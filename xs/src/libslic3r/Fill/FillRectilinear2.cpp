@@ -823,7 +823,7 @@ bool FillRectilinear2::fill_surface_by_lines(const Surface *surface, const FillP
     }
 
     // Intersect a set of euqally spaced vertical lines wiht expolygon.
-    size_t  n_vlines = (bounding_box.max.x - bounding_box.min.x + SCALED_EPSILON) / line_spacing;
+    size_t  n_vlines = (bounding_box.max.x - bounding_box.min.x + SCALED_EPSILON) / line_spacing + 1;
     coord_t x0 = bounding_box.min.x + line_spacing / 2;
 
 #ifdef SLIC3R_DEBUG
