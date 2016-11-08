@@ -91,13 +91,20 @@ sub new {
         my ($s, $event) = @_;
         
         my $key = $event->GetKeyCode;
+        my $idx_low  = $slider_low->GetValue;
+        my $idx_high = $slider_high->GetValue;
         if ($key == 85 || $key == 315) {
-            $slider_high->SetValue($slider_high->GetValue + 1);
-            $self->set_z_high($self->{layers_z}[$slider_high->GetValue]);
+            $slider_high->SetValue($idx_high + 1);
         } elsif ($key == 68 || $key == 317) {
-            $slider_high->SetValue($slider_high->GetValue - 1);
-            $self->set_z_high($self->{layers_z}[$slider_high->GetValue]);
+            $$slider_high->SetValue($idx_high - 1);
+        } else {
+            return;
         }
+        if ($idx_low > $idx_high) {
+            $idx_low = $idx_high;
+            $self->slider_low->SetValue($idx_low);
+        }
+        $self->set_z_range($self->{layers_z}[$idx_low], $self->{layers_z}[$idx_high]);
     });
     
     $self->SetSizer($sizer);
