@@ -515,9 +515,10 @@ package Slic3r::GUI::OptionsGroup::Field::Slider;
 use Moo;
 extends 'Slic3r::GUI::OptionsGroup::Field::wxSizer';
 
-has 'scale'         => (is => 'rw', default => sub { 10 });
-has 'slider'        => (is => 'rw');
-has 'textctrl'      => (is => 'rw');
+has 'scale'             => (is => 'rw', default => sub { 10 });
+has 'slider'            => (is => 'rw');
+has 'textctrl'          => (is => 'rw');
+has 'disable_textctrl'  => (is => 'rw', default => sub{ 0 }); # mutex to prevent deep recursion on textfield update
 
 use Slic3r::Geometry qw(X Y);
 use Wx qw(:misc :sizer);
@@ -528,7 +529,7 @@ sub BUILD {
     
     my $sizer = Wx::BoxSizer->new(wxHORIZONTAL);
     $self->wxSizer($sizer);
-    
+
     my $slider = Wx::Slider->new(
         $self->parent, -1,
         ($self->option->default // $self->option->min) * $self->scale,
@@ -551,10 +552,15 @@ sub BUILD {
         $self->_on_change($self->option->opt_id);
     });
     EVT_TEXT($self->parent, $textctrl, sub {
-        my $value = $textctrl->GetValue;
-        if ($value =~ /^-?\d+(\.\d*)?$/) {
-            $self->set_value($value);
-            $self->_on_change($self->option->opt_id);
+        unless($self->disable_textctrl) {
+	        my $value = $textctrl->GetValue;
+	        if ($value =~ /^-?\d+(\.\d*)?$/) {
+	            # don't call set_value here to keep the focus on textctrl
+	            $self->disable_change_event(1);
+			    $self->slider->SetValue($value*$self->scale);
+			    $self->disable_change_event(0);
+	            $self->_on_change($self->option->opt_id);
+	        }
         }
     });
     EVT_KILL_FOCUS($textctrl, sub {
@@ -576,9 +582,22 @@ sub get_value {
     return $self->slider->GetValue/$self->scale;
 }
 
+# Update internal scaling
+sub set_scale {
+	my ($self, $scale) = @_;
+	$self->disable_change_event(1);
+	my $current_value = $self->get_value;
+	$self->slider->SetRange($self->slider->GetMin / $self->scale * $scale, $self->slider->GetMax / $self->scale * $scale);
+	$self->scale($scale);
+	$self->set_value($current_value);
+	$self->disable_change_event(0);
+}
+
 sub _update_textctrl {
     my ($self) = @_;
-    $self->textctrl->SetLabel($self->get_value);
+    $self->disable_textctrl(1);
+    $self->textctrl->SetValue($self->get_value);
+    $self->disable_textctrl(0);
 }
 
 sub enable {
