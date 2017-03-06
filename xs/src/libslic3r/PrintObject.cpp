@@ -217,7 +217,9 @@ PrintObject::invalidate_state_by_config_options(const std::vector<t_config_optio
             steps.insert(posPerimeters);
         } else if (*opt_key == "layer_height"
             || *opt_key == "first_layer_height"
-            || *opt_key == "raft_layers") {
+            || *opt_key == "raft_layers"
+            || *opt_key == "adaptive_slicing"
+            || *opt_key == "adaptive_slicing_quality") {
             steps.insert(posSlice);
 			this->reset_layer_height_profile();
 		}
@@ -976,8 +978,7 @@ bool PrintObject::update_layer_height_profile(std::vector<coordf_t> &layer_heigh
         layer_height_profile.clear();
 
     if (layer_height_profile.empty()) {
-        if (0)
-//        if (this->layer_height_profile.empty())
+        if (this->config.adaptive_slicing.value)
             layer_height_profile = layer_height_profile_adaptive(slicing_params, this->layer_height_ranges,
                 this->model_object()->volumes);
         else

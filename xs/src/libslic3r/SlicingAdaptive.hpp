@@ -18,8 +18,11 @@ public:
 	void set_slicing_parameters(SlicingParameters params) { m_slicing_params = params; }
 	void add_mesh(const TriangleMesh *mesh) { m_meshes.push_back(mesh); }
 	void prepare();
-	float cusp_height(float z, float cusp_value, int &current_facet);
+	float layer_height(float z, int &current_facet);
 	float horizontal_facet_distance(float z);
+
+private:
+	float _layer_height_from_facet(int ordered_id, float scaled_quality_factor);
 
 protected:
 	SlicingParameters 					m_slicing_params;

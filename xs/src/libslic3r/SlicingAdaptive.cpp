@@ -2,6 +2,22 @@
 #include "TriangleMesh.hpp"
 #include "SlicingAdaptive.hpp"
 
+#ifdef SLIC3R_DEBUG
+    #undef NDEBUG
+    #define DEBUG
+    #define _DEBUG
+#endif
+
+/* This constant essentially describes the volumetric error at the surface which is induced
+ * by stacking "elliptic" extrusion threads.
+ * It is empirically determined by
+ * 1. measuring the surface profile of printed parts to find
+ * the ratio between layer height and profile height and then
+ * 2. computing the geometric difference between the model-surface and the elliptic profile.
+ * [Link to detailed description follows]
+ */
+#define SURFACE_CONST 0.18403
+
 namespace Slic3r
 {
 
@@ -43,31 +59,38 @@ void SlicingAdaptive::prepare()
     	m_face_normal_z[iface] = m_faces[iface]->normal.z;
 }
 
-float SlicingAdaptive::cusp_height(float z, float cusp_value, int &current_facet)
+float SlicingAdaptive::layer_height(float z, int &current_facet)
 {
-	float height = m_slicing_params.max_layer_height;
+    float height = m_slicing_params.max_layer_height;
+    // factor must be between 0-1, 0 is highest quality, 1 highest print speed.
+    // Invert the slider scale (100% should represent a very high quality for the user)
+	float quality_factor = std::max(0.f, std::min(1.f, 1 - m_slicing_params.adaptive_slicing_quality/100.f));
+
+    float delta_min = SURFACE_CONST * m_slicing_params.min_layer_height;
+    float delta_max = SURFACE_CONST * m_slicing_params.max_layer_height + 0.5 * m_slicing_params.max_layer_height;
+    float scaled_quality_factor = quality_factor * (delta_max - delta_min) + delta_min;
+
 	bool first_hit = false;
-	
-	// find all facets intersecting the slice-layer
-	int ordered_id = current_facet;
-	for (; ordered_id < int(m_faces.size()); ++ ordered_id) {
+
+    // find all facets intersecting the slice-layer
+    int ordered_id = current_facet;
+    for (; ordered_id < int(m_faces.size()); ++ ordered_id) {
 		std::pair<float, float> zspan = face_z_span(m_faces[ordered_id]);
 		// facet's minimum is higher than slice_z -> end loop
 		if (zspan.first >= z)
 			break;
-		// facet's maximum is higher than slice_z -> store the first event for next cusp_height call to begin at this point
+		// facet's maximum is higher than slice_z -> store the first event for next layer_height call to begin at this point
 		if (zspan.second > z) {
 			// first event?
 			if (! first_hit) {
 				first_hit = true;
 				current_facet = ordered_id;
 			}
-			// skip touching facets which could otherwise cause small cusp values
+			// skip touching facets which could otherwise cause small height values
 			if (zspan.second <= z + EPSILON)
 				continue;
-			// compute cusp-height for this facet and store minimum of all heights
-			float normal_z = m_face_normal_z[ordered_id];
-			height = std::min(height, (normal_z == 0.f) ? 9999.f : std::abs(cusp_value / normal_z));
+			// compute height for this facet and store minimum of all heights
+			height = std::min(height, this->_layer_height_from_facet(ordered_id, scaled_quality_factor));
 		}
 	}
 
@@ -86,35 +109,39 @@ float SlicingAdaptive::cusp_height(float z, float cusp_value, int &current_facet
 			if (zspan.second <= z + EPSILON)
 				continue;
 
-			// Compute cusp-height for this facet and check against height.
-			float normal_z = m_face_normal_z[ordered_id];
-			float cusp = (normal_z == 0) ? 9999 : abs(cusp_value / normal_z);
-			
+			// Compute new height for this facet and check against height.
+			float reduced_height = this->_layer_height_from_facet(ordered_id, scaled_quality_factor);
+
 			float z_diff = zspan.first - z;
 
-			// handle horizontal facets
-			if (m_face_normal_z[ordered_id] > 0.999) {
-				// Slic3r::debugf "cusp computation, height is reduced from %f", $height;
-				height = z_diff;
-				// Slic3r::debugf "to %f due to near horizontal facet\n", $height;
-			} else if (cusp > z_diff) {
-				if (cusp < height) {
-					// Slic3r::debugf "cusp computation, height is reduced from %f", $height;
-					height = cusp;
-					// Slic3r::debugf "to %f due to new cusp height\n", $height;
+			if (reduced_height > z_diff) {
+				if (reduced_height < height) {
+#ifdef DEBUG
+					std::cout << "adaptive layer computation: height is reduced from " << height;
+#endif
+					height = reduced_height;
+#ifdef DEBUG
+					std::cout << "to " << height << " due to higher facet" << std::endl;
+#endif
 				}
 			} else {
-				// Slic3r::debugf "cusp computation, height is reduced from %f", $height;
+#ifdef DEBUG
+				std::cout << "cusp computation, height is reduced from " << height;
+#endif
 				height = z_diff;
-				// Slic3r::debugf "to z-diff: %f\n", $height;
+#ifdef DEBUG
+				std::cout << "to " << height << " due to z-diff" << std::endl;
+#endif
 			}
 		}
-		// lower height limit due to printer capabilities again
-		height = std::max(height, float(m_slicing_params.min_layer_height));
+        // lower height limit due to printer capabilities again
+        height = std::max(height, float(m_slicing_params.min_layer_height));
 	}
-	
-//	Slic3r::debugf "cusp computation, layer-bottom at z:%f, cusp_value:%f, resulting layer height:%f\n", unscale $z, $cusp_value, $height;	
-	return height; 
+
+#ifdef DEBUG
+    std::cout << "adaptive layer computation, layer-bottom at z:" << z << ", quality_factor:" << quality_factor << ", resulting layer height:" << height << std::endl;
+#endif
+	return height;
 }
 
 // Returns the distance to the next horizontal facet in Z-dir 
@@ -135,6 +162,14 @@ float SlicingAdaptive::horizontal_facet_distance(float z)
 	return (z + m_slicing_params.max_layer_height > m_slicing_params.object_print_z_height()) ? 
 		std::max<float>(m_slicing_params.object_print_z_height() - z, 0.f) :
 		m_slicing_params.max_layer_height;
+}
+
+// for a given facet, compute maximum height within the allowed surface roughness / stairstepping deviation
+float SlicingAdaptive::_layer_height_from_facet(int ordered_id, float scaled_quality_factor)
+{
+	float normal_z = std::abs(m_face_normal_z[ordered_id]);
+	float height = scaled_quality_factor/(SURFACE_CONST + normal_z/2);
+	return (normal_z == 0.f) ? 9999.f : height;
 }
 
 }; // namespace Slic3r

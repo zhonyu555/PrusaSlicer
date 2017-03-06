@@ -67,6 +67,8 @@ SlicingParameters SlicingParameters::create_from_config(
     params.base_raft_layers = object_config.raft_layers.value;
     params.soluble_interface = soluble_interface;
 
+    params.adaptive_slicing_quality = object_config.adaptive_slicing_quality;
+
     // Miniumum/maximum of the minimum layer height over all extruders.
     params.min_layer_height = MIN_LAYER_HEIGHT;
     params.max_layer_height = std::numeric_limits<double>::max();
@@ -230,9 +232,7 @@ std::vector<coordf_t> layer_height_profile_adaptive(
 
     // 2) Generate layers using the algorithm of @platsch 
     // loop until we have at least one layer and the max slice_z reaches the object height
-    //FIXME make it configurable
-    // Cusp value: A maximum allowed distance from a corner of a rectangular extrusion to a chrodal line, in mm.
-    const coordf_t cusp_value = 0.2; // $self->config->get_value('cusp_value');
+    //Quality parameter for adaptive height determination is provided by the slicing_params struct.
 
     std::vector<coordf_t> layer_height_profile;
     layer_height_profile.push_back(0.);
@@ -243,33 +243,33 @@ std::vector<coordf_t> layer_height_profile_adaptive(
     }
     coordf_t slice_z = slicing_params.first_object_layer_height;
     coordf_t height  = slicing_params.first_object_layer_height;
-    coordf_t cusp_height = 0.;
+    coordf_t adaptive_height = 0.;
     int current_facet = 0;
     while ((slice_z - height) <= slicing_params.object_print_z_height()) {
         height = 999;
         // Slic3r::debugf "\n Slice layer: %d\n", $id;
         // determine next layer height
-        coordf_t cusp_height = as.cusp_height(slice_z, cusp_value, current_facet);
+        coordf_t adaptive_height = as.layer_height(slice_z, current_facet);
         // check for horizontal features and object size
         /*
         if($self->config->get_value('match_horizontal_surfaces')) {
-            my $horizontal_dist = $adaptive_slicing[$region_id]->horizontal_facet_distance(scale $slice_z+$cusp_height, $min_height);
+            my $horizontal_dist = $adaptive_slicing[$region_id]->horizontal_facet_distance(scale $slice_z+$adaptive_height, $min_height);
             if(($horizontal_dist < $min_height) && ($horizontal_dist > 0)) {
                 Slic3r::debugf "Horizontal feature ahead, distance: %f\n", $horizontal_dist;
                 # can we shrink the current layer a bit?
-                if($cusp_height-($min_height-$horizontal_dist) > $min_height) {
+                if($adaptive_height-($min_height-$horizontal_dist) > $min_height) {
                     # yes we can
-                    $cusp_height = $cusp_height-($min_height-$horizontal_dist);
-                    Slic3r::debugf "Shrink layer height to %f\n", $cusp_height;
+                    $adaptive_height = $adaptive_height-($min_height-$horizontal_dist);
+                    Slic3r::debugf "Shrink layer height to %f\n", $adaptive_height;
                 }else{
                     # no, current layer would become too thin
-                    $cusp_height = $cusp_height+$horizontal_dist;
-                    Slic3r::debugf "Widen layer height to %f\n", $cusp_height;
+                    $adaptive_height = $adaptive_height+$horizontal_dist;
+                    Slic3r::debugf "Widen layer height to %f\n", $adaptive_height;
                 }
             }
         }
         */
-        height = std::min(cusp_height, height);
+        height = std::min(adaptive_height, height);
 
         // apply z-gradation
         /*

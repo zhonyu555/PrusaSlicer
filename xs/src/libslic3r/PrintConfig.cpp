@@ -9,6 +9,23 @@ PrintConfigDef::PrintConfigDef()
     
     ConfigOptionDef* def;
     
+    def = this->add("adaptive_slicing", coBool);
+    def->label = "Adaptive layer heights";
+    def->tooltip = "Automatically determine layer heights by the objects topology instead of using a static value.";
+    def->cli = "adaptive-slicing!";
+    def->default_value = new ConfigOptionBool(false);
+
+    def = this->add("adaptive_slicing_quality", coPercent);
+    def->label = "Adaptive quality";
+    def->tooltip = "Controls the quality / printing time tradeoff for adaptive layer generation. 0 -> fastest printing with max layer height, 100 -> highest quality, min layer height";
+    def->sidetext = "%";
+    def->cli = "adaptive_slicing_quality=f";
+    def->min = 0;
+    def->max = 100;
+    def->gui_type = "slider";
+    def->width = 200;
+    def->default_value = new ConfigOptionPercent(75);
+
     def = this->add("avoid_crossing_perimeters", coBool);
     def->label = "Avoid crossing perimeters";
     def->tooltip = "Optimize travel moves in order to minimize the crossing of perimeters. This is mostly useful with Bowden extruders which suffer from oozing. This feature slows down both the print and the G-code generation.";

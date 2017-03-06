@@ -520,6 +520,7 @@ sub build {
     
     $self->init_config_options(qw(
         layer_height first_layer_height
+        adaptive_slicing adaptive_slicing_quality
         perimeters spiral_vase
         top_solid_layers bottom_solid_layers
         extra_perimeters ensure_vertical_shell_thickness avoid_crossing_perimeters thin_walls overhangs
@@ -567,6 +568,9 @@ sub build {
             my $optgroup = $page->new_optgroup('Layer height');
             $optgroup->append_single_option_line('layer_height');
             $optgroup->append_single_option_line('first_layer_height');
+            $optgroup->append_single_option_line('adaptive_slicing');
+            $optgroup->append_single_option_line('adaptive_slicing_quality');
+            $optgroup->get_field('adaptive_slicing_quality')->set_scale(1);
         }
         {
             my $optgroup = $page->new_optgroup('Vertical shells');
@@ -815,6 +819,12 @@ sub _update {
 
     my $config = $self->{config};
     
+    my $have_adaptive_slicing = $config->adaptive_slicing;
+    $self->get_field($_)->toggle($have_adaptive_slicing)
+        for qw(adaptive_slicing_quality);
+    $self->get_field($_)->toggle(!$have_adaptive_slicing)
+        for qw(layer_height);
+
     if ($config->spiral_vase && !($config->perimeters == 1 && $config->top_solid_layers == 0 && $config->fill_density == 0)) {
         my $dialog = Wx::MessageDialog->new($self,
             "The Spiral Vase mode requires:\n"

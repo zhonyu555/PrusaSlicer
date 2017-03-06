@@ -138,6 +138,8 @@ class StaticPrintConfig : public PrintConfigBase, public StaticConfig
 class PrintObjectConfig : public virtual StaticPrintConfig
 {
     public:
+    ConfigOptionBool                adaptive_slicing;
+    ConfigOptionPercent             adaptive_slicing_quality;
     ConfigOptionBool                clip_multipart_objects;
     ConfigOptionBool                dont_support_bridges;
     ConfigOptionFloatOrPercent      extrusion_width;
@@ -176,6 +178,8 @@ class PrintObjectConfig : public virtual StaticPrintConfig
     }
 
     virtual ConfigOption* optptr(const t_config_option_key &opt_key, bool create = false) {
+        OPT_PTR(adaptive_slicing);
+        OPT_PTR(adaptive_slicing_quality);
         OPT_PTR(clip_multipart_objects);
         OPT_PTR(dont_support_bridges);
         OPT_PTR(extrusion_width);
