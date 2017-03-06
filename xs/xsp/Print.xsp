@@ -147,6 +147,7 @@ _constant()
             if (force) {
                 SlicingParameters slicing_params = THIS->slicing_parameters(); 
                 bool level_of_detail_2nd_level = true;
+                THIS->model_object()->layer_height_profile_valid = true;
                 RETVAL = generate_layer_height_texture(
                     slicing_params, 
                     generate_object_layers(slicing_params, THIS->model_object()->layer_height_profile), 
