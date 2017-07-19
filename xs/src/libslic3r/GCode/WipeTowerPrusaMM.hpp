@@ -91,7 +91,8 @@ public:
 		// Start counting the color changes from zero. Special case: -1 - extrude a brim first.
 		m_idx_tool_change_in_layer = is_first_layer ? (unsigned int)(-1) : 0;
 		m_current_wipe_start_y  = 0.f;
-		m_current_shape = (! is_first_layer && m_current_shape == SHAPE_NORMAL) ? SHAPE_REVERSED : SHAPE_NORMAL;
+		m_current_shape = (! is_first_layer && m_current_shape == SHAPE_X) ? SHAPE_Y : SHAPE_X;
+		m_current_direction = (! is_first_layer && (m_current_shape == SHAPE_X && m_current_direction == DIR_FORWARD) || (m_current_shape == SHAPE_Y && m_current_direction == DIR_BACK)) ? DIR_BACK : DIR_FORWARD;
 		++ m_num_layer_changes;
 		// Extrusion rate for an extrusion aka perimeter width 0.35mm.
 		m_extrusion_flow = std::min(0.2f, layer_height) * 0.145f;
@@ -125,8 +126,14 @@ private:
 	// A fill-in direction (positive Y, negative Y) alternates with each layer.
 	enum wipe_shape
 	{
-		SHAPE_NORMAL   = 1,
-		SHAPE_REVERSED = -1
+		SHAPE_X   	= 1,
+		SHAPE_Y		= -1
+	};
+
+	enum wipe_direction
+	{
+		DIR_FORWARD 	= 1,
+		DIR_BACK 		= -1
 	};
 
 	// Left front corner of the wipe tower in mm.
@@ -167,7 +174,8 @@ private:
 	// Layer change counter in this layer. Counting up to m_max_color_changes.
 	unsigned int 	m_idx_tool_change_in_layer = 0;
 	// A fill-in direction (positive Y, negative Y) alternates with each layer.
-	wipe_shape   	m_current_shape = SHAPE_NORMAL;
+	wipe_shape   	m_current_shape = SHAPE_X;
+	wipe_direction	m_current_direction = DIR_FORWARD;
 	unsigned int 	m_current_tool  = 0;
 	// Current y position at the wipe tower.
 	float 		 	m_current_wipe_start_y = 0.f;
