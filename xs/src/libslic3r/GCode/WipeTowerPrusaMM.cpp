@@ -609,7 +609,6 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	float yu = cleaning_box.lu.y - 0.5f * m_perimeter_width;
 	float yd = cleaning_box.ld.y + 0.5f * m_perimeter_width;
 	float d_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
-	float d_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
 
 	writer.append("; CP TOOLCHANGE UNLOAD\n");
 
