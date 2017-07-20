@@ -173,7 +173,7 @@ private:
 	unsigned int 	m_num_tool_changes = 0;
 	// Layer change counter in this layer. Counting up to m_max_color_changes.
 	unsigned int 	m_idx_tool_change_in_layer = 0;
-	// A fill-in direction (positive Y, negative Y) alternates with each layer.
+	// A fill-in direction (+Y, +X, -Y, -X) alternates with each layer.
 	wipe_shape   	m_current_shape = SHAPE_X;
 	wipe_direction	m_current_direction = DIR_FORWARD;
 	unsigned int 	m_current_tool  = 0;
