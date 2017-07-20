@@ -142,12 +142,15 @@ public:
 		return *this;
 	}
 
-	// Derectract while moving in the X direction.
+	// Derectract while moving in the x direction.
 	// If |x| > 0, the feed rate relates to the x distance,
 	// otherwise the feed rate relates to the e distance.
 	Writer& load_move_x(float x, float e, float f = 0.f)
 		{ return extrude_explicit(x, m_current_pos.y, e, f); }
 
+	// Derectract while moving in the y direction.
+	// If |y| > 0, the feed rate relates to the y distance,
+	// otherwise the feed rate relates to the e distance.
 	Writer& load_move_y(float y, float e, float f = 0.0f)
 		{ return extrude_explicit(m_current_pos.x, y, e, f); }
 
@@ -176,6 +179,9 @@ public:
 		extrude_explicit(x2, m_current_pos.y, e);
 		return *this;
 	}
+
+	// Move to y1, +x_increment,
+	// extrude quickly amount e to y2 with feed f.
 	Writer& ramY(float y1, float y2, float dx, float e0, float e, float f)
 	{
 		extrude_explicit(m_current_pos.x + dx, y1, e0, f);
@@ -194,6 +200,9 @@ public:
 		return *this;
 	}
 
+	// Let the end of the pulled out filament cool down in the cooling tube
+	// by moving left and right and moving the print head up / down
+	// at the current X position to spread the leaking material.
 	Writer& coolY(float y1, float y2, float e1, float e2, float f)
 	{
 		extrude_explicit(m_current_pos.x, y1, e1, f);
@@ -674,11 +683,12 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	// In case the current print head position is closer to the left edge, reverse the direction.
 	if (std::abs(writer.x() - xl) < std::abs(writer.x() - xr))
 		std::swap(xl, xr);
-
-	if (std::abs(writer.y() - yd) < std::abs(writer.y() - yu))
+	// In case the current print head position is closer to the top edge, reverse the direction.
+	if (std::abs(writer.y() - yu) < std::abs(writer.y() - yd))
 		std::swap(yu, yd);
-	// Horizontal cooling moves will be performed at the following Y coordinate:
+
 	if (m_current_shape == SHAPE_X) {
+		// Horizontal cooling moves will be performed at the following Y coordinate:
 		writer.travel(xr, writer.y() + y_step * 0.8f, 7200)
 			  .suppress_preview();
 		switch (current_material)
@@ -711,6 +721,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
 				  .coolX(xl, xr, 5, -3, 2400);
 		}
 	} else {
+		// Horizontal cooling moves will be performed at the following X coordinate:
 		writer.travel(writer.x() + x_step * 0.8f, yd, 7200)
 			  .suppress_preview();
 		switch (current_material)
@@ -803,7 +814,7 @@ void WipeTowerPrusaMM::toolchange_Load(
 		 	writer.extrude(xr, writer.y(), 		2200);
 		}
 	} else {
-		// Load the filament while moving left / right,
+		// Load the filament while moving up / down,
 		// so the excess material will not create a blob at a single position.
 			  writer.suppress_preview()
 			  .load_move_y(yd, 20, 1400)
@@ -844,9 +855,9 @@ void WipeTowerPrusaMM::toolchange_Wipe(
 	float wipe_speed 	 = 4200.f;
 	float wipe_speed_inc = 50.f;
 	float wipe_speed_max = 4800.f;
-	// Y increment per wipe line.
-	float dy = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
+	// X/Y increment per wipe line.
 	float dx = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
+	float dy = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
 
 	if (m_current_shape == SHAPE_X) {
 		for (bool p = true; ; p = ! p) {
