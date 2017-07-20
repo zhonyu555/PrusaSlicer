@@ -123,7 +123,7 @@ public:
 private:
 	WipeTowerPrusaMM();
 
-	// A fill-in direction (positive Y, negative Y) alternates with each layer.
+	// A fill-in shape (along X or Y axis) and a direction (forward or backward along that axis).
 	enum wipe_shape
 	{
 		SHAPE_X   	= 1,
