@@ -424,7 +424,7 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::tool_change(int tool, bool last_in
 		  .speed_override(100);
 
     xy initial_position = ((m_current_direction == DIR_FORWARD) ? cleaning_box.ld : cleaning_box.ru) + 
-    	xy(((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width, ((m_current_direction == DIR_FORWARD) ? 2.f : -2.f) * m_perimeter_width);
+    	xy(((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width, ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width);
 
 	if (purpose == PURPOSE_MOVE_TO_TOWER || purpose == PURPOSE_MOVE_TO_TOWER_AND_EXTRUDE) {
 		// Scaffold leaks terribly, reduce leaking by a full retract when going to the wipe tower.
@@ -782,12 +782,12 @@ void WipeTowerPrusaMM::toolchange_Load(
 	float  dx   = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.85f;
 	float  dy   = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.85f;
 	
-	writer.append("; CP TOOLCHANGE LOAD\n")
+	writer.append("; CP TOOLCHANGE LOAD\n");
 
 	if (m_current_shape == SHAPE_X) {
 		// Load the filament while moving left / right,
 		// so the excess material will not create a blob at a single position.
-			  .suppress_preview()
+			  writer.suppress_preview()
 			  .load_move_x(xr, 20, 1400)
 			  .load_move_x(xl, 40, 3000)
 			  .load_move_x(xr, 20, 1600)
@@ -805,7 +805,7 @@ void WipeTowerPrusaMM::toolchange_Load(
 	} else {
 		// Load the filament while moving left / right,
 		// so the excess material will not create a blob at a single position.
-			  .suppress_preview()
+			  writer.suppress_preview()
 			  .load_move_y(yd, 20, 1400)
 			  .load_move_y(yu, 40, 3000)
 			  .load_move_y(yd, 20, 1600)
