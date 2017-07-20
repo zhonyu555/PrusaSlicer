@@ -608,8 +608,8 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	float xr = cleaning_box.rd.x - 0.5f * m_perimeter_width;
 	float yu = cleaning_box.lu.y - 0.5f * m_perimeter_width;
 	float yd = cleaning_box.ld.y + 0.5f * m_perimeter_width;
-	float y_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
-	float x_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
+	float d_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
+	float d_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
 
 	writer.append("; CP TOOLCHANGE UNLOAD\n");
 
@@ -624,52 +624,52 @@ void WipeTowerPrusaMM::toolchange_Unload(
 		{
 		case ABS:
 	   		// ramming          start                    end                  y increment     amount feedrate
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     y_step * 0.2f, 0,  1.2f * e,  4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     y_step * 1.2f, e0, 1.6f * e,  4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, y_step * 1.2f, e0, 1.8f * e,  5000)
-				  .ramX(xr - m_perimeter_width * 2, xl + m_perimeter_width * 2, y_step * 1.2f, e0, 1.8f * e,  5000);
+			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.2f * e,  4000)
+				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.6f * e,  4600)
+				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000)
+				  .ramX(xr - m_perimeter_width * 2, xl + m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000);
 			break;
 		case PVA:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     y_step * 0.2f, 0,  3,     4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     y_step * 1.5f, 0,  3,     4500)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, y_step * 1.5f, 0,  3,     4800)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     y_step * 1.5f, 0,  3,     5000);
+			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  3,     4000)
+				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     4500)
+				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.5f, 0,  3,     4800)
+				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     5000);
 			break;
 		case SCAFF:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     y_step * 2.f,  0,  3,     4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     y_step * 3.f,  0,  4,     4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, y_step * 3.f,  0,  4.5,   5200);
+			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 2.f,  0,  3,     4000)
+				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 3.f,  0,  4,     4600)
+				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 3.f,  0,  4.5,   5200);
 			break;
 		default:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     y_step * 0.2f, 0,  1.6f  * e, 4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     y_step * 1.2f, e0, 1.65f * e, 4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, y_step * 1.2f, e0, 1.74f * e, 5200);
+			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.6f  * e, 4000)
+				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.65f * e, 4600)
+				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.74f * e, 5200);
 		}
 	} else {
 		switch (current_material)
 		{
 		case ABS:
 	   		// ramming          start                    end                  x increment     amount feedrate
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     x_step * 0.2f, 0,  1.2f * e,  4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     x_step * 1.2f, e0, 1.6f * e,  4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, x_step * 1.2f, e0, 1.8f * e,  5000)
-				  .ramY(yd + m_perimeter_width * 2, yu - m_perimeter_width * 2, x_step * 1.2f, e0, 1.8f * e,  5000);
+			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  1.2f * e,  4000)
+				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.2f, e0, 1.6f * e,  4600)
+				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000)
+				  .ramY(yd + m_perimeter_width * 2, yu - m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000);
 			break;
 		case PVA:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     x_step * 0.2f, 0,  3,     4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     x_step * 1.5f, 0,  3,     4500)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, x_step * 1.5f, 0,  3,     4800)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     x_step * 1.5f, 0,  3,     5000);
+			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  3,     4000)
+				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.5f, 0,  3,     4500)
+				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.5f, 0,  3,     4800)
+				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.5f, 0,  3,     5000);
 			break;
 		case SCAFF:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     x_step * 2.f,  0,  3,     4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     x_step * 3.f,  0,  4,     4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, x_step * 3.f,  0,  4.5,   5200);
+			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 2.f,  0,  3,     4000)
+				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 3.f,  0,  4,     4600)
+				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 3.f,  0,  4.5,   5200);
 			break;
 		default:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     x_step * 0.2f, 0,  1.6f  * e, 4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     x_step * 1.2f, e0, 1.65f * e, 4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, x_step * 1.2f, e0, 1.74f * e, 5200);
+			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  1.6f  * e, 4000)
+				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.2f, e0, 1.65f * e, 4600)
+				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.2f, e0, 1.74f * e, 5200);
 		}
 	}
 
@@ -689,7 +689,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
 
 	if (m_current_shape == SHAPE_X) {
 		// Horizontal cooling moves will be performed at the following Y coordinate:
-		writer.travel(xr, writer.y() + y_step * 0.8f, 7200)
+		writer.travel(xr, writer.y() + d_step * 0.8f, 7200)
 			  .suppress_preview();
 		switch (current_material)
 		{
@@ -722,7 +722,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
 		}
 	} else {
 		// Horizontal cooling moves will be performed at the following X coordinate:
-		writer.travel(writer.x() + x_step * 0.8f, yd, 7200)
+		writer.travel(writer.x() + d_step * 0.8f, yd, 7200)
 			  .suppress_preview();
 		switch (current_material)
 		{
@@ -790,8 +790,7 @@ void WipeTowerPrusaMM::toolchange_Load(
 
 	bool   colorInit = false;
 	size_t pass = colorInit ? 1 : 2;
-	float  dx   = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.85f;
-	float  dy   = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.85f;
+	float  d   = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.85f;
 	
 	writer.append("; CP TOOLCHANGE LOAD\n");
 
@@ -808,9 +807,9 @@ void WipeTowerPrusaMM::toolchange_Load(
 		// Extrude first five lines (just three lines if colorInit is set).
 		writer.extrude(xr, writer.y(), 1600);
 		for (int i = 0; i < pass; ++ i) {
-			writer.travel (xr, writer.y() + dy, 7200);
+			writer.travel (xr, writer.y() + d, 7200);
 			writer.extrude(xl, writer.y(), 		2200);
-			writer.travel (xl, writer.y() + dy, 7200);
+			writer.travel (xl, writer.y() + d, 7200);
 		 	writer.extrude(xr, writer.y(), 		2200);
 		}
 	} else {
@@ -826,9 +825,9 @@ void WipeTowerPrusaMM::toolchange_Load(
 		// Extrude first five lines (just three lines if colorInit is set).
 		writer.extrude(writer.x(), yd, 1600);
 		for (int i = 0; i < pass; ++ i) {
-			writer.travel (writer.x() + dx, yd, 7200);
+			writer.travel (writer.x() + d, yd, 7200);
 			writer.extrude(writer.x(),		yu, 2200);
-			writer.travel (writer.x() + dx, yu, 7200);
+			writer.travel (writer.x() + d, yu, 7200);
 		 	writer.extrude(writer.x(), 		yd,	2200);
 		}
 	}
@@ -856,21 +855,20 @@ void WipeTowerPrusaMM::toolchange_Wipe(
 	float wipe_speed_inc = 50.f;
 	float wipe_speed_max = 4800.f;
 	// X/Y increment per wipe line.
-	float dx = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
-	float dy = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
+	float d = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width * 0.8f;
 
 	if (m_current_shape == SHAPE_X) {
 		for (bool p = true; ; p = ! p) {
 			wipe_speed = std::min(wipe_speed_max, wipe_speed + wipe_speed_inc);
 			if (p) {
-				writer.extrude(xl - m_perimeter_width / 2, writer.y() + dy, wipe_speed * wipe_coeff);
+				writer.extrude(xl - m_perimeter_width / 2, writer.y() + d, wipe_speed * wipe_coeff);
 				writer.extrude(xr + m_perimeter_width,     writer.y());
 			} else {
-				writer.extrude(xl - m_perimeter_width,     writer.y() + dy, wipe_speed * wipe_coeff);
+				writer.extrude(xl - m_perimeter_width,     writer.y() + d, wipe_speed * wipe_coeff);
 				writer.extrude(xr + m_perimeter_width * 2, writer.y());
 			}
 			wipe_speed = std::min(wipe_speed_max, wipe_speed + wipe_speed_inc);
-			writer.extrude(xr + m_perimeter_width, writer.y() + dy, wipe_speed * wipe_coeff);
+			writer.extrude(xr + m_perimeter_width, writer.y() + d, wipe_speed * wipe_coeff);
 			writer.extrude(xl - m_perimeter_width, writer.y());
 			if ((m_current_direction == DIR_FORWARD) ?
 				(writer.y() > cleaning_box.lu.y - m_perimeter_width) :
@@ -883,15 +881,15 @@ void WipeTowerPrusaMM::toolchange_Wipe(
 		for (bool p = true; ; p = !p) {
 			wipe_speed = std::min(wipe_speed_max, wipe_speed + wipe_speed_inc);
 			if (p) {
-				writer.extrude(writer.x() + dx, yu + m_perimeter_width / 2, wipe_speed * wipe_coeff);
+				writer.extrude(writer.x() + d, yu + m_perimeter_width / 2, wipe_speed * wipe_coeff);
 				writer.extrude(writer.x(), yd - m_perimeter_width);
 			}
 			else {
-				writer.extrude(writer.x() + dx, yu + m_perimeter_width, wipe_speed * wipe_coeff);
+				writer.extrude(writer.x() + d, yu + m_perimeter_width, wipe_speed * wipe_coeff);
 				writer.extrude(writer.x(), yd - m_perimeter_width * 2);
 			}
 			wipe_speed = std::min(wipe_speed_max, wipe_speed + wipe_speed_inc);
-			writer.extrude(writer.x() + dx, yd - m_perimeter_width, wipe_speed * wipe_coeff);
+			writer.extrude(writer.x() + d, yd - m_perimeter_width, wipe_speed * wipe_coeff);
 			writer.extrude(writer.x(), yu + m_perimeter_width);
 			if ((m_current_direction == DIR_FORWARD) ?
 			(writer.x() > cleaning_box.ru.x - m_perimeter_width) :
