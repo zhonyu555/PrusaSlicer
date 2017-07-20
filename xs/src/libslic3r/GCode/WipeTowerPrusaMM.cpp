@@ -842,8 +842,8 @@ void WipeTowerPrusaMM::toolchange_Wipe(
 	PrusaMultiMaterial::Writer &writer,
 	const box_coordinates  &cleaning_box)
 {
-	// Increase flow on first layer, slow down print.
-	writer.set_extrusion_flow(m_extrusion_flow * (m_is_first_layer ? 1.18f : 1.18))
+	// Slow down print on first layer, increase flow to provide full bonding.
+	writer.set_extrusion_flow(m_extrusion_flow * (m_is_first_layer ? 1.18f : 1.18f))
 		  .append("; CP TOOLCHANGE WIPE\n");
 	float wipe_coeff = m_is_first_layer ? 0.5f : 1.f;
 	float xl = cleaning_box.ld.x + 2.f * m_perimeter_width;
