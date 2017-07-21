@@ -468,7 +468,13 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::tool_change(int tool, bool last_in
 			toolchange_Load(writer, cleaning_box);
 			// Wipe the newly loaded filament until the end of the assigned wipe area.
 			toolchange_Wipe(writer, cleaning_box);
+
 			// Draw a perimeter around cleaning_box and wipe.
+			box_coordinates cleaning_box(
+			m_wipe_tower_pos + xy(0.f, m_current_wipe_start_y + 0.5f * m_perimeter_width),
+			m_wipe_tower_width, 
+			wipe_area - m_perimeter_width);
+
 			box_coordinates box = cleaning_box;
 			if (m_current_direction == DIR_BACK) {
 				if(m_current_shape == SHAPE_X) {
@@ -600,7 +606,7 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::toolchange_Brim(Purpose purpose, b
 // Ram the hot material out of the melt zone, retract the filament into the cooling tubes and let it cool.
 void WipeTowerPrusaMM::toolchange_Unload(
 	PrusaMultiMaterial::Writer &writer,
-	const box_coordinates 	&cleaning_box,
+	box_coordinates 	&cleaning_box,
 	const material_type		 current_material,
 	const int 				 new_temperature)
 {
@@ -609,6 +615,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	float yu = cleaning_box.lu.y - 0.5f * m_perimeter_width;
 	float yd = cleaning_box.ld.y + 0.5f * m_perimeter_width;
 	float d_step = ((m_current_direction == DIR_FORWARD) ? 1.f : -1.f) * m_perimeter_width;
+	float subHeight = 0;
 
 	writer.append("; CP TOOLCHANGE UNLOAD\n");
 
@@ -616,60 +623,36 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	// Current extruder position is on the left, one perimeter inside the cleaning box in both X and Y.
 	float e0 = m_perimeter_width * m_extrusion_flow;
 	float e;
-	(m_current_shape) == SHAPE_X ? e = (xr - xl) * m_extrusion_flow : e = (yu - yd) * m_extrusion_flow;
+	e = (xr - xl) * m_extrusion_flow;
 
-	if (m_current_shape == SHAPE_X) {
-			switch (current_material)
-		{
-		case ABS:
-	   		// ramming          start                    end                  y increment     amount feedrate
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.2f * e,  4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.6f * e,  4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000)
-				  .ramX(xr - m_perimeter_width * 2, xl + m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000);
-			break;
-		case PVA:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  3,     4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     4500)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.5f, 0,  3,     4800)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     5000);
-			break;
-		case SCAFF:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 2.f,  0,  3,     4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 3.f,  0,  4,     4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 3.f,  0,  4.5,   5200);
-			break;
-		default:
-			writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.6f  * e, 4000)
-				  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.65f * e, 4600)
-				  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.74f * e, 5200);
-		}
-	} else {
 		switch (current_material)
-		{
-		case ABS:
-	   		// ramming          start                    end                  x increment     amount feedrate
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  1.2f * e,  4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.2f, e0, 1.6f * e,  4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000)
-				  .ramY(yd + m_perimeter_width * 2, yu - m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000);
-			break;
-		case PVA:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  3,     4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.5f, 0,  3,     4500)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.5f, 0,  3,     4800)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.5f, 0,  3,     5000);
-			break;
-		case SCAFF:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 2.f,  0,  3,     4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 3.f,  0,  4,     4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 3.f,  0,  4.5,   5200);
-			break;
-		default:
-			writer.ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width,     d_step * 0.2f, 0,  1.6f  * e, 4000)
-				  .ramY(yd + m_perimeter_width,     yu - m_perimeter_width,     d_step * 1.2f, e0, 1.65f * e, 4600)
-				  .ramY(yu - m_perimeter_width * 2, yd + m_perimeter_width * 2, d_step * 1.2f, e0, 1.74f * e, 5200);
-		}
+	{
+	case ABS:
+   		// ramming          start                    end                  y increment     amount feedrate
+		writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.2f * e,  4000)
+			  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.6f * e,  4600)
+			  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000)
+			  .ramX(xr - m_perimeter_width * 2, xl + m_perimeter_width * 2, d_step * 1.2f, e0, 1.8f * e,  5000);
+			  subHeight = (3.8f + 0.8f) * d_step;
+		break;
+	case PVA:
+		writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  3,     4000)
+			  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     4500)
+			  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.5f, 0,  3,     4800)
+			  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.5f, 0,  3,     5000);
+			  subHeight = (4.7f + 0.8f) * d_step;
+		break;
+	case SCAFF:
+		writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 2.f,  0,  3,     4000)
+			  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 3.f,  0,  4,     4600)
+			  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 3.f,  0,  4.5,   5200);
+			  subHeight = (8.f + 0.8f) * d_step;
+		break;
+	default:
+		writer.ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width,     d_step * 0.2f, 0,  1.6f  * e, 4000)
+			  .ramX(xr - m_perimeter_width,     xl + m_perimeter_width,     d_step * 1.2f, e0, 1.65f * e, 4600)
+			  .ramX(xl + m_perimeter_width * 2, xr - m_perimeter_width * 2, d_step * 1.2f, e0, 1.74f * e, 5200);
+			  subHeight = (2.6f + 0.8f) * d_step;
 	}
 
 	// Pull the filament end into a cooling tube.
@@ -682,75 +665,55 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	// In case the current print head position is closer to the left edge, reverse the direction.
 	if (std::abs(writer.x() - xl) < std::abs(writer.x() - xr))
 		std::swap(xl, xr);
-	// In case the current print head position is closer to the top edge, reverse the direction.
-	if (std::abs(writer.y() - yu) < std::abs(writer.y() - yd))
-		std::swap(yu, yd);
 
-	if (m_current_shape == SHAPE_X) {
-		// Horizontal cooling moves will be performed at the following Y coordinate:
-		writer.travel(xr, writer.y() + d_step * 0.8f, 7200)
-			  .suppress_preview();
-		switch (current_material)
-		{
-		case ABS:
-			writer.coolX(xl, xr, 3, -5, 1600)
-				  .coolX(xl, xr, 5, -5, 2000)
-				  .coolX(xl, xr, 5, -5, 2400)
-				  .coolX(xl, xr, 5, -3, 2400);
-			break;
-		case PVA:
-			writer.coolX(xl, xr, 3, -5, 1600)
-				  .coolX(xl, xr, 5, -5, 2000)
-				  .coolX(xl, xr, 5, -5, 2200)
-				  .coolX(xl, xr, 5, -5, 2400)
-				  .coolX(xl, xr, 5, -5, 2400)
-				  .coolX(xl, xr, 5, -3, 2400);
-			break;
-		case SCAFF:
-			writer.coolX(xl, xr, 3, -5, 1600)
-				  .coolX(xl, xr, 5, -5, 2000)
-				  .coolX(xl, xr, 5, -5, 2200)
-				  .coolX(xl, xr, 5, -5, 2200)
-				  .coolX(xl, xr, 5, -3, 2400);
-			break;
-		default:
-			writer.coolX(xl, xr, 3, -5, 1600)
-				  .coolX(xl, xr, 5, -5, 2000)
-				  .coolX(xl, xr, 5, -5, 2400)
-				  .coolX(xl, xr, 5, -3, 2400);
-		}
-	} else {
-		// Horizontal cooling moves will be performed at the following X coordinate:
-		writer.travel(writer.x() + d_step * 0.8f, yd, 7200)
-			  .suppress_preview();
-		switch (current_material)
-		{
-		case ABS:
-			writer.coolY(yu, yd, 3, -5, 1600)
-				  .coolY(yu, yd, 5, -5, 2000)
-				  .coolY(yu, yd, 5, -5, 2400)
-				  .coolY(yu, yd, 5, -3, 2400);
-			break;
-		case PVA:
-			writer.coolY(yu, yd, 3, -5, 1600)
-				  .coolY(yu, yd, 5, -5, 2000)
-				  .coolY(yu, yd, 5, -5, 2200)
-				  .coolY(yu, yd, 5, -5, 2400)
-				  .coolY(yu, yd, 5, -5, 2400)
-				  .coolY(yu, yd, 5, -3, 2400);
-			break;
-		case SCAFF:
-			writer.coolY(yu, yd, 3, -5, 1600)
-				  .coolY(yu, yd, 5, -5, 2000)
-				  .coolY(yu, yd, 5, -5, 2200)
-				  .coolY(yu, yd, 5, -5, 2200)
-				  .coolY(yu, yd, 5, -3, 2400);
-			break;
-		default:
-			writer.coolY(yu, yd, 3, -5, 1600)
-				  .coolY(yu, yd, 5, -5, 2000)
-				  .coolY(yu, yd, 5, -5, 2400)
-				  .coolY(yu, yd, 5, -3, 2400);
+	// Horizontal cooling moves will be performed at the following Y coordinate:
+	writer.travel(xr, writer.y() + d_step * 0.8f, 7200)
+		  .suppress_preview();
+	switch (current_material)
+	{
+	case ABS:
+		writer.coolX(xl, xr, 3, -5, 1600)
+			  .coolX(xl, xr, 5, -5, 2000)
+			  .coolX(xl, xr, 5, -5, 2400)
+			  .coolX(xl, xr, 5, -3, 2400);
+		break;
+	case PVA:
+		writer.coolX(xl, xr, 3, -5, 1600)
+			  .coolX(xl, xr, 5, -5, 2000)
+			  .coolX(xl, xr, 5, -5, 2200)
+			  .coolX(xl, xr, 5, -5, 2400)
+			  .coolX(xl, xr, 5, -5, 2400)
+			  .coolX(xl, xr, 5, -3, 2400);
+		break;
+	case SCAFF:
+		writer.coolX(xl, xr, 3, -5, 1600)
+			  .coolX(xl, xr, 5, -5, 2000)
+			  .coolX(xl, xr, 5, -5, 2200)
+			  .coolX(xl, xr, 5, -5, 2200)
+			  .coolX(xl, xr, 5, -3, 2400);
+		break;
+	default:
+		writer.coolX(xl, xr, 3, -5, 1600)
+			  .coolX(xl, xr, 5, -5, 2000)
+			  .coolX(xl, xr, 5, -5, 2400)
+			  .coolX(xl, xr, 5, -3, 2400);
+	}
+
+	if (m_current_shape == SHAPE_Y) {
+		if(m_current_direction == DIR_FORWARD){
+
+		cleaning_box = box_coordinates(cleaning_box.ld.x, cleaning_box.ld.y + subHeight, cleaning_box.rd.x - cleaning_box.ld.x , (cleaning_box.lu.y - cleaning_box.ld.y) - subHeight);
+		xl = cleaning_box.ld.x + 0.5f * m_perimeter_width;
+		yd = cleaning_box.ld.y + 0.5f * m_perimeter_width;
+		writer.travel(xl, yd, 2400);
+
+		}else{
+
+		cleaning_box = box_coordinates(cleaning_box.ld.x, cleaning_box.ld.y, cleaning_box.rd.x - cleaning_box.ld.x , (cleaning_box.lu.y - cleaning_box.ld.y) + subHeight);
+		xr = cleaning_box.rd.x - 0.5f * m_perimeter_width;
+		yu = cleaning_box.lu.y - 0.5f * m_perimeter_width;
+		writer.travel(xr, yu, 2400);
+
 		}
 	}
 
