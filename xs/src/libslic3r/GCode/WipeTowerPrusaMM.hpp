@@ -218,7 +218,7 @@ private:
 
 	void toolchange_Unload(
 		PrusaMultiMaterial::Writer &writer,
-		const box_coordinates  &cleaning_box, 
+		box_coordinates  &cleaning_box, 
 		const material_type	 	current_material,
 		const int 				new_temperature);
 
