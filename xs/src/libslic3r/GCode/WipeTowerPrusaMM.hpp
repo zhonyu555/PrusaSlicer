@@ -83,11 +83,11 @@ public:
 		// Is this the last layer of the waste tower?
 		bool   is_last_layer)
 	{
-		m_z_pos 				= print_z;
-		m_layer_height			= layer_height;
-		m_max_color_changes 	= max_tool_changes;
-		m_is_first_layer 		= is_first_layer;
-		m_is_last_layer			= is_last_layer;
+		m_z_pos 					= print_z;
+		m_layer_height				= layer_height;
+		m_max_color_changes 		= max_tool_changes;
+		m_is_first_layer 			= is_first_layer;
+		m_is_last_layer				= is_last_layer;
 		// Start counting the color changes from zero. Special case: -1 - extrude a brim first.
 		m_idx_tool_change_in_layer = is_first_layer ? (unsigned int)(-1) : 0;
 		m_current_wipe_start_y  = 0.f;
@@ -148,6 +148,7 @@ private:
 	float           m_layer_height      = 0.f;
 	// Maximum number of color changes per layer.
 	size_t 			m_max_color_changes = 0;
+
 	// Is this the 1st layer of the print? If so, print the brim around the waste tower.
 	bool   			m_is_first_layer = false;
 	// Is this the last layer of this waste tower?
@@ -171,6 +172,8 @@ private:
 	unsigned int 	m_num_layer_changes = 0;
 	// Tool change change counter for the output statistics.
 	unsigned int 	m_num_tool_changes = 0;
+	// Number of color changes in last layer;
+	unsigned int	m_last_tool_changes = 0;
 	// Layer change counter in this layer. Counting up to m_max_color_changes.
 	unsigned int 	m_idx_tool_change_in_layer = 0;
 	// A fill-in direction (+Y, +X, -Y, -X) alternates with each layer.
