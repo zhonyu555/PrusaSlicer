@@ -378,6 +378,13 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::tool_change(int tool, bool last_in
 		return toolchange_Brim(purpose);
 	}
 
+	if ((m_current_shape == SHAPE_Y) && ((m_idx_tool_change_in_layer == m_last_tool_changes) || (m_idx_tool_change_in_layer == (m_last_tool_changes - 1) && (!last_in_layer)))) { 
+		// This tool_change() call will bridge over zig-zag infill and must bridge along the x-axis.
+		m_current_shape = SHAPE_X;
+		(m_current_direction == DIR_FORWARD) ? m_current_direction = DIR_BACK : m_current_direction = DIR_FORWARD;
+		++ m_last_tool_changes;
+	}
+
 	float wipe_area = m_wipe_area;
 	if (++ m_idx_tool_change_in_layer < (unsigned int)m_max_color_changes && last_in_layer) {
 		// This tool_change() call will be followed by a finish_layer() call.
@@ -963,6 +970,7 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::finish_layer(Purpose purpose)
 				      ";------------------\n\n\n\n\n\n\n");
 
 		// Indicate that this wipe tower layer is fully covered.
+		m_last_tool_changes = m_idx_tool_change_in_layer;
 	    m_idx_tool_change_in_layer = (unsigned int)m_max_color_changes;
 	}
 
