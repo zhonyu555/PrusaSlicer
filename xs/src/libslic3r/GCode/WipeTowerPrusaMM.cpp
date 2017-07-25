@@ -378,10 +378,13 @@ WipeTower::ToolChangeResult WipeTowerPrusaMM::tool_change(int tool, bool last_in
 		return toolchange_Brim(purpose);
 	}
 
-	if ((m_current_shape == SHAPE_Y) && ((m_idx_tool_change_in_layer == m_last_tool_changes) || (m_idx_tool_change_in_layer == (m_last_tool_changes - 1) && (!last_in_layer)))) { 
+	if ((m_idx_tool_change_in_layer == m_last_tool_changes) || (m_idx_tool_change_in_layer == (m_last_tool_changes - 1) && (!last_in_layer))) { 
 		// This tool_change() call will bridge over zig-zag infill and must bridge along the x-axis.
+
+		if (m_current_shape == SHAPE_Y) {
+			(m_current_direction == DIR_FORWARD) ? m_current_direction = DIR_BACK : m_current_direction = DIR_FORWARD;
+		}
 		m_current_shape = SHAPE_X;
-		(m_current_direction == DIR_FORWARD) ? m_current_direction = DIR_BACK : m_current_direction = DIR_FORWARD;
 		++ m_last_tool_changes;
 	}
 
