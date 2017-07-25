@@ -142,13 +142,13 @@ public:
 		return *this;
 	}
 
-	// Derectract while moving in the x direction.
+	// Derectract while moving in the X direction.
 	// If |x| > 0, the feed rate relates to the x distance,
 	// otherwise the feed rate relates to the e distance.
 	Writer& load_move_x(float x, float e, float f = 0.f)
 		{ return extrude_explicit(x, m_current_pos.y, e, f); }
 
-	// Derectract while moving in the y direction.
+	// Derectract while moving in the Y direction.
 	// If |y| > 0, the feed rate relates to the y distance,
 	// otherwise the feed rate relates to the e distance.
 	Writer& load_move_y(float y, float e, float f = 0.0f)
@@ -632,10 +632,9 @@ void WipeTowerPrusaMM::toolchange_Unload(
 	// Ram the hot material out of the extruder melt zone.
 	// Current extruder position is on the left, one perimeter inside the cleaning box in both X and Y.
 	float e0 = m_perimeter_width * m_extrusion_flow;
-	float e;
-	e = (xr - xl) * m_extrusion_flow;
-
-		switch (current_material)
+	float e = (xr - xl) * m_extrusion_flow;
+	
+	switch (current_material)
 	{
 	case ABS:
    		// ramming          start                    end                  y increment     amount feedrate
