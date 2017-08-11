@@ -94,7 +94,7 @@ target_include_directories(XS PRIVATE ${PERL_INCLUDE_PATH})
 ## REQUIRED packages
 
 # Find and configure boost
-find_package(Boost REQUIRED COMPONENTS system filesystem thread log)
+find_package(Boost REQUIRED COMPONENTS system filesystem thread log locale)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIRS})
     target_link_libraries(XS ${Boost_LIBRARIES})
