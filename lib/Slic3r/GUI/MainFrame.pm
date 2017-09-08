@@ -60,19 +60,8 @@ sub new {
         $self->SetSizer($sizer);
         $self->Fit;
         $self->SetMinSize([760, 490]);
-        if (defined $Slic3r::GUI::Settings->{_}{main_frame_size}) {
-            my $size = [ split ',', $Slic3r::GUI::Settings->{_}{main_frame_size}, 2 ];
-            $self->SetSize($size);
-            
-            my $display = Wx::Display->new->GetClientArea();
-            my $pos = [ split ',', $Slic3r::GUI::Settings->{_}{main_frame_pos}, 2 ];
-            if (($pos->[X] + $size->[X]/2) < $display->GetRight && ($pos->[Y] + $size->[Y]/2) < $display->GetBottom) {
-                $self->Move($pos);
-            }
-            $self->Maximize(1) if $Slic3r::GUI::Settings->{_}{main_frame_maximized};
-        } else {
-            $self->SetSize($self->GetMinSize);
-        }
+        $self->SetSize($self->GetMinSize);
+        wxTheApp->restore_window_pos($self, "main_frame");
         $self->Show;
         $self->Layout;
     }
@@ -87,10 +76,7 @@ sub new {
         }
         
         # save window size
-        $Slic3r::GUI::Settings->{_}{main_frame_pos}  = join ',', $self->GetScreenPositionXY;
-        $Slic3r::GUI::Settings->{_}{main_frame_size} = join ',', $self->GetSizeWH;
-        $Slic3r::GUI::Settings->{_}{main_frame_maximized} = $self->IsMaximized;
-        wxTheApp->save_settings;
+        wxTheApp->save_window_pos($self, "main_frame");
         
         # propagate event
         $event->Skip;
@@ -368,7 +354,7 @@ sub quick_slice {
                 $dialog->Destroy;
                 return;
             }
-            $input_file = Slic3r::decode_path($dialog->GetPaths);
+            $input_file = $dialog->GetPaths;
             $dialog->Destroy;
             $qs_last_input_file = $input_file unless $params{export_svg};
         } else {
@@ -398,7 +384,6 @@ sub quick_slice {
             print_center    => $print_center,
             status_cb       => sub {
                 my ($percent, $message) = @_;
-                return if &Wx::wxVERSION_STRING !~ m" 2\.(8\.|9\.[2-9])";
                 $progress_dialog->Update($percent, "$message…");
             },
         );
@@ -428,7 +413,7 @@ sub quick_slice {
                 $dlg->Destroy;
                 return;
             }
-            $output_file = Slic3r::decode_path($dlg->GetPath);
+            $output_file = $dlg->GetPath;
             $qs_last_output_file = $output_file unless $params{export_svg};
             $Slic3r::GUI::Settings->{_}{last_output_path} = dirname($output_file);
             wxTheApp->save_settings;
@@ -482,7 +467,7 @@ sub repair_stl {
             $dialog->Destroy;
             return;
         }
-        $input_file = Slic3r::decode_path($dialog->GetPaths);
+        $input_file = $dialog->GetPaths;
         $dialog->Destroy;
     }
     
@@ -495,14 +480,14 @@ sub repair_stl {
             $dlg->Destroy;
             return undef;
         }
-        $output_file = Slic3r::decode_path($dlg->GetPath);
+        $output_file = $dlg->GetPath;
         $dlg->Destroy;
     }
     
     my $tmesh = Slic3r::TriangleMesh->new;
-    $tmesh->ReadSTLFile(Slic3r::encode_path($input_file));
+    $tmesh->ReadSTLFile($input_file);
     $tmesh->repair;
-    $tmesh->WriteOBJFile(Slic3r::encode_path($output_file));
+    $tmesh->WriteOBJFile($output_file);
     Slic3r::GUI::show_info($self, "Your file was repaired.", "Repair");
 }
 
@@ -529,7 +514,7 @@ sub export_config {
     my $dlg = Wx::FileDialog->new($self, 'Save configuration as:', $dir, $filename, 
         &Slic3r::GUI::FILE_WILDCARDS->{ini}, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
     if ($dlg->ShowModal == wxID_OK) {
-        my $file = Slic3r::decode_path($dlg->GetPath);
+        my $file = $dlg->GetPath;
         $Slic3r::GUI::Settings->{recent}{config_directory} = dirname($file);
         wxTheApp->save_settings;
         $last_config = $file;
@@ -548,7 +533,7 @@ sub load_config_file {
         my $dlg = Wx::FileDialog->new($self, 'Select configuration to load:', $dir, "config.ini", 
                 'INI files (*.ini, *.gcode)|*.ini;*.INI;*.gcode;*.g', wxFD_OPEN | wxFD_FILE_MUST_EXIST);
         return unless $dlg->ShowModal == wxID_OK;
-        $file = Slic3r::decode_path($dlg->GetPaths);
+        $file = $dlg->GetPaths;
         $dlg->Destroy;
     }
     for my $tab (values %{$self->{options_tabs}}) {
@@ -574,7 +559,7 @@ sub export_configbundle {
     my $dlg = Wx::FileDialog->new($self, 'Save presets bundle as:', $dir, $filename, 
         &Slic3r::GUI::FILE_WILDCARDS->{ini}, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
     if ($dlg->ShowModal == wxID_OK) {
-        my $file = Slic3r::decode_path($dlg->GetPath);
+        my $file = $dlg->GetPath;
         $Slic3r::GUI::Settings->{recent}{config_directory} = dirname($file);
         wxTheApp->save_settings;
         
@@ -604,7 +589,7 @@ sub load_configbundle {
         my $dlg = Wx::FileDialog->new($self, 'Select configuration to load:', $dir, "config.ini", 
                 &Slic3r::GUI::FILE_WILDCARDS->{ini}, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
         return unless $dlg->ShowModal == wxID_OK;
-        $file = Slic3r::decode_path($dlg->GetPaths);
+        $file = $dlg->GetPaths;
         $dlg->Destroy;
     }
     

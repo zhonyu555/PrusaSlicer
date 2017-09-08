@@ -36,9 +36,8 @@ use Slic3r::GUI::Tab;
 our $have_OpenGL = eval "use Slic3r::GUI::3DScene; 1";
 our $have_LWP    = eval "use LWP::UserAgent; 1";
 
-use Wx 0.9901 qw(:bitmap :dialog :icon :id :misc :systemsettings :toplevelwindow
-    :filedialog :font);
-use Wx::Event qw(EVT_IDLE EVT_COMMAND);
+use Wx 0.9901 qw(:bitmap :dialog :icon :id :misc :systemsettings :toplevelwindow :filedialog :font);
+use Wx::Event qw(EVT_IDLE EVT_COMMAND EVT_MENU);
 use base 'Wx::App';
 
 use constant FILE_WILDCARDS => {
@@ -74,7 +73,6 @@ our $Settings = {
     },
 };
 
-our $have_button_icons = &Wx::wxVERSION_STRING =~ m" (?:2\.9\.[1-9]|3\.)";
 our $small_font = Wx::SystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
 $small_font->SetPointSize(11) if &Wx::wxMAC;
 our $small_bold_font = Wx::SystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
@@ -92,7 +90,7 @@ sub OnInit {
     my ($self) = @_;
     
     $self->SetAppName('Slic3r');
-    $self->SetAppDisplayName('Slic3r Prusa Edition') if (Wx::wxVERSION >= 3.000000);
+    $self->SetAppDisplayName('Slic3r Prusa Edition');
     Slic3r::debugf "wxWidgets version %s, Wx version %s\n", &Wx::wxVERSION_STRING, $Wx::VERSION;
     
     $self->{notifier} = Slic3r::GUI::Notifier->new;
@@ -101,7 +99,7 @@ sub OnInit {
     # Unix: ~/.Slic3r
     # Windows: "C:\Users\username\AppData\Roaming\Slic3r" or "C:\Documents and Settings\username\Application Data\Slic3r"
     # Mac: "~/Library/Application Support/Slic3r"
-    $datadir ||= Slic3r::decode_path(Wx::StandardPaths::Get->GetUserDataDir);
+    $datadir ||= Wx::StandardPaths::Get->GetUserDataDir;
     my $enc_datadir = Slic3r::encode_path($datadir);
     Slic3r::debugf "Data directory: %s\n", $datadir;
     
@@ -370,9 +368,8 @@ sub open_model {
         $dialog->Destroy;
         return;
     }
-    my @input_files = map Slic3r::decode_path($_), $dialog->GetPaths;
+    my @input_files = $dialog->GetPaths;
     $dialog->Destroy;
-    
     return @input_files;
 }
 
@@ -404,6 +401,64 @@ sub scan_serial_ports {
     }
     
     return grep !/Bluetooth|FireFly/, @ports;
+}
+
+sub append_menu_item {
+    my ($self, $menu, $string, $description, $cb, $id, $icon, $kind) = @_;
+    
+    $id //= &Wx::NewId();
+    my $item = Wx::MenuItem->new($menu, $id, $string, $description // '', $kind // 0);
+    $self->set_menu_item_icon($item, $icon);
+    $menu->Append($item);
+    
+    EVT_MENU($self, $id, $cb);
+    return $item;
+}
+
+sub append_submenu {
+    my ($self, $menu, $string, $description, $submenu, $id, $icon) = @_;
+    
+    $id //= &Wx::NewId();
+    my $item = Wx::MenuItem->new($menu, $id, $string, $description // '');
+    $self->set_menu_item_icon($item, $icon);
+    $item->SetSubMenu($submenu);
+    $menu->Append($item);
+    
+    return $item;
+}
+
+sub set_menu_item_icon {
+    my ($self, $menuItem, $icon) = @_;
+    
+    # SetBitmap was not available on OS X before Wx 0.9927
+    if ($icon && $menuItem->can('SetBitmap')) {
+        $menuItem->SetBitmap(Wx::Bitmap->new($Slic3r::var->($icon), wxBITMAP_TYPE_PNG));
+    }
+}
+
+sub save_window_pos {
+    my ($self, $window, $name) = @_;
+    
+    $Settings->{_}{"${name}_pos"}  = join ',', $window->GetScreenPositionXY;
+    $Settings->{_}{"${name}_size"} = join ',', $window->GetSizeWH;
+    $Settings->{_}{"${name}_maximized"}      = $window->IsMaximized;
+    $self->save_settings;
+}
+
+sub restore_window_pos {
+    my ($self, $window, $name) = @_;
+    
+    if (defined $Settings->{_}{"${name}_pos"}) {
+        my $size = [ split ',', $Settings->{_}{"${name}_size"}, 2 ];
+        $window->SetSize($size);
+        
+        my $display = Wx::Display->new->GetClientArea();
+        my $pos = [ split ',', $Settings->{_}{"${name}_pos"}, 2 ];
+        if (($pos->[0] + $size->[0]/2) < $display->GetRight && ($pos->[1] + $size->[1]/2) < $display->GetBottom) {
+            $window->Move($pos);
+        }
+        $window->Maximize(1) if $Settings->{_}{"${name}_maximized"};
+    }
 }
 
 1;

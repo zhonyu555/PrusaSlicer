@@ -7,7 +7,7 @@ use strict;
 use warnings;
 use utf8;
 
-use Wx qw(:dialog :id :misc :sizer :systemsettings :notebook wxTAB_TRAVERSAL);
+use Wx qw(:dialog :id :misc :sizer :systemsettings :notebook wxTAB_TRAVERSAL wxTheApp);
 use Wx::Event qw(EVT_BUTTON);
 use base 'Wx::Dialog';
 
@@ -33,6 +33,9 @@ sub new {
         # notify tabs
         $self->{layers}->Closing;
         
+        # save window size
+        wxTheApp->save_window_pos($self, "object_settings");
+        
         $self->EndModal(wxID_OK);
         $self->Destroy;
     });
@@ -43,6 +46,8 @@ sub new {
     
     $self->SetSizer($sizer);
     $self->SetMinSize($self->GetSize);
+    
+    wxTheApp->restore_window_pos($self, "object_settings");
     
     return $self;
 }
@@ -90,7 +95,7 @@ sub new {
     $sizer->Add($grid, 1, wxEXPAND | wxALL, 10);
     $grid->CreateGrid(0, 3);
     $grid->DisableDragRowSize;
-    $grid->HideRowLabels if &Wx::wxVERSION_STRING !~ / 2\.8\./;
+    $grid->HideRowLabels;
     $grid->SetColLabelValue(0, "Min Z (mm)");
     $grid->SetColLabelValue(1, "Max Z (mm)");
     $grid->SetColLabelValue(2, "Layer height (mm)");
