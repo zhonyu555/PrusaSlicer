@@ -6,6 +6,7 @@ use warnings;
 BEGIN {
     use FindBin;
     use lib "$FindBin::Bin/lib";
+    use local::lib '--no-create', "$FindBin::Bin/local-lib";
 }
 
 use File::Basename qw(basename);
@@ -17,6 +18,9 @@ use Slic3r::Geometry qw(deg2rad);
 use Time::HiRes qw(gettimeofday tv_interval);
 $|++;
 binmode STDOUT, ':utf8';
+
+# Convert all parameters from the local code page to utf8 on Windows.
+@ARGV = map Slic3r::decode_path($_), @ARGV if $^O eq 'MSWin32';
 
 our %opt = ();
 my %cli_options = ();
@@ -65,7 +69,6 @@ my %cli_options = ();
 my @external_configs = ();
 if ($opt{load}) {
     foreach my $configfile (@{$opt{load}}) {
-        $configfile = Slic3r::decode_path($configfile);
         if (-e $configfile) {
             push @external_configs, Slic3r::Config->load($configfile);
         } elsif (-e "$FindBin::Bin/$configfile") {
@@ -102,7 +105,7 @@ my $gui;
 if ((!@ARGV || $opt{gui}) && !$opt{save} && eval "require Slic3r::GUI; 1") {
     {
         no warnings 'once';
-        $Slic3r::GUI::datadir       = Slic3r::decode_path($opt{datadir} // '');
+        $Slic3r::GUI::datadir       = $opt{datadir} // '';
         $Slic3r::GUI::no_controller = $opt{no_controller};
         $Slic3r::GUI::no_plater     = $opt{no_plater};
         $Slic3r::GUI::autosave      = $opt{autosave};
@@ -111,7 +114,7 @@ if ((!@ARGV || $opt{gui}) && !$opt{save} && eval "require Slic3r::GUI; 1") {
     setlocale(LC_NUMERIC, 'C');
     $gui->{mainframe}->load_config_file($_) for @{$opt{load}};
     $gui->{mainframe}->load_config($cli_config);
-    my @input_files = map Slic3r::decode_path($_), @ARGV;
+    my @input_files = @ARGV;
     $gui->{mainframe}{plater}->load_files(\@input_files) unless $opt{no_plater};
     $gui->MainLoop;
     exit;
@@ -123,7 +126,6 @@ if (@ARGV) {  # slicing from command line
     
     if ($opt{repair}) {
         foreach my $file (@ARGV) {
-            $file = Slic3r::decode_path($file);
             die "Repair is currently supported only on STL files\n"
                 if $file !~ /\.[sS][tT][lL]$/;
             
@@ -139,7 +141,6 @@ if (@ARGV) {  # slicing from command line
     
     if ($opt{cut}) {
         foreach my $file (@ARGV) {
-            $file = Slic3r::decode_path($file);
             my $model = Slic3r::Model->read_from_file($file);
             my $mesh = $model->mesh;
             $mesh->translate(0, 0, -$mesh->bounding_box->z_min);
@@ -158,7 +159,6 @@ if (@ARGV) {  # slicing from command line
     
     if ($opt{split}) {
         foreach my $file (@ARGV) {
-            $file = Slic3r::decode_path($file);
             my $model = Slic3r::Model->read_from_file($file);
             my $mesh = $model->mesh;
             $mesh->repair;
@@ -167,14 +167,13 @@ if (@ARGV) {  # slicing from command line
             foreach my $new_mesh (@{$mesh->split}) {
                 my $output_file = sprintf '%s_%02d.stl', $file, ++$part_count;
                 printf "Writing to %s\n", basename($output_file);
-                $new_mesh->write_binary(Slic3r::encode_path($output_file));
+                $new_mesh->write_binary($output_file);
             }
         }
         exit;
     }
     
     while (my $input_file = shift @ARGV) {
-        $input_file = Slic3r::decode_path($input_file);
         my $model;
         if ($opt{merge}) {
             my @models = map Slic3r::Model->read_from_file($_), $input_file, (splice @ARGV, 0);

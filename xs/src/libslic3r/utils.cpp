@@ -1,6 +1,13 @@
+#include <locale>
+
 #include <boost/log/core.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
+
+#include <boost/locale.hpp>
+
+#include <boost/nowide/integration/filesystem.hpp>
+#include <boost/nowide/convert.hpp>
 
 namespace Slic3r {
 
@@ -30,9 +37,13 @@ void set_logging_level(unsigned int level)
 }
 
 // Force set_logging_level(<=error) after loading of the DLL.
-static struct SetLoggingLevelOnInit {
-    SetLoggingLevelOnInit() { set_logging_level(1); }
-} g_SetLoggingLevelOnInit;
+// Switch boost::filesystem to utf8.
+static struct RunOnInit {
+    RunOnInit() { 
+        boost::nowide::nowide_filesystem();
+        set_logging_level(1);
+    }
+} g_RunOnInit;
 
 void trace(unsigned int level, const char *message)
 {
@@ -126,3 +137,54 @@ confess_at(const char *file, int line, const char *func,
 }
 
 #endif
+
+#ifdef WIN32
+    #ifndef NOMINMAX
+    # define NOMINMAX
+    #endif
+    #include <windows.h>
+#endif /* WIN32 */
+
+namespace Slic3r {
+
+std::string encode_path(const char *src)
+{    
+#ifdef WIN32
+    // Convert the source utf8 encoded string to a wide string.
+    std::wstring wstr_src = boost::nowide::widen(src);
+    if (wstr_src.length() == 0)
+        return std::string();
+    // Convert a wide string to a local code page.
+    int size_needed = ::WideCharToMultiByte(0, 0, wstr_src.data(), (int)wstr_src.size(), nullptr, 0, nullptr, nullptr);
+    std::string str_dst(size_needed, 0);
+    ::WideCharToMultiByte(0, 0, wstr_src.data(), (int)wstr_src.size(), const_cast<char*>(str_dst.data()), size_needed, nullptr, nullptr);
+    return str_dst;
+#else /* WIN32 */
+    return src;
+#endif /* WIN32 */
+}
+
+std::string decode_path(const char *src)
+{  
+#ifdef WIN32
+    int len = int(strlen(src));
+    if (len == 0)
+        return std::string();
+    // Convert the string encoded using the local code page to a wide string.
+    int size_needed = ::MultiByteToWideChar(0, 0, src, len, nullptr, 0);
+    std::wstring wstr_dst(size_needed, 0);
+    ::MultiByteToWideChar(0, 0, src, len, const_cast<wchar_t*>(wstr_dst.data()), size_needed);
+    // Convert a wide string to utf8.
+    return boost::nowide::narrow(wstr_dst.c_str());
+#else /* WIN32 */
+    return src;
+#endif /* WIN32 */
+}
+
+std::string normalize_utf8_nfc(const char *src)
+{
+    static std::locale locale_utf8("en_US.UTF-8");
+    return boost::locale::normalize(src, boost::locale::norm_nfc, locale_utf8);
+}
+
+}; // namespace Slic3r

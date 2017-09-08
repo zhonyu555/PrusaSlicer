@@ -235,30 +235,28 @@ sub new {
     $self->{btn_print}->Hide;
     $self->{btn_send_gcode}->Hide;
     
-    if ($Slic3r::GUI::have_button_icons) {
-        my %icons = qw(
-            add             brick_add.png
-            remove          brick_delete.png
-            reset           cross.png
-            arrange         bricks.png
-            export_gcode    cog_go.png
-            print           arrow_up.png
-            send_gcode      arrow_up.png
-            reslice         reslice.png
-            export_stl      brick_go.png
-            
-            increase        add.png
-            decrease        delete.png
-            rotate45cw      arrow_rotate_clockwise.png
-            rotate45ccw     arrow_rotate_anticlockwise.png
-            changescale     arrow_out.png
-            split           shape_ungroup.png
-            cut             package.png
-            settings        cog.png
-        );
-        for (grep $self->{"btn_$_"}, keys %icons) {
-            $self->{"btn_$_"}->SetBitmap(Wx::Bitmap->new($Slic3r::var->($icons{$_}), wxBITMAP_TYPE_PNG));
-        }
+    my %icons = qw(
+        add             brick_add.png
+        remove          brick_delete.png
+        reset           cross.png
+        arrange         bricks.png
+        export_gcode    cog_go.png
+        print           arrow_up.png
+        send_gcode      arrow_up.png
+        reslice         reslice.png
+        export_stl      brick_go.png
+        
+        increase        add.png
+        decrease        delete.png
+        rotate45cw      arrow_rotate_clockwise.png
+        rotate45ccw     arrow_rotate_anticlockwise.png
+        changescale     arrow_out.png
+        split           shape_ungroup.png
+        cut             package.png
+        settings        cog.png
+    );
+    for (grep $self->{"btn_$_"}, keys %icons) {
+        $self->{"btn_$_"}->SetBitmap(Wx::Bitmap->new($Slic3r::var->($icons{$_}), wxBITMAP_TYPE_PNG));
     }
     $self->selection_changed(0);
     $self->object_list_changed;
@@ -905,9 +903,9 @@ sub reset {
 
 sub increase {
     my ($self, $copies) = @_;
-    
     $copies //= 1;
     my ($obj_idx, $object) = $self->selected_object;
+    return if ! defined $obj_idx;
     my $model_object = $self->{model}->objects->[$obj_idx];
     my $instance = $model_object->instances->[-1];
     for my $i (1..$copies) {
@@ -932,11 +930,12 @@ sub increase {
 
 sub decrease {
     my ($self, $copies_asked) = @_;
-    
     my $copies = $copies_asked // 1;
+    my ($obj_idx, $object) = $self->selected_object;
+    return if ! defined $obj_idx;
+
     $self->stop_background_process;
     
-    my ($obj_idx, $object) = $self->selected_object;
     my $model_object = $self->{model}->objects->[$obj_idx];
     if ($model_object->instances_count > $copies) {
         for my $i (1..$copies) {
@@ -1401,14 +1400,14 @@ sub export_gcode {
     if ($output_file) {
         $self->{export_gcode_output_file} = $self->{print}->output_filepath($output_file);
     } else {
-        my $default_output_file = $self->{print}->output_filepath($main::opt{output});
+        my $default_output_file = $self->{print}->output_filepath($main::opt{output} // '');
         my $dlg = Wx::FileDialog->new($self, 'Save G-code file as:', wxTheApp->output_path(dirname($default_output_file)),
             basename($default_output_file), &Slic3r::GUI::FILE_WILDCARDS->{gcode}, wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
         if ($dlg->ShowModal != wxID_OK) {
             $dlg->Destroy;
             return;
         }
-        my $path = Slic3r::decode_path($dlg->GetPath);
+        my $path = $dlg->GetPath;
         $Slic3r::GUI::Settings->{_}{last_output_path} = dirname($path);
         wxTheApp->save_settings;
         $self->{export_gcode_output_file} = $path;
@@ -1574,7 +1573,7 @@ sub send_gcode {
     my $ua = LWP::UserAgent->new;
     $ua->timeout(180);
     
-    my $path = Slic3r::encode_path($self->{send_gcode_file});
+    my $enc_path = Slic3r::encode_path($self->{send_gcode_file});
     my $res = $ua->post(
         "http://" . $self->{config}->octoprint_host . "/api/files/local",
         Content_Type => 'form-data',
@@ -1582,7 +1581,7 @@ sub send_gcode {
         Content => [
             # OctoPrint doesn't like Windows paths so we use basename()
             # Also, since we need to read from filesystem we process it through encode_path()
-            file => [ $path, basename($path) ],
+            file => [ $enc_path, basename($enc_path) ],
         ],
     );
     
@@ -1603,7 +1602,7 @@ sub export_stl {
     return if !@{$self->{objects}};
         
     my $output_file = $self->_get_export_file('STL') or return;
-    $self->{model}->store_stl(Slic3r::encode_path($output_file), 1);
+    $self->{model}->store_stl($output_file, 1);
     $self->statusbar->SetStatusText("STL file exported to $output_file");
 }
 
@@ -1644,7 +1643,7 @@ sub export_object_stl {
     my $model_object = $self->{model}->objects->[$obj_idx];
         
     my $output_file = $self->_get_export_file('STL') or return;
-    $model_object->mesh->write_binary(Slic3r::encode_path($output_file));
+    $model_object->mesh->write_binary($output_file);
     $self->statusbar->SetStatusText("STL file exported to $output_file");
 }
 
@@ -1654,7 +1653,7 @@ sub export_amf {
     return if !@{$self->{objects}};
         
     my $output_file = $self->_get_export_file('AMF') or return;
-    $self->{model}->store_amf(Slic3r::encode_path($output_file));
+    $self->{model}->store_amf($output_file);
     $self->statusbar->SetStatusText("AMF file exported to $output_file");
 }
 
@@ -1674,7 +1673,7 @@ sub _get_export_file {
             $dlg->Destroy;
             return undef;
         }
-        $output_file = Slic3r::decode_path($dlg->GetPath);
+        $output_file = $dlg->GetPath;
         $dlg->Destroy;
     }
     return $output_file;
