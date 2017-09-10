@@ -73,8 +73,8 @@ protected:
 #endif
 	bool cell_inside_or_crossing(int r, int c) const
 	{
-		if (r < 0 || r >= m_rows ||
-			c < 0 || c >= m_cols)
+	  if (r < 0 || (unsigned int) r >= m_rows ||
+	      c < 0 || (unsigned int) c >= m_cols)
 			// The cell is outside the domain. Hoping that the contours were correctly oriented, so
 			// there is a CCW outmost contour so the out of domain cells are outside.
 			return false;

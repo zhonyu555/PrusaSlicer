@@ -773,11 +773,11 @@ void EdgeGrid::Grid::calculate_sdf()
 				// For each corner of this cell and its 1 ring neighbours:
 				for (int corner_y = -1; corner_y < 3; ++ corner_y) {
 					coord_t corner_r = r + corner_y;
-					if (corner_r < 0 || corner_r >= nrows)
+					if (corner_r < 0 || (unsigned int) corner_r >= nrows)
 						continue;
 					for (int corner_x = -1; corner_x < 3; ++ corner_x) {
 						coord_t corner_c = c + corner_x;
-						if (corner_c < 0 || corner_c >= ncols)
+						if (corner_c < 0 || (unsigned int) corner_c >= ncols)
 							continue;
 						float  &d_min = m_signed_distance_field[corner_r * ncols + corner_c];
 						Slic3r::Point pt(m_bbox.min.x + corner_c * m_resolution, m_bbox.min.y + corner_r * m_resolution);
@@ -1133,9 +1133,9 @@ bool EdgeGrid::Grid::signed_distance_edges(const Point &pt, coord_t search_radiu
 		return false;
 	bbox.max.x /= m_resolution;
 	bbox.max.y /= m_resolution;
-	if (bbox.max.x >= m_cols)
+	if (bbox.max.x >= int(m_cols))
 		bbox.max.x = m_cols - 1;
-	if (bbox.max.y >= m_rows)
+	if (bbox.max.y >= int(m_rows))
 		bbox.max.y = m_rows - 1;
 	// Lower boundary, round to grid and test validity.
 	bbox.min.x -= search_radius;
