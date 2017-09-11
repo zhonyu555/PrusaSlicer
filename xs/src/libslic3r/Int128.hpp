@@ -50,7 +50,7 @@
 #include <cassert>
 #include "Point.hpp"
 
-#ifndef _MSC_VER
+#ifdef __SIZEOF_INT128__
 	#define HAS_INTRINSIC_128_TYPE
 #endif
 
