@@ -10,6 +10,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_compile_options(-std=c++11 -Wall)
 endif()
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUXX)
+    # Adding -fext-numeric-literals to enable GCC extensions on definitions of quad float literals, which are required by Boost.
+    add_compile_options(-fext-numeric-literals)
+endif()
+
 # Where all the bundled libraries reside?
 set(LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 # For the bundled boost libraries (boost::nowide)
@@ -82,6 +87,8 @@ add_library(libslic3r STATIC
     ${LIBDIR}/libslic3r/GCode/CoolingBuffer.hpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.cpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.hpp
+    ${LIBDIR}/libslic3r/GCode/PrintExtents.cpp
+    ${LIBDIR}/libslic3r/GCode/PrintExtents.hpp
     ${LIBDIR}/libslic3r/GCode/SpiralVase.cpp
     ${LIBDIR}/libslic3r/GCode/SpiralVase.hpp
     ${LIBDIR}/libslic3r/GCode/ToolOrdering.cpp
@@ -394,8 +401,15 @@ target_compile_options(XS PRIVATE ${PerlEmbed_CCFLAGS})
 # If the Perl is compiled with optimization off, disable optimization over the whole project.
 if (WIN32 AND ";${PerlEmbed_CCFLAGS};" MATCHES ";[-/]Od;")
     message(STATUS "Perl compiled without optimization. Disabling optimization for the Slic3r build.")
-    set(CMAKE_CXX_FLAGS_RELEASE /Od /Zi)
-    set(CMAKE_C_FLAGS_RELEASE /Od /Zi)
+    message("Old CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message("Old CMAKE_CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELEASE}")
+    message("Old CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
+    set(CMAKE_CXX_FLAGS_RELEASE "/MD /Od /Zi /EHsc /DNDEBUG")
+    set(CMAKE_C_FLAGS_RELEASE "/MD /Od /Zi /DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MD /Od /Zi /EHsc /DNDEBUG")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/MD /Od /Zi /DNDEBUG")
+    set(CMAKE_CXX_FLAGS "/MD /Od /Zi /EHsc /DNDEBUG")
+    set(CMAKE_C_FLAGS "/MD /Od /Zi /DNDEBUG")
 endif()
 # The following line will add -fPIC on Linux to make the XS.so rellocable.
 add_definitions(${PerlEmbed_CCCDLFLAGS})
@@ -437,6 +451,8 @@ if(MSVC)
     # Suppress implicit linking of the TBB libraries by the Visual Studio compiler.
     add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
 endif()
+# The Intel TBB library will use the std::exception_ptr feature of C++11.
+add_definitions(-DTBB_USE_CAPTURED_EXCEPTION=0)
 target_link_libraries(XS ${TBB_LIBRARIES})
 
 # Find and configure wxWidgets

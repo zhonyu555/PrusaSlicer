@@ -50,7 +50,11 @@
 #include <cassert>
 #include "Point.hpp"
 
+<<<<<<< HEAD
 #ifdef __SIZEOF_INT128__
+=======
+#if ! defined(_MSC_VER) && defined(__SIZEOF_INT128__)
+>>>>>>> origin/master
 	#define HAS_INTRINSIC_128_TYPE
 #endif
 
