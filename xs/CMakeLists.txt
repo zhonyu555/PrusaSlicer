@@ -10,6 +10,11 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_compile_options(-std=c++11 -Wall)
 endif()
 
+if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUXX)
+    # Adding -fext-numeric-literals to enable GCC extensions on definitions of quad float literals, which are required by Boost.
+    add_compile_options(-fext-numeric-literals)
+endif()
+
 # Where all the bundled libraries reside?
 set(LIBDIR ${CMAKE_CURRENT_SOURCE_DIR}/src/)
 # For the bundled boost libraries (boost::nowide)
@@ -82,6 +87,8 @@ add_library(libslic3r STATIC
     ${LIBDIR}/libslic3r/GCode/CoolingBuffer.hpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.cpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.hpp
+    ${LIBDIR}/libslic3r/GCode/PrintExtents.cpp
+    ${LIBDIR}/libslic3r/GCode/PrintExtents.hpp
     ${LIBDIR}/libslic3r/GCode/SpiralVase.cpp
     ${LIBDIR}/libslic3r/GCode/SpiralVase.hpp
     ${LIBDIR}/libslic3r/GCode/ToolOrdering.cpp
