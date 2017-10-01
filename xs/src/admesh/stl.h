@@ -26,11 +26,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <boost/detail/endian.hpp>
-
-#ifndef BOOST_LITTLE_ENDIAN
-#error "admesh works correctly on little endian machines only!"
-#endif
 
 #define STL_MAX(A,B) ((A)>(B)? (A):(B))
 #define STL_MIN(A,B) ((A)<(B)? (A):(B))
