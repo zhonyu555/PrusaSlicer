@@ -264,7 +264,10 @@ stl_read(stl_file *stl, int first_facet, int first) {
       /* Read a single facet from a binary .STL file */
     {
       /* we assume little-endian architecture! */
-      if (fread(&facet, 1, SIZEOF_STL_FACET, stl->fp) != SIZEOF_STL_FACET) {
+      if (fread(&facet.normal, sizeof(stl_normal), 1, stl->fp) \
+          + fread(&facet.vertex, sizeof(stl_vertex), 3, stl->fp) \
+          + fread(&facet.extra, sizeof(char), 2, stl->fp) != 6) {
+        perror("Cannot read facet");
         stl->error = 1;
         return;
       }
