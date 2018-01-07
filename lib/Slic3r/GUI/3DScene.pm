@@ -616,6 +616,19 @@ sub mouse_wheel_event {
     $self->Refresh;
 }
 
+sub zoom{
+    my ($self, $direction) = @_;
+    if( $direction eq 'in'){
+        $self->_zoom($self->_zoom / (1-0.3));
+    }
+    elsif($direction eq 'out'){
+        $self->_zoom($self->_zoom / (1+0.3));
+    }
+    $self->on_viewport_changed->() if $self->on_viewport_changed;
+    $self->_dirty(1);
+    $self->Refresh;
+}
+
 # Reset selection.
 sub reset_objects {
     my ($self) = @_;

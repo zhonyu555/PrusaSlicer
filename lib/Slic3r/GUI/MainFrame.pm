@@ -265,6 +265,12 @@ sub _init_menubar {
         $self->_append_menu_item($self->{plater_menu}, L("Export plate as 3MF..."), L('Export current plate as 3MF'), sub {
             $plater->export_3mf;
         }, undef, 'brick_go.png');
+
+        $self->{plater_menu}->AppendSeparator();
+        $self->_append_menu_item($self->{plater_menu}, "Zoom In\tAlt+PgUp", 'Zoom In',
+            sub { $self->{plater}->zoom('in') }, undef, 'zoom_in.png');
+        $self->_append_menu_item($self->{plater_menu}, "Zoom Out\tAlt+PgDn", 'Zoom Out',
+            sub { $self->{plater}->zoom('out') }, undef, 'zoom_out.png');
         
         $self->{object_menu} = $self->{plater}->object_menu;
         $self->on_plater_selection_changed(0);

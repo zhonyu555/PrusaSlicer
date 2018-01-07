@@ -2130,6 +2130,21 @@ sub select_view {
     }
 }
 
+sub zoom{
+    my ($self, $direction) = @_;
+    #Apply Zoom to the current active tab
+    my ($currentSelection) = $self->{preview_notebook}->GetSelection;
+    if($currentSelection == 0){
+        $self->{canvas3D}->zoom($direction) if($self->{canvas3D});
+    }
+    elsif($currentSelection == 2){ #3d Preview tab
+        $self->{preview3D}->canvas->zoom($direction) if($self->{preview3D});
+    }
+    elsif($currentSelection == 3) { #2D toolpaths tab
+        $self->{toolpaths2D}->{canvas}->zoom($direction) if($self->{toolpaths2D});
+    }
+}
+
 package Slic3r::GUI::Plater::DropTarget;
 use Wx::DND;
 use base 'Wx::FileDropTarget';

@@ -249,6 +249,20 @@ sub Destroy {
     return $self->SUPER::Destroy;
 }
 
+sub zoom{
+    my($self, $direction) = @_;
+    if( $direction eq 'in'){
+        $self->_zoom($self->_zoom / (1+0.3));
+    }
+    elsif($direction eq 'out'){
+        $self->_zoom($self->_zoom / (1-0.3));
+        $self->_zoom(1) if $self->_zoom > 1;  # prevent from zooming out too much
+    }
+    #apply changes
+    $self->_dirty(1);
+    $self->Refresh;
+}
+
 sub mouse_event {
     my ($self, $e) = @_;
     
