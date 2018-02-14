@@ -31,8 +31,8 @@ ExtrusionEntityCollection::swap(ExtrusionEntityCollection &c)
 
 void ExtrusionEntityCollection::clear()
 {
-	for (size_t i = 0; i < this->entities.size(); ++i)
-		delete this->entities[i];
+    for (size_t i = 0; i < this->entities.size(); ++i)
+        delete this->entities[i];
     this->entities.clear();
 }
 
@@ -52,6 +52,7 @@ ExtrusionEntityCollection::clone() const
     ExtrusionEntityCollection* coll = new ExtrusionEntityCollection(*this);
     for (size_t i = 0; i < coll->entities.size(); ++i)
         coll->entities[i] = this->entities[i]->clone();
+    
     return coll;
 }
 
@@ -204,6 +205,42 @@ ExtrusionEntityCollection::flatten() const
 {
     ExtrusionEntityCollection coll;
     this->flatten(&coll);
+    return coll;
+}
+
+/* Returns a vector of chained (new) pointers to all non-collection items contained in this one */
+void
+ExtrusionEntityCollection::flattenIfSortable(ExtrusionEntityCollection* retval) const
+{
+    if(no_sort){
+        ExtrusionEntityCollection *unsortable = new ExtrusionEntityCollection(*this);
+        retval->append(*unsortable);
+        unsortable->entities.clear();
+        for (ExtrusionEntitiesPtr::const_iterator it = this->entities.begin(); it != this->entities.end(); ++it) {
+            if ((*it)->is_collection()) {
+                ExtrusionEntityCollection* collection = dynamic_cast<ExtrusionEntityCollection*>(*it);
+                collection->flattenIfSortable(unsortable);
+            } else {
+                unsortable->append(**it);
+            }
+        }
+    }else{
+        for (ExtrusionEntitiesPtr::const_iterator it = this->entities.begin(); it != this->entities.end(); ++it) {
+            if ((*it)->is_collection()) {
+                ExtrusionEntityCollection* collection = dynamic_cast<ExtrusionEntityCollection*>(*it);
+                retval->append(collection->flattenIfSortable().entities);
+            } else {
+                retval->append(**it);
+            }
+        }
+    }
+}
+
+ExtrusionEntityCollection
+ExtrusionEntityCollection::flattenIfSortable() const
+{
+    ExtrusionEntityCollection coll;
+    this->flattenIfSortable(&coll);
     return coll;
 }
 

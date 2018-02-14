@@ -9,6 +9,7 @@
 #include "../libslic3r.h"
 #include "../BoundingBox.hpp"
 #include "../PrintConfig.hpp"
+#include "../Flow.hpp"
 
 namespace Slic3r {
 
@@ -46,6 +47,8 @@ public:
     size_t      layer_id;
     // Z coordinate of the top print surface, in unscaled coordinates
     coordf_t    z;
+    // For gyroid, to avoid impossible slopes, in unscaled value
+    coordf_t      layer_height;
     // in unscaled coordinates
     coordf_t    spacing;
     // infill / perimeter overlap, in unscaled coordinates
@@ -77,6 +80,10 @@ public:
 
     // Perform the fill.
     virtual Polylines fill_surface(const Surface *surface, const FillParams &params);
+
+    
+    // This method have to return a correct new ExtrusionEntityCollection. It call fill_surface by default
+    virtual void fill_surface_extrusion(const Surface *surface, const FillParams &params, const Flow &flow, ExtrusionEntityCollection &out );
 
 protected:
     Fill() :
@@ -115,8 +122,8 @@ public:
         // for both positive and negative numbers. Here we want to round down for negative
         // numbers as well.
         coord_t aligned = (coord < 0) ?
-        		((coord - spacing + 1) / spacing) * spacing :
-        		(coord / spacing) * spacing;
+                ((coord - spacing + 1) / spacing) * spacing :
+                (coord / spacing) * spacing;
         assert(aligned <= coord);
         return aligned;
     }

@@ -238,12 +238,33 @@ PrintConfigDef::PrintConfigDef()
     def->cli = "ensure-vertical-shell-thickness!";
     def->default_value = new ConfigOptionBool(false);
 
-    def = this->add("external_fill_pattern", coEnum);
-    def->label = "Top/bottom fill pattern";
+    def = this->add("top_fill_pattern", coEnum);
+    def->label = "Top fill pattern";
     def->category = "Infill";
-    def->tooltip = "Fill pattern for top/bottom infill. This only affects the external visible layer, "
-                   "and not its adjacent solid shells.";
-    def->cli = "external-fill-pattern|solid-fill-pattern=s";
+    def->tooltip = "Fill pattern for top infill. This only affects the top external visible layer, and not its adjacent solid shells.";
+    def->cli = "top-fill-pattern|solid-fill-pattern=s";
+    def->enum_keys_map = &ConfigOptionEnum<InfillPattern>::get_enum_values();
+    def->enum_values.push_back("rectilinear");
+    def->enum_values.push_back("smooth");
+    def->enum_values.push_back("concentric");
+    def->enum_values.push_back("hilbertcurve");
+    def->enum_values.push_back("archimedeanchords");
+    def->enum_values.push_back("octagramspiral");
+    def->enum_labels.push_back("Rectilinear");
+    def->enum_labels.push_back("Ironing");
+    def->enum_labels.push_back("Concentric");
+    def->enum_labels.push_back("Hilbert Curve");
+    def->enum_labels.push_back("Archimedean Chords");
+    def->enum_labels.push_back("Octagram Spiral");
+    // solid_fill_pattern is an obsolete equivalent to external_fill_pattern.
+    def->aliases.push_back("solid_fill_pattern");
+    def->default_value = new ConfigOptionEnum<InfillPattern>(ipRectilinear);
+
+    def = this->add("bottom_fill_pattern", coEnum);
+    def->label = "bottom fill pattern";
+    def->category = "Infill";
+    def->tooltip = "Fill pattern for bottom infill. This only affects the bottom external visible layer, and not its adjacent solid shells.";
+    def->cli = "bottom-fill-pattern|solid-fill-pattern=s";
     def->enum_keys_map = &ConfigOptionEnum<InfillPattern>::get_enum_values();
     def->enum_values.push_back("rectilinear");
     def->enum_values.push_back("concentric");
@@ -255,8 +276,6 @@ PrintConfigDef::PrintConfigDef()
     def->enum_labels.push_back("Hilbert Curve");
     def->enum_labels.push_back("Archimedean Chords");
     def->enum_labels.push_back("Octagram Spiral");
-    // solid_fill_pattern is an obsolete equivalent to external_fill_pattern.
-    def->aliases.push_back("solid_fill_pattern");
     def->default_value = new ConfigOptionEnum<InfillPattern>(ipRectilinear);
 
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
@@ -297,6 +316,14 @@ PrintConfigDef::PrintConfigDef()
                    "is supported.";
     def->cli = "extra-perimeters!";
     def->default_value = new ConfigOptionBool(true);
+    
+    def = this->add("only_one_perimeter_top", coBool);
+    def->label = "Only one perimeter on Top surfaces";
+    def->category = "Layers and Perimeters";
+    def->tooltip = "Use only one perimeter on flat top surface, to let more space to the top infill pattern.";
+    def->cli = "one-top-perimeters!";
+    def->default_value = new ConfigOptionBool(true);
+
 
     def = this->add("extruder", coInt);
     def->gui_type = "i_enum_open";
@@ -503,6 +530,7 @@ PrintConfigDef::PrintConfigDef()
     def->max = 100;
     def->enum_values.push_back("0");
     def->enum_values.push_back("5");
+    def->enum_values.push_back("7.5");
     def->enum_values.push_back("10");
     def->enum_values.push_back("15");
     def->enum_values.push_back("20");
@@ -517,6 +545,7 @@ PrintConfigDef::PrintConfigDef()
     def->enum_values.push_back("100");
     def->enum_labels.push_back("0%");
     def->enum_labels.push_back("5%");
+    def->enum_labels.push_back("7.5%");
     def->enum_labels.push_back("10%");
     def->enum_labels.push_back("15%");
     def->enum_labels.push_back("20%");
@@ -546,6 +575,7 @@ PrintConfigDef::PrintConfigDef()
     def->enum_values.push_back("concentric");
     def->enum_values.push_back("honeycomb");
     def->enum_values.push_back("3dhoneycomb");
+    def->enum_values.push_back("gyroid");
     def->enum_values.push_back("hilbertcurve");
     def->enum_values.push_back("archimedeanchords");
     def->enum_values.push_back("octagramspiral");
@@ -558,6 +588,7 @@ PrintConfigDef::PrintConfigDef()
     def->enum_labels.push_back("Concentric");
     def->enum_labels.push_back("Honeycomb");
     def->enum_labels.push_back("3D Honeycomb");
+    def->enum_labels.push_back("Gyroid");
     def->enum_labels.push_back("Hilbert Curve");
     def->enum_labels.push_back("Archimedean Chords");
     def->enum_labels.push_back("Octagram Spiral");
@@ -1939,9 +1970,13 @@ std::string FullPrintConfig::validate()
     if (! print_config_def.get("fill_pattern")->has_enum_value(this->fill_pattern.serialize()))
         return "Invalid value for --fill-pattern";
     
-    // --external-fill-pattern
-    if (! print_config_def.get("external_fill_pattern")->has_enum_value(this->external_fill_pattern.serialize()))
-        return "Invalid value for --external-fill-pattern";
+    // --top-fill-pattern
+    if (! print_config_def.get("top_fill_pattern")->has_enum_value(this->top_fill_pattern.serialize()))
+        return "Invalid value for --top-fill-pattern";
+    
+    // --bottom-fill-pattern
+    if (! print_config_def.get("bottom_fill_pattern")->has_enum_value(this->bottom_fill_pattern.serialize()))
+        return "Invalid value for --bottom-fill-pattern";
 
     // --fill-density
     if (fabs(this->fill_density.value - 100.) < EPSILON &&

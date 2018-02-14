@@ -69,7 +69,8 @@ void make_fill(LayerRegion &layerm, ExtrusionEntityCollection &out)
                 if (surface.is_solid() && (!surface.is_bridge() || layerm.layer()->id() == 0)) {
                     group_attrib[i].is_solid = true;
                     group_attrib[i].flow_width = (surface.surface_type == stTop) ? top_solid_infill_flow.width : solid_infill_flow.width;
-                    group_attrib[i].pattern = surface.is_external() ? layerm.region()->config.external_fill_pattern.value : ipRectilinear;
+                    group_attrib[i].pattern = (surface.surface_type == stTop && surface.is_external()) ? layerm.region()->config.top_fill_pattern.value : ipRectilinear;
+                    group_attrib[i].pattern = (surface.surface_type == stBottom && surface.is_external()) ? layerm.region()->config.bottom_fill_pattern.value : ipRectilinear;
                 }
             }
             // Loop through solid groups, find compatible groups and append them to this one.
@@ -161,7 +162,7 @@ void make_fill(LayerRegion &layerm, ExtrusionEntityCollection &out)
         if (surface.is_solid()) {
             density = 100.;
             fill_pattern = (surface.is_external() && ! is_bridge) ? 
-                layerm.region()->config.external_fill_pattern.value :
+                (surface.surface_type == stTop ? layerm.region()->config.top_fill_pattern.value : layerm.region()->config.bottom_fill_pattern.value) :
                 ipRectilinear;
         } else if (density <= 0)
             continue;
@@ -214,6 +215,7 @@ void make_fill(LayerRegion &layerm, ExtrusionEntityCollection &out)
         }
 
         f->layer_id = layerm.layer()->id();
+        f->layer_height = layerm.layer()->object()->config.layer_height.value;
         f->z = layerm.layer()->print_z;
         f->angle = float(Geometry::deg2rad(layerm.region()->config.fill_angle.value));
         // Maximum length of the perimeter segment linking two infill lines.
@@ -227,10 +229,8 @@ void make_fill(LayerRegion &layerm, ExtrusionEntityCollection &out)
         params.density = 0.01 * density;
 //        params.dont_adjust = true;
         params.dont_adjust = false;
-        Polylines polylines = f->fill_surface(&surface, params);
-        if (polylines.empty())
-            continue;
-
+        
+        
         // calculate actual flow from spacing (which might have been adjusted by the infill
         // pattern generator)
         if (using_internal_flow) {
@@ -240,20 +240,10 @@ void make_fill(LayerRegion &layerm, ExtrusionEntityCollection &out)
         } else {
             flow = Flow::new_from_spacing(f->spacing, flow.nozzle_diameter, h, is_bridge || f->use_bridge_flow());
         }
+        
+        flow.bridge = is_bridge; //i'm not 100% sure of that line [merill]
+        f->fill_surface_extrusion(&surface, params, flow, out);
 
-        // Save into layer.
-        auto *eec = new ExtrusionEntityCollection();
-        out.entities.push_back(eec);
-        // Only concentric fills are not sorted.
-        eec->no_sort = f->no_sort();
-        extrusion_entities_append_paths(
-            eec->entities, STDMOVE(polylines),
-            is_bridge ?
-                erBridgeInfill :
-                (surface.is_solid() ?
-                    ((surface.surface_type == stTop) ? erTopSolidInfill : erSolidInfill) :
-                    erInternalInfill),
-            flow.mm3_per_mm(), flow.width, flow.height);
     }
 
     // add thin fill regions

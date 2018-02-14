@@ -28,7 +28,7 @@ enum GCodeFlavor {
 };
 
 enum InfillPattern {
-    ipRectilinear, ipGrid, ipTriangles, ipStars, ipCubic, ipLine, ipConcentric, ipHoneycomb, ip3DHoneycomb,
+    ipRectilinear, ipSmooth, ipGrid, ipTriangles, ipStars, ipCubic, ipLine, ipConcentric, ipHoneycomb, ip3DHoneycomb, ipGyroid,
     ipHilbertCurve, ipArchimedeanChords, ipOctagramSpiral,
 };
 
@@ -65,6 +65,7 @@ template<> inline t_config_enum_values& ConfigOptionEnum<InfillPattern>::get_enu
     static t_config_enum_values keys_map;
     if (keys_map.empty()) {
         keys_map["rectilinear"]         = ipRectilinear;
+        keys_map["smooth"]             = ipSmooth;
         keys_map["grid"]                = ipGrid;
         keys_map["triangles"]           = ipTriangles;
         keys_map["stars"]               = ipStars;
@@ -73,6 +74,7 @@ template<> inline t_config_enum_values& ConfigOptionEnum<InfillPattern>::get_enu
         keys_map["concentric"]          = ipConcentric;
         keys_map["honeycomb"]           = ipHoneycomb;
         keys_map["3dhoneycomb"]         = ip3DHoneycomb;
+        keys_map["gyroid"]              = ipGyroid;
         keys_map["hilbertcurve"]        = ipHilbertCurve;
         keys_map["archimedeanchords"]   = ipArchimedeanChords;
         keys_map["octagramspiral"]      = ipOctagramSpiral;
@@ -378,11 +380,13 @@ public:
     ConfigOptionFloat               bridge_flow_ratio;
     ConfigOptionFloat               bridge_speed;
     ConfigOptionBool                ensure_vertical_shell_thickness;
-    ConfigOptionEnum<InfillPattern> external_fill_pattern;
+    ConfigOptionEnum<InfillPattern> top_fill_pattern;
+    ConfigOptionEnum<InfillPattern> bottom_fill_pattern;
     ConfigOptionFloatOrPercent      external_perimeter_extrusion_width;
     ConfigOptionFloatOrPercent      external_perimeter_speed;
     ConfigOptionBool                external_perimeters_first;
     ConfigOptionBool                extra_perimeters;
+    ConfigOptionBool                only_one_perimeter_top;
     ConfigOptionFloat               fill_angle;
     ConfigOptionPercent             fill_density;
     ConfigOptionEnum<InfillPattern> fill_pattern;
@@ -416,11 +420,13 @@ protected:
         OPT_PTR(bridge_flow_ratio);
         OPT_PTR(bridge_speed);
         OPT_PTR(ensure_vertical_shell_thickness);
-        OPT_PTR(external_fill_pattern);
+        OPT_PTR(top_fill_pattern);
+        OPT_PTR(bottom_fill_pattern);
         OPT_PTR(external_perimeter_extrusion_width);
         OPT_PTR(external_perimeter_speed);
         OPT_PTR(external_perimeters_first);
         OPT_PTR(extra_perimeters);
+        OPT_PTR(only_one_perimeter_top);
         OPT_PTR(fill_angle);
         OPT_PTR(fill_density);
         OPT_PTR(fill_pattern);

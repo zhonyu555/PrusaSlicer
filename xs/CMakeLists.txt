@@ -58,12 +58,16 @@ add_library(libslic3r STATIC
     ${LIBDIR}/libslic3r/Fill/Fill.hpp
     ${LIBDIR}/libslic3r/Fill/Fill3DHoneycomb.cpp
     ${LIBDIR}/libslic3r/Fill/Fill3DHoneycomb.hpp
+    ${LIBDIR}/libslic3r/Fill/FillGyroid.cpp
+    ${LIBDIR}/libslic3r/Fill/FillGyroid.hpp
     ${LIBDIR}/libslic3r/Fill/FillBase.cpp
     ${LIBDIR}/libslic3r/Fill/FillBase.hpp
     ${LIBDIR}/libslic3r/Fill/FillConcentric.cpp
     ${LIBDIR}/libslic3r/Fill/FillConcentric.hpp
     ${LIBDIR}/libslic3r/Fill/FillHoneycomb.cpp
     ${LIBDIR}/libslic3r/Fill/FillHoneycomb.hpp
+    ${LIBDIR}/libslic3r/Fill/FillGyroid.cpp
+    ${LIBDIR}/libslic3r/Fill/FillGyroid.hpp
     ${LIBDIR}/libslic3r/Fill/FillPlanePath.cpp
     ${LIBDIR}/libslic3r/Fill/FillPlanePath.hpp
     ${LIBDIR}/libslic3r/Fill/FillRectilinear.cpp
