@@ -437,7 +437,7 @@ PrintConfigDef::PrintConfigDef()
     def->tooltip = "Enter your filament density here. This is only for statistical information. "
                    "A decent way is to weigh a known length of filament and compute the ratio "
                    "of the length to volume. Better is to calculate the volume directly through displacement.";
-    def->sidetext = "g/cm^3";
+    def->sidetext = "g/cm³";
     def->cli = "filament-density=f@";
     def->min = 0;
     def->default_value = new ConfigOptionFloats { 0. };
