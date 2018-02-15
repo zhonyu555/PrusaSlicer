@@ -90,6 +90,8 @@ add_library(libslic3r STATIC
     ${LIBDIR}/libslic3r/GCode/CoolingBuffer.hpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.cpp
     ${LIBDIR}/libslic3r/GCode/PressureEqualizer.hpp
+    ${LIBDIR}/libslic3r/GCode/PreviewData.cpp
+    ${LIBDIR}/libslic3r/GCode/PreviewData.hpp
     ${LIBDIR}/libslic3r/GCode/PrintExtents.cpp
     ${LIBDIR}/libslic3r/GCode/PrintExtents.hpp
     ${LIBDIR}/libslic3r/GCode/SpiralVase.cpp
@@ -177,6 +179,8 @@ add_library(libslic3r_gui STATIC
     ${LIBDIR}/slic3r/GUI/PresetHints.hpp
     ${LIBDIR}/slic3r/GUI/GUI.cpp
     ${LIBDIR}/slic3r/GUI/GUI.hpp
+    ${LIBDIR}/slic3r/GUI/wxExtensions.cpp
+    ${LIBDIR}/slic3r/GUI/wxExtensions.hpp
 )
 
 add_library(admesh STATIC

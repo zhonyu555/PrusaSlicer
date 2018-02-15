@@ -60,10 +60,14 @@ sub new {
     $self->{print} = Slic3r::Print->new;
     # List of Perl objects Slic3r::GUI::Plater::Object, representing a 2D preview of the platter.
     $self->{objects} = [];
+    $self->{gcode_preview_data} = Slic3r::GCode::PreviewData->new;
     
     $self->{print}->set_status_cb(sub {
         my ($percent, $message) = @_;
-        Wx::PostEvent($self, Wx::PlThreadEvent->new(-1, $PROGRESS_BAR_EVENT, shared_clone([$percent, $message])));
+        my $event = Wx::CommandEvent->new($PROGRESS_BAR_EVENT);
+        $event->SetString($message);
+        $event->SetInt($percent);
+        Wx::PostEvent($self, $event);
     });
     
     # Initialize preview notebook
@@ -137,7 +141,7 @@ sub new {
     
     # Initialize 3D toolpaths preview
     if ($Slic3r::GUI::have_OpenGL) {
-        $self->{preview3D} = Slic3r::GUI::Plater::3DPreview->new($self->{preview_notebook}, $self->{print}, $self->{config});
+        $self->{preview3D} = Slic3r::GUI::Plater::3DPreview->new($self->{preview_notebook}, $self->{print}, $self->{gcode_preview_data}, $self->{config});
         $self->{preview3D}->canvas->on_viewport_changed(sub {
             $self->{canvas3D}->set_viewport_from_scene($self->{preview3D}->canvas);
         });
@@ -153,8 +157,15 @@ sub new {
     
     EVT_NOTEBOOK_PAGE_CHANGED($self, $self->{preview_notebook}, sub {
         my $preview = $self->{preview_notebook}->GetCurrentPage;
-        $self->{preview3D}->load_print(1) if ($preview == $self->{preview3D});
-        $preview->OnActivate if $preview->can('OnActivate');
+        if ($preview == $self->{preview3D})
+        {
+            $self->{preview3D}->canvas->set_legend_enabled(1);
+            $self->{preview3D}->load_print(1);
+        } else {
+            $self->{preview3D}->canvas->set_legend_enabled(0);
+        }
+
+        $preview->OnActivate if $preview->can('OnActivate');        
     });
     
     # toolbar for object manipulation
@@ -307,23 +318,22 @@ sub new {
     
     EVT_COMMAND($self, -1, $PROGRESS_BAR_EVENT, sub {
         my ($self, $event) = @_;
-        my ($percent, $message) = @{$event->GetData};
-        $self->on_progress_event($percent, $message);
+        $self->on_progress_event($event->GetInt, $event->GetString);
     });
     
     EVT_COMMAND($self, -1, $ERROR_EVENT, sub {
         my ($self, $event) = @_;
-        Slic3r::GUI::show_error($self, @{$event->GetData});
+        Slic3r::GUI::show_error($self, $event->GetString);
     });
     
     EVT_COMMAND($self, -1, $EXPORT_COMPLETED_EVENT, sub {
         my ($self, $event) = @_;
-        $self->on_export_completed($event->GetData);
+        $self->on_export_completed($event->GetInt);
     });
     
     EVT_COMMAND($self, -1, $PROCESS_COMPLETED_EVENT, sub {
         my ($self, $event) = @_;
-        $self->on_process_completed($event->GetData);
+        $self->on_process_completed($event->GetInt ? undef : $event->GetString);
     });
     
     {
@@ -776,6 +786,7 @@ sub remove {
     splice @{$self->{objects}}, $obj_idx, 1;
     $self->{model}->delete_object($obj_idx);
     $self->{print}->delete_object($obj_idx);
+    $self->{gcode_preview_data}->reset;
     $self->{list}->DeleteItem($obj_idx);
     $self->object_list_changed;
     
@@ -796,6 +807,7 @@ sub reset {
     @{$self->{objects}} = ();
     $self->{model}->clear_objects;
     $self->{print}->clear_objects;
+    $self->{gcode_preview_data}->reset;
     $self->{list}->DeleteAllItems;
     $self->object_list_changed;
     
@@ -1184,12 +1196,15 @@ sub start_background_process {
         eval {
             $self->{print}->process;
         };
+        my $event = Wx::CommandEvent->new($PROCESS_COMPLETED_EVENT);
         if ($@) {
             Slic3r::debugf "Background process error: $@\n";
-            Wx::PostEvent($self, Wx::PlThreadEvent->new(-1, $PROCESS_COMPLETED_EVENT, $@));
+            $event->SetInt(0);
+            $event->SetString($@);
         } else {
-            Wx::PostEvent($self, Wx::PlThreadEvent->new(-1, $PROCESS_COMPLETED_EVENT, undef));
+            $event->SetInt(1);
         }
+        Wx::PostEvent($self, $event);
         Slic3r::thread_cleanup();
     });
     Slic3r::debugf "Background processing started.\n";
@@ -1252,6 +1267,8 @@ sub reslice {
         $self->stop_background_process;
         # Rather perform one additional unnecessary update of the print object instead of skipping a pending async update.
         $self->async_apply_config;
+        # Reset gcode data
+        $self->{gcode_preview_data}->reset;
         $self->statusbar->SetCancelCallback(sub {
             $self->stop_background_process;
             $self->statusbar->SetStatusText("Slicing cancelled");
@@ -1365,14 +1382,21 @@ sub on_process_completed {
         
         $self->{export_thread} = Slic3r::spawn_thread(sub {
             eval {
-                $_thread_self->{print}->export_gcode(output_file => $_thread_self->{export_gcode_output_file});
+                $_thread_self->{print}->export_gcode(output_file => $_thread_self->{export_gcode_output_file}, gcode_preview_data => $_thread_self->{gcode_preview_data});
             };
+            my $export_completed_event = Wx::CommandEvent->new($EXPORT_COMPLETED_EVENT);
             if ($@) {
-                Wx::PostEvent($_thread_self, Wx::PlThreadEvent->new(-1, $ERROR_EVENT, shared_clone([ $@ ])));
-                Wx::PostEvent($_thread_self, Wx::PlThreadEvent->new(-1, $EXPORT_COMPLETED_EVENT, 0));
+                {
+                    my $error_event = Wx::CommandEvent->new($ERROR_EVENT);
+                    $error_event->SetString($@);
+                    Wx::PostEvent($_thread_self, $error_event);
+                }
+                $export_completed_event->SetInt(0);
+                $export_completed_event->SetString($@);
             } else {
-                Wx::PostEvent($_thread_self, Wx::PlThreadEvent->new(-1, $EXPORT_COMPLETED_EVENT, 1));
+                $export_completed_event->SetInt(1);
             }
+            Wx::PostEvent($_thread_self, $export_completed_event);
             Slic3r::thread_cleanup();
         });
         Slic3r::debugf "Background G-code export started.\n";
@@ -1435,6 +1459,10 @@ sub on_export_completed {
 
     # this updates buttons status
     $self->object_list_changed;
+    
+    # refresh preview
+    $self->{toolpaths2D}->reload_print if $self->{toolpaths2D};
+    $self->{preview3D}->reload_print if $self->{preview3D};
 }
 
 sub do_print {
