@@ -284,10 +284,6 @@ sub selection_changed {
             if ($self->{canvas}) {
                 $self->{canvas}->volumes->[ $itemData->{volume_id} ]->set_selected(1);
             }
-            $self->{btn_delete}->Enable;
-            $self->{btn_split}->Enable;
-            $self->{btn_move_up}->Enable if $itemData->{volume_id} > 0;
-            $self->{btn_move_down}->Enable if $itemData->{volume_id} + 1 < $self->{model_object}->volumes_count;
             
             # attach volume config to settings panel
             my $volume = $self->{model_object}->volumes->[ $itemData->{volume_id} ];
@@ -299,6 +295,11 @@ sub selection_changed {
             }
             $config = $volume->config;
             $self->{staticbox}->SetLabel('Part Settings');
+
+            $self->{btn_delete}->Enable;
+            $self->{btn_split}->Enable if not $volume->name eq 'lambda-seam';
+            $self->{btn_move_up}->Enable if $itemData->{volume_id} > 0;
+            $self->{btn_move_down}->Enable if $itemData->{volume_id} + 1 < $self->{model_object}->volumes_count;
             
             # get default values
             @opt_keys = @{Slic3r::Config::PrintRegion->new->get_keys};
@@ -315,14 +316,17 @@ sub selection_changed {
         my $default_config = Slic3r::Config::new_from_defaults_keys(\@opt_keys);
         
         # append default extruder
-        push @opt_keys, 'extruder';
-        $default_config->set('extruder', 0);
-        $config->set_ifndef('extruder', 0);
-        $self->{settings_panel}->set_default_config($default_config);
-        $self->{settings_panel}->set_config($config);
-        $self->{settings_panel}->set_opt_keys(\@opt_keys);
-        $self->{settings_panel}->set_fixed_options([qw(extruder)]);
-        $self->{settings_panel}->enable;
+		my $volume = $self->{model_object}->volumes->[$itemData->{volume_id}];
+		if (not $volume->name eq 'lambda-seam') {
+			push @opt_keys, 'extruder';
+			$default_config->set('extruder', 0);
+			$config->set_ifndef('extruder', 0);
+			$self->{settings_panel}->set_default_config($default_config);
+			$self->{settings_panel}->set_config($config);
+			$self->{settings_panel}->set_opt_keys(\@opt_keys);
+			$self->{settings_panel}->set_fixed_options([qw(extruder)]);
+			$self->{settings_panel}->enable;
+		}
     }
     
     $self->{canvas}->Render if $self->{canvas};
@@ -377,6 +381,8 @@ sub on_btn_lambda {
         $mesh = Slic3r::TriangleMesh::cylinder($params->{"cyl_r"}, $params->{"cyl_h"});
     } elsif ($type eq "sphere") {
         $mesh = Slic3r::TriangleMesh::sphere($params->{"sph_rho"});
+	} elsif ($type eq "seam") {
+        $mesh = Slic3r::TriangleMesh::sphere(1.0);
     } elsif ($type eq "slab") {
         $mesh = Slic3r::TriangleMesh::cube($self->{model_object}->bounding_box->size->x*1.5, $self->{model_object}->bounding_box->size->y*1.5, $params->{"slab_h"});
         # box sets the base coordinate at 0,0, move to center of plate and move it up to initial_z

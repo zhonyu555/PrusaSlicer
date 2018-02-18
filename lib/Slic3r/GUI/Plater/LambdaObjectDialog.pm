@@ -18,7 +18,7 @@ sub new {
     # Note whether the window was already closed, so a pending update is not executed.
     $self->{already_closed} = 0;
     $self->{object_parameters} = { 
-        type => "box", 
+        type => "seam", 
         dim => [1, 1, 1],
         cyl_r => 1,
         cyl_h => 1,
@@ -64,8 +64,8 @@ sub new {
         },
         label_width => 100,
     );
-    my @options = ("box", "slab", "cylinder", "sphere");
-    $self->{type} = Wx::ComboBox->new($self, 1, "box", wxDefaultPosition, wxDefaultSize, \@options, wxCB_READONLY);
+    my @options = ("seam", "box", "slab", "cylinder", "sphere");
+    $self->{type} = Wx::ComboBox->new($self, 1, "seam", wxDefaultPosition, wxDefaultSize, \@options, wxCB_READONLY);
 
     $optgroup_box->append_single_option_line(Slic3r::GUI::OptionsGroup::Option->new(
         opt_id  =>  0,
@@ -140,6 +140,15 @@ sub new {
         default =>  '1',
     ));
 
+    my $optgroup_seam;
+    $optgroup_seam = $self->{optgroup_seam} = Slic3r::GUI::OptionsGroup->new(
+        parent      => $self,
+        title       => 'Add preferred Seam-Position',
+        on_change   => sub {
+        },
+        label_width => 100,
+    );
+
     my $optgroup_slab;
     $optgroup_slab = $self->{optgroup_slab} = Slic3r::GUI::OptionsGroup->new(
         parent      => $self,
@@ -180,6 +189,7 @@ sub new {
     $self->{sizer}->Add($optgroup_box->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
     $self->{sizer}->Add($optgroup_cylinder->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
     $self->{sizer}->Add($optgroup_sphere->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
+    $self->{sizer}->Add($optgroup_seam->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
     $self->{sizer}->Add($optgroup_slab->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
     $self->{sizer}->Add($button_sizer,0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
     $self->_update_ui;
@@ -205,6 +215,7 @@ sub _update_ui {
     $self->{sizer}->Hide($self->{optgroup_slab}->sizer);
     $self->{sizer}->Hide($self->{optgroup_box}->sizer);
     $self->{sizer}->Hide($self->{optgroup_sphere}->sizer);
+    $self->{sizer}->Hide($self->{optgroup_seam}->sizer);
     if ($self->{type}->GetValue eq "box") {
         $self->{sizer}->Show($self->{optgroup_box}->sizer);
     } elsif ($self->{type}->GetValue eq "cylinder") {
@@ -213,6 +224,8 @@ sub _update_ui {
         $self->{sizer}->Show($self->{optgroup_slab}->sizer);
     } elsif ($self->{type}->GetValue eq "sphere") {
         $self->{sizer}->Show($self->{optgroup_sphere}->sizer);
+    } elsif ($self->{type}->GetValue eq "seam") {
+        $self->{sizer}->Show($self->{optgroup_seam}->sizer);
     }
     $self->{sizer}->Fit($self);
     $self->{sizer}->SetSizeHints($self);
