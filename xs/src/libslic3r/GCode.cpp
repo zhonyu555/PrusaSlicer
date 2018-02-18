@@ -1691,7 +1691,7 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     SeamPosition seam_position = m_config.seam_position;
     if (loop.loop_role() == elrSkirt) 
         seam_position = spNearest;
-    
+
     // find the point of the loop that is closest to the current extruder position
     // or randomize if requested
     Point last_pos = this->last_pos();
@@ -1712,11 +1712,24 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
                 last_pos_weight = 1.f;
             }
             break;
-        case spRear:
-            last_pos = m_layer->object()->bounding_box().center();
-            last_pos.y += coord_t(3. * m_layer->object()->bounding_box().radius());
-            last_pos_weight = 5.f;
-            break;
+		case spRear:
+			// Seam is aligned to be nearest to the position of a "lambda-seam"-named modifier in this or any preceding layer, or to the rear, if there is none.
+			last_pos = m_layer->object()->bounding_box().center();
+			// Look for all lambda-seam-modifiers below current z, choose the highest one
+			ModelVolume *v_lambda_seam = NULL;
+			for (ModelVolume *v : m_layer->object()->model_object()->volumes)
+				if (v->modifier && v->name == "lambda-seam" && v->mesh.bounding_box().min.z <= m_layer->print_z)
+					if (v_lambda_seam == NULL || (v->mesh.bounding_box().min.z > v_lambda_seam->mesh.bounding_box().min.z))
+						v_lambda_seam = v;
+
+			if (v_lambda_seam == NULL)
+				// If not found, use a point to the rear
+				last_pos.y += coord_t(3. * m_layer->object()->bounding_box().radius());
+			else
+				last_pos += Point::new_scale(v_lambda_seam->mesh.bounding_box().center().x, v_lambda_seam->mesh.bounding_box().center().y);
+
+			last_pos_weight = 5.f;
+			break;
         }
 
         // Insert a projection of last_pos into the polygon.
