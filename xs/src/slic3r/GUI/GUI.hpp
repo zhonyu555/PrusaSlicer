@@ -127,7 +127,6 @@ wxString	L_str(const std::string &str);
 // Return wxString from std::string in UTF8
 wxString	from_u8(const std::string &str);
 
-wxWindow *get_widget_by_id(int id);
 
 void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFlexGridSizer* preset_sizer);
 

@@ -591,19 +591,6 @@ wxString from_u8(const std::string &str)
 	return wxString::FromUTF8(str.c_str());
 }
 
-wxWindow *get_widget_by_id(int id)
-{
-    if (g_wxMainFrame == nullptr) {
-        throw std::runtime_error("Main frame not set");
-    }
-
-    wxWindow *window = g_wxMainFrame->FindWindow(id);
-    if (window == nullptr) {
-        throw std::runtime_error((boost::format("Could not find widget by ID: %1%") % id).str());
-    }
-
-    return window;
-}
 
 void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFlexGridSizer* preset_sizer)
 {
