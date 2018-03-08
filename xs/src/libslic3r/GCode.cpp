@@ -816,19 +816,19 @@ void GCode::_do_export(Print &print, FILE *file, GCodePreviewData *preview_data)
         double filament_weight = extruded_volume * extruder.filament_density() * 0.001;
         double filament_cost   = filament_weight * extruder.filament_cost()    * 0.001;
         print.filament_stats.insert(std::pair<size_t,float>(extruder.id(), used_filament));
-        _write_format(file, "; filament used = %.1lfmm (%.1lfcm3)\n", used_filament, extruded_volume * 0.001);
+        _write_format(file, "; filament used = %.2lfmm (%.2lfcm3)\n", used_filament, extruded_volume * 0.001);
         if (filament_weight > 0.) {
             print.total_weight = print.total_weight + filament_weight;
-            _write_format(file, "; filament used = %.1lfg\n", filament_weight);
+            _write_format(file, "; filament used = %.2lfg\n", filament_weight);
             if (filament_cost > 0.) {
                 print.total_cost = print.total_cost + filament_cost;
-                _write_format(file, "; filament cost = %.1lf\n", filament_cost);
+                _write_format(file, "; filament cost = %.2lf\n", filament_cost);
             }
         }
         print.total_used_filament = print.total_used_filament + used_filament;
         print.total_extruded_volume = print.total_extruded_volume + extruded_volume;
     }
-    _write_format(file, "; total filament cost = %.1lf\n", print.total_cost);
+    _write_format(file, "; total filament cost = %.2lf\n", print.total_cost);
     _write_format(file, "; estimated printing time = %s\n", m_time_estimator.get_time_hms().c_str());
 
     // Append full config.
