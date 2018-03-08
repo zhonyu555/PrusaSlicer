@@ -819,7 +819,7 @@ void GCode::_do_export(Print &print, FILE *file, GCodePreviewData *preview_data)
         _write_format(file, "; filament used = %.1lfmm (%.1lfcm3)\n", used_filament, extruded_volume * 0.001);
         if (filament_weight > 0.) {
             print.total_weight = print.total_weight + filament_weight;
-            _write_format(file, "; filament used = %.1lf\n", filament_weight);
+            _write_format(file, "; filament used = %.1lfg\n", filament_weight);
             if (filament_cost > 0.) {
                 print.total_cost = print.total_cost + filament_cost;
                 _write_format(file, "; filament cost = %.1lf\n", filament_cost);
