@@ -50,7 +50,6 @@ and use these commands to build the Slic3r from the command line:
     cd build
     cmake .. -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release
     nmake
-    ctest --verbose    # TODO: ???
     cd ..
     perl slic3r.pl
 
@@ -87,7 +86,7 @@ If you also want to use the `Release` configuration, you can generate Visual Stu
 
 ### Building with ninja
 
-To use [Ninja](TODO), replace the `cmake` and `nmake` commands with:
+To use [Ninja](https://ninja-build.org/), replace the `cmake` and `nmake` commands with:
 
     cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
     ninja
