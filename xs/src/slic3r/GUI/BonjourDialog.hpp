@@ -15,6 +15,7 @@ namespace Slic3r {
 
 class Bonjour;
 class BonjourReplyEvent;
+class ReplySet;
 
 
 class BonjourDialog: public wxDialog
@@ -31,6 +32,7 @@ public:
 	wxString get_selected() const;
 private:
 	wxListView *list;
+	std::unique_ptr<ReplySet> replies;
 	wxStaticText *label;
 	std::shared_ptr<Bonjour> bonjour;
 	std::unique_ptr<wxTimer> timer;

@@ -2,6 +2,7 @@
 
 #include "BonjourDialog.hpp"
 
+#include <set>
 #include <mutex>
 
 #include <wx/sizer.h>
@@ -37,6 +38,8 @@ wxDEFINE_EVENT(EVT_BONJOUR_REPLY, BonjourReplyEvent);
 wxDECLARE_EVENT(EVT_BONJOUR_COMPLETE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_BONJOUR_COMPLETE, wxCommandEvent);
 
+class ReplySet: public std::set<BonjourReply> {};
+
 struct LifetimeGuard
 {
 	std::mutex mutex;
@@ -49,6 +52,7 @@ struct LifetimeGuard
 BonjourDialog::BonjourDialog(wxWindow *parent) :
 	wxDialog(parent, wxID_ANY, _(L("Network lookup"))),
 	list(new wxListView(this, wxID_ANY, wxDefaultPosition, wxSize(800, 300))),
+	replies(new ReplySet),
 	label(new wxStaticText(this, wxID_ANY, "")),
 	timer(new wxTimer()),
 	timer_state(0)
@@ -106,7 +110,8 @@ bool BonjourDialog::show_and_lookup()
 	auto dguard = std::make_shared<LifetimeGuard>(this);
 
 	bonjour = std::move(Bonjour("octoprint")
-		.set_timeout(10)
+		.set_retries(3)
+		.set_timeout(4)
 		.on_reply([dguard](BonjourReply &&reply) {
 			std::lock_guard<std::mutex> lock_guard(dguard->mutex);
 			auto dialog = dguard->dialog;
@@ -138,7 +143,7 @@ bool BonjourDialog::show_and_lookup()
 wxString BonjourDialog::get_selected() const
 {
 	auto sel = list->GetFirstSelected();
-	return list->GetItemText(sel);
+	return sel >= 0 ? list->GetItemText(sel) : wxString();
 }
 
 
@@ -146,40 +151,35 @@ wxString BonjourDialog::get_selected() const
 
 void BonjourDialog::on_reply(BonjourReplyEvent &e)
 {
-	auto port_suffix = e.reply.port == 80 ? wxString() : wxString::Format(":%d", e.reply.port);
-	auto ip = e.reply.ip.to_string();
-	auto address = e.reply.path == "/" ?
-		wxString::Format("%s%s", ip, port_suffix)
-		: wxString::Format("http://%s%s%s", ip, port_suffix, e.reply.path);
+	if (replies->find(e.reply) != replies->end()) {
+		// We already have this reply
+		return;
+	}
 
-	auto item = this->list->GetItemCount();
-	this->list->InsertItem(item, std::move(address));
-	this->list->SetItem(item, 1, e.reply.hostname);
-	this->list->SetItem(item, 2, e.reply.service_name);
-	this->list->SetItem(item, 3, e.reply.version);
-	this->list->SetItemData(item, item);   // item's data = its original index
+	replies->insert(std::move(e.reply));
+
+	auto selected = get_selected();
+	list->DeleteAllItems();
+
+	// The whole list is recreated so that we benefit from it already being sorted in the set.
+	// (And also because wxListView's sorting API is bananas.)
+	for (const auto &reply : *replies) {
+		auto item = list->InsertItem(0, reply.full_address);
+		list->SetItem(item, 1, reply.hostname);
+		list->SetItem(item, 2, reply.service_name);
+		list->SetItem(item, 3, reply.version);
+	}
 
 	for (int i = 0; i < 4; i++) {
-		this->list->SetColumnWidth(i, wxLIST_AUTOSIZE_USEHEADER);
+		this->list->SetColumnWidth(i, wxLIST_AUTOSIZE);
+		if (this->list->GetColumnWidth(i) < 100) { this->list->SetColumnWidth(i, 100); }
 	}
 
-	this->list->SortItems([](wxIntPtr item1, wxIntPtr item2, wxIntPtr self) {
-		auto list = reinterpret_cast<wxListView*>(self);
-
-		// Since the items in the list move about during sorting, the original indices are invalidated
-		// and so we need to use FindItem() here instead of just using item1/2 as indicies (it's quite silly).
-		auto addr1 = list->GetItemText(list->FindItem(-1, item1));
-		auto addr2 = list->GetItemText(list->FindItem(-1, item2));
-		return addr1.compare(addr2);
-	}, reinterpret_cast<wxIntPtr>(this->list));
-
-	auto *parent = this->GetParent();
-	if (parent != nullptr) {
-		auto size = this->list->GetSize();
-		this->list->SetSize(this->list->GetViewRect().GetWidth(), size.GetHeight());
+	if (!selected.IsEmpty()) {
+		// Attempt to preserve selection
+		auto hit = list->FindItem(-1, selected);
+		if (hit >= 0) { list->SetItemState(hit, wxLIST_STATE_SELECTED, wxLIST_STATE_SELECTED); }
 	}
-
-	this->Fit();
 }
 
 void BonjourDialog::on_timer(wxTimerEvent &)
