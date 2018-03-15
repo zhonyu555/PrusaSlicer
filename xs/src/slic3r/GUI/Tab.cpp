@@ -3,6 +3,7 @@
 #include "PresetBundle.hpp"
 #include "PresetHints.hpp"
 #include "../../libslic3r/Utils.hpp"
+#include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/OctoPrint.hpp"
 #include "BonjourDialog.hpp"
 
@@ -1151,40 +1152,44 @@ void TabPrinter::build()
 		optgroup->append_line(host_line);
 		optgroup->append_single_option_line("octoprint_apikey");
 
-		Line cafile_line = optgroup->create_single_option_line("octoprint_cafile");
+		if (Http::ca_file_supported()) {
 
-		auto octoprint_cafile_browse = [this, optgroup] (wxWindow* parent) {
-			auto btn = new wxButton(parent, wxID_ANY, _(L(" Browse "))+"\u2026", wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
-			btn->SetBitmap(wxBitmap(from_u8(Slic3r::var("zoom.png")), wxBITMAP_TYPE_PNG));
-			auto sizer = new wxBoxSizer(wxHORIZONTAL);
-			sizer->Add(btn);
+			Line cafile_line = optgroup->create_single_option_line("octoprint_cafile");
 
-			btn->Bind(wxEVT_BUTTON, [this, optgroup] (wxCommandEvent e){
-				static const auto filemasks = _(L("Certificate files (*.crt, *.pem)|*.crt;*.pem|All files|*.*"));
-				wxFileDialog openFileDialog(this, _(L("Open CA certificate file")), "", "", filemasks, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-				if (openFileDialog.ShowModal() != wxID_CANCEL) {
-					optgroup->set_value("octoprint_cafile", std::move(openFileDialog.GetPath()), true);
-				}
-			});
+			auto octoprint_cafile_browse = [this, optgroup] (wxWindow* parent) {
+				auto btn = new wxButton(parent, wxID_ANY, _(L(" Browse "))+"\u2026", wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
+				btn->SetBitmap(wxBitmap(from_u8(Slic3r::var("zoom.png")), wxBITMAP_TYPE_PNG));
+				auto sizer = new wxBoxSizer(wxHORIZONTAL);
+				sizer->Add(btn);
 
-			return sizer;
-		};
+				btn->Bind(wxEVT_BUTTON, [this, optgroup] (wxCommandEvent e){
+					static const auto filemasks = _(L("Certificate files (*.crt, *.pem)|*.crt;*.pem|All files|*.*"));
+					wxFileDialog openFileDialog(this, _(L("Open CA certificate file")), "", "", filemasks, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+					if (openFileDialog.ShowModal() != wxID_CANCEL) {
+						optgroup->set_value("octoprint_cafile", std::move(openFileDialog.GetPath()), true);
+					}
+				});
 
-		cafile_line.append_widget(octoprint_cafile_browse);
-		optgroup->append_line(cafile_line);
+				return sizer;
+			};
 
-		auto octoprint_cafile_hint = [this, optgroup] (wxWindow* parent) {
-			auto txt = new wxStaticText(parent, wxID_ANY, 
-				_(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate.")));
-			auto sizer = new wxBoxSizer(wxHORIZONTAL);
-			sizer->Add(txt);
-			return sizer;
-		};
+			cafile_line.append_widget(octoprint_cafile_browse);
+			optgroup->append_line(cafile_line);
 
-		Line cafile_hint { "", "" };
-		cafile_hint.full_width = 1;
-		cafile_hint.widget = std::move(octoprint_cafile_hint);
-		optgroup->append_line(cafile_hint);
+			auto octoprint_cafile_hint = [this, optgroup] (wxWindow* parent) {
+				auto txt = new wxStaticText(parent, wxID_ANY, 
+					_(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate.")));
+				auto sizer = new wxBoxSizer(wxHORIZONTAL);
+				sizer->Add(txt);
+				return sizer;
+			};
+
+			Line cafile_hint { "", "" };
+			cafile_hint.full_width = 1;
+			cafile_hint.widget = std::move(octoprint_cafile_hint);
+			optgroup->append_line(cafile_hint);
+
+		}
 
 		optgroup = page->new_optgroup(_(L("Firmware")));
 		optgroup->append_single_option_line("gcode_flavor");

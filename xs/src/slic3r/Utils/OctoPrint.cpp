@@ -48,7 +48,7 @@ void OctoPrint::send_gcode(int windowId, int completeEvt, int errorEvt, const st
 		.on_complete([=](std::string body, unsigned status) {
 			wxWindow *window = wxWindow::FindWindowById(windowId);
 			if (window == nullptr) { return; }
-			
+
 			wxCommandEvent* evt = new wxCommandEvent(completeEvt);
 			evt->SetString(_(L("G-code file successfully uploaded to the OctoPrint server")));
 			evt->SetInt(100);
