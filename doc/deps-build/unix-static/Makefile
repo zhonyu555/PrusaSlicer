@@ -67,13 +67,17 @@ $(TBB).tar.gz:
 	curl -L -o $@ https://github.com/wjakob/tbb/archive/$(TBB_SHA).tar.gz
 
 
+# Note: libcurl build system seems to be a bit wonky about finding openssl (cf. #2378).
+# It seems that currently the only working option is to set a prefix in the openssl build
+# and use the `--with-ssl=...` option in libcurl.
+# Additionally, pkg-config needs to be installed and openssl libs need to NOT be installed on the build system.
 
 libopenssl: $(OPENSSL).tar.gz
 	tar -zxvf $(OPENSSL).tar.gz
-	cd $(OPENSSL) && ./config --openssldir=/etc/ssl shared no-ssl3-method no-dynamic-engine '-Wa,--noexecstack'
-	make -C $(OPENSSL) depend
-	make -C $(OPENSSL) -j$(NPROC)
-	make -C $(OPENSSL) install DESTDIR=$(DESTDIR)
+	cd $(OPENSSL) && ./config --prefix=$(DESTDIR)/usr/local no-shared no-ssl3-method no-dynamic-engine '-Wa,--noexecstack'
+	$(MAKE) -C $(OPENSSL) depend
+	$(MAKE) -C $(OPENSSL) -j$(NPROC)
+	$(MAKE) -C $(OPENSSL) install_sw
 
 $(OPENSSL).tar.gz:
 	curl -L -o $@ 'https://github.com/openssl/openssl/archive/OpenSSL_1_1_0g.tar.gz'
@@ -82,11 +86,10 @@ $(OPENSSL).tar.gz:
 
 libcurl: libopenssl $(CURL).tar.gz
 	tar -zxvf $(CURL).tar.gz
-# XXX: disable shared?
-# Setting PKG_CONFIG_PATH should make libcurl find our previously built openssl
-	cd $(CURL) && PKG_CONFIG_PATH=$(DESTDIR)/usr/local/lib/pkgconfig ./configure \
+	cd $(CURL) && ./configure \
 		--enable-static \
-		--enable-shared \
+		--disable-shared \
+		--with-ssl=$(DESTDIR)/usr/local \
 		--with-pic \
 		--enable-ipv6 \
 		--enable-versioned-symbols \
