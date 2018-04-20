@@ -70,6 +70,7 @@ __PACKAGE__->mk_accessors( qw(_quat _dirty init
                               _legend_enabled
                               _warning_enabled
                               _apply_zoom_to_volumes_filter
+                              _mouse_dragging
                                                             
                               ) );
                               
@@ -146,6 +147,7 @@ sub new {
     $self->_warning_enabled(0);
     $self->use_plain_shader(0);
     $self->_apply_zoom_to_volumes_filter(0);
+    $self->_mouse_dragging(0);
 
     # Collection of GLVolume objects
     $self->volumes(Slic3r::GUI::_3DScene::GLVolume::Collection->new);
@@ -381,6 +383,8 @@ sub mouse_event {
     my $pos = Slic3r::Pointf->new($e->GetPositionXY);
     my $object_idx_selected = $self->{layer_height_edit_last_object_id} = ($self->layer_editing_enabled && $self->{print}) ? $self->_first_selected_object_id_for_variable_layer_height_editing : -1;
 
+    $self->_mouse_dragging($e->Dragging);
+    
     if ($e->Entering && &Wx::wxMSW) {
         # wxMSW needs focus in order to catch mouse wheel events
         $self->SetFocus;
@@ -1182,7 +1186,7 @@ sub Render {
     # Head light
     glLightfv_p(GL_LIGHT1, GL_POSITION, 1, 0, 1, 0);
     
-    if ($self->enable_picking) {
+    if ($self->enable_picking && !$self->_mouse_dragging) {
         if (my $pos = $self->_mouse_pos) {
             # Render the object for picking.
             # FIXME This cannot possibly work in a multi-sampled context as the color gets mangled by the anti-aliasing.
@@ -1281,10 +1285,7 @@ sub Render {
         # disable depth testing so that axes are not covered by ground
         glDisable(GL_DEPTH_TEST);
         my $origin = $self->origin;
-        my $axis_len = max(
-            0.3 * max(@{ $self->bed_bounding_box->size }),
-              2 * max(@{ $volumes_bb->size }),
-        );
+        my $axis_len = $self->use_plain_shader ? 0.3 * max(@{ $self->bed_bounding_box->size }) : 2 * max(@{ $volumes_bb->size });
         glLineWidth(2);
         glBegin(GL_LINES);
         # draw line for x axis
@@ -1330,8 +1331,8 @@ sub Render {
         glEnable(GL_CULL_FACE) if ($self->enable_picking);
     }
 
-    # draw cutting plane
     if (defined $self->cutting_plane_z) {
+        # draw cutting plane
         my $plane_z = $self->cutting_plane_z;
         my $bb = $volumes_bb;
         glDisable(GL_CULL_FACE);
@@ -1347,6 +1348,15 @@ sub Render {
         glEnd();
         glEnable(GL_CULL_FACE);
         glDisable(GL_BLEND);
+        
+        # draw cutting contours
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glLineWidth(2);
+        glColor3f(0, 0, 0);
+        glVertexPointer_c(3, GL_FLOAT, 0, $self->cut_lines_vertices->ptr());
+        glDrawArrays(GL_LINES, 0, $self->cut_lines_vertices->elements / 3);
+        glVertexPointer_c(3, GL_FLOAT, 0, 0);
+        glDisableClientState(GL_VERTEX_ARRAY);
     }
 
     # draw warning message
@@ -1393,18 +1403,10 @@ sub draw_volumes {
         $volume->render;
     }
     glDisableClientState(GL_NORMAL_ARRAY);
-    glDisable(GL_BLEND);
-
-    glEnable(GL_CULL_FACE);
-    
-    if (defined $self->cutting_plane_z) {
-        glLineWidth(2);
-        glColor3f(0, 0, 0);
-        glVertexPointer_c(3, GL_FLOAT, 0, $self->cut_lines_vertices->ptr());
-        glDrawArrays(GL_LINES, 0, $self->cut_lines_vertices->elements / 3);
-        glVertexPointer_c(3, GL_FLOAT, 0, 0);
-    }
     glDisableClientState(GL_VERTEX_ARRAY);
+    
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);    
 }
 
 sub mark_volumes_for_layer_height {
