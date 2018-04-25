@@ -163,6 +163,7 @@ sub thread_cleanup {
     *Slic3r::GUI::AppConfig::DESTROY        = sub {};
     *Slic3r::GUI::PresetBundle::DESTROY     = sub {};
     *Slic3r::GUI::Tab::DESTROY              = sub {};
+    *Slic3r::PresetUpdater::DESTROY         = sub {};
     return undef;  # this prevents a "Scalars leaked" warning
 }
 
@@ -278,5 +279,6 @@ sub system_info
 # this package declaration prevents an ugly fatal warning to be emitted when
 # spawning a new thread
 package GLUquadricObjPtr;
+package Wx::Printout;
 
 1;

@@ -39,16 +39,23 @@
 #include <wx/sizer.h>
 #include <wx/combo.h>
 #include <wx/window.h>
+#include <wx/msgdlg.h>
 #include <wx/settings.h>
 
 #include "wxExtensions.hpp"
 
 #include "Tab.hpp"
 #include "TabIface.hpp"
+#include "AboutDialog.hpp"
 #include "AppConfig.hpp"
+#include "ConfigSnapshotDialog.hpp"
 #include "Utils.hpp"
+#include "ConfigWizard.hpp"
 #include "Preferences.hpp"
 #include "PresetBundle.hpp"
+
+#include "../Utils/PresetUpdater.hpp"
+#include "../Config/Snapshot.hpp"
 
 namespace Slic3r { namespace GUI {
 
@@ -177,8 +184,10 @@ wxFrame     *g_wxMainFrame  = nullptr;
 wxNotebook  *g_wxTabPanel   = nullptr;
 AppConfig	*g_AppConfig	= nullptr;
 PresetBundle *g_PresetBundle= nullptr;
+PresetUpdater *g_PresetUpdater = nullptr;
 wxColour    g_color_label_modified;
 wxColour    g_color_label_sys;
+wxColour    g_color_label_default;
 
 std::vector<Tab *> g_tabs_list;
 
@@ -198,6 +207,7 @@ static void init_label_colours()
 		g_color_label_modified = wxColour(253, 111, 40);
 		g_color_label_sys = wxColour(115, 220, 103);
 	}
+	g_color_label_default = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 }
 
 void set_wxapp(wxApp *app)
@@ -224,6 +234,11 @@ void set_app_config(AppConfig *app_config)
 void set_preset_bundle(PresetBundle *preset_bundle)
 {
 	g_PresetBundle = preset_bundle;
+}
+
+void set_preset_updater(PresetUpdater *updater)
+{
+	g_PresetUpdater = updater;
 }
 
 std::vector<Tab *>& get_tabs_list()
@@ -349,26 +364,159 @@ void get_installed_languages(wxArrayString & names,
 	}
 }
 
-void add_debug_menu(wxMenuBar *menu, int event_language_change)
+enum ConfigMenuIDs {
+	ConfigMenuWizard,
+	ConfigMenuSnapshots,
+	ConfigMenuTakeSnapshot,
+	ConfigMenuUpdate,
+	ConfigMenuPreferences,
+	ConfigMenuLanguage,
+	ConfigMenuCnt,
+};
+
+void add_config_menu(wxMenuBar *menu, int event_preferences_changed, int event_language_change)
 {
-//#if 0
     auto local_menu = new wxMenu();
-	local_menu->Append(wxWindow::NewControlId(1), _(L("Change Application Language")));
-	local_menu->Bind(wxEVT_MENU, [event_language_change](wxEvent&){
-		wxArrayString names;
-		wxArrayLong identifiers;
-		get_installed_languages(names, identifiers);
-		if (select_language(names, identifiers)){
-			save_language();
-			show_info(g_wxTabPanel, _(L("Application will be restarted")), _(L("Attention!")));
-			if (event_language_change > 0) {
-				wxCommandEvent event(event_language_change);
-				g_wxApp->ProcessEvent(event);
+    wxWindowID config_id_base = wxWindow::NewControlId((int)ConfigMenuCnt);
+
+    const auto config_wizard_tooltip = wxString::Format(_(L("Run %s")), ConfigWizard::name());
+    // Cmd+, is standard on OS X - what about other operating systems?
+   	local_menu->Append(config_id_base + ConfigMenuWizard, 		ConfigWizard::name() + "\u2026", 		config_wizard_tooltip);
+   	local_menu->Append(config_id_base + ConfigMenuSnapshots, 	_(L("Configuration Snapshots\u2026")), 	_(L("Inspect / activate configuration snapshots")));
+   	local_menu->Append(config_id_base + ConfigMenuTakeSnapshot, _(L("Take Configuration Snapshot")), 	_(L("Capture a configuration snapshot")));
+   	local_menu->Append(config_id_base + ConfigMenuUpdate, 		_(L("Check for updates")), 				_(L("Check for configuration updates")));
+   	local_menu->AppendSeparator();
+   	local_menu->Append(config_id_base + ConfigMenuPreferences, 	_(L("Preferences\u2026\tCtrl+,")), 		_(L("Application preferences")));
+   	local_menu->AppendSeparator();
+   	local_menu->Append(config_id_base + ConfigMenuLanguage, 	_(L("Change Application Language")));
+	local_menu->Bind(wxEVT_MENU, [config_id_base, event_language_change, event_preferences_changed](wxEvent &event){
+		switch (event.GetId() - config_id_base) {
+		case ConfigMenuWizard:
+            config_wizard(ConfigWizard::RR_USER);
+            break;
+		case ConfigMenuTakeSnapshot:
+			// Take a configuration snapshot.
+			if (check_unsaved_changes()) {
+				wxTextEntryDialog dlg(nullptr, _(L("Taking configuration snapshot")), _(L("Snapshot name")));
+				if (dlg.ShowModal() == wxID_OK)
+					g_AppConfig->set("on_snapshot", 
+						Slic3r::GUI::Config::SnapshotDB::singleton().take_snapshot(
+							*g_AppConfig, Slic3r::GUI::Config::Snapshot::SNAPSHOT_USER, dlg.GetValue().ToUTF8().data()).id);
 			}
+			break;
+		case ConfigMenuSnapshots:
+			if (check_unsaved_changes()) {
+				std::string on_snapshot;
+		    	if (Config::SnapshotDB::singleton().is_on_snapshot(*g_AppConfig))
+		    		on_snapshot = g_AppConfig->get("on_snapshot");
+		    	ConfigSnapshotDialog dlg(Slic3r::GUI::Config::SnapshotDB::singleton(), on_snapshot);
+		    	dlg.ShowModal();
+		    	if (! dlg.snapshot_to_activate().empty()) {
+		    		if (! Config::SnapshotDB::singleton().is_on_snapshot(*g_AppConfig))
+		    			Config::SnapshotDB::singleton().take_snapshot(*g_AppConfig, Config::Snapshot::SNAPSHOT_BEFORE_ROLLBACK);
+		    		g_AppConfig->set("on_snapshot", 
+		    			Config::SnapshotDB::singleton().restore_snapshot(dlg.snapshot_to_activate(), *g_AppConfig).id);
+		    		g_PresetBundle->load_presets(*g_AppConfig);
+		    		// Load the currently selected preset into the GUI, update the preset selection box.
+					for (Tab *tab : g_tabs_list)
+						tab->load_current_preset();
+		    	}
+		    }
+		    break;
+		case ConfigMenuPreferences:
+		{
+			PreferencesDialog dlg(g_wxMainFrame, event_preferences_changed);
+			dlg.ShowModal();
+			break;
+		}
+		case ConfigMenuLanguage:
+		{
+			wxArrayString names;
+			wxArrayLong identifiers;
+			get_installed_languages(names, identifiers);
+			if (select_language(names, identifiers)) {
+				save_language();
+				show_info(g_wxTabPanel, _(L("Application will be restarted")), _(L("Attention!")));
+				if (event_language_change > 0) {
+					wxCommandEvent event(event_language_change);
+					g_wxApp->ProcessEvent(event);
+				}
+			}
+			break;
+		}		
 		}
 	});
-	menu->Append(local_menu, _(L("&Localization")));
-//#endif
+	menu->Append(local_menu, _(L("&Configuration")));
+}
+
+// This is called when closing the application, when loading a config file or when starting the config wizard
+// to notify the user whether he is aware that some preset changes will be lost.
+bool check_unsaved_changes()
+{
+	std::string dirty;
+	for (Tab *tab : g_tabs_list)
+		if (tab->current_preset_is_dirty())
+			if (dirty.empty())
+				dirty = tab->name();
+			else
+				dirty += std::string(", ") + tab->name();
+	if (dirty.empty())
+		// No changes, the application may close or reload presets.
+		return true;
+	// Ask the user.
+	auto dialog = new wxMessageDialog(g_wxMainFrame,
+		_(L("You have unsaved changes ")) + dirty + _(L(". Discard changes and continue anyway?")), 
+		_(L("Unsaved Presets")),
+		wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT);
+	return dialog->ShowModal() == wxID_YES;
+}
+
+bool config_wizard_startup(bool app_config_exists)
+{
+	if (! app_config_exists || g_PresetBundle->has_defauls_only()) {
+		config_wizard(ConfigWizard::RR_DATA_EMPTY);
+		return true;
+	} else if (g_AppConfig->legacy_datadir()) {
+		// Looks like user has legacy pre-vendorbundle data directory,
+		// explain what this is and run the wizard
+
+		const auto msg = _(L("Configuration update"));
+		const auto ext_msg = wxString::Format(
+			_(L(
+				"Slic3r PE now uses an updated configuration structure.\n\n"
+
+				"So called 'System presets' have been introduced, which hold the built-in default settings for various "
+				"printers. These System presets cannot be modified, instead, users now may create their"
+				"own presets inheriting settings from one of the System presets.\n"
+				"An inheriting preset may either inherit a particular value from its parent or override it with a customized value.\n\n"
+
+				"Please proceed with the %s that follows to set up the new presets "
+				"and to choose whether to enable automatic preset updates."
+			)),
+			ConfigWizard::name()
+		);
+		wxMessageDialog dlg(NULL, msg, _(L("Configuration update")), wxOK|wxCENTRE);
+		dlg.SetExtendedMessage(ext_msg);
+		const auto res = dlg.ShowModal();
+
+		config_wizard(ConfigWizard::RR_DATA_LEGACY);
+		return true;
+	}
+	return false;
+}
+
+void config_wizard(int reason)
+{
+    // Exit wizard if there are unsaved changes and the user cancels the action.
+    if (! check_unsaved_changes())
+    	return;
+
+	ConfigWizard wizard(nullptr, static_cast<ConfigWizard::RunReason>(reason));
+	wizard.run(g_PresetBundle, g_PresetUpdater);
+
+    // Load the currently selected preset into the GUI, update the preset selection box.
+	for (Tab *tab : g_tabs_list)
+		tab->load_current_preset();
 }
 
 void open_preferences_dialog(int event_preferences)
@@ -540,12 +688,21 @@ wxApp* get_app(){
 	return g_wxApp;
 }
 
+PresetBundle* get_preset_bundle()
+{
+	return g_PresetBundle;
+}
+
 const wxColour& get_modified_label_clr() {
 	return g_color_label_modified;
 }
 
 const wxColour& get_sys_label_clr() {
 	return g_color_label_sys;
+}
+
+const wxColour& get_default_label_clr() {
+	return g_color_label_default;
 }
 
 unsigned get_colour_approx_luma(const wxColour &colour)
@@ -634,8 +791,8 @@ void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFl
 {
 	DynamicPrintConfig*	config = &g_PresetBundle->prints.get_edited_preset().config;
 	m_optgroup = std::make_shared<ConfigOptionsGroup>(parent, "", config);
-	const wxArrayInt& ar = preset_sizer->GetColWidths();
-	m_optgroup->label_width = ar.IsEmpty() ? 100 : ar.front();
+//	const wxArrayInt& ar = preset_sizer->GetColWidths();
+// 	m_optgroup->label_width = ar.IsEmpty() ? 100 : ar.front(); // doesn't work
 	m_optgroup->m_on_change = [config](t_config_option_key opt_key, boost::any value){
 		TabPrint* tab_print = nullptr;
 		for (size_t i = 0; i < g_wxTabPanel->GetPageCount(); ++i) {
@@ -689,10 +846,9 @@ void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFl
 		tab_print->update_dirty();
 	};
 
-	const int width = 250;
 	Option option = m_optgroup->get_option("fill_density");
 	option.opt.sidetext = "";
-	option.opt.width = width;
+	option.opt.full_width = true;
 	m_optgroup->append_single_option_line(option);
 
 	ConfigOptionDef def;
@@ -711,7 +867,7 @@ void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFl
 		"Everywhere";
 	def.default_value = new ConfigOptionStrings { selection };
 	option = Option(def, "support");
-	option.opt.width = width;
+	option.opt.full_width = true;
 	m_optgroup->append_single_option_line(option);
 
 	m_brim_width = config->opt_float("brim_width");
@@ -750,7 +906,7 @@ void add_frequently_changed_parameters(wxWindow* parent, wxBoxSizer* sizer, wxFl
 
 
 
-	sizer->Add(m_optgroup->sizer, 0, wxEXPAND | wxBOTTOM | wxBottom, 1);
+	sizer->Add(m_optgroup->sizer, 1, wxEXPAND | wxBOTTOM, 2);
 }
 
 ConfigOptionsGroup* get_optgroup()
@@ -810,6 +966,11 @@ int get_export_option(wxFileDialog* dlg)
 
 }
 
+void about()
+{
+    AboutDialog dlg;
+    dlg.ShowModal();
+    dlg.Destroy();
+}
 
-} // namespace GUI
-} // namespace Slic3r
+} }
