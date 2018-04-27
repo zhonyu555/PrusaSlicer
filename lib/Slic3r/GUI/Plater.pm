@@ -663,6 +663,9 @@ sub load_files {
             Slic3r::GUI::show_error($self, $@) if $@;
             $_->load_current_preset for (values %{$self->GetFrame->{options_tabs}});
             wxTheApp->{app_config}->update_config_dir(dirname($input_file));
+            # forces the update of the config here, or it will invalidate the imported layer heights profile if done using the timer
+            # and if the config contains a "layer_height" different from the current defined one
+            $self->async_apply_config;
         }
         else
         {
@@ -1677,6 +1680,7 @@ sub update {
 
     $self->{canvas}->reload_scene if $self->{canvas};
     $self->{canvas3D}->reload_scene if $self->{canvas3D};
+    $self->{preview3D}->reset_gcode_preview_data if $self->{preview3D};
     $self->{preview3D}->reload_print if $self->{preview3D};
 }
 
@@ -1856,6 +1860,7 @@ sub object_cut_dialog {
 	    $self->remove($obj_idx);
 	    $self->load_model_objects(grep defined($_), @new_objects);
 	    $self->arrange;
+        $self->{canvas3D}->zoom_to_volumes if $self->{canvas3D};
 	}
 }
 
