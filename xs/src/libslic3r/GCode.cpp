@@ -1717,7 +1717,7 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
         // Retrieve the last start position for this object.
         float last_pos_weight = 1.f;
 		switch (seam_position) {
-		case spCustom:
+		case spCustom: {
 			// Seam is aligned to be nearest to the position of a "lambda-seam"-named modifier in this or any preceding layer
 			last_pos = m_layer->object()->bounding_box().center();
 			// Look for all lambda-seam-modifiers below current z, choose the highest one
@@ -1738,7 +1738,8 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
 				last_pos_weight = std::max(0.0, std::round(100 * ((v_lambda_seam->mesh.bounding_box().size().x / 2.0) - 0.5)));
 				if (last_pos_weight > 0.0)
 					break;
-			}			
+			}
+		}
 		case spAligned:
 			// Seam is aligned to the seam at the preceding layer.
 			if (m_layer != NULL && m_seam_position.count(m_layer->object()) > 0) {
