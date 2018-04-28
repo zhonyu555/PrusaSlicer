@@ -1717,6 +1717,28 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
         // Retrieve the last start position for this object.
         float last_pos_weight = 1.f;
 		switch (seam_position) {
+		case spCustom:
+			// Seam is aligned to be nearest to the position of a "lambda-seam"-named modifier in this or any preceding layer
+			last_pos = m_layer->object()->bounding_box().center();
+			// Look for all lambda-seam-modifiers below current z, choose the highest one
+			ModelVolume *v_lambda_seam = NULL;
+			for (ModelVolume *v : m_layer->object()->model_object()->volumes)
+				if (v->modifier && v->name == "lambda-seam" && v->mesh.bounding_box().min.z <= m_layer->print_z)
+					if (v_lambda_seam == NULL || (v->mesh.bounding_box().min.z > v_lambda_seam->mesh.bounding_box().min.z))
+						v_lambda_seam = v;
+
+			if (v_lambda_seam != NULL) {
+				// Found, get the center point and apply rotation and scaling of Model instance. Continues to spAligned if not found or Weight set to Zero.
+				Pointf3 lambda_pos = m_layer->object()->model_object()->instances.front()->transform_bounding_box(v_lambda_seam->mesh.bounding_box(), true).center();
+				// The center of the unrotated Boundingbox of the Model (which is the origin of Modifiers) may not be equal to the center of the Model (that's stored in last_pos right now),
+				// especially when the Model was rotated 45°. Now we compensate this
+				lambda_pos -= m_layer->object()->model_object()->raw_bounding_box().center();
+				last_pos += Point::new_scale(lambda_pos.x, lambda_pos.y);
+				// Weight is set by user and stored in the radius of the sphere
+				last_pos_weight = std::max(0.0, std::round(100 * ((v_lambda_seam->mesh.bounding_box().size().x / 2.0) - 0.5)));
+				if (last_pos_weight > 0.0)
+					break;
+			}			
 		case spAligned:
 			// Seam is aligned to the seam at the preceding layer.
 			if (m_layer != NULL && m_seam_position.count(m_layer->object()) > 0) {
@@ -1729,27 +1751,6 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
 			last_pos = m_layer->object()->bounding_box().center();			
 			last_pos.y += coord_t(3. * m_layer->object()->bounding_box().radius());
 			last_pos_weight = 5.f;
-			break;
-		case spCustom:
-			// Seam is aligned to be nearest to the position of a "lambda-seam"-named modifier in this or any preceding layer, or aligned to the seam at the preceding layer, if there is none.
-			last_pos = m_layer->object()->bounding_box().center();
-			// Look for all lambda-seam-modifiers below current z, choose the highest one
-			ModelVolume *v_lambda_seam = NULL;
-			for (ModelVolume *v : m_layer->object()->model_object()->volumes)
-				if (v->modifier && v->name == "lambda-seam" && v->mesh.bounding_box().min.z <= m_layer->print_z)
-					if (v_lambda_seam == NULL || (v->mesh.bounding_box().min.z > v_lambda_seam->mesh.bounding_box().min.z))
-						v_lambda_seam = v;
-
-			if (v_lambda_seam != NULL) {
-				// Found, get the center point and apply rotation and scaling of Model instance. Behaves like "nearest" if not found.
-				Pointf3 lambda_pos = m_layer->object()->model_object()->instances.front()->transform_bounding_box(v_lambda_seam->mesh.bounding_box(), true).center();
-				// The center of the unrotated Boundingbox of the Model (which is the origin of Modifiers) may not be equal to the center of the Model (that's stored in last_pos right now),
-				// especially when the Model was rotated 45°. Now we compensate this
-				lambda_pos -= m_layer->object()->model_object()->raw_bounding_box().center();
-				last_pos += Point::new_scale(lambda_pos.x, lambda_pos.y);
-				// Weight is set by user and stored in the radius of the sphere
-				last_pos_weight = 100 * ((v_lambda_seam->mesh.bounding_box().size().x / 2.0) - 0.5);
-			}
 			break;
         }
 
@@ -1827,7 +1828,7 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
         size_t idx_min = std::min_element(penalties.begin(), penalties.end()) - penalties.begin();
 
         // if (seam_position == spAligned)
-        // For all (aligned, nearest, rear) seams:
+        // For all (aligned, nearest, rear, custom) seams:
         {
             // Very likely the weight of idx_min is very close to the weight of last_pos_proj_idx.
             // In that case use last_pos_proj_idx instead.
@@ -1951,11 +1952,6 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
         point.rotate(angle, first_segment.a);
         
         // generate the travel move
-		gcode += m_writer.travel_to_xy(this->point_to_gcode(last_pos), "dartrax");
-		
-		//Pointf(unscale(point.x) + m_origin.x, unscale(point.y) + m_origin.y);
-
-
         gcode += m_writer.travel_to_xy(this->point_to_gcode(point), "move inwards before travel");
     }
     
