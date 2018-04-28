@@ -23,6 +23,7 @@ sub new {
         cyl_r => 1,
         cyl_h => 1,
         sph_rho => 1.0,
+        seam_w => 5.0,
         slab_h => 1.0,
         slab_z => 0.0,
     };
@@ -143,11 +144,29 @@ sub new {
     my $optgroup_seam;
     $optgroup_seam = $self->{optgroup_seam} = Slic3r::GUI::OptionsGroup->new(
         parent      => $self,
-        title       => 'Add preferred Seam-Position',
+        title       => 'Add custom Seam-Position...',
         on_change   => sub {
+            # Do validation
+            my ($opt_id) = @_;
+            if ($opt_id eq 'seam_w') {
+                if (!looks_like_number($optgroup_seam->get_value($opt_id))) {
+                    return 0;
+                }
+            }
+            $self->{object_parameters}->{$opt_id} = $optgroup_seam->get_value($opt_id);
         },
         label_width => 100,
     );
+    
+    $optgroup_seam->append_single_option_line(Slic3r::GUI::OptionsGroup::Option->new(
+        opt_id  =>  "seam_w",
+        label   =>  'Weight (0-99)',
+        tooltip =>  'Strength of influence on seam position. The higher the value, the steeper the overhangs which are ignored.',
+        min     =>  '0',
+        max     =>  '99',
+        type    =>  'i',
+        default =>  '5',
+    ));
 
     my $optgroup_slab;
     $optgroup_slab = $self->{optgroup_slab} = Slic3r::GUI::OptionsGroup->new(

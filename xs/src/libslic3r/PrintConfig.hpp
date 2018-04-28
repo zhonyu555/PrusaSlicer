@@ -37,7 +37,7 @@ enum SupportMaterialPattern {
 };
 
 enum SeamPosition {
-    spRandom, spNearest, spAligned, spRear
+    spRandom, spNearest, spAligned, spRear, spCustom
 };
 
 enum FilamentType {
@@ -97,7 +97,8 @@ template<> inline t_config_enum_values& ConfigOptionEnum<SeamPosition>::get_enum
         keys_map["random"]              = spRandom;
         keys_map["nearest"]             = spNearest;
         keys_map["aligned"]             = spAligned;
-        keys_map["rear"]                = spRear;
+		keys_map["rear"]				= spRear;
+		keys_map["custom"]				= spCustom;
     }
     return keys_map;
 }

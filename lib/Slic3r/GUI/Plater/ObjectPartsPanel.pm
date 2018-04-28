@@ -391,7 +391,7 @@ sub on_btn_lambda {
     } elsif ($type eq "sphere") {
         $mesh = Slic3r::TriangleMesh::sphere($params->{"sph_rho"});
 	} elsif ($type eq "seam") {
-        $mesh = Slic3r::TriangleMesh::sphere(1.0);
+        $mesh = Slic3r::TriangleMesh::sphere(0.5 + $params->{"seam_w"} * 0.01);
     } elsif ($type eq "slab") {
         $mesh = Slic3r::TriangleMesh::cube($self->{model_object}->bounding_box->size->x*1.5, $self->{model_object}->bounding_box->size->y*1.5, $params->{"slab_h"});
         # box sets the base coordinate at 0,0, move to center of plate and move it up to initial_z

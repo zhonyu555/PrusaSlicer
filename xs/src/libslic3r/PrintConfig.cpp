@@ -1257,20 +1257,24 @@ PrintConfigDef::PrintConfigDef()
     def = this->add("seam_position", coEnum);
     def->label = L("Seam position");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Position of perimeters starting points.");
+    def->tooltip = L("Position of perimeters starting points. When using Custom, define one or more lambda seam objects in Part Settings Dialog.");
     def->cli = "seam-position=s";
     def->enum_keys_map = &ConfigOptionEnum<SeamPosition>::get_enum_values();
     def->enum_values.push_back("random");
     def->enum_values.push_back("nearest");
     def->enum_values.push_back("aligned");
-    def->enum_values.push_back("rear");
+	def->enum_values.push_back("rear");
+	def->enum_values.push_back("custom");
     def->enum_labels.push_back("Random");
     def->enum_labels.push_back("Nearest");
     def->enum_labels.push_back("Aligned");
-    def->enum_labels.push_back("Rear"); 
+	def->enum_labels.push_back("Rear");
+	def->enum_labels.push_back("Custom");
     def->default_value = new ConfigOptionEnum<SeamPosition>(spAligned);
 
 #if 0
+	// Note: With a direction-setting, there is no possibility to place the seam inside a horseshoe-shape.
+	// Custom Location is better!
     def = this->add("seam_preferred_direction", coFloat);
 //    def->gui_type = "slider";
     def->label = L("Direction");
