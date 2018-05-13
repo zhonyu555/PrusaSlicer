@@ -285,7 +285,20 @@ sub new {
         $self->{print_file} = $self->export_gcode(Wx::StandardPaths::Get->GetTempDir());
     });
     EVT_BUTTON($self, $self->{btn_send_gcode}, sub {
-        $self->{send_gcode_file} = $self->export_gcode(Wx::StandardPaths::Get->GetTempDir());
+        my $filename = basename($self->{print}->output_filepath($main::opt{output}));
+        $filename = Wx::GetTextFromUser("Save to printer with the following name:",
+            "OctoPrint", $filename, $self);
+
+        if ($filename eq '') { # User hit cancel, so abort
+          return;
+        }
+
+        my $dialog = Wx::MessageDialog->new($self,
+            "Shall I start the print after uploading the file?",
+            'OctoPrint', wxICON_QUESTION | wxYES | wxNO);
+        $self->{send_gcode_file_print} = ($dialog->ShowModal() == wxID_YES);
+
+        $self->{send_gcode_file} = $self->export_gcode(Wx::StandardPaths::Get->GetTempDir() . "/$filename");
     });
     EVT_BUTTON($self, $self->{btn_reslice}, \&reslice);
     EVT_BUTTON($self, $self->{btn_export_stl}, \&export_stl);
@@ -1393,6 +1406,7 @@ sub export_gcode {
         $self->statusbar->SetStatusText(L("Export cancelled"));
         $self->{export_gcode_output_file} = undef;
         $self->{send_gcode_file} = undef;
+        $self->{send_gcode_file_print} = undef;
         
         # this updates buttons status
         $self->object_list_changed;
@@ -1507,7 +1521,7 @@ sub on_export_completed {
     # Send $self->{send_gcode_file} to OctoPrint.
     if ($send_gcode) {
         my $op = Slic3r::OctoPrint->new($self->{config});
-        if ($op->send_gcode($self->{send_gcode_file})) {
+        if ($op->send_gcode($self->{send_gcode_file}, $self->{send_gcode_file_print})) {
             $self->statusbar->SetStatusText(L("OctoPrint upload finished."));
         } else {
             $self->statusbar->SetStatusText("");
@@ -1516,6 +1530,7 @@ sub on_export_completed {
 
     $self->{print_file} = undef;
     $self->{send_gcode_file} = undef;
+    $self->{send_gcode_file_print} = undef;
     $self->{"print_info_cost"}->SetLabel(sprintf("%.2f" , $self->{print}->total_cost));
     $self->{"print_info_fil_g"}->SetLabel(sprintf("%.2f" , $self->{print}->total_weight));
     $self->{"print_info_fil_mm3"}->SetLabel(sprintf("%.2f" , $self->{print}->total_extruded_volume));
