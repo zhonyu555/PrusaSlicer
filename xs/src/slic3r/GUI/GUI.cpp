@@ -443,8 +443,13 @@ void config_wizard(int reason)
     if (! check_unsaved_changes())
     	return;
 
-	ConfigWizard wizard(nullptr, static_cast<ConfigWizard::RunReason>(reason));
-	wizard.run(g_PresetBundle, g_PresetUpdater);
+	try {
+		ConfigWizard wizard(nullptr, static_cast<ConfigWizard::RunReason>(reason));
+		wizard.run(g_PresetBundle, g_PresetUpdater);
+	}
+	catch (const std::exception &e) {
+		show_error(nullptr, e.what());
+	}
 
     // Load the currently selected preset into the GUI, update the preset selection box.
 	for (Tab *tab : g_tabs_list)
