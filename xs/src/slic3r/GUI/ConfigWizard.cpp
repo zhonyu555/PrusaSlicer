@@ -598,10 +598,10 @@ void ConfigWizardIndex::on_paint(wxPaintEvent & evt)
 
 static const std::unordered_map<std::string, std::pair<std::string, std::string>> legacy_preset_map {{
 	{ "Original Prusa i3 MK2.ini",                           std::make_pair("MK2S", "0.4") },
-	{ "Original Prusa i3 MK2 MM Single Mode.ini",            std::make_pair("MK2S", "0.4") },
-	{ "Original Prusa i3 MK2 MM Single Mode 0.6 nozzle.ini", std::make_pair("MK2S", "0.6") },
-	{ "Original Prusa i3 MK2 MultiMaterial.ini",             std::make_pair("MK2S", "0.4") },
-	{ "Original Prusa i3 MK2 MultiMaterial 0.6 nozzle.ini",  std::make_pair("MK2S", "0.6") },
+	{ "Original Prusa i3 MK2 MM Single Mode.ini",            std::make_pair("MK2SMM", "0.4") },
+	{ "Original Prusa i3 MK2 MM Single Mode 0.6 nozzle.ini", std::make_pair("MK2SMM", "0.6") },
+	{ "Original Prusa i3 MK2 MultiMaterial.ini",             std::make_pair("MK2SMM", "0.4") },
+	{ "Original Prusa i3 MK2 MultiMaterial 0.6 nozzle.ini",  std::make_pair("MK2SMM", "0.6") },
 	{ "Original Prusa i3 MK2 0.25 nozzle.ini",               std::make_pair("MK2S", "0.25") },
 	{ "Original Prusa i3 MK2 0.6 nozzle.ini",                std::make_pair("MK2S", "0.6") },
 	{ "Original Prusa i3 MK3.ini",                           std::make_pair("MK3",  "0.4") },
