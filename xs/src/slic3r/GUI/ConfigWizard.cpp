@@ -113,6 +113,11 @@ PrinterPicker::PrinterPicker(wxWindow *parent, const VendorProfile &vendor, cons
 	sizer->Add(all_none_sizer, 0, wxEXPAND);
 
 	SetSizer(sizer);
+
+	if (cboxes.size() > 0) {
+		cboxes[0]->SetValue(true);
+		on_checkbox(cboxes[0], true);
+	}
 }
 
 void PrinterPicker::select_all(bool select)
