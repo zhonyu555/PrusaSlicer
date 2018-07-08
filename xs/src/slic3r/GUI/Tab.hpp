@@ -318,7 +318,8 @@ class TabPrinter : public Tab
 	bool		m_has_single_extruder_MM_page = false;
 public:
 	wxButton*	m_serial_test_btn;
-	wxButton*	m_octoprint_host_test_btn;
+	wxButton*	m_print_host_test_btn;
+	wxButton*	m_printhost_browse_btn;
 
 	size_t		m_extruders_count;
 	size_t		m_extruders_count_old = 0;
