@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/align/aligned_allocator.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/nowide/fstream.hpp>
 
@@ -319,7 +320,7 @@ namespace Slic3r {
 
         typedef std::map<int, ModelObject*> IdToModelObjectMap;
         typedef std::map<int, ComponentsList> IdToAliasesMap;
-        typedef std::vector<Instance> InstancesList;
+        typedef std::vector<Instance, boost::alignment::aligned_allocator<Instance, 16>> InstancesList;
         typedef std::map<int, ObjectMetadata> IdToMetadataMap;
         typedef std::map<int, Geometry> IdToGeometryMap;
         typedef std::map<int, std::vector<coordf_t>> IdToLayerHeightsProfileMap;
