@@ -464,6 +464,13 @@ void GLCanvas3DManager::set_viewport_from_scene(wxGLCanvas* canvas, wxGLCanvas* 
     }
 }
 
+void GLCanvas3DManager::zoom_fixed_inout(wxGLCanvas* canvas, const std::string& direction)
+{
+    CanvasesMap::iterator it = _get_canvas(canvas);
+    if (it != m_canvases.end())
+        it->second->zoom_fixed_inout(direction);
+}
+
 void GLCanvas3DManager::update_volumes_colors_by_extruder(wxGLCanvas* canvas)
 {
     CanvasesMap::const_iterator it = _get_canvas(canvas);

@@ -2052,6 +2052,28 @@ float GLCanvas3D::get_camera_zoom() const
     return m_camera.zoom;
 }
 
+void GLCanvas3D::zoom_fixed_inout(const std::string& direction)
+{
+    float zoom = 0;
+
+    if (direction == "in") {
+        zoom = get_camera_zoom() / (1.0 - 0.3);
+    }
+    else if (direction == "out") {
+        zoom = get_camera_zoom() / (1.0 + 0.3);
+    }
+
+    // Don't allow to zoom too far outside the scene.
+    float zoom_min = _get_zoom_to_bounding_box_factor(_max_bounding_box());
+    if (zoom_min > 0.0f)
+        zoom = std::max(zoom, zoom_min * 0.8f);
+
+    m_camera.zoom = zoom;
+    m_on_viewport_changed_callback.call();
+
+    _refresh_if_shown_on_screen();
+}
+
 BoundingBoxf3 GLCanvas3D::volumes_bounding_box() const
 {
     BoundingBoxf3 bb;

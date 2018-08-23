@@ -470,6 +470,13 @@ set_viewport_from_scene(canvas, other)
         _3DScene::set_viewport_from_scene((wxGLCanvas*)wxPli_sv_2_object(aTHX_ canvas, "Wx::GLCanvas"), (wxGLCanvas*)wxPli_sv_2_object(aTHX_ other, "Wx::GLCanvas"));
 
 void
+zoom_fixed_inout(canvas, direction)
+        SV          *canvas;
+        std::string direction;
+    CODE:
+        _3DScene::zoom_fixed_inout((wxGLCanvas*)wxPli_sv_2_object(aTHX_ canvas, "Wx::GLCanvas"), direction);
+
+void
 update_volumes_colors_by_extruder(canvas)
         SV *canvas;
     CODE:

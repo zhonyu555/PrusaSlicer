@@ -120,6 +120,8 @@ public:
     void select_view(wxGLCanvas* canvas, const std::string& direction);
     void set_viewport_from_scene(wxGLCanvas* canvas, wxGLCanvas* other);
 
+    void zoom_fixed_inout(wxGLCanvas* canvas, const std::string& direction);
+
     void update_volumes_colors_by_extruder(wxGLCanvas* canvas);
     void update_gizmos_data(wxGLCanvas* canvas);
 

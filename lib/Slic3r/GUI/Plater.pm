@@ -2400,6 +2400,18 @@ sub select_view {
     }
 }
 
+sub zoom{
+    my ($self, $direction) = @_;
+    #Apply Zoom to the current active tab
+    my $idx_page = $self->{preview_notebook}->GetSelection;
+    my $page = ($idx_page == &Wx::wxNOT_FOUND) ? L('3D') : $self->{preview_notebook}->GetPageText($idx_page);
+    if ($page eq L('Preview')) {
+        Slic3r::GUI::_3DScene::zoom_fixed_inout($self->{preview3D}->canvas, $direction);
+    } else {
+        Slic3r::GUI::_3DScene::zoom_fixed_inout($self->{canvas3D}, $direction);
+    }
+}
+
 package Slic3r::GUI::Plater::DropTarget;
 use Wx::DND;
 use base 'Wx::FileDropTarget';
