@@ -7,7 +7,7 @@
 #include <atomic>
 #include <iostream>
 
-#include "IProgressIndicator.hpp"
+#include "ProgressIndicator.hpp"
 
 namespace Slic3r {
 
@@ -15,6 +15,7 @@ class Model;
 class Print;
 class PrintObject;
 class PrintConfig;
+class ProgressStatusBar;
 
 
 /**
@@ -33,7 +34,7 @@ class AppControllerBoilerplate {
 public:
 
     /// A Progress indicator object smart pointer
-    using ProgresIndicatorPtr = std::shared_ptr<IProgressIndicator>;
+    using ProgresIndicatorPtr = std::shared_ptr<ProgressIndicator>;
 
 private:
     class PriData;   // Some structure to store progress indication data
@@ -255,8 +256,7 @@ public:
      * @param gauge_id The ID of the gague widget of the status bar.
      * @param statusbar_id The ID of the status bar.
      */
-    void set_global_progress_indicator(unsigned gauge_id,
-                                          unsigned statusbar_id);
+    void set_global_progress_indicator(ProgressStatusBar *prs);
 
     void arrange_model();
 };
