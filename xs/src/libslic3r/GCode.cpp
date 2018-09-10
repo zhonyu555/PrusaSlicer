@@ -1393,8 +1393,9 @@ void GCode::process_layer(
             // - we group all extrusions by extruder so that we minimize toolchanges
             // - we start from the last used extruder
             // - for each extruder, we group extrusions by island
-            // - for each island, we extrude perimeters first, unless user set the infill_first
-            //   option
+            // - for each island, we extrude the infill for any regions with the infill_first
+            //   option set, then all of the perimeters, then the infill for any regions with
+            //   the infill_first option unset.
             // (Still, we have to keep track of regions because we need to apply their config)
             size_t n_slices = layer.slices.expolygons.size();
             std::vector<BoundingBox> layer_surface_bboxes;
@@ -1565,12 +1566,21 @@ void GCode::process_layer(
                     for (ObjectByExtruder::Island &island : object_by_extruder.islands) {
                         const auto& by_region_specific = const_cast<LayerTools&>(layer_tools).wiping_extrusions().is_anything_overridden() ? island.by_region_per_copy(copy_id, extruder_id, print_wipe_extrusions) : island.by_region;
 
-                        if (print.config.infill_first) {
-                            gcode += this->extrude_infill(print, by_region_specific);
-                            gcode += this->extrude_perimeters(print, by_region_specific, lower_layer_edge_grids[layer_id]);
-                        } else {
-                            gcode += this->extrude_perimeters(print, by_region_specific, lower_layer_edge_grids[layer_id]);
-                            gcode += this->extrude_infill(print,by_region_specific);
+                        for (const ObjectByExtruder::Island::Region &region : by_region_specific) {
+                            if (print.regions[&region - &by_region_specific.front()]->config.infill_first) {
+                                m_config.apply(print.regions[&region - &by_region_specific.front()]->config);
+                                gcode += this->extrude_infill(print, region);
+                            }
+                        }
+                        for (const ObjectByExtruder::Island::Region &region : by_region_specific) {
+                            m_config.apply(print.regions[&region - &by_region_specific.front()]->config);
+                            gcode += this->extrude_perimeters(print, region, lower_layer_edge_grids[layer_id]);
+                        }
+                        for (const ObjectByExtruder::Island::Region &region : by_region_specific) {
+                            if (!print.regions[&region - &by_region_specific.front()]->config.infill_first) {
+                                m_config.apply(print.regions[&region - &by_region_specific.front()]->config);
+                                gcode += this->extrude_infill(print, region);
+                            }
                         }
                     }
                     ++copy_id;
@@ -2196,33 +2206,27 @@ std::string GCode::extrude_path(ExtrusionPath path, std::string description, dou
 }
 
 // Extrude perimeters: Decide where to put seams (hide or align seams).
-std::string GCode::extrude_perimeters(const Print &print, const std::vector<ObjectByExtruder::Island::Region> &by_region, std::unique_ptr<EdgeGrid::Grid> &lower_layer_edge_grid)
+std::string GCode::extrude_perimeters(const Print &print, const ObjectByExtruder::Island::Region &region, std::unique_ptr<EdgeGrid::Grid> &lower_layer_edge_grid)
 {
     std::string gcode;
-    for (const ObjectByExtruder::Island::Region &region : by_region) {
-        m_config.apply(print.regions[&region - &by_region.front()]->config);
-        for (ExtrusionEntity *ee : region.perimeters.entities)
-            gcode += this->extrude_entity(*ee, "perimeter", -1., &lower_layer_edge_grid);
-    }
+    for (ExtrusionEntity *ee : region.perimeters.entities)
+        gcode += this->extrude_entity(*ee, "perimeter", -1., &lower_layer_edge_grid);
     return gcode;
 }
 
 // Chain the paths hierarchically by a greedy algorithm to minimize a travel distance.
-std::string GCode::extrude_infill(const Print &print, const std::vector<ObjectByExtruder::Island::Region> &by_region)
+std::string GCode::extrude_infill(const Print &print, const ObjectByExtruder::Island::Region &region)
 {
     std::string gcode;
-    for (const ObjectByExtruder::Island::Region &region : by_region) {
-        m_config.apply(print.regions[&region - &by_region.front()]->config);
-		ExtrusionEntityCollection chained = region.infills.chained_path_from(m_last_pos, false);
-        for (ExtrusionEntity *fill : chained.entities) {
-            auto *eec = dynamic_cast<ExtrusionEntityCollection*>(fill);
-            if (eec) {
-				ExtrusionEntityCollection chained2 = eec->chained_path_from(m_last_pos, false);
-				for (ExtrusionEntity *ee : chained2.entities)
-                    gcode += this->extrude_entity(*ee, "infill");
-            } else
-                gcode += this->extrude_entity(*fill, "infill");
-        }
+	ExtrusionEntityCollection chained = region.infills.chained_path_from(m_last_pos, false);
+    for (ExtrusionEntity *fill : chained.entities) {
+        auto *eec = dynamic_cast<ExtrusionEntityCollection*>(fill);
+        if (eec) {
+            ExtrusionEntityCollection chained2 = eec->chained_path_from(m_last_pos, false);
+            for (ExtrusionEntity *ee : chained2.entities)
+                gcode += this->extrude_entity(*ee, "infill");
+        } else
+            gcode += this->extrude_entity(*fill, "infill");
     }
     return gcode;
 }
