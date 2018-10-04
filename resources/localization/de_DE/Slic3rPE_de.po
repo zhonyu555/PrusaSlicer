@@ -302,7 +302,7 @@ msgstr "Ein Daumenwert ist 160 bis 230 °C für PLA, und 215 bis 250 °C für AB
 
 #: xs/src/slic3r/GUI/ConfigWizard.cpp:494
 msgid "A rule of thumb is 60 °C for PLA and 110 °C for ABS. Leave zero if you have no heated bed."
-msgstr "Ein Daumenwert ist 60 °C für PLA und 110 °C für ABS. Auf 0 setzen, falls kein beheiztes Bett vorhanden ist."
+msgstr "Ein Daumenwert ist 60 °C für PLA und 110 °C für ABS. Auf 0 setzen, falls kein beheiztes Druckbett vorhanden ist."
 
 #: xs/src/slic3r/GUI/AboutDialog.cpp:32
 msgid "About Slic3r"
@@ -540,7 +540,7 @@ msgstr "Druckbetttemperatur"
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:39
 msgid "Bed temperature for layers after the first one. Set this to zero to disable bed temperature control commands in the output."
-msgstr "Druckbett-Temperatur für Schichten nach der ersten Schicht. Setzen Sie diesen Wert auf Null, um die Befehle zur Steuerung der Betttemperatur im Output zu deaktivieren."
+msgstr "Druckbetttemperatur für Schichten nach der ersten Schicht. Setzen Sie diesen Wert auf Null, um die Befehle zur Steuerung der Betttemperatur im Output zu deaktivieren."
 
 #: xs/src/slic3r/GUI/ConfigWizard.cpp:497
 msgid "Bed Temperature:"
@@ -1068,7 +1068,7 @@ msgstr "Stelle die vertikale Hüllenstärke sicher"
 
 #: xs/src/slic3r/GUI/ConfigWizard.cpp:493
 msgid "Enter the bed temperature needed for getting your filament to stick to your heated bed."
-msgstr "Geben Sie die Betttemperatur ein, die erforderlich ist, damit Ihr Filament an Ihrem beheizten Bett haftet."
+msgstr "Geben Sie die Druckbetttemperatur ein, die erforderlich ist, damit Ihr Filament an Ihrem beheizten Bett haftet."
 
 #: xs/src/slic3r/GUI/ConfigWizard.cpp:441
 msgid "Enter the diameter of your filament."
@@ -3036,7 +3036,7 @@ msgstr "Anzahl der Kopien angeben…"
 
 #: xs/src/slic3r/GUI/ConfigWizard.cpp:398
 msgid "Set the shape of your printer's bed."
-msgstr "Stellen Sie die Konturen Ihres Druckerbettes ein."
+msgstr "Stellen Sie die Konturen Ihres Druckbettes ein."
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:378
 msgid "Set this to a non-zero value to allow a manual extrusion width. If left to zero, Slic3r derives extrusion widths from the nozzle diameter (see the tooltips for perimeter extrusion width, infill extrusion width etc). If expressed as percentage (for example: 230%), it will be computed over layer height."
@@ -3755,7 +3755,7 @@ msgstr ""
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:60
 msgid "This code is inserted between objects when using sequential printing. By default extruder and bed temperature are reset using non-wait command; however if M104, M109, M140 or M190 are detected in this custom code, Slic3r will not add temperature commands. Note that you can use placeholder variables for all Slic3r settings, so you can put a \"M109 S[first_layer_temperature]\" command wherever you want."
-msgstr "Dieser Code wird beim sequentiellen Drucken zwischen Objekten eingefügt. Standardmäßig werden Extruder- und Betttemperatur mit dem Befehl, der nicht auf die Änderung wartet, zurückgesetzt. Wenn jedoch M104, M109, M140 oder M190 in diesem benutzerdefinierten Code erkannt werden, fügt Slic3r keine Temperaturbefehle hinzu. Beachten Sie, dass Sie Platzhaltervariablen für alle Slic3r-Einstellungen verwenden können, so dass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
+msgstr "Dieser Code wird beim sequentiellen Drucken zwischen Objekten eingefügt. Standardmäßig werden Extruder- und Druckbetttemperatur mit dem Befehl, der nicht auf die Änderung wartet, zurückgesetzt. Wenn jedoch M104, M109, M140 oder M190 in diesem benutzerdefinierten Code erkannt werden, fügt Slic3r keine Temperaturbefehle hinzu. Beachten Sie, dass Sie Platzhaltervariablen für alle Slic3r-Einstellungen verwenden können, so dass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:767
 msgid "This custom code is inserted at every layer change, right after the Z move and before the extruder moves to the first layer point. Note that you can use placeholder variables for all Slic3r settings as well as [layer_num] and [layer_z]."
@@ -3933,7 +3933,7 @@ msgstr "Dieser Startvorgang wird am Anfang nach dem G-Code für den Druckerstart
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:1343
 msgid "This start procedure is inserted at the beginning, after bed has reached the target temperature and extruder just started heating, and before extruder has finished heating. If Slic3r detects M104 or M190 in your custom codes, such commands will not be prepended automatically so you're free to customize the order of heating commands and other custom actions. Note that you can use placeholder variables for all Slic3r settings, so you can put a \"M109 S[first_layer_temperature]\" command wherever you want."
-msgstr "Dieser Startvorgang wird am Anfang eingefügt, nachdem das Heizbett die Zieltemperatur erreicht hat und der Extruder gerade erst mit dem Aufheizen begonnen hat, und bevor der Extruder fertig aufgeheizt ist. Falls Slic3r M104 oder M190 in Ihren benutzerdefinierten Codes erkennt, werden solche Befehle nicht automatisch vorangestellt, sodass Sie die Reihenfolge der Heizbefehle und anderer benutzerdefinierter Aktionen anpassen können. Beachten Sie, dass Sie Platzhaltervariablen für alle Slic3r-Einstellungen verwenden können, sodass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
+msgstr "Dieser Startvorgang wird am Anfang eingefügt, nachdem das Druckbett die Zieltemperatur erreicht hat und der Extruder gerade erst mit dem Aufheizen begonnen hat, und bevor der Extruder fertig aufgeheizt ist. Falls Slic3r M104 oder M190 in Ihren benutzerdefinierten Codes erkennt, werden solche Befehle nicht automatisch vorangestellt, sodass Sie die Reihenfolge der Heizbefehle und anderer benutzerdefinierter Aktionen anpassen können. Beachten Sie, dass Sie Platzhaltervariablen für alle Slic3r-Einstellungen verwenden können, sodass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
 
 #: xs/src/libslic3r/PrintConfig.cpp:487
 msgid "This string is edited by RammingDialog and contains ramming specific parameters "
