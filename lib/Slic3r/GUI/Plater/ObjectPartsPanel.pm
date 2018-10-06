@@ -39,7 +39,7 @@ sub new {
     };
 
     # create TreeCtrl
-    my $tree = $self->{tree} = Wx::TreeCtrl->new($self, -1, wxDefaultPosition, [300, 100], 
+    my $tree = $self->{tree} = Wx::TreeCtrl->new($self, -1, wxDefaultPosition, [300, 100],
         wxTR_NO_BUTTONS | wxSUNKEN_BORDER | wxTR_HAS_VARIABLE_ROW_HEIGHT
         | wxTR_SINGLE);
     {
@@ -63,6 +63,7 @@ sub new {
     $self->{btn_split} = Wx::Button->new($self, -1, "Split part", wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
     $self->{btn_move_up} = Wx::Button->new($self, -1, "", wxDefaultPosition, [40, -1], wxBU_LEFT);
     $self->{btn_move_down} = Wx::Button->new($self, -1, "", wxDefaultPosition, [40, -1], wxBU_LEFT);
+    $self->{btn_toogle_modifier} = Wx::Button->new($self, -1, "Toogle modifier", wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
     $self->{btn_load_part}->SetBitmap(Wx::Bitmap->new(Slic3r::var("brick_add.png"), wxBITMAP_TYPE_PNG));
     $self->{btn_load_modifier}->SetBitmap(Wx::Bitmap->new(Slic3r::var("brick_add.png"), wxBITMAP_TYPE_PNG));
     $self->{btn_load_lambda_modifier}->SetBitmap(Wx::Bitmap->new(Slic3r::var("brick_add.png"), wxBITMAP_TYPE_PNG));
@@ -71,8 +72,9 @@ sub new {
     $self->{btn_move_up}->SetBitmap(Wx::Bitmap->new(Slic3r::var("bullet_arrow_up.png"), wxBITMAP_TYPE_PNG));
     $self->{btn_move_down}->SetBitmap(Wx::Bitmap->new(Slic3r::var("bullet_arrow_down.png"), wxBITMAP_TYPE_PNG));
     
+    $self->{btn_toogle_modifier}->SetBitmap(Wx::Bitmap->new(Slic3r::var("plugin.png"), wxBITMAP_TYPE_PNG));
     # buttons sizer
-    my $buttons_sizer = Wx::GridSizer->new(2, 3);
+    my $buttons_sizer = Wx::GridSizer->new(3, 3);
     $buttons_sizer->Add($self->{btn_load_part}, 0, wxEXPAND | wxBOTTOM | wxRIGHT, 5);
     $buttons_sizer->Add($self->{btn_load_modifier}, 0, wxEXPAND | wxBOTTOM | wxRIGHT, 5);
     $buttons_sizer->Add($self->{btn_load_lambda_modifier}, 0, wxEXPAND | wxBOTTOM, 5);
@@ -84,6 +86,7 @@ sub new {
         $up_down_sizer->Add($self->{btn_move_down}, 0, wxEXPAND, 5);
         $buttons_sizer->Add($up_down_sizer, 0, wxEXPAND, 5);
     }
+    $buttons_sizer->Add($self->{btn_toogle_modifier}, 2, wxEXPAND | wxBOTTOM | wxRIGHT, 5);
     $self->{btn_load_part}->SetFont($Slic3r::GUI::small_font);
     $self->{btn_load_modifier}->SetFont($Slic3r::GUI::small_font);
     $self->{btn_load_lambda_modifier}->SetFont($Slic3r::GUI::small_font);
@@ -92,6 +95,7 @@ sub new {
     $self->{btn_move_up}->SetFont($Slic3r::GUI::small_font);
     $self->{btn_move_down}->SetFont($Slic3r::GUI::small_font);
     
+    $self->{btn_toogle_modifier}->SetFont($Slic3r::GUI::small_font);
     # part settings panel
     $self->{settings_panel} = Slic3r::GUI::Plater::OverrideSettingsPanel->new($self, on_change => sub {
         my ($key, $value) = @_;
@@ -211,6 +215,7 @@ sub new {
         }
     });
     
+    EVT_BUTTON($self, $self->{btn_toogle_modifier}, \&on_btn_toggle_modifier);
     $self->reload_tree;
     
     return $self;
@@ -281,7 +286,7 @@ sub selection_changed {
     }
     
     # disable things as if nothing is selected
-    $self->{'btn_' . $_}->Disable for (qw(delete move_up move_down split));
+    $self->{'btn_' . $_}->Disable for (qw(delete move_up move_down split toogle_modifier));
     $self->{settings_panel}->disable;
     $self->{settings_panel}->set_config(undef);
 
@@ -311,6 +316,7 @@ sub selection_changed {
             }
             $self->{btn_delete}->Enable;
             $self->{btn_split}->Enable;
+            $self->{btn_toogle_modifier}->Enable;
             $self->{btn_move_up}->Enable if $itemData->{volume_id} > 0;
             $self->{btn_move_down}->Enable if $itemData->{volume_id} + 1 < $self->{model_object}->volumes_count;
             
@@ -553,6 +559,26 @@ sub on_btn_split {
     }
     
     $self->_parts_changed;
+}
+
+sub on_btn_toggle_modifier {
+    my ($self) = @_;
+
+    my $itemData = $self->get_selection;
+    if ($itemData && $itemData->{type} eq 'volume') {
+        my $volume = $self->{model_object}->volumes->[$itemData->{volume_id}];
+
+        if (!$volume->modifier && scalar(grep !$_->modifier, @{$self->{model_object}->volumes}) == 1) {
+            Slic3r::GUI::show_error($self, "You can't change the last solid part from this object to a modifier.");
+            return;
+        }
+
+        $volume->set_modifier(!$volume->modifier());
+
+        $self->{parts_changed} = 1;
+    }
+
+   $self->_parts_changed;
 }
 
 sub _parts_changed {
