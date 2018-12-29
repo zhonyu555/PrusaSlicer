@@ -374,7 +374,7 @@ msgstr "Avanzado: salida del log avrdude"
 #: c:\src\Slic3r\xs\src\slic3r\GUI\Tab.cpp:1138
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:766
 msgid "After layer change G-code"
-msgstr "Código G tras  un cambio de capa"
+msgstr "Código G tras un cambio de capa"
 
 #: c:\src\Slic3r\xs\src\slic3r\GUI\Tab.cpp:1636
 msgid "All"
@@ -3950,7 +3950,7 @@ msgstr "Este valor será añadido (o eliminado) de todas las coordenadas Z en el
 
 #: xs/src/libslic3r/PrintConfig.cpp:1808
 msgid "This vector saves required volumes to change from/to each tool used on the wipe tower. These values are used to simplify creation of the full purging volumes below. "
-msgstr "Este vector guarda los volúmenes necesarios para cambiar  desde/hasta cada herramienta usada en la torre de limpieza. Estos valores se emplean para simplificar la creación de los volúmenes totales de purga más abajo. "
+msgstr "Este vector guarda los volúmenes necesarios para cambiar desde/hasta cada herramienta usada en la torre de limpieza. Estos valores se emplean para simplificar la creación de los volúmenes totales de purga más abajo. "
 
 #: xs/src/slic3r/GUI/UpdateDialogs.cpp:111
 msgid ""
