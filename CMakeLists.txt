@@ -20,6 +20,10 @@ else()
 	endif()
 endif()
 
+IF(UNIX)
+    INCLUDE(GNUInstallDirs)
+ENDIF(UNIX)
+
 option(SLIC3R_STATIC 			"Compile Slic3r with static libraries (Boost, TBB, glew)" ${SLIC3R_STATIC_INITIAL})
 option(SLIC3R_GUI    			"Compile Slic3r with GUI components (OpenGL, wxWidgets)" 1)
 option(SLIC3R_PROFILE 			"Compile Slic3r with an invasive Shiny profiler" 0)
