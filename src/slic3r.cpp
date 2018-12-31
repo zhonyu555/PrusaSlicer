@@ -34,6 +34,8 @@
 
 #include "slic3r/GUI/GUI.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
+// generated header with compile time configurations
+#include <slic3r_generated_config.h>
 
 using namespace Slic3r;
 
@@ -77,6 +79,10 @@ int main(int argc, char **argv)
     // The resources are packed to 'resources'
     // Path from Slic3r binary to resources:
     boost::filesystem::path path_resources = path_to_binary.parent_path() / "resources";
+#elif defined RESOURCE_PATH
+    //The application is not being packed but built and installed from source
+    //get the resource path from compile time config
+    boost::filesystem::path path_resources = RESOURCE_PATH;
 #else
     // The application is packed in the .tar.bz archive (or in AppImage) as 'bin/slic3r',
     // The resources are packed to 'resources'

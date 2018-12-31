@@ -62,6 +62,10 @@ if (SLIC3R_GUI)
     include(${wxWidgets_USE_FILE})
 endif()
 
+#creating a header for configuration variables from cmake to be compiled in
+CONFIGURE_FILE(slic3r_generated_config.h.in slic3r_generated_config.h)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 add_subdirectory(slic3r)
 
 # Create a slic3r executable
@@ -189,4 +193,5 @@ else ()
     )
 endif()
 
+#install slic3r into the filesystem
 INSTALL(TARGETS slic3r RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
