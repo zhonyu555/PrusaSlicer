@@ -2321,7 +2321,11 @@ void Tab::load_current_preset()
                     if (tab->type() == Preset::TYPE_PRINTER) // Printer tab is shown every time
                         continue;
                     if (tab->supports_printer_technology(printer_technology))
+                    {
                         wxGetApp().tab_panel()->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title());
+                        int page_id = wxGetApp().tab_panel()->FindPage(tab);
+                        wxGetApp().tab_panel()->GetPage(page_id)->Show(true);
+                    }
                     else {
                         int page_id = wxGetApp().tab_panel()->FindPage(tab);
                         wxGetApp().tab_panel()->GetPage(page_id)->Show(false);
