@@ -306,5 +306,9 @@ if(SLIC3R_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
-#install resources eg, icons languages etc
-install(DIRECTORY resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/slic3r-prusa3d)
+IF (NOT SLIC3R_APPIMAGE)
+    IF (UNIX AND NOT APPLE)
+        #install resources eg, icons languages etc
+        install(DIRECTORY resources/ DESTINATION ${CMAKE_INSTALL_DATADIR}/slic3r-prusa3d)
+    ENDIF (UNIX AND NOT APPLE)
+ENDIF(NOT SLIC3R_APPIMAGE)
