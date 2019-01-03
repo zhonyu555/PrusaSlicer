@@ -280,9 +280,9 @@ add_custom_target(pot
 )
 
 #if on unix then set resource_path used in a header
-IF (UNIX)
+IF (NOT APPLE AND UNIX AND NOT CMAKE_BUILD_TYPE EQUAL "AppImage")
     SET(RESOURCE_PATH ${CMAKE_INSTALL_FULL_DATADIR}/slic3r-prusa3d)
-ENDIF(UNIX)
+ENDIF(NOT APPLE AND UNIX AND NOT CMAKE_BUILD_TYPE EQUAL "AppImage")
 
 # libslic3r, Slic3r GUI and the slic3r executable.
 add_subdirectory(src)
