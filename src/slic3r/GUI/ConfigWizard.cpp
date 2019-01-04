@@ -90,8 +90,8 @@ PrinterPicker::PrinterPicker(wxWindow *parent, const VendorProfile &vendor, cons
 
 		bool default_variant = true;   // Mark the first variant as default in the GUI
 		for (const auto &variant : model.variants) {
-			const auto label = wxString::Format("%s %s %s %s", variant.name, _(L("mm")), _(L("nozzle")),
-				(default_variant ? _(L("(default)")) : wxString()));
+			const auto label = wxString::Format("%s %s %s %s", variant.name, (model.id != "SL1" ? _(L("mm")):""),
+				(model.id != "SL1" ? _(L("nozzle")):""), (default_variant ? _(L("(default)")) : wxString()));
 			default_variant = false;
 			auto *cbox = new Checkbox(variants_panel, label, model_id, variant.name);
 			const size_t idx = cboxes.size();
