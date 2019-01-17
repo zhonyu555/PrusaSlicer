@@ -34,7 +34,6 @@
 #define BOOST_RESULT_OF_USE_DECLTYPE
 #define BOOST_SPIRIT_USE_PHOENIX_V3
 #include <boost/config/warning_disable.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/qi_lit.hpp>
 #include <boost/spirit/include/phoenix_core.hpp>
