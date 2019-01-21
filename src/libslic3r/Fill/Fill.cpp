@@ -120,6 +120,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		        params.extruder 	 = layerm.region()->extruder(extrusion_role);
 		        params.pattern 		 = layerm.region()->config().fill_pattern.value;
 		        params.density       = float(layerm.region()->config().fill_density);
+		        params.dont_connect  = layerm.region()->config().infill_no_connect;
 
 		        if (surface.is_solid()) {
 		            params.density = 100.f;
@@ -370,6 +371,7 @@ void Layer::make_fills(FillAdaptive_Internal::Octree* adaptive_fill_octree, Fill
         FillParams params;
         params.density 		= float(0.01 * surface_fill.params.density);
         params.dont_adjust 	= surface_fill.params.dont_adjust; // false
+        params.dont_connect	= surface_fill.params.dont_connect;
 
         for (ExPolygon &expoly : surface_fill.expolygons) {
 			// Spacing is modified by the filler to indicate adjustments. Reset it for each expolygon.

@@ -1072,6 +1072,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("infill_no_connect", coBool);
+    def->label = L("Don't connect infill to perimeters");
+    def->category = L("Infill");
+    def->tooltip = L("Disable extra lines connecting infill to perimeters. These extra lines create a stronger bond, "
+		     "but can result in an uneven pattern in translucent materials.");
+    def->cli = "infill-no-connect!";
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("infill_only_where_needed", coBool);
     def->label = L("Only infill where needed");
     def->category = L("Infill");

@@ -523,6 +523,7 @@ public:
     ConfigOptionInt                 infill_extruder;
     ConfigOptionFloatOrPercent      infill_extrusion_width;
     ConfigOptionInt                 infill_every_layers;
+    ConfigOptionBool                infill_no_connect;
     ConfigOptionFloatOrPercent      infill_overlap;
     ConfigOptionFloat               infill_speed;
     // Ironing options
@@ -574,6 +575,7 @@ protected:
         OPT_PTR(infill_extruder);
         OPT_PTR(infill_extrusion_width);
         OPT_PTR(infill_every_layers);
+        OPT_PTR(infill_no_connect);
         OPT_PTR(infill_overlap);
         OPT_PTR(infill_speed);
         OPT_PTR(ironing);
