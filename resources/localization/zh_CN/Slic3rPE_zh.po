@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-02-28 13:53+0100\n"
-"PO-Revision-Date: 2019-02-18 12:24+0800\n"
+"PO-Revision-Date: 2019-02-22 15:37+0800\n"
 "Last-Translator: Jiang Yue <maze1024@gmail.com>\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -2089,7 +2089,7 @@ msgstr "Slic3r的最小打印速度。"
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:874
 msgid "Minimum extrusion length"
-msgstr "最大挤出长度"
+msgstr "最小挤出长度"
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:875
 msgid ""
@@ -2492,6 +2492,10 @@ msgid ""
 "as a shield against drafts."
 msgstr "图层中表示的环边高度。设为一个较高值，可将环边用作。"
 
+#: src/libslic3r/PrintConfig.cpp:1259
+msgid "Minimal filament extrusion length"
+msgstr "最小耗材丝挤出长度"
+
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:1229
 msgid "Loops (minimum)"
 msgstr "圈数(最小)"
@@ -2676,6 +2680,9 @@ msgstr "打印机将耗材丝多路复用到一个热端。"
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:1379
 msgid "Generate support material"
 msgstr "生成支撑材料"
+
+msgid "Auto generated supports"
+msgstr "自动生成支撑"
 
 #: C:\src\Slic3r\xs\src\libslic3r\PrintConfig.cpp:1381
 msgid "Enable support material generation."
@@ -3781,7 +3788,7 @@ msgstr "载入中…"
 #: c:\src\Slic3r\lib\Slic3r\GUI\Plater.pm:629
 #: c:\src\Slic3r\lib\Slic3r\GUI\Plater.pm:643
 msgid "Processing input file\n"
-msgstr "处理输入文件 %s\n"
+msgstr "处理输入文件\n"
 
 #: c:\src\Slic3r\lib\Slic3r\GUI\Plater.pm:663
 msgid ""
@@ -3961,8 +3968,7 @@ msgstr "自动修复 (%d 错误):"
 msgid ""
 "%d degenerate facets, %d edges fixed, %d facets removed, %d facets added, %d "
 "facets reversed, %d backwards edges"
-msgstr ""
-"% d 退化面,% d 边缘固定,% d 面被移除,% d 面被删除,% d 面反转,% d 向后边缘"
+msgstr "%d 退化面,%d 边缘固定,%d 面被移除,%d 面被删除,%d 面反转,%d 向后边缘"
 
 #: c:\src\Slic3r\lib\Slic3r\GUI\Plater.pm:1970
 msgid "Yes"
