@@ -2273,7 +2273,7 @@ RENDER_AGAIN:
         m_combo_box_open = m_imgui->combo(_(L("Head diameter")), options, str);
         force_refresh |= (old_combo_state != m_combo_box_open);
 
-        float current_number = atof(str);
+        float current_number = atof(str.mb_str());
         if (old_combo_state && !m_combo_box_open) // closing the combo must always change the sizes (even if the selection did not change)
             for (auto& point_and_selection : m_editing_mode_cache)
                 if (point_and_selection.second) {
