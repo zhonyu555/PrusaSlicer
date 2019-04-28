@@ -2352,9 +2352,8 @@ void ModeButton::SetState(const bool state)
 void ModeButton::focus_button(const bool focus)
 {
     wxFont font = GetFont();
-    const wxFont& new_font = focus ? font.Bold() : font.GetBaseFont();
-
-    SetFont(new_font);
+    font.SetWeight(focus ? wxFONTWEIGHT_BOLD : wxFONTWEIGHT_NORMAL);
+    SetFont(font);
 
     Refresh();
     Update();
