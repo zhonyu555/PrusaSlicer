@@ -1,0 +1,48 @@
+option('static', type: 'boolean', value: false,
+  description: 'build slic3r with static libraries (boost, tbb, glew)'
+)
+option('gui', type: 'boolean', value: true,
+  description: 'build slic3r with gui components (opengl, wxwidgets)'
+)
+option('fhs', type: 'boolean', value: false,
+  description: 'assume slic3r is to be installed in a fhs directory structure'
+)
+option('wx_stable', type: 'boolean', value: false,
+  description: 'use wxwidgets stable (3.0) instead of dev (3.1) on linux'
+)
+option('wx_gtk_version', type: 'combo', choices: ['2', '3'], value: '2',
+  description: 'gtk version to use with wxwidgets on linux',
+)
+option('profile', type: 'boolean', value: false,
+  description: 'compile slic3r with an invasive shiny profiler'
+)
+option('pch', type: 'boolean', value: true,
+  description: 'use precompiled headers'
+)
+option('msvc_compile_parallel', type: 'boolean', value: true,
+  description: 'compile on visual studio in parallel'
+)
+option('msvc_pdb', type: 'boolean', value: true,
+  description: 'generate pdb files on msvc in release mode'
+)
+option('windows_sdk_path', type: 'string', value: '',
+  description: 'Windows 10 SDK installation directory'
+)
+# option('perl_xs', type: 'boolean', value: false,
+#   description: 'compile xs perl module and enable perl unit and integration tests'
+# )
+# option('asan', type: 'boolean', value: false,
+#   description: 'enable asan on clang and gcc'
+# )
+option('syntaxonly', type: 'boolean', value: false,
+  description:
+  'only perform source code correctness checking, no binary output (unix only)'
+)
+
+# proposal for c++ unit tests and sandboxes
+option('sandboxes', type: 'boolean', value: false,
+  description: 'build development sandboxes'
+)
+option('tests', type: 'boolean', value: false,
+  description: 'build unit tests'
+)
