@@ -66,6 +66,11 @@ void Point::rotate(double angle, const Point &center)
     (*this)(1) = (coord_t)round( (double)center(1) + c * dy + s * dx );
 }
 
+double Point::distance_to_squared(const Point &point) const
+{
+    return sqr<double>((*this)(0) - point.x()) + sqr<double>((*this)(1) - point.y());
+}
+
 int Point::nearest_point_index(const Points &points) const
 {
     PointConstPtrs p;

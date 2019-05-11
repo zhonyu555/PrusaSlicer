@@ -117,6 +117,7 @@ public:
     void   rotate(double angle, const Point &center);
     Point  rotated(double angle) const { Point res(*this); res.rotate(angle); return res; }
     Point  rotated(double angle, const Point &center) const { Point res(*this); res.rotate(angle, center); return res; }
+    double distance_to_squared(const Point &point) const;
     int    nearest_point_index(const Points &points) const;
     int    nearest_point_index(const PointConstPtrs &points) const;
     int    nearest_point_index(const PointPtrs &points) const;

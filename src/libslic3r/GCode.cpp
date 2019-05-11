@@ -2623,6 +2623,9 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
             last_pos.y() += coord_t(3. * m_layer->object()->bounding_box().radius());
             last_pos_weight = 5.f;
         }
+        else if (seam_position == spNearest) {
+            last_pos_weight = 5.f;
+        }
 
         // Insert a projection of last_pos into the polygon.
         size_t last_pos_proj_idx;
@@ -2633,6 +2636,14 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
 
         // Parametrize the polygon by its length.
         std::vector<float> lengths = polygon_parameter_by_length(polygon);
+        float dist_max = 0.1f * lengths.back(); // 5.f * nozzle_dmr
+
+        std::vector<float> distances(polygon.points.size(), 0.f);
+        if (seam_position == spNearest) {
+            for (size_t i = 0; i < polygon.points.size(); ++ i)
+                distances[i] = last_pos_proj.distance_to_squared(polygon.points[i]);
+            dist_max = *std::max_element(distances.begin(), distances.end());
+        }
 
         // For each polygon point, store a penalty.
         // First calculate the angles, store them as penalties. The angles are caluculated over a minimum arm length of nozzle_r.
@@ -2663,13 +2674,16 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
                 // Interpolate penalty between maximum and the penalty for a convex vertex.
                 penalty = penaltyConvexVertex + (penaltyFlatSurface - penaltyConvexVertex) * bspline_kernel(ccwAngle * float(PI * 2. / 3.));
             }
-            // Give a negative penalty for points close to the last point or the prefered seam location.
-            //float dist_to_last_pos_proj = last_pos_proj.distance_to(polygon.points[i]);
-            float dist_to_last_pos_proj = (i < last_pos_proj_idx) ? 
-                std::min(lengths[last_pos_proj_idx] - lengths[i], lengths.back() - lengths[last_pos_proj_idx] + lengths[i]) : 
-                std::min(lengths[i] - lengths[last_pos_proj_idx], lengths.back() - lengths[i] + lengths[last_pos_proj_idx]);
-            float dist_max = 0.1f * lengths.back(); // 5.f * nozzle_dmr
-            penalty -= last_pos_weight * bspline_kernel(dist_to_last_pos_proj / dist_max);
+            if (seam_position == spNearest) {
+                penalty += last_pos_weight * distances[i] / dist_max;
+            } else {
+                // Give a negative penalty for points close to the last point or the prefered seam location.
+                //float dist_to_last_pos_proj = last_pos_proj.distance_to(polygon.points[i]);
+                float dist_to_last_pos_proj = (i < last_pos_proj_idx) ?
+                    std::min(lengths[last_pos_proj_idx] - lengths[i], lengths.back() - lengths[last_pos_proj_idx] + lengths[i]) :
+                    std::min(lengths[i] - lengths[last_pos_proj_idx], lengths.back() - lengths[i] + lengths[last_pos_proj_idx]);
+                penalty -= last_pos_weight * bspline_kernel(dist_to_last_pos_proj / dist_max);
+            }
             penalties[i] = std::max(0.f, penalty);
         }
 
