@@ -7809,7 +7809,7 @@ msgstr ""
 
 #: src/slic3r/GUI/GUI_Preview.cpp:245
 msgid "Unretractions"
-msgstr "Non retrazioni"
+msgstr "Avanzamenti"
 
 #: src/slic3r/GUI/Tab.cpp:2785
 msgid "Unsaved Changes"
