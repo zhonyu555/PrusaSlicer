@@ -1,0 +1,9 @@
+static_library('Shiny',
+  'ShinyManager.c',
+  'ShinyNode.c',
+  'ShinyNodePool.c',
+  'ShinyNodeState.c',
+  'ShinyOutput.c',
+  'ShinyTools.c',
+  'ShinyZone.c',
+)

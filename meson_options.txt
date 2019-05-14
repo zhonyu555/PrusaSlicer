@@ -7,7 +7,7 @@ option('gui', type: 'boolean', value: true,
 option('fhs', type: 'boolean', value: false,
   description: 'assume slic3r is to be installed in a fhs directory structure'
 )
-option('wx_stable', type: 'boolean', value: false,
+option('wx_stable', type: 'boolean', value: true,
   description: 'use wxwidgets stable (3.0) instead of dev (3.1) on linux'
 )
 option('wx_gtk_version', type: 'combo', choices: ['2', '3'], value: '2',
@@ -28,15 +28,18 @@ option('msvc_pdb', type: 'boolean', value: true,
 option('windows_sdk_path', type: 'string', value: '',
   description: 'Windows 10 SDK installation directory'
 )
-# option('perl_xs', type: 'boolean', value: false,
-#   description: 'compile xs perl module and enable perl unit and integration tests'
-# )
+option('perl_xs', type: 'boolean', value: false,
+  description: 'compile xs perl module and enable perl unit and integration tests'
+)
 # option('asan', type: 'boolean', value: false,
 #   description: 'enable asan on clang and gcc'
 # )
 option('syntaxonly', type: 'boolean', value: false,
   description:
   'only perform source code correctness checking, no binary output (unix only)'
+)
+
+option('perl_xs', type: 'boolean', value: false,
 )
 
 # proposal for c++ unit tests and sandboxes

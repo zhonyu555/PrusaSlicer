@@ -13,6 +13,7 @@ cc = meson.get_compiler('c')
 cxx= meson.get_compiler('cpp')
 config = configuration_data()
 
+i18n = import('i18n')
 
 ###############################################################################
 # OS specific options
@@ -21,7 +22,7 @@ on_windows = ['cygwin', 'windows'].contains(host_machine.system())
 on_appleos = ['darwin'].contains(host_machine.system())
 on_linux = not (on_windows or on_appleos)
 
-needs_static_dependencies = on_windows or on_appleos
+static_dependencies = on_windows or on_appleos or get_option('static')
 
 build_arguments = [
   '-DwxUSE_UNICODE',
@@ -38,8 +39,6 @@ if on_windows
     '-D_SCL_SECURE_NO_WARNINGS',
     '-D_USE_MATH_DEFINES',
     '-D_WIN32',
-    '-DBOOST_ALL_NO_LIB',
-    '-DBOOST_USE_WINAPI_VERSION=0x601',
   ]
 endif
 
@@ -61,11 +60,10 @@ build_arguments += cxx.get_supported_arguments([
 ###############################################################################
 # Project options
 
-
-static_dependencies = get_option('static') or needs_static_dependencies
-
-
 config.set('SLIC3R_GUI', get_option('gui'))
+if get_option('gui')
+  build_arguments += [ '-DSLIC3R_GUI' ]
+endif
 
 # TODO Visual studio parallel implemented by Meson ?
 # add_compile_options(-bigobj -Zm316)
@@ -81,159 +79,138 @@ endif
 
 # Automatic detection
 threads = dependency('threads')
-math_lib= cc.find_library('m', required : false)
+math= cc.find_library('m', required: on_linux)
+
+# Windows only
+psapi = cc.find_library('Psapi', required: on_windows)
+
+boost = dependency('boost', version: '>=1.64.0', static: static_dependencies,
+  modules: [ 'system', 'filesystem', 'thread', 'log', 'locale', 'regex', ],
+)
+
+if on_appleos
+  # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X:
+  # https://svn.boost.org/trac/boost/ticket/5339
+  build_arguments += [ '-DBOOST_ASIO_DISABLE_KQUEUE' ]
+endif
+
+if on_windows
+  build_arguments += [
+    '-DBOOST_ALL_NO_LIB',
+    '-DBOOST_USE_WINAPI_VERSION=0x601',
+  ]
+endif
+
+
+if not static_dependencies
+  build_arguments += [ '-DBOOST_LOG_DYN_LINK' ]
+endif
+
+
+# Find and configure intel-tbb
+tbb = cxx.find_library('tbb',
+  has_headers: 'tbb/tbb.h',
+  static: static_dependencies,
+)
+
+# The Intel TBB library will use the std::exception_ptr feature of C++11.
+build_arguments += [ '-DTBB_USE_CAPTURED_EXCEPTION=0' ]
+
+if get_option('buildtype').contains('debug')
+  build_arguments += [ '-DTBB_USE_DEBUG=1' ]
+endif
+
+if on_windows
+  # Suppress implicit linking of the TBB libraries by the Visual Studio compiler.
+  build_arguments += [ '-D__TBB_NO_IMPLICIT_LINKAGE' ]
+endif
+
+
+curl = dependency('libcurl', static: static_dependencies)
+
+if static_dependencies
+  # libcurl is always linked dynamically to the system libcurl on OSX.
+  # On other systems, libcurl is linked statically if SLIC3R_STATIC is set.
+  build_arguments += [ '-DCURL_STATICLIB' ]
+
+  if on_linux
+    # As of now, our build system produces a statically linked libcurl,
+    # which links the OpenSSL library dynamically.
+    openssl = dependency('openssl')
+  endif
+endif
+
+
+# Find eigen3 or use bundled version
+if not static_dependencies
+  eigen = dependency('eigen3', required: false)
+else
+  eigen = declare_dependency(
+    include_directories: include_directories('src/eigen')
+  )
+endif
+
+# Find expat or use bundled version
+if (not static_dependencies) # or on_linux
+  expat = dependency('expat', required: on_linux)
+else
+  expat = declare_dependency(
+    link_with: static_library('expat',
+      'src/expat/xmlparse.c',
+      'src/expat/xmlrole.c',
+      'src/expat/xmltok.c',
+    ),
+    include_directories: include_directories('src/expat')
+  )
+endif
+
+
+
+# Find glew or use bundled version
+if not static_dependencies
+  glew = dependency('glew')
+else
+  glew = declare_dependency(
+    link_with: static_library('glew',
+      'src/glew/src/glew.c',
+    ),
+    include_directories: include_directories('src/glew'),
+    compile_args: '-DGLEW_STATIC',
+  )
+endif
 
 
 ###############################################################################
 
 add_project_arguments(build_arguments, language: ['c', 'cpp'])
 
-rootInclude = include_directories('.')
-
-
-
-
-
-# Find and configure boost
-if(SLIC3R_STATIC)
-    # Use static boost libraries.
-    set(Boost_USE_STATIC_LIBS ON)
-    # Use boost libraries linked statically to the C++ runtime.
-    # set(Boost_USE_STATIC_RUNTIME ON)
-endif()
-#set(Boost_DEBUG ON)
-# set(Boost_COMPILER "-vc120")
-if(NOT WIN32)
-    # boost::process was introduced first in version 1.64.0
-    set(MINIMUM_BOOST_VERSION "1.64.0")
-endif()
-find_package(Boost ${MINIMUM_BOOST_VERSION} REQUIRED COMPONENTS system filesystem thread log locale regex)
-if(Boost_FOUND)
-    include_directories(${Boost_INCLUDE_DIRS})
-    if (APPLE)
-        # BOOST_ASIO_DISABLE_KQUEUE : prevents a Boost ASIO bug on OS X: https://svn.boost.org/trac/boost/ticket/5339
-        add_definitions(-DBOOST_ASIO_DISABLE_KQUEUE)
-    endif()
-    if(NOT SLIC3R_STATIC)
-        add_definitions(-DBOOST_LOG_DYN_LINK)
-    endif()
-endif()
-
-# Find and configure intel-tbb
-if(SLIC3R_STATIC)
-    set(TBB_STATIC 1)
-endif()
-set(TBB_DEBUG 1)
-find_package(TBB REQUIRED)
-include_directories(${TBB_INCLUDE_DIRS})
-add_definitions(${TBB_DEFINITIONS})
-if(MSVC)
-    # Suppress implicit linking of the TBB libraries by the Visual Studio compiler.
-    add_definitions(-D__TBB_NO_IMPLICIT_LINKAGE)
-endif()
-# The Intel TBB library will use the std::exception_ptr feature of C++11.
-add_definitions(-DTBB_USE_CAPTURED_EXCEPTION=0)
-
-find_package(CURL REQUIRED)
-include_directories(${CURL_INCLUDE_DIRS})
-
-if (SLIC3R_STATIC)
-    if (NOT APPLE)
-        # libcurl is always linked dynamically to the system libcurl on OSX.
-        # On other systems, libcurl is linked statically if SLIC3R_STATIC is set.
-        add_definitions(-DCURL_STATICLIB)
-    endif()
-    if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        # As of now, our build system produces a statically linked libcurl,
-        # which links the OpenSSL library dynamically.
-        find_package(OpenSSL REQUIRED)
-        message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
-        message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
-        include_directories(${OPENSSL_INCLUDE_DIR})
-    endif()
-endif()
-
-## OPTIONAL packages
-
-# Find eigen3 or use bundled version
-if (NOT SLIC3R_STATIC)
-    find_package(Eigen3 3)
-endif ()
-if (NOT Eigen3_FOUND)
-    set(Eigen3_FOUND 1)
-    set(EIGEN3_INCLUDE_DIR ${LIBDIR}/eigen/)
-endif ()
-include_directories(${EIGEN3_INCLUDE_DIR})
-
-# Find expat or use bundled version
-# Always use the system libexpat on Linux.
-if (NOT SLIC3R_STATIC OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    find_package(EXPAT)
-endif ()
-if (NOT EXPAT_FOUND)
-    add_library(expat STATIC
-        ${LIBDIR}/expat/xmlparse.c
-        ${LIBDIR}/expat/xmlrole.c
-        ${LIBDIR}/expat/xmltok.c
-    )
-    set(EXPAT_FOUND 1)
-    set(EXPAT_INCLUDE_DIRS ${LIBDIR}/expat/)
-    set(EXPAT_LIBRARIES expat)
-endif ()
-include_directories(${EXPAT_INCLUDE_DIRS})
-
-# Find glew or use bundled version
-if (NOT SLIC3R_STATIC)
-    find_package(GLEW)
-endif ()
-if (NOT GLEW_FOUND)
-    add_library(glew STATIC ${LIBDIR}/glew/src/glew.c)
-    set(GLEW_FOUND 1)
-    set(GLEW_INCLUDE_DIRS ${LIBDIR}/glew/include/)
-    set(GLEW_LIBRARIES glew)
-    add_definitions(-DGLEW_STATIC)
-endif ()
-include_directories(${GLEW_INCLUDE_DIRS})
-
-# l10n
-set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/localization")
-add_custom_target(pot
-    COMMAND xgettext --keyword=L --add-comments=TRN --from-code=UTF-8 --debug
-        -f "${L10N_DIR}/list.txt"
-        -o "${L10N_DIR}/Slic3rPE.pot"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generate pot file from strings in the source tree"
-)
+subdir('resources/localization')
 
 # Resources install target, configure fhs.hpp on UNIX
-if (WIN32)
-    install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/resources")
-else ()
-    set(SLIC3R_FHS_RESOURCES "${CMAKE_INSTALL_FULL_DATAROOTDIR}/slic3r-prusa3d")
-    install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${SLIC3R_FHS_RESOURCES}")
-endif ()
-
-
-configure_file(
-  input : 'src/platform/unix/fhs.hpp.in',
-  output: 'src/platform/unix/fhs.hpp',
-  configuration: config,
-)
-
+if on_windows
+  install_subdir('resources',
+    install_dir: 'resources',
+  )
+else
+  install_subdir('resources',
+    install_dir: get_option('datadir') / meson.project_name(),
+  )
+endif
 
 subdir('src')
 
 # Perl bindings, currently only used for the unit / integration tests of libslic3r.
 # Also runs the unit / integration tests.
 #FIXME Port the tests into C++ to finally get rid of the Perl!
+
 if get_option('perl_xs')
-  subdir(xs)
+#   subdir(xs)
 endif
 
 if get_option('sandboxes')
-  subdir(sandboxes)
+#   subdir(sandboxes)
 endif
 
 if get_option('tests')
-  subdir(tests)
-endif()
+#   subdir(tests)
+endif
