@@ -1,7 +1,7 @@
 #ifndef _libslic3r_h_
 #define _libslic3r_h_
 
-#include "libslic3r_version.h"
+#include "libslic3r/libslic3r_version.h"
 
 // this needs to be included early for MSVC (listing it in Build.PL is not enough)
 #include <memory>
@@ -39,7 +39,7 @@ typedef double  coordf_t;
 #define PI 3.141592653589793238
 // When extruding a closed loop, the loop is interrupted and shortened a bit to reduce the seam.
 #define LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER 0.15
-// Maximum perimeter length for the loop to apply the small perimeter speed. 
+// Maximum perimeter length for the loop to apply the small perimeter speed.
 #define SMALL_PERIMETER_LENGTH (6.5 / SCALING_FACTOR) * 2 * PI
 #define INSET_OVERLAP_TOLERANCE 0.4
 // 3mm ring around the top / bottom / bridging areas.
@@ -116,7 +116,7 @@ inline void append(std::vector<T>& dest, std::vector<T>&& src)
 
 // Casting an std::vector<> from one type to another type without warnings about a loss of accuracy.
 template<typename T_TO, typename T_FROM>
-std::vector<T_TO> cast(const std::vector<T_FROM> &src) 
+std::vector<T_TO> cast(const std::vector<T_FROM> &src)
 {
     std::vector<T_TO> dst;
     dst.reserve(src.size());

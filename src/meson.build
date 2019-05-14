@@ -3,7 +3,7 @@ subdir('platform')
 srcInclude = include_directories('.')
 
 subdir('admesh')
-# subdir('avrdude')
+subdir('avrdude')
 subdir('boost/nowide')
 subdir('clipper')
 subdir('glu-libtess')
@@ -18,39 +18,8 @@ subdir('libnest2d')
 
 subdir('libslic3r')
 
-
-
-
 if get_option('gui')
   subdir('imgui')
-
-  if on_windows
-    message('WXWIN environment set to: @0@'.format())
-  endif
-  if on_linux
-    wxWidgets_USE_UNICODE = true
-    wxWidgets_USE_STATIC = static_dependencies
-  endif
-
-  wx_version = (on_linux and get_option('wx_stable')) ? '>=3.0' : '>=3.1'
-
-  wx_modules = [
-    'base',
-    'core',
-    'adv',
-    'html',
-    'gl',
-  ]
-
-  if on_linux
-    wx_modules += '--toolkit=gtk@0@'.format(get_option('wx_gtk_version'))
-  endif
-
-  wxwidgets = dependency('WxWidgets',
-    modules: wx_modules,
-    version: wx_version,
-  )
-
   subdir('slic3r')
 endif
 
@@ -95,6 +64,7 @@ slic3r = build_target(slic3r_target_name,
 
   link_with: [
     libslic3r,
+    libslic3r_gui,
   ],
   link_args: [
     slic3r_platform_ldflags,
@@ -104,5 +74,35 @@ slic3r = build_target(slic3r_target_name,
     libnest2d,
     clipper,
     boost,
+    curl,
+    zlib,
+    gl,
+    get_option('gui') ? wxwidgets : [],
   ],
 )
+
+
+# On Windows, a shim application is required to produce a console / non console
+# version of the Slic3r application.
+# Also the shim may load the Mesa software OpenGL renderer if the default
+# renderer does not support OpenGL 2.0 and higher.
+if on_windows
+  slic3r_app_gui = executable('slic3r',
+    'slic3r_app_msvc.cpp',
+    slic3r_rc,
+
+    cpp_args: [
+      '-DSLIC3R_WRAPPER_NOCONSOLE',
+    ],
+    depends: slic3r,
+  )
+  slic3r_app_console = executable('slic3r-console',
+    'slic3r_app_msvc.cpp',
+    slic3r_rc,
+
+    cpp_args: [
+      '-DSLIC3R_WRAPPER_CONSOLE',
+    ],
+    depends: slic3r,
+  )
+endif

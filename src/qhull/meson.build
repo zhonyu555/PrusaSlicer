@@ -16,7 +16,7 @@ qhull_VERSION2= '2015.2 2016/01/18'
 qhull_VERSION = '7.2.0'
 
 
-message('STATUS "qhull Version: ${qhull_VERSION} (static linking)"')
+message('qhull Version: @0@ (static linking)'.format(qhull_VERSION))
 
 libqhull_sources = [
   # reentrant qhull SOURCES:

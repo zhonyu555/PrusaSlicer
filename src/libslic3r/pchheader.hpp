@@ -100,7 +100,7 @@
 #include <tbb/task_scheduler_init.h>
 
 #include <Eigen/Dense>
-#include <Eigen/Geometry> 
+#include <Eigen/Geometry>
 
 #include "BoundingBox.hpp"
 #include "ClipperUtils.hpp"
@@ -113,7 +113,7 @@
 #include "SVG.hpp"
 
 #include "libslic3r.h"
-#include "libslic3r_version.h"
+#include "libslic3r/libslic3r_version.h"
 
 #include "clipper.hpp"
 
