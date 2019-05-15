@@ -1,4 +1,4 @@
-libslic3r_gui_sources = [
+libslicer_gui_sources = [
   'GUI/AboutDialog.cpp',
   'GUI/SysInfoDialog.cpp',
   'GUI/KBShortcutsDialog.cpp',
@@ -72,15 +72,15 @@ libslic3r_gui_sources = [
 ]
 
 if on_appleos
-  slic3r_gui_sources += [
+  slicer_gui_sources += [
     'Utils/MacDarkMode.mm',
     'Utils/RetinaHelperImpl.mm',
   ]
 endif
 
 
-libslic3r_gui = static_library('slic3r_gui',
-  libslic3r_gui_sources,
+libslicer_gui = static_library('slicer_gui',
+  libslicer_gui_sources,
 
   include_directories: [
     srcInclude,

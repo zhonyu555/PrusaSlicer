@@ -1,5 +1,5 @@
-# This CMake file is written specifically to integrate qhull library with Slic3rPE
-# (see https://github.com/prusa3d/Slic3r for more information about the project)
+# This file is written specifically to integrate qhull library with PrusaSlicer
+# (see https://github.com/prusa3d/PrusaSlicer for more information)
 #
 # Only original libraries qhullstatic_r and qhullcpp are included.
 # They are built as a single statically linked library.

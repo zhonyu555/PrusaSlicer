@@ -1,6 +1,6 @@
-project('Slic3r',
+project('PrusaSlicer',
    'c', 'cpp',
-  version: '1.42.0',
+  version: '2.0.0',
 
   default_options: [
     'c_std=gnu11',
@@ -11,15 +11,14 @@ project('Slic3r',
 ###############################################################################
 # Version Info
 
-project_name_pretty   = 'Slic3r Prusa Edition'
-project_name_key      = 'Slic3rPE'
-project_version_full  = '1.42.0-beta2'
+project_name_pretty   = 'PrusaSlicer'
+project_version_full  = '2.0.0-rc'
 
 # TODO add commit info
 project_build         = project_version_full + '+UNKNOWN'
 project_build_id      = project_version_full
 
-project_version_rcdots= meson.project_version()
+project_version_rcdots= meson.project_version() + '.0'
 project_version_rc    = ','.join(project_version_rcdots.split('.'))
 
 
@@ -79,7 +78,7 @@ build_arguments += cxx.get_supported_arguments([
 # Project options
 
 config.set('SLIC3R_APP_NAME',       project_name_pretty)
-config.set('SLIC3R_APP_KEY',        project_name_key)
+config.set('SLIC3R_APP_KEY',        project_name_pretty)
 config.set('SLIC3R_VERSION',        project_version_full)
 config.set('SLIC3R_BUILD',          project_build)
 config.set('SLIC3R_BUILD_ID',       project_build_id)
@@ -96,7 +95,7 @@ endif
 # add_compile_options(-bigobj -Zm316)
 
 if get_option('profile')
-  message('Slic3r will be built with a Shiny invasive profiler')
+  message('PrusaSlicer will be built with a Shiny invasive profiler')
   build_arguments += [ '-DSLIC3R_PROFILE' ]
 endif
 
@@ -148,16 +147,22 @@ if get_option('gui')
   ]
 
   if on_linux
+    if static_dependencies
+      static = 'yes'
+    else
+      static = 'no'
+    endif
+
     wx_modules += [
       '--toolkit=gtk@0@'.format(get_option('wx_gtk_version')),
       '--unicode=yes',
-      '--static=@0@'.format(static_dependencies ? 'yes' : 'no'),
+      '--static=@0@'.format(static),
     ]
   endif
 
   wxwidgets = dependency('WxWidgets',
     modules: wx_modules,
-    version: wx_version,
+    # version: wx_version,
   )
 
   build_arguments += [
@@ -242,7 +247,7 @@ if not static_dependencies
   eigen = dependency('eigen3', required: false)
 else
   eigen = declare_dependency(
-    include_directories: include_directories('src/eigen')
+    # include_directories: include_directories('src/eigen')
   )
 endif
 
@@ -251,7 +256,8 @@ endif
 if (not static_dependencies) or on_linux
   expat = dependency('expat', required: on_linux)
 else
-  expat = subproject('expat').get_variable('dependency')
+  expat = declare_dependency()
+  # expat = subproject('expat').get_variable('dependency')
 endif
 
 
@@ -261,14 +267,15 @@ if not static_dependencies
 else
   glew = declare_dependency(
     link_with: static_library('glew',
-      'src/glew/src/glew.c',
+      # 'src/glew/src/glew.c',
     ),
-    include_directories: include_directories('src/glew'),
+    # include_directories: include_directories('src/glew'),
     compile_args: '-DGLEW_STATIC',
   )
 endif
 
-libnest2d = subproject('libnest2d').get_variable('dependency')
+libnest2d = declare_dependency()
+# libnest2d = subproject('libnest2d').get_variable('dependency')
 
 avrdude = subproject('avrdude').get_variable('dependency')
 

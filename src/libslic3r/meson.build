@@ -4,7 +4,7 @@ configure_file(
   configuration: config,
 )
 
-libslic3r_sources = [
+libslicer_sources = [
   'pchheader.cpp',
   'BoundingBox.cpp',
   'BridgeDetector.cpp',
@@ -93,8 +93,8 @@ endif
 
 shiny_on_profile = get_option('profile') ? shiny : []
 
-libslic3r = static_library('libslic3r',
-  libslic3r_sources,
+libslicer = static_library('libslicer',
+  libslicer_sources,
 
   link_with: [
     admesh,

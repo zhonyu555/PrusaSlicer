@@ -2,7 +2,7 @@ executable('slabasebed'
   'slabasebed.cpp',
 
   link_with: [
-    libslic3r,
+    libslicer,
   ],
   dependencies: [
     boost,

@@ -1,11 +1,11 @@
 
-slic3r_rc = configure_file(
-  input : 'slic3r.rc.in',
-  output: 'slic3r.rc',
+slicer_rc = configure_file(
+  input : 'PrusaSlicer.rc.in',
+  output: 'PrusaSlicer.rc',
   configuration: config,
 )
-slic3r_manifest = configure_file(
-  input : 'slic3r.manifest.in',
-  output: 'slic3r.manifest',
+slicer_manifest = configure_file(
+  input : 'PrusaSlicer.manifest.in',
+  output: 'PrusaSlicer.manifest',
   configuration: config,
 )

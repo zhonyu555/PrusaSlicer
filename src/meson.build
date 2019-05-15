@@ -24,25 +24,25 @@ endif
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 # Final executable
 
-slic3r_target_name = 'slic3r-' + (get_option('gui') ? 'gui' : 'console')
-slic3r_target_type = on_windows ? 'shared_library' : 'executable'
+slicer_target_name = 'slicer-' + (get_option('gui') ? 'gui' : 'console')
+slicer_target_type = on_windows ? 'shared_library' : 'executable'
 
-slic3r_platform_ldflags = [ ]
+slicer_platform_ldflags = [ ]
 if on_appleos
-  slic3r_platform_ldflags += [
+  slicer_platform_ldflags += [
     '-liconv -framework IOKit',
     '-framework CoreFoundation',
     '-lc++',
   ]
 elif on_windows
-  # Manifest is provided through slic3r.rc, don't generate your own.
-  slic3r_platform_ldflags += [
+  # Manifest is provided through slicer.rc, don't generate your own.
+  slicer_platform_ldflags += [
     '/MANIFEST:NO',
   ]
 else
   # Boost on Raspberry-Pi does not link to pthreads explicitely.
   ## FIXME What ?
-  slic3r_platform_ldflags += [
+  slicer_platform_ldflags += [
     '-lstdc++',
     # 'Threads::Threads',
   ]
@@ -50,7 +50,7 @@ endif
 
 
 
-slic3r = build_target(slic3r_target_name,
+slicer = build_target(slicer_target_name,
   'slic3r.cpp',
   target_type: slic3r_target_type,
 
@@ -60,11 +60,11 @@ slic3r = build_target(slic3r_target_name,
   ],
 
   link_with: [
-    libslic3r,
-    libslic3r_gui,
+    libslicer,
+    libslicer_gui,
   ],
   link_args: [
-    slic3r_platform_ldflags,
+    slicer_platform_ldflags,
   ],
   dependencies: [
     eigen,
@@ -80,26 +80,26 @@ slic3r = build_target(slic3r_target_name,
 
 
 # On Windows, a shim application is required to produce a console / non console
-# version of the Slic3r application.
+# version of the PrusaSlicer application.
 # Also the shim may load the Mesa software OpenGL renderer if the default
 # renderer does not support OpenGL 2.0 and higher.
 if on_windows
-  slic3r_app_gui = executable('slic3r',
+  slicer_app_gui = executable('slicer',
     'slic3r_app_msvc.cpp',
-    slic3r_rc,
+    slicer_rc,
 
     cpp_args: [
       '-DSLIC3R_WRAPPER_NOCONSOLE',
     ],
-    depends: slic3r,
+    depends: slicer,
   )
-  slic3r_app_console = executable('slic3r-console',
+  slicer_app_console = executable('slicer-console',
     'slic3r_app_msvc.cpp',
-    slic3r_rc,
+    slicer_rc,
 
     cpp_args: [
       '-DSLIC3R_WRAPPER_CONSOLE',
     ],
-    depends: slic3r,
+    depends: slicer,
   )
 endif
