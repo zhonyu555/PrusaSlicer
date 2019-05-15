@@ -89,7 +89,6 @@ libslic3r_gui = static_library('slic3r_gui',
 
   link_with: [
     imgui,
-    avrdude,
   ],
   dependencies: [
     wxwidgets,
@@ -97,6 +96,7 @@ libslic3r_gui = static_library('slic3r_gui',
     libnest2d,
     clipper,
     glew,
+    avrdude,
   ],
 
   cpp_pch: 'pch/pchheader.hpp',

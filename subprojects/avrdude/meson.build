@@ -1,4 +1,14 @@
 
+project('avrdude',
+  'c',
+  version: '6.3-20160220',
+)
+
+###############################################################################
+# OS dependency
+
+on_windows = ['cygwin', 'windows'].contains(host_machine.system())
+
 avrdude_sources = [
   'arduino.c',
   'avr.c',
@@ -96,4 +106,10 @@ avrdude = static_library('avrdude',
 avrdude_slic3r = executable('avrdude-slic3r',
   'main-standalone.cpp',
   link_with: avrdude,
+)
+
+
+dependency = declare_dependency(
+  link_with: avrdude,
+  include_directories: '.',
 )

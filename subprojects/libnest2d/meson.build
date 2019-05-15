@@ -1,8 +1,15 @@
 
+project('libnest2d',
+  'c',
+)
+
 nlopt = dependency('nlopt')
 
-libnest2d = declare_dependency(
-  link_with: [],
+libnest2d = static_library('libnest2d',
+)
+
+dependency = declare_dependency(
+  link_with: libnest2d,
   include_directories: 'include',
   compile_args: [
     '-DLIBNEST2D_BACKEND_CLIPPER',

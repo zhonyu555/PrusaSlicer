@@ -2,7 +2,7 @@
 #include <string.h>
 #include <map>
 #include <string>
-#include <expat/expat.h>
+#include <expat.h>
 
 #include <boost/nowide/cstdio.hpp>
 
@@ -47,8 +47,8 @@ struct AMFParserContext
     AMFParserContext(XML_Parser parser, DynamicPrintConfig *config, Model *model) :
         m_version(0),
         m_parser(parser),
-        m_model(*model), 
-        m_object(nullptr), 
+        m_model(*model),
+        m_object(nullptr),
         m_volume(nullptr),
         m_material(nullptr),
         m_instance(nullptr),
@@ -57,7 +57,7 @@ struct AMFParserContext
         m_path.reserve(12);
     }
 
-    void stop() 
+    void stop()
     {
         XML_StopParser(m_parser, 0);
     }
@@ -83,7 +83,7 @@ struct AMFParserContext
     static void XMLCALL characters(void *userData, const XML_Char *s, int len)
     {
         AMFParserContext *ctx = (AMFParserContext*)userData;
-        ctx->characters(s, len);    
+        ctx->characters(s, len);
     }
 
     static const char* get_attribute(const char **atts, const char *id) {
@@ -270,7 +270,7 @@ void AMFParserContext::startElement(const char *name, const char **atts)
                     this->stop();
                 else {
                     m_object_instances_map[object_id].instances.push_back(AMFParserContext::Instance());
-                    m_instance = &m_object_instances_map[object_id].instances.back(); 
+                    m_instance = &m_object_instances_map[object_id].instances.back();
                     node_type_new = NODE_TYPE_INSTANCE;
                 }
             }
@@ -291,7 +291,7 @@ void AMFParserContext::startElement(const char *name, const char **atts)
         } else if (m_path[2] == NODE_TYPE_INSTANCE) {
             assert(m_instance);
             if (strcmp(name, "deltax") == 0)
-                node_type_new = NODE_TYPE_DELTAX; 
+                node_type_new = NODE_TYPE_DELTAX;
             else if (strcmp(name, "deltay") == 0)
                 node_type_new = NODE_TYPE_DELTAY;
             else if (strcmp(name, "deltaz") == 0)
@@ -321,7 +321,7 @@ void AMFParserContext::startElement(const char *name, const char **atts)
     case 4:
         if (m_path[3] == NODE_TYPE_VERTICES) {
             if (strcmp(name, "vertex") == 0)
-                node_type_new = NODE_TYPE_VERTEX; 
+                node_type_new = NODE_TYPE_VERTEX;
         } else if (m_path[3] == NODE_TYPE_VOLUME) {
             if (strcmp(name, "metadata") == 0) {
                 const char *type = get_attribute(atts, "type");
@@ -338,7 +338,7 @@ void AMFParserContext::startElement(const char *name, const char **atts)
     case 5:
         if (strcmp(name, "coordinates") == 0) {
             if (m_path[4] == NODE_TYPE_VERTEX) {
-                node_type_new = NODE_TYPE_COORDINATES; 
+                node_type_new = NODE_TYPE_COORDINATES;
             } else
                 this->stop();
         } else if (name[0] == 'v' && name[1] >= '1' && name[1] <= '3' && name[2] == 0) {
@@ -926,7 +926,7 @@ bool store_amf(const char *path, Model *model, const DynamicPrintConfig *config)
         int              num_vertices = 0;
         for (ModelVolume *volume : object->volumes) {
             vertices_offsets.push_back(num_vertices);
-            if (! volume->mesh.repaired) 
+            if (! volume->mesh.repaired)
                 throw std::runtime_error("store_amf() requires repair()");
             auto &stl = volume->mesh.stl;
             if (stl.v_shared == nullptr)

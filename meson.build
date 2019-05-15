@@ -251,14 +251,7 @@ endif
 if (not static_dependencies) or on_linux
   expat = dependency('expat', required: on_linux)
 else
-  expat = declare_dependency(
-    link_with: static_library('expat',
-      'src/expat/xmlparse.c',
-      'src/expat/xmlrole.c',
-      'src/expat/xmltok.c',
-    ),
-    include_directories: include_directories('src/expat')
-  )
+  expat = subproject('expat').get_variable('dependency')
 endif
 
 
@@ -275,6 +268,9 @@ else
   )
 endif
 
+libnest2d = subproject('libnest2d').get_variable('dependency')
+
+avrdude = subproject('avrdude').get_variable('dependency')
 
 ###############################################################################
 

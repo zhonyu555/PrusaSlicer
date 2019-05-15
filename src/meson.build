@@ -3,7 +3,6 @@ subdir('platform')
 srcInclude = include_directories('.')
 
 subdir('admesh')
-subdir('avrdude')
 subdir('boost/nowide')
 subdir('clipper')
 subdir('glu-libtess')
@@ -13,8 +12,6 @@ subdir('polypartition')
 subdir('qhull')
 subdir('semver')
 subdir('Shiny')
-
-subdir('libnest2d')
 
 subdir('libslic3r')
 

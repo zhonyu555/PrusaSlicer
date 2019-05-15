@@ -11,7 +11,7 @@
 #include <boost/optional.hpp>
 
 #include "libslic3r/Utils.hpp"
-#include "avrdude/avrdude-slic3r.hpp"
+#include "avrdude-slic3r.hpp"
 #include "GUI.hpp"
 #include "GUI_App.hpp"
 #include "I18N.hpp"
@@ -321,7 +321,7 @@ bool FirmwareDialog::priv::ask_model_id_mismatch(const std::string &printer_mode
 
 	response_cv.wait(lock, [this]() { return this->modal_response != wxID_NONE; });
 
-	if (modal_response == wxID_YES) { 
+	if (modal_response == wxID_YES) {
 		return true;
 	} else {
 		user_cancel();
@@ -335,7 +335,7 @@ bool FirmwareDialog::priv::check_model_id()
 	// Therefore, regretably, so far the check cannot be used and we just return true here.
 	// TODO: Rewrite Serial using more platform-native code.
 	return true;
-	
+
 	// if (hex_file.model_id.empty()) {
 	// 	// No data to check against, assume it's ok
 	// 	return true;
@@ -745,7 +745,7 @@ FirmwareDialog::FirmwareDialog(wxWindow *parent) :
 	p->min_height = MIN_HEIGHT * em;
 	p->min_height_expanded = MIN_HEIGHT_EXPANDED * em;
 
-    /* get current font from application, 
+    /* get current font from application,
      * because of wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT) function
      * returns font for primary Display
      */
@@ -905,7 +905,7 @@ void FirmwareDialog::on_dpi_changed(const wxRect &suggested_rect)
 {
     const int& em = em_unit();
 
-    msw_buttons_rescale(this, em, { p->btn_close->GetId(), 
+    msw_buttons_rescale(this, em, { p->btn_close->GetId(),
                                     p->btn_rescan->GetId(),
                                     p->btn_flash->GetId(),
                                     p->hex_picker->GetPickerCtrl()->GetId()
