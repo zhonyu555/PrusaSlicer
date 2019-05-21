@@ -6902,7 +6902,7 @@ msgstr "supporti e pad"
 
 #: src/libslic3r/PrintConfig.cpp:1043
 msgid "Supports remaining times"
-msgstr "Tempo rimanente Supporti"
+msgstr "Supporto tempo residuo"
 
 #: src/libslic3r/PrintConfig.cpp:1052
 msgid "Supports silent mode"
