@@ -38,7 +38,7 @@ namespace GUI {
 wxDEFINE_EVENT(EVT_TAB_VALUE_CHANGED, wxCommandEvent);
 wxDEFINE_EVENT(EVT_TAB_PRESETS_CHANGED, SimpleEvent);
 
-// Tab::Tab(wxNotebook* parent, const wxString& title, const char* name) : 
+// Tab::Tab(wxNotebook* parent, const wxString& title, const char* name) :
 // 	m_parent(parent), m_title(title), m_name(name)
 Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
 	m_parent(parent), m_title(title), m_type(type)
@@ -98,7 +98,7 @@ void Tab::create_preset_tab()
 	// Create additional panel to Fit() it from OnActivate()
 	// It's needed for tooltip showing on OSX
 	m_tmp_panel = new wxPanel(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL);
-	auto panel = m_tmp_panel; 
+	auto panel = m_tmp_panel;
 	auto  sizer = new wxBoxSizer(wxVERTICAL);
 	m_tmp_panel->SetSizer(sizer);
 	m_tmp_panel->Layout();
@@ -194,7 +194,7 @@ void Tab::create_preset_tab()
     m_hsizer->AddSpacer(int(32 * scale_factor));
 	m_hsizer->Add(m_question_btn, 0, wxALIGN_CENTER_VERTICAL);
     // m_hsizer->AddStretchSpacer(32);
-    // StretchSpacer has a strange behavior under OSX, so 
+    // StretchSpacer has a strange behavior under OSX, so
     // There is used just additional sizer for m_mode_sizer with right alignment
     auto mode_sizer = new wxBoxSizer(wxVERTICAL);
     mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
@@ -225,9 +225,9 @@ void Tab::create_preset_tab()
 	m_treectrl->Bind(wxEVT_KEY_DOWN, &Tab::OnKeyDown, this);
 
 	m_presets_choice->Bind(wxEVT_COMBOBOX, ([this](wxCommandEvent e) {
-		//! Because of The MSW and GTK version of wxBitmapComboBox derived from wxComboBox, 
+		//! Because of The MSW and GTK version of wxBitmapComboBox derived from wxComboBox,
 		//! but the OSX version derived from wxOwnerDrawnCombo, instead of:
-		//! select_preset(m_presets_choice->GetStringSelection().ToUTF8().data()); 
+		//! select_preset(m_presets_choice->GetStringSelection().ToUTF8().data());
 		//! we doing next:
 		int selected_item = m_presets_choice->GetSelection();
 		if (m_selected_preset_item == selected_item && !m_presets->current_is_dirty())
@@ -265,18 +265,18 @@ void Tab::create_preset_tab()
     m_complited = true;
 }
 
-void Tab::add_scaled_button(wxWindow* parent, 
-                            ScalableButton** btn, 
-                            const std::string& icon_name, 
-                            const wxString& label/* = wxEmptyString*/, 
+void Tab::add_scaled_button(wxWindow* parent,
+                            ScalableButton** btn,
+                            const std::string& icon_name,
+                            const wxString& label/* = wxEmptyString*/,
                             long style /*= wxBU_EXACTFIT | wxNO_BORDER*/)
 {
     *btn = new ScalableButton(parent, wxID_ANY, icon_name, label, wxDefaultSize, wxDefaultPosition, style);
     m_scaled_buttons.push_back(*btn);
 }
 
-void Tab::add_scaled_bitmap(wxWindow* parent, 
-                            ScalableBitmap& bmp, 
+void Tab::add_scaled_bitmap(wxWindow* parent,
+                            ScalableBitmap& bmp,
                             const std::string& icon_name)
 {
     bmp = ScalableBitmap(parent, icon_name);
@@ -322,7 +322,7 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
 	page->Hide();
 	m_hsizer->Add(page.get(), 1, wxEXPAND | wxLEFT, 5);
 
-    if (!is_extruder_pages) 
+    if (!is_extruder_pages)
 		m_pages.push_back(page);
 
 	page->set_config(m_config);
@@ -331,7 +331,7 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
 
 void Tab::OnActivate()
 {
-#ifdef __WXOSX__	
+#ifdef __WXOSX__
 	wxWindowUpdateLocker noUpdates(this);
 
 	auto size = GetSizer()->GetSize();
@@ -379,7 +379,7 @@ void Tab::update_labels_colour()
 		{
 			if (page->title() != title)
 				continue;
-			
+
 			const wxColor *clr = !page->m_is_nonsys_values ? &m_sys_label_clr :
 				page->m_is_modified_values ? &m_modified_label_clr :
 				&m_default_text_clr;
@@ -394,7 +394,7 @@ void Tab::update_labels_colour()
 // Update UI according to changes
 void Tab::update_changed_ui()
 {
-	if (m_postpone_update_ui) 
+	if (m_postpone_update_ui)
 		return;
 
 	const bool deep_compare = (m_type == Slic3r::Preset::TYPE_PRINTER || m_type == Slic3r::Preset::TYPE_SLA_MATERIAL);
@@ -560,7 +560,7 @@ void Tab::update_changed_tree_ui()
 		auto title = m_treectrl->GetItemText(cur_item);
 		for (auto page : m_pages)
 		{
-			if (page->title() != title) 
+			if (page->title() != title)
 				continue;
 			bool sys_page = true;
 			bool modified_page = false;
@@ -591,7 +591,7 @@ void Tab::update_changed_tree_ui()
 			}
 
 			const wxColor *clr = sys_page		?	&m_sys_label_clr :
-								 modified_page	?	&m_modified_label_clr : 
+								 modified_page	?	&m_modified_label_clr :
 													&m_default_text_clr;
 
 			if (page->set_item_colour(clr))
@@ -686,7 +686,7 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
 void Tab::update_dirty()
 {
 	m_presets->update_dirty_ui(m_presets_choice);
-	on_presets_changed();	
+	on_presets_changed();
 	update_changed_ui();
 }
 
@@ -915,19 +915,19 @@ void Tab::update_preset_description_line()
 {
 	const Preset* parent = m_presets->get_selected_preset_parent();
 	const Preset& preset = m_presets->get_edited_preset();
-			
+
 	wxString description_line = preset.is_default ?
 		_(L("It's a default preset.")) : preset.is_system ?
-		_(L("It's a system preset.")) : 
-		wxString::Format(_(L("Current preset is inherited from %s")), (parent == nullptr ? 
-													_(L("default preset"))+"." : 
+		_(L("It's a system preset.")) :
+		wxString::Format(_(L("Current preset is inherited from %s")), (parent == nullptr ?
+													_(L("default preset"))+"." :
 													":\n\t" + parent->name));
-	
+
 	if (preset.is_default || preset.is_system)
-		description_line += "\n\t" + _(L("It can't be deleted or modified.")) + 
-							"\n\t" + _(L("Any modifications should be saved as a new preset inherited from this one.")) + 
+		description_line += "\n\t" + _(L("It can't be deleted or modified.")) +
+							"\n\t" + _(L("Any modifications should be saved as a new preset inherited from this one.")) +
 							"\n\t" + _(L("To do that please specify a new name for the preset."));
-	
+
 	if (parent && parent->vendor)
 	{
 		description_line += "\n\n" + _(L("Additional information:")) + "\n";
@@ -1190,14 +1190,14 @@ void TabPrint::build()
 		option.opt.full_width = true;
 		optgroup->append_single_option_line(option);
 
-		optgroup = page->new_optgroup(_(L("Post-processing scripts")), 0);	
+		optgroup = page->new_optgroup(_(L("Post-processing scripts")), 0);
 		option = optgroup->get_option("post_process");
 		option.opt.full_width = true;
         option.opt.height = 5;//50;
 		optgroup->append_single_option_line(option);
 
 	page = add_options_page(_(L("Notes")), "note.png");
-		optgroup = page->new_optgroup(_(L("Notes")), 0);						
+		optgroup = page->new_optgroup(_(L("Notes")), 0);
 		option = optgroup->get_option("notes");
 		option.opt.full_width = true;
         option.opt.height = 25;//250;
@@ -1576,7 +1576,7 @@ void TabFilament::build()
 			ramming_dialog_btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
             auto sizer = new wxBoxSizer(wxHORIZONTAL);
 			sizer->Add(ramming_dialog_btn);
-            
+
             ramming_dialog_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e)
 			{
                 RammingDialog dlg(this,(m_config->option<ConfigOptionStrings>("filament_ramming_parameters"))->get_at(0));
@@ -1613,7 +1613,7 @@ void TabFilament::build()
 
 	page = add_options_page(_(L("Dependencies")), "wrench.png");
 		optgroup = page->new_optgroup(_(L("Profile dependencies")));
-        
+
         line = optgroup->create_single_option_line("compatible_printers");
         line.widget = [this](wxWindow* parent) {
 			return compatible_widget_create(parent, m_compatible_printers);
@@ -1761,7 +1761,7 @@ void TabPrinter::build_printhost(ConfigOptionsGroup *optgroup)
 
 	const auto ca_file_hint = _(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate."));
 
-	if (Http::ca_file_supported()) {   
+	if (Http::ca_file_supported()) {
 		Line cafile_line = optgroup->create_single_option_line("printhost_cafile");
 
 		auto printhost_cafile_browse = [this, optgroup] (wxWindow* parent) {
@@ -1871,7 +1871,7 @@ void TabPrinter::build_fff()
 		optgroup = page->new_optgroup(_(L("Capabilities")));
 		ConfigOptionDef def;
 			def.type =  coInt,
-			def.set_default_value(new ConfigOptionInt(1)); 
+			def.set_default_value(new ConfigOptionInt(1));
 			def.label = L("Extruders");
 			def.tooltip = L("Number of extruders of the printer.");
 			def.min = 1;
@@ -1925,7 +1925,7 @@ void TabPrinter::build_fff()
 				btn->Bind(wxEVT_BUTTON, [this, parent](wxCommandEvent e) {
 					auto sender = Slic3r::make_unique<GCodeSender>();
 					auto res = sender->connect(
-						m_config->opt_string("serial_port"), 
+						m_config->opt_string("serial_port"),
 						m_config->opt_int("serial_speed")
 						);
 					if (res && sender->wait_connected()) {
@@ -2012,7 +2012,7 @@ void TabPrinter::build_fff()
 		option.opt.full_width = true;
         option.opt.height = gcode_field_height;//150;
 		optgroup->append_single_option_line(option);
-	
+
 	page = add_options_page(_(L("Notes")), "note.png");
 		optgroup = page->new_optgroup(_(L("Notes")), 0);
 		option = optgroup->get_option("printer_notes");
@@ -2141,7 +2141,7 @@ void TabPrinter::extruders_count_changed(size_t extruders_count)
         is_count_changed = true;
     }
 
-    /* This function should be call in any case because of correct updating/rebuilding 
+    /* This function should be call in any case because of correct updating/rebuilding
      * of unregular pages of a Printer Settings
      */
 	build_unregular_pages();
@@ -2218,9 +2218,9 @@ PageShp TabPrinter::build_kinematics_page()
 }
 
 /* Previous name build_extruder_pages().
- * 
- * This function was renamed because of now it implements not just an extruder pages building, 
- * but "Machine limits" and "Single extruder MM setup" too 
+ *
+ * This function was renamed because of now it implements not just an extruder pages building,
+ * but "Machine limits" and "Single extruder MM setup" too
  * (These pages can changes according to the another values of a current preset)
  * */
 void TabPrinter::build_unregular_pages()
@@ -2228,7 +2228,7 @@ void TabPrinter::build_unregular_pages()
 	size_t		n_before_extruders = 2;			//	Count of pages before Extruder pages
 	bool		is_marlin_flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value == gcfMarlin;
 
-    /* ! Freeze/Thaw in this function is needed to avoid call OnPaint() for erased pages 
+    /* ! Freeze/Thaw in this function is needed to avoid call OnPaint() for erased pages
      * and be cause of application crash, when try to change Preset in moment,
      * when one of unregular pages is selected.
      *  */
@@ -2250,11 +2250,11 @@ void TabPrinter::build_unregular_pages()
 		m_pages.insert(m_pages.begin() + n_before_extruders, page);
 	}
 
-	if (is_marlin_flavor) 
+	if (is_marlin_flavor)
 		n_before_extruders++;
 	size_t		n_after_single_extruder_MM = 2; //	Count of pages after single_extruder_multi_material page
 
-	if (m_extruders_count_old == m_extruders_count || 
+	if (m_extruders_count_old == m_extruders_count ||
 		(m_has_single_extruder_MM_page && m_extruders_count == 1))
 	{
 		// if we have a single extruder MM setup, add a page with configuration options:
@@ -2277,25 +2277,25 @@ void TabPrinter::build_unregular_pages()
 		m_pages.insert(m_pages.end() - n_after_single_extruder_MM, page);
 		m_has_single_extruder_MM_page = true;
 	}
-	
+
     // Build missed extruder pages
 	for (auto extruder_idx = m_extruders_count_old; extruder_idx < m_extruders_count; ++extruder_idx) {
 		//# build page
         const wxString& page_name = wxString::Format(_(L("Extruder %d")), int(extruder_idx + 1));
         auto page = add_options_page(page_name, "funnel", true);
 		m_pages.insert(m_pages.begin() + n_before_extruders + extruder_idx, page);
-			
+
 			auto optgroup = page->new_optgroup(_(L("Size")));
 			optgroup->append_single_option_line("nozzle_diameter", extruder_idx);
-		
+
 			optgroup = page->new_optgroup(_(L("Layer height limits")));
 			optgroup->append_single_option_line("min_layer_height", extruder_idx);
 			optgroup->append_single_option_line("max_layer_height", extruder_idx);
-				
-		
+
+
 			optgroup = page->new_optgroup(_(L("Position (for multi-extruder printers)")));
 			optgroup->append_single_option_line("extruder_offset", extruder_idx);
-		
+
 			optgroup = page->new_optgroup(_(L("Retraction")));
 			optgroup->append_single_option_line("retract_length", extruder_idx);
 			optgroup->append_single_option_line("retract_lift", extruder_idx);
@@ -2303,7 +2303,7 @@ void TabPrinter::build_unregular_pages()
 				line.append_option(optgroup->get_option("retract_lift_above", extruder_idx));
 				line.append_option(optgroup->get_option("retract_lift_below", extruder_idx));
 				optgroup->append_line(line);
-			
+
 			optgroup->append_single_option_line("retract_speed", extruder_idx);
 			optgroup->append_single_option_line("deretract_speed", extruder_idx);
 			optgroup->append_single_option_line("retract_restart_extra", extruder_idx);
@@ -2311,7 +2311,7 @@ void TabPrinter::build_unregular_pages()
 			optgroup->append_single_option_line("retract_layer_change", extruder_idx);
 			optgroup->append_single_option_line("wipe", extruder_idx);
 			optgroup->append_single_option_line("retract_before_wipe", extruder_idx);
-	
+
 			optgroup = page->new_optgroup(_(L("Retraction when tool is disabled (advanced settings for multi-extruder setups)")));
 			optgroup->append_single_option_line("retract_length_toolchange", extruder_idx);
 			optgroup->append_single_option_line("retract_restart_extra_toolchange", extruder_idx);
@@ -2319,10 +2319,10 @@ void TabPrinter::build_unregular_pages()
 			optgroup = page->new_optgroup(_(L("Preview")));
 			optgroup->append_single_option_line("extruder_colour", extruder_idx);
 	}
- 
+
 	// # remove extra pages
 	if (m_extruders_count < m_extruders_count_old)
-		m_pages.erase(	m_pages.begin() + n_before_extruders + m_extruders_count, 
+		m_pages.erase(	m_pages.begin() + n_before_extruders + m_extruders_count,
 						m_pages.begin() + n_before_extruders + m_extruders_count_old);
 
     Thaw();
@@ -2378,7 +2378,7 @@ void TabPrinter::update_pages()
 
          wxGetApp().sidebar().update_objects_list_extruder_column(m_extruders_count);
     }
-    else 
+    else
         m_pages_sla.empty() ? build_sla() : m_pages.swap(m_pages_sla);
 
     rebuild_page_tree();
@@ -2405,7 +2405,7 @@ void TabPrinter::update_fff()
 		get_field("serial_speed")->toggle(en);
 		if (m_config->opt_int("serial_speed") != 0 && en)
 			m_serial_test_btn->Enable();
-		else 
+		else
 			m_serial_test_btn->Disable();
 	}
 
@@ -2527,7 +2527,7 @@ void Tab::load_current_preset()
 
 #if 0
 	// use CallAfter because some field triggers schedule on_change calls using CallAfter,
-	// and we don't want them to be called after this update_dirty() as they would mark the 
+	// and we don't want them to be called after this update_dirty() as they would mark the
 	// preset dirty again
 	// (not sure this is true anymore now that update_dirty is idempotent)
 	wxTheApp->CallAfter([this]
@@ -2558,7 +2558,7 @@ void Tab::load_current_preset()
                         int page_id = wxGetApp().tab_panel()->FindPage(tab);
                         wxGetApp().tab_panel()->GetPage(page_id)->Show(false);
                         wxGetApp().tab_panel()->RemovePage(page_id);
-                    } 
+                    }
                 }
                 static_cast<TabPrinter*>(this)->m_printer_technology = printer_technology;
             }
@@ -2741,7 +2741,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
 		// Delete the file and select some other reasonable preset.
 		// It does not matter which preset will be made active as the preset will be re-selected from the preset_name variable.
 		// The 'external' presets will only be removed from the preset list, their files will not be deleted.
-		try { 
+		try {
 			m_presets->delete_current_preset();
 		} catch (const std::exception & /* e */) {
 			//FIXME add some error reporting!
@@ -2772,11 +2772,11 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
         if (! is_selected && printer_tab)
         {
             /* There is a case, when :
-             * after Config Wizard applying we try to select previously selected preset, but 
+             * after Config Wizard applying we try to select previously selected preset, but
              * in a current configuration this one:
              *  1. doesn't exist now,
              *  2. have another printer_technology
-             * So, it is necessary to update list of dependent tabs 
+             * So, it is necessary to update list of dependent tabs
              * to the corresponding printer_technology
              */
             const PrinterTechnology printer_technology = m_presets->get_edited_preset().printer_technology();
@@ -2810,7 +2810,7 @@ bool Tab::may_discard_current_dirty_preset(PresetCollection* presets /*= nullptr
 		if (! opt.category.empty())
 			name += _(opt.category) + " > ";
 		name += !opt.full_label.empty() ?
-				_(opt.full_label) : 
+				_(opt.full_label) :
 				_(opt.label);
 		changes += tab + /*from_u8*/(name) + "\n";
 	}
@@ -2837,7 +2837,7 @@ bool Tab::may_switch_to_SLA_preset()
 {
     if (wxGetApp().obj_list()->has_multi_part_objects())
     {
-        show_info( parent(), 
+        show_info( parent(),
                     _(L("It's impossible to print multi-part object(s) with SLA technology.")) + "\n\n" +
                     _(L("Please check your object list before preset changing.")),
                     _(L("Attention!")) );
@@ -2848,51 +2848,50 @@ bool Tab::may_switch_to_SLA_preset()
 
 void Tab::OnTreeSelChange(wxTreeEvent& event)
 {
-	if (m_disable_tree_sel_changed_event)         
+	if (m_disable_tree_sel_changed_event)
         return;
 
-// There is a bug related to Ubuntu overlay scrollbars, see https://github.com/prusa3d/PrusaSlicer/issues/898 and https://github.com/prusa3d/PrusaSlicer/issues/952.
-// The issue apparently manifests when Show()ing a window with overlay scrollbars while the UI is frozen. For this reason,
-// we will Thaw the UI prematurely on Linux. This means destroing the no_updates object prematurely.
-#ifdef __linux__	
-	std::unique_ptr<wxWindowUpdateLocker> no_updates(new wxWindowUpdateLocker(this));
-#else
-//	wxWindowUpdateLocker noUpdates(this);
-#endif
-
-    if (m_pages.empty())
-        return;
+  // There is a bug related to Ubuntu overlay scrollbars, see https://github.com/prusa3d/PrusaSlicer/issues/898 and https://github.com/prusa3d/PrusaSlicer/issues/952.
+	// The issue apparently manifests when Show()ing a window with overlay scrollbars while the UI is frozen. For this reason,
+	// we will Thaw the UI prematurely on Linux. This means destroing the no_updates object prematurely.
+	#ifdef __linux__
+		std::unique_ptr<wxWindowUpdateLocker> no_updates(new wxWindowUpdateLocker(this));
+	#else
+	//	wxWindowUpdateLocker noUpdates(this);
+	#endif
+	if (m_pages.empty())
+    return;
 
 	Page* page = nullptr;
-    const auto sel_item = m_treectrl->GetSelection();
-    const auto selection = sel_item ? m_treectrl->GetItemText(sel_item) : "";
-    for (auto p : m_pages)
-		if (p->title() == selection)
-		{
-			page = p.get();
-			m_is_nonsys_values = page->m_is_nonsys_values;
-			m_is_modified_values = page->m_is_modified_values;
-			break;
-		}
+  const auto sel_item = m_treectrl->GetSelection();
+  const auto selection = sel_item ? m_treectrl->GetItemText(sel_item) : "";
+  for (auto p : m_pages)
+	if (p->title() == selection)
+	{
+		page = p.get();
+		m_is_nonsys_values = page->m_is_nonsys_values;
+		m_is_modified_values = page->m_is_modified_values;
+		break;
+	}
 	if (page == nullptr) return;
 
 	for (auto& el : m_pages)
-//		if (el.get()->IsShown()) {
-			el.get()->Hide();
-//			break;
-//		}
+	//		if (el.get()->IsShown()) {
+		el.get()->Hide();
+	//			break;
+	//		}
 
 	#ifdef __linux__
-	    no_updates.reset(nullptr);
+		no_updates.reset(nullptr);
 	#endif
 
 	update_undo_buttons();
 	page->Show();
-//	if (! page->layout_valid) {
-		page->layout_valid = true;
-		m_hsizer->Layout();
-		Refresh();
-//	}
+	//	if (! page->layout_valid) {
+	page->layout_valid = true;
+	m_hsizer->Layout();
+	Refresh();
+	//	}
 }
 
 void Tab::OnKeyDown(wxKeyEvent& event)
@@ -2913,12 +2912,12 @@ void Tab::save_preset(std::string name /*= ""*/)
 	// since buttons(and choices too) don't get focus on Mac, we set focus manually
 	// to the treectrl so that the EVT_* events are fired for the input field having
 	// focus currently.is there anything better than this ?
-//!	m_treectrl->OnSetFocus();
+  //!	m_treectrl->OnSetFocus();
 
 	if (name.empty()) {
 		const Preset &preset = m_presets->get_selected_preset();
         auto default_name = preset.is_default ? "Untitled" :
-                            preset.is_system ? (boost::format(_utf8(L("%1% - Copy"))) % preset.name).str() : 
+                            preset.is_system ? (boost::format(_utf8(L("%1% - Copy"))) % preset.name).str() :
 	                        preset.name;
 
  		bool have_extention = boost::iends_with(default_name, ".ini");
@@ -2936,7 +2935,7 @@ void Tab::save_preset(std::string name /*= ""*/)
 		}
 
 		auto dlg = new SavePresetWindow(parent());
-		dlg->build(title(), default_name, values);	
+		dlg->build(title(), default_name, values);
 		if (dlg->ShowModal() != wxID_OK)
 			return;
 		name = dlg->get_name();
@@ -3140,7 +3139,7 @@ void Tab::set_tooltips_text()
 // 										"WHITE BULLET icon indicates a non system preset.\n\n"
 // 										"Click the UNLOCKED LOCK icon to reset all settings for current option group to "
 // 										"the system values.")));
-// 
+//
 // 	m_undo_btn->SetToolTip(_(L(	"WHITE BULLET icon indicates that the settings are the same as in the last saved"
 // 								"preset  for the current option group.\n"
 // 								"BACK ARROW icon indicates that the settings were changed and are not equal to "
@@ -3287,9 +3286,9 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
 void SavePresetWindow::build(const wxString& title, const std::string& default_name, std::vector<std::string> &values)
 {
     // TRN Preset
-	auto text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title), 
+	auto text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title),
 									wxDefaultPosition, wxDefaultSize);
-	m_combo = new wxComboBox(this, wxID_ANY, from_u8(default_name), 
+	m_combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
 							wxDefaultPosition, wxDefaultSize, 0, 0, wxTE_PROCESS_ENTER);
 	for (auto value : values)
 		m_combo->Append(from_u8(value));
@@ -3424,12 +3423,12 @@ void TabSLAMaterial::update()
 {
     if (m_preset_bundle->printers.get_selected_preset().printer_technology() == ptFFF)
         return; // #ys_FIXME
-    
+
 // #ys_FIXME
 //     m_update_cnt++;
 //     ! something to update
 //     m_update_cnt--;
-// 
+//
 //     if (m_update_cnt == 0)
         wxGetApp().mainframe->on_config_changed(m_config);
 }
