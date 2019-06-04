@@ -579,6 +579,63 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats { 28. });
+    
+    def = this->add("filament_use_skinnydip", coBools);
+    def->label = L("Enable Skinnydip string reduction");
+    def->tooltip = L("Skinnydip performs a secondary dip into the meltzone to burn off fine strings of filament");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBools { false });
+
+    def = this->add("filament_melt_zone_pause", coInts);
+    def->label = L("Time to pause in melt zone during skinnydip");
+    def->tooltip = L("This happens when the skinnydip move is deepest in the melt zone");
+    def->sidetext = L("milliseconds");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts { 0 });
+
+    def = this->add("filament_cooling_zone_pause", coInts);
+    def->label = L("Time to pause in cool zone after skinnydip");
+    def->tooltip = L("Can be useful to avoid bondtech gears deforming hot tips");
+    def->sidetext = L("milliseconds");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts { 0 });
+
+
+    def = this->add("filament_dip_insertion_speed", coInts);
+    def->label = L("Speed to move into melt zone");
+    def->tooltip = L("usually not necessary to change this");
+    def->sidetext = L("mm/min");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts { 2000 });
+
+    def = this->add("filament_dip_extraction_speed", coInts);
+    def->label = L("Speed to pull filament out of melt zone");
+    def->tooltip = L("usually not necessary to change this");
+    def->sidetext = L("mm/min");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts { 4000 });
+
+
+    def = this->add("filament_toolchange_temp", coInts);
+    def->label = L("Toolchange temperature");
+    def->tooltip = L("To further reduce stringing, it can be helpful to set a lower temperature just prior to extracting filament from the hotend.");
+    def->sidetext = L("°C");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInts { 0 });
+
+    
+    def = this->add("filament_skinnydip_distance", coFloats);
+    def->label = L("Skinnydip distance");
+    def->tooltip = L("distance to dip filament.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloats { 31 });
 
     def = this->add("filament_loading_speed_start", coFloats);
     def->label = L("Loading speed at the start");

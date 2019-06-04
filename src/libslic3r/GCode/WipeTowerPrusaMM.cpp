@@ -845,6 +845,13 @@ void WipeTowerPrusaMM::toolchange_Unload(
     float old_x = writer.x();
     float turning_point = (!m_left_to_right ? xl : xr );
     float total_retraction_distance = m_cooling_tube_retraction + m_cooling_tube_length/2.f - 15.f; // the 15mm is reserved for the first part after ramming
+    
+    // add wait for toolchange temp (SKINNYDIP)
+    char tdbuf[128];
+    sprintf(tdbuf, "M109 %d  ;SKINNYDIP TOOLCHANGE WAIT_FOR_TEMP\n", m_filpar[m_current_tool].filament_toolchange_temp);
+    writer.append(tdbuf);
+    
+
     writer.suppress_preview()
           .retract(15.f, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
           .retract(0.70f * total_retraction_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
@@ -857,11 +864,25 @@ void WipeTowerPrusaMM::toolchange_Unload(
           .load_move_x_advanced(old_x,         -0.10f * total_retraction_distance, 0.3f * m_filpar[m_current_tool].unloading_speed)
           .travel(old_x, writer.y()) // in case previous move was shortened to limit feedrate*/
           .resume_preview();
+
+    // restore temperature for this filament (no waiting) (SKINNYDIP)
+    //if !(m_is_first_layer){
+    //char trbuf[128];
+    //sprintf(trbuf, "M104 %d  ;SKINNYDIP RESTORE TEMP AFTER TOOLCHANGE\n", m_filpar[m_current_tool].temperature);
+    //writer.append(trbuf);}
+    //else{
+    char trbuf[128];
+    sprintf(trbuf, "M104 %d  ;SKINNYDIP RESTORE TEMP AFTER TOOLCHANGE\n", m_filpar[m_current_tool].first_layer_temperature);
+    writer.append(trbuf);
+
+
+
     if (new_temperature != 0 && (new_temperature != m_old_temperature || m_is_first_layer) ) { 	// Set the extruder temperature, but don't wait.
         // If the required temperature is the same as last time, don't emit the M104 again (if user adjusted the value, it would be reset)
         // However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
 		writer.set_extruder_temp(new_temperature, false);
         m_old_temperature = new_temperature;
+
     }
 
     // Cooling:
@@ -882,6 +903,16 @@ void WipeTowerPrusaMM::toolchange_Unload(
             speed += speed_inc;
             writer.load_move_x_advanced(old_x, -m_cooling_tube_length, speed);
         }
+     //Generate a skinnydip move
+     char dipbuf[400];
+     int retVal;
+     retVal = sprintf(dipbuf, "G1 E%d F%d ;SKINNYDIP move into melt zone\nG4 P%d ;SKINNYDIP pause in melt zone\nG1 E-%d F%d ;SKINNYDIP move out of melt zone\nG4 P%d ;SKINNYDIP pause in cool zone\n",
+                  m_filpar[m_current_tool].filament_skinnydip_distance, 
+		  m_filpar[m_current_tool].filament_dip_insertion_speed,
+		  m_filpar[m_current_tool].filament_melt_zone_pause,
+                  m_filpar[m_current_tool].filament_dip_extraction_speed,
+		  m_filpar[m_current_tool].filament_cooling_zone_pause);
+     writer.append(dipbuf);  // end of skinnydip move
     }
 
     // let's wait is necessary:

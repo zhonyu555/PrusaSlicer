@@ -1558,8 +1558,11 @@ void TabFilament::build()
 		optgroup->append_line(line);
 
         optgroup = page->new_optgroup(_(L("Toolchange parameters with single extruder MM printers")));
+
 		optgroup->append_single_option_line("filament_loading_speed_start");
+
         optgroup->append_single_option_line("filament_loading_speed");
+	
         optgroup->append_single_option_line("filament_unloading_speed_start");
         optgroup->append_single_option_line("filament_unloading_speed");
 		optgroup->append_single_option_line("filament_load_time");
@@ -1586,6 +1589,16 @@ void TabFilament::build()
 			return sizer;
 		};
 		optgroup->append_line(line);
+
+        optgroup = page->new_optgroup(_(L("Skinnydip parameters")));
+	optgroup->append_single_option_line("filament_toolchange_temp"); //ERIK
+	optgroup->append_single_option_line("filament_use_skinnydip"); //ERIK	
+	optgroup->append_single_option_line("filament_skinnydip_distance"); //ERIK
+	optgroup->append_single_option_line("filament_melt_zone_pause"); //ERIK		
+	optgroup->append_single_option_line("filament_cooling_zone_pause"); //ERIK
+        optgroup->append_single_option_line("filament_dip_insertion_speed"); //ERIK				
+        optgroup->append_single_option_line("filament_dip_extraction_speed"); //ERIK				
+
 
         const int gcode_field_height = 15; // 150
         const int notes_field_height = 25; // 250
