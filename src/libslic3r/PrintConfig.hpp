@@ -610,9 +610,11 @@ public:
     ConfigOptionFloats              filament_skinnydip_distance;   
     ConfigOptionInts                filament_melt_zone_pause;   
     ConfigOptionInts                filament_cooling_zone_pause;
-    ConfigOptionInts                filament_toolchange_temp;  
-    ConfigOptionFloats                filament_dip_insertion_speed;  
-    ConfigOptionFloats                filament_dip_extraction_speed;  //SKINNYDIP OPTIONS END
+    ConfigOptionBools                filament_enable_toolchange_temp;  
+    ConfigOptionInts                filament_toolchange_temp;
+    ConfigOptionBools                filament_enable_toolchange_part_fan;    
+    ConfigOptionFloats              filament_dip_insertion_speed;  
+    ConfigOptionFloats              filament_dip_extraction_speed;  //SKINNYDIP OPTIONS END
     ConfigOptionFloats              filament_loading_speed_start;
     ConfigOptionFloats              filament_load_time;
     ConfigOptionFloats              filament_unloading_speed;
@@ -691,7 +693,9 @@ protected:
         OPT_PTR(filament_cooling_zone_pause);
         OPT_PTR(filament_dip_insertion_speed);
         OPT_PTR(filament_dip_extraction_speed);
-        OPT_PTR(filament_toolchange_temp); //skinnydip end
+        OPT_PTR(filament_enable_toolchange_temp);
+        OPT_PTR(filament_toolchange_temp); 
+        OPT_PTR(filament_enable_toolchange_part_fan);//skinnydip end
         OPT_PTR(filament_loading_speed_start);
         OPT_PTR(filament_load_time);
         OPT_PTR(filament_unloading_speed);

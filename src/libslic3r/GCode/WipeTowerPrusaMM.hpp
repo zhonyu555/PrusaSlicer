@@ -73,8 +73,8 @@ public:
 	// Set the extruder properties.
 	void set_extruder(size_t idx, material_type material, int temp, int first_layer_temp, float loading_speed, float loading_speed_start,
                       float unloading_speed, float unloading_speed_start, float delay, int cooling_moves,
-                      float cooling_initial_speed, float cooling_final_speed, std::string ramming_parameters, float nozzle_diameter, int filament_toolchange_temp,
-                      bool filament_use_skinnydip, float filament_skinnydip_distance, int filament_melt_zone_pause, int filament_cooling_zone_pause, int filament_dip_insertion_speed,
+                      float cooling_initial_speed, float cooling_final_speed, std::string ramming_parameters, float nozzle_diameter, bool filament_enable_toolchange_temp, int filament_toolchange_temp,
+                      bool filament_enable_toolchange_part_fan, bool filament_use_skinnydip, float filament_skinnydip_distance, int filament_melt_zone_pause, int filament_cooling_zone_pause, int filament_dip_insertion_speed,
                       int filament_dip_extraction_speed)
 	{
         //while (m_filpar.size() < idx+1)   // makes sure the required element is in the vector
@@ -97,7 +97,9 @@ public:
         m_filpar[idx].cooling_initial_speed = cooling_initial_speed;
         m_filpar[idx].cooling_final_speed = cooling_final_speed;
         m_filpar[idx].nozzle_diameter = nozzle_diameter; // to be used in future with (non-single) multiextruder MM
+        m_filpar[idx].filament_enable_toolchange_temp = filament_enable_toolchange_temp; 		// skinnydip
         m_filpar[idx].filament_toolchange_temp = filament_toolchange_temp; 		// skinnydip
+        m_filpar[idx].filament_enable_toolchange_part_fan = filament_enable_toolchange_part_fan; 		// skinnydip
         m_filpar[idx].filament_use_skinnydip = filament_use_skinnydip; 			// skinnydip
         m_filpar[idx].filament_skinnydip_distance = filament_skinnydip_distance; 	// skinnydip
         m_filpar[idx].filament_melt_zone_pause = filament_melt_zone_pause;	        // skinnydip
@@ -257,13 +259,15 @@ private:
         float               ramming_step_multiplicator = 0.f;
         std::vector<float>  ramming_speed;
         float               nozzle_diameter;
-        int                 filament_toolchange_temp;
-        bool                filament_use_skinnydip;
-        float               filament_skinnydip_distance;
-        int                 filament_melt_zone_pause;
-        int                 filament_cooling_zone_pause;
-        float               filament_dip_insertion_speed;
-        float               filament_dip_extraction_speed;
+        bool                filament_enable_toolchange_temp = false;
+        int                 filament_toolchange_temp = 222.f;
+        bool                filament_enable_toolchange_part_fan = false;
+        bool                filament_use_skinnydip = true;
+        float               filament_skinnydip_distance = 10.f;
+        int                 filament_melt_zone_pause = 0;
+        int                 filament_cooling_zone_pause = 0;
+        float               filament_dip_insertion_speed = 0.f;
+        float               filament_dip_extraction_speed = 0.f;
     };
 
 	// Extruder specific parameters.

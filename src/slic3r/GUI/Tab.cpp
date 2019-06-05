@@ -1547,6 +1547,19 @@ void TabFilament::build()
 		optgroup->append_single_option_line("filament_type");
 		optgroup->append_single_option_line("filament_soluble");
 
+        optgroup = page->new_optgroup(_(L("Multimaterial toolchange temperature ")));
+	optgroup->append_single_option_line("filament_enable_toolchange_temp"); //ERIK
+	optgroup->append_single_option_line("filament_toolchange_temp"); //ERIK
+	optgroup->append_single_option_line("filament_enable_toolchange_part_fan"); //ERIK
+
+        optgroup = page->new_optgroup(_(L("Multimaterial toolchange string reduction")));
+	optgroup->append_single_option_line("filament_use_skinnydip"); //ERIK	
+	optgroup->append_single_option_line("filament_skinnydip_distance"); //ERIK
+	optgroup->append_single_option_line("filament_melt_zone_pause"); //ERIK		
+	optgroup->append_single_option_line("filament_cooling_zone_pause"); //ERIK
+        optgroup->append_single_option_line("filament_dip_insertion_speed"); //ERIK				
+        optgroup->append_single_option_line("filament_dip_extraction_speed"); //ERIK
+
 		optgroup = page->new_optgroup(_(L("Print speed override")));
 		optgroup->append_single_option_line("filament_max_volumetric_speed");
 
@@ -1589,15 +1602,6 @@ void TabFilament::build()
 			return sizer;
 		};
 		optgroup->append_line(line);
-
-        optgroup = page->new_optgroup(_(L("Skinnydip parameters")));
-	optgroup->append_single_option_line("filament_toolchange_temp"); //ERIK
-	optgroup->append_single_option_line("filament_use_skinnydip"); //ERIK	
-	optgroup->append_single_option_line("filament_skinnydip_distance"); //ERIK
-	optgroup->append_single_option_line("filament_melt_zone_pause"); //ERIK		
-	optgroup->append_single_option_line("filament_cooling_zone_pause"); //ERIK
-        optgroup->append_single_option_line("filament_dip_insertion_speed"); //ERIK				
-        optgroup->append_single_option_line("filament_dip_extraction_speed"); //ERIK				
 
 
         const int gcode_field_height = 15; // 150
