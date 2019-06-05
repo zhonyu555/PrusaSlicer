@@ -584,7 +584,7 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Enable Skinnydip string reduction");
     def->tooltip = L("Skinnydip performs a secondary dip into the meltzone to burn off fine strings of filament");
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionBools { false });
+    def->set_default_value(new ConfigOptionBools { true });
 
     def = this->add("filament_melt_zone_pause", coInts);
     def->label = L("Time to pause in melt zone during skinnydip");
@@ -592,7 +592,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("milliseconds");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionInts { 0 });
+    def->set_default_value(new ConfigOptionInts { 1 });
 
     def = this->add("filament_cooling_zone_pause", coInts);
     def->label = L("Time to pause in cool zone after skinnydip");
@@ -600,24 +600,24 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("milliseconds");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionInts { 0 });
+    def->set_default_value(new ConfigOptionInts { 1 });
 
 
-    def = this->add("filament_dip_insertion_speed", coInts);
+    def = this->add("filament_dip_insertion_speed", coFloats);
     def->label = L("Speed to move into melt zone");
     def->tooltip = L("usually not necessary to change this");
-    def->sidetext = L("mm/min");
+    def->sidetext = L("mm/sec");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionInts { 2000 });
+    def->set_default_value(new ConfigOptionFloats { 33. });
 
-    def = this->add("filament_dip_extraction_speed", coInts);
+    def = this->add("filament_dip_extraction_speed", coFloats);
     def->label = L("Speed to pull filament out of melt zone");
     def->tooltip = L("usually not necessary to change this");
     def->sidetext = L("mm/min");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionInts { 4000 });
+    def->set_default_value(new ConfigOptionFloats { 70. });
 
 
     def = this->add("filament_toolchange_temp", coInts);
@@ -635,7 +635,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloats { 31 });
+    def->set_default_value(new ConfigOptionFloats { 31. });
 
     def = this->add("filament_loading_speed_start", coFloats);
     def->label = L("Loading speed at the start");

@@ -611,8 +611,8 @@ public:
     ConfigOptionInts                filament_melt_zone_pause;   
     ConfigOptionInts                filament_cooling_zone_pause;
     ConfigOptionInts                filament_toolchange_temp;  
-    ConfigOptionInts                filament_dip_insertion_speed;  
-    ConfigOptionInts                filament_dip_extraction_speed;  //SKINNYDIP OPTIONS END
+    ConfigOptionFloats                filament_dip_insertion_speed;  
+    ConfigOptionFloats                filament_dip_extraction_speed;  //SKINNYDIP OPTIONS END
     ConfigOptionFloats              filament_loading_speed_start;
     ConfigOptionFloats              filament_load_time;
     ConfigOptionFloats              filament_unloading_speed;

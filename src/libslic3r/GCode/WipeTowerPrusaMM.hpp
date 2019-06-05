@@ -262,8 +262,8 @@ private:
         float               filament_skinnydip_distance;
         int                 filament_melt_zone_pause;
         int                 filament_cooling_zone_pause;
-        int                 filament_dip_insertion_speed;
-        int                 filament_dip_extraction_speed;
+        float               filament_dip_insertion_speed;
+        float               filament_dip_extraction_speed;
     };
 
 	// Extruder specific parameters.

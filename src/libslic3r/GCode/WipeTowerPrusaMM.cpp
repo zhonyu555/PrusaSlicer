@@ -286,6 +286,47 @@ public:
 		m_current_tool = tool;
 		return *this;
 	}
+	
+	//add skinnydip move (dip in, pause, dip out, pause)
+	Writer& skinnydip_move(float distance, float downspeed, int meltpause, float upspeed, int coolpause) 
+	{
+               char all[320] ="";
+               snprintf(all, 80, "G1 E%.4f F%.0f\n", distance, downspeed*60 );
+	       this->append(all);
+	       //m_gcode += all;
+	       snprintf(all, 80, "G4 P%d\n", meltpause);
+	       this->append(all);
+	       //m_gcode += all;
+	       snprintf(all, 80,  "G1 E-%.4f F%.0f\n", distance, upspeed*60);
+	       this->append(all);
+	       //m_gcode += all;
+	       snprintf(all, 80, "G4 P%d\n", coolpause);
+	       this->append(all);
+	       
+
+               return *this;
+	}
+
+	//add toolchange_temp
+	Writer& wait_for_toolchange_temp(int tc_temp) 
+	{
+	    char tdbuf[128];
+	    sprintf(tdbuf, "M109 %d  ;SKINNYDIP TOOLCHANGE WAIT_FOR_TEMP\n", tc_temp);
+	    m_gcode += tdbuf;
+            return *this;
+
+	}
+
+	//restore after toolchange_temp
+	Writer& begin_toolchange_temp(int tc_temp) 
+	{
+	    char tdbuf[128];
+	    sprintf(tdbuf, "M104 %d  ;SKINNYDIP BEGIN TOOLCHANGE TEMP\n", tc_temp);
+	    m_gcode += tdbuf;
+            return *this;
+
+	}
+
 
 	// Set extruder temperature, don't wait by default.
 	Writer& set_extruder_temp(int temperature, bool wait = false)
@@ -847,9 +888,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
     float total_retraction_distance = m_cooling_tube_retraction + m_cooling_tube_length/2.f - 15.f; // the 15mm is reserved for the first part after ramming
     
     // add wait for toolchange temp (SKINNYDIP)
-    char tdbuf[128];
-    sprintf(tdbuf, "M109 %d  ;SKINNYDIP TOOLCHANGE WAIT_FOR_TEMP\n", m_filpar[m_current_tool].filament_toolchange_temp);
-    writer.append(tdbuf);
+    writer.wait_for_toolchange_temp(m_filpar[m_current_tool].filament_toolchange_temp);
     
 
     writer.suppress_preview()
@@ -865,16 +904,8 @@ void WipeTowerPrusaMM::toolchange_Unload(
           .travel(old_x, writer.y()) // in case previous move was shortened to limit feedrate*/
           .resume_preview();
 
-    // restore temperature for this filament (no waiting) (SKINNYDIP)
-    //if !(m_is_first_layer){
-    //char trbuf[128];
-    //sprintf(trbuf, "M104 %d  ;SKINNYDIP RESTORE TEMP AFTER TOOLCHANGE\n", m_filpar[m_current_tool].temperature);
-    //writer.append(trbuf);}
-    //else{
-    char trbuf[128];
-    sprintf(trbuf, "M104 %d  ;SKINNYDIP RESTORE TEMP AFTER TOOLCHANGE\n", m_filpar[m_current_tool].first_layer_temperature);
-    writer.append(trbuf);
-
+    //restore toolchange temp
+    writer.begin_toolchange_temp(m_filpar[m_current_tool].temperature);
 
 
     if (new_temperature != 0 && (new_temperature != m_old_temperature || m_is_first_layer) ) { 	// Set the extruder temperature, but don't wait.
@@ -885,6 +916,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
 
     }
 
+         
     // Cooling:
     const int& number_of_moves = m_filpar[m_current_tool].cooling_moves;
     if (number_of_moves > 0) {
@@ -894,7 +926,7 @@ void WipeTowerPrusaMM::toolchange_Unload(
         float speed_inc = (final_speed - initial_speed) / (2.f * number_of_moves - 1.f);
 
         writer.suppress_preview()
-              .travel(writer.x(), writer.y() + y_step);
+        .travel(writer.x(), writer.y() + y_step);
         old_x = writer.x();
         turning_point = xr-old_x > old_x-xl ? xr : xl;
         for (int i=0; i<number_of_moves; ++i) {
@@ -903,30 +935,36 @@ void WipeTowerPrusaMM::toolchange_Unload(
             speed += speed_inc;
             writer.load_move_x_advanced(old_x, -m_cooling_tube_length, speed);
         }
-     //Generate a skinnydip move
-     char dipbuf[400];
-     int retVal;
-     retVal = sprintf(dipbuf, "G1 E%d F%d ;SKINNYDIP move into melt zone\nG4 P%d ;SKINNYDIP pause in melt zone\nG1 E-%d F%d ;SKINNYDIP move out of melt zone\nG4 P%d ;SKINNYDIP pause in cool zone\n",
-                  m_filpar[m_current_tool].filament_skinnydip_distance, 
-		  m_filpar[m_current_tool].filament_dip_insertion_speed,
-		  m_filpar[m_current_tool].filament_melt_zone_pause,
-                  m_filpar[m_current_tool].filament_dip_extraction_speed,
-		  m_filpar[m_current_tool].filament_cooling_zone_pause);
-     writer.append(dipbuf);  // end of skinnydip move
+        writer.resume_preview();
+    
     }
 
-    // let's wait is necessary:
+
+    //Generate a skinnydip move
+    writer.suppress_preview()
+          .skinnydip_move(m_filpar[m_current_tool].filament_skinnydip_distance, 
+                     m_filpar[m_current_tool].filament_dip_insertion_speed,
+		     m_filpar[m_current_tool].filament_melt_zone_pause,
+                     m_filpar[m_current_tool].filament_dip_extraction_speed,
+             	     m_filpar[m_current_tool].filament_cooling_zone_pause)
+          .resume_preview();
+
+
+    // let's wait if necessary:
     writer.wait(m_filpar[m_current_tool].delay);
+
+
+
     // we should be at the beginning of the cooling tube again - let's move to parking position:
     writer.retract(-m_cooling_tube_length/2.f+m_parking_pos_retraction-m_cooling_tube_retraction, 2000);
 
-	// this is to align ramming and future wiping extrusions, so the future y-steps can be uniform from the start:
+// this is to align ramming and future wiping extrusions, so the future y-steps can be uniform from the start:
     // the perimeter_width will later be subtracted, it is there to not load while moving over just extruded material
 	writer.travel(end_of_ramming.x, end_of_ramming.y + (y_step/m_extra_spacing-m_perimeter_width) / 2.f + m_perimeter_width, 2400.f);
 
 	writer.resume_preview()
 		  .flush_planner_queue();
-}
+} // of toolchange unload
 
 // Change the tool, set a speed override for soluble and flex materials.
 void WipeTowerPrusaMM::toolchange_Change(
