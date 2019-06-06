@@ -1102,7 +1102,6 @@ void GCode::_do_export(Print &print, FILE *file)
 		if (out_filament_cost.second)
 			_writeln(file, out_filament_cost.first);
     }
-    _writeln(file, "; ERIK WAS HERE \n");
     _write_format(file, "; total filament used [g] = %.1lf\n", print.m_print_statistics.total_weight);
     _write_format(file, "; total filament cost = %.1lf\n", print.m_print_statistics.total_cost);
     _write_format(file, "; estimated printing time (normal mode) = %s\n", m_normal_time_estimator.get_time_dhms().c_str());
