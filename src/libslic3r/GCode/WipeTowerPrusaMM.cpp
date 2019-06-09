@@ -314,7 +314,7 @@ public:
 	{
 	    char all[128];
             if (fan_on == true){
-            sprintf(all, "M106 S255 ;Part fan on to cool hotend\n");
+            sprintf(all, "M106 S128 ;Part fan on to cool hotend\n");
 	    this->append(all);
             }
 
