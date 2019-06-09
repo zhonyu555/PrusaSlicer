@@ -318,11 +318,11 @@ public:
 	    this->append(all);
             }
 
-	    sprintf(all, "M109 %d  ;SKINNYDIP TOOLCHANGE WAIT_FOR_TEMP\n", tc_temp);
+	    sprintf(all, "M109 S%d ;SKINNYDIP TOOLCHANGE WAIT_FOR_TEMP\n", tc_temp);
 	    this->append(all);
 
 	    if (fan_on == true){
-	    sprintf(all, "M107 ;Fan off\n"); //turn off fan
+	    sprintf(all, "M106 S0 ;Fan off\n"); //turn off fan
 	    this->append(all);
 	    }
             return *this;
@@ -333,7 +333,7 @@ public:
 	Writer& begin_toolchange_temp(int tc_temp) 
 	{
 	    char tdbuf[128];
-	    sprintf(tdbuf, "M104 %d  ;SKINNYDIP BEGIN TOOLCHANGE TEMP\n", tc_temp);
+	    sprintf(tdbuf, "M104 S%d  ;SKINNYDIP BEGIN TOOLCHANGE TEMP\n", tc_temp);
 	    m_gcode += tdbuf;
             return *this;
 
@@ -343,7 +343,7 @@ public:
 	Writer& restore_pre_toolchange_temp(int tc_temp) 
 	{
 	    char tdbuf[128];
-	    sprintf(tdbuf, "M104 %d  ;RESTORE PRE-TOOLCHANGE TEMP\n", tc_temp);
+	    sprintf(tdbuf, "M104 S%d  ;RESTORE PRE-TOOLCHANGE TEMP\n", tc_temp);
 	    m_gcode += tdbuf;
             return *this;
 
