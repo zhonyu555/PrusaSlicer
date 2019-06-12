@@ -29,6 +29,7 @@ TODO LIST
 
 #ifdef _MSC_VER 
 #define strcasecmp _stricmp
+#define snprintf _snprintf
 #endif
 
 
@@ -294,18 +295,13 @@ public:
 	       char all[320] ="";
                snprintf(all, 80, "G1 E%.4f F%.0f\n", distance, downspeed*60 );
 	       this->append(all);
-	       //m_gcode += all;
 	       snprintf(all, 80, "G4 P%d\n", meltpause);
 	       this->append(all);
-	       //m_gcode += all;
 	       snprintf(all, 80,  "G1 E-%.4f F%.0f\n", distance, upspeed*60);
 	       this->append(all);
-	       //m_gcode += all;
 	       snprintf(all, 80, "G4 P%d\n", coolpause);
 	       this->append(all);
                this->append("; SKINNYDIP END\n");
-	       
-
                return *this;
 	}
 
