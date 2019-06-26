@@ -1833,6 +1833,7 @@ void Print::_make_wipe_tower()
             m_config.filament_enable_toolchange_temp.get_at(i),
             m_config.filament_toolchange_temp.get_at(i),
             m_config.filament_enable_toolchange_part_fan.get_at(i),
+            m_config.filament_toolchange_part_fan_speed.get_at(i),
             m_config.filament_use_skinnydip.get_at(i),
             m_config.filament_skinnydip_distance.get_at(i),
             m_config.filament_melt_zone_pause.get_at(i),

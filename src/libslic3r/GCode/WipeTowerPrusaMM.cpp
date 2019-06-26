@@ -306,11 +306,11 @@ public:
 	}
 
 	//add toolchange_temp
-	Writer& wait_for_toolchange_temp(int tc_temp, bool fan_on) 
+	Writer& wait_for_toolchange_temp(int tc_temp, bool fan_on, int fan_speed) 
 	{
 	    char all[128];
             if (fan_on == true){
-            sprintf(all, "M106 S128 ;Part fan on to cool hotend\n");
+            sprintf(all, "M106 S%u ;Part fan on to cool hotend\n",(unsigned int)(255.0 * fan_speed / 100.0));
 	    this->append(all);
             }
 
@@ -908,7 +908,8 @@ void WipeTowerPrusaMM::toolchange_Unload(
     // add wait for toolchange temp (SKINNYDIP)
     if (m_filpar[m_current_tool].filament_enable_toolchange_temp == true) {
     writer.wait_for_toolchange_temp(m_filpar[m_current_tool].filament_toolchange_temp, 
-				    m_filpar[m_current_tool].filament_enable_toolchange_part_fan);
+				    m_filpar[m_current_tool].filament_enable_toolchange_part_fan,
+				    m_filpar[m_current_tool].filament_toolchange_part_fan_speed);
     }
     
 

@@ -592,7 +592,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBools { false });
 
-    
+    def = this->add("filament_toolchange_part_fan_speed", coInts);
+    def->label = L("Toolchange part fan speed");
+    def->tooltip = L("Experimental setting.  Fan speeds that are too high can clash with the hotend's PID routine.");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->max = 100;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInts { 50 });
+   
     def = this->add("filament_use_skinnydip", coBools);
     def->label = L("Enable Skinnydip string reduction");
     def->tooltip = L("Skinnydip performs a secondary dip into the meltzone to burn off fine strings of filament");

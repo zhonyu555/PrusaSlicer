@@ -1551,6 +1551,7 @@ void TabFilament::build()
 	optgroup->append_single_option_line("filament_enable_toolchange_temp"); //Skinnydip options start here
 	optgroup->append_single_option_line("filament_toolchange_temp"); 
 	optgroup->append_single_option_line("filament_enable_toolchange_part_fan");
+	optgroup->append_single_option_line("filament_toolchange_part_fan_speed");
         optgroup = page->new_optgroup(_(L("Multimaterial toolchange string reduction")));
 	optgroup->append_single_option_line("filament_use_skinnydip"); 
 	optgroup->append_single_option_line("filament_skinnydip_distance");
