@@ -2640,6 +2640,7 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
 
         std::vector<float> distances(polygon.points.size(), 0.f);
         if (seam_position == spNearest) {
+            Point last_pos_proj = polygon.points[last_pos_proj_idx];
             for (size_t i = 0; i < polygon.points.size(); ++ i)
                 distances[i] = last_pos_proj.distance_to_squared(polygon.points[i]);
             dist_max = *std::max_element(distances.begin(), distances.end());
