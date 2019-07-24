@@ -920,7 +920,7 @@ void Tab::update_preset_description_line()
 		_(L("It's a system preset.")) : 
 		wxString::Format(_(L("Current preset is inherited from %s")), (parent == nullptr ? 
 													_(L("default preset"))+"." : 
-													":\n\t" + parent->name));
+													wxT(":\n\t") + parent->name));
 	
 	if (preset.is_default || preset.is_system)
 		description_line += "\n\t" + _(L("It can't be deleted or modified.")) + 
