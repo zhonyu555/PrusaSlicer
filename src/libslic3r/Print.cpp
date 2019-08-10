@@ -1153,11 +1153,18 @@ std::string Print::validate() const
 
     if (this->has_wipe_tower() && ! m_objects.empty()) {
         // make sure all extruders use same diameter filament and have the same nozzle diameter
+		bool err_diam = false;
         for (const auto& extruder_idx : extruders()) {
-            if (m_config.nozzle_diameter.get_at(extruder_idx) != m_config.nozzle_diameter.get_at(extruders().front())
-             || m_config.filament_diameter.get_at(extruder_idx) != m_config.filament_diameter.get_at(extruders().front()))
-                 return L("The wipe tower is only supported if all extruders have the same nozzle diameter and use filaments of the same diameter.");
+            if (m_config.nozzle_diameter.get_at(extruder_idx) != m_config.nozzle_diameter.get_at(extruders().front()))
+				err_diam = true;
         }
+
+		for (size_t i=1; i < extruders().size() - 1; i++) {
+			if (abs(m_config.filament_diameter.values[i] - m_config.filament_diameter.values[i+1]) > 0.20f)
+				err_diam = true;
+		}
+		if (err_diam == true)
+			return L("The wipe tower is only supported if all extruders have the same nozzle diameter and use filaments of the same diameter.");
 
         if (m_config.gcode_flavor != gcfRepRap && m_config.gcode_flavor != gcfRepetier && m_config.gcode_flavor != gcfMarlin)
             return L("The Wipe Tower is currently only supported for the Marlin, RepRap/Sprinter and Repetier G-code flavors.");
