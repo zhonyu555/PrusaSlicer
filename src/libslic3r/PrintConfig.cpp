@@ -672,6 +672,29 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats { 0.0f });
+        
+    def = this->add("filament_dribbling", coBools);
+    def->label = L("Dribbling Mode");
+    def->tooltip = L("Dribbling mode improves the shape of the filament at unloading.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBools { false });        
+
+	def = this->add("dribbling_meltingzone", coFloats);
+	def->label = L("Melting distance");
+	def->tooltip = L("Melting distance from the end of the cooler's PTFE tube.");		
+	def->sidetext = L("mm");
+	def->min = 3;
+	def->mode = comExpert;
+	def->set_default_value(new ConfigOptionFloats{ 8.f });
+
+	def = this->add("dribbling_moves", coInts);
+	def->label = L("Number of dribbling moves");
+	def->tooltip = L("How many dribbling moves the filament should do.");
+	def->sidetext = L("moves");
+	def->min = 1;
+	def->mode = comExpert;
+	def->set_default_value(new ConfigOptionInts{ 1 });
+
 
     def = this->add("filament_ramming_parameters", coStrings);
     def->label = L("Ramming parameters");

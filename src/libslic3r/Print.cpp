@@ -189,6 +189,9 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
             || opt_key == "filament_cooling_final_speed"
             || opt_key == "filament_ramming_parameters"
             || opt_key == "filament_max_volumetric_speed"
+            || opt_key == "filament_dribbling"          
+			|| opt_key == "dribbling_meltingzone"
+			|| opt_key == "dribbling_moves"
             || opt_key == "gcode_flavor"
             || opt_key == "high_current_on_filament_swap"
             || opt_key == "infill_first"
@@ -1792,7 +1795,11 @@ void Print::_make_wipe_tower()
             m_config.filament_ramming_parameters.get_at(i),
             (float)m_config.filament_max_volumetric_speed.get_at(i),
             (float)m_config.nozzle_diameter.get_at(i),
-            (float)m_config.filament_diameter.get_at(i));
+            (float)m_config.filament_diameter.get_at(i),
+			m_config.filament_dribbling.get_at(i),
+			(float)m_config.dribbling_meltingzone.get_at(i),
+			m_config.dribbling_moves.get_at(i))
+			;
 
     m_wipe_tower_data.priming = Slic3r::make_unique<std::vector<WipeTower::ToolChangeResult>>(
         wipe_tower.prime((float)this->skirt_first_layer_height(), m_wipe_tower_data.tool_ordering.all_extruders(), false));

@@ -331,6 +331,17 @@ public:
 		return *this;
 	};
 
+	    // Wait for a period of time (milliseconds).
+	WipeTowerWriter& waitmills(float time)
+	{
+        if (time==0)
+            return *this;
+		char buf[128];
+		sprintf(buf, "G4 P%.3f\n", time);
+		m_gcode += buf;
+		return *this;
+	};
+
 	// Set speed factor override percentage.
 	WipeTowerWriter& speed_override(int speed)
 	{
@@ -819,6 +830,7 @@ void WipeTower::toolchange_Unload(
     }
 
     // now the ramming itself:
+    writer.append("; START Ramming GCODE\n");
     while (i < m_filpar[m_current_tool].ramming_speed.size())
     {
         const float x = volume_to_length(m_filpar[m_current_tool].ramming_speed[i] * 0.25f, line_width, m_layer_height);
@@ -847,6 +859,8 @@ void WipeTower::toolchange_Unload(
     float turning_point = (!m_left_to_right ? xl : xr );
     if (m_semm && (m_cooling_tube_retraction != 0 || m_cooling_tube_length != 0)) {
         float total_retraction_distance = m_cooling_tube_retraction + m_cooling_tube_length/2.f - 15.f; // the 15mm is reserved for the first part after ramming
+		if (m_filpar[m_current_tool].filament_dribbling == false) {
+			writer.append("; START PRUSA Retraction GCODE\n");
         writer.suppress_preview()
               .retract(15.f, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
               .retract(0.70f * total_retraction_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
@@ -859,7 +873,73 @@ void WipeTower::toolchange_Unload(
               .load_move_x_advanced(old_x,         -0.10f * total_retraction_distance, 0.3f * m_filpar[m_current_tool].unloading_speed)
               .travel(old_x, writer.y()) // in case previous move was shortened to limit feedrate*/
               .resume_preview();
+    	writer.append("; END Retraction GCODE\n");
     }
+		else
+		{
+			writer.append("; START Dribbling GCODE\n");
+			writer.suppress_preview();
+			
+			// go to the left border
+			writer.travel(xl, writer.y());
+			old_x = writer.x();
+			turning_point = xr - old_x > old_x - xl ? xr : xl;
+
+			float dribbling_meltingzone = m_filpar[m_current_tool].dribbling_meltingzone; // from the end of PTFE Tube
+			int dribbling_moves = m_filpar[m_current_tool].dribbling_moves;           // TBD: define in GUI
+			float dribbling_distance = dribbling_meltingzone * 3.f;   // 25mm
+			
+			int dribbling_tictac = 50;
+			float dr_offset = 2.0f; //  initial break dribbling distance 
+			float speed = m_filpar[m_current_tool].cooling_initial_speed;
+
+			// Extract inital
+			for (int i = 0; i < dribbling_tictac; ++i) {
+				writer.retract(0.10f * dr_offset, 0.40f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(0.20f * dr_offset, 0.30f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(0.30f * dr_offset, 0.20f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(0.40f * dr_offset, 0.10f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .waitmills(10);
+
+				writer.retract(-0.40f * dr_offset, 0.10f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(-0.30f * dr_offset, 0.20f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(-0.20f * dr_offset, 0.30f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .retract(-0.10f * dr_offset, 0.40f * m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+					  .waitmills(10);
+			}
+
+			writer.retract(0.40f * dribbling_distance, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+				  .retract(0.30f * dribbling_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
+				  .retract(0.20f * dribbling_distance, 0.5f * m_filpar[m_current_tool].unloading_speed * 60.f)
+				  .retract(0.10f * dribbling_distance, 0.3f * m_filpar[m_current_tool].unloading_speed * 60.f);									  
+			
+			writer.load_move_x_advanced(turning_point, -(dribbling_distance / 2), speed * 0.40f);
+			writer.load_move_x_advanced(old_x, (dribbling_distance / 2), speed * 0.40f);
+			
+			for (int i = 0; i < dribbling_moves; ++i) {					
+				for (int j = 0; j < 1; ++j) {
+					// Insert 1
+					writer.retract(-0.10f * dribbling_distance, 0.3f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .retract(-0.20f * dribbling_distance, 0.5f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .retract(-0.30f * dribbling_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .retract(-0.40f * dribbling_distance, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+						  .waitmills(100)
+
+						// Extract 2
+						  .retract(0.40f * dribbling_distance, m_filpar[m_current_tool].unloading_speed_start * 60.f) // feedrate 5000mm/min = 83mm/s
+						  .retract(0.30f * dribbling_distance, 1.0f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .retract(0.20f * dribbling_distance, 0.5f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .retract(0.10f * dribbling_distance, 0.3f * m_filpar[m_current_tool].unloading_speed * 60.f)
+						  .waitmills(500);
+				}				
+				writer.append("; ---\n");
+			}			
+			float total_dribbling_distance = m_cooling_tube_retraction + (m_cooling_tube_length / 2.f) - 15.f - dribbling_distance; // the 15mm is reserved for the first part after ramming
+			writer.retract(total_dribbling_distance, 0.3f * m_filpar[m_current_tool].unloading_speed * 60.f)
+			      .resume_preview();
+			writer.append("; END Dribbling GCODE\n");
+		}
+	}
     if (new_temperature != 0 && (new_temperature != m_old_temperature || m_is_first_layer) ) { 	// Set the extruder temperature, but don't wait.
         // If the required temperature is the same as last time, don't emit the M104 again (if user adjusted the value, it would be reset)
         // However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
@@ -874,6 +954,7 @@ void WipeTower::toolchange_Unload(
         const float& final_speed   = m_filpar[m_current_tool].cooling_final_speed;
 
         float speed_inc = (final_speed - initial_speed) / (2.f * number_of_moves - 1.f);
+        writer.append("; START Cooling moves GCODE\n");
 
         writer.suppress_preview()
               .travel(writer.x(), writer.y() + y_step);
@@ -885,17 +966,25 @@ void WipeTower::toolchange_Unload(
             speed += speed_inc;
             writer.load_move_x_advanced(old_x, -m_cooling_tube_length, speed);
         }
+        writer.append("; END Cooling moves GCODE\n");
     }
 
-    // let's wait is necessary:
-    writer.wait(m_filpar[m_current_tool].delay);
-    // we should be at the beginning of the cooling tube again - let's move to parking position:
-    writer.retract(-m_cooling_tube_length/2.f+m_parking_pos_retraction-m_cooling_tube_retraction, 2000);
+	// let's wait is necessary:
+	writer.wait(m_filpar[m_current_tool].delay);
+
+	// we should be at the beginning of the cooling tube again - let's move to parking position:
+	// THIS CODE IS THE EFFECTIVE EXTRUDER EJECT FILAMENT. Failure in calculation and the filament will be still into the grinder
+	float const additionl_safe = 20.f;
+	writer.append("; EJECT FILAMENT\n");
+	writer.retract(-m_cooling_tube_length / 2.f + m_parking_pos_retraction - m_cooling_tube_retraction + additionl_safe, 2000);
+	writer.append("; ----\n");
 
 	// this is to align ramming and future wiping extrusions, so the future y-steps can be uniform from the start:
     // the perimeter_width will later be subtracted, it is there to not load while moving over just extruded material
 	writer.travel(end_of_ramming.x(), end_of_ramming.y() + (y_step/m_extra_spacing-m_perimeter_width) / 2.f + m_perimeter_width, 2400.f);
-
+  
+  writer.append("; END Ramming GCODE\n");
+	
 	writer.resume_preview()
 		  .flush_planner_queue();
 }
