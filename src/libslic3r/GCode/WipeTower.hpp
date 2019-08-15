@@ -112,7 +112,11 @@ public:
 	void set_extruder(size_t idx, std::string material, int temp, int first_layer_temp, float loading_speed, float loading_speed_start,
                       float unloading_speed, float unloading_speed_start, float delay, int cooling_moves,
                       float cooling_initial_speed, float cooling_final_speed, std::string ramming_parameters, float max_volumetric_speed,
-                      float nozzle_diameter, float filament_diameter)
+                      float nozzle_diameter, float filament_diameter,
+					  // dribbling
+					  bool filament_dribbling,
+					  float dribbling_meltingzone,
+					  int dribbling_moves)
 	{
         //while (m_filpar.size() < idx+1)   // makes sure the required element is in the vector
         m_filpar.push_back(FilamentParameters());
@@ -132,6 +136,10 @@ public:
             m_filpar[idx].cooling_moves           = cooling_moves;
             m_filpar[idx].cooling_initial_speed   = cooling_initial_speed;
             m_filpar[idx].cooling_final_speed     = cooling_final_speed;
+			m_filpar[idx].filament_dribbling      = filament_dribbling;
+			m_filpar[idx].dribbling_meltingzone = dribbling_meltingzone;
+			m_filpar[idx].dribbling_moves = dribbling_moves;
+
         }
 
         m_filpar[idx].filament_area = float((M_PI/4.f) * pow(filament_diameter, 2)); // all extruders are assumed to have the same filament diameter at this point
@@ -252,6 +260,9 @@ public:
         std::vector<float>  ramming_speed;
         float               nozzle_diameter;
         float               filament_area;
+        bool                filament_dribbling = false;
+		float				dribbling_meltingzone = 8.f ;
+		int					dribbling_moves = 1 ;
     };
 
 private:

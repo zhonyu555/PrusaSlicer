@@ -624,7 +624,10 @@ public:
     ConfigOptionFloats              filament_cooling_initial_speed;
     ConfigOptionFloats              filament_minimal_purge_on_wipe_tower;
     ConfigOptionFloats              filament_cooling_final_speed;
-    ConfigOptionStrings             filament_ramming_parameters;
+    ConfigOptionStrings             filament_ramming_parameters;    
+	ConfigOptionBools               filament_dribbling;
+	ConfigOptionFloats				dribbling_meltingzone;
+	ConfigOptionInts				dribbling_moves;
     ConfigOptionBool                gcode_comments;
     ConfigOptionEnum<GCodeFlavor>   gcode_flavor;
     ConfigOptionBool                gcode_label_objects;
@@ -696,7 +699,10 @@ protected:
         OPT_PTR(filament_cooling_initial_speed);
         OPT_PTR(filament_minimal_purge_on_wipe_tower);
         OPT_PTR(filament_cooling_final_speed);
-        OPT_PTR(filament_ramming_parameters);
+        OPT_PTR(filament_ramming_parameters);        
+		OPT_PTR(filament_dribbling);
+		OPT_PTR(dribbling_meltingzone);
+		OPT_PTR(dribbling_moves);
         OPT_PTR(gcode_comments);
         OPT_PTR(gcode_flavor);
         OPT_PTR(gcode_label_objects);
