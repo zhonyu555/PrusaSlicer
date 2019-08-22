@@ -14,6 +14,9 @@ Thank you for understanding.
 
 # Building PrusaSlicer on Microsoft Windows
 
+You can use the free [Visual Studio 2019 Community Edition](https://visualstudio.microsoft.com/vs/) or use
+CMake from the command line.  
+
 ~~The currently supported way of building PrusaSlicer on Windows is with CMake and MS Visual Studio 2013.
 You can use the free [Visual Studio 2013 Community Edition](https://www.visualstudio.com/vs/older-downloads/).
 CMake installer can be downloaded from [the official website](https://cmake.org/download/).~~
@@ -24,9 +27,18 @@ _Note:_ Thanks to [**@supermerill**](https://github.com/supermerill) for testing
 
 ### Dependencies
 
-On Windows PrusaSlicer is built against statically built libraries.
-~~We provide a prebuilt package of all the needed dependencies. This package only works on Visual Studio 2013, so~~ if you are using a newer version of Visual Studio, you need to compile the dependencies yourself as per [below](#building-the-dependencies-package-yourself).
-The package comes in a several variants:
+On Windows PrusaSlicer is built against statically built libraries. 
+At this time you need to create these with the instructions [below](#building-the-dependencies-package-yourself).. 
+
+When the dependiencis are built their destination is specified to CMake using -DDESTDIR="\<your path\>". It can be anywhere.  
+
+By default VS 2019 will create a 64 bit Debug variant.
+ 
+~~We provide a prebuilt package of all the needed dependencies. This package only works on 
+Visual Studio 2013, so if you are using a newer version of Visual Studio, 
+you need to compile the dependencies yourself as per 
+[below](#building-the-dependencies-package-yourself).
+The package comes in a several variants:~~
 
   - ~~64 bit, Release mode only (41 MB, 578 MB unpacked)~~
   - ~~64 bit, Release and Debug mode (88 MB, 1.3 GB unpacked)~~
@@ -35,32 +47,54 @@ The package comes in a several variants:
 
 When unsure, use the _Release mode only_ variant, the _Release and Debug_ variant is only needed for debugging & development.
 
-If you're unsure where to unpack the package, unpack it into `C:\local\` (but it can really be anywhere).
+~~If you're unsure where to unpack the package, unpack it into `C:\local\` (but it can really be anywhere).~~
 
-Alternatively you can also compile the dependencies yourself, see below.
+~~Alternatively you can also compile the dependencies yourself, see below.~~
 
 ### Building PrusaSlicer with Visual Studio
 
 First obtain the PrusaSlicer sources via either git or by extracting the source archive.
 
-Then you will need to note down the so-called 'prefix path' to the dependencies, this is the location of the dependencies packages + `\usr\local` appended.
-For example on 64 bits this would be `C:\local\destdir-64\usr\local`. The prefix path will need to be passed to CMake.
+The 'prefix path' to the dependencies is "\<your path\>" with "\usr\local" appended.  For example, if \<your path\> is "c:\local\lib64" the
+CMAKE_PREFIX_PATH is "c:\local\lib64\usr\local" 
 
+#### Command Line Build
 When ready, open the relevant Visual Studio command line and `cd` into the directory with PrusaSlicer sources.
 Use these commands to prepare Visual Studio solution file:
 
     mkdir build
     cd build
-    cmake .. -G "Visual Studio 12 Win64" -DCMAKE_PREFIX_PATH="<insert prefix path here>"
+    cmake ..\.. -G "Visual Studio 16" -A x64 -DCMAKE_PREFIX_PATH="<insert prefix path here>"
+    msbuild /m /P:Configuration=Debug ALL_BUILD.vcxproj
 
-Note that if you're building a 32-bit variant, you will need to change the `"Visual Studio 12 Win64"` to just `"Visual Studio 12"`.
+Note that if you're building a 32-bit variant, you will need to change the `"Visual Studio 16" -A x64` to `"Visual Studio 16" -A Win32`.
 
-Conversely, if you're using Visual Studio version other than 2013, the version number will need to be changed accordingly.
+If `cmake` finishes without errors run the msbuild command using ALL_BUILD.vcxproj.
 
-If `cmake` has finished without errors, go to the build directory and open the `PrusaSlicer.sln` solution file in Visual Studio.
+#### Visual Studio Setup
+Open PrusaSlicer.sln  in /PrusaSlicer/src/build folder.
+
+By default Visual Studio 2019 uses Ninja. You need to change this to "Visual Studio 16 Win64" (or what you want to build) and specify the CMAKE_PREFIX_PATH used for the dependancies.  
+Access the configuration by clicking the down arrow next to "x64-Debug" (or whatever you built) and selecting "Manage Configurations..." to expose the CMake Settings.
+
+ - In 'CMake Command Arguments' enter:
+
+    - -DCMAKE_PREFIX_PATH="c:\local\lib64\usr\local".  
+ - Click on "Show Advanced settings" if they are not visable and 
+ 
+    - select "Visual Studio 16 2019 Win64" for the CMake Generator.
+
+Save the changes by clicking the 'Save' icon or File->Save All.
+
+
+When you save it will trigger CMake to run and you shouldn't see errors. Once CMake has completed you should be ready to make changes and debug.  NOTE: There is an error I have to ignore.
+
+Navigate to the 'src/build' build directory (you will have to 'Show all files') and open the `PrusaSlicer.sln` solution file in Visual Studio.
 Before building, make sure you're building the right project (use one of those starting with `PrusaSlicer_app_...`) and that you're building
 with the right configuration, i.e. _Release_ vs. _Debug_. When unsure, choose _Release_.
 Note that you won't be able to build a _Debug_ variant against a _Release_-only dependencies package.
+
+
 
 #### Installing using the `INSTALL` project
 
@@ -96,7 +130,7 @@ Then `cd` into the `deps` directory and use these commands to build:
 
     mkdir build
     cd build
-    cmake .. -G "Visual Studio 12 Win64" -DDESTDIR="C:\local\destdir-custom"
+    cmake .. -G "Visual Studio 16" -A x64 -DDESTDIR="C:\local\lib64"
     msbuild /m ALL_BUILD.vcxproj
 
 You can also use the Visual Studio GUI or other generators as mentioned above.
