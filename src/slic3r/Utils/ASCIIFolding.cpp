@@ -1911,14 +1911,14 @@ static void fold_to_ascii(wchar_t c, OUTPUT_ITERATOR out)
 		    break;
 		case L'\u2038': // [CARET]
 		case L'\uFF3E': // [FULLWIDTH CIRCUMFLEX ACCENT]
-		    *out = '^';
+		    *out = '_';
 		    break;
 		case L'\uFF3F': // [FULLWIDTH LOW LINE]
 		    *out = '_';
 		    break;
 		case L'\u2053': // [SWUNG DASH]
 		case L'\uFF5E': // [FULLWIDTH TILDE]
-		    *out = '~';
+		    *out = '-';
 		    break;
 		default:
 		    *out = c;
