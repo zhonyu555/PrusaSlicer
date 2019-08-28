@@ -608,7 +608,13 @@ std::vector<WipeTower::ToolChangeResult> WipeTower::prime(
         m_left_to_right = true;
         toolchange_Change(writer, tool, m_filpar[tool].material); // Select the tool, set a speed override for soluble and flex materials.
         toolchange_Load(writer, cleaning_box); // Prime the tool.
-        if (idx_tool + 1 == tools.size()) {
+		// Moving to a lower temperature doesn't happen until it is time to purge
+		if (m_filpar[m_current_tool].first_layer_temperature != m_old_temperature ) {  
+			writer.set_extruder_temp(m_filpar[m_current_tool].first_layer_temperature);
+			m_old_temperature = m_filpar[m_current_tool].first_layer_temperature;
+		}
+
+		if (idx_tool + 1 == tools.size()) {
             // Last tool should not be unloaded, but it should be wiped enough to become of a pure color.
             toolchange_Wipe(writer, cleaning_box, wipe_volumes[tools[idx_tool-1]][tool]);
         } else {
@@ -672,6 +678,8 @@ WipeTower::ToolChangeResult WipeTower::tool_change(unsigned int tool, bool last_
 		return toolchange_Brim();
 
     int old_tool = m_current_tool;
+	int next_tool = tool != (unsigned int)(-1) ? tool : m_current_tool;
+	int next_temp = m_is_first_layer ? m_filpar[next_tool].first_layer_temperature : m_filpar[next_tool].temperature;
 
 	float wipe_area = 0.f;
 	bool last_change_in_layer = false;
@@ -723,16 +731,21 @@ WipeTower::ToolChangeResult WipeTower::tool_change(unsigned int tool, bool last_
 		writer.set_extruder_trimpot(750);
 
     // Ram the hot material out of the melt zone, retract the filament into the cooling tubes and let it cool.
-    if (tool != (unsigned int)-1){ 			// This is not the last change.
-        toolchange_Unload(writer, cleaning_box, m_filpar[m_current_tool].material,
-                          m_is_first_layer ? m_filpar[tool].first_layer_temperature : m_filpar[tool].temperature);
-        toolchange_Change(writer, tool, m_filpar[tool].material); // Change the tool, set a speed override for soluble and flex materials.
-        toolchange_Load(writer, cleaning_box);
-        writer.travel(writer.x(), writer.y()-m_perimeter_width); // cooling and loading were done a bit down the road
-        toolchange_Wipe(writer, cleaning_box, wipe_volume);     // Wipe the newly loaded filament until the end of the assigned wipe area.
-        ++ m_num_tool_changes;
-    } else
-        toolchange_Unload(writer, cleaning_box, m_filpar[m_current_tool].material, m_filpar[m_current_tool].temperature);
+	toolchange_Unload(writer, cleaning_box, m_filpar[m_current_tool].material, next_temp); 
+
+	if (tool != (unsigned int)-1) { 			// This is not the last change.
+		toolchange_Change(writer, tool, m_filpar[tool].material); // Change the tool, set a speed override for soluble and flex materials.
+		toolchange_Load(writer, cleaning_box);
+		writer.travel(writer.x(), writer.y() - m_perimeter_width); // cooling and loading were done a bit down the road
+		// Moving to a lower temperature doesn't happen until it is time to purge so make sure it is applied if necessary
+		if (m_old_temperature != next_temp) { 
+			writer.set_extruder_temp(next_temp);
+			m_old_temperature = next_temp;
+		}
+		toolchange_Wipe(writer, cleaning_box, wipe_volume);     // Wipe the newly loaded filament until the end of the assigned wipe area.
+		++m_num_tool_changes;
+	}
+
 
     m_depth_traversed += wipe_area;
 
@@ -947,12 +960,6 @@ void WipeTower::toolchange_Unload(
               .travel(old_x, writer.y()) // in case previous move was shortened to limit feedrate*/
               .resume_preview();
     }
-    if (new_temperature != 0 && (new_temperature != m_old_temperature || m_is_first_layer) ) { 	// Set the extruder temperature, but don't wait.
-        // If the required temperature is the same as last time, don't emit the M104 again (if user adjusted the value, it would be reset)
-        // However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
-		writer.set_extruder_temp(new_temperature, false);
-        m_old_temperature = new_temperature;
-    }
 
     // Cooling:
     const int& number_of_moves = m_filpar[m_current_tool].cooling_moves;
@@ -985,6 +992,13 @@ void WipeTower::toolchange_Unload(
 
 	writer.resume_preview()
 		  .flush_planner_queue();
+}
+
+if (new_temperature != 0 && (new_temperature > m_old_temperature || m_is_first_layer)) { 	// Set the extruder temperature, but don't wait.
+// If the required temperature is the same as (OR LOWER than) last time don't emit the M104 again (if user adjusted the value, it would be reset)
+// However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
+	writer.set_extruder_temp(new_temperature, false);
+	m_old_temperature = new_temperature;
 }
 
 // Change the tool, set a speed override for soluble and flex materials.
