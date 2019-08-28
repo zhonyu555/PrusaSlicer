@@ -3211,8 +3211,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Plater.cpp:2243
 msgid ""
-"You can't load SLA project if there is at least one multi-part object on the "
-"bed"
+"You cannot load SLA project with a multi-part object on the bed"
 msgstr ""
 
 #: src/slic3r/GUI/Plater.cpp:2244 src/slic3r/GUI/Tab.cpp:3143
