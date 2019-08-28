@@ -990,15 +990,15 @@ void WipeTower::toolchange_Unload(
     // the perimeter_width will later be subtracted, it is there to not load while moving over just extruded material
 	writer.travel(end_of_ramming.x(), end_of_ramming.y() + (y_step/m_extra_spacing-m_perimeter_width) / 2.f + m_perimeter_width, 2400.f);
 
-	if (new_temperature != 0 && (new_temperature > m_old_temperature || m_is_first_layer)) { 	// Set the extruder temperature, but don't wait.
-	// If the required temperature is the same as (OR LOWER than) last time don't emit the M104 again (if user adjusted the value, it would be reset)
-	// However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
-		writer.set_extruder_temp(new_temperature, false);
-		m_old_temperature = new_temperature;
-	}
-
 	writer.resume_preview()
 		  .flush_planner_queue();
+}
+
+if (new_temperature != 0 && (new_temperature > m_old_temperature || m_is_first_layer)) { 	// Set the extruder temperature, but don't wait.
+// If the required temperature is the same as (OR LOWER than) last time don't emit the M104 again (if user adjusted the value, it would be reset)
+// However, always change temperatures on the first layer (this is to avoid issues with priming lines turned off).
+	writer.set_extruder_temp(new_temperature, false);
+	m_old_temperature = new_temperature;
 }
 
 // Change the tool, set a speed override for soluble and flex materials.
