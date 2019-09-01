@@ -20,6 +20,17 @@ protected:
 	bool fill_surface_by_lines(const Surface *surface, const FillParams &params, float angleBase, float pattern_shift, Polylines &polylines_out);
 };
 
+class FillAlignedRectilinear : public FillRectilinear2
+{
+public:
+    virtual Fill* clone() const { return new FillAlignedRectilinear(*this); };
+    virtual ~FillAlignedRectilinear() {}
+
+protected:
+    // Always generate infill at the same angle.
+    virtual float _layer_angle(size_t idx) const { return 0.f; }
+};
+
 class FillGrid2 : public FillRectilinear2
 {
 public:
