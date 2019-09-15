@@ -5008,6 +5008,8 @@ void GLCanvas3D::_load_gcode_extrusion_paths(const GCodePreviewData& preview_dat
                 return (float)path.extruder_id;
             case GCodePreviewData::Extrusion::ColorPrint:
                 return (float)path.cp_color_id;
+            case GCodePreviewData::Extrusion::FanSpeed:
+                return path.fan_speed;
             default:
                 return 0.0f;
             }
@@ -5048,6 +5050,8 @@ void GLCanvas3D::_load_gcode_extrusion_paths(const GCodePreviewData& preview_dat
 
                 return color;
             }
+            case GCodePreviewData::Extrusion::FanSpeed:
+                return data.get_fan_speed_color(value);
             default:
                 return GCodePreviewData::Color::Dummy;
             }
