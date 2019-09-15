@@ -463,7 +463,9 @@ void GCodeAnalyzer::_processM83(const GCodeReader::GCodeLine& line)
 void GCodeAnalyzer::_processM106(const GCodeReader::GCodeLine& line)
 {
     float new_fan_speed;
-    if (!line.has('P')) { // The absence of P means the print cooling fan, so ignore anything else.
+    float extruder_id = 0;
+
+    if (!line.has_value('P', extruder_id) || unsigned(extruder_id) == _get_extruder_id()) {
         if (line.has_value('S', new_fan_speed))
             _set_fan_speed((100.0f / 256) * new_fan_speed);
         else
@@ -474,7 +476,9 @@ void GCodeAnalyzer::_processM106(const GCodeReader::GCodeLine& line)
 
 void GCodeAnalyzer::_processM107(const GCodeReader::GCodeLine& line)
 {
-    if (!line.has('P')) // The absence of P means the print cooling fan, so ignore anything else.
+    float extruder_id = 0;
+
+    if (!line.has_value('P', extruder_id) || unsigned(extruder_id) == _get_extruder_id())
         _set_fan_speed(0.0f);
 }
 
