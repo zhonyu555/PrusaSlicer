@@ -38,10 +38,11 @@ GCodeAnalyzer::Metadata::Metadata()
     , width(GCodeAnalyzer::Default_Width)
     , height(GCodeAnalyzer::Default_Height)
     , feedrate(DEFAULT_FEEDRATE)
+    , fan_speed(0.0f)
 {
 }
 
-GCodeAnalyzer::Metadata::Metadata(ExtrusionRole extrusion_role, unsigned int extruder_id, double mm3_per_mm, float width, float height, float feedrate, unsigned int cp_color_id/* = 0*/)
+GCodeAnalyzer::Metadata::Metadata(ExtrusionRole extrusion_role, unsigned int extruder_id, double mm3_per_mm, float width, float height, float feedrate, unsigned int cp_color_id/* = 0*/, float fan_speed /* = 0.0f*/)
     : extrusion_role(extrusion_role)
     , extruder_id(extruder_id)
     , mm3_per_mm(mm3_per_mm)
@@ -49,6 +50,7 @@ GCodeAnalyzer::Metadata::Metadata(ExtrusionRole extrusion_role, unsigned int ext
     , height(height)
     , feedrate(feedrate)
     , cp_color_id(cp_color_id)
+    , fan_speed(fan_speed)
 {
 }
 
@@ -75,12 +77,15 @@ bool GCodeAnalyzer::Metadata::operator != (const GCodeAnalyzer::Metadata& other)
     if (cp_color_id != other.cp_color_id)
         return true;
 
+    if (fan_speed != other.fan_speed)
+        return true;
+
     return false;
 }
 
-GCodeAnalyzer::GCodeMove::GCodeMove(GCodeMove::EType type, ExtrusionRole extrusion_role, unsigned int extruder_id, double mm3_per_mm, float width, float height, float feedrate, const Vec3d& start_position, const Vec3d& end_position, float delta_extruder, unsigned int cp_color_id/* = 0*/)
+GCodeAnalyzer::GCodeMove::GCodeMove(GCodeMove::EType type, ExtrusionRole extrusion_role, unsigned int extruder_id, double mm3_per_mm, float width, float height, float feedrate, const Vec3d& start_position, const Vec3d& end_position, float delta_extruder, unsigned int cp_color_id/* = 0*/, float fan_speed)
     : type(type)
-    , data(extrusion_role, extruder_id, mm3_per_mm, width, height, feedrate, cp_color_id)
+    , data(extrusion_role, extruder_id, mm3_per_mm, width, height, feedrate, cp_color_id, fan_speed)
     , start_position(start_position)
     , end_position(end_position)
     , delta_extruder(delta_extruder)
@@ -127,6 +132,7 @@ void GCodeAnalyzer::reset()
     _set_start_extrusion(DEFAULT_START_EXTRUSION);
     _reset_axes_position();
     _reset_cached_position();
+    _set_fan_speed(0.0f);
 
     m_moves_map.clear();
     m_extruder_offsets.clear();
@@ -253,6 +259,16 @@ void GCodeAnalyzer::_process_gcode_line(GCodeReader&, const GCodeReader::GCodeLi
                 case 83: // Set extruder to relative mode
                     {
                         _processM83(line);
+                        break;
+                    }
+                case 106: // Set fan speed
+                    {
+                        _processM106(line);
+                        break;
+                    }
+                case 107: // Disable fan
+                    {
+                        _processM107(line);
                         break;
                     }
                 case 108:
@@ -442,6 +458,23 @@ void GCodeAnalyzer::_processM82(const GCodeReader::GCodeLine& line)
 void GCodeAnalyzer::_processM83(const GCodeReader::GCodeLine& line)
 {
     _set_e_local_positioning_type(Relative);
+}
+
+void GCodeAnalyzer::_processM106(const GCodeReader::GCodeLine& line)
+{
+    float new_fan_speed;
+    if (!line.has('P')) { // The absence of P means the print cooling fan, so ignore anything else.
+        if (line.has_value('S', new_fan_speed))
+            _set_fan_speed((100.0f / 256) * new_fan_speed);
+        else
+            _set_fan_speed(100.0f);
+    }
+
+}
+
+void GCodeAnalyzer::_processM107(const GCodeReader::GCodeLine& line)
+{
+    _set_fan_speed(0.0f);
 }
 
 void GCodeAnalyzer::_processM108orM135(const GCodeReader::GCodeLine& line)
@@ -708,6 +741,16 @@ float GCodeAnalyzer::_get_feedrate() const
     return m_state.data.feedrate;
 }
 
+void GCodeAnalyzer::_set_fan_speed(float fan_speed_percentage)
+{
+    m_state.data.fan_speed = fan_speed_percentage;
+}
+
+float GCodeAnalyzer::_get_fan_speed() const
+{
+    return m_state.data.fan_speed;
+}
+
 void GCodeAnalyzer::_set_axis_position(EAxis axis, float position)
 {
     m_state.position[axis] = position;
@@ -780,7 +823,7 @@ void GCodeAnalyzer::_store_move(GCodeAnalyzer::GCodeMove::EType type)
 
     Vec3d start_position = _get_start_position() + extruder_offset;
     Vec3d end_position = _get_end_position() + extruder_offset;
-    it->second.emplace_back(type, _get_extrusion_role(), extruder_id, _get_mm3_per_mm(), _get_width(), _get_height(), _get_feedrate(), start_position, end_position, _get_delta_extrusion(), _get_cp_color_id());
+    it->second.emplace_back(type, _get_extrusion_role(), extruder_id, _get_mm3_per_mm(), _get_width(), _get_height(), _get_feedrate(), start_position, end_position, _get_delta_extrusion(), _get_cp_color_id(), _get_fan_speed());
 }
 
 bool GCodeAnalyzer::_is_valid_extrusion_role(int value) const
@@ -817,6 +860,7 @@ void GCodeAnalyzer::_calc_gcode_preview_extrusion_layers(GCodePreviewData& previ
                 path.feedrate = data.feedrate;
                 path.extruder_id = data.extruder_id;
                 path.cp_color_id = data.cp_color_id;
+                path.fan_speed = data.fan_speed;
 
                 get_layer_at_z(preview_data.extrusion.layers, z).paths.push_back(path);
             }
@@ -836,6 +880,7 @@ void GCodeAnalyzer::_calc_gcode_preview_extrusion_layers(GCodePreviewData& previ
     GCodePreviewData::Range width_range;
     GCodePreviewData::Range feedrate_range;
     GCodePreviewData::Range volumetric_rate_range;
+    GCodePreviewData::Range fan_speed_range;
 
     // to avoid to call the callback too often
     unsigned int cancel_callback_threshold = (unsigned int)std::max((int)extrude_moves->second.size() / 25, 1);
@@ -870,6 +915,7 @@ void GCodeAnalyzer::_calc_gcode_preview_extrusion_layers(GCodePreviewData& previ
             width_range.update_from(move.data.width);
             feedrate_range.update_from(move.data.feedrate);
             volumetric_rate_range.update_from(volumetric_rate);
+            fan_speed_range.update_from(move.data.fan_speed);
         }
         else
             // append end vertex of the move to current polyline
@@ -888,6 +934,7 @@ void GCodeAnalyzer::_calc_gcode_preview_extrusion_layers(GCodePreviewData& previ
     preview_data.ranges.width.update_from(width_range);
     preview_data.ranges.feedrate.update_from(feedrate_range);
     preview_data.ranges.volumetric_rate.update_from(volumetric_rate_range);
+    preview_data.ranges.fan_speed.update_from(fan_speed_range);
 
     // we need to sort the layers by their z as they can be shuffled in case of sequential prints
     std::sort(preview_data.extrusion.layers.begin(), preview_data.extrusion.layers.end(), [](const GCodePreviewData::Extrusion::Layer& l1, const GCodePreviewData::Extrusion::Layer& l2)->bool { return l1.z < l2.z; });

@@ -281,6 +281,7 @@ void GCodePreviewData::set_default()
     ::memcpy((void*)ranges.height.colors, (const void*)Range::Default_Colors, Range::Colors_Count * sizeof(Color));
     ::memcpy((void*)ranges.width.colors, (const void*)Range::Default_Colors, Range::Colors_Count * sizeof(Color));
     ::memcpy((void*)ranges.feedrate.colors, (const void*)Range::Default_Colors, Range::Colors_Count * sizeof(Color));
+    ::memcpy((void*)ranges.fan_speed.colors, (const void*)Range::Default_Colors, Range::Colors_Count * sizeof(Color));
     ::memcpy((void*)ranges.volumetric_rate.colors, (const void*)Range::Default_Colors, Range::Colors_Count * sizeof(Color));
 
     extrusion.set_default();
@@ -325,6 +326,11 @@ GCodePreviewData::Color GCodePreviewData::get_width_color(float width) const
 GCodePreviewData::Color GCodePreviewData::get_feedrate_color(float feedrate) const
 {
     return ranges.feedrate.get_color_at(feedrate);
+}
+
+GCodePreviewData::Color GCodePreviewData::get_fan_speed_color(float fan_speed) const
+{
+    return ranges.fan_speed.get_color_at(fan_speed);
 }
 
 GCodePreviewData::Color GCodePreviewData::get_volumetric_rate_color(float rate) const
@@ -404,6 +410,8 @@ std::string GCodePreviewData::get_legend_title() const
         return L("Tool");
     case Extrusion::ColorPrint:
         return L("Color Print");
+    case Extrusion::FanSpeed:
+        return L("Fan Speed");
     case Extrusion::Num_View_Types:
         break; // just to supress warning about non-handled value
     }
@@ -508,6 +516,11 @@ GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::
 //                 items.emplace_back((boost::format(Slic3r::I18N::translate(L("%.2f - %.2f mm"))) %  cp_values[i-1] % cp_values[i]).str(), color);
                 items.emplace_back(id_str + (boost::format(Slic3r::I18N::translate(L("%.2f - %.2f mm"))) % cp_values[i - 1].second% cp_values[i].first).str(), color);
             }
+            break;
+        }
+    case Extrusion::FanSpeed:
+        {
+            Helper::FillListFromRange(items, ranges.fan_speed, 0, 1.0f);
             break;
         }
     case Extrusion::Num_View_Types:

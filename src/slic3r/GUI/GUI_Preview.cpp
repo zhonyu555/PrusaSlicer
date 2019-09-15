@@ -224,6 +224,7 @@ bool Preview::init(wxWindow* parent, Bed3D& bed, Camera& camera, GLToolbar& view
     m_choice_view_type->Append(_(L("Volumetric flow rate")));
     m_choice_view_type->Append(_(L("Tool")));
     m_choice_view_type->Append(_(L("Color Print")));
+    m_choice_view_type->Append(_(L("Fan Speed")));
     m_choice_view_type->SetSelection(0);
 
     m_label_show_features = new wxStaticText(this, wxID_ANY, _(L("Show")));

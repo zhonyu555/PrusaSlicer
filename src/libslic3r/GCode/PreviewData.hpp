@@ -54,6 +54,8 @@ public:
         Range feedrate;
         // Color mapping by volumetric extrusion rate.
         Range volumetric_rate;
+        // Color mapping by fan speed.
+        Range fan_speed;
     };
 
     struct LegendItem
@@ -77,6 +79,7 @@ public:
             VolumetricRate,
             Tool,
             ColorPrint,
+            FanSpeed,
             Num_View_Types
         };
 
@@ -206,6 +209,7 @@ public:
     Color get_height_color(float height) const;
     Color get_width_color(float width) const;
     Color get_feedrate_color(float feedrate) const;
+    Color get_fan_speed_color(float fan_speed) const;
     Color get_volumetric_rate_color(float rate) const;
 
     void set_extrusion_role_color(const std::string& role_name, float red, float green, float blue, float alpha);
