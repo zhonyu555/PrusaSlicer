@@ -469,6 +469,9 @@ void GCodeAnalyzer::_processM106(const GCodeReader::GCodeLine& line)
     float new_fan_speed;
     float extruder_id = 0;
 
+    // This tries to track the correct fan. It could miss using P to set a fan not currently active
+    // that later becomes active. However, that seems like a very rare corner case for an unlikely
+    // printer configuration, so I chose to keep the code simple and not handle it.
     if (!line.has_value('P', extruder_id) || unsigned(extruder_id) == _get_extruder_id()) {
         if (line.has_value('S', new_fan_speed))
             _set_fan_speed((100.0f / 256) * new_fan_speed);
@@ -482,6 +485,7 @@ void GCodeAnalyzer::_processM107(const GCodeReader::GCodeLine& line)
 {
     float extruder_id = 0;
 
+    // See _processM106 above to understand the logic.
     if (!line.has_value('P', extruder_id) || unsigned(extruder_id) == _get_extruder_id())
         _set_fan_speed(0.0f);
 }
