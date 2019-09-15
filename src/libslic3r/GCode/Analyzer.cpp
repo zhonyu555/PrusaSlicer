@@ -474,7 +474,8 @@ void GCodeAnalyzer::_processM106(const GCodeReader::GCodeLine& line)
 
 void GCodeAnalyzer::_processM107(const GCodeReader::GCodeLine& line)
 {
-    _set_fan_speed(0.0f);
+    if (!line.has('P')) // The absence of P means the print cooling fan, so ignore anything else.
+        _set_fan_speed(0.0f);
 }
 
 void GCodeAnalyzer::_processM108orM135(const GCodeReader::GCodeLine& line)
