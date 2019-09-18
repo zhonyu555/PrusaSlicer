@@ -111,7 +111,7 @@ void Camera::set_zoom(double zoom, const BoundingBoxf3& max_box, int canvas_w, i
     // Don't allow to zoom too far outside the scene.
     double zoom_min = calc_zoom_to_bounding_box_factor(max_box, canvas_w, canvas_h);
     if (zoom_min > 0.0)
-        zoom = std::max(zoom, zoom_min * 0.7);
+        zoom = std::max(zoom, zoom_min * 0.35);
 
     // Don't allow to zoom too close to the scene.
     zoom = std::min(zoom, 100.0);
