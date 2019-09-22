@@ -7144,7 +7144,7 @@ msgstr "Hız (mm / s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:402
 msgid "Volumetric flow rate (mm3/s)"
-msgstr "Hacimsel akış hızı (mm3/s)"
+msgstr "Hacimsel akış hızı (mm³/s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:491
 msgid "Default print color"

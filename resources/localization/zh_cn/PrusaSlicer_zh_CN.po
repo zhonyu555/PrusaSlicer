@@ -8867,7 +8867,7 @@ msgstr "回退速度(mm/s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:386
 msgid "Volumetric flow rate (mm3/s)"
-msgstr "体积流量 (mm3/s)"
+msgstr "体积流量 (mm³/s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:477
 msgid "Default print color"

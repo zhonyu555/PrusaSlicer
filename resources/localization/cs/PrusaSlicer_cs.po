@@ -7308,7 +7308,7 @@ msgstr "Objemový průtok"
 
 #: src/libslic3r/GCode/PreviewData.cpp:402
 msgid "Volumetric flow rate (mm3/s)"
-msgstr "Objemový průtok (mm3/s)"
+msgstr "Objemový průtok (mm³/s)"
 
 #: src/slic3r/GUI/RammingChart.cpp:81
 msgid "Volumetric speed"

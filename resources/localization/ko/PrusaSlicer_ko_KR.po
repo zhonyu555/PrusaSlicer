@@ -8955,7 +8955,7 @@ msgstr "속도 (mm/s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:402
 msgid "Volumetric flow rate (mm3/s)"
-msgstr "용적 유량값 (mm3/s)"
+msgstr "용적 유량값 (mm³/s)"
 
 #: src/libslic3r/GCode/PreviewData.cpp:493
 msgid "Default print color"

@@ -7306,7 +7306,7 @@ msgstr "Flusso volumetrico"
 
 #: src/libslic3r/GCode/PreviewData.cpp:402
 msgid "Volumetric flow rate (mm3/s)"
-msgstr "Flusso volumetrico (mm3/s)"
+msgstr "Flusso volumetrico (mm³/s)"
 
 #: src/slic3r/GUI/RammingChart.cpp:81
 msgid "Volumetric speed"
