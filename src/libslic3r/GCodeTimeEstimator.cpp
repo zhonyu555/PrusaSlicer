@@ -125,8 +125,8 @@ namespace Slic3r {
         trapezoid.distance = distance;
         trapezoid.feedrate = feedrate;
 
-        float accelerate_distance = estimate_acceleration_distance(feedrate.entry, feedrate.cruise, acceleration);
-        float decelerate_distance = estimate_acceleration_distance(feedrate.cruise, feedrate.exit, -acceleration);
+        float accelerate_distance = std::max(0.0f, estimate_acceleration_distance(feedrate.entry, feedrate.cruise, acceleration));
+        float decelerate_distance = std::max(0.0f, estimate_acceleration_distance(feedrate.cruise, feedrate.exit, -acceleration));
         float cruise_distance = distance - accelerate_distance - decelerate_distance;
 
         // Not enough space to reach the nominal feedrate.
@@ -168,13 +168,15 @@ namespace Slic3r {
     }
 #endif // ENABLE_MOVE_STATS
 
-    const std::string GCodeTimeEstimator::Normal_First_M73_Output_Placeholder_Tag = "; NORMAL_FIRST_M73_OUTPUT_PLACEHOLDER";
-    const std::string GCodeTimeEstimator::Silent_First_M73_Output_Placeholder_Tag = "; SILENT_FIRST_M73_OUTPUT_PLACEHOLDER";
-    const std::string GCodeTimeEstimator::Normal_Last_M73_Output_Placeholder_Tag = "; NORMAL_LAST_M73_OUTPUT_PLACEHOLDER";
-    const std::string GCodeTimeEstimator::Silent_Last_M73_Output_Placeholder_Tag = "; SILENT_LAST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Normal_First_M73_Output_Placeholder_Tag = "; _TE_NORMAL_FIRST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Silent_First_M73_Output_Placeholder_Tag = "; _TE_SILENT_FIRST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Normal_Last_M73_Output_Placeholder_Tag = "; _TE_NORMAL_LAST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Silent_Last_M73_Output_Placeholder_Tag = "; _TE_SILENT_LAST_M73_OUTPUT_PLACEHOLDER";
+
+    const std::string GCodeTimeEstimator::Color_Change_Tag = "PRINT_COLOR_CHANGE";
 
     GCodeTimeEstimator::GCodeTimeEstimator(EMode mode)
-        : _mode(mode)
+        : m_mode(mode)
     {
         reset();
         set_default();
@@ -183,7 +185,7 @@ namespace Slic3r {
     void GCodeTimeEstimator::add_gcode_line(const std::string& gcode_line)
     {
         PROFILE_FUNC();
-        _parser.parse_line(gcode_line, 
+        m_parser.parse_line(gcode_line, 
             [this](GCodeReader &reader, const GCodeReader::GCodeLine &line)
         { this->_process_gcode_line(reader, line); });
     }
@@ -196,7 +198,7 @@ namespace Slic3r {
         { this->_process_gcode_line(reader, line); };
         for (; *ptr != 0;) {
             gline.reset();
-            ptr = _parser.parse_line(ptr, gline, action);
+            ptr = m_parser.parse_line(ptr, gline, action);
         }
     }
 
@@ -206,9 +208,12 @@ namespace Slic3r {
         if (start_from_beginning)
         {
             _reset_time();
-            _last_st_synchronized_block_id = -1;
+            m_last_st_synchronized_block_id = -1;
         }
         _calculate_time();
+
+        if (m_needs_color_times && (m_color_time_cache != 0.0f))
+            m_color_times.push_back(m_color_time_cache);
 
 #if ENABLE_MOVE_STATS
         _log_moves_stats();
@@ -219,11 +224,14 @@ namespace Slic3r {
     {
         reset();
 
-        _parser.parse_buffer(gcode,
+        m_parser.parse_buffer(gcode,
             [this](GCodeReader &reader, const GCodeReader::GCodeLine &line)
         { this->_process_gcode_line(reader, line); });
 
         _calculate_time();
+
+        if (m_needs_color_times && (m_color_time_cache != 0.0f))
+            m_color_times.push_back(m_color_time_cache);
 
 #if ENABLE_MOVE_STATS
         _log_moves_stats();
@@ -234,8 +242,11 @@ namespace Slic3r {
     {
         reset();
 
-        _parser.parse_file(file, boost::bind(&GCodeTimeEstimator::_process_gcode_line, this, _1, _2));
+        m_parser.parse_file(file, boost::bind(&GCodeTimeEstimator::_process_gcode_line, this, _1, _2));
         _calculate_time();
+
+        if (m_needs_color_times && (m_color_time_cache != 0.0f))
+            m_color_times.push_back(m_color_time_cache);
 
 #if ENABLE_MOVE_STATS
         _log_moves_stats();
@@ -249,378 +260,389 @@ namespace Slic3r {
         auto action = [this](GCodeReader &reader, const GCodeReader::GCodeLine &line)
         { this->_process_gcode_line(reader, line); };
         for (const std::string& line : gcode_lines)
-            _parser.parse_line(line, action);
+            m_parser.parse_line(line, action);
         _calculate_time();
+
+        if (m_needs_color_times && (m_color_time_cache != 0.0f))
+            m_color_times.push_back(m_color_time_cache);
 
 #if ENABLE_MOVE_STATS
         _log_moves_stats();
 #endif // ENABLE_MOVE_STATS
     }
 
-    bool GCodeTimeEstimator::post_process_remaining_times(const std::string& filename, float interval)
+    bool GCodeTimeEstimator::post_process(const std::string& filename, float interval_sec, const PostProcessData* const normal_mode, const PostProcessData* const silent_mode)
     {
         boost::nowide::ifstream in(filename);
         if (!in.good())
-            throw std::runtime_error(std::string("Remaining times export failed.\nCannot open file for reading.\n"));
+            throw std::runtime_error(std::string("Time estimator post process export failed.\nCannot open file for reading.\n"));
 
-        std::string path_tmp = filename + ".times";
+        std::string path_tmp = filename + ".postprocess";
 
         FILE* out = boost::nowide::fopen(path_tmp.c_str(), "wb");
         if (out == nullptr)
-            throw std::runtime_error(std::string("Remaining times export failed.\nCannot open file for writing.\n"));
+            throw std::runtime_error(std::string("Time estimator post process export failed.\nCannot open file for writing.\n"));
 
-        std::string time_mask;
-        switch (_mode)
-        {
-        default:
-        case Normal:
-        {
-            time_mask = "M73 P%s R%s\n";
-            break;
-        }
-        case Silent:
-        {
-            time_mask = "M73 Q%s S%s\n";
-            break;
-        }
-        }
+        std::string normal_time_mask = "M73 P%s R%s\n";
+        std::string silent_time_mask = "M73 Q%s S%s\n";
+        char line_M73[64];
 
-        unsigned int g1_lines_count = 0;
-        float last_recorded_time = 0.0f;
         std::string gcode_line;
         // buffer line to export only when greater than 64K to reduce writing calls
         std::string export_line;
-        char time_line[64];
-		G1LineIdToBlockIdMap::const_iterator it_line_id = _g1_line_ids.begin();
-		while (std::getline(in, gcode_line))
-        {
-            if (!in.good())
-            {
-                fclose(out);
-                throw std::runtime_error(std::string("Remaining times export failed.\nError while reading from file.\n"));
-            }
 
-            // replaces placeholders for initial line M73 with the real lines
-            if (((_mode == Normal) && (gcode_line == Normal_First_M73_Output_Placeholder_Tag)) ||
-                ((_mode == Silent) && (gcode_line == Silent_First_M73_Output_Placeholder_Tag)))
-            {
-                sprintf(time_line, time_mask.c_str(), "0", _get_time_minutes(_time).c_str());
-                gcode_line = time_line;
-            }
-            // replaces placeholders for final line M73 with the real lines
-            else if (((_mode == Normal) && (gcode_line == Normal_Last_M73_Output_Placeholder_Tag)) ||
-                     ((_mode == Silent) && (gcode_line == Silent_Last_M73_Output_Placeholder_Tag)))
-            {
-                sprintf(time_line, time_mask.c_str(), "100", "0");
-                gcode_line = time_line;
-            }
-            else
-               gcode_line += "\n";
-
-
-            // add remaining time lines where needed
-            _parser.parse_line(gcode_line,
-                [this, &it_line_id, &g1_lines_count, &last_recorded_time, &time_line, &gcode_line, time_mask, interval](GCodeReader& reader, const GCodeReader::GCodeLine& line)
-            {
-                if (line.cmd_is("G1"))
-                {
-                    ++g1_lines_count;
-
-					assert(it_line_id == _g1_line_ids.end() || it_line_id->first >= g1_lines_count);
-
-					const Block *block = nullptr;
-					if (it_line_id != _g1_line_ids.end() && it_line_id->first == g1_lines_count) {
-						if (line.has_e() && it_line_id->second < (unsigned int)_blocks.size())
-							block = &_blocks[it_line_id->second];
-						++it_line_id;
-					}
-
-					if (block != nullptr && block->elapsed_time != -1.0f) {
-                        float block_remaining_time = _time - block->elapsed_time;
-                        if (std::abs(last_recorded_time - block_remaining_time) > interval)
-                        {
-                            sprintf(time_line, time_mask.c_str(), std::to_string((int)(100.0f * block->elapsed_time / _time)).c_str(), _get_time_minutes(block_remaining_time).c_str());
-                            gcode_line += time_line;
-
-                            last_recorded_time = block_remaining_time;
-                        }
-                    }
-                }
-            });
-
-            export_line += gcode_line;
-            if (export_line.length() > 65535)
-            {
-                fwrite((const void*)export_line.c_str(), 1, export_line.length(), out);
-                if (ferror(out))
-                {
-                    in.close();
-                    fclose(out);
-                    boost::nowide::remove(path_tmp.c_str());
-                    throw std::runtime_error(std::string("Remaining times export failed.\nIs the disk full?\n"));
-                }
-                export_line.clear();
-            }
-        }
-
-        if (export_line.length() > 0)
-        {
+        // helper function to write to disk
+        auto write_string = [&](const std::string& str) {
             fwrite((const void*)export_line.c_str(), 1, export_line.length(), out);
             if (ferror(out))
             {
                 in.close();
                 fclose(out);
                 boost::nowide::remove(path_tmp.c_str());
-                throw std::runtime_error(std::string("Remaining times export failed.\nIs the disk full?\n"));
+                throw std::runtime_error(std::string("Time estimator post process export failed.\nIs the disk full?\n"));
             }
+            export_line.clear();
+        };
+
+        GCodeReader parser;
+        unsigned int g1_lines_count = 0;
+        int normal_g1_line_id = 0;
+        float normal_last_recorded_time = 0.0f;
+        int silent_g1_line_id = 0;
+        float silent_last_recorded_time = 0.0f;
+
+        // helper function to process g1 lines
+        auto process_g1_line = [&](const PostProcessData* const data, const GCodeReader::GCodeLine& line, int& g1_line_id, float& last_recorded_time, const std::string& time_mask) {
+            if (data == nullptr)
+                return;
+
+            assert((g1_line_id >= (int)data->g1_line_ids.size()) || (data->g1_line_ids[g1_line_id].first >= g1_lines_count));
+            const Block* block = nullptr;
+            const G1LineIdToBlockId& map_item = data->g1_line_ids[g1_line_id];
+            if ((g1_line_id < (int)data->g1_line_ids.size()) && (map_item.first == g1_lines_count))
+            {
+                if (line.has_e() && (map_item.second < (unsigned int)data->blocks.size()))
+                    block = &data->blocks[map_item.second];
+                ++g1_line_id;
+            }
+
+            if ((block != nullptr) && (block->elapsed_time != -1.0f))
+            {
+                float block_remaining_time = data->time - block->elapsed_time;
+                if (std::abs(last_recorded_time - block_remaining_time) > interval_sec)
+                {
+                    sprintf(line_M73, time_mask.c_str(), std::to_string((int)(100.0f * block->elapsed_time / data->time)).c_str(), _get_time_minutes(block_remaining_time).c_str());
+                    gcode_line += line_M73;
+
+                    last_recorded_time = block_remaining_time;
+                }
+            }
+        };
+
+        while (std::getline(in, gcode_line))
+        {
+            if (!in.good())
+            {
+                fclose(out);
+                throw std::runtime_error(std::string("Time estimator post process export failed.\nError while reading from file.\n"));
+            }
+
+            // check tags
+            // remove color change tag
+            if (gcode_line == "; " + Color_Change_Tag)
+                continue;
+
+            // replaces placeholders for initial line M73 with the real lines
+            if ((normal_mode != nullptr) && (gcode_line == Normal_First_M73_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, normal_time_mask.c_str(), "0", _get_time_minutes(normal_mode->time).c_str());
+                gcode_line = line_M73;
+            }
+            else if ((silent_mode != nullptr) && (gcode_line == Silent_First_M73_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, silent_time_mask.c_str(), "0", _get_time_minutes(silent_mode->time).c_str());
+                gcode_line = line_M73;
+            }
+            // replaces placeholders for final line M73 with the real lines
+            else if ((normal_mode != nullptr) && (gcode_line == Normal_Last_M73_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, normal_time_mask.c_str(), "100", "0");
+                gcode_line = line_M73;
+            }
+            else if ((silent_mode != nullptr) && (gcode_line == Silent_Last_M73_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, silent_time_mask.c_str(), "100", "0");
+                gcode_line = line_M73;
+            }
+            else
+                gcode_line += "\n";
+
+            // add remaining time lines where needed
+            parser.parse_line(gcode_line,
+                [&](GCodeReader& reader, const GCodeReader::GCodeLine& line)
+                {
+                    if (line.cmd_is("G1"))
+                    {
+                        ++g1_lines_count;
+                        process_g1_line(silent_mode, line, silent_g1_line_id, silent_last_recorded_time, silent_time_mask);
+                        process_g1_line(normal_mode, line, normal_g1_line_id, normal_last_recorded_time, normal_time_mask);
+                    }
+                });
+
+            export_line += gcode_line;
+            if (export_line.length() > 65535)
+                write_string(export_line);
         }
+
+        if (!export_line.empty())
+            write_string(export_line);
 
         fclose(out);
         in.close();
 
-        if (rename_file(path_tmp, filename) != 0)
+        if (rename_file(path_tmp, filename))
             throw std::runtime_error(std::string("Failed to rename the output G-code file from ") + path_tmp + " to " + filename + '\n' +
-            "Is " + path_tmp + " locked?" + '\n');
+                "Is " + path_tmp + " locked?" + '\n');
 
         return true;
     }
 
     void GCodeTimeEstimator::set_axis_position(EAxis axis, float position)
     {
-        _state.axis[axis].position = position;
+        m_state.axis[axis].position = position;
     }
 
     void GCodeTimeEstimator::set_axis_max_feedrate(EAxis axis, float feedrate_mm_sec)
     {
-        _state.axis[axis].max_feedrate = feedrate_mm_sec;
+        m_state.axis[axis].max_feedrate = feedrate_mm_sec;
     }
 
     void GCodeTimeEstimator::set_axis_max_acceleration(EAxis axis, float acceleration)
     {
-        _state.axis[axis].max_acceleration = acceleration;
+        m_state.axis[axis].max_acceleration = acceleration;
     }
 
     void GCodeTimeEstimator::set_axis_max_jerk(EAxis axis, float jerk)
     {
-        _state.axis[axis].max_jerk = jerk;
+        m_state.axis[axis].max_jerk = jerk;
     }
 
     float GCodeTimeEstimator::get_axis_position(EAxis axis) const
     {
-        return _state.axis[axis].position;
+        return m_state.axis[axis].position;
     }
 
     float GCodeTimeEstimator::get_axis_max_feedrate(EAxis axis) const
     {
-        return _state.axis[axis].max_feedrate;
+        return m_state.axis[axis].max_feedrate;
     }
 
     float GCodeTimeEstimator::get_axis_max_acceleration(EAxis axis) const
     {
-        return _state.axis[axis].max_acceleration;
+        return m_state.axis[axis].max_acceleration;
     }
 
     float GCodeTimeEstimator::get_axis_max_jerk(EAxis axis) const
     {
-        return _state.axis[axis].max_jerk;
+        return m_state.axis[axis].max_jerk;
     }
 
     void GCodeTimeEstimator::set_feedrate(float feedrate_mm_sec)
     {
-        _state.feedrate = feedrate_mm_sec;
+        m_state.feedrate = feedrate_mm_sec;
     }
 
     float GCodeTimeEstimator::get_feedrate() const
     {
-        return _state.feedrate;
+        return m_state.feedrate;
     }
 
     void GCodeTimeEstimator::set_acceleration(float acceleration_mm_sec2)
     {
-        _state.acceleration = (_state.max_acceleration == 0) ? 
+        m_state.acceleration = (m_state.max_acceleration == 0) ? 
             acceleration_mm_sec2 : 
             // Clamp the acceleration with the maximum.
-            std::min(_state.max_acceleration, acceleration_mm_sec2);
+            std::min(m_state.max_acceleration, acceleration_mm_sec2);
     }
 
     float GCodeTimeEstimator::get_acceleration() const
     {
-        return _state.acceleration;
+        return m_state.acceleration;
     }
 
     void GCodeTimeEstimator::set_max_acceleration(float acceleration_mm_sec2)
     {
-        _state.max_acceleration = acceleration_mm_sec2;
+        m_state.max_acceleration = acceleration_mm_sec2;
         if (acceleration_mm_sec2 > 0)
-            _state.acceleration = acceleration_mm_sec2;
+            m_state.acceleration = acceleration_mm_sec2;
     }
 
     float GCodeTimeEstimator::get_max_acceleration() const
     {
-        return _state.max_acceleration;
+        return m_state.max_acceleration;
     }
 
     void GCodeTimeEstimator::set_retract_acceleration(float acceleration_mm_sec2)
     {
-        _state.retract_acceleration = acceleration_mm_sec2;
+        m_state.retract_acceleration = acceleration_mm_sec2;
     }
 
     float GCodeTimeEstimator::get_retract_acceleration() const
     {
-        return _state.retract_acceleration;
+        return m_state.retract_acceleration;
     }
 
     void GCodeTimeEstimator::set_minimum_feedrate(float feedrate_mm_sec)
     {
-        _state.minimum_feedrate = feedrate_mm_sec;
+        m_state.minimum_feedrate = feedrate_mm_sec;
     }
 
     float GCodeTimeEstimator::get_minimum_feedrate() const
     {
-        return _state.minimum_feedrate;
+        return m_state.minimum_feedrate;
     }
 
     void GCodeTimeEstimator::set_minimum_travel_feedrate(float feedrate_mm_sec)
     {
-        _state.minimum_travel_feedrate = feedrate_mm_sec;
+        m_state.minimum_travel_feedrate = feedrate_mm_sec;
     }
 
     float GCodeTimeEstimator::get_minimum_travel_feedrate() const
     {
-        return _state.minimum_travel_feedrate;
+        return m_state.minimum_travel_feedrate;
     }
 
     void GCodeTimeEstimator::set_filament_load_times(const std::vector<double> &filament_load_times)
     {
-        _state.filament_load_times.clear();
+        m_state.filament_load_times.clear();
         for (double t : filament_load_times)
-            _state.filament_load_times.push_back((float)t);
+            m_state.filament_load_times.push_back((float)t);
     }
 
     void GCodeTimeEstimator::set_filament_unload_times(const std::vector<double> &filament_unload_times)
     {
-        _state.filament_unload_times.clear();
+        m_state.filament_unload_times.clear();
         for (double t : filament_unload_times)
-            _state.filament_unload_times.push_back((float)t);
+            m_state.filament_unload_times.push_back((float)t);
     }
 
     float GCodeTimeEstimator::get_filament_load_time(unsigned int id_extruder)
     {
         return
-            (_state.filament_load_times.empty() || id_extruder == _state.extruder_id_unloaded) ? 
+            (m_state.filament_load_times.empty() || id_extruder == m_state.extruder_id_unloaded) ? 
                 0 :
-                (_state.filament_load_times.size() <= id_extruder) ?
-                    _state.filament_load_times.front() : 
-                    _state.filament_load_times[id_extruder];
+                (m_state.filament_load_times.size() <= id_extruder) ?
+                    m_state.filament_load_times.front() : 
+                    m_state.filament_load_times[id_extruder];
     }
 
     float GCodeTimeEstimator::get_filament_unload_time(unsigned int id_extruder)
     {
         return
-            (_state.filament_unload_times.empty() || id_extruder == _state.extruder_id_unloaded) ? 
+            (m_state.filament_unload_times.empty() || id_extruder == m_state.extruder_id_unloaded) ? 
                 0 :
-                (_state.filament_unload_times.size() <= id_extruder) ?
-                    _state.filament_unload_times.front() : 
-                    _state.filament_unload_times[id_extruder];
+                (m_state.filament_unload_times.size() <= id_extruder) ?
+                    m_state.filament_unload_times.front() : 
+                    m_state.filament_unload_times[id_extruder];
     }
 
     void GCodeTimeEstimator::set_extrude_factor_override_percentage(float percentage)
     {
-        _state.extrude_factor_override_percentage = percentage;
+        m_state.extrude_factor_override_percentage = percentage;
     }
 
     float GCodeTimeEstimator::get_extrude_factor_override_percentage() const
     {
-        return _state.extrude_factor_override_percentage;
+        return m_state.extrude_factor_override_percentage;
     }
 
     void GCodeTimeEstimator::set_dialect(GCodeFlavor dialect)
     {
-        _state.dialect = dialect;
+        m_state.dialect = dialect;
     }
 
     GCodeFlavor GCodeTimeEstimator::get_dialect() const
     {
         PROFILE_FUNC();
-        return _state.dialect;
+        return m_state.dialect;
     }
 
     void GCodeTimeEstimator::set_units(GCodeTimeEstimator::EUnits units)
     {
-        _state.units = units;
+        m_state.units = units;
     }
 
     GCodeTimeEstimator::EUnits GCodeTimeEstimator::get_units() const
     {
-        return _state.units;
+        return m_state.units;
     }
 
     void GCodeTimeEstimator::set_global_positioning_type(GCodeTimeEstimator::EPositioningType type)
     {
-        _state.global_positioning_type = type;
+        m_state.global_positioning_type = type;
     }
 
     GCodeTimeEstimator::EPositioningType GCodeTimeEstimator::get_global_positioning_type() const
     {
-        return _state.global_positioning_type;
+        return m_state.global_positioning_type;
     }
 
     void GCodeTimeEstimator::set_e_local_positioning_type(GCodeTimeEstimator::EPositioningType type)
     {
-        _state.e_local_positioning_type = type;
+        m_state.e_local_positioning_type = type;
     }
 
     GCodeTimeEstimator::EPositioningType GCodeTimeEstimator::get_e_local_positioning_type() const
     {
-        return _state.e_local_positioning_type;
+        return m_state.e_local_positioning_type;
     }
 
     int GCodeTimeEstimator::get_g1_line_id() const
     {
-        return _state.g1_line_id;
+        return m_state.g1_line_id;
     }
 
     void GCodeTimeEstimator::increment_g1_line_id()
     {
-        ++_state.g1_line_id;
+        ++m_state.g1_line_id;
     }
 
     void GCodeTimeEstimator::reset_g1_line_id()
     {
-        _state.g1_line_id = 0;
+        m_state.g1_line_id = 0;
     }
 
     void GCodeTimeEstimator::set_extruder_id(unsigned int id)
     {
-        _state.extruder_id = id;
+        m_state.extruder_id = id;
     }
 
     unsigned int GCodeTimeEstimator::get_extruder_id() const
     {
-        return _state.extruder_id;
+        return m_state.extruder_id;
     }
 
     void GCodeTimeEstimator::reset_extruder_id()
     {
         // Set the initial extruder ID to unknown. For the multi-material setup it means
         // that all the filaments are parked in the MMU and no filament is loaded yet.
-        _state.extruder_id = _state.extruder_id_unloaded;
+        m_state.extruder_id = m_state.extruder_id_unloaded;
     }
 
     void GCodeTimeEstimator::add_additional_time(float timeSec)
     {
         PROFILE_FUNC();
-        _state.additional_time += timeSec;
+        m_state.additional_time += timeSec;
     }
 
     void GCodeTimeEstimator::set_additional_time(float timeSec)
     {
-        _state.additional_time = timeSec;
+        m_state.additional_time = timeSec;
     }
 
     float GCodeTimeEstimator::get_additional_time() const
     {
-        return _state.additional_time;
+        return m_state.additional_time;
     }
 
     void GCodeTimeEstimator::set_default()
@@ -648,8 +670,8 @@ namespace Slic3r {
             set_axis_max_jerk(axis, DEFAULT_AXIS_MAX_JERK[a]);
         }
 
-        _state.filament_load_times.clear();
-        _state.filament_unload_times.clear();
+        m_state.filament_load_times.clear();
+        m_state.filament_unload_times.clear();
     }
 
     void GCodeTimeEstimator::reset()
@@ -664,7 +686,7 @@ namespace Slic3r {
 
     float GCodeTimeEstimator::get_time() const
     {
-        return _time;
+        return m_time;
     }
 
     std::string GCodeTimeEstimator::get_time_dhms() const
@@ -677,19 +699,61 @@ namespace Slic3r {
         return _get_time_minutes(get_time());
     }
 
+    std::vector<float> GCodeTimeEstimator::get_color_times() const
+    {
+        return m_color_times;
+    }
+
+    std::vector<std::string> GCodeTimeEstimator::get_color_times_dhms(bool include_remaining) const
+    {
+        std::vector<std::string> ret;
+        float total_time = 0.0f;
+        for (float t : m_color_times)
+        {
+            std::string time = _get_time_dhms(t);
+            if (include_remaining)
+            {
+                time += " (";
+                time += _get_time_dhms(m_time - total_time);
+                time += ")";
+            }
+            total_time += t;
+            ret.push_back(time);
+        }
+        return ret;
+    }
+
+    std::vector<std::string> GCodeTimeEstimator::get_color_times_minutes(bool include_remaining) const
+    {
+        std::vector<std::string> ret;
+        float total_time = 0.0f;
+        for (float t : m_color_times)
+        {
+            std::string time = _get_time_minutes(t);
+            if (include_remaining)
+            {
+                time += " (";
+                time += _get_time_minutes(m_time - total_time);
+                time += ")";
+            }
+            total_time += t;
+        }
+        return ret;
+    }
+
     // Return an estimate of the memory consumed by the time estimator.
 	size_t GCodeTimeEstimator::memory_used() const
     {
         size_t out = sizeof(*this);
-		out += SLIC3R_STDVEC_MEMSIZE(this->_blocks, Block);
-		out += SLIC3R_STDVEC_MEMSIZE(this->_g1_line_ids, G1LineIdToBlockId);
+		out += SLIC3R_STDVEC_MEMSIZE(this->m_blocks, Block);
+		out += SLIC3R_STDVEC_MEMSIZE(this->m_g1_line_ids, G1LineIdToBlockId);
         return out;
     }
 
     void GCodeTimeEstimator::_reset()
     {
-        _curr.reset();
-        _prev.reset();
+        m_curr.reset();
+        m_prev.reset();
 
         set_axis_position(X, 0.0f);
         set_axis_position(Y, 0.0f);
@@ -701,19 +765,23 @@ namespace Slic3r {
 
         reset_extruder_id();
         reset_g1_line_id();
-        _g1_line_ids.clear();
+        m_g1_line_ids.clear();
 
-        _last_st_synchronized_block_id = -1;
+        m_last_st_synchronized_block_id = -1;
+
+        m_needs_color_times = false;
+        m_color_times.clear();
+        m_color_time_cache = 0.0f;
     }
 
     void GCodeTimeEstimator::_reset_time()
     {
-        _time = 0.0f;
+        m_time = 0.0f;
     }
 
     void GCodeTimeEstimator::_reset_blocks()
     {
-        _blocks.clear();
+        m_blocks.clear();
     }
 
     void GCodeTimeEstimator::_calculate_time()
@@ -723,35 +791,32 @@ namespace Slic3r {
         _reverse_pass();
         _recalculate_trapezoids();
 
-        _time += get_additional_time();
+        m_time += get_additional_time();
+        m_color_time_cache += get_additional_time();
 
-        for (int i = _last_st_synchronized_block_id + 1; i < (int)_blocks.size(); ++i)
+        for (int i = m_last_st_synchronized_block_id + 1; i < (int)m_blocks.size(); ++i)
         {
-            Block& block = _blocks[i];
-
-#if ENABLE_MOVE_STATS
+            Block& block = m_blocks[i];
             float block_time = 0.0f;
             block_time += block.acceleration_time();
             block_time += block.cruise_time();
             block_time += block.deceleration_time();
-            _time += block_time;
-            block.elapsed_time = _time;
+            m_time += block_time;
+            block.elapsed_time = m_time;
 
+#if ENABLE_MOVE_STATS
             MovesStatsMap::iterator it = _moves_stats.find(block.move_type);
             if (it == _moves_stats.end())
                 it = _moves_stats.insert(MovesStatsMap::value_type(block.move_type, MoveStats())).first;
 
             it->second.count += 1;
             it->second.time += block_time;
-#else
-            _time += block.acceleration_time();
-            _time += block.cruise_time();
-            _time += block.deceleration_time();
-            block.elapsed_time = _time;
 #endif // ENABLE_MOVE_STATS
+
+            m_color_time_cache += block_time;
         }
 
-        _last_st_synchronized_block_id = (int)_blocks.size() - 1;
+        m_last_st_synchronized_block_id = (int)m_blocks.size() - 1;
         // The additional time has been consumed (added to the total time), reset it to zero.
         set_additional_time(0.);
     }
@@ -759,6 +824,11 @@ namespace Slic3r {
     void GCodeTimeEstimator::_process_gcode_line(GCodeReader&, const GCodeReader::GCodeLine& line)
     {
         PROFILE_FUNC();
+
+        // processes 'special' comments contained in line
+        if (_process_tags(line))
+            return;
+
         std::string cmd = line.cmd();
         if (cmd.length() > 1)
         {
@@ -934,7 +1004,7 @@ namespace Slic3r {
             return;
 
         // calculates block feedrate
-        _curr.feedrate = std::max(get_feedrate(), block.is_travel_move() ? get_minimum_travel_feedrate() : get_minimum_feedrate());
+        m_curr.feedrate = std::max(get_feedrate(), block.is_travel_move() ? get_minimum_travel_feedrate() : get_minimum_feedrate());
 
         float distance = block.move_length();
         float invDistance = 1.0f / distance;
@@ -942,23 +1012,23 @@ namespace Slic3r {
         float min_feedrate_factor = 1.0f;
         for (unsigned char a = X; a < Num_Axis; ++a)
         {
-            _curr.axis_feedrate[a] = _curr.feedrate * block.delta_pos[a] * invDistance;
+            m_curr.axis_feedrate[a] = m_curr.feedrate * block.delta_pos[a] * invDistance;
             if (a == E)
-                _curr.axis_feedrate[a] *= get_extrude_factor_override_percentage();
+                m_curr.axis_feedrate[a] *= get_extrude_factor_override_percentage();
 
-            _curr.abs_axis_feedrate[a] = std::abs(_curr.axis_feedrate[a]);
-            if (_curr.abs_axis_feedrate[a] > 0.0f)
-                min_feedrate_factor = std::min(min_feedrate_factor, get_axis_max_feedrate((EAxis)a) / _curr.abs_axis_feedrate[a]);
+            m_curr.abs_axis_feedrate[a] = std::abs(m_curr.axis_feedrate[a]);
+            if (m_curr.abs_axis_feedrate[a] > 0.0f)
+                min_feedrate_factor = std::min(min_feedrate_factor, get_axis_max_feedrate((EAxis)a) / m_curr.abs_axis_feedrate[a]);
         }
         
-        block.feedrate.cruise = min_feedrate_factor * _curr.feedrate;
+        block.feedrate.cruise = min_feedrate_factor * m_curr.feedrate;
 
         if (min_feedrate_factor < 1.0f)
         {
             for (unsigned char a = X; a < Num_Axis; ++a)
             {
-                _curr.axis_feedrate[a] *= min_feedrate_factor;
-                _curr.abs_axis_feedrate[a] *= min_feedrate_factor;
+                m_curr.axis_feedrate[a] *= min_feedrate_factor;
+                m_curr.abs_axis_feedrate[a] *= min_feedrate_factor;
             }
         }
 
@@ -975,25 +1045,25 @@ namespace Slic3r {
         block.acceleration = acceleration;
 
         // calculates block exit feedrate
-        _curr.safe_feedrate = block.feedrate.cruise;
+        m_curr.safe_feedrate = block.feedrate.cruise;
 
         for (unsigned char a = X; a < Num_Axis; ++a)
         {
             float axis_max_jerk = get_axis_max_jerk((EAxis)a);
-            if (_curr.abs_axis_feedrate[a] > axis_max_jerk)
-                _curr.safe_feedrate = std::min(_curr.safe_feedrate, axis_max_jerk);
+            if (m_curr.abs_axis_feedrate[a] > axis_max_jerk)
+                m_curr.safe_feedrate = std::min(m_curr.safe_feedrate, axis_max_jerk);
         }
 
-        block.feedrate.exit = _curr.safe_feedrate;
+        block.feedrate.exit = m_curr.safe_feedrate;
 
         // calculates block entry feedrate
-        float vmax_junction = _curr.safe_feedrate;
-        if (!_blocks.empty() && (_prev.feedrate > PREVIOUS_FEEDRATE_THRESHOLD))
+        float vmax_junction = m_curr.safe_feedrate;
+        if (!m_blocks.empty() && (m_prev.feedrate > PREVIOUS_FEEDRATE_THRESHOLD))
         {
-            bool prev_speed_larger = _prev.feedrate > block.feedrate.cruise;
-            float smaller_speed_factor = prev_speed_larger ? (block.feedrate.cruise / _prev.feedrate) : (_prev.feedrate / block.feedrate.cruise);
+            bool prev_speed_larger = m_prev.feedrate > block.feedrate.cruise;
+            float smaller_speed_factor = prev_speed_larger ? (block.feedrate.cruise / m_prev.feedrate) : (m_prev.feedrate / block.feedrate.cruise);
             // Pick the smaller of the nominal speeds. Higher speed shall not be achieved at the junction during coasting.
-            vmax_junction = prev_speed_larger ? block.feedrate.cruise : _prev.feedrate;
+            vmax_junction = prev_speed_larger ? block.feedrate.cruise : m_prev.feedrate;
 
             float v_factor = 1.0f;
             bool limited = false;
@@ -1001,8 +1071,8 @@ namespace Slic3r {
             for (unsigned char a = X; a < Num_Axis; ++a)
             {
                 // Limit an axis. We have to differentiate coasting from the reversal of an axis movement, or a full stop.
-                float v_exit = _prev.axis_feedrate[a];
-                float v_entry = _curr.axis_feedrate[a];
+                float v_exit = m_prev.axis_feedrate[a];
+                float v_entry = m_curr.axis_feedrate[a];
 
                 if (prev_speed_larger)
                     v_exit *= smaller_speed_factor;
@@ -1044,23 +1114,23 @@ namespace Slic3r {
             float vmax_junction_threshold = vmax_junction * 0.99f;
 
             // Not coasting. The machine will stop and start the movements anyway, better to start the segment from start.
-            if ((_prev.safe_feedrate > vmax_junction_threshold) && (_curr.safe_feedrate > vmax_junction_threshold))
-                vmax_junction = _curr.safe_feedrate;
+            if ((m_prev.safe_feedrate > vmax_junction_threshold) && (m_curr.safe_feedrate > vmax_junction_threshold))
+                vmax_junction = m_curr.safe_feedrate;
         }
 
-        float v_allowable = Block::max_allowable_speed(-acceleration, _curr.safe_feedrate, distance);
+        float v_allowable = Block::max_allowable_speed(-acceleration, m_curr.safe_feedrate, distance);
         block.feedrate.entry = std::min(vmax_junction, v_allowable);
 
         block.max_entry_speed = vmax_junction;
         block.flags.nominal_length = (block.feedrate.cruise <= v_allowable);
         block.flags.recalculate = true;
-        block.safe_feedrate = _curr.safe_feedrate;
+        block.safe_feedrate = m_curr.safe_feedrate;
 
         // calculates block trapezoid
         block.calculate_trapezoid();
 
         // updates previous
-        _prev = _curr;
+        m_prev = m_curr;
 
         // updates axis positions
         for (unsigned char a = X; a < Num_Axis; ++a)
@@ -1091,8 +1161,8 @@ namespace Slic3r {
 #endif // ENABLE_MOVE_STATS
 
         // adds block to blocks list
-        _blocks.emplace_back(block);
-        _g1_line_ids.emplace_back(G1LineIdToBlockIdMap::value_type(get_g1_line_id(), (unsigned int)_blocks.size() - 1));
+        m_blocks.emplace_back(block);
+        m_g1_line_ids.emplace_back(G1LineIdToBlockIdMap::value_type(get_g1_line_id(), (unsigned int)m_blocks.size() - 1));
     }
 
     void GCodeTimeEstimator::_processG4(const GCodeReader::GCodeLine& line)
@@ -1367,6 +1437,33 @@ namespace Slic3r {
         }
     }
 
+    bool GCodeTimeEstimator::_process_tags(const GCodeReader::GCodeLine& line)
+    {
+        std::string comment = line.comment();
+
+        // color change tag
+        size_t pos = comment.find(Color_Change_Tag);
+        if (pos != comment.npos)
+        {
+            _process_color_change_tag();
+            return true;
+        }
+
+        return false;
+    }
+
+    void GCodeTimeEstimator::_process_color_change_tag()
+    {
+        PROFILE_FUNC();
+        m_needs_color_times = true;
+        _calculate_time();
+        if (m_color_time_cache != 0.0f)
+        {
+            m_color_times.push_back(m_color_time_cache);
+            m_color_time_cache = 0.0f;
+        }
+    }
+
     void GCodeTimeEstimator::_simulate_st_synchronize()
     {
         PROFILE_FUNC();
@@ -1376,11 +1473,11 @@ namespace Slic3r {
     void GCodeTimeEstimator::_forward_pass()
     {
         PROFILE_FUNC();
-        if (_blocks.size() > 1)
+        if (m_blocks.size() > 1)
         {
-            for (int i = _last_st_synchronized_block_id + 1; i < (int)_blocks.size() - 1; ++i)
+            for (int i = m_last_st_synchronized_block_id + 1; i < (int)m_blocks.size() - 1; ++i)
             {
-                _planner_forward_pass_kernel(_blocks[i], _blocks[i + 1]);
+                _planner_forward_pass_kernel(m_blocks[i], m_blocks[i + 1]);
             }
         }
     }
@@ -1388,11 +1485,11 @@ namespace Slic3r {
     void GCodeTimeEstimator::_reverse_pass()
     {
         PROFILE_FUNC();
-        if (_blocks.size() > 1)
+        if (m_blocks.size() > 1)
         {
-            for (int i = (int)_blocks.size() - 1; i >= _last_st_synchronized_block_id + 2; --i)
+            for (int i = (int)m_blocks.size() - 1; i >= m_last_st_synchronized_block_id + 2; --i)
             {
-                _planner_reverse_pass_kernel(_blocks[i - 1], _blocks[i]);
+                _planner_reverse_pass_kernel(m_blocks[i - 1], m_blocks[i]);
             }
         }
     }
@@ -1444,9 +1541,9 @@ namespace Slic3r {
         Block* curr = nullptr;
         Block* next = nullptr;
 
-        for (int i = _last_st_synchronized_block_id + 1; i < (int)_blocks.size(); ++i)
+        for (int i = m_last_st_synchronized_block_id + 1; i < (int)m_blocks.size(); ++i)
         {
-            Block& b = _blocks[i];
+            Block& b = m_blocks[i];
 
             curr = next;
             next = &b;
@@ -1517,7 +1614,7 @@ namespace Slic3r {
         {
             std::cout << MOVE_TYPE_STR[move.first];
             std::cout << ": count " << move.second.count << " (" << 100.0f * (float)move.second.count / moves_count << "%)";
-            std::cout << " - time: " << move.second.time << "s (" << 100.0f * move.second.time / _time << "%)";
+            std::cout << " - time: " << move.second.time << "s (" << 100.0f * move.second.time / m_time << "%)";
             std::cout << std::endl;
         }
         std::cout << std::endl;

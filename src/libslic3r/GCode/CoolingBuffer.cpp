@@ -2,6 +2,7 @@
 #include "CoolingBuffer.hpp"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/log/trivial.hpp>
 #include <iostream>
 #include <float.h>
 
@@ -415,13 +416,22 @@ std::vector<PerExtruderAdjustments> CoolingBuffer::parse_layer_gcode(const std::
             line.type = CoolingLine::TYPE_EXTRUDE_END;
             active_speed_modifier = size_t(-1);
         } else if (boost::starts_with(sline, toolchange_prefix)) {
-            // Switch the tool.
-            line.type = CoolingLine::TYPE_SET_TOOL;
             unsigned int new_extruder = (unsigned int)atoi(sline.c_str() + toolchange_prefix.size());
-            if (new_extruder != current_extruder) {
-                current_extruder = new_extruder;
-                adjustment         = &per_extruder_adjustments[map_extruder_to_per_extruder_adjustment[current_extruder]];
+            // Only change extruder in case the number is meaningful. User could provide an out-of-range index through custom gcodes - those shall be ignored.
+            if (new_extruder < map_extruder_to_per_extruder_adjustment.size()) {
+                if (new_extruder != current_extruder) {
+                    // Switch the tool.
+                    line.type = CoolingLine::TYPE_SET_TOOL;
+                    current_extruder = new_extruder;
+                    adjustment         = &per_extruder_adjustments[map_extruder_to_per_extruder_adjustment[current_extruder]];
+                }
             }
+            else {
+                // Only log the error in case of MM printer. Single extruder printers likely ignore any T anyway.
+                if (map_extruder_to_per_extruder_adjustment.size() > 1)
+                    BOOST_LOG_TRIVIAL(error) << "CoolingBuffer encountered an invalid toolchange, maybe from a custom gcode: " << sline;
+            }
+
         } else if (boost::starts_with(sline, ";_BRIDGE_FAN_START")) {
             line.type = CoolingLine::TYPE_BRIDGE_FAN_START;
         } else if (boost::starts_with(sline, ";_BRIDGE_FAN_END")) {
@@ -672,7 +682,7 @@ std::string CoolingBuffer::apply_layer_cooldown(
 #define EXTRUDER_CONFIG(OPT) config.OPT.get_at(m_current_extruder)
         int min_fan_speed = EXTRUDER_CONFIG(min_fan_speed);
         int fan_speed_new = EXTRUDER_CONFIG(fan_always_on) ? min_fan_speed : 0;
-        if (layer_id >= EXTRUDER_CONFIG(disable_fan_first_layers)) {
+        if (layer_id >= (size_t)EXTRUDER_CONFIG(disable_fan_first_layers)) {
             int   max_fan_speed             = EXTRUDER_CONFIG(max_fan_speed);
             float slowdown_below_layer_time = float(EXTRUDER_CONFIG(slowdown_below_layer_time));
             float fan_below_layer_time      = float(EXTRUDER_CONFIG(fan_below_layer_time));

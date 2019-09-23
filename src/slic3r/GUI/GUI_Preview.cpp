@@ -63,7 +63,8 @@ bool View3D::init(wxWindow* parent, Bed3D& bed, Camera& camera, GLToolbar& view_
     m_canvas->set_config(config);
     m_canvas->enable_gizmos(true);
     m_canvas->enable_selection(true);
-    m_canvas->enable_toolbar(true);
+    m_canvas->enable_main_toolbar(true);
+    m_canvas->enable_undoredo_toolbar(true);
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     main_sizer->Add(m_canvas_widget, 1, wxALL | wxEXPAND, 0);
@@ -175,6 +176,7 @@ Preview::Preview(
     , m_checkbox_retractions(nullptr)
     , m_checkbox_unretractions(nullptr)
     , m_checkbox_shells(nullptr)
+    , m_checkbox_legend(nullptr)
     , m_config(config)
     , m_process(process)
     , m_gcode_preview_data(gcode_preview_data)
@@ -250,6 +252,8 @@ bool Preview::init(wxWindow* parent, Bed3D& bed, Camera& camera, GLToolbar& view
     m_checkbox_retractions = new wxCheckBox(this, wxID_ANY, _(L("Retractions")));
     m_checkbox_unretractions = new wxCheckBox(this, wxID_ANY, _(L("Unretractions")));
     m_checkbox_shells = new wxCheckBox(this, wxID_ANY, _(L("Shells")));
+    m_checkbox_legend = new wxCheckBox(this, wxID_ANY, _(L("Legend")));
+    m_checkbox_legend->SetValue(true);
 
     wxBoxSizer* top_sizer = new wxBoxSizer(wxHORIZONTAL);
     top_sizer->Add(m_canvas_widget, 1, wxALL | wxEXPAND, 0);
@@ -269,6 +273,8 @@ bool Preview::init(wxWindow* parent, Bed3D& bed, Camera& camera, GLToolbar& view
     bottom_sizer->Add(m_checkbox_unretractions, 0, wxEXPAND | wxALL, 5);
     bottom_sizer->AddSpacer(10);
     bottom_sizer->Add(m_checkbox_shells, 0, wxEXPAND | wxALL, 5);
+    bottom_sizer->AddSpacer(20);
+    bottom_sizer->Add(m_checkbox_legend, 0, wxEXPAND | wxALL, 5);
 
     wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
     main_sizer->Add(top_sizer, 1, wxALL | wxEXPAND, 0);
@@ -311,6 +317,12 @@ Preview::~Preview()
         delete m_canvas_widget;
         m_canvas = nullptr;
     }
+}
+
+void Preview::set_as_dirty()
+{
+    if (m_canvas != nullptr)
+        m_canvas->set_as_dirty();
 }
 
 void Preview::set_number_extruders(unsigned int number_extruders)
@@ -414,6 +426,18 @@ void Preview::msw_rescale()
     refresh_print();
 }
 
+void Preview::move_double_slider(wxKeyEvent& evt)
+{
+    if (m_slider) 
+        m_slider->OnKeyDown(evt);
+}
+
+void Preview::edit_double_slider(wxKeyEvent& evt)
+{
+    if (m_slider) 
+        m_slider->OnChar(evt);
+}
+
 void Preview::bind_event_handlers()
 {
     this->Bind(wxEVT_SIZE, &Preview::on_size, this);
@@ -423,6 +447,7 @@ void Preview::bind_event_handlers()
     m_checkbox_retractions->Bind(wxEVT_CHECKBOX, &Preview::on_checkbox_retractions, this);
     m_checkbox_unretractions->Bind(wxEVT_CHECKBOX, &Preview::on_checkbox_unretractions, this);
     m_checkbox_shells->Bind(wxEVT_CHECKBOX, &Preview::on_checkbox_shells, this);
+    m_checkbox_legend->Bind(wxEVT_CHECKBOX, &Preview::on_checkbox_legend, this);
 }
 
 void Preview::unbind_event_handlers()
@@ -434,6 +459,7 @@ void Preview::unbind_event_handlers()
     m_checkbox_retractions->Unbind(wxEVT_CHECKBOX, &Preview::on_checkbox_retractions, this);
     m_checkbox_unretractions->Unbind(wxEVT_CHECKBOX, &Preview::on_checkbox_unretractions, this);
     m_checkbox_shells->Unbind(wxEVT_CHECKBOX, &Preview::on_checkbox_shells, this);
+    m_checkbox_legend->Unbind(wxEVT_CHECKBOX, &Preview::on_checkbox_legend, this);
 }
 
 void Preview::show_hide_ui_elements(const std::string& what)
@@ -445,6 +471,7 @@ void Preview::show_hide_ui_elements(const std::string& what)
     m_checkbox_retractions->Enable(enable);
     m_checkbox_unretractions->Enable(enable);
     m_checkbox_shells->Enable(enable);
+    m_checkbox_legend->Enable(enable);
 
     enable = (what != "none");
     m_label_view_type->Enable(enable);
@@ -457,6 +484,7 @@ void Preview::show_hide_ui_elements(const std::string& what)
     m_checkbox_retractions->Show(visible);
     m_checkbox_unretractions->Show(visible);
     m_checkbox_shells->Show(visible);
+    m_checkbox_legend->Show(visible);
     m_label_view_type->Show(visible);
     m_choice_view_type->Show(visible);
 }
@@ -523,6 +551,32 @@ void Preview::on_checkbox_shells(wxCommandEvent& evt)
     refresh_print();
 }
 
+void Preview::on_checkbox_legend(wxCommandEvent& evt)
+{
+    m_canvas->enable_legend_texture(m_checkbox_legend->IsChecked());
+    m_canvas_widget->Refresh();
+}
+
+void Preview::update_view_type()
+{
+    const DynamicPrintConfig& config = wxGetApp().preset_bundle->project_config;
+
+    const wxString& choice = !config.option<ConfigOptionFloats>("colorprint_heights")->values.empty() && 
+                             wxGetApp().extruders_edited_cnt()==1 ? 
+                                _(L("Color Print")) :
+                                config.option<ConfigOptionFloats>("wiping_volumes_matrix")->values.size() > 1 ?
+                                    _(L("Tool")) : 
+                                    _(L("Feature type"));
+
+    int type = m_choice_view_type->FindString(choice);
+    if (m_choice_view_type->GetSelection() != type) {
+        m_choice_view_type->SetSelection(type);
+        if (0 <= type && type < (int)GCodePreviewData::Extrusion::Num_View_Types)
+            m_gcode_preview_data->extrusion.view_type = (GCodePreviewData::Extrusion::EViewType)type;
+        m_preferred_color_mode = "feature";
+    }
+}
+
 void Preview::create_double_slider()
 {
     m_slider = new DoubleSlider(this, wxID_ANY, 0, 0, 0, 100);
@@ -535,23 +589,13 @@ void Preview::create_double_slider()
 
 
     Bind(wxCUSTOMEVT_TICKSCHANGED, [this](wxEvent&) {
-            auto& config = wxGetApp().preset_bundle->project_config;
-            ((config.option<ConfigOptionFloats>("colorprint_heights"))->values) = (m_slider->GetTicksValues());
-            m_schedule_background_process();
+        wxGetApp().preset_bundle->project_config.option<ConfigOptionFloats>("colorprint_heights")->values = m_slider->GetTicksValues();
+        m_schedule_background_process();
 
-            const wxString& choise = !config.option<ConfigOptionFloats>("colorprint_heights")->values.empty() ? _(L("Color Print")) :
-                                      config.option<ConfigOptionFloats>("wiping_volumes_matrix")->values.size() > 1  ? 
-                                      _(L("Tool")) : _(L("Feature type"));
+        update_view_type();
 
-            int type = m_choice_view_type->FindString(choise);
-            if (m_choice_view_type->GetSelection() != type) {
-                m_choice_view_type->SetSelection(type);
-                if ((0 <= type) && (type < (int)GCodePreviewData::Extrusion::Num_View_Types))
-                    m_gcode_preview_data->extrusion.view_type = (GCodePreviewData::Extrusion::EViewType)type;
-                m_preferred_color_mode = "feature";
-            }
-            reload_print();
-        });
+        reload_print();
+    });
 }
 
 // Find an index of a value in a sorted vector, which is in <z-eps, z+eps>.
@@ -590,15 +634,16 @@ void Preview::update_double_slider(const std::vector<double>& layers_z, bool kee
     bool force_sliders_full_range = was_empty;
     if (!keep_z_range)
     {
-        bool span_changed = layers_z.empty() || std::abs(layers_z.back() - m_slider->GetMaxValueD()) > 1e-6;
+        bool span_changed = layers_z.empty() || std::abs(layers_z.back() - m_slider->GetMaxValueD()) > DoubleSlider::epsilon()/*1e-6*/;
         force_sliders_full_range |= span_changed;
     }
     bool   snap_to_min = force_sliders_full_range || m_slider->is_lower_at_min();
 	bool   snap_to_max  = force_sliders_full_range || m_slider->is_higher_at_max();
 
-    std::vector<std::pair<int, double>> values;
-    fill_slider_values(values, layers_z);
-    m_slider->SetSliderValues(values);
+    std::vector<double> &ticks_from_config = (wxGetApp().preset_bundle->project_config.option<ConfigOptionFloats>("colorprint_heights"))->values;
+    check_slider_values(ticks_from_config, layers_z);
+
+    m_slider->SetSliderValues(layers_z);
     assert(m_slider->GetMinValue() == 0);
     m_slider->SetMaxValue(layers_z.empty() ? 0 : layers_z.size() - 1);
 
@@ -606,20 +651,17 @@ void Preview::update_double_slider(const std::vector<double>& layers_z, bool kee
     int idx_high = m_slider->GetMaxValue();
     if (! layers_z.empty()) {
         if (! snap_to_min) {
-            int idx_new = find_close_layer_idx(layers_z, z_low, 1e-6);
+            int idx_new = find_close_layer_idx(layers_z, z_low, DoubleSlider::epsilon()/*1e-6*/);
             if (idx_new != -1)
                 idx_low = idx_new;
         }
         if (! snap_to_max) {
-            int idx_new = find_close_layer_idx(layers_z, z_high, 1e-6);
+            int idx_new = find_close_layer_idx(layers_z, z_high, DoubleSlider::epsilon()/*1e-6*/);
             if (idx_new != -1)
                 idx_high = idx_new;
         }
     }
     m_slider->SetSelectionSpan(idx_low, idx_high);
-
-    const auto& config = wxGetApp().preset_bundle->project_config;
-    const std::vector<double> &ticks_from_config = (config.option<ConfigOptionFloats>("colorprint_heights"))->values;
 
     m_slider->SetTicksValues(ticks_from_config);
 
@@ -632,22 +674,19 @@ void Preview::update_double_slider(const std::vector<double>& layers_z, bool kee
     m_slider->EnableTickManipulation(color_print_enable);
 }
 
-void Preview::fill_slider_values(std::vector<std::pair<int, double>> &values,
+void Preview::check_slider_values(std::vector<double>& ticks_from_config,
                                  const std::vector<double> &layers_z)
 {
-    values.clear();
-    for (int i = 0; i < layers_z.size(); ++i)
-    {
-        values.push_back(std::pair<int, double>(i + 1, layers_z[i]));
-    }
-
     // All ticks that would end up outside the slider range should be erased.
     // TODO: this should be placed into more appropriate part of code,
     // this function is e.g. not called when the last object is deleted
-    std::vector<double> &ticks_from_config = (wxGetApp().preset_bundle->project_config.option<ConfigOptionFloats>("colorprint_heights"))->values;
     unsigned int old_size = ticks_from_config.size();
     ticks_from_config.erase(std::remove_if(ticks_from_config.begin(), ticks_from_config.end(),
-                                           [values](double val) { return values.back().second < val; }),
+                                           [layers_z](double val)
+    {
+        auto it = std::lower_bound(layers_z.begin(), layers_z.end(), val - DoubleSlider::epsilon());
+        return it == layers_z.end();
+    }),
                             ticks_from_config.end());
     if (ticks_from_config.size() != old_size)
         m_schedule_background_process();
@@ -672,6 +711,11 @@ void Preview::update_double_slider_from_canvas(wxKeyEvent& event)
         const int new_pos = key == 'U' ? m_slider->GetHigherValue() + 1 : m_slider->GetHigherValue() - 1;
         m_slider->SetHigherValue(new_pos);
 		if (event.ShiftDown() || m_slider->is_one_layer()) m_slider->SetLowerValue(m_slider->GetHigherValue());
+    }
+    else if (key == 'L') {
+        m_checkbox_legend->SetValue(!m_checkbox_legend->GetValue());
+        auto evt = wxCommandEvent();
+        on_checkbox_legend(evt);
     }
     else if (key == 'S')
         m_slider->ChangeOneLayerLock();
@@ -769,9 +813,14 @@ void Preview::load_print_as_fff(bool keep_z_range)
             // Load the real G-code preview.
             m_canvas->load_gcode_preview(*m_gcode_preview_data, colors);
             m_loaded = true;
-        } else
+        } else {
+            // disable color change information for multi-material presets
+            if (wxGetApp().extruders_edited_cnt() > 1)
+                color_print_values.clear();
+
             // Load the initial preview based on slices, not the final G-code.
             m_canvas->load_preview(colors, color_print_values);
+        }
         show_hide_ui_elements(gcode_preview_data_valid ? "full" : "simple");
         // recalculates zs and update sliders accordingly
         std::vector<double> zs = m_canvas->get_current_print_zs(true);

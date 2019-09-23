@@ -100,8 +100,13 @@
 #include <tbb/task_scheduler_init.h>
 
 #include <Eigen/Dense>
-#include <Eigen/Geometry> 
+#include <Eigen/Geometry>
 
+#include <cereal/access.hpp>
+#include <cereal/types/base_class.hpp>
+
+#include <clipper/clipper_z.hpp>
+#include <clipper/clipper.hpp>
 #include "BoundingBox.hpp"
 #include "ClipperUtils.hpp"
 #include "Config.hpp"

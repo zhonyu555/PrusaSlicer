@@ -89,7 +89,7 @@ void BackgroundSlicingProcess::process_fff()
 	    	// Perform the final post-processing of the export path by applying the print statistics over the file name.
 	    	std::string export_path = m_fff_print->print_statistics().finalize_output_path(m_export_path);
 		    if (copy_file(m_temp_output_path, export_path) != 0)
-	    		throw std::runtime_error(_utf8(L("Copying of the temporary G-code to the output G-code failed")));
+	    		throw std::runtime_error(_utf8(L("Copying of the temporary G-code to the output G-code failed. Maybe the SD card is write locked?")));
 	    	m_print->set_status(95, _utf8(L("Running post-processing scripts")));
 	    	run_post_process_scripts(export_path, m_fff_print->config());
 	    	m_print->set_status(100, (boost::format(_utf8(L("G-code file exported to %1%"))) % export_path).str());
@@ -151,7 +151,12 @@ void BackgroundSlicingProcess::thread_proc()
 		} catch (CanceledException & /* ex */) {
 			// Canceled, this is all right.
 			assert(m_print->canceled());
-		} catch (std::exception &ex) {
+        } catch (const std::bad_alloc& ex) {
+            wxString errmsg = wxString::Format(_(L("%s has encountered an error. It was likely caused by running out of memory. "
+                                  "If you are sure you have enough RAM on your system, this may also be a bug and we would "
+                                  "be glad if you reported it.")), SLIC3R_APP_NAME);
+            error = errmsg.ToStdString() + "\n\n" + std::string(ex.what());
+        } catch (std::exception &ex) {
 			error = ex.what();
 		} catch (...) {
 			error = "Unknown C++ exception.";
@@ -215,7 +220,11 @@ bool BackgroundSlicingProcess::start()
 	if (m_state == STATE_INITIAL) {
 		// The worker thread is not running yet. Start it.
 		assert(! m_thread.joinable());
-		m_thread = std::thread([this]{this->thread_proc_safe();});
+		boost::thread::attributes attrs;
+		// Duplicating the stack allocation size of Thread Building Block worker threads of the thread pool:
+		// allocate 4MB on a 64bit system, allocate 2MB on a 32bit system by default.
+		attrs.set_stack_size((sizeof(void*) == 4) ? (2048 * 1024) : (4096 * 1024));
+		m_thread = boost::thread(attrs, [this]{this->thread_proc_safe();});
 		// Wait until the worker thread is ready to execute the background processing task.
 		m_condition.wait(lck, [this](){ return m_state == STATE_IDLE; });
 	}

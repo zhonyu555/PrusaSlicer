@@ -123,6 +123,8 @@ public:
     /// subclasses should overload with a specific version
     /// Postcondition: Method does not fire the on_change event.
     virtual void		set_value(const boost::any& value, bool change_event) = 0;
+    virtual void        set_last_meaningful_value() {}
+    virtual void        set_na_value() {}
 
     /// Gets a boost::any representing this control.
     /// subclasses should overload with a specific version
@@ -150,7 +152,7 @@ public:
     virtual wxWindow*	getWindow() { return nullptr; }
 
 	bool				is_matched(const std::string& string, const std::string& pattern);
-	void				get_value_by_opt_type(wxString& str);
+	void				get_value_by_opt_type(wxString& str, const bool check_value = true);
 
     /// Factory method for generating new derived classes.
     template<class T>
@@ -247,6 +249,8 @@ protected:
 
 	// current value
 	boost::any			m_value;
+    // last maeningful value
+	boost::any			m_last_meaningful_value;
 
     int                 m_em_unit;
 
@@ -277,6 +281,7 @@ public:
 	~TextCtrl() {}
 
     void BUILD();
+    bool value_was_changed();
     // Propagate value from field to the OptionGroupe and Config after kill_focus/ENTER
     void propagate_value();
     wxWindow* window {nullptr};
@@ -286,11 +291,9 @@ public:
         dynamic_cast<wxTextCtrl*>(window)->SetValue(wxString(value));
 		m_disable_change_event = false;
     }
-	virtual void	set_value(const boost::any& value, bool change_event = false) {
-		m_disable_change_event = !change_event;
-		dynamic_cast<wxTextCtrl*>(window)->SetValue(boost::any_cast<wxString>(value));
-		m_disable_change_event = false;
-    }
+	virtual void	set_value(const boost::any& value, bool change_event = false) override;
+    virtual void    set_last_meaningful_value() override;
+    virtual void	set_na_value() override;
 
 	boost::any&		get_value() override;
 
@@ -303,6 +306,7 @@ public:
 
 class CheckBox : public Field {
 	using Field::Field;
+    bool            m_is_na_val {false};
 public:
 	CheckBox(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id) {}
 	CheckBox(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id) {}
@@ -316,11 +320,9 @@ public:
 		dynamic_cast<wxCheckBox*>(window)->SetValue(value);
 		m_disable_change_event = false;
 	}
-	void			set_value(const boost::any& value, bool change_event = false) {
-		m_disable_change_event = !change_event;
-		dynamic_cast<wxCheckBox*>(window)->SetValue(boost::any_cast<bool>(value));
-		m_disable_change_event = false;
-	}
+	void			set_value(const boost::any& value, bool change_event = false) override;
+    void            set_last_meaningful_value() override;
+	void            set_na_value() override;
 	boost::any&		get_value() override;
 
     void            msw_rescale() override;
@@ -334,6 +336,8 @@ class SpinCtrl : public Field {
 	using Field::Field;
 private:
 	static const int UNDEF_VALUE = INT_MIN;
+
+    bool            suppress_propagation {false};
 public:
 	SpinCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id), tmp_value(UNDEF_VALUE) {}
 	SpinCtrl(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id), tmp_value(UNDEF_VALUE) {}
@@ -402,6 +406,8 @@ public:
 
 class ColourPicker : public Field {
 	using Field::Field;
+
+    void            set_undef_value(wxColourPickerCtrl* field);
 public:
 	ColourPicker(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id) {}
 	ColourPicker(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id) {}
@@ -415,13 +421,9 @@ public:
 		dynamic_cast<wxColourPickerCtrl*>(window)->SetColour(value);
 		m_disable_change_event = false;
 	 	}
-	void			set_value(const boost::any& value, bool change_event = false) {
-		m_disable_change_event = !change_event;
-		dynamic_cast<wxColourPickerCtrl*>(window)->SetColour(boost::any_cast<wxString>(value));
-		m_disable_change_event = false;
-	}
-
+	void			set_value(const boost::any& value, bool change_event = false) override;
 	boost::any&		get_value() override;
+    void            msw_rescale() override;
 
 	void			enable() override { dynamic_cast<wxColourPickerCtrl*>(window)->Enable(); };
 	void			disable() override{ dynamic_cast<wxColourPickerCtrl*>(window)->Disable(); };

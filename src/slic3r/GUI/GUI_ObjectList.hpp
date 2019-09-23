@@ -26,12 +26,16 @@ enum class ModelVolumeType : int;
 // FIXME: broken build on mac os because of this is missing:
 typedef std::vector<std::string>    t_config_option_keys;
 
-typedef std::map<std::string, std::vector<std::string>> FreqSettingsBundle;
+typedef std::map<std::string, std::vector<std::string>> SettingsBundle;
 
 //				  category ->		vector 			 ( option	;  label )
 typedef std::map< std::string, std::vector< std::pair<std::string, std::string> > > settings_menu_hierarchy;
 
 typedef std::vector<ModelVolume*> ModelVolumePtrs;
+
+typedef double                                              coordf_t;
+typedef std::pair<coordf_t, coordf_t>                       t_layer_height_range;
+typedef std::map<t_layer_height_range, DynamicPrintConfig>  t_layer_config_ranges;
 
 namespace GUI {
 
@@ -62,12 +66,20 @@ struct ItemForDelete
 
 class ObjectList : public wxDataViewCtrl
 {
+public:
     enum SELECTION_MODE
     {
-        smUndef,
-        smVolume,
-        smInstance
-    } m_selection_mode {smUndef};
+        smUndef     = 0,
+        smVolume    = 1,
+        smInstance  = 2,
+        smLayer     = 4,
+        smSettings  = 8,  // used for undo/redo
+        smLayerRoot = 16, // used for undo/redo
+    };
+
+private:
+    SELECTION_MODE  m_selection_mode {smUndef};
+    int             m_selected_layers_range_idx;
 
     struct dragged_item_data
     {
@@ -119,12 +131,18 @@ class ObjectList : public wxDataViewCtrl
     MenuWithSeparators  m_menu_part;
     MenuWithSeparators  m_menu_sla_object;
     MenuWithSeparators  m_menu_instance;
-    wxMenuItem* m_menu_item_split { nullptr };
-    wxMenuItem* m_menu_item_split_part { nullptr };
+    MenuWithSeparators  m_menu_layer;
+    MenuWithSeparators  m_menu_default;
     wxMenuItem* m_menu_item_settings { nullptr };
     wxMenuItem* m_menu_item_split_instances { nullptr };
 
-    std::vector<wxBitmap*> m_bmp_vector;
+    ObjectDataViewModel         *m_objects_model{ nullptr };
+    DynamicPrintConfig          *m_config {nullptr};
+    std::vector<ModelObject*>   *m_objects{ nullptr };
+
+    std::vector<wxBitmap*>      m_bmp_vector;
+
+    t_layer_config_ranges       m_layer_config_ranges_cache;
 
     int			m_selected_object_id = -1;
     bool		m_prevent_list_events = false;		// We use this flag to avoid circular event handling Select() 
@@ -140,10 +158,14 @@ class ObjectList : public wxDataViewCtrl
 
     int         m_selected_row = 0;
     wxDataViewItem m_last_selected_item {nullptr};
+#ifdef __WXMSW__
+    // Workaround for entering the column editing mode on Windows. Simulate keyboard enter when another column of the active line is selected.
+    int 	    m_last_selected_column = -1;
+#endif /* __MSW__ */
 
 #if 0
-    FreqSettingsBundle m_freq_settings_fff;
-    FreqSettingsBundle m_freq_settings_sla;
+    SettingsBundle m_freq_settings_fff;
+    SettingsBundle m_freq_settings_sla;
 #endif
 
 public:
@@ -153,23 +175,23 @@ public:
 
     std::map<std::string, wxBitmap> CATEGORY_ICON;
 
-    ObjectDataViewModel	*m_objects_model{ nullptr };
-    DynamicPrintConfig          *m_config {nullptr};
+    ObjectDataViewModel*        GetModel() const    { return m_objects_model; }
+    DynamicPrintConfig*         config() const      { return m_config; }
+    std::vector<ModelObject*>*  objects() const     { return m_objects; }
 
-    std::vector<ModelObject*>   *m_objects{ nullptr };
-
+    ModelObject*                object(const int obj_idx) const ;
 
     void                create_objects_ctrl();
     void                create_popup_menus();
-    wxDataViewColumn*   create_objects_list_extruder_column(int extruders_count);
-    void                update_objects_list_extruder_column(int extruders_count);
+    wxDataViewColumn*   create_objects_list_extruder_column(size_t extruders_count);
+    void                update_objects_list_extruder_column(size_t extruders_count);
     // show/hide "Extruder" column for Objects List
     void                set_extruder_column_hidden(const bool hide) const;
     // update extruder in current config
     void                update_extruder_in_config(const wxDataViewItem& item);
     // update changed name in the object model
     void                update_name_in_model(const wxDataViewItem& item) const;
-    void                update_extruder_values_for_items(const int max_extruder);
+    void                update_extruder_values_for_items(const size_t max_extruder);
 
     void                init_icons();
     void                msw_rescale_icons();
@@ -187,21 +209,28 @@ public:
     void                set_tooltip_for_item(const wxPoint& pt);
 
     void                selection_changed();
-    void                show_context_menu();
+    void                show_context_menu(const bool evt_context_menu);
 #ifndef __WXOSX__
     void                key_event(wxKeyEvent& event);
 #endif /* __WXOSX__ */
 
+    void                copy();
+    void                paste();
+    void                undo();
+    void                redo();
+
     void                get_settings_choice(const wxString& category_name);
     void                get_freq_settings_choice(const wxString& bundle_name);
-    void                update_settings_item();
+    void                show_settings(const wxDataViewItem settings_item);
 
     wxMenu*             append_submenu_add_generic(wxMenu* menu, const ModelVolumeType type);
     void                append_menu_items_add_volume(wxMenu* menu);
     wxMenuItem*         append_menu_item_split(wxMenu* menu);
+    wxMenuItem*         append_menu_item_layers_editing(wxMenu* menu);
     wxMenuItem*         append_menu_item_settings(wxMenu* menu);
     wxMenuItem*         append_menu_item_change_type(wxMenu* menu);
     wxMenuItem*         append_menu_item_instance_to_object(wxMenu* menu, wxWindow* parent);
+    wxMenuItem*         append_menu_item_printable(wxMenu* menu, wxWindow* parent);
     void                append_menu_items_osx(wxMenu* menu);
     wxMenuItem*         append_menu_item_fix_through_netfabb(wxMenu* menu);
     void                append_menu_item_export_stl(wxMenu* menu) const ;
@@ -212,20 +241,30 @@ public:
     void                create_sla_object_popupmenu(wxMenu*menu);
     void                create_part_popupmenu(wxMenu*menu);
     void                create_instance_popupmenu(wxMenu*menu);
+    void                create_default_popupmenu(wxMenu *menu);
     wxMenu*             create_settings_popupmenu(wxMenu *parent_menu);
-    void                create_freq_settings_popupmenu(wxMenu *parent_menu);
+    void                create_freq_settings_popupmenu(wxMenu *parent_menu, const bool is_object_settings = true);
 
-    void                update_opt_keys(t_config_option_keys& t_optopt_keys);
+    void                update_opt_keys(t_config_option_keys& t_optopt_keys, const bool is_object);
 
     void                load_subobject(ModelVolumeType type);
     void                load_part(ModelObject* model_object, std::vector<std::pair<wxString, bool>> &volumes_info, ModelVolumeType type);
 	void                load_generic_subobject(const std::string& type_name, const ModelVolumeType type);
+    void                load_shape_object(const std::string &type_name);
     void                del_object(const int obj_idx);
     void                del_subobject_item(wxDataViewItem& item);
-    void                del_settings_from_config();
+    void                del_settings_from_config(const wxDataViewItem& parent_item);
     void                del_instances_from_object(const int obj_idx);
+    void                del_layer_from_object(const int obj_idx, const t_layer_height_range& layer_range);
+    void                del_layers_from_object(const int obj_idx);
     bool                del_subobject_from_object(const int obj_idx, const int idx, const int type);
     void                split();
+    void                layers_editing();
+
+    wxDataViewItem      add_layer_root_item(const wxDataViewItem obj_item);
+    wxDataViewItem      add_settings_item(wxDataViewItem parent_item, const DynamicPrintConfig* config);
+
+    DynamicPrintConfig  get_default_layer_config(const int obj_idx);
     bool                get_volume_by_item(const wxDataViewItem& item, ModelVolume*& volume);
     bool                is_splittable();
     bool                selected_instances_of_same_object();
@@ -235,12 +274,13 @@ public:
     wxBoxSizer*         get_sizer() {return  m_sizer;}
     int                 get_selected_obj_idx() const;
     DynamicPrintConfig& get_item_config(const wxDataViewItem& item) const;
+    SettingsBundle      get_item_settings_bundle(const DynamicPrintConfig* config, const bool is_object_settings);
 
     void                changed_object(const int obj_idx = -1) const;
     void                part_selection_changed();
 
     // Add object to the list
-    void add_object_to_list(size_t obj_idx);
+    void add_object_to_list(size_t obj_idx, bool call_selection_changed = true);
     // Delete object from the list
     void delete_object_from_list();
     void delete_object_from_list(const size_t obj_idx);
@@ -265,10 +305,21 @@ public:
 
     // Remove objects/sub-object from the list
     void remove();
+    void del_layer_range(const t_layer_height_range& range);
+    void add_layer_range_after_current(const t_layer_height_range& current_range);
+    void add_layer_item (const t_layer_height_range& range, 
+                         const wxDataViewItem layers_item, 
+                         const int layer_idx = -1);
+    bool edit_layer_range(const t_layer_height_range& range, coordf_t layer_height);
+    bool edit_layer_range(const t_layer_height_range& range, 
+                          const t_layer_height_range& new_range);
 
     void init_objects();
     bool multiple_selection() const ;
     bool is_selected(const ItemType type) const;
+    int  get_selected_layers_range_idx() const;
+    void set_selected_layers_range_idx(const int range_idx) { m_selected_layers_range_idx = range_idx; }
+    void set_selection_mode(SELECTION_MODE mode) { m_selection_mode = mode; }
     void update_selections();
     void update_selections_on_canvas();
     void select_item(const wxDataViewItem& item);
@@ -284,8 +335,10 @@ public:
     void change_part_type();
 
     void last_volume_is_deleted(const int obj_idx);
-    bool has_multi_part_objects();
     void update_settings_items();
+    void update_and_show_object_settings_item();
+    void update_settings_item_and_selection(wxDataViewItem item, wxDataViewItemArray& selections);
+    void update_object_list_by_printer_technology();
     void update_object_menu();
 
     void instances_to_separated_object(const int obj_idx, const std::set<int>& inst_idx);
@@ -295,16 +348,24 @@ public:
     void fix_through_netfabb();
     void update_item_error_icon(const int obj_idx, int vol_idx) const ;
 
+    void fill_layer_config_ranges_cache();
+    void paste_layers_into_list();
     void paste_volumes_into_list(int obj_idx, const ModelVolumePtrs& volumes);
     void paste_objects_into_list(const std::vector<size_t>& object_idxs);
 
     void msw_rescale();
+
+    void update_after_undo_redo();
+    //update printable state for item from objects model
+    void update_printable_state(int obj_idx, int instance_idx);
+    void toggle_printable_state(wxDataViewItem item);
 
 private:
 #ifdef __WXOSX__
 //    void OnChar(wxKeyEvent& event);
 #endif /* __WXOSX__ */
     void OnContextMenu(wxDataViewEvent &event);
+    void list_manipulation(bool evt_context_menu = false);
 
     void OnBeginDrag(wxDataViewEvent &event);
     void OnDropPossible(wxDataViewEvent &event);
@@ -312,6 +373,10 @@ private:
     bool can_drop(const wxDataViewItem& item) const ;
 
     void ItemValueChanged(wxDataViewEvent &event);
+#ifdef __WXMSW__
+    // Workaround for entering the column editing mode on Windows. Simulate keyboard enter when another column of the active line is selected.
+	void OnEditingStarted(wxDataViewEvent &event);
+#endif /* __WXMSW__ */
     void OnEditingDone(wxDataViewEvent &event);
 
     void show_multi_selection_menu();

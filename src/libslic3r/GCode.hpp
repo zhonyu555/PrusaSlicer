@@ -45,12 +45,16 @@ public:
     AvoidCrossingPerimeters() : use_external_mp(false), use_external_mp_once(false), disable_once(true) {}
     ~AvoidCrossingPerimeters() {}
 
-    void init_external_mp(const ExPolygons &islands) { m_external_mp = Slic3r::make_unique<MotionPlanner>(islands); }
+    void reset() { m_external_mp.reset(); m_layer_mp.reset(); }
+	void init_external_mp(const Print &print);
     void init_layer_mp(const ExPolygons &islands) { m_layer_mp = Slic3r::make_unique<MotionPlanner>(islands); }
 
     Polyline travel_to(const GCode &gcodegen, const Point &point);
 
 private:
+    // For initializing the regions to avoid.
+	static Polygons collect_contours_all_layers(const PrintObjectPtrs& objects);
+
     std::unique_ptr<MotionPlanner> m_external_mp;
     std::unique_ptr<MotionPlanner> m_layer_mp;
 };
@@ -83,13 +87,14 @@ class WipeTowerIntegration {
 public:
     WipeTowerIntegration(
         const PrintConfig                                           &print_config,
-        const WipeTower::ToolChangeResult                           &priming,
+        const std::vector<WipeTower::ToolChangeResult>              &priming,
         const std::vector<std::vector<WipeTower::ToolChangeResult>> &tool_changes,
         const WipeTower::ToolChangeResult                           &final_purge) :
         m_left(/*float(print_config.wipe_tower_x.value)*/ 0.f),
         m_right(float(/*print_config.wipe_tower_x.value +*/ print_config.wipe_tower_width.value)),
         m_wipe_tower_pos(float(print_config.wipe_tower_x.value), float(print_config.wipe_tower_y.value)),
         m_wipe_tower_rotation(float(print_config.wipe_tower_rotation_angle)),
+        m_extruder_offsets(print_config.extruder_offset.values),
         m_priming(priming),
         m_tool_changes(tool_changes),
         m_final_purge(final_purge),
@@ -107,16 +112,18 @@ private:
     WipeTowerIntegration& operator=(const WipeTowerIntegration&);
     std::string append_tcr(GCode &gcodegen, const WipeTower::ToolChangeResult &tcr, int new_extruder_id) const;
 
-    // Postprocesses gcode: rotates and moves all G1 extrusions and returns result
-    std::string rotate_wipe_tower_moves(const std::string& gcode_original, const WipeTower::xy& start_pos, const WipeTower::xy& translation, float angle) const;
+    // Postprocesses gcode: rotates and moves G1 extrusions and returns result
+    std::string post_process_wipe_tower_moves(const WipeTower::ToolChangeResult& tcr, const Vec2f& translation, float angle) const;
 
     // Left / right edges of the wipe tower, for the planning of wipe moves.
     const float                                                  m_left;
     const float                                                  m_right;
-    const WipeTower::xy                                          m_wipe_tower_pos;
+    const Vec2f                                                  m_wipe_tower_pos;
     const float                                                  m_wipe_tower_rotation;
+    const std::vector<Vec2d>                                     m_extruder_offsets;
+
     // Reference to cached values at the Printer class.
-    const WipeTower::ToolChangeResult                           &m_priming;
+    const std::vector<WipeTower::ToolChangeResult>              &m_priming;
     const std::vector<std::vector<WipeTower::ToolChangeResult>> &m_tool_changes;
     const WipeTower::ToolChangeResult                           &m_final_purge;
     // Current layer index.
@@ -239,7 +246,7 @@ protected:
                 std::vector<const ExtruderPerCopy*> perimeters_overrides;
 
                 // Appends perimeter/infill entities and writes don't indices of those that are not to be extruder as part of perimeter/infill wiping
-                void append(const std::string& type, const ExtrusionEntityCollection* eec, const ExtruderPerCopy* copy_extruders, unsigned int object_copies_num);
+                void append(const std::string& type, const ExtrusionEntityCollection* eec, const ExtruderPerCopy* copy_extruders, size_t object_copies_num);
             };
 
             std::vector<Region> by_region;                                    // all extrusions for this island, grouped by regions
