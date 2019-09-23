@@ -457,9 +457,8 @@ void ConfigOptionsGroup::Show(const bool show)
 bool ConfigOptionsGroup::update_visibility(ConfigOptionMode mode) {
     if (m_options_mode.empty())
         return true;
-    int opt_mode_size = m_options_mode.size();
-    if (m_grid_sizer->GetEffectiveRowsCount() != opt_mode_size &&
-        opt_mode_size == 1)
+    if (m_grid_sizer->GetEffectiveRowsCount() != m_options_mode.size() &&
+        m_options_mode.size() == 1)
         return m_options_mode[0] <= mode;
 
     Show(true);
@@ -477,7 +476,7 @@ bool ConfigOptionsGroup::update_visibility(ConfigOptionMode mode) {
         coef+= cols;
 	}
 
-    if (hidden_row_cnt == opt_mode_size) {
+    if (hidden_row_cnt == m_options_mode.size()) {
         sizer->ShowItems(false);
         return false;
     }

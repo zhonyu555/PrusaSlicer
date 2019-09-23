@@ -7,21 +7,21 @@
 #include <utility>
 #include <algorithm>
 
-#include "libslic3r/Point.hpp"
+#include "libslic3r/PrintConfig.hpp"
+
 
 namespace Slic3r
 {
 
 class WipeTowerWriter;
-class PrintConfig;
-enum GCodeFlavor : unsigned char;
+
 
 
 class WipeTower
 {
 public:
     struct Extrusion
-    {
+	{
 		Extrusion(const Vec2f &pos, float width, unsigned int tool) : pos(pos), width(width), tool(tool) {}
 		// End position of this extrusion.
 		Vec2f				pos;
@@ -79,6 +79,7 @@ public:
 	// width		-- width of wipe tower in mm ( default 60 mm - leave as it is )
 	// wipe_area	-- space available for one toolchange in mm
     WipeTower(const PrintConfig& config, const std::vector<std::vector<float>>& wiping_matrix, size_t initial_tool);
+	virtual ~WipeTower() {}
 
 
 	// Set the extruder properties.
@@ -148,7 +149,7 @@ public:
 
 	// Returns gcode for a toolchange and a final print head position.
 	// On the first layer, extrude a brim around the future wipe tower first.
-    ToolChangeResult tool_change(size_t new_tool, bool last_in_layer);
+	ToolChangeResult tool_change(unsigned int new_tool, bool last_in_layer);
 
 	// Fill the unfilled space with a sparse infill.
 	// Call this method only if layer_finished() is false.
@@ -174,11 +175,24 @@ public:
         int                 cooling_moves = 0;
         float               cooling_initial_speed = 0.f;
         float               cooling_final_speed = 0.f;
+// start skinnydip
+        bool                filament_enable_toolchange_temp = false;
+        int                 filament_toolchange_temp = 222.f;
+        bool                filament_enable_toolchange_part_fan = false;
+        int                 filament_toolchange_part_fan_speed = 0;
+        bool                filament_use_skinnydip = true;
+        float               filament_skinnydip_distance = 10.f;
+        int                 filament_melt_zone_pause = 0;
+        int                 filament_cooling_zone_pause = 0;
+        float               filament_dip_insertion_speed = 0.f;
+        float               filament_dip_extraction_speed = 0.f;		
+// end skinnydip		
         float               ramming_line_width_multiplicator = 1.f;
         float               ramming_step_multiplicator = 1.f;
         float               max_e_speed = std::numeric_limits<float>::max();
         std::vector<float>  ramming_speed;
         float               nozzle_diameter;
+		
         float               filament_area;
     };
 
@@ -194,7 +208,7 @@ private:
     const bool  m_peters_wipe_tower   = false; // sparse wipe tower inspired by Peter's post processor - not finished yet
     const float Width_To_Nozzle_Ratio = 1.25f; // desired line width (oval) in multiples of nozzle diameter - may not be actually neccessary to adjust
     const float WT_EPSILON            = 1e-3f;
-    float filament_area() const {
+    const float filament_area() const {
         return m_filpar[0].filament_area; // all extruders are assumed to have the same filament diameter at this point
     }
 
@@ -243,7 +257,7 @@ private:
 	bool m_print_brim = true;
 	// A fill-in direction (positive Y, negative Y) alternates with each layer.
 	wipe_shape   	m_current_shape = SHAPE_NORMAL;
-    size_t 	m_current_tool  = 0;
+	unsigned int 	m_current_tool  = 0;
     const std::vector<std::vector<float>> wipe_volumes;
 
 	float           m_depth_traversed = 0.f; // Current y position at the wipe tower.
@@ -308,13 +322,13 @@ private:
 	// to store information about tool changes for a given layer
 	struct WipeTowerInfo{
 		struct ToolChange {
-            size_t old_tool;
-            size_t new_tool;
+			unsigned int old_tool;
+			unsigned int new_tool;
 			float required_depth;
             float ramming_depth;
             float first_wipe_line;
             float wipe_volume;
-            ToolChange(size_t old, size_t newtool, float depth=0.f, float ramming_depth=0.f, float fwl=0.f, float wv=0.f)
+			ToolChange(unsigned int old, unsigned int newtool, float depth=0.f, float ramming_depth=0.f, float fwl=0.f, float wv=0.f)
             : old_tool{old}, new_tool{newtool}, required_depth{depth}, ramming_depth{ramming_depth}, first_wipe_line{fwl}, wipe_volume{wv} {}
 		};
 		float z;		// z position of the layer
@@ -349,7 +363,7 @@ private:
 
 	void toolchange_Change(
 		WipeTowerWriter &writer,
-        const size_t		new_tool,
+		const unsigned int		new_tool,
 		const std::string& 		new_material);
 	
 	void toolchange_Load(

@@ -706,19 +706,15 @@ void GCode::do_export(Print *print, const char *path, GCodePreviewData *preview_
         throw std::runtime_error(msg);
     }
 
-    GCodeTimeEstimator::PostProcessData normal_data = m_normal_time_estimator.get_post_process_data();
-    GCodeTimeEstimator::PostProcessData silent_data = m_silent_time_estimator.get_post_process_data();
-
-    bool remaining_times_enabled = print->config().remaining_times.value;
-
-    BOOST_LOG_TRIVIAL(debug) << "Time estimator post processing" << log_memory_info();
-    GCodeTimeEstimator::post_process(path_tmp, 60.0f, remaining_times_enabled ? &normal_data : nullptr, (remaining_times_enabled && m_silent_time_estimator_enabled) ? &silent_data : nullptr);
-
-    if (remaining_times_enabled)
-    {
+    if (print->config().remaining_times.value) {
+        BOOST_LOG_TRIVIAL(debug) << "Processing remaining times for normal mode" << log_memory_info();
+        m_normal_time_estimator.post_process_remaining_times(path_tmp, 60.0f);
         m_normal_time_estimator.reset();
-        if (m_silent_time_estimator_enabled)
+        if (m_silent_time_estimator_enabled) {
+            BOOST_LOG_TRIVIAL(debug) << "Processing remaining times for silent mode" << log_memory_info();
+            m_silent_time_estimator.post_process_remaining_times(path_tmp, 60.0f);
             m_silent_time_estimator.reset();
+        }
     }
 
     // starts analyzer calculations
@@ -1791,9 +1787,13 @@ void GCode::process_layer(
 
                         // This extrusion is part of certain Region, which tells us which extruder should be used for it:
                         int correct_extruder_id = Print::get_extruder(*fill, region);
+                        //FIXME what is this?
+                        entity_type=="infills" ? 
+                            std::max<int>(0, (is_solid_infill(fill->entities.front()->role()) ? region.config().solid_infill_extruder : region.config().infill_extruder) - 1) :
+                            std::max<int>(region.config().perimeter_extruder.value - 1, 0);
 
                         // Let's recover vector of extruder overrides:
-                        const ExtruderPerCopy* entity_overrides = const_cast<LayerTools&>(layer_tools).wiping_extrusions().get_extruder_overrides(fill, correct_extruder_id, layer_to_print.object()->copies().size());
+                        const ExtruderPerCopy* entity_overrides = const_cast<LayerTools&>(layer_tools).wiping_extrusions().get_extruder_overrides(fill, correct_extruder_id, (int)layer_to_print.object()->copies().size());
 
                         // Now we must add this extrusion into the by_extruder map, once for each extruder that will print it:
                         for (unsigned int extruder : layer_tools.extruders)
@@ -1869,9 +1869,8 @@ void GCode::process_layer(
         if (! m_brim_done) {
             this->set_origin(0., 0.);
             m_avoid_crossing_perimeters.use_external_mp = true;
-            for (const ExtrusionEntity *ee : print.brim().entities) {
-                gcode += this->extrude_entity(*ee, "brim", m_config.support_material_speed.value);
-            }
+            for (const ExtrusionEntity *ee : print.brim().entities)
+                gcode += this->extrude_loop(*dynamic_cast<const ExtrusionLoop*>(ee), "brim", m_config.support_material_speed.value);
             m_brim_done = true;
             m_avoid_crossing_perimeters.use_external_mp = false;
             // Allow a straight travel move to the first object point.
@@ -1966,7 +1965,7 @@ void GCode::process_layer(
     _write(file, gcode);
     BOOST_LOG_TRIVIAL(trace) << "Exported layer " << layer.id() << " print_z " << print_z << 
         ", time estimator memory: " <<
-            format_memsize_MB(m_normal_time_estimator.memory_used() + (m_silent_time_estimator_enabled ? m_silent_time_estimator.memory_used() : 0)) <<
+            format_memsize_MB(m_normal_time_estimator.memory_used() + m_silent_time_estimator_enabled ? m_silent_time_estimator.memory_used() : 0) <<
         ", analyzer memory: " <<
             format_memsize_MB(m_analyzer.memory_used()) <<
         log_memory_info();
@@ -2046,6 +2045,38 @@ std::string GCode::change_layer(coordf_t print_z)
     
     return gcode;
 }
+
+static inline const char* ExtrusionRole2String(const ExtrusionRole role)
+{
+    switch (role) {
+    case erNone:                        return "erNone";
+    case erPerimeter:                   return "erPerimeter";
+    case erExternalPerimeter:           return "erExternalPerimeter";
+    case erOverhangPerimeter:           return "erOverhangPerimeter";
+    case erInternalInfill:              return "erInternalInfill";
+    case erSolidInfill:                 return "erSolidInfill";
+    case erTopSolidInfill:              return "erTopSolidInfill";
+    case erBridgeInfill:                return "erBridgeInfill";
+    case erGapFill:                     return "erGapFill";
+    case erSkirt:                       return "erSkirt";
+    case erSupportMaterial:             return "erSupportMaterial";
+    case erSupportMaterialInterface:    return "erSupportMaterialInterface";
+    case erWipeTower:                   return "erWipeTower";
+    case erMixed:                       return "erMixed";
+
+    default:                            return "erInvalid";
+    };
+}
+
+static inline const char* ExtrusionLoopRole2String(const ExtrusionLoopRole role)
+{
+    switch (role) {
+    case elrDefault:                    return "elrDefault";
+    case elrContourInternalPerimeter:   return "elrContourInternalPerimeter";
+    case elrSkirt:                      return "elrSkirt";
+    default:                            return "elrInvalid";
+    }
+};
 
 // Return a value in <0, 1> of a cubic B-spline kernel centered around zero.
 // The B-spline is re-scaled so it has value 1 at zero.
@@ -2429,8 +2460,8 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     // extrude along the path
     std::string gcode;
     for (ExtrusionPaths::iterator path = paths.begin(); path != paths.end(); ++path) {
-//    description += ExtrusionLoop::role_to_string(loop.loop_role());
-//    description += ExtrusionEntity::role_to_string(path->role);
+//    description += ExtrusionLoopRole2String(loop.loop_role());
+//    description += ExtrusionRole2String(path->role);
         path->simplify(SCALED_RESOLUTION);
         gcode += this->_extrude(*path, description, speed);
     }
@@ -2483,8 +2514,8 @@ std::string GCode::extrude_multi_path(ExtrusionMultiPath multipath, std::string 
     // extrude along the path
     std::string gcode;
     for (ExtrusionPath path : multipath.paths) {
-//    description += ExtrusionLoop::role_to_string(loop.loop_role());
-//    description += ExtrusionEntity::role_to_string(path->role);
+//    description += ExtrusionLoopRole2String(loop.loop_role());
+//    description += ExtrusionRole2String(path->role);
         path.simplify(SCALED_RESOLUTION);
         gcode += this->_extrude(path, description, speed);
     }
@@ -2505,14 +2536,15 @@ std::string GCode::extrude_entity(const ExtrusionEntity &entity, std::string des
         return this->extrude_multi_path(*multipath, description, speed);
     else if (const ExtrusionLoop* loop = dynamic_cast<const ExtrusionLoop*>(&entity))
         return this->extrude_loop(*loop, description, speed, lower_layer_edge_grid);
-    else
+    else {
         throw std::invalid_argument("Invalid argument supplied to extrude()");
-    return "";
+        return "";
+    }
 }
 
 std::string GCode::extrude_path(ExtrusionPath path, std::string description, double speed)
 {
-//    description += ExtrusionEntity::role_to_string(path.role());
+//    description += ExtrusionRole2String(path.role());
     path.simplify(SCALED_RESOLUTION);
     std::string gcode = this->_extrude(path, description, speed);
     if (m_wipe.enable) {
@@ -3040,7 +3072,7 @@ const std::vector<GCode::ObjectByExtruder::Island::Region>& GCode::ObjectByExtru
 
 // This function takes the eec and appends its entities to either perimeters or infills of this Region (depending on the first parameter)
 // It also saves pointer to ExtruderPerCopy struct (for each entity), that holds information about which extruders should be used for which copy.
-void GCode::ObjectByExtruder::Island::Region::append(const std::string& type, const ExtrusionEntityCollection* eec, const ExtruderPerCopy* copies_extruder, size_t object_copies_num)
+void GCode::ObjectByExtruder::Island::Region::append(const std::string& type, const ExtrusionEntityCollection* eec, const ExtruderPerCopy* copies_extruder, unsigned int object_copies_num)
 {
     // We are going to manipulate either perimeters or infills, exactly in the same way. Let's create pointers to the proper structure to not repeat ourselves:
     ExtrusionEntityCollection* perimeters_or_infills = &infills;

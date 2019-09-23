@@ -31,6 +31,8 @@ public:
 	bool disable_version_check() const;
 
 private:
+	const Semver &ver_current;
+	const Semver &ver_online;
 	wxCheckBox *cbox;
 };
 

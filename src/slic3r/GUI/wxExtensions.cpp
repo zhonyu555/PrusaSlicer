@@ -460,9 +460,6 @@ void ObjectDataViewModelNode::init_container()
 #endif  //__WXGTK__
 }
 
-#define LAYER_ROOT_ICON "edit_layers_all"
-#define LAYER_ICON      "edit_layers_some"
-
 ObjectDataViewModelNode::ObjectDataViewModelNode(ObjectDataViewModelNode* parent, const ItemType type) :
     m_parent(parent),
     m_type(type),
@@ -481,7 +478,7 @@ ObjectDataViewModelNode::ObjectDataViewModelNode(ObjectDataViewModelNode* parent
     }
     else if (type == itLayerRoot)
     {
-        m_bmp = create_scaled_bitmap(nullptr, LAYER_ROOT_ICON);    // FIXME: pass window ptr
+        m_bmp = create_scaled_bitmap(nullptr, "edit_layers_all");    // FIXME: pass window ptr
         m_name = _(L("Layers"));
     }
 
@@ -510,7 +507,7 @@ ObjectDataViewModelNode::ObjectDataViewModelNode(ObjectDataViewModelNode* parent
     }
     const std::string label_range = (boost::format(" %.2f-%.2f ") % layer_range.first % layer_range.second).str();
     m_name = _(L("Range")) + label_range + "(" + _(L("mm")) + ")";
-    m_bmp = create_scaled_bitmap(nullptr, LAYER_ICON);    // FIXME: pass window ptr
+    m_bmp = create_scaled_bitmap(nullptr, "edit_layers_some");    // FIXME: pass window ptr
 
     set_action_icon();
     init_container();
@@ -583,9 +580,6 @@ void ObjectDataViewModelNode::msw_rescale()
 {
     if (!m_action_icon_name.empty())
         m_action_icon = create_scaled_bitmap(nullptr, m_action_icon_name);
-
-    if (m_printable != piUndef)
-        m_printable_icon = create_scaled_bitmap(nullptr, m_printable == piPrintable ? "eye_open.png" : "eye_closed.png");
 
     if (!m_opt_categories.empty())
         update_settings_digest_bitmaps();
@@ -758,7 +752,7 @@ static bool append_root_node(ObjectDataViewModelNode *parent_node,
     
     if (inst_root_id < 0) {
         if ((root_type&itInstanceRoot) ||
-            ( (root_type&itLayerRoot) && get_root_idx(parent_node, itInstanceRoot)<0) )
+            (root_type&itLayerRoot) && get_root_idx(parent_node, itInstanceRoot)<0)
             parent_node->Append(*root_node);
         else if (root_type&itLayerRoot)
             parent_node->Insert(*root_node, static_cast<unsigned int>(get_root_idx(parent_node, itInstanceRoot)));
@@ -946,7 +940,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
             // node can be deleted by the Delete, let's check its type while we safely can
             bool is_instance_root = (node->m_type & itInstanceRoot);
 
-            for (int i = int(node->GetChildCount() - 1); i >= (is_instance_root ? 1 : 0); i--)
+            for (int i = node->GetChildCount() - 1; i >= (is_instance_root ? 1 : 0); i--)
                 Delete(wxDataViewItem(node->GetNthChild(i)));
 
             return parent;
@@ -1026,7 +1020,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
         {
             int vol_cnt = 0;
             int vol_idx = 0;
-            for (size_t i = 0; i < node_parent->GetChildCount(); ++i) {
+            for (int i = 0; i < node_parent->GetChildCount(); ++i) {
                 if (node_parent->GetNthChild(i)->GetType() == itVolume) {
                     vol_idx = i;
                     vol_cnt++;
@@ -1065,7 +1059,7 @@ wxDataViewItem ObjectDataViewModel::Delete(const wxDataViewItem &item)
 	else
 	{
 		auto it = find(m_objects.begin(), m_objects.end(), node);
-        size_t id = it - m_objects.begin();
+		auto id = it - m_objects.begin();
 		if (it != m_objects.end())
 		{
             // Delete all sub-items
@@ -1236,7 +1230,7 @@ void ObjectDataViewModel::DeleteSettings(const wxDataViewItem& parent)
 
 wxDataViewItem ObjectDataViewModel::GetItemById(int obj_idx)
 {
-    if (size_t(obj_idx) >= m_objects.size())
+	if (obj_idx >= m_objects.size())
 	{
 		printf("Error! Out of objects range.\n");
 		return wxDataViewItem(0);
@@ -1247,7 +1241,7 @@ wxDataViewItem ObjectDataViewModel::GetItemById(int obj_idx)
 
 wxDataViewItem ObjectDataViewModel::GetItemByVolumeId(int obj_idx, int volume_idx)
 {
-    if (size_t(obj_idx) >= m_objects.size()) {
+	if (obj_idx >= m_objects.size() || obj_idx < 0) {
 		printf("Error! Out of objects range.\n");
 		return wxDataViewItem(0);
 	}
@@ -1271,7 +1265,7 @@ wxDataViewItem ObjectDataViewModel::GetItemByVolumeId(int obj_idx, int volume_id
 
 wxDataViewItem ObjectDataViewModel::GetItemById(const int obj_idx, const int sub_obj_idx, const ItemType parent_type)
 {
-    if (size_t(obj_idx) >= m_objects.size()) {
+    if (obj_idx >= m_objects.size() || obj_idx < 0) {
         printf("Error! Out of objects range.\n");
         return wxDataViewItem(0);
     }
@@ -1300,7 +1294,7 @@ wxDataViewItem ObjectDataViewModel::GetItemByLayerId(int obj_idx, int layer_idx)
 
 wxDataViewItem ObjectDataViewModel::GetItemByLayerRange(const int obj_idx, const t_layer_height_range& layer_range)
 {
-    if (size_t(obj_idx) >= m_objects.size()) {
+    if (obj_idx >= m_objects.size() || obj_idx < 0) {
         printf("Error! Out of objects range.\n");
         return wxDataViewItem(0);
     }
@@ -1385,12 +1379,7 @@ void ObjectDataViewModel::GetItemInfo(const wxDataViewItem& item, ItemType& type
     type = itUndef;
 
     ObjectDataViewModelNode *node = (ObjectDataViewModelNode*)item.GetID();
-    if (!node || 
-        node->GetIdx() <-1 || 
-        ( node->GetIdx() == -1 && 
-         !(node->GetType() & (itObject | itSettings | itInstanceRoot | itLayerRoot/* | itLayer*/))
-        )
-       )
+    if (!node || node->GetIdx() <-1 || node->GetIdx() == -1 && !(node->GetType() & (itObject | itSettings | itInstanceRoot | itLayerRoot/* | itLayer*/)))
         return;
 
     idx = node->GetIdx();
@@ -1417,13 +1406,13 @@ int ObjectDataViewModel::GetRowByItem(const wxDataViewItem& item) const
 
     int row_num = 0;
     
-    for (size_t i = 0; i < m_objects.size(); i++)
+    for (int i = 0; i < m_objects.size(); i++)
     {
         row_num++;
         if (item == wxDataViewItem(m_objects[i]))
             return row_num;
 
-        for (size_t j = 0; j < m_objects[i]->GetChildCount(); j++)
+        for (int j = 0; j < m_objects[i]->GetChildCount(); j++)
         {
             row_num++;
             ObjectDataViewModelNode* cur_node = m_objects[i]->GetNthChild(j);
@@ -1435,7 +1424,7 @@ int ObjectDataViewModel::GetRowByItem(const wxDataViewItem& item) const
             if (cur_node->m_type == itInstanceRoot)
             {
                 row_num++;
-                for (size_t t = 0; t < cur_node->GetChildCount(); t++)
+                for (int t = 0; t < cur_node->GetChildCount(); t++)
                 {
                     row_num++;
                     if (item == wxDataViewItem(cur_node->GetNthChild(t)))
@@ -1509,7 +1498,7 @@ bool ObjectDataViewModel::SetValue(const wxVariant &variant, const wxDataViewIte
 
 bool ObjectDataViewModel::SetValue(const wxVariant &variant, const int item_idx, unsigned int col)
 {
-    if (size_t(item_idx) >= m_objects.size())
+	if (item_idx < 0 || item_idx >= m_objects.size())
 		return false;
 
 	return m_objects[item_idx]->SetValue(variant, col);
@@ -1668,7 +1657,7 @@ wxDataViewItem ObjectDataViewModel::GetItemByType(const wxDataViewItem &parent_i
     if (node->GetChildCount() == 0)
         return wxDataViewItem(0);
 
-    for (size_t i = 0; i < node->GetChildCount(); i++) {
+    for (int i = 0; i < node->GetChildCount(); i++) {
         if (node->GetNthChild(i)->m_type == type)
             return wxDataViewItem((void*)node->GetNthChild(i));
     }
@@ -1772,22 +1761,11 @@ void ObjectDataViewModel::Rescale()
         ObjectDataViewModelNode *node = (ObjectDataViewModelNode*)item.GetID();
         node->msw_rescale();
 
-        switch (node->m_type)
-        {
-        case itObject:
-            if (node->m_bmp.IsOk()) node->m_bmp = *m_warning_bmp;
-            break;
-        case itVolume:
+        if (node->m_type & itVolume)
             node->m_bmp = GetVolumeIcon(node->m_volume_type, node->m_bmp.GetWidth() != node->m_bmp.GetHeight());
-            break;
-        case itLayerRoot:
-            node->m_bmp = create_scaled_bitmap(nullptr, LAYER_ROOT_ICON);    // FIXME: pass window ptr
-            break;
-        case itLayer:
-            node->m_bmp = create_scaled_bitmap(nullptr, LAYER_ICON);    // FIXME: pass window ptr
-            break;
-        default: break;
-        }
+
+        if (node->m_type & itObject && node->m_bmp.IsOk())
+            node->m_bmp = *m_warning_bmp;
 
         ItemChanged(item);
     }
@@ -2162,7 +2140,7 @@ void DoubleSlider::draw_scroll_line(wxDC& dc, const int lower_pos, const int hig
     wxCoord segm_end_x = is_horizontal() ? higher_pos : width*0.5 - 1;
     wxCoord segm_end_y = is_horizontal() ? height*0.5 - 1 : higher_pos-1;
 
-    for (size_t id = 0; id < m_line_pens.size(); id++)
+    for (int id = 0; id < m_line_pens.size(); id++)
     {
         dc.SetPen(*m_line_pens[id]);
         dc.DrawLine(line_beg_x, line_beg_y, line_end_x, line_end_y);
@@ -2209,9 +2187,9 @@ double DoubleSlider::get_double_value(const SelectedSlider& selection)
         return 0.0;
     if (m_values.size() <= m_higher_value) {
         correct_higher_value();
-        return m_values.back();
+        return m_values.back().second;
     }
-    return m_values[selection == ssLower ? m_lower_value : m_higher_value];
+    return m_values[selection == ssLower ? m_lower_value : m_higher_value].second;
 }
 
 std::vector<double> DoubleSlider::GetTicksValues() const
@@ -2223,7 +2201,7 @@ std::vector<double> DoubleSlider::GetTicksValues() const
         for (int tick : m_ticks) {
             if (tick > val_size)
                 break;
-            values.push_back(m_values[tick]);
+            values.push_back(m_values[tick].second);
         }
 
     return values;
@@ -2237,13 +2215,14 @@ void DoubleSlider::SetTicksValues(const std::vector<double>& heights)
     const bool was_empty = m_ticks.empty();
 
     m_ticks.clear();
+    unsigned int i = 0;
     for (auto h : heights) {
-        auto it = std::lower_bound(m_values.begin(), m_values.end(), h - epsilon());
-
-        if (it == m_values.end())
-            continue;
-
-        m_ticks.insert(it-m_values.begin());
+        while (i < m_values.size() && m_values[i].second - epsilon()/*1e-6*/ < h)
+            ++i;
+        // don't miss last layer if it is
+        if (i == m_values.size() && fabs(m_values[i-1].second - h) > epsilon())
+            return;
+        m_ticks.insert(i-1);
     }
     
     if (!was_empty && m_ticks.empty())
@@ -2363,14 +2342,13 @@ wxString DoubleSlider::get_label(const SelectedSlider& selection) const
 
     const wxString str = m_values.empty() ? 
                          wxNumberFormatter::ToString(m_label_koef*value, 2, wxNumberFormatter::Style_None) :
-                         wxNumberFormatter::ToString(m_values[value], 2, wxNumberFormatter::Style_None);
-    return wxString::Format("%s\n(%d)", str, m_values.empty() ? value : value+1);
+                         wxNumberFormatter::ToString(m_values[value].second, 2, wxNumberFormatter::Style_None);
+    return wxString::Format("%s\n(%d)", str, m_values.empty() ? value : m_values[value].first);
 }
 
 void DoubleSlider::draw_thumb_text(wxDC& dc, const wxPoint& pos, const SelectedSlider& selection) const
 {
-    if ( selection == ssUndef || 
-        ((m_is_one_layer || m_higher_value==m_lower_value) && selection != m_selection) )
+    if ((m_is_one_layer || m_higher_value==m_lower_value) && selection != m_selection || !selection) 
         return;
     wxCoord text_width, text_height;
     const wxString label = get_label(selection);
@@ -2511,7 +2489,7 @@ void DoubleSlider::draw_colored_band(wxDC& dc)
     dc.SetBrush(clr);
     dc.DrawRectangle(main_band);
 
-    size_t i = 1;
+    int i = 1;
     for (auto tick : m_ticks)
     {
         if (i == colors_cnt)
@@ -2702,7 +2680,7 @@ void DoubleSlider::correct_lower_value()
     else if (m_lower_value > m_max_value)
         m_lower_value = m_max_value;
     
-    if ((m_lower_value >= m_higher_value && m_lower_value <= m_max_value) || m_is_one_layer)
+    if (m_lower_value >= m_higher_value && m_lower_value <= m_max_value || m_is_one_layer)
         m_higher_value = m_lower_value;
 }
 
@@ -2713,7 +2691,7 @@ void DoubleSlider::correct_higher_value()
     else if (m_higher_value < m_min_value)
         m_higher_value = m_min_value;
     
-    if ((m_higher_value <= m_lower_value && m_higher_value >= m_min_value) || m_is_one_layer)
+    if (m_higher_value <= m_lower_value && m_higher_value >= m_min_value || m_is_one_layer)
         m_lower_value = m_higher_value;
 }
 
