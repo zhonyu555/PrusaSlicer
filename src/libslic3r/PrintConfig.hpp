@@ -615,6 +615,7 @@ public:
     ConfigOptionFloats              filament_max_volumetric_speed;
     ConfigOptionFloats              filament_loading_speed;
     ConfigOptionBools               filament_use_skinnydip;  //SKINNYDIP OPTIONS BEGIN
+    ConfigOptionBools               filament_use_fast_skinnydip;  
     ConfigOptionFloats              filament_skinnydip_distance;   
     ConfigOptionInts                filament_melt_zone_pause;   
     ConfigOptionInts                filament_cooling_zone_pause;
@@ -697,6 +698,7 @@ protected:
         OPT_PTR(filament_max_volumetric_speed);
         OPT_PTR(filament_loading_speed);
         OPT_PTR(filament_use_skinnydip);  //skinnydip start
+        OPT_PTR(filament_use_fast_skinnydip); 
 		OPT_PTR(filament_skinnydip_distance);        
 		OPT_PTR(filament_melt_zone_pause);
         OPT_PTR(filament_cooling_zone_pause);

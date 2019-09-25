@@ -598,6 +598,12 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Determines whether toolchange temperatures will be applied");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBools { false });
+	
+	def = this->add("filament_use_fast_skinnydip", coBools);
+    def->label = L("Fast mode");
+    def->tooltip = L("Experimental: drops nozzle temperature during cooling moves instead of prior to extraction to reduce wait time.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBools { false });
 
     def = this->add("filament_enable_toolchange_part_fan", coBools);
     def->label = L("Use part fan to cool hotend");
@@ -618,6 +624,10 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Skinnydip performs a secondary dip into the meltzone to burn off fine strings of filament");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBools { false });
+
+
+    
+
 
     def = this->add("filament_melt_zone_pause", coInts);
     def->label = L("Pause in melt zone");

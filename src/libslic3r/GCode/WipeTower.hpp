@@ -181,6 +181,7 @@ public:
         bool                filament_enable_toolchange_part_fan = false;
         int                 filament_toolchange_part_fan_speed = 0;
         bool                filament_use_skinnydip = true;
+        bool                filament_use_fast_skinnydip = false;
         float               filament_skinnydip_distance = 10.f;
         int                 filament_melt_zone_pause = 0;
         int                 filament_cooling_zone_pause = 0;

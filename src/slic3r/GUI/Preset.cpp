@@ -497,6 +497,7 @@ const std::vector<std::string>& Preset::filament_options()
         "filament_cooling_final_speed", 
 // skinnydip params start
 		"filament_use_skinnydip",
+	"filament_use_fast_skinnydip",
         "filament_skinnydip_distance",
         "filament_melt_zone_pause",
         "filament_cooling_zone_pause",
