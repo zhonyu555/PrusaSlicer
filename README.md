@@ -33,8 +33,10 @@ Key features are:
 * **multi-platform** (Linux/Mac/Win) and packaged as standalone-app with no dependencies required
 * complete **command-line interface** to use it with no GUI
 * multi-material **(multiple extruders)** object printing
-* multiple G-code flavors supported (RepRap, Makerbot, Mach3, Machinekit etc.)
 * ability to plate **multiple objects having distinct print settings**
+* manual support material generation/adjustment
+* ability to set different settings in arbitrarily shaped parts of the print **(modifier meshes, settings on height ranges)**
+* undo/redo
 * **multithread** processing
 * **STL auto-repair** (tolerance for broken models)
 * wide automated unit testing
@@ -43,11 +45,9 @@ Other major features are:
 
 * combine infill every 'n' perimeters layer to speed up printing
 * **3D preview** (including multi-material files)
-* **multiple layer heights** in a single print
+* smooth transition between **multiple layer heights** in a single print **(layer editing)**
 * **spiral vase** mode for bumpless vases
-* fine-grained configuration of speed, acceleration, extrusion width
-* several infill patterns including honeycomb, spirals, Hilbert curves
-* support material, raft, brim, skirt
+* several infill patterns including honeycomb, spirals, and gyroid
 * **standby temperature** and automatic wiping for multi-extruder printing
 * [customizable **G-code macros**](https://github.com/prusa3d/PrusaSlicer/wiki/Slic3r-Prusa-Edition-Macro-Language) and output filename with variable placeholders
 * support for **post-processing scripts**
