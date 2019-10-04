@@ -2159,7 +2159,9 @@ void GLCanvas3D::load_gcode_preview(const GCodePreviewData& preview_data, const 
 	                size_t idx_volume_of_this_type_last = (idx_volume_index_src + 1 == m_gcode_preview_volume_index.first_volumes.size()) ? m_volumes.volumes.size() : m_gcode_preview_volume_index.first_volumes[idx_volume_index_src + 1].id;
 	                size_t idx_volume_of_this_type_first_new = 0;
 	                for (;;) {
-	                	if (idx_volume_src == idx_volume_of_this_type_last) {
+	                	if (idx_volume_src > m_volumes.volumes.size() - 1)
+					break;
+				if (idx_volume_src == idx_volume_of_this_type_last) {
 	                		if (idx_volume_of_this_type_first_new < idx_volume_dst) {
 	                			// There are some volumes of this type left, therefore their entry in the index has to be maintained.
 	                			if (idx_volume_index_dst < idx_volume_index_src)
