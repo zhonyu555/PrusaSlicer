@@ -2174,8 +2174,11 @@ void GLCanvas3D::load_gcode_preview(const GCodePreviewData& preview_data, const 
 	                		idx_volume_of_this_type_first_new = idx_volume_dst;
 	                	}
 	                	if (! m_volumes.volumes[idx_volume_src]->print_zs.empty())
-                			m_volumes.volumes[idx_volume_dst ++] = m_volumes.volumes[idx_volume_src];
-	                	++ idx_volume_src;
+                			m_volumes.volumes[idx_volume_dst] = m_volumes.volumes[idx_volume_src];
+				if (++ idx_volume_src <= m_volumes.volumes.size() - 1)
+					++ idx_volume_dst;
+				else
+					break;
 	                }
 	                m_volumes.volumes.erase(m_volumes.volumes.begin() + idx_volume_dst, m_volumes.volumes.end());
 	                m_gcode_preview_volume_index.first_volumes.erase(m_gcode_preview_volume_index.first_volumes.begin() + idx_volume_index_dst, m_gcode_preview_volume_index.first_volumes.end());
