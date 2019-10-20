@@ -46,6 +46,7 @@
 #include "SysInfoDialog.hpp"
 #include "KBShortcutsDialog.hpp"
 #include "UpdateDialogs.hpp"
+#include "UnsavedChangesDialog.hpp"
 
 #ifdef __WXMSW__
 #include <Shlobj.h>
@@ -907,29 +908,23 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
 // to notify the user whether he is aware that some preset changes will be lost.
 bool GUI_App::check_unsaved_changes(const wxString &header)
 {
-    wxString dirty;
-    PrinterTechnology printer_technology = preset_bundle->printers.get_edited_preset().printer_technology();
-    for (Tab *tab : tabs_list)
-        if (tab->supports_printer_technology(printer_technology) && tab->current_preset_is_dirty()) {
-            if (dirty.empty())
-                dirty = tab->title();
-            else
-                dirty += wxString(", ") + tab->title();
-        }
+    //if (! header.empty())
+    //	message = header + "\n\n";
 
-    if (dirty.empty())
-        // No changes, the application may close or reload presets.
-        return true;
-    // Ask the user.
-    wxString message;
-    if (! header.empty())
-    	message = header + "\n\n";
-    message += _(L("The presets on the following tabs were modified")) + ": " + dirty + "\n\n" + _(L("Discard changes and continue anyway?"));
-    wxMessageDialog dialog(mainframe,
+    //message += _(L("The presets on the following tabs were modified")) + ": " + dirty + "\n\n" + _(L("Discard changes and continue anyway?"));
+    /*
+	wxMessageDialog dialog(mainframe,
         message,
         wxString(SLIC3R_APP_NAME) + " - " + _(L("Unsaved Presets")),
         wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT);
+
     return dialog.ShowModal() == wxID_YES;
+	*/
+
+	UnsavedChangesDialog dialog(mainframe, this, header, wxString(SLIC3R_APP_NAME) + " - " + _(L("Unsaved Presets")));
+	dialog.ShowModal();
+
+	return false;
 }
 
 bool GUI_App::checked_tab(Tab* tab)
