@@ -908,23 +908,8 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
 // to notify the user whether he is aware that some preset changes will be lost.
 bool GUI_App::check_unsaved_changes(const wxString &header)
 {
-    //if (! header.empty())
-    //	message = header + "\n\n";
-
-    //message += _(L("The presets on the following tabs were modified")) + ": " + dirty + "\n\n" + _(L("Discard changes and continue anyway?"));
-    /*
-	wxMessageDialog dialog(mainframe,
-        message,
-        wxString(SLIC3R_APP_NAME) + " - " + _(L("Unsaved Presets")),
-        wxICON_QUESTION | wxYES_NO | wxNO_DEFAULT);
-
-    return dialog.ShowModal() == wxID_YES;
-	*/
-
 	UnsavedChangesDialog dialog(mainframe, this, header, wxString(SLIC3R_APP_NAME) + " - " + _(L("Unsaved Presets")));
-	dialog.ShowModal();
-
-	return false;
+	return dialog.ShowModal() == wxID_YES;
 }
 
 bool GUI_App::checked_tab(Tab* tab)
