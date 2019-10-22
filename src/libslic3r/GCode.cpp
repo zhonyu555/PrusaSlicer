@@ -1109,6 +1109,17 @@ void GCode::_do_export(Print &print, FILE *file)
         _write(file, this->set_extruder(initial_extruder_id, 0.));
     }
 
+    if (print.config().gcode_label_objects) {
+        size_t total_objects;
+        std::vector<PrintObject*> objects(print.objects());
+        for (size_t object_id = initial_print_object_id; object_id < objects.size(); ++ object_id) {
+            const PrintObject &object = *objects[object_id];
+            total_objects = total_objects + object.copies().size();
+        }
+        _write(file, "; Total objects to print: " + std::to_string(total_objects) + "\n");
+        _write(file, "M486 T" + std::to_string(total_objects) + "\n");
+    }
+
     // Do all objects for each layer.
     if (print.config().complete_objects.value) {
         // Print objects from the smallest to the tallest to avoid collisions
@@ -1940,10 +1951,7 @@ void GCode::process_layer(
             continue;
 
 		std::vector<InstanceToPrint> instances_to_print = sort_print_object_instances(objects_by_extruder_it->second, layers, ordering, single_object_instance_idx);
-        //This might be better earlier in gcode
-        if (this->config().gcode_label_objects)
-            gcode += "; Total object instances to print: " + std::to_string(instances_to_print.size()) + "\n";
-            gcode += std::string("M486 T") + std::to_string(instances_to_print.size()) + "\n";
+
 
         // We are almost ready to print. However, we must go through all the objects twice to print the the overridden extrusions first (infill/perimeter wiping feature):
         bool is_anything_overridden = const_cast<LayerTools&>(layer_tools).wiping_extrusions().is_anything_overridden();
@@ -1959,9 +1967,10 @@ void GCode::process_layer(
                 if (m_config.avoid_crossing_perimeters)
                     m_avoid_crossing_perimeters.init_layer_mp(union_ex(m_layer->slices, true));
 
-                if (this->config().gcode_label_objects)
+                if (this->config().gcode_label_objects) {
                     gcode += std::string("; printing object ") + instance_to_print.print_object.model_object()->name + " id:" + std::to_string(instance_to_print.layer_id) + " copy " + std::to_string(instance_to_print.instance_id) + " index " + std::to_string(o_index) + "\n";
                     gcode += std::string("M486 S") + std::to_string(o_index) + "\n";
+                }
                 // When starting a new object, use the external motion planner for the first travel move.
                 const Point &offset = instance_to_print.print_object.copies()[instance_to_print.instance_id];
                 std::pair<const PrintObject*, Point> this_object_copy(&instance_to_print.print_object, offset);
@@ -1987,11 +1996,15 @@ void GCode::process_layer(
                         gcode += this->extrude_infill(print,by_region_specific);
                     }
                 }
-                if (this->config().gcode_label_objects)
-		   gcode += std::string("; stop printing object ") + instance_to_print.print_object.model_object()->name + " id:" + std::to_string(instance_to_print.layer_id) + " copy " + std::to_string(instance_to_print.instance_id) + " index " + std::to_string(o_index) + "\n";
-                    gcode += std::string("M486 S-1") + "\n";
-            o_index++;
+
+                if (this->config().gcode_label_objects) {
+		           gcode += std::string("; stop printing object ") + instance_to_print.print_object.model_object()->name + " id:" + std::to_string(instance_to_print.layer_id) + " copy " + std::to_string(instance_to_print.instance_id) + " index " + std::to_string(o_index) + "\n";
+                   gcode += std::string("M486 S-1") + "\n";
+                }
+                
+                o_index++;
             }
+
         }
     }
 
