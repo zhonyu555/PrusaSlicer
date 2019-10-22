@@ -13,6 +13,9 @@
 #define UnsavedChangesDialog_min_width 600
 #define UnsavedChangesDialog_min_height 200
 
+#define UnsavedChangesDialog_def_border 5
+#define UnsavedChangesDialog_child_indentation 20
+
 namespace Slic3r {
 	namespace GUI {
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
@@ -33,25 +36,40 @@ namespace Slic3r {
 				msg->SetFont(msg_font);
 				msg->Wrap(UnsavedChangesDialog_max_width - 10);
 
-			wxWindow* cont_win = new wxWindow(this, wxID_ANY);
-				cont_win->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
-				wxBoxSizer* cont_sizer = new wxBoxSizer(wxHORIZONTAL);
-				wxStaticText* cont_label = new wxStaticText(cont_win, wxID_ANY, _(L("Continue? All unsaved changes will be discarded.")), wxDefaultPosition, wxDefaultSize);
-				
-				cont_sizer->Add(cont_label, 0, wxLEFT | wxRIGHT | wxALIGN_CENTER_VERTICAL, 5);
-				cont_sizer->Add(CreateButtonSizer(wxYES | wxNO | wxNO_DEFAULT));
+				wxBoxSizer* cont_stretch_sizer = new wxBoxSizer(wxHORIZONTAL);
+					wxPanel* cont_win = new wxPanel(this, wxID_ANY);
+					cont_win->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
+					wxBoxSizer* cont_sizer = new wxBoxSizer(wxHORIZONTAL);
+						wxStaticText* cont_label = new wxStaticText(cont_win, wxID_ANY, _(L("Continue? All unsaved changes will be discarded.")), wxDefaultPosition, wxDefaultSize);
+						wxButton* btn_yes = new wxButton(cont_win, wxID_ANY, "Yes");
+						btn_yes->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
+							EndModal(wxID_YES);
+						}));
 
-				cont_win->SetSizer(cont_sizer);
+						wxButton* btn_no = new wxButton(cont_win, wxID_ANY, "No");
+						btn_no->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
+							EndModal(wxID_NO);
+						}));
+						btn_no->SetFocus();
 
-			main_sizer->Add(msg, 0, wxALL, 5);
+					cont_sizer->AddStretchSpacer();
+					cont_sizer->Add(cont_label, 0, wxALL | wxALIGN_CENTER_VERTICAL, 10);
+
+					cont_sizer->Add(btn_yes, 0, wxALIGN_CENTER_VERTICAL);
+					cont_sizer->Add(btn_no, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, UnsavedChangesDialog_def_border);
+
+					cont_win->SetSizer(cont_sizer);
+				cont_stretch_sizer->Add(cont_win, 1);
+
+			main_sizer->Add(msg, 0, wxALL, UnsavedChangesDialog_def_border);
 			main_sizer->Add(-1, 10);
-			main_sizer->Add(scrolled_win, 1, wxEXPAND | wxALL, 5);
-			main_sizer->Add(cont_win, 1, wxALL | wxALIGN_RIGHT, 5);
+			main_sizer->Add(scrolled_win, 1, wxEXPAND | wxALL, UnsavedChangesDialog_def_border);
+			main_sizer->Add(cont_stretch_sizer, 0, wxEXPAND);
 			SetSizer(main_sizer);
 
 			this->Layout();
-			int scrolled_add_width = scrolled_win->GetVirtualSize().x - scrolled_win->GetSize().x + 5;
-			int scrolled_add_height = scrolled_win->GetVirtualSize().y - scrolled_win->GetSize().y + 5;
+			int scrolled_add_width = scrolled_win->GetVirtualSize().x - scrolled_win->GetSize().x + UnsavedChangesDialog_def_border;
+			int scrolled_add_height = scrolled_win->GetVirtualSize().y - scrolled_win->GetSize().y + UnsavedChangesDialog_def_border;
 
 			this->SetSize(wxSize(std::min(UnsavedChangesDialog_min_width + scrolled_add_width, UnsavedChangesDialog_max_width), std::min(UnsavedChangesDialog_min_height + scrolled_add_height, UnsavedChangesDialog_max_height)));
 		}
@@ -76,7 +94,7 @@ namespace Slic3r {
 					wxStaticText* tabTitle = new wxStaticText(cur_tab_win, wxID_ANY, tab->title(), wxDefaultPosition, wxDefaultSize);
 						tabTitle->SetFont(GUI::wxGetApp().bold_font());
 
-					cur_tab_sizer->Add(tabTitle, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, 5);
+					cur_tab_sizer->Add(tabTitle, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
 					add_dirty_options(tab, cur_tab_win, cur_tab_sizer);
 
 					cur_tab_win->SetSizer(cur_tab_sizer);
@@ -96,9 +114,9 @@ namespace Slic3r {
 
 		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer) {
 			struct def_opt_pair {
-				const ConfigOptionDef* def;
-				const ConfigOption* old_opt;
-				const ConfigOption* new_opt;
+				const ConfigOptionDef* def = NULL;
+				const ConfigOption* old_opt = NULL;
+				const ConfigOption* new_opt = NULL;
 				t_config_option_key key;
 
 				bool operator <(const def_opt_pair& b)
@@ -137,19 +155,19 @@ namespace Slic3r {
 					if (cat != lastCat) {
 						lastCat = cat;
 
-						sizer->Add(-1, 5);
+						sizer->Add(-1, UnsavedChangesDialog_def_border);
 						line = new wxStaticText(parent, wxID_ANY, cat, wxDefaultPosition, wxDefaultSize);
 						line->SetFont(GUI::wxGetApp().bold_font());
-						sizer->Add(line, 0, wxLEFT | wxALIGN_LEFT, 15);
+						sizer->Add(line, 0, wxLEFT | wxALIGN_LEFT, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation);
 					}
-					left = 25;
+					left = UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation * 2;
 				}
 				else {
 					left = 0;
 				}
 				
 				
-				sizer->Add(-1, 5);
+				sizer->Add(-1, UnsavedChangesDialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
 					wxStaticText* opt_label = new wxStaticText(parent, wxID_ANY, label, wxDefaultPosition, wxSize(200,-1));
