@@ -1,6 +1,4 @@
 #include "UnsavedChangesDialog.hpp"
-#include "PresetBundle.hpp"
-#include "Tab.hpp"
 #include "BitmapCache.hpp"
 #include <boost/range/algorithm.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -72,10 +70,12 @@ namespace Slic3r {
 						else
 							dirty_tabs += wxString(", ") + tab->title();
 
-						wxWindow* cur_tab_win = new wxWindow(scrolled_win, wxID_ANY);
+						wxPanel* cur_tab_win = new wxPanel(scrolled_win, wxID_ANY);
 						wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
 							wxCheckBox* tabTitle = new wxCheckBox(cur_tab_win, wxID_ANY, tab->title(), wxDefaultPosition, wxDefaultSize);
 									tabTitle->SetFont(GUI::wxGetApp().bold_font());
+									tabTitle->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& e) {});
+									tabTitle->SetValue(true);
 
 							cur_tab_sizer->Add(tabTitle, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
 							add_dirty_options(tab, cur_tab_win, cur_tab_sizer);
@@ -104,19 +104,7 @@ namespace Slic3r {
 			return border_win;
 		}
 
-		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer) {
-			struct def_opt_pair {
-				const ConfigOptionDef* def = NULL;
-				const ConfigOption* old_opt = NULL;
-				const ConfigOption* new_opt = NULL;
-				t_config_option_key key;
-
-				bool operator <(const def_opt_pair& b)
-				{
-					return this->def->category < b.def->category;
-				}
-			};
-			
+		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer) {	
 			std::vector<def_opt_pair> options;
 			
 			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
@@ -147,6 +135,7 @@ namespace Slic3r {
 
 						sizer->Add(-1, UnsavedChangesDialog_def_border);
 						wxCheckBox* category = new wxCheckBox(parent, wxID_ANY, cat, wxDefaultPosition, wxDefaultSize);
+						category->SetValue(true);
 						category->SetFont(GUI::wxGetApp().bold_font());
 						sizer->Add(category, 0, wxLEFT | wxALIGN_LEFT, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation);
 					}
@@ -161,6 +150,7 @@ namespace Slic3r {
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
 					wxCheckBox* opt_label = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxSize(200,-1));
+					opt_label->SetValue(true);
 					wxWindow* win_old_opt;
 					wxWindow* win_new_opt;
 
@@ -347,6 +337,15 @@ namespace Slic3r {
 			cont_stretch_sizer->Add(cont_win, 1);
 
 			return cont_stretch_sizer;
+		}
+
+		dirty_opts_node& UnsavedChangesDialog::buildNode(dirty_opts_node& treeParent, std::string name, Tab* tab = NULL) {
+			dirty_opts_node node;
+			node.name = name;
+			node.tab = tab;
+
+			treeParent.childs.push_back(node);
+			return node;
 		}
 	}
 }
