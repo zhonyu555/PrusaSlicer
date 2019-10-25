@@ -423,16 +423,30 @@ int copy_file(const std::string &from, const std::string &to)
     const boost::filesystem::path target(to);
     static const auto perms = boost::filesystem::owner_read | boost::filesystem::owner_write | boost::filesystem::group_read | boost::filesystem::others_read;   // aka 644
 
-    // Make sure the file has correct permission both before and after we copy over it.
-    try {
-        if (boost::filesystem::exists(target))
-            boost::filesystem::permissions(target, perms);
-        boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists);
-        boost::filesystem::permissions(target, perms);
-    } catch (std::exception & /* ex */) {
-        return -1;
+    boost::system::error_code ec;
+
+    auto is_ok = [](const boost::system::error_code& e) {
+        return e.value() == boost::system::errc::success;
+    };
+
+    // try first without doing any permissions stuff
+    boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists, ec);
+    if (is_ok(ec))
+        return 0;
+
+    // if we can't write to it, maybe it is a file owned by us that we can
+    // give ourselves permissions to overwrite so let's try chmod'ing it
+    // and copying again
+    if (ec.value() == boost::system::errc::permission_denied
+            && boost::filesystem::exists(target)) {
+        boost::filesystem::permissions(target, perms, ec);
+        // if we can't set permissions our copy will fail again so don't try
+        if (!is_ok(ec))
+            return -1;
+        boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists, ec);
+        return (is_ok(ec) ? 0 : -1);
     }
-    return 0;
+    return -1;
 }
 
 // Ignore system and hidden files, which may be created by the DropBox synchronisation process.
