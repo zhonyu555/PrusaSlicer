@@ -22,39 +22,85 @@ namespace Slic3r {
 			}
 		};
 
+		struct dirty_opts_node;
+
+		//this binds the gui checkbox of an option and its definition and internal value together
 		struct dirty_opt {
 			def_opt_pair val;
 			wxCheckBox* checkbox;
+			wxWindow* old_win;
+			wxWindow* new_win;
 
-			dirty_opt(def_opt_pair val, wxCheckBox* checkbox) {
+			dirty_opts_node* parent;
+
+			dirty_opt(def_opt_pair val, wxCheckBox* checkbox, dirty_opts_node* parent) {
 				this->val = val;
 				this->checkbox = checkbox;
+				this->parent = parent;
 			}
 		};
 
+		//a node is a tab or category in the scroll window
 		struct dirty_opts_node {
-			std::string name = "";
+			wxString label = "";
+			wxCheckBox* checkbox;
 			Tab* tab = NULL;
-			std::vector<dirty_opts_node> childs;
+			std::vector<dirty_opts_node*> childs;
 			std::vector<dirty_opt> opts;
+
+			void enableChilds(bool enabled = true) {
+				for (dirty_opts_node* cur_node : this->childs) {
+					cur_node->checkbox->Enable(enabled);
+					cur_node->enableChilds(enabled);
+				}
+
+				for (dirty_opt cur_opt : this->opts) {
+					cur_opt.checkbox->Enable(enabled);
+					cur_opt.old_win->Enable(enabled);
+					cur_opt.new_win->Enable(enabled);
+				}
+			}
+
+			void selectChilds(bool selected = true) {
+				for (dirty_opts_node* cur_node : this->childs) {
+					cur_node->checkbox->SetValue(selected);
+					cur_node->selectChilds(selected);
+				}
+
+				for (dirty_opt cur_opt : this->opts) {
+					cur_opt.checkbox->SetValue(selected);
+				}
+
+				this->enableChilds(selected);
+			}
+
+			~dirty_opts_node() {
+				for (dirty_opts_node* cur_node : this->childs) {
+					cur_node->~dirty_opts_node();
+					delete cur_node;
+				}
+			}
 		};
 
 		class UnsavedChangesDialog : public wxDialog
 		{
 		public:
 			UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption = wxMessageBoxCaptionStr, long style = wxOK | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
-
+			~UnsavedChangesDialog();
 		private:
 			GUI_App* m_app;
 			wxScrolledWindow* m_scroller;
-			dirty_opts_node m_dirty_tabs_tree;
+			dirty_opts_node* m_dirty_tabs_tree;
 
 			wxWindow* buildScrollWindow(wxString& dirty_tabs);
-			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer);
+			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node);
 			std::string getTooltipText(const ConfigOptionDef& def);
 			wxBoxSizer* buildYesNoBtns();
-			dirty_opts_node& buildNode(dirty_opts_node& treeParent, std::string name, Tab* tab = NULL);
-			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, dirty_opts_node& parent_node, wxSize size = wxDefaultSize);
+
+			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
+			template<typename Functor>
+			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize);
+			dirty_opt& buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size = wxDefaultSize);
 		};
 	}
 }

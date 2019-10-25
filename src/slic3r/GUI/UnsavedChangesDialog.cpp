@@ -53,7 +53,14 @@ namespace Slic3r {
 			this->SetSize(wxSize(width, height));
 		}
 
+		UnsavedChangesDialog::~UnsavedChangesDialog() {
+			this->m_dirty_tabs_tree->~dirty_opts_node();
+			delete this->m_dirty_tabs_tree;
+		}
+
 		wxWindow* UnsavedChangesDialog::buildScrollWindow(wxString& dirty_tabs) {
+			this->m_dirty_tabs_tree = new dirty_opts_node();
+
 			wxWindow* border_win = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_SIMPLE);
 			border_win->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 			wxBoxSizer* wrapper_sizer = new wxBoxSizer(wxVERTICAL);
@@ -63,22 +70,21 @@ namespace Slic3r {
 
 				PrinterTechnology printer_technology = m_app->preset_bundle->printers.get_edited_preset().printer_technology();
 				bool highlight = false;
-				for (Tab* tab : m_app->tabs_list)
-					if (tab->supports_printer_technology(printer_technology) && tab->current_preset_is_dirty()) {
+				for (Tab* cur_tab : m_app->tabs_list)
+					if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
 						if (dirty_tabs.empty())
-							dirty_tabs = tab->title();
+							dirty_tabs = cur_tab->title();
 						else
-							dirty_tabs += wxString(", ") + tab->title();
+							dirty_tabs += wxString(", ") + cur_tab->title();
 
 						wxPanel* cur_tab_win = new wxPanel(scrolled_win, wxID_ANY);
 						wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
-							wxCheckBox* tabTitle = new wxCheckBox(cur_tab_win, wxID_ANY, tab->title(), wxDefaultPosition, wxDefaultSize);
-									tabTitle->SetFont(GUI::wxGetApp().bold_font());
-									tabTitle->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& e) {});
-									tabTitle->SetValue(true);
+							dirty_opts_node* cur_tab_node = buildNode(cur_tab_win, cur_tab->title(), this->m_dirty_tabs_tree, cur_tab);
+							wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
+								cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
 
-							cur_tab_sizer->Add(tabTitle, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
-							add_dirty_options(tab, cur_tab_win, cur_tab_sizer);
+							cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
+							add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node);
 
 							cur_tab_win->SetSizer(cur_tab_sizer);
 
@@ -92,11 +98,25 @@ namespace Slic3r {
 				scrolled_win->SetSizer(scrolled_sizer);
 				scrolled_win->SetScrollRate(2, 2);
 
-			ScalableButton* save_btn = new ScalableButton(border_win, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
-			
+			wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
+				ScalableButton* save_btn = new ScalableButton(border_win, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+				wxButton* select_all_btn = new wxButton(border_win, wxID_ANY, L(_("Select All")));
+				select_all_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+					m_dirty_tabs_tree->selectChilds();
+				});
+
+				wxButton* select_none_btn = new wxButton(border_win, wxID_ANY, L(_("Select None")));
+				select_none_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+					m_dirty_tabs_tree->selectChilds(false);
+				});
+
+			btn_sizer->Add(save_btn);
+			btn_sizer->Add(select_all_btn, 0, wxLEFT | wxRIGHT, UnsavedChangesDialog_def_border);
+			btn_sizer->Add(select_none_btn);
+
 			wrapper_sizer->Add(scrolled_win, 1, wxEXPAND);
 			wrapper_sizer->AddSpacer(UnsavedChangesDialog_def_border * 2);
-			wrapper_sizer->Add(save_btn, 0, wxALL, UnsavedChangesDialog_def_border);
+			wrapper_sizer->Add(btn_sizer, 0, wxALL, UnsavedChangesDialog_def_border);
 
 			border_win->SetSizer(wrapper_sizer);
 
@@ -104,7 +124,7 @@ namespace Slic3r {
 			return border_win;
 		}
 
-		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer) {	
+		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node) {
 			std::vector<def_opt_pair> options;
 			
 			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
@@ -121,40 +141,38 @@ namespace Slic3r {
 			boost::sort(options);
 
 			std::string lastCat = "";
-			int left = 0;
-			for (def_opt_pair pair : options) {
-				std::string cat = pair.def->category;
-				std::string label = pair.def->label;
+			dirty_opts_node* category_node;
+			for (def_opt_pair cur_pair : options) {
+				std::string cat = cur_pair.def->category;
+				std::string label = cur_pair.def->label;
 
-				const ConfigOption* old_opt = pair.old_opt;
-				const ConfigOption* new_opt = pair.new_opt;
+				const ConfigOption* old_opt = cur_pair.old_opt;
+				const ConfigOption* new_opt = cur_pair.new_opt;
 
-				if (cat != "") {
-					if (cat != lastCat) {
-						lastCat = cat;
-
-						sizer->Add(-1, UnsavedChangesDialog_def_border);
-						wxCheckBox* category = new wxCheckBox(parent, wxID_ANY, cat, wxDefaultPosition, wxDefaultSize);
-						category->SetValue(true);
-						category->SetFont(GUI::wxGetApp().bold_font());
-						sizer->Add(category, 0, wxLEFT | wxALIGN_LEFT, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation);
-					}
-					left = UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation * 2;
+				if (cat == "") {
+					cat = "Other";
 				}
-				else {
-					left = 0;
+
+				if (cat != lastCat) {
+					lastCat = cat;
+
+					sizer->Add(-1, UnsavedChangesDialog_def_border);
+					category_node = buildNode(parent, cat, parent_node);
+					wxCheckBox* cat_cb = category_node->checkbox;
+					cat_cb->SetValue(true);
+					cat_cb->SetFont(GUI::wxGetApp().bold_font());
+					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation);
 				}
-				
 				
 				sizer->Add(-1, UnsavedChangesDialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					wxCheckBox* opt_label = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, wxSize(200,-1));
-					opt_label->SetValue(true);
+					dirty_opt& cur_opt = buildOption(parent, label, category_node, cur_pair, wxSize(200,-1));
+					wxCheckBox* opt_label = cur_opt.checkbox;
 					wxWindow* win_old_opt;
 					wxWindow* win_new_opt;
 
-					if(pair.def->gui_type == "color"){
+					if(cur_pair.def->gui_type == "color"){
 						std::string old_val = old_opt->serialize();
 						std::string new_val = new_opt->serialize();
 
@@ -169,7 +187,7 @@ namespace Slic3r {
 						win_new_opt = new wxColourPickerCtrl(parent, wxID_ANY, wxColour(new_val));
 					}
 					else {
-						switch (pair.def->type) {
+						switch (cur_pair.def->type) {
 							case coFloatOrPercent:
 							case coFloat:
 							case coFloats:
@@ -187,13 +205,13 @@ namespace Slic3r {
 								old_val = old_opt->serialize();
 								new_val = new_opt->serialize();
 
-								if (old_opt->is_vector() || pair.def->type == coString)
+								if (old_opt->is_vector() || cur_pair.def->type == coString)
 									unescape_string_cstyle(old_val, old_val);
 
-								if (new_opt->is_vector() || pair.def->type == coString)
+								if (new_opt->is_vector() || cur_pair.def->type == coString)
 									unescape_string_cstyle(new_val, new_val);
 
-								if (pair.def->type & coBool) {
+								if (cur_pair.def->type & coBool) {
 									boost::replace_all(old_val, "0", "false");
 									boost::replace_all(old_val, "1", "true");
 									boost::replace_all(new_val, "0", "false");
@@ -210,9 +228,12 @@ namespace Slic3r {
 						}
 					}
 
+					cur_opt.old_win = win_old_opt;
+					cur_opt.new_win = win_new_opt;
+
 					win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
 					
-					std::string tooltip = getTooltipText(*pair.def);
+					std::string tooltip = getTooltipText(*cur_pair.def);
 						
 					win_new_opt->SetToolTip(tooltip);
 					win_old_opt->SetToolTip(tooltip);
@@ -229,7 +250,7 @@ namespace Slic3r {
 					lineSizer->AddSpacer(30);
 					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
-				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, left);
+				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation * 2);
 			}
 		}
 
@@ -339,13 +360,34 @@ namespace Slic3r {
 			return cont_stretch_sizer;
 		}
 
-		dirty_opts_node& UnsavedChangesDialog::buildNode(dirty_opts_node& treeParent, std::string name, Tab* tab = NULL) {
-			dirty_opts_node node;
-			node.name = name;
-			node.tab = tab;
+		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab, wxSize size) {
+			dirty_opts_node* node = new dirty_opts_node();
 
-			treeParent.childs.push_back(node);
+			node->label = label;
+			node->tab = tab;
+			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
+				node->enableChilds(node->checkbox->GetValue());
+			});
+
+			parent_node->childs.push_back(node);
 			return node;
+		}
+
+		template<typename Functor>
+		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size) {
+			wxCheckBox* cb = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, size);
+			cb->SetValue(true);
+			cb->Bind(wxEVT_CHECKBOX, toggleCallback);
+
+			return cb;
+		}
+
+		dirty_opt& UnsavedChangesDialog::buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size) {
+			wxCheckBox* cb = buildCheckbox(parent, label, [](wxCommandEvent& e) {}, size);
+
+			parent_node->opts.push_back(dirty_opt(val, cb, parent_node));
+
+			return parent_node->opts.back();
 		}
 	}
 }
