@@ -439,10 +439,12 @@ int copy_file(const std::string &from, const std::string &to)
     // and copying again
     if (ec.value() == boost::system::errc::permission_denied
             && boost::filesystem::exists(target)) {
+        ec.clear();
         boost::filesystem::permissions(target, perms, ec);
         // if we can't set permissions our copy will fail again so don't try
         if (!is_ok(ec))
             return -1;
+        ec.clear();
         boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists, ec);
         return (is_ok(ec) ? 0 : -1);
     }
