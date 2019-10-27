@@ -142,6 +142,8 @@ public:
     	*this = *rhs; 
     	return true;
     }
+	//better suitable than serialize() for displaying in a gui
+	virtual std::string			to_string() const { return this->serialize(); }
 };
 
 typedef ConfigOption*       ConfigOptionPtr;
@@ -688,6 +690,11 @@ public:
         return unescape_string_cstyle(str, this->value);
     }
 
+	std::string to_string() const override
+	{
+		return this->value;
+	}
+
 private:
 	friend class cereal::access;
 	template<class Archive> void serialize(Archive &ar) { ar(cereal::base_class<ConfigOptionSingle<std::string>>(this)); }
@@ -726,6 +733,25 @@ public:
             this->values.clear();
         return unescape_strings_cstyle(str, this->values);
     }
+
+	std::string to_string() const override
+	{
+		std::string s;
+		bool first = true;
+
+		for (std::string curLine : this->values) {
+			if (first) {
+				first = false;
+			}
+			else {
+				s += "\n";
+			}
+
+			s += curLine;
+		}
+
+		return s;
+	}
 
 private:
 	friend class cereal::access;
@@ -905,6 +931,15 @@ public:
                sscanf(str.data(), " %lf x %lf %c", &this->value(0), &this->value(1), &dummy) == 2;
     }
 
+	std::string to_string() const override
+	{
+		std::ostringstream ss;
+		ss << this->value(0);
+		ss << "x";
+		ss << this->value(1);
+		return ss.str();
+	}
+
 private:
 	friend class cereal::access;
 	template<class Archive> void serialize(Archive &ar) { ar(cereal::base_class<ConfigOptionSingle<Vec2d>>(this)); }
@@ -1015,6 +1050,17 @@ public:
                sscanf(str.data(), " %lf x %lf x %lf %c", &this->value(0), &this->value(1), &this->value(2), &dummy) == 2;
     }
 
+	std::string to_string() const override
+	{
+		std::ostringstream ss;
+		ss << this->value(0);
+		ss << "x";
+		ss << this->value(1);
+		ss << "x";
+		ss << this->value(2);
+		return ss.str();
+	}
+
 private:
 	friend class cereal::access;
 	template<class Archive> void serialize(Archive &ar) { ar(cereal::base_class<ConfigOptionSingle<Vec3d>>(this)); }
@@ -1044,6 +1090,11 @@ public:
         this->value = (str.compare("1") == 0);
         return true;
     }
+
+	std::string to_string() const override
+	{
+		return this->value ? "true" : "false";
+	}
 
 private:
 	friend class cereal::access;
@@ -1122,6 +1173,45 @@ public:
         }
         return true;
     }
+
+	std::string to_string() const override
+	{
+		std::ostringstream ss;
+		for (const unsigned char& v : this->values) {
+			if (&v != &this->values.front())
+				ss << ",";
+
+			if (v == nil_value()) {
+				if (NULLABLE)
+					ss << "nil";
+				else
+					std::runtime_error("Serializing NaN");
+			}
+			else
+				ss << (v ? "true" : "false");
+		}
+		return ss.str();
+	}
+
+	std::vector<std::string> v_to_string()
+	{
+		std::vector<std::string> vv;
+		for (const unsigned char v : this->values) {
+			std::ostringstream ss;
+
+			if (v == nil_value()) {
+				if (NULLABLE)
+					ss << "nil";
+				else
+					std::runtime_error("Serializing NaN");
+			}
+			else
+				ss << (v ? "true" : "false");
+
+			vv.push_back(ss.str());
+		}
+		return vv;
+	}
 
 protected:
 	void serialize_single_value(std::ostringstream &ss, const unsigned char v) const {

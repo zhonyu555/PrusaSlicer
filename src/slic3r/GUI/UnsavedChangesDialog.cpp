@@ -194,16 +194,16 @@ namespace Slic3r {
 					wxWindow* win_old_opt;
 					wxWindow* win_new_opt;
 
-					std::string old_val = old_opt->serialize();
-					std::string new_val = new_opt->serialize();
+					std::string old_val;
+					std::string new_val;
 
 					if (cur_pair.index >= 0) {
 						old_val = cur_pair.ser_old_opt;
 						new_val = cur_pair.ser_new_opt;
 					}
 					else {
-						old_val = old_opt->serialize();
-						new_val = new_opt->serialize();
+						old_val = old_opt->to_string();
+						new_val = new_opt->to_string();
 					}
 
 					if(cur_pair.def->gui_type == "color"){
@@ -232,19 +232,6 @@ namespace Slic3r {
 							case coPoint:
 							case coPoint3:
 							case coPoints:{
-								if (old_opt->is_vector() || cur_pair.def->type == coString)
-									unescape_string_cstyle(old_val, old_val);
-
-								if (new_opt->is_vector() || cur_pair.def->type == coString)
-									unescape_string_cstyle(new_val, new_val);
-
-								if (cur_pair.def->type & coBool) {
-									boost::replace_all(old_val, "0", "false");
-									boost::replace_all(old_val, "1", "true");
-									boost::replace_all(new_val, "0", "false");
-									boost::replace_all(new_val, "1", "true");
-								}
-
 								win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
 								win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
 								break;
@@ -340,8 +327,8 @@ namespace Slic3r {
 					new_vals = ((ConfigOptionPoints*)pair.new_opt)->vserialize();
 					break;
 				case coBools:
-					old_vals = ((ConfigOptionBools*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionBools*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionBools*)pair.old_opt)->v_to_string();
+					new_vals = ((ConfigOptionBools*)pair.new_opt)->v_to_string();
 					break;
 				default:
 					return;
@@ -363,49 +350,7 @@ namespace Slic3r {
 		}
 
 		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def, int index) {
-			int opt_idx = std::max(index, 0);
-
-			wxString default_val = wxString("");
-
-			switch (def.type) {
-			case coFloatOrPercent:
-			{
-				default_val = double_to_string(def.default_value->getFloat());
-				if (def.get_default_value<ConfigOptionFloatOrPercent>()->percent)
-					default_val += "%";
-				break;
-			}
-			case coPercent:
-			{
-				default_val = wxString::Format(_T("%i"), int(def.default_value->getFloat()));
-				default_val += "%";
-				break;
-			}
-			case coPercents:
-			case coFloats:
-			case coFloat:
-			{
-				double val = def.type == coFloats ?
-					def.get_default_value<ConfigOptionFloats>()->get_at(opt_idx) :
-					def.type == coFloat ?
-					def.default_value->getFloat() :
-					def.get_default_value<ConfigOptionPercents>()->get_at(opt_idx);
-				default_val = double_to_string(val);
-				break;
-			}
-			case coString:
-				default_val = def.get_default_value<ConfigOptionString>()->value;
-				break;
-			case coStrings:
-			{
-				const ConfigOptionStrings* vec = def.get_default_value<ConfigOptionStrings>();
-				if (vec == nullptr || vec->empty()) break; //for the case of empty default value
-				default_val = vec->get_at(opt_idx);
-				break;
-			}
-			default:
-				break;
-			}
+			wxString default_val = def.default_value->to_string();
 
 			std::string opt_id = def.opt_key;
 			if (index >= 0) {
