@@ -33,7 +33,7 @@ namespace Slic3r {
 #define CATEGORY_NAME_CUSTOM_GCODE L("Custom G-code")
 #define CATEGORY_NAME_GENERAL L("General")
 #define CATEGORY_NAME_MACHINE_LIMITES L("Machine limits")
-#define CATEGORY_NAME_EXTRUDER_N L("Extruder<n>")
+#define CATEGORY_NAME_EXTRUDER_N L("Extruder #")
 
 static void assign_printer_technology_to_unknown(t_optiondef_map &options, PrinterTechnology printer_technology)
 {

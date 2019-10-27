@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
+#include <wx/statline.h>
 
 #define UnsavedChangesDialog_max_width 1200
 #define UnsavedChangesDialog_max_height 800
@@ -51,6 +52,8 @@ namespace Slic3r {
 			int height = std::min(UnsavedChangesDialog_min_height + scrolled_add_height, UnsavedChangesDialog_max_height);
 
 			this->SetSize(wxSize(width, height));
+
+			this->Center();
 		}
 
 		UnsavedChangesDialog::~UnsavedChangesDialog() {
@@ -85,6 +88,7 @@ namespace Slic3r {
 
 							cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
 							add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node);
+							cur_tab_sizer->AddSpacer(UnsavedChangesDialog_def_border);
 
 							cur_tab_win->SetSizer(cur_tab_sizer);
 
@@ -97,6 +101,8 @@ namespace Slic3r {
 
 				scrolled_win->SetSizer(scrolled_sizer);
 				scrolled_win->SetScrollRate(2, 2);
+
+			wxStaticLine* line = new wxStaticLine(border_win, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL);
 
 			wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
 				ScalableButton* save_btn = new ScalableButton(border_win, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
@@ -116,6 +122,7 @@ namespace Slic3r {
 
 			wrapper_sizer->Add(scrolled_win, 1, wxEXPAND);
 			wrapper_sizer->AddSpacer(UnsavedChangesDialog_def_border * 2);
+			wrapper_sizer->Add(line, 0, wxLEFT | wxRIGHT | wxEXPAND, UnsavedChangesDialog_def_border);
 			wrapper_sizer->Add(btn_sizer, 0, wxALL, UnsavedChangesDialog_def_border);
 
 			border_win->SetSizer(wrapper_sizer);
@@ -131,11 +138,17 @@ namespace Slic3r {
 				def_opt_pair pair;
 
 				pair.def = tab->m_presets->get_selected_preset().config.def()->get(key);
+
 				pair.old_opt = tab->m_presets->get_selected_preset().config.option(key);
 				pair.new_opt = tab->m_presets->get_edited_preset().config.option(key);
 				pair.key = key;
 
-				options.push_back(pair);
+				if (pair.def->category.find('#') != std::string::npos && pair.old_opt->type() & pair.new_opt->type() & coVectorType) {
+					split_dirty_option_by_extruders(pair, options);
+				}
+				else {
+					options.push_back(pair);
+				}
 			}
 
 			boost::sort(options);
@@ -144,6 +157,15 @@ namespace Slic3r {
 			dirty_opts_node* category_node;
 			for (def_opt_pair cur_pair : options) {
 				std::string cat = cur_pair.def->category;
+
+				if (cur_pair.index >= 0) {
+					size_t tag_pos = cat.find("#");
+					if (tag_pos != std::string::npos)
+					{
+						cat.replace(tag_pos, 1, std::to_string(cur_pair.index + 1));
+					}
+				}
+
 				std::string label = cur_pair.def->label;
 
 				const ConfigOption* old_opt = cur_pair.old_opt;
@@ -182,9 +204,11 @@ namespace Slic3r {
 
 						unsigned char rgb[3];
 						Slic3r::PresetBundle::parse_color(old_val, rgb);
-
 						win_old_opt = new wxStaticBitmap(parent, wxID_ANY, BitmapCache::mksolid(icon_width, icon_height, rgb));
-						win_new_opt = new wxColourPickerCtrl(parent, wxID_ANY, wxColour(new_val));
+						
+						//win_new_opt = new wxColourPickerCtrl(parent, wxID_ANY, wxColour(new_val));
+						Slic3r::PresetBundle::parse_color(new_val, rgb);
+						win_new_opt = new wxStaticBitmap(parent, wxID_ANY, BitmapCache::mksolid(icon_width, icon_height, rgb));
 					}
 					else {
 						switch (cur_pair.def->type) {
@@ -199,11 +223,20 @@ namespace Slic3r {
 							case coInts:
 							case coBool:
 							case coBools:
-							case coEnum:{
+							case coEnum:
+							case coPoint:
+							case coPoint3:
+							case coPoints:{
 								std::string old_val, new_val;
 								
-								old_val = old_opt->serialize();
-								new_val = new_opt->serialize();
+								if (cur_pair.index >= 0) {
+									old_val = cur_pair.ser_old_opt;
+									new_val = cur_pair.ser_new_opt;
+								}
+								else {
+									old_val = old_opt->serialize();
+									new_val = new_opt->serialize();
+								}
 
 								if (old_opt->is_vector() || cur_pair.def->type == coString)
 									unescape_string_cstyle(old_val, old_val);
@@ -233,10 +266,13 @@ namespace Slic3r {
 
 					win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
 					
-					std::string tooltip = getTooltipText(*cur_pair.def);
+					std::string tooltip = getTooltipText(*cur_pair.def, cur_pair.index);
 						
 					win_new_opt->SetToolTip(tooltip);
 					win_old_opt->SetToolTip(tooltip);
+					//win_new_opt->Bind(wxEVT_MOTION, [win_new_opt, tooltip](wxMouseEvent& e) {
+					//	win_new_opt->SetToolTip(tooltip);
+					//});
 
 					lineSizer->Add(opt_label);
 
@@ -254,23 +290,57 @@ namespace Slic3r {
 			}
 		}
 
-		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def) {
-			int opt_idx = 0;
-			switch (def.type)
+		void UnsavedChangesDialog::split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out) {
+			std::vector<std::string> old_vals;
+			std::vector<std::string> new_vals;
+
+			switch (pair.def->type) 
 			{
-			case coPercents:
-			case coFloats:
-			case coStrings:
-			case coBools:
-			case coInts: {
-				auto tag_pos = def.opt_key.find("#");
-				if (tag_pos != std::string::npos)
-					opt_idx = stoi(def.opt_key.substr(tag_pos + 1, def.opt_key.size()));
-				break;
+				case coFloats:
+					old_vals = ((ConfigOptionFloats*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionFloats*)pair.new_opt)->vserialize();
+					break;
+				case coInts:
+					old_vals = ((ConfigOptionInts*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionInts*)pair.new_opt)->vserialize();
+					break;
+				case coStrings:
+					old_vals = ((ConfigOptionStrings*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionStrings*)pair.new_opt)->vserialize();
+					break;
+				case coPercents:
+					old_vals = ((ConfigOptionPercents*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionPercents*)pair.new_opt)->vserialize();
+					break;
+				case coPoints:
+					old_vals = ((ConfigOptionPoints*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionPoints*)pair.new_opt)->vserialize();
+					break;
+				case coBools:
+					old_vals = ((ConfigOptionBools*)pair.old_opt)->vserialize();
+					new_vals = ((ConfigOptionBools*)pair.new_opt)->vserialize();
+					break;
+				default:
+					return;
 			}
-			default:
-				break;
+
+			for (size_t i = 0; i < old_vals.size() || i < new_vals.size(); i++) {
+				std::string cur_old_val = i < old_vals.size() ? old_vals[i] : "-";
+				std::string cur_new_val = i < new_vals.size() ? new_vals[i] : "-";
+
+				if (cur_old_val != cur_new_val) {
+					def_opt_pair newPair(pair);
+					newPair.index = i;
+					newPair.ser_old_opt = cur_old_val;
+					newPair.ser_new_opt = cur_new_val;
+
+					out.push_back(newPair);
+				}
 			}
+		}
+
+		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def, int index) {
+			int opt_idx = std::max(index, 0);
 
 			wxString default_val = wxString("");
 
@@ -315,10 +385,8 @@ namespace Slic3r {
 			}
 
 			std::string opt_id = def.opt_key;
-			auto hash_pos = opt_id.find("#");
-			if (hash_pos != std::string::npos) {
-				opt_id.replace(hash_pos, 1, "[");
-				opt_id += "]";
+			if (index >= 0) {
+				opt_id += "[" + std::to_string(index) + "]";
 			}
 
 			std::string tooltip = def.tooltip;

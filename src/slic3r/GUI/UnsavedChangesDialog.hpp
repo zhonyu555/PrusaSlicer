@@ -16,15 +16,24 @@ namespace Slic3r {
 			const ConfigOption* new_opt = NULL;
 			t_config_option_key key;
 
+			int index = -1;
+			std::string ser_old_opt;
+			std::string ser_new_opt;
+
 			bool operator <(const def_opt_pair& b)
 			{
+				if (this->def->category == b.def->category && this->index >= 0 && b.index >= 0)
+				{
+					return this->index < b.index;
+				}
+
 				return this->def->category < b.def->category;
 			}
 		};
 
 		struct dirty_opts_node;
 
-		//this binds the gui checkbox of an option and its definition and internal value together
+		//this binds the gui line of an option and its definition and internal value together
 		struct dirty_opt {
 			def_opt_pair val;
 			wxCheckBox* checkbox;
@@ -40,7 +49,7 @@ namespace Slic3r {
 			}
 		};
 
-		//a node is a tab or category in the scroll window
+		//a node represents a tab or category in the scroll window
 		struct dirty_opts_node {
 			wxString label = "";
 			wxCheckBox* checkbox;
@@ -94,7 +103,8 @@ namespace Slic3r {
 
 			wxWindow* buildScrollWindow(wxString& dirty_tabs);
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node);
-			std::string getTooltipText(const ConfigOptionDef& def);
+			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
+			std::string getTooltipText(const ConfigOptionDef& def, int index);
 			wxBoxSizer* buildYesNoBtns();
 
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
