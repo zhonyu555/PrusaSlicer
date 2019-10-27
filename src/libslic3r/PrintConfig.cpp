@@ -1597,7 +1597,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_before_travel", coFloats);
     def->label = L("Minimum travel after retraction");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("Retraction is not triggered when travel moves are shorter than this length.");
     def->sidetext = L("mm");
     def->mode = comAdvanced;
@@ -1605,7 +1605,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_before_wipe", coPercents);
     def->label = L("Retract amount before wipe");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("With bowden extruders, it may be wise to do some amount of quick retract "
                    "before doing the wipe movement.");
     def->sidetext = L("%");
@@ -1614,7 +1614,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_layer_change", coBools);
     def->label = L("Retract on layer change");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("This flag enforces a retraction whenever a Z move is done.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBools { false });
@@ -1630,7 +1630,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_length_toolchange", coFloats);
     def->label = L("Length");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->full_label = L("Retraction Length (Toolchange)");
     def->tooltip = L("When retraction is triggered before changing tool, filament is pulled back "
                    "by the specified amount (the length is measured on raw filament, before it enters "
@@ -1641,7 +1641,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_lift", coFloats);
     def->label = L("Lift Z");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("If you set this to a positive value, Z is quickly raised every time a retraction "
                    "is triggered. When using multiple extruders, only the setting for the first extruder "
                    "will be considered.");
@@ -1650,7 +1650,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_lift_above", coFloats);
     def->label = L("Above Z");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->full_label = L("Only lift Z above");
     def->tooltip = L("If you set this to a positive value, Z lift will only take place above the specified "
                    "absolute Z. You can tune this setting for skipping lift on the first layers.");
@@ -1660,7 +1660,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_lift_below", coFloats);
     def->label = L("Below Z");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->full_label = L("Only lift Z below");
     def->tooltip = L("If you set this to a positive value, Z lift will only take place below "
                    "the specified absolute Z. You can tune this setting for limiting lift "
@@ -1671,7 +1671,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_restart_extra", coFloats);
     def->label = L("Extra length on restart");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("When the retraction is compensated after the travel move, the extruder will push "
                    "this additional amount of filament. This setting is rarely needed.");
     def->sidetext = L("mm");
@@ -1680,7 +1680,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("retract_restart_extra_toolchange", coFloats);
     def->label = L("Extra length on restart");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("When the retraction is compensated after changing tool, the extruder will push "
                    "this additional amount of filament.");
     def->sidetext = L("mm");
@@ -1690,7 +1690,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("retract_speed", coFloats);
     def->label = L("Retraction Speed");
     def->full_label = L("Retraction Speed");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("The speed for retractions (it only applies to the extruder motor).");
     def->sidetext = L("mm/s");
     def->mode = comAdvanced;
@@ -1699,7 +1699,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("deretract_speed", coFloats);
     def->label = L("Deretraction Speed");
     def->full_label = L("Deretraction Speed");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("The speed for loading of a filament into extruder after retraction "
                    "(it only applies to the extruder motor). If left to zero, the retraction speed is used.");
     def->sidetext = L("mm/s");
@@ -2268,7 +2268,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("wipe", coBools);
     def->label = L("Wipe while retracting");
-	def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+	def->category = CATEGORY_NAME_EXTRUDER_N;
 	def->tooltip = L("This flag will move the nozzle while retracting to minimize the possible blob "
                    "on leaky extruders.");
     def->mode = comAdvanced;
@@ -2389,7 +2389,8 @@ void PrintConfigDef::init_fff_params()
         def = this->add_nullable(std::string("filament_") + opt_key, it_opt->second.type);
         def->label 		= it_opt->second.label;
         def->full_label = it_opt->second.full_label;
-        def->tooltip 	= it_opt->second.tooltip;
+		def->category = CATEGORY_NAME_FILAMENT_OVERRIDES;
+		def->tooltip 	= it_opt->second.tooltip;
         def->sidetext   = it_opt->second.sidetext;
         def->mode       = it_opt->second.mode;
         switch (def->type) {
