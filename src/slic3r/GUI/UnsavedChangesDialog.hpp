@@ -106,6 +106,7 @@ namespace Slic3r {
 			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
 			std::string getTooltipText(const ConfigOptionDef& def, int index);
 			wxBoxSizer* buildYesNoBtns();
+			wxBitmap getColourBitmap(const std::string& color);
 
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
 			template<typename Functor>

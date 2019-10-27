@@ -194,21 +194,26 @@ namespace Slic3r {
 					wxWindow* win_old_opt;
 					wxWindow* win_new_opt;
 
+					std::string old_val = old_opt->serialize();
+					std::string new_val = new_opt->serialize();
+
+					if (cur_pair.index >= 0) {
+						old_val = cur_pair.ser_old_opt;
+						new_val = cur_pair.ser_new_opt;
+					}
+					else {
+						old_val = old_opt->serialize();
+						new_val = new_opt->serialize();
+					}
+
 					if(cur_pair.def->gui_type == "color"){
-						std::string old_val = old_opt->serialize();
-						std::string new_val = new_opt->serialize();
+						win_old_opt = old_val == "-" ?
+							  (wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
+							: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
 
-						const double em = Slic3r::GUI::wxGetApp().em_unit();
-						const int icon_width = lround(3.2 * em);
-						const int icon_height = lround(1.6 * em);
-
-						unsigned char rgb[3];
-						Slic3r::PresetBundle::parse_color(old_val, rgb);
-						win_old_opt = new wxStaticBitmap(parent, wxID_ANY, BitmapCache::mksolid(icon_width, icon_height, rgb));
-						
-						//win_new_opt = new wxColourPickerCtrl(parent, wxID_ANY, wxColour(new_val));
-						Slic3r::PresetBundle::parse_color(new_val, rgb);
-						win_new_opt = new wxStaticBitmap(parent, wxID_ANY, BitmapCache::mksolid(icon_width, icon_height, rgb));
+						win_new_opt = new_val == "-" ?
+							  (wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
+							: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
 					}
 					else {
 						switch (cur_pair.def->type) {
@@ -227,17 +232,6 @@ namespace Slic3r {
 							case coPoint:
 							case coPoint3:
 							case coPoints:{
-								std::string old_val, new_val;
-								
-								if (cur_pair.index >= 0) {
-									old_val = cur_pair.ser_old_opt;
-									new_val = cur_pair.ser_new_opt;
-								}
-								else {
-									old_val = old_opt->serialize();
-									new_val = new_opt->serialize();
-								}
-
 								if (old_opt->is_vector() || cur_pair.def->type == coString)
 									unescape_string_cstyle(old_val, old_val);
 
@@ -287,6 +281,35 @@ namespace Slic3r {
 					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
 				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation * 2);
+			}
+		}
+
+		wxBitmap UnsavedChangesDialog::getColourBitmap(const std::string& color) {
+			const double em = Slic3r::GUI::wxGetApp().em_unit();
+			const int icon_width = lround(6.4 * em);
+			const int icon_height = lround(1.6 * em);
+
+			unsigned char rgb[3];
+			if (!Slic3r::PresetBundle::parse_color(color, rgb)) {
+				wxBitmap bmp = BitmapCache::mksolid(icon_width, icon_height, 0, 0, 0, wxALPHA_TRANSPARENT);
+
+				wxMemoryDC dc(bmp);
+				if (!dc.IsOk()) 
+					return bmp;
+
+				dc.SetTextForeground(*wxWHITE);
+				dc.SetFont(wxGetApp().normal_font());
+
+				const wxRect rect = wxRect(0, 0, bmp.GetWidth(), bmp.GetHeight());
+				dc.DrawLabel("undef", rect, wxALIGN_CENTER_HORIZONTAL | wxALIGN_CENTER_VERTICAL);
+
+				dc.SelectObject(wxNullBitmap);
+
+				return bmp;
+			}
+			else {
+				wxBitmap bmp = BitmapCache::mksolid(icon_width, icon_height, rgb);
+				return bmp;
 			}
 		}
 
