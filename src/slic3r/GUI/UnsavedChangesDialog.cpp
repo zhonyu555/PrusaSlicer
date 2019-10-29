@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
 #include <wx/statline.h>
+#include "slic3r/Utils/Diff.hpp"
 
 #define UnsavedChangesDialog_max_width 1200
 #define UnsavedChangesDialog_max_height 800
@@ -217,13 +218,16 @@ namespace Slic3r {
 					}
 					else {
 						switch (cur_pair.def->type) {
+							case coString:
+							case coStrings: {
+								slic3r::Diff diff = slic3r::Diff(old_val, new_val);
+								diff.solve();
+							}
 							case coFloatOrPercent:
 							case coFloat:
 							case coFloats:
 							case coPercent:
-							case coPercents:
-							case coString:
-							case coStrings:
+							case coPercents:							
 							case coInt:
 							case coInts:
 							case coBool:
