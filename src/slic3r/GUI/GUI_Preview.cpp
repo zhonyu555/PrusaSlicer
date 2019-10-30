@@ -185,6 +185,7 @@ Preview::Preview(
     , m_loaded(false)
     , m_enabled(false)
     , m_schedule_background_process(schedule_background_process_func)
+    , m_toggle_state_combochecklist_features(true)
 #ifdef __linux__
     , m_volumes_cleanup_required(false)
 #endif // __linux__
@@ -233,6 +234,7 @@ bool Preview::init(wxWindow* parent, Bed3D& bed, Camera& camera, GLToolbar& view
     m_combochecklist_features->Create(this, wxID_ANY, _(L("Feature types")), wxDefaultPosition, wxSize(15 * wxGetApp().em_unit(), -1), wxCB_READONLY);
     std::string feature_text = GUI::into_u8(_(L("Feature types")));
     std::string feature_items = GUI::into_u8(
+        _(L("Toggle All")) + "|" +
         _(L("Perimeter")) + "|" +
         _(L("External perimeter")) + "|" +
         _(L("Overhang perimeter")) + "|" +
@@ -314,7 +316,7 @@ Preview::~Preview()
 
     if (m_canvas_widget != nullptr)
     {
-		_3DScene::remove_canvas(m_canvas_widget);
+        _3DScene::remove_canvas(m_canvas_widget);
         delete m_canvas_widget;
         m_canvas = nullptr;
     }
@@ -523,9 +525,22 @@ void Preview::on_choice_view_type(wxCommandEvent& evt)
 
 void Preview::on_combochecklist_features(wxCommandEvent& evt)
 {
-    int flags = Slic3r::GUI::combochecklist_get_flags(m_combochecklist_features);
-    m_gcode_preview_data->extrusion.role_flags = (unsigned int)flags;
-    refresh_print();
+    unsigned int flags = Slic3r::GUI::combochecklist_get_flags(m_combochecklist_features);
+    bool toggle_flag = flags & 1;
+	
+	//Temp workaround for event double firing, detect actual state change
+	bool toggle_flag_changed = m_toggle_state_combochecklist_features != toggle_flag;
+
+	if ((m_gcode_preview_data->extrusion.role_flags ^ (flags >> 1)) > 0 || toggle_flag_changed)
+    {
+        if (toggle_flag_changed)
+        {
+            flags = Slic3r::GUI::combochecklist_set_flags(m_combochecklist_features, toggle_flag);
+            m_toggle_state_combochecklist_features = toggle_flag;
+         }
+        m_gcode_preview_data->extrusion.role_flags = (flags >> 1);
+        refresh_print();
+    }
 }
 
 void Preview::on_checkbox_travel(wxCommandEvent& evt)

@@ -100,6 +100,7 @@ class Preview : public wxPanel
 
     bool m_loaded;
     bool m_enabled;
+    bool m_toggle_state_combochecklist_features;
 
     DoubleSlider* m_slider {nullptr};
 

@@ -282,9 +282,9 @@ void create_combochecklist(wxComboCtrl* comboCtrl, std::string text, std::string
     }
 }
 
-int combochecklist_get_flags(wxComboCtrl* comboCtrl)
+unsigned int combochecklist_get_flags(wxComboCtrl* comboCtrl)
 {
-    int flags = 0;
+    unsigned int flags = 0;
 
     wxCheckListBoxComboPopup* popup = wxDynamicCast(comboCtrl->GetPopupControl(), wxCheckListBoxComboPopup);
     if (popup != nullptr)
@@ -292,6 +292,24 @@ int combochecklist_get_flags(wxComboCtrl* comboCtrl)
         for (unsigned int i = 0; i < popup->GetCount(); ++i)
         {
             if (popup->IsChecked(i))
+                flags |= 1 << i;
+        }
+    }
+
+    return flags;
+}
+
+unsigned int combochecklist_set_flags(wxComboCtrl* comboCtrl, bool flag_value)
+{
+    unsigned int flags = 0;
+
+    wxCheckListBoxComboPopup* popup = wxDynamicCast(comboCtrl->GetPopupControl(), wxCheckListBoxComboPopup);
+    if (popup != nullptr)
+    {
+        for (unsigned int i = 0; i < popup->GetCount(); ++i)
+        {
+            popup->Check(i, flag_value);
+            if (flag_value) 
                 flags |= 1 << i;
         }
     }

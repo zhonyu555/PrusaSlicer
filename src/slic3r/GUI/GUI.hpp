@@ -50,7 +50,8 @@ void create_combochecklist(wxComboCtrl* comboCtrl, std::string text, std::string
 
 // Returns the current state of the items listed in the wxCheckListBoxComboPopup contained in the given wxComboCtrl,
 // encoded inside an int.
-int combochecklist_get_flags(wxComboCtrl* comboCtrl);
+unsigned int combochecklist_get_flags(wxComboCtrl* comboCtrl);
+unsigned int combochecklist_set_flags(wxComboCtrl* comboCtrl, bool flag_value);
 
 // wxString conversions:
 
