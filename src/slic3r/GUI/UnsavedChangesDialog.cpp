@@ -1,11 +1,11 @@
 #include "UnsavedChangesDialog.hpp"
 #include "BitmapCache.hpp"
+#include "slic3r/Utils/Diff.hpp"
 #include <boost/range/algorithm.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
 #include <wx/statline.h>
-#include "slic3r/Utils/Diff.hpp"
 #include <wx/html/htmlwin.h>
 
 #define UnsavedChangesDialog_max_width 1200

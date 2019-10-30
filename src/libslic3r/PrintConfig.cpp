@@ -20,7 +20,7 @@ namespace Slic3r {
 #define CATEGORY_NAME_LAYERS L("Layers and perimeters")
 #define CATEGORY_NAME_INFILL L("Infill")
 #define CATEGORY_NAME_SKIRT L("Skirt and brim")
-#define CATEGORY_NAME_SUPPORT L("Support material")
+#define CATEGORY_NAME_SUPPORT_MAT L("Support material")
 #define CATEGORY_NAME_SPEED L("Speed")
 #define CATEGORY_NAME_EXTRUDERS L("Extruders")
 #define CATEGORY_NAME_ADVANCED L("Advanced")
@@ -34,6 +34,10 @@ namespace Slic3r {
 #define CATEGORY_NAME_GENERAL L("General")
 #define CATEGORY_NAME_MACHINE_LIMITES L("Machine limits")
 #define CATEGORY_NAME_EXTRUDER_N L("Extruder #")
+//SLA
+#define CATEGORY_NAME_SUPPORTS L("Supports")
+#define CATEGORY_NAME_PAD L("Pad")
+#define CATEGORY_NAME_MATERIAL L("Material")
 
 static void assign_printer_technology_to_unknown(t_optiondef_map &options, PrinterTechnology printer_technology)
 {
@@ -379,7 +383,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("dont_support_bridges", coBool);
     def->label = L("Don't support bridges");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Experimental option for preventing support material from being generated "
                    "under bridged areas.");
     def->mode = comAdvanced;
@@ -1575,7 +1579,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("raft_layers", coInt);
     def->label = L("Raft layers");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("The object will be raised by this number of layers, and support material "
                    "will be generated under it.");
     def->sidetext = L("layers");
@@ -1948,13 +1952,13 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material", coBool);
     def->label = L("Generate support material");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Enable support material generation.");
     def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("support_material_auto", coBool);
     def->label = L("Auto generated supports");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("If checked, supports will be generated automatically based on the overhang threshold value."\
                      " If unchecked, supports will be generated inside the \"Support Enforcer\" volumes only.");
     def->mode = comSimple;
@@ -1962,7 +1966,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_xy_spacing", coFloatOrPercent);
     def->label = L("XY separation between an object and its support");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("XY separation between an object and its support. If expressed as percentage "
                    "(for example 50%), it will be calculated over external perimeter width.");
     def->sidetext = L("mm or %");
@@ -1974,7 +1978,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_angle", coFloat);
     def->label = L("Pattern angle");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Use this setting to rotate the support material pattern on the horizontal plane.");
     def->sidetext = L("°");
     def->min = 0;
@@ -1984,7 +1988,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_buildplate_only", coBool);
     def->label = L("Support on build plate only");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Only create support if it lies on a build plate. Don't create support on a print.");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
@@ -1992,7 +1996,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("support_material_contact_distance", coFloat);
     def->gui_type = "f_enum_open";
     def->label = L("Contact Z distance");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("The vertical distance between object and support material interface. "
                    "Setting this to 0 will also prevent Slic3r from using bridge flow and speed "
                    "for the first object layer.");
@@ -2007,7 +2011,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_enforce_layers", coInt);
     def->label = L("Enforce support for the first");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Generate support material for the specified number of layers counting from bottom, "
                    "regardless of whether normal support material is enabled or not and regardless "
                    "of any angle threshold. This is useful for getting more adhesion of objects "
@@ -2039,7 +2043,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_interface_contact_loops", coBool);
     def->label = L("Interface loops");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Cover the top contact layer of the supports with loops. Disabled by default.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
@@ -2055,7 +2059,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_interface_layers", coInt);
     def->label = L("Interface layers");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Number of interface layers to insert between the object(s) and support material.");
     def->sidetext = L("layers");
     def->min = 0;
@@ -2064,7 +2068,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_interface_spacing", coFloat);
     def->label = L("Interface pattern spacing");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Spacing between interface lines. Set zero to get a solid interface.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2084,7 +2088,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_pattern", coEnum);
     def->label = L("Pattern");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Pattern used to generate support material.");
     def->enum_keys_map = &ConfigOptionEnum<SupportMaterialPattern>::get_enum_values();
     def->enum_values.push_back("rectilinear");
@@ -2098,7 +2102,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_spacing", coFloat);
     def->label = L("Pattern spacing");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Spacing between support material lines.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2116,7 +2120,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_synchronize_layers", coBool);
     def->label = L("Synchronize with object layers");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Synchronize support layers with the object print layers. This is useful "
                    "with multi-material printers, where the extruder switch is expensive.");
     def->mode = comExpert;
@@ -2124,7 +2128,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_threshold", coInt);
     def->label = L("Overhang threshold");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Support material will not be generated for overhangs whose slope angle "
                    "(90° = vertical) is above the given threshold. In other words, this value "
                    "represent the most horizontal slope (measured from the horizontal plane) "
@@ -2138,7 +2142,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("support_material_with_sheath", coBool);
     def->label = L("With sheath around the support");
-    def->category = CATEGORY_NAME_SUPPORT;
+    def->category = CATEGORY_NAME_SUPPORT_MAT;
     def->tooltip = L("Add a sheath (a single perimeter line) around the base support. This makes "
                    "the support more reliable, but also more difficult to remove.");
     def->mode = comExpert;
@@ -2437,46 +2441,53 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("display_width", coFloat);
     def->label = L("Display width");
-    def->tooltip = L("Width of the display");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Width of the display");
     def->min = 1;
     def->set_default_value(new ConfigOptionFloat(120.));
 
     def = this->add("display_height", coFloat);
     def->label = L("Display height");
-    def->tooltip = L("Height of the display");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Height of the display");
     def->min = 1;
     def->set_default_value(new ConfigOptionFloat(68.));
 
     def = this->add("display_pixels_x", coInt);
     def->full_label = L("Number of pixels in");
     def->label = ("X");
-    def->tooltip = L("Number of pixels in X");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Number of pixels in X");
     def->min = 100;
     def->set_default_value(new ConfigOptionInt(2560));
 
     def = this->add("display_pixels_y", coInt);
     def->label = ("Y");
-    def->tooltip = L("Number of pixels in Y");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Number of pixels in Y");
     def->min = 100;
     def->set_default_value(new ConfigOptionInt(1440));
 
     def = this->add("display_mirror_x", coBool);
     def->full_label = L("Display horizontal mirroring");
     def->label = L("Mirror horizontally");
-    def->tooltip = L("Enable horizontal mirroring of output images");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Enable horizontal mirroring of output images");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
 
     def = this->add("display_mirror_y", coBool);
     def->full_label = L("Display vertical mirroring");
     def->label = L("Mirror vertically");
-    def->tooltip = L("Enable vertical mirroring of output images");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Enable vertical mirroring of output images");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("display_orientation", coEnum);
     def->label = L("Display orientation");
-    def->tooltip = L("Set the actual LCD display orientation inside the SLA printer."
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Set the actual LCD display orientation inside the SLA printer."
                      " Portrait mode will flip the meaning of display width and height parameters"
                      " and the output images will be rotated by 90 degrees.");
     def->enum_keys_map = &ConfigOptionEnum<SLADisplayOrientation>::get_enum_values();
@@ -2489,8 +2500,9 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("fast_tilt_time", coFloat);
     def->label = L("Fast");
-    def->full_label = L("Fast tilt");
-    def->tooltip = L("Time of the fast tilt");
+	def->full_label = L("Fast tilt");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Time of the fast tilt");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2499,7 +2511,8 @@ void PrintConfigDef::init_sla_params()
     def = this->add("slow_tilt_time", coFloat);
     def->label = L("Slow");
     def->full_label = L("Slow tilt");
-    def->tooltip = L("Time of the slow tilt");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Time of the slow tilt");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2507,7 +2520,8 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("area_fill", coFloat);
     def->label = L("Area fill");
-    def->tooltip = L("The percentage of the bed area. \nIf the print area exceeds the specified value, \nthen a slow tilt will be used, otherwise - a fast tilt");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("The percentage of the bed area. \nIf the print area exceeds the specified value, \nthen a slow tilt will be used, otherwise - a fast tilt");
     def->sidetext = L("%");
     def->min = 0;
     def->mode = comExpert;
@@ -2516,7 +2530,8 @@ void PrintConfigDef::init_sla_params()
     def = this->add("relative_correction", coFloats);
     def->label = L("Printer scaling correction");
     def->full_label = L("Printer scaling correction");
-    def->tooltip  = L("Printer scaling correction");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip  = L("Printer scaling correction");
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats( { 1., 1. } ));
@@ -2524,7 +2539,8 @@ void PrintConfigDef::init_sla_params()
     def = this->add("absolute_correction", coFloat);
     def->label = L("Printer absolute correction");
     def->full_label = L("Printer absolute correction");
-    def->tooltip  = L("Will inflate or deflate the sliced 2D polygons according "
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip  = L("Will inflate or deflate the sliced 2D polygons according "
                       "to the sign of the correction.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.0));
@@ -2532,7 +2548,8 @@ void PrintConfigDef::init_sla_params()
     def = this->add("gamma_correction", coFloat);
     def->label = L("Printer gamma correction");
     def->full_label = L("Printer gamma correction");
-    def->tooltip  = L("This will apply a gamma correction to the rasterized 2D "
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip  = L("This will apply a gamma correction to the rasterized 2D "
                       "polygons. A gamma value of zero means thresholding with "
                       "the threshold in the middle. This behaviour eliminates "
                       "antialiasing without losing holes in polygons.");
@@ -2557,14 +2574,16 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("initial_layer_height", coFloat);
     def->label = L("Initial layer height");
-    def->tooltip = L("Initial layer height");
+	def->category = CATEGORY_NAME_MATERIAL;
+	def->tooltip = L("Initial layer height");
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0.3));
 
     def = this->add("faded_layers", coInt);
     def->label = L("Faded layers");
-    def->tooltip = L("Number of the layers needed for the exposure time fade from initial exposure time to the exposure time");
+	def->category = CATEGORY_NAME_LAYERS;
+	def->tooltip = L("Number of the layers needed for the exposure time fade from initial exposure time to the exposure time");
     def->min = 3;
     def->max = 20;
     def->mode = comExpert;
@@ -2572,7 +2591,8 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("min_exposure_time", coFloat);
     def->label = L("Minimum exposure time");
-    def->tooltip = L("Minimum exposure time");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Minimum exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2580,7 +2600,8 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("max_exposure_time", coFloat);
     def->label = L("Maximum exposure time");
-    def->tooltip = L("Maximum exposure time");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Maximum exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2588,14 +2609,16 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("exposure_time", coFloat);
     def->label = L("Exposure time");
-    def->tooltip = L("Exposure time");
+	def->category = CATEGORY_NAME_MATERIAL;
+	def->tooltip = L("Exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(10));
 
     def = this->add("min_initial_exposure_time", coFloat);
     def->label = L("Minimum initial exposure time");
-    def->tooltip = L("Minimum initial exposure time");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Minimum initial exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2603,7 +2626,8 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("max_initial_exposure_time", coFloat);
     def->label = L("Maximum initial exposure time");
-    def->tooltip = L("Maximum initial exposure time");
+	def->category = CATEGORY_NAME_GENERAL;
+	def->tooltip = L("Maximum initial exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->mode = comExpert;
@@ -2611,14 +2635,16 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("initial_exposure_time", coFloat);
     def->label = L("Initial exposure time");
-    def->tooltip = L("Initial exposure time");
+	def->category = CATEGORY_NAME_MATERIAL;
+	def->tooltip = L("Initial exposure time");
     def->sidetext = L("s");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(15));
 
     def = this->add("material_correction", coFloats);
     def->full_label = L("Correction for expansion");
-    def->tooltip  = L("Correction for expansion");
+	def->category = CATEGORY_NAME_MATERIAL;
+	def->tooltip  = L("Correction for expansion");
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats( { 1. , 1. } ));
@@ -2661,14 +2687,14 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("supports_enable", coBool);
     def->label = L("Generate supports");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Generate supports for the models");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(true));
 
     def = this->add("support_head_front_diameter", coFloat);
     def->label = L("Support head front diameter");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Diameter of the pointing side of the head");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2677,7 +2703,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_head_penetration", coFloat);
     def->label = L("Support head penetration");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("How much the pinhead has to penetrate the model surface");
     def->sidetext = L("mm");
     def->mode = comAdvanced;
@@ -2686,7 +2712,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_head_width", coFloat);
     def->label = L("Support head width");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Width from the back sphere center to the front sphere center");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2696,7 +2722,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_pillar_diameter", coFloat);
     def->label = L("Support pillar diameter");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Diameter in mm of the support pillars");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2706,7 +2732,8 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_pillar_connection_mode", coEnum);
     def->label = L("Support pillar connection mode");
-    def->tooltip = L("Controls the bridge type between two neighboring pillars."
+	def->category = CATEGORY_NAME_SUPPORTS;
+	def->tooltip = L("Controls the bridge type between two neighboring pillars."
                      " Can be zig-zag, cross (double zig-zag) or dynamic which"
                      " will automatically switch between the first two depending"
                      " on the distance of the two pillars.");
@@ -2722,14 +2749,14 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_buildplate_only", coBool);
     def->label = L("Support on build plate only");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Only create support if it lies on a build plate. Don't create support on a print.");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("support_pillar_widening_factor", coFloat);
     def->label = L("Pillar widening factor");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Merging bridges or pillars into another pillars can "
                      "increase the radius. Zero means no increase, one means "
                      "full increase.");
@@ -2740,7 +2767,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_base_diameter", coFloat);
     def->label = L("Support base diameter");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("Diameter in mm of the pillar base");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2750,7 +2777,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_base_height", coFloat);
     def->label = L("Support base height");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("The height of the pillar base cone");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2759,7 +2786,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_base_safety_distance", coFloat);
     def->label = L("Support base safety distance");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip  = L(
         "The minimum distance of the pillar base from the model in mm. "
         "Makes sense in zero elevation mode where a gap according "
@@ -2772,7 +2799,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_critical_angle", coFloat);
     def->label = L("Critical angle");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("The default angle for connecting support sticks and junctions.");
     def->sidetext = L("°");
     def->min = 0;
@@ -2782,7 +2809,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_max_bridge_length", coFloat);
     def->label = L("Max bridge length");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("The max length of a bridge");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2791,7 +2818,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_max_pillar_link_distance", coFloat);
     def->label = L("Max pillar linking distance");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("The max distance of two pillars to get linked with each other."
                      " A zero value will prohibit pillar cascading.");
     def->sidetext = L("mm");
@@ -2801,7 +2828,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_object_elevation", coFloat);
     def->label = L("Object elevation");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("How much the supports should lift up the supported object. "
                      "If \"Pad around object\" is enabled, this value is ignored.");
     def->sidetext = L("mm");
@@ -2812,7 +2839,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_points_density_relative", coInt);
     def->label = L("Support points density");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("This is a relative measure of support points density.");
     def->sidetext = L("%");
     def->min = 0;
@@ -2820,7 +2847,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("support_points_minimal_distance", coFloat);
     def->label = L("Minimal distance of the support points");
-    def->category = L("Supports");
+    def->category = CATEGORY_NAME_SUPPORTS;
     def->tooltip = L("No support points will be placed closer than this threshold.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2828,14 +2855,14 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_enable", coBool);
     def->label = L("Use pad");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip = L("Add a pad underneath the supported model");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(true));
 
     def = this->add("pad_wall_thickness", coFloat);
     def->label = L("Pad wall thickness");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
      def->tooltip = L("The thickness of the pad and its optional cavity walls.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2849,7 +2876,7 @@ void PrintConfigDef::init_sla_params()
                      "Be careful when enabling this feature, as some resins may "
                      "produce an extreme suction effect inside the cavity, "
                      "which makes peeling the print off the vat foil difficult.");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
 //     def->tooltip = L("");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2860,7 +2887,7 @@ void PrintConfigDef::init_sla_params()
     def = this->add("pad_brim_size", coFloat);
     def->label = L("Pad brim size");
     def->tooltip = L("How far should the pad extend around the contained geometry");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     //     def->tooltip = L("");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2870,7 +2897,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_max_merge_distance", coFloat);
     def->label = L("Max merge distance");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
      def->tooltip = L("Some objects can get along with a few smaller pads "
                       "instead of a single big one. This parameter defines "
                       "how far the center of two smaller pads should be. If they"
@@ -2883,7 +2910,7 @@ void PrintConfigDef::init_sla_params()
     // This is disabled on the UI. I hope it will never be enabled.
 //    def = this->add("pad_edge_radius", coFloat);
 //    def->label = L("Pad edge radius");
-//    def->category = L("Pad");
+//    def->category = CATEGORY_NAME_PAD;
 ////     def->tooltip = L("");
 //    def->sidetext = L("mm");
 //    def->min = 0;
@@ -2892,7 +2919,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_wall_slope", coFloat);
     def->label = L("Pad wall slope");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip = L("The slope of the pad wall relative to the bed plane. "
                      "90 degrees means straight walls.");
     def->sidetext = L("°");
@@ -2903,21 +2930,21 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_around_object", coBool);
     def->label = L("Pad around object");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip = L("Create pad around object and ignore the support elevation");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
     
     def = this->add("pad_around_object_everywhere", coBool);
     def->label = L("Pad around object everywhere");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip = L("Force pad around object everywhere");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("pad_object_gap", coFloat);
     def->label = L("Pad object gap");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip  = L("The gap between the object bottom and the generated "
                       "pad in zero elevation mode.");
     def->sidetext = L("mm");
@@ -2928,7 +2955,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_object_connector_stride", coFloat);
     def->label = L("Pad object connector stride");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip = L("Distance between two connector sticks which connect the object and the generated pad.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2937,7 +2964,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_object_connector_width", coFloat);
     def->label = L("Pad object connector width");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip  = L("Width of the connector sticks which connect the object and the generated pad.");
     def->sidetext = L("mm");
     def->min = 0;
@@ -2946,7 +2973,7 @@ void PrintConfigDef::init_sla_params()
 
     def = this->add("pad_object_connector_penetration", coFloat);
     def->label = L("Pad object connector penetration");
-    def->category = L("Pad");
+    def->category = CATEGORY_NAME_PAD;
     def->tooltip  = L(
         "How much should the tiny connectors penetrate into the model body.");
     def->sidetext = L("mm");

@@ -313,6 +313,7 @@ Line OptionsGroup::create_single_option_line(const Option& option) const {
 // 	Line retval{ _(option.opt.label), _(option.opt.tooltip) };
     wxString tooltip = _(option.opt.tooltip);
     edit_tooltip(tooltip);
+	//Line retval{ _(option.opt_id + "|" + option.opt.category), tooltip }; //for debugging
 	Line retval{ _(option.opt.label), tooltip };
     Option tmp(option);
     tmp.opt.label = std::string("");
