@@ -88,14 +88,14 @@ namespace Slic3r {
 							wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
 								cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
 
+							wxColour background = highlight ? wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+							highlight = !highlight;
+
 							cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
-							add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node);
+							add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, background);
 							cur_tab_sizer->AddSpacer(UnsavedChangesDialog_def_border);
 
 							cur_tab_win->SetSizer(cur_tab_sizer);
-
-							wxColour background = highlight ? wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
-							highlight = !highlight;
 							cur_tab_win->SetBackgroundColour(background);
 
 						scrolled_sizer->Add(cur_tab_win, 0, wxEXPAND);
@@ -133,7 +133,7 @@ namespace Slic3r {
 			return border_win;
 		}
 
-		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node) {
+		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour) {
 			std::vector<def_opt_pair> options;
 			
 			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
@@ -221,15 +221,22 @@ namespace Slic3r {
 						switch (cur_pair.def->type) {
 							case coString:
 							case coStrings: {
-								win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
-
 								wxString sText;
-								std::string text = std::string(
+								std::string html = std::string(
 									"<html>"
-									"<body>");
+									"<body bgcolor=" + wxString::Format(wxT("#%02X%02X%02X"), bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) + ">");
 
 								using namespace slic3r;
 								Diff diff = Diff(old_val, new_val);
+
+								auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
+									unsigned char r, g, b;
+									r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
+									g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
+									b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
+
+									return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
+								};
 
 								for (EditScriptAction cur_action : diff.getSolution()) {
 									std::string sub, font;
@@ -241,27 +248,33 @@ namespace Slic3r {
 										}
 										case EditScriptAction::ActionType::remove: {
 											sub = old_val.substr(cur_action.offset, cur_action.count);
-											font = "<font bgcolor=#FF0000>";
+											font = "<font bgcolor=" + fakeAlpha(wxColour(255, 0, 0, 255), bg_colour, 130) + ">";
 											break;
 										}
 										case EditScriptAction::ActionType::insert: {
 											sub = new_val.substr(cur_action.offset, cur_action.count);
-											font = "<font bgcolor=#00FF00>";
+											font = "<font bgcolor=" + fakeAlpha(wxColour(0, 255, 0, 255), bg_colour, 130) + ">";
 											break;
 										}
 									}
-									sub = (font != "" ? " " + sub + " " : sub);
 
-									text += font + sub + (font != "" ? "</font>" : "");
-									sText += sub;
+									if (font != "") {
+										html += font + sub + "</font>";
+										sText += sub;
+									}
+									else {
+										html += sub;
+										sText += sub;
+									}
 								}
 
-								text += wxString(
+								html += wxString(
 									"</body>"
 									"</html>");
 
-								boost::replace_all(text, "\n", "<br />");
+								boost::replace_all(html, "\n", "<br />");
 
+								//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
 								wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
 								wxSize size = win_test->GetSize();
 								win_test->Destroy();
@@ -271,25 +284,15 @@ namespace Slic3r {
 								const int fs = font.GetPointSize();
 								int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
 
-								wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER/*NEVER*/);
+								wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
 								html_win->SetBorders(0);
 								html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
-								html_win->SetPage(text);
+								html_win->SetPage(html);
 								html_win->Layout();
-								//wxSize size = wxSize(html_win->GetInternalRepresentation()->GetWidth(), html_win->GetInternalRepresentation()->GetHeight());
-								//wxSize s = html_win->GetVirtualSize();
-								//html_win->SetMinSize(wxSize(50, 16 * wxGetApp().em_unit()));
 								html_win->Refresh();
-								/*html_win->Destroy();
 
-								html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
-								html_win->SetBorders(0);
-								html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
-								html_win->SetPage(text);
-								html_win->Layout();
-								html_win->SetBackgroundColour(wxColor(100,0,0,120));
-								*/
-								win_new_opt = (wxWindow*)html_win;
+								win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+								win_old_opt = (wxWindow*)html_win;
 
 								break;
 							}

@@ -102,7 +102,7 @@ namespace Slic3r {
 			dirty_opts_node* m_dirty_tabs_tree;
 
 			wxWindow* buildScrollWindow(wxString& dirty_tabs);
-			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node);
+			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
 			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
 			std::string getTooltipText(const ConfigOptionDef& def, int index);
 			wxBoxSizer* buildYesNoBtns();
