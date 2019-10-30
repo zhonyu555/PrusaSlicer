@@ -6,6 +6,7 @@
 #include <wx/clrpicker.h>
 #include <wx/statline.h>
 #include "slic3r/Utils/Diff.hpp"
+#include <wx/html/htmlwin.h>
 
 #define UnsavedChangesDialog_max_width 1200
 #define UnsavedChangesDialog_max_height 800
@@ -220,8 +221,77 @@ namespace Slic3r {
 						switch (cur_pair.def->type) {
 							case coString:
 							case coStrings: {
-								slic3r::Diff diff = slic3r::Diff(old_val, new_val);
-								diff.solve();
+								win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
+
+								wxString sText;
+								std::string text = std::string(
+									"<html>"
+									"<body>");
+
+								using namespace slic3r;
+								Diff diff = Diff(old_val, new_val);
+
+								for (EditScriptAction cur_action : diff.getSolution()) {
+									std::string sub, font;
+									switch (cur_action.action)
+									{
+										case EditScriptAction::ActionType::keep: {
+											sub = old_val.substr(cur_action.offset, cur_action.count);
+											break;
+										}
+										case EditScriptAction::ActionType::remove: {
+											sub = old_val.substr(cur_action.offset, cur_action.count);
+											font = "<font bgcolor=#FF0000>";
+											break;
+										}
+										case EditScriptAction::ActionType::insert: {
+											sub = new_val.substr(cur_action.offset, cur_action.count);
+											font = "<font bgcolor=#00FF00>";
+											break;
+										}
+									}
+									sub = (font != "" ? " " + sub + " " : sub);
+
+									text += font + sub + (font != "" ? "</font>" : "");
+									sText += sub;
+								}
+
+								text += wxString(
+									"</body>"
+									"</html>");
+
+								boost::replace_all(text, "\n", "<br />");
+
+								wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
+								wxSize size = win_test->GetSize();
+								win_test->Destroy();
+								size.x += 5;
+
+								wxFont font = GetFont();
+								const int fs = font.GetPointSize();
+								int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
+
+								wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER/*NEVER*/);
+								html_win->SetBorders(0);
+								html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
+								html_win->SetPage(text);
+								html_win->Layout();
+								//wxSize size = wxSize(html_win->GetInternalRepresentation()->GetWidth(), html_win->GetInternalRepresentation()->GetHeight());
+								//wxSize s = html_win->GetVirtualSize();
+								//html_win->SetMinSize(wxSize(50, 16 * wxGetApp().em_unit()));
+								html_win->Refresh();
+								/*html_win->Destroy();
+
+								html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
+								html_win->SetBorders(0);
+								html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
+								html_win->SetPage(text);
+								html_win->Layout();
+								html_win->SetBackgroundColour(wxColor(100,0,0,120));
+								*/
+								win_new_opt = (wxWindow*)html_win;
+
+								break;
 							}
 							case coFloatOrPercent:
 							case coFloat:
