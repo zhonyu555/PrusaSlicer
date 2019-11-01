@@ -436,15 +436,73 @@ public:
 class SavePresetWindow :public wxDialog
 {
 public:
-	SavePresetWindow(wxWindow* parent) :wxDialog(parent, wxID_ANY, _(L("Save preset"))) {}
-	~SavePresetWindow() {}
+	SavePresetWindow(wxWindow* parent) : wxDialog(parent, wxID_ANY, _(L("Save preset"))) {
+		m_icon_cross = create_scaled_bitmap(nullptr, "cross_red");
+		m_icon_warning = create_scaled_bitmap(nullptr, "warning");
+		m_icon_tick = create_scaled_bitmap(nullptr, "tick_mark");
+		
+		this->buildBaseLayout();
+	}
+	~SavePresetWindow() {
+		for (Entry* cur_entry : entries) {
+			delete cur_entry;
+		}
+	}
 
-	std::string		m_chosen_name;
-	wxComboBox*		m_combo;
+	void						build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets);
+	std::string					get_name() { return get_names()[0]; }
+	std::vector<std::string>	get_names() { 
+		std::vector<std::string> names;
+		for (Entry* cur_entry : entries) {
+			names.emplace_back(cur_entry->hasValidChosenName ? cur_entry->chosenName : "nil");
+		}
+		return names;
+	}
 
-	void			build(const wxString& title, const std::string& default_name, std::vector<std::string> &values);
-	void			accept();
-	std::string		get_name() { return m_chosen_name; }
+private:
+	struct Entry {
+		wxComboBox* combo;
+		std::string title;
+		PresetCollection* preset;
+
+		wxBoxSizer* status_sizer;
+		wxStaticBitmap* status_icon = NULL;
+		wxStaticText* status_text = NULL;
+		std::string str_status_text = "nil";
+
+		bool mustDeleteOld = false;
+		bool hasValidChosenName = false;
+		std::string chosenName;
+
+		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxBoxSizer* _status_sizer, wxStaticBitmap* icon, wxStaticText* text) : 
+			combo(_combo),
+			title(_title),
+			preset(_preset),
+			status_sizer(_status_sizer),
+			status_icon(icon),
+			status_text(text)
+		{}
+
+		void setStatus(const wxBitmap& icon, std::string text) {
+			this->status_icon->SetBitmap(icon);
+			this->status_text->SetLabel(text);
+		}
+	};
+
+	std::vector<Entry*>			entries;
+	size_t						cur_entry_insert_offset = 0;
+	wxBoxSizer*					m_sizer;
+	std::vector<std::string>	m_chosen_names;
+
+	wxButton* m_btn_accept;
+	wxBitmap m_icon_tick;
+	wxBitmap m_icon_cross;
+	wxBitmap m_icon_warning;
+
+	void buildBaseLayout();
+	void OnComboText(Entry* entry);
+	void updateBtnAccept();
+	void accept();
 };
 
 } // GUI

@@ -22,10 +22,10 @@
 #include <wx/imaglist.h>
 #include <wx/settings.h>
 #include <wx/filedlg.h>
+#include <wx/wupdlock.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include "wxExtensions.hpp"
-#include <wx/wupdlock.h>
 
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
@@ -3002,35 +3002,10 @@ void Tab::save_preset(std::string name /*= ""*/)
         }
 
         SavePresetWindow dlg(parent());
-        dlg.build(title(), default_name, values);
+        dlg.build_entry(title(), default_name, values, m_presets);
         if (dlg.ShowModal() != wxID_OK)
             return;
         name = dlg.get_name();
-        if (name == "") {
-            show_error(this, _(L("The supplied name is empty. It can't be saved.")));
-            return;
-        }
-        const Preset *existing = m_presets->find_preset(name, false);
-        if (existing && (existing->is_default || existing->is_system)) {
-            show_error(this, _(L("Cannot overwrite a system profile.")));
-            return;
-        }
-        if (existing && (existing->is_external)) {
-            show_error(this, _(L("Cannot overwrite an external profile.")));
-            return;
-        }
-        if (existing && name != preset.name)
-        {
-            wxString msg_text = GUI::from_u8((boost::format(_utf8(L("Preset with name \"%1%\" already exist."))) % name).str());
-            msg_text += "\n" + _(L("Replace?"));
-            wxMessageDialog dialog(nullptr, msg_text, _(L("Warning")), wxICON_WARNING | wxYES | wxNO);
-
-            if (dialog.ShowModal() == wxID_NO)
-                return;
-
-            // Remove the preset from the list.
-            m_presets->delete_preset(name);
-        }
     }
 
     // Save the preset into Slic3r::data_dir / presets / section_name / preset_name.ini
@@ -3353,63 +3328,172 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
     return optgroup;
 }
 
-void SavePresetWindow::build(const wxString& title, const std::string& default_name, std::vector<std::string> &values)
+void SavePresetWindow::buildBaseLayout() {
+	auto buttons = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
+
+	m_sizer = new wxBoxSizer(wxVERTICAL);
+	m_sizer->Add(buttons, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+
+	m_btn_accept = static_cast<wxButton*>(FindWindowById(wxID_OK, this));
+	m_btn_accept->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { accept(); });
+
+	SetSizer(m_sizer);
+}
+
+void SavePresetWindow::build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets)
 {
     // TRN Preset
-    auto text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title),
+    wxStaticText* text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title),
                                     wxDefaultPosition, wxDefaultSize);
-    m_combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
+
+    wxComboBox* combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
                             wxDefaultPosition, wxDefaultSize, 0, 0, wxTE_PROCESS_ENTER);
     for (auto value : values)
-        m_combo->Append(from_u8(value));
-    auto buttons = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
+		combo->Append(from_u8(value));
+    
+	size_t em = Slic3r::GUI::wxGetApp().em_unit();
+	wxWindow* status_win = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxSize(30 * em, 3 * em));
+	wxBoxSizer* status_sizer = new wxBoxSizer(wxHORIZONTAL);
+		wxStaticBitmap* status_icon = new wxStaticBitmap(status_win, wxID_ANY, wxNullBitmap);
+		status_sizer->Add(status_icon, 0, wxALIGN_CENTER_VERTICAL);
 
-    auto sizer = new wxBoxSizer(wxVERTICAL);
-    sizer->Add(text, 0, wxEXPAND | wxALL, 10);
-    sizer->Add(m_combo, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
-    sizer->Add(buttons, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+		wxStaticText* status_text = new wxStaticText(status_win, wxID_ANY, "");
+		status_sizer->Add(status_text, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, 5);
 
-    wxButton* btn = static_cast<wxButton*>(FindWindowById(wxID_OK, this));
-    btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { accept(); });
-    m_combo->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent&) { accept(); });
+	status_win->SetSizer(status_sizer);
 
-    SetSizer(sizer);
-    sizer->SetSizeHints(this);
+	if (this->entries.size()) {
+		m_sizer->InsertSpacer(cur_entry_insert_offset, 10);
+	}
+
+	m_sizer->Insert(cur_entry_insert_offset++, text, 0, wxEXPAND | wxALL, 10);
+	m_sizer->Insert(cur_entry_insert_offset++, combo, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+	m_sizer->Insert(cur_entry_insert_offset++, status_win, 0, wxALL, 10);
+
+	this->entries.push_back(new Entry(combo, std::string(title), presets, status_sizer, status_icon, status_text));
+
+	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ OnComboText(entry); });
+	//combo->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent& e) { accept(); });
+
+	OnComboText(this->entries.back());
+}
+
+void SavePresetWindow::OnComboText(Entry* entry) {
+	std::string chosen_name = normalize_utf8_nfc(entry->combo->GetValue().ToUTF8());
+
+	std::string errMsg;
+	std::string warningMsg;
+
+	entry->mustDeleteOld = false;
+
+	if (chosen_name.empty()) {
+		errMsg = _(L("The supplied name is empty. It can't be saved."));
+	}
+	else if (chosen_name == "- default -") {
+		errMsg += _(L("The supplied name is not available."));
+	}
+	else {
+		const char* unusable_symbols = "<>[]:/\\|?*\"";
+		bool is_unusable_symbol = false;
+		bool is_unusable_suffix = false;
+		const std::string unusable_suffix = PresetCollection::get_suffix_modified();//"(modified)";
+		for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
+			if (chosen_name.find_first_of(unusable_symbols[i]) != std::string::npos) {
+				is_unusable_symbol = true;
+				break;
+			}
+		}
+		if (chosen_name.find(unusable_suffix) != std::string::npos)
+			is_unusable_suffix = true;
+
+		if (is_unusable_symbol) {
+			errMsg = _(L("The supplied name is not valid;")) + "\n"
+				+ _(L("the following characters are not allowed:")) + " " + unusable_symbols;
+		}
+		else if (is_unusable_suffix) {
+			errMsg = _(L("The supplied name is not valid;")) + "\n"
+				+ _(L("the following suffix is not allowed:")) + "\n\t"
+				+ wxString::FromUTF8(unusable_suffix.c_str());
+		}
+		else {
+			const Preset* existing = entry->preset->find_preset(chosen_name, false);
+
+			if (existing && (existing->is_default || existing->is_system)) {
+				errMsg = _(L("Cannot overwrite a system profile."));
+			}
+			else if (existing && (existing->is_external)) {
+				errMsg = _(L("Cannot overwrite an external profile."));
+			}
+			else if (existing && chosen_name != entry->preset->get_selected_preset().name)
+			{
+				warningMsg = GUI::from_u8((boost::format(_utf8(L("Preset with name \"%1%\" already exists and will be\noverwritten."))) % chosen_name).str());
+				entry->mustDeleteOld = true;
+			}
+		}
+	}
+
+	std::string finalMsg;
+	wxBitmap icon;
+
+	if (!errMsg.empty()) {
+		finalMsg = errMsg;
+		icon = m_icon_cross;
+
+		entry->hasValidChosenName = false;
+	}
+	else if (!warningMsg.empty()) {
+		finalMsg = warningMsg;
+		icon = m_icon_warning;
+
+		entry->hasValidChosenName = true;
+		entry->chosenName = chosen_name;
+	}
+	else {
+		finalMsg = "";
+		icon = m_icon_tick;
+
+		entry->hasValidChosenName = true;
+		entry->chosenName = chosen_name;
+	}
+
+	if (finalMsg != entry->str_status_text) {
+		entry->str_status_text = finalMsg;
+
+		entry->setStatus(icon, finalMsg);
+
+		m_sizer->SetSizeHints(this);
+		this->Layout();
+	}
+
+	this->updateBtnAccept();
+}
+
+void SavePresetWindow::updateBtnAccept() {
+	for (Entry* cur_entry : entries) {
+		if (!cur_entry->hasValidChosenName) {
+			m_btn_accept->Enable(false);
+			return;
+		}
+	}
+	m_btn_accept->Enable();
 }
 
 void SavePresetWindow::accept()
 {
-    m_chosen_name = normalize_utf8_nfc(m_combo->GetValue().ToUTF8());
-    if (!m_chosen_name.empty()) {
-        const char* unusable_symbols = "<>[]:/\\|?*\"";
-        bool is_unusable_symbol = false;
-        bool is_unusable_suffix = false;
-        const std::string unusable_suffix = PresetCollection::get_suffix_modified();//"(modified)";
-        for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
-            if (m_chosen_name.find_first_of(unusable_symbols[i]) != std::string::npos) {
-                is_unusable_symbol = true;
-                break;
-            }
-        }
-        if (m_chosen_name.find(unusable_suffix) != std::string::npos)
-            is_unusable_suffix = true;
+	for(Entry* cur_entry : entries){
+		if (!cur_entry->hasValidChosenName) {
+			return;
+		}
+	}
 
-        if (is_unusable_symbol) {
-            show_error(this,_(L("The supplied name is not valid;")) + "\n" +
-                            _(L("the following characters are not allowed:")) + " " + unusable_symbols);
-        }
-        else if (is_unusable_suffix) {
-            show_error(this,_(L("The supplied name is not valid;")) + "\n" +
-                            _(L("the following suffix is not allowed:")) + "\n\t" +
-                            wxString::FromUTF8(unusable_suffix.c_str()));
-        }
-        else if (m_chosen_name == "- default -") {
-            show_error(this, _(L("The supplied name is not available.")));
-        }
-        else {
-            EndModal(wxID_OK);
-        }
-    }
+	for (Entry* cur_entry : entries) {
+		if (cur_entry->mustDeleteOld) {
+			// Remove the preset from the list.
+			cur_entry->preset->delete_preset(cur_entry->chosenName);
+		}
+	}
+
+	EndModal(wxID_OK);
 }
 
 void TabSLAMaterial::build()
