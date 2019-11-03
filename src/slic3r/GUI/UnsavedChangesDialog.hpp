@@ -149,11 +149,13 @@ namespace Slic3r {
 		private:
 			GUI_App* m_app;
 			wxStaticText* m_msg;
-			wxScrolledWindow* m_scroller;
-			dirty_opts_node* m_dirty_tabs_tree;
+			wxWindow* m_scroller_container;
+			wxScrolledWindow* m_scroller = NULL;
+			dirty_opts_node* m_dirty_tabs_tree = NULL;
 
 			void setCorrectSize();
-			wxWindow* buildScrollWindow(wxString& dirty_tabs);
+			void buildScrollWindow(wxString& dirty_tabs);	//builds m_scroller_container
+			void buildScroller(wxString& dirty_tabs);		//builds m_scroller
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
 			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
 			std::string getTooltipText(const ConfigOptionDef& def, int index);
