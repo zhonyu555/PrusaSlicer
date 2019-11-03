@@ -3010,24 +3010,28 @@ void Tab::save_preset(std::string name /*= ""*/)
 
     // Save the preset into Slic3r::data_dir / presets / section_name / preset_name.ini
     m_presets->save_current_preset(name);
-    // Mark the print & filament enabled if they are compatible with the currently selected preset.
-    m_preset_bundle->update_compatible(false);
-    // Add the new item into the UI component, remove dirty flags and activate the saved item.
-    update_tab_ui();
-    // Update the selection boxes at the platter.
-    on_presets_changed();
-    // If current profile is saved, "delete preset" button have to be enabled
-    m_btn_delete_preset->Enable(true);
+	update_after_preset_save();
+}
 
-    if (m_type == Preset::TYPE_PRINTER)
-        static_cast<TabPrinter*>(this)->m_initial_extruders_count = static_cast<TabPrinter*>(this)->m_extruders_count;
-    update_changed_ui();
+void Tab::update_after_preset_save() {
+	// Mark the print & filament enabled if they are compatible with the currently selected preset.
+	m_preset_bundle->update_compatible(false);
+	// Add the new item into the UI component, remove dirty flags and activate the saved item.
+	update_tab_ui();
+	// Update the selection boxes at the platter.
+	on_presets_changed();
+	// If current profile is saved, "delete preset" button have to be enabled
+	m_btn_delete_preset->Enable(true);
 
-    /* If filament preset is saved for multi-material printer preset, 
-     * there are cases when filament comboboxs are updated for old (non-modified) colors, 
-     * but in full_config a filament_colors option aren't.*/
-    if (m_type == Preset::TYPE_FILAMENT && wxGetApp().extruders_edited_cnt() > 1)
-        wxGetApp().plater()->force_filament_colors_update();
+	if (m_type == Preset::TYPE_PRINTER)
+		static_cast<TabPrinter*>(this)->m_initial_extruders_count = static_cast<TabPrinter*>(this)->m_extruders_count;
+	update_changed_ui();
+
+	/* If filament preset is saved for multi-material printer preset,
+	 * there are cases when filament comboboxs are updated for old (non-modified) colors,
+	 * but in full_config a filament_colors option aren't.*/
+	if (m_type == Preset::TYPE_FILAMENT && wxGetApp().extruders_edited_cnt() > 1)
+		wxGetApp().plater()->force_filament_colors_update();
 }
 
 // Called for a currently selected preset.
@@ -3340,7 +3344,7 @@ void SavePresetWindow::buildBaseLayout() {
 	SetSizer(m_sizer);
 }
 
-void SavePresetWindow::build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets)
+void SavePresetWindow::build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets, Tab* tab)
 {
     // TRN Preset
     wxStaticText* text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title),
@@ -3370,7 +3374,7 @@ void SavePresetWindow::build_entry(const wxString& title, const std::string& def
 	m_sizer->Insert(cur_entry_insert_offset++, combo, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 	m_sizer->Insert(cur_entry_insert_offset++, status_win, 0, wxALL, 10);
 
-	this->entries.push_back(new Entry(combo, std::string(title), presets, status_sizer, status_icon, status_text));
+	this->entries.push_back(new Entry(combo, std::string(title), presets, status_sizer, status_icon, status_text, tab));
 
 	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ OnComboText(entry); });
 	//combo->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent& e) { accept(); });
@@ -3426,7 +3430,7 @@ void SavePresetWindow::OnComboText(Entry* entry) {
 			}
 			else if (existing && chosen_name != entry->preset->get_selected_preset().name)
 			{
-				warningMsg = GUI::from_u8((boost::format(_utf8(L("Preset with name \"%1%\" already exists and will be\noverwritten."))) % chosen_name).str());
+				warningMsg = GUI::from_u8((boost::format(_utf8(L("Preset with name \"%1%\" already exists and will be overwritten."))) % chosen_name).str());
 				entry->mustDeleteOld = true;
 			}
 		}
@@ -3434,16 +3438,19 @@ void SavePresetWindow::OnComboText(Entry* entry) {
 
 	std::string finalMsg;
 	wxBitmap icon;
+	wxFont font;
 
 	if (!errMsg.empty()) {
 		finalMsg = errMsg;
 		icon = m_icon_cross;
+		font = GUI::wxGetApp().normal_font();
 
 		entry->hasValidChosenName = false;
 	}
 	else if (!warningMsg.empty()) {
 		finalMsg = warningMsg;
 		icon = m_icon_warning;
+		font = GUI::wxGetApp().bold_font();
 
 		entry->hasValidChosenName = true;
 		entry->chosenName = chosen_name;
@@ -3451,6 +3458,7 @@ void SavePresetWindow::OnComboText(Entry* entry) {
 	else {
 		finalMsg = "";
 		icon = m_icon_tick;
+		font = GUI::wxGetApp().normal_font();
 
 		entry->hasValidChosenName = true;
 		entry->chosenName = chosen_name;
@@ -3459,7 +3467,7 @@ void SavePresetWindow::OnComboText(Entry* entry) {
 	if (finalMsg != entry->str_status_text) {
 		entry->str_status_text = finalMsg;
 
-		entry->setStatus(icon, finalMsg);
+		entry->setStatus(icon, finalMsg, font);
 
 		m_sizer->SetSizeHints(this);
 		this->Layout();

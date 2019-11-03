@@ -5,22 +5,21 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
-#include <wx/statline.h>
 #include <wx/html/htmlwin.h>
 
-#define UnsavedChangesDialog_max_width 1200
-#define UnsavedChangesDialog_max_height 800
+#define Dialog_max_width 1200
+#define Dialog_max_height 800
 
-#define UnsavedChangesDialog_min_width 600
-#define UnsavedChangesDialog_min_height 200
+#define Dialog_min_width 600
+#define Dialog_min_height 200
 
-#define UnsavedChangesDialog_def_border 5
-#define UnsavedChangesDialog_child_indentation 20
+#define Dialog_def_border 5
+#define Dialog_child_indentation 20
 
 namespace Slic3r {
 	namespace GUI {
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
-			: wxDialog(parent, -1, caption, pos, wxSize(UnsavedChangesDialog_min_width, UnsavedChangesDialog_min_height))
+			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height))
 		{
 			m_app = app;
 
@@ -31,36 +30,38 @@ namespace Slic3r {
 			wxString dirty_tabs;
 			wxWindow* scrolled_win = buildScrollWindow(dirty_tabs);
 
-			wxStaticText* msg = new wxStaticText(this, wxID_ANY, _(L("The presets on the following tabs were modified")) + ": " + dirty_tabs, wxDefaultPosition, wxDefaultSize);
-				wxFont msg_font = GUI::wxGetApp().bold_font();
+			m_msg = new wxStaticText(this, wxID_ANY, _(L("The presets on the following tabs were modified")) + ": " + dirty_tabs, wxDefaultPosition, wxDefaultSize);
+				wxFont msg_font = GUI::wxGetApp().normal_font();
 				msg_font.SetPointSize(10);
-				msg->SetFont(msg_font);
+				m_msg->SetFont(msg_font);
 
 
-			main_sizer->Add(msg, 0, wxALL, UnsavedChangesDialog_def_border);
-			main_sizer->Add(-1, UnsavedChangesDialog_def_border);
-			main_sizer->Add(scrolled_win, 1, wxEXPAND | wxALL, UnsavedChangesDialog_def_border);
-			main_sizer->Add(buildYesNoBtns(), 0, wxEXPAND | wxTOP, UnsavedChangesDialog_def_border * 2);
+			main_sizer->Add(m_msg, 0, wxALL, Dialog_def_border);
+			main_sizer->Add(-1, Dialog_def_border);
+			main_sizer->Add(scrolled_win, 1, wxEXPAND | wxALL, Dialog_def_border);
+			main_sizer->Add(buildYesNoBtns(), 0, wxEXPAND | wxTOP, Dialog_def_border * 2);
 			SetSizer(main_sizer);
-
-			this->Layout();
-			int scrolled_add_width = m_scroller->GetVirtualSize().x - m_scroller->GetSize().x + UnsavedChangesDialog_def_border;
-
-			int width = std::min(UnsavedChangesDialog_min_width + scrolled_add_width, UnsavedChangesDialog_max_width);
-			msg->Wrap(width - UnsavedChangesDialog_def_border * 2);
-
-			this->Layout();
-			int scrolled_add_height = m_scroller->GetVirtualSize().y - m_scroller->GetSize().y + UnsavedChangesDialog_def_border;
-			int height = std::min(UnsavedChangesDialog_min_height + scrolled_add_height, UnsavedChangesDialog_max_height);
-
-			this->SetSize(wxSize(width, height));
-
+			setCorrectSize();
 			this->Center();
 		}
 
 		UnsavedChangesDialog::~UnsavedChangesDialog() {
 			this->m_dirty_tabs_tree->~dirty_opts_node();
 			delete this->m_dirty_tabs_tree;
+		}
+
+		void UnsavedChangesDialog::setCorrectSize() {
+			this->Layout();
+			int scrolled_add_width = m_scroller->GetVirtualSize().x - m_scroller->GetSize().x + Dialog_def_border;
+
+			int width = std::min(Dialog_min_width + scrolled_add_width, Dialog_max_width);
+			m_msg->Wrap(width - Dialog_def_border * 2);
+
+			this->Layout();
+			int scrolled_add_height = m_scroller->GetVirtualSize().y - m_scroller->GetSize().y + Dialog_def_border;
+			int height = std::min(Dialog_min_height + scrolled_add_height, Dialog_max_height);
+
+			this->SetSize(wxSize(width, height));
 		}
 
 		wxWindow* UnsavedChangesDialog::buildScrollWindow(wxString& dirty_tabs) {
@@ -91,9 +92,9 @@ namespace Slic3r {
 							wxColour background = highlight ? wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 							highlight = !highlight;
 
-							cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, UnsavedChangesDialog_def_border);
+							cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, Dialog_def_border);
 							add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, background);
-							cur_tab_sizer->AddSpacer(UnsavedChangesDialog_def_border);
+							cur_tab_sizer->AddSpacer(Dialog_def_border);
 
 							cur_tab_win->SetSizer(cur_tab_sizer);
 							cur_tab_win->SetBackgroundColour(background);
@@ -108,24 +109,32 @@ namespace Slic3r {
 
 			wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
 				ScalableButton* save_btn = new ScalableButton(border_win, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+				save_btn->Bind(wxEVT_BUTTON, &UnsavedChangesDialog::OnBtnSaveSelected, this);
+
 				wxButton* select_all_btn = new wxButton(border_win, wxID_ANY, L(_("Select All")));
 				select_all_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
-					m_dirty_tabs_tree->selectChilds();
+					for (dirty_opts_node* cur_node : m_dirty_tabs_tree->childs) {
+						cur_node->checkbox->SetValue(true);
+						cur_node->selectChilds(true);
+					}
 				});
 
 				wxButton* select_none_btn = new wxButton(border_win, wxID_ANY, L(_("Select None")));
 				select_none_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
-					m_dirty_tabs_tree->selectChilds(false);
+					for (dirty_opts_node* cur_node : m_dirty_tabs_tree->childs){
+						cur_node->checkbox->SetValue(false);
+						cur_node->selectChilds(false);
+					}
 				});
 
 			btn_sizer->Add(save_btn);
-			btn_sizer->Add(select_all_btn, 0, wxLEFT | wxRIGHT, UnsavedChangesDialog_def_border);
+			btn_sizer->Add(select_all_btn, 0, wxLEFT | wxRIGHT, Dialog_def_border);
 			btn_sizer->Add(select_none_btn);
 
 			wrapper_sizer->Add(scrolled_win, 1, wxEXPAND);
-			wrapper_sizer->AddSpacer(UnsavedChangesDialog_def_border * 2);
-			wrapper_sizer->Add(line, 0, wxLEFT | wxRIGHT | wxEXPAND, UnsavedChangesDialog_def_border);
-			wrapper_sizer->Add(btn_sizer, 0, wxALL, UnsavedChangesDialog_def_border);
+			wrapper_sizer->AddSpacer(Dialog_def_border * 2);
+			wrapper_sizer->Add(line, 0, wxLEFT | wxRIGHT | wxEXPAND, Dialog_def_border);
+			wrapper_sizer->Add(btn_sizer, 0, wxALL, Dialog_def_border);
 
 			border_win->SetSizer(wrapper_sizer);
 
@@ -180,15 +189,15 @@ namespace Slic3r {
 				if (cat != lastCat) {
 					lastCat = cat;
 
-					sizer->Add(-1, UnsavedChangesDialog_def_border);
+					sizer->Add(-1, Dialog_def_border);
 					category_node = buildNode(parent, cat, parent_node);
 					wxCheckBox* cat_cb = category_node->checkbox;
 					cat_cb->SetValue(true);
 					cat_cb->SetFont(GUI::wxGetApp().bold_font());
-					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation);
+					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
 				}
 				
-				sizer->Add(-1, UnsavedChangesDialog_def_border);
+				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
 					dirty_opt& cur_opt = buildOption(parent, label, category_node, cur_pair, wxSize(200,-1));
@@ -344,7 +353,7 @@ namespace Slic3r {
 					lineSizer->AddSpacer(30);
 					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
-				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, UnsavedChangesDialog_def_border + UnsavedChangesDialog_child_indentation * 2);
+				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, Dialog_def_border + Dialog_child_indentation * 2);
 			}
 		}
 
@@ -462,10 +471,10 @@ namespace Slic3r {
 			btn_no->SetFocus();
 
 			cont_sizer->AddStretchSpacer();
-			cont_sizer->Add(cont_label, 0, wxALL | wxALIGN_CENTER_VERTICAL, UnsavedChangesDialog_def_border * 3);
+			cont_sizer->Add(cont_label, 0, wxALL | wxALIGN_CENTER_VERTICAL, Dialog_def_border * 3);
 
 			cont_sizer->Add(btn_yes, 0, wxALIGN_CENTER_VERTICAL);
-			cont_sizer->Add(btn_no, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, UnsavedChangesDialog_def_border);
+			cont_sizer->Add(btn_no, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, Dialog_def_border);
 
 			cont_win->SetSizer(cont_sizer);
 			cont_stretch_sizer->Add(cont_win, 1);
@@ -501,6 +510,104 @@ namespace Slic3r {
 			parent_node->opts.push_back(dirty_opt(val, cb, parent_node));
 
 			return parent_node->opts.back();
+		}
+
+		void UnsavedChangesDialog::OnBtnSaveSelected(wxCommandEvent& e)
+		{
+			SavePresetWindow dlg(this);
+
+			for (dirty_opts_node* cur_tab : m_dirty_tabs_tree->childs) {
+				if (!cur_tab->hasAnythingToSave()) {
+					continue;
+				}
+
+				PresetCollection* m_presets = cur_tab->tab->m_presets;
+
+				const Preset& preset = m_presets->get_selected_preset();
+				auto default_name = preset.is_default ? "Untitled" :
+					preset.is_system ? (boost::format(_utf8(L("%1% - Copy"))) % preset.name).str() :
+					preset.name;
+
+				bool have_extention = boost::iends_with(default_name, ".ini");
+				if (have_extention) {
+					size_t len = default_name.length() - 4;
+					default_name.resize(len);
+				}
+
+				std::vector<std::string> values;
+				for (size_t i = 0; i < m_presets->size(); ++i) {
+					const Preset& preset = m_presets->preset(i);
+					if (preset.is_default || preset.is_system || preset.is_external)
+						continue;
+					values.push_back(preset.name);
+				}
+
+				dlg.build_entry(cur_tab->tab->title(), default_name, values, m_presets, cur_tab->tab);
+			}
+
+			if (dlg.ShowModal() == wxID_OK){
+				for (std::pair<Tab*, std::string> cur_pair : dlg.get_tab_name_pairs()) {
+					Tab* cur_tab = cur_pair.first;
+					std::string chosen_name = cur_pair.second;
+
+					DynamicPrintConfig& edited_conf = cur_tab->m_presets->get_edited_preset().config;
+					DynamicPrintConfig edited_backup(edited_conf);
+
+					std::vector<dirty_opt*> all_opts;
+
+					dirty_opts_node* cur_tab_node = m_dirty_tabs_tree->getTabNode(cur_tab);
+					cur_tab_node->getAllOptions(all_opts);
+
+					//this loop sets all options (in the edited preset) - that the user does not want to save - to their old values (from selected preset)
+					for (dirty_opt* cur_opt_to_save : all_opts) {
+						if (!cur_opt_to_save->saveMe()) {
+							int idx = cur_opt_to_save->val.index;
+							if (idx >= 0) {
+								ConfigOption* old_opt = cur_opt_to_save->val.old_opt;
+								ConfigOption* new_opt = cur_opt_to_save->val.new_opt;
+
+								switch (cur_opt_to_save->val.def->type) {
+								case coFloats:
+									((ConfigOptionFloats*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								case coInts:
+									((ConfigOptionInts*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								case coStrings:
+									((ConfigOptionStrings*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								case coPercents:
+									((ConfigOptionPercents*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								case coPoints:
+									((ConfigOptionPoints*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								case coBools:
+									((ConfigOptionBools*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+									break;
+								}
+							}
+							else {
+								ConfigOption* new_opt = edited_conf.option(cur_opt_to_save->val.key);
+								new_opt->set(cur_opt_to_save->val.old_opt);
+								edited_conf.option(cur_opt_to_save->val.key);
+							}
+						}
+					}
+
+					//edited conf will become selected conf and be saved to disk
+					cur_tab->m_presets->save_current_preset(chosen_name);
+					edited_conf = DynamicPrintConfig(std::move(edited_backup));
+					cur_tab->update_after_preset_save();
+
+					//refresh pointers to ConfigOptions
+					DynamicPrintConfig& selected_conf = cur_tab->m_presets->get_selected_preset().config;
+					for (dirty_opt* cur_opt : all_opts) {
+						cur_opt->val.old_opt = selected_conf.option(cur_opt->val.def->opt_key);
+						cur_opt->val.new_opt = edited_conf.option(cur_opt->val.def->opt_key);
+					}
+				}
+			}
 		}
 	}
 }

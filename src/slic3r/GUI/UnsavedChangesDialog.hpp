@@ -3,6 +3,7 @@
 
 #include <wx/wx.h>
 #include <wx/checkbox.h>
+#include <wx/statline.h>
 #include "GUI_App.hpp"
 #include "Tab.hpp"
 #include "PresetBundle.hpp"
@@ -12,8 +13,8 @@ namespace Slic3r {
 	namespace GUI {
 		struct def_opt_pair {
 			const ConfigOptionDef* def = NULL;
-			const ConfigOption* old_opt = NULL;
-			const ConfigOption* new_opt = NULL;
+			ConfigOption* old_opt = NULL;
+			ConfigOption* new_opt = NULL;
 			t_config_option_key key;
 
 			int index = -1;
@@ -39,6 +40,7 @@ namespace Slic3r {
 			wxCheckBox* checkbox;
 			wxWindow* old_win;
 			wxWindow* new_win;
+			bool isEnabled = true;
 
 			dirty_opts_node* parent;
 
@@ -46,6 +48,17 @@ namespace Slic3r {
 				this->val = val;
 				this->checkbox = checkbox;
 				this->parent = parent;
+			}
+
+			void setEnabled(bool enabled = true) {
+				this->checkbox->Enable(enabled);
+				this->old_win->Enable(enabled);
+				this->new_win->Enable(enabled);
+				this->isEnabled = enabled;
+			}
+
+			bool saveMe() {
+				return this->isEnabled && this->checkbox->GetValue();
 			}
 		};
 
@@ -60,13 +73,14 @@ namespace Slic3r {
 			void enableChilds(bool enabled = true) {
 				for (dirty_opts_node* cur_node : this->childs) {
 					cur_node->checkbox->Enable(enabled);
-					cur_node->enableChilds(enabled);
+
+					if (cur_node->checkbox->GetValue()) {
+						cur_node->enableChilds(enabled);
+					}
 				}
 
-				for (dirty_opt cur_opt : this->opts) {
-					cur_opt.checkbox->Enable(enabled);
-					cur_opt.old_win->Enable(enabled);
-					cur_opt.new_win->Enable(enabled);
+				for (dirty_opt& cur_opt : this->opts) {
+					cur_opt.setEnabled(enabled);
 				}
 			}
 
@@ -76,11 +90,47 @@ namespace Slic3r {
 					cur_node->selectChilds(selected);
 				}
 
-				for (dirty_opt cur_opt : this->opts) {
+				for (dirty_opt& cur_opt : this->opts) {
 					cur_opt.checkbox->SetValue(selected);
 				}
 
 				this->enableChilds(selected);
+			}
+
+			void getAllOptions(std::vector<dirty_opt*>& _opts) {
+				for (dirty_opts_node* cur_node : this->childs) {
+					cur_node->getAllOptions(_opts);
+				}
+
+				for (dirty_opt& cur_opt : this->opts) {
+					_opts.push_back(&cur_opt);
+				}
+			}
+
+			bool hasAnythingToSave() {
+				for (dirty_opts_node* cur_node : this->childs) {
+					if (cur_node->hasAnythingToSave()) {
+						return true;
+					}
+				}
+
+				for (dirty_opt& cur_opt : this->opts) {
+					if (cur_opt.saveMe()) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			dirty_opts_node* getTabNode(Tab* tab) {
+				for (dirty_opts_node* cur_node : this->childs) {
+					if (cur_node->tab == tab) {
+						return cur_node;
+					}
+				}
+
+				return NULL;
 			}
 
 			~dirty_opts_node() {
@@ -98,9 +148,11 @@ namespace Slic3r {
 			~UnsavedChangesDialog();
 		private:
 			GUI_App* m_app;
+			wxStaticText* m_msg;
 			wxScrolledWindow* m_scroller;
 			dirty_opts_node* m_dirty_tabs_tree;
 
+			void setCorrectSize();
 			wxWindow* buildScrollWindow(wxString& dirty_tabs);
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
 			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
@@ -112,6 +164,8 @@ namespace Slic3r {
 			template<typename Functor>
 			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize);
 			dirty_opt& buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size = wxDefaultSize);
+
+			void OnBtnSaveSelected(wxCommandEvent& e);
 		};
 	}
 }

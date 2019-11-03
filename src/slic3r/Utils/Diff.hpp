@@ -1,3 +1,6 @@
+#ifndef slic3r_Utils_Diff_hpp_
+#define slic3r_Utils_Diff_hpp_
+
 #include <string>
 #include <vector>
 
@@ -34,3 +37,5 @@ namespace slic3r {
 		void solve(std::string str1, std::string str2);
 	};
 }
+
+#endif

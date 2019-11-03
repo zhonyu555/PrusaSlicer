@@ -264,6 +264,7 @@ public:
 	void		OnKeyDown(wxKeyEvent& event);
 
 	void		save_preset(std::string name = "");
+	void		update_after_preset_save();
 	void		delete_preset();
 	void		toggle_show_hide_incompatible();
 	void		update_show_hide_incompatible_button();
@@ -449,14 +450,14 @@ public:
 		}
 	}
 
-	void						build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets);
-	std::string					get_name() { return get_names()[0]; }
-	std::vector<std::string>	get_names() { 
-		std::vector<std::string> names;
+	void						build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets, Tab* tab = NULL);
+	std::string					get_name() { return get_tab_name_pairs()[0].second; }
+	std::vector<std::pair<Tab*, std::string>>	get_tab_name_pairs() { 
+		std::vector<std::pair<Tab*, std::string>> pairs;
 		for (Entry* cur_entry : entries) {
-			names.emplace_back(cur_entry->hasValidChosenName ? cur_entry->chosenName : "nil");
+			pairs.emplace_back(cur_entry->tab, cur_entry->hasValidChosenName ? cur_entry->chosenName : "nil");
 		}
-		return names;
+		return pairs;
 	}
 
 private:
@@ -464,6 +465,7 @@ private:
 		wxComboBox* combo;
 		std::string title;
 		PresetCollection* preset;
+		Tab* tab;
 
 		wxBoxSizer* status_sizer;
 		wxStaticBitmap* status_icon = NULL;
@@ -474,18 +476,24 @@ private:
 		bool hasValidChosenName = false;
 		std::string chosenName;
 
-		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxBoxSizer* _status_sizer, wxStaticBitmap* icon, wxStaticText* text) : 
+		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxBoxSizer* _status_sizer, wxStaticBitmap* _icon, wxStaticText* _text, Tab* _tab) : 
 			combo(_combo),
 			title(_title),
 			preset(_preset),
 			status_sizer(_status_sizer),
-			status_icon(icon),
-			status_text(text)
+			status_icon(_icon),
+			status_text(_text),
+			tab(_tab)
 		{}
 
-		void setStatus(const wxBitmap& icon, std::string text) {
+		void setStatus(const wxBitmap& icon, std::string text, wxFont font) {
 			this->status_icon->SetBitmap(icon);
 			this->status_text->SetLabel(text);
+
+			this->status_text->SetFont(font);
+
+			int x = this->status_text->GetParent()->GetSize().GetWidth() - 22;
+			this->status_text->Wrap(x);
 		}
 	};
 
