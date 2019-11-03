@@ -75,28 +75,30 @@ namespace Slic3r {
 			wxStaticLine* line = new wxStaticLine(m_scroller_container, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL);
 
 			wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
-				ScalableButton* save_btn = new ScalableButton(m_scroller_container, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
-				save_btn->Bind(wxEVT_BUTTON, &UnsavedChangesDialog::OnBtnSaveSelected, this);
+				m_btn_save = new ScalableButton(m_scroller_container, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+				m_btn_save->Bind(wxEVT_BUTTON, &UnsavedChangesDialog::OnBtnSaveSelected, this);
 
-				wxButton* select_all_btn = new wxButton(m_scroller_container, wxID_ANY, L(_("Select All")));
-				select_all_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+				m_btn_select_all = new wxButton(m_scroller_container, wxID_ANY, _(L("Select All")));
+				m_btn_select_all->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
 					for (dirty_opts_node* cur_node : m_dirty_tabs_tree->childs) {
 						cur_node->checkbox->SetValue(true);
 						cur_node->selectChilds(true);
+						updateSaveBtn();
 					}
 				});
 
-				wxButton* select_none_btn = new wxButton(m_scroller_container, wxID_ANY, L(_("Select None")));
-				select_none_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+				m_btn_select_none = new wxButton(m_scroller_container, wxID_ANY, _(L("Select None")));
+				m_btn_select_none->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
 					for (dirty_opts_node* cur_node : m_dirty_tabs_tree->childs){
 						cur_node->checkbox->SetValue(false);
 						cur_node->selectChilds(false);
+						updateSaveBtn();
 					}
 				});
 
-			btn_sizer->Add(save_btn);
-			btn_sizer->Add(select_all_btn, 0, wxLEFT | wxRIGHT, Dialog_def_border);
-			btn_sizer->Add(select_none_btn);
+			btn_sizer->Add(m_btn_save);
+			btn_sizer->Add(m_btn_select_all, 0, wxLEFT | wxRIGHT, Dialog_def_border);
+			btn_sizer->Add(m_btn_select_none);
 
 			wrapper_sizer->Add(m_scroller, 1, wxEXPAND);
 			wrapper_sizer->AddSpacer(Dialog_def_border * 2);
@@ -124,8 +126,11 @@ namespace Slic3r {
 
 			PrinterTechnology printer_technology = m_app->preset_bundle->printers.get_edited_preset().printer_technology();
 			bool highlight = false;
-			for (Tab* cur_tab : m_app->tabs_list)
+			int itemCount = 0;
+			for (Tab* cur_tab : m_app->tabs_list) {
 				if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
+					itemCount++;
+
 					if (dirty_tabs.empty())
 						dirty_tabs = cur_tab->title();
 					else
@@ -149,6 +154,26 @@ namespace Slic3r {
 
 					scrolled_sizer->Add(cur_tab_win, 0, wxEXPAND);
 				}
+			}
+
+			if (!itemCount) {
+				wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+
+				wxStaticBitmap* icon = new wxStaticBitmap(m_scroller, wxID_ANY, create_scaled_bitmap(nullptr, "tick_mark", 24));
+				wxStaticText* msg = new wxStaticText(m_scroller, wxID_ANY, _(L("Successfully saved")));
+
+				sizer->Add(icon, 0, wxTOP | wxLEFT | wxRIGHT, Dialog_def_border);
+				sizer->Add(msg, 0, wxALIGN_CENTER_VERTICAL);
+
+				scrolled_sizer->AddSpacer(Dialog_def_border * 2);
+				scrolled_sizer->Add(sizer);
+
+				m_btn_save->Enable(false);
+				m_btn_select_all->Enable(false);
+				m_btn_select_none->Enable(false);
+
+				dirty_tabs = "-";
+			}
 
 			m_scroller->SetSizer(scrolled_sizer, true);
 			m_scroller->SetScrollRate(2, 2);
@@ -465,6 +490,15 @@ namespace Slic3r {
 			return tooltip;
 		}
 
+		void UnsavedChangesDialog::updateSaveBtn() {
+			if (m_dirty_tabs_tree->hasAnythingToSave()) {
+				m_btn_save->Enable();
+			}
+			else {
+				m_btn_save->Enable(false);
+			}
+		}
+
 		wxBoxSizer* UnsavedChangesDialog::buildYesNoBtns() {
 			wxBoxSizer* cont_stretch_sizer = new wxBoxSizer(wxHORIZONTAL);
 			wxPanel* cont_win = new wxPanel(this, wxID_ANY);
@@ -501,6 +535,7 @@ namespace Slic3r {
 			node->tab = tab;
 			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
 				node->enableChilds(node->checkbox->GetValue());
+				updateSaveBtn();
 			});
 
 			parent_node->childs.push_back(node);
@@ -517,7 +552,7 @@ namespace Slic3r {
 		}
 
 		dirty_opt& UnsavedChangesDialog::buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size) {
-			wxCheckBox* cb = buildCheckbox(parent, label, [](wxCommandEvent& e) {}, size);
+			wxCheckBox* cb = buildCheckbox(parent, label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size);
 
 			parent_node->opts.push_back(dirty_opt(val, cb, parent_node));
 

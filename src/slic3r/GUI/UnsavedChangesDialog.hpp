@@ -151,6 +151,11 @@ namespace Slic3r {
 			wxStaticText* m_msg;
 			wxWindow* m_scroller_container;
 			wxScrolledWindow* m_scroller = NULL;
+
+			ScalableButton* m_btn_save;
+			wxButton*		m_btn_select_all;
+			wxButton*		m_btn_select_none;
+
 			dirty_opts_node* m_dirty_tabs_tree = NULL;
 
 			void setCorrectSize();
@@ -161,6 +166,7 @@ namespace Slic3r {
 			std::string getTooltipText(const ConfigOptionDef& def, int index);
 			wxBoxSizer* buildYesNoBtns();
 			wxBitmap getColourBitmap(const std::string& color);
+			void updateSaveBtn();
 
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
 			template<typename Functor>
