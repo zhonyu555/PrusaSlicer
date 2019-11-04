@@ -180,22 +180,37 @@ namespace Slic3r {
 		}
 
 		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour) {
-			std::vector<def_opt_pair> options;
-			
+			std::vector<dirty_opt> options;
+
 			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
-				def_opt_pair pair;
+				dirty_opt opt(tab->m_presets->get_selected_preset().config.def()->get(key),
+					tab->m_presets->get_selected_preset().config.option(key),
+					tab->m_presets->get_edited_preset().config.option(key),
+					key);
 
-				pair.def = tab->m_presets->get_selected_preset().config.def()->get(key);
-
-				pair.old_opt = tab->m_presets->get_selected_preset().config.option(key);
-				pair.new_opt = tab->m_presets->get_edited_preset().config.option(key);
-				pair.key = key;
-
-				if (pair.def->category.find('#') != std::string::npos && pair.old_opt->type() & pair.new_opt->type() & coVectorType) {
-					split_dirty_option_by_extruders(pair, options);
+				if (opt.def->category.find('#') != std::string::npos && opt.old_opt->type() & opt.new_opt->type() & coVectorType) {
+					split_dirty_option_by_extruders(opt, options);
 				}
 				else {
-					options.push_back(pair);
+					options.push_back(opt);
+				}
+			}
+
+			if (tab->type() == Slic3r::Preset::TYPE_PRINTER) {
+				size_t old_num_extr = tab->m_presets->get_selected_preset().get_num_extruders();
+				size_t new_num_extr = tab->m_presets->get_edited_preset().get_num_extruders();
+
+				if (new_num_extr > old_num_extr) {
+					for (int i = old_num_extr + 1; i <= new_num_extr; i++) {
+						dirty_opt opt(dirty_opt::Type::ExtruderWasAdded, i);
+						options.push_back(opt);
+					}
+				}
+				else if (new_num_extr < old_num_extr) {
+					for (int i = new_num_extr + 1; i <= old_num_extr; i++) {
+						dirty_opt opt(dirty_opt::Type::ExtruderWasRemoved, i);
+						options.push_back(opt);
+					}
 				}
 			}
 
@@ -203,21 +218,18 @@ namespace Slic3r {
 
 			std::string lastCat = "";
 			dirty_opts_node* category_node;
-			for (def_opt_pair cur_pair : options) {
-				std::string cat = cur_pair.def->category;
 
-				if (cur_pair.index >= 0) {
+			for (dirty_opt cur_opt : options) {
+				/* Figure out Category */
+				std::string cat = cur_opt.dialog_category;
+
+				if (cur_opt.extrIdx >= 0) {
 					size_t tag_pos = cat.find("#");
 					if (tag_pos != std::string::npos)
 					{
-						cat.replace(tag_pos, 1, std::to_string(cur_pair.index + 1));
+						cat.replace(tag_pos, 1, std::to_string(cur_opt.extrIdx + 1));
 					}
 				}
-
-				std::string label = cur_pair.def->label;
-
-				const ConfigOption* old_opt = cur_pair.old_opt;
-				const ConfigOption* new_opt = cur_pair.new_opt;
 
 				if (cat == "") {
 					cat = "Other";
@@ -233,162 +245,28 @@ namespace Slic3r {
 					cat_cb->SetFont(GUI::wxGetApp().bold_font());
 					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
 				}
+				/* End Category */
 				
 				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt& cur_opt = buildOption(parent, label, category_node, cur_pair, wxSize(200,-1));
-					wxCheckBox* opt_label = cur_opt.checkbox;
-					wxWindow* win_old_opt;
-					wxWindow* win_new_opt;
-
-					std::string old_val;
-					std::string new_val;
-
-					if (cur_pair.index >= 0) {
-						old_val = cur_pair.ser_old_opt;
-						new_val = cur_pair.ser_new_opt;
-					}
-					else {
-						old_val = old_opt->to_string();
-						new_val = new_opt->to_string();
-					}
-
-					if(cur_pair.def->gui_type == "color"){
-						win_old_opt = old_val == "-" ?
-							  (wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-							: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
-
-						win_new_opt = new_val == "-" ?
-							  (wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-							: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
-					}
-					else {
-						switch (cur_pair.def->type) {
-							case coString:
-							case coStrings: {
-								wxString sText;
-								std::string html = std::string(
-									"<html>"
-									"<body bgcolor=" + wxString::Format(wxT("#%02X%02X%02X"), bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) + ">");
-
-								using namespace slic3r;
-								Diff diff = Diff(old_val, new_val);
-
-								auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
-									unsigned char r, g, b;
-									r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
-									g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
-									b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
-
-									return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
-								};
-
-								for (EditScriptAction cur_action : diff.getSolution()) {
-									std::string sub, font;
-									switch (cur_action.action)
-									{
-										case EditScriptAction::ActionType::keep: {
-											sub = old_val.substr(cur_action.offset, cur_action.count);
-											break;
-										}
-										case EditScriptAction::ActionType::remove: {
-											sub = old_val.substr(cur_action.offset, cur_action.count);
-											font = "<font bgcolor=" + fakeAlpha(wxColour(255, 0, 0, 255), bg_colour, 130) + ">";
-											break;
-										}
-										case EditScriptAction::ActionType::insert: {
-											sub = new_val.substr(cur_action.offset, cur_action.count);
-											font = "<font bgcolor=" + fakeAlpha(wxColour(0, 255, 0, 255), bg_colour, 130) + ">";
-											break;
-										}
-									}
-
-									if (font != "") {
-										html += font + sub + "</font>";
-										sText += sub;
-									}
-									else {
-										html += sub;
-										sText += sub;
-									}
-								}
-
-								html += wxString(
-									"</body>"
-									"</html>");
-
-								boost::replace_all(html, "\n", "<br />");
-
-								//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
-								wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
-								wxSize size = win_test->GetSize();
-								win_test->Destroy();
-								size.x += 5;
-
-								wxFont font = GetFont();
-								const int fs = font.GetPointSize();
-								int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
-
-								wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
-								html_win->SetBorders(0);
-								html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
-								html_win->SetPage(html);
-								html_win->Layout();
-								html_win->Refresh();
-
-								win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
-								win_old_opt = (wxWindow*)html_win;
-
-								break;
-							}
-							case coFloatOrPercent:
-							case coFloat:
-							case coFloats:
-							case coPercent:
-							case coPercents:							
-							case coInt:
-							case coInts:
-							case coBool:
-							case coBools:
-							case coEnum:
-							case coPoint:
-							case coPoint3:
-							case coPoints:{
-								win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
-								win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
-								break;
-							}
-							default:
-								win_old_opt = new wxStaticText(parent, wxID_ANY, "This control doesn't exist till now", wxDefaultPosition, wxDefaultSize);
-								win_new_opt = new wxStaticText(parent, wxID_ANY, "This control doesn't exist till now", wxDefaultPosition, wxDefaultSize);
-						}
-					}
-
-					cur_opt.old_win = win_old_opt;
-					cur_opt.new_win = win_new_opt;
-
-					win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
-					
-					std::string tooltip = getTooltipText(*cur_pair.def, cur_pair.index);
-						
-					win_new_opt->SetToolTip(tooltip);
-					win_old_opt->SetToolTip(tooltip);
-					//win_new_opt->Bind(wxEVT_MOTION, [win_new_opt, tooltip](wxMouseEvent& e) {
-					//	win_new_opt->SetToolTip(tooltip);
-					//});
-
+					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, category_node, cur_opt, wxSize(200,-1));
+					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 					lineSizer->Add(opt_label);
 
-					wxBoxSizer* old_sizer = new wxBoxSizer(wxVERTICAL);
-					old_sizer->Add(win_old_opt, 0, wxALIGN_CENTER_HORIZONTAL);
+					if (cur_opt.type == dirty_opt::Type::ConfigOption) {
+						buildWindowsForOpt(cur_opt_entry, parent, bg_colour);
 
-					wxBoxSizer* new_sizer = new wxBoxSizer(wxVERTICAL);
-					new_sizer->Add(win_new_opt, 0, wxALIGN_CENTER_HORIZONTAL);
+						wxBoxSizer* old_sizer = new wxBoxSizer(wxVERTICAL);
+						old_sizer->Add(cur_opt_entry.old_win, 0, wxALIGN_CENTER_HORIZONTAL);
 
-					lineSizer->Add(old_sizer, 1, wxEXPAND);
-					lineSizer->AddSpacer(30);
-					lineSizer->Add(new_sizer, 1, wxEXPAND);
+						wxBoxSizer* new_sizer = new wxBoxSizer(wxVERTICAL);
+						new_sizer->Add(cur_opt_entry.new_win, 0, wxALIGN_CENTER_HORIZONTAL);
+
+						lineSizer->Add(old_sizer, 1, wxEXPAND);
+						lineSizer->AddSpacer(30);
+						lineSizer->Add(new_sizer, 1, wxEXPAND);
+					}
 
 				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, Dialog_def_border + Dialog_child_indentation * 2);
 			}
@@ -423,61 +301,203 @@ namespace Slic3r {
 			}
 		}
 
-		void UnsavedChangesDialog::split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out) {
+		void UnsavedChangesDialog::split_dirty_option_by_extruders(const dirty_opt& opt, std::vector<dirty_opt>& out) {
 			std::vector<std::string> old_vals;
 			std::vector<std::string> new_vals;
 
-			switch (pair.def->type) 
+			switch (opt.def->type)
 			{
 				case coFloats:
-					old_vals = ((ConfigOptionFloats*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionFloats*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionFloats*)opt.old_opt)->vserialize();
+					new_vals = ((ConfigOptionFloats*)opt.new_opt)->vserialize();
 					break;
 				case coInts:
-					old_vals = ((ConfigOptionInts*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionInts*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionInts*)opt.old_opt)->vserialize();
+					new_vals = ((ConfigOptionInts*)opt.new_opt)->vserialize();
 					break;
 				case coStrings:
-					old_vals = ((ConfigOptionStrings*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionStrings*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionStrings*)opt.old_opt)->vserialize();
+					new_vals = ((ConfigOptionStrings*)opt.new_opt)->vserialize();
 					break;
 				case coPercents:
-					old_vals = ((ConfigOptionPercents*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionPercents*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionPercents*)opt.old_opt)->vserialize();
+					new_vals = ((ConfigOptionPercents*)opt.new_opt)->vserialize();
 					break;
 				case coPoints:
-					old_vals = ((ConfigOptionPoints*)pair.old_opt)->vserialize();
-					new_vals = ((ConfigOptionPoints*)pair.new_opt)->vserialize();
+					old_vals = ((ConfigOptionPoints*)opt.old_opt)->vserialize();
+					new_vals = ((ConfigOptionPoints*)opt.new_opt)->vserialize();
 					break;
 				case coBools:
-					old_vals = ((ConfigOptionBools*)pair.old_opt)->v_to_string();
-					new_vals = ((ConfigOptionBools*)pair.new_opt)->v_to_string();
+					old_vals = ((ConfigOptionBools*)opt.old_opt)->v_to_string();
+					new_vals = ((ConfigOptionBools*)opt.new_opt)->v_to_string();
 					break;
 				default:
 					return;
 			}
 
-			for (size_t i = 0; i < old_vals.size() || i < new_vals.size(); i++) {
-				std::string cur_old_val = i < old_vals.size() ? old_vals[i] : "-";
-				std::string cur_new_val = i < new_vals.size() ? new_vals[i] : "-";
+			for (size_t i = 0; i < old_vals.size() && i < new_vals.size(); i++) {
+				std::string cur_old_val = old_vals[i];
+				std::string cur_new_val = new_vals[i];
 
 				if (cur_old_val != cur_new_val) {
-					def_opt_pair newPair(pair);
-					newPair.index = i;
-					newPair.ser_old_opt = cur_old_val;
-					newPair.ser_new_opt = cur_new_val;
+					dirty_opt new_opt(opt);
+					new_opt.extrIdx = i;
+					new_opt.ser_old_opt = cur_old_val;
+					new_opt.ser_new_opt = cur_new_val;
 
-					out.push_back(newPair);
+					out.push_back(new_opt);
 				}
 			}
 		}
 
-		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def, int index) {
+		void UnsavedChangesDialog::buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour){
+			const ConfigOption* old_opt = opt.val.old_opt;
+			const ConfigOption* new_opt = opt.val.new_opt;
+
+			wxWindow* win_old_opt;
+			wxWindow* win_new_opt;
+
+			std::string old_val;
+			std::string new_val;
+
+			dirty_opt val = opt.val;
+
+			if (val.extrIdx >= 0) {
+				old_val = val.ser_old_opt;
+				new_val = val.ser_new_opt;
+			}
+			else {
+				old_val = old_opt->to_string();
+				new_val = new_opt->to_string();
+			}
+
+			if (val.def->gui_type == "color") {
+				win_old_opt = old_val == "-" ?
+					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
+					: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
+
+				win_new_opt = new_val == "-" ?
+					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
+					: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
+			}
+			else {
+				switch (val.def->type) {
+				case coString:
+				case coStrings: {
+					wxString sText;
+					std::string html = std::string(
+						"<html>"
+						"<body bgcolor=" + wxString::Format(wxT("#%02X%02X%02X"), bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) + ">");
+
+					using namespace slic3r;
+					Diff diff = Diff(old_val, new_val);
+
+					auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
+						unsigned char r, g, b;
+						r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
+						g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
+						b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
+
+						return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
+					};
+
+					for (EditScriptAction cur_action : diff.getSolution()) {
+						std::string sub, font;
+						switch (cur_action.action)
+						{
+						case EditScriptAction::ActionType::keep: {
+							sub = old_val.substr(cur_action.offset, cur_action.count);
+							break;
+						}
+						case EditScriptAction::ActionType::remove: {
+							sub = old_val.substr(cur_action.offset, cur_action.count);
+							font = "<font bgcolor=" + fakeAlpha(wxColour(255, 0, 0, 255), bg_colour, 130) + ">";
+							break;
+						}
+						case EditScriptAction::ActionType::insert: {
+							sub = new_val.substr(cur_action.offset, cur_action.count);
+							font = "<font bgcolor=" + fakeAlpha(wxColour(0, 255, 0, 255), bg_colour, 130) + ">";
+							break;
+						}
+						}
+
+						if (font != "") {
+							html += font + sub + "</font>";
+							sText += sub;
+						}
+						else {
+							html += sub;
+							sText += sub;
+						}
+					}
+
+					html += wxString(
+						"</body>"
+						"</html>");
+
+					boost::replace_all(html, "\n", "<br />");
+
+					//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
+					wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
+					wxSize size = win_test->GetSize();
+					win_test->Destroy();
+					size.x += 5;
+
+					wxFont font = GetFont();
+					const int fs = font.GetPointSize();
+					int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
+
+					wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
+					html_win->SetBorders(0);
+					html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
+					html_win->SetPage(html);
+					html_win->Layout();
+					html_win->Refresh();
+
+					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+					win_old_opt = (wxWindow*)html_win;
+
+					break;
+				}
+				case coFloatOrPercent:
+				case coFloat:
+				case coFloats:
+				case coPercent:
+				case coPercents:
+				case coInt:
+				case coInts:
+				case coBool:
+				case coBools:
+				case coEnum:
+				case coPoint:
+				case coPoint3:
+				case coPoints: {
+					win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
+					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+					break;
+				}
+				default:
+					win_old_opt = new wxStaticText(parent, wxID_ANY, "This control doesn't exist till now", wxDefaultPosition, wxDefaultSize);
+					win_new_opt = new wxStaticText(parent, wxID_ANY, "This control doesn't exist till now", wxDefaultPosition, wxDefaultSize);
+				}
+			}
+
+			win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
+
+			std::string tooltip = getTooltipText(*opt.val.def, opt.val.extrIdx);
+			win_new_opt->SetToolTip(tooltip);
+			win_old_opt->SetToolTip(tooltip);
+
+			opt.old_win = win_old_opt;
+			opt.new_win = win_new_opt;
+		}
+
+		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def, int extrIdx) {
 			wxString default_val = def.default_value->to_string();
 
 			std::string opt_id = def.opt_key;
-			if (index >= 0) {
-				opt_id += "[" + std::to_string(index) + "]";
+			if (extrIdx >= 0) {
+				opt_id += "[" + std::to_string(extrIdx) + "]";
 			}
 
 			std::string tooltip = def.tooltip;
@@ -551,10 +571,21 @@ namespace Slic3r {
 			return cb;
 		}
 
-		dirty_opt& UnsavedChangesDialog::buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size) {
+		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxSize size) {
+			wxString label;
+			if (opt.type == dirty_opt::Type::ConfigOption) {
+				label = opt.def->label;
+			}
+			else if(opt.type == dirty_opt::Type::ExtruderWasAdded) {
+				label = wxString::Format(_(L("Extruder %d added")), opt.extrIdx);
+			}
+			else if (opt.type == dirty_opt::Type::ExtruderWasRemoved) {
+				label = wxString::Format(_(L("Extruder %d removed")), opt.extrIdx);
+			}
+
 			wxCheckBox* cb = buildCheckbox(parent, label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size);
 
-			parent_node->opts.push_back(dirty_opt(val, cb, parent_node));
+			parent_node->opts.push_back(dirty_opt_entry(opt, cb, parent_node));
 
 			return parent_node->opts.back();
 		}
@@ -600,44 +631,52 @@ namespace Slic3r {
 					DynamicPrintConfig& edited_conf = cur_tab->m_presets->get_edited_preset().config;
 					DynamicPrintConfig edited_backup(edited_conf);
 
-					std::vector<dirty_opt*> all_opts;
+					std::vector<dirty_opt_entry*> all_opts;
 
 					dirty_opts_node* cur_tab_node = m_dirty_tabs_tree->getTabNode(cur_tab);
-					cur_tab_node->getAllOptions(all_opts);
+					cur_tab_node->getAllOptionEntries(all_opts);
 
 					//this loop sets all options (in the edited preset) - that the user does not want to save - to their old values (from selected preset)
-					for (dirty_opt* cur_opt_to_save : all_opts) {
+					for (dirty_opt_entry* cur_opt_to_save : all_opts) {
 						if (!cur_opt_to_save->saveMe()) {
-							int idx = cur_opt_to_save->val.index;
-							if (idx >= 0) {
-								ConfigOption* old_opt = cur_opt_to_save->val.old_opt;
-								ConfigOption* new_opt = cur_opt_to_save->val.new_opt;
+							int idx = cur_opt_to_save->val.extrIdx;
 
-								switch (cur_opt_to_save->val.def->type) {
-								case coFloats:
-									((ConfigOptionFloats*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
-								case coInts:
-									((ConfigOptionInts*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
-								case coStrings:
-									((ConfigOptionStrings*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
-								case coPercents:
-									((ConfigOptionPercents*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
-								case coPoints:
-									((ConfigOptionPoints*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
-								case coBools:
-									((ConfigOptionBools*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-									break;
+							if (cur_opt_to_save->val.type == dirty_opt::Type::ConfigOption) {
+								if (idx >= 0) {
+									ConfigOption* old_opt = cur_opt_to_save->val.old_opt;
+									ConfigOption* new_opt = cur_opt_to_save->val.new_opt;
+
+									switch (cur_opt_to_save->val.def->type) {
+									case coFloats:
+										((ConfigOptionFloats*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									case coInts:
+										((ConfigOptionInts*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									case coStrings:
+										((ConfigOptionStrings*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									case coPercents:
+										((ConfigOptionPercents*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									case coPoints:
+										((ConfigOptionPoints*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									case coBools:
+										((ConfigOptionBools*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
+										break;
+									}
+								}
+								else {
+									ConfigOption* new_opt = edited_conf.option(cur_opt_to_save->val.key);
+									new_opt->set(cur_opt_to_save->val.old_opt);
 								}
 							}
-							else {
-								ConfigOption* new_opt = edited_conf.option(cur_opt_to_save->val.key);
-								new_opt->set(cur_opt_to_save->val.old_opt);
-								//edited_conf.option(cur_opt_to_save->val.key);
+							else if(cur_opt_to_save->val.type == dirty_opt::Type::ExtruderWasAdded){
+
+							}
+							else if (cur_opt_to_save->val.type == dirty_opt::Type::ExtruderWasRemoved) {
+
 							}
 						}
 					}

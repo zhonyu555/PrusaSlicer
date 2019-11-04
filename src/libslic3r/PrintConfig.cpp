@@ -3107,6 +3107,22 @@ void DynamicPrintConfig::normalize()
     }
 }
 
+size_t DynamicPrintConfig::get_num_extruders()
+{
+	const auto& defaults = FullPrintConfig::defaults();
+	for (const std::string& key : print_config_def.extruder_option_keys()) {
+		if (key == "default_filament_profile")
+			continue;
+		auto* opt = this->option(key, false);
+		assert(opt != nullptr);
+		assert(opt->is_vector());
+		if (opt != nullptr && opt->is_vector())
+			return static_cast<ConfigOptionVectorBase*>(opt)->size();
+	}
+
+	return 0;
+}
+
 void DynamicPrintConfig::set_num_extruders(unsigned int num_extruders)
 {
     const auto &defaults = FullPrintConfig::defaults();

@@ -234,6 +234,7 @@ public:
 
     void                normalize();
 
+	size_t				get_num_extruders();
     void 				set_num_extruders(unsigned int num_extruders);
 
     // Validate the PrintConfig. Returns an empty string on success, otherwise an error message is returned.

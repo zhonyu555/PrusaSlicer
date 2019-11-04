@@ -11,40 +11,68 @@
 
 namespace Slic3r {
 	namespace GUI {
-		struct def_opt_pair {
+		struct dirty_opt {
+			enum class Type {
+				Nil,
+				ConfigOption,
+				ExtruderWasAdded,
+				ExtruderWasRemoved
+			};
+
+			Type type = Type::Nil;
+			std::string dialog_category;
+
 			const ConfigOptionDef* def = NULL;
 			ConfigOption* old_opt = NULL;
 			ConfigOption* new_opt = NULL;
 			t_config_option_key key;
 
-			int index = -1;
+			int extrIdx = -1;
 			std::string ser_old_opt;
 			std::string ser_new_opt;
 
-			bool operator <(const def_opt_pair& b)
+			dirty_opt(){}
+
+			dirty_opt(const ConfigOptionDef* def, ConfigOption* old_opt, ConfigOption* new_opt, t_config_option_key key) :
+				def(def), old_opt(old_opt), new_opt(new_opt), key(key)
 			{
-				if (this->def->category == b.def->category && this->index >= 0 && b.index >= 0)
+				this->type = Type::ConfigOption;
+				this->dialog_category = def->category;
+			}
+
+			dirty_opt(Type type, int extruder_index)
+			{
+				this->type = type;
+				this->extrIdx = extruder_index;
+				this->dialog_category = _(L("Extruders"));
+			}
+
+
+			bool operator <(const dirty_opt& b)
+			{
+				if (this->type == Type::ConfigOption && this->dialog_category == b.dialog_category && this->extrIdx >= 0 && b.extrIdx >= 0)
 				{
-					return this->index < b.index;
+					return this->extrIdx < b.extrIdx;
 				}
 
-				return this->def->category < b.def->category;
+				return this->dialog_category < b.dialog_category;
 			}
 		};
 
 		struct dirty_opts_node;
 
 		//this binds the gui line of an option and its definition and internal value together
-		struct dirty_opt {
-			def_opt_pair val;
-			wxCheckBox* checkbox;
-			wxWindow* old_win;
-			wxWindow* new_win;
-			bool isEnabled = true;
+		struct dirty_opt_entry {
+			dirty_opt val;
 
+			wxCheckBox* checkbox = NULL;
+			wxWindow* old_win = NULL;
+			wxWindow* new_win = NULL;
+
+			bool isEnabled = true;
 			dirty_opts_node* parent;
 
-			dirty_opt(def_opt_pair val, wxCheckBox* checkbox, dirty_opts_node* parent) {
+			dirty_opt_entry(dirty_opt val, wxCheckBox* checkbox, dirty_opts_node* parent) {
 				this->val = val;
 				this->checkbox = checkbox;
 				this->parent = parent;
@@ -52,8 +80,14 @@ namespace Slic3r {
 
 			void setEnabled(bool enabled = true) {
 				this->checkbox->Enable(enabled);
-				this->old_win->Enable(enabled);
-				this->new_win->Enable(enabled);
+
+				if (this->old_win != NULL) {
+					this->old_win->Enable(enabled);
+				}
+				if (this->new_win != NULL) {
+					this->new_win->Enable(enabled);
+				}
+
 				this->isEnabled = enabled;
 			}
 
@@ -68,7 +102,7 @@ namespace Slic3r {
 			wxCheckBox* checkbox;
 			Tab* tab = NULL;
 			std::vector<dirty_opts_node*> childs;
-			std::vector<dirty_opt> opts;
+			std::vector<dirty_opt_entry> opts;
 
 			void enableChilds(bool enabled = true) {
 				for (dirty_opts_node* cur_node : this->childs) {
@@ -79,7 +113,7 @@ namespace Slic3r {
 					}
 				}
 
-				for (dirty_opt& cur_opt : this->opts) {
+				for (dirty_opt_entry& cur_opt : this->opts) {
 					cur_opt.setEnabled(enabled);
 				}
 			}
@@ -90,19 +124,19 @@ namespace Slic3r {
 					cur_node->selectChilds(selected);
 				}
 
-				for (dirty_opt& cur_opt : this->opts) {
+				for (dirty_opt_entry& cur_opt : this->opts) {
 					cur_opt.checkbox->SetValue(selected);
 				}
 
 				this->enableChilds(selected);
 			}
 
-			void getAllOptions(std::vector<dirty_opt*>& _opts) {
+			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts) {
 				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->getAllOptions(_opts);
+					cur_node->getAllOptionEntries(_opts);
 				}
 
-				for (dirty_opt& cur_opt : this->opts) {
+				for (dirty_opt_entry& cur_opt : this->opts) {
 					_opts.push_back(&cur_opt);
 				}
 			}
@@ -114,7 +148,7 @@ namespace Slic3r {
 					}
 				}
 
-				for (dirty_opt& cur_opt : this->opts) {
+				for (dirty_opt_entry& cur_opt : this->opts) {
 					if (cur_opt.saveMe()) {
 						return true;
 					}
@@ -162,8 +196,9 @@ namespace Slic3r {
 			void buildScrollWindow(wxString& dirty_tabs);	//builds m_scroller_container
 			void buildScroller(wxString& dirty_tabs);		//builds m_scroller
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
-			void split_dirty_option_by_extruders(const def_opt_pair& pair, std::vector<def_opt_pair>& out);
-			std::string getTooltipText(const ConfigOptionDef& def, int index);
+			void split_dirty_option_by_extruders(const dirty_opt& pair, std::vector<dirty_opt>& out);
+			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
+			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
 			wxBoxSizer* buildYesNoBtns();
 			wxBitmap getColourBitmap(const std::string& color);
 			void updateSaveBtn();
@@ -171,7 +206,7 @@ namespace Slic3r {
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
 			template<typename Functor>
 			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize);
-			dirty_opt& buildOption(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, def_opt_pair val, wxSize size = wxDefaultSize);
+			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxSize size = wxDefaultSize);
 
 			void OnBtnSaveSelected(wxCommandEvent& e);
 		};
