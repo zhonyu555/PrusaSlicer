@@ -799,6 +799,17 @@ Field* Tab::get_field(const t_config_option_key& opt_key, int opt_index/* = -1*/
     return field;
 }
 
+std::pair<const PageShp, const ConfigOptionsGroupShp> Tab::get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
+{
+	for (const PageShp page : m_pages) {
+		const ConfigOptionsGroupShp optgroup = page->get_opt_group(opt_key, opt_index);
+		if (optgroup != nullptr) {
+			return std::pair<const PageShp, const ConfigOptionsGroupShp>(page, optgroup);
+		}
+	}
+	return std::pair<const PageShp, const ConfigOptionsGroupShp>(nullptr, nullptr);
+}
+
 // Set a key/value pair on this page. Return true if the value has been modified.
 // Currently used for distributing extruders_count over preset pages of Slic3r::GUI::Tab::Printer
 // after a preset is loaded.
@@ -3252,6 +3263,16 @@ Field* Page::get_field(const t_config_option_key& opt_key, int opt_index /*= -1*
     return field;
 }
 
+const ConfigOptionsGroupShp Page::get_opt_group(const t_config_option_key& opt_key, int opt_index /*= -1*/) const
+{
+    Field* field = nullptr;
+    for (auto opt : m_optgroups) {
+        if (opt->get_fieldc(opt_key, opt_index) != nullptr)
+            return opt;
+    }
+    return nullptr;
+}
+
 bool Page::set_value(const t_config_option_key& opt_key, const boost::any& value) {
     bool changed = false;
     for(auto optgroup: m_optgroups) {
@@ -3326,7 +3347,7 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
     return optgroup;
 }
 
-void SavePresetWindow::buildBaseLayout() {
+void SavePresetWindow::build_base_ayout() {
 	auto buttons = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
 
 	m_sizer = new wxBoxSizer(wxVERTICAL);
@@ -3370,13 +3391,13 @@ void SavePresetWindow::build_entry(const wxString& title, const std::string& def
 
 	this->entries.push_back(new Entry(combo, std::string(title), presets, status_sizer, status_icon, status_text, tab));
 
-	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ OnComboText(entry); });
+	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ On_combo_text(entry); });
 	//combo->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent& e) { accept(); });
 
-	OnComboText(this->entries.back());
+	On_combo_text(this->entries.back());
 }
 
-void SavePresetWindow::OnComboText(Entry* entry) {
+void SavePresetWindow::On_combo_text(Entry* entry) {
 	std::string chosen_name = normalize_utf8_nfc(entry->combo->GetValue().ToUTF8());
 
 	std::string errMsg;
@@ -3467,10 +3488,10 @@ void SavePresetWindow::OnComboText(Entry* entry) {
 		this->Layout();
 	}
 
-	this->updateBtnAccept();
+	this->update_btn_accept();
 }
 
-void SavePresetWindow::updateBtnAccept() {
+void SavePresetWindow::update_btn_accept() {
 	for (Entry* cur_entry : entries) {
 		if (!cur_entry->hasValidChosenName) {
 			m_btn_accept->Enable(false);

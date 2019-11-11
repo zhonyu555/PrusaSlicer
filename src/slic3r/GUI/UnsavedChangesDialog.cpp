@@ -109,13 +109,13 @@ namespace Slic3r {
 		}
 
 		void UnsavedChangesDialog::buildScroller(wxString& dirty_tabs) {
-			if (m_dirty_tabs_tree != NULL) {
+			if (m_dirty_tabs_tree != nullptr) {
 				m_dirty_tabs_tree->~dirty_opts_node();
 				delete m_dirty_tabs_tree;
 			}
 			m_dirty_tabs_tree = new dirty_opts_node();
 
-			if (m_scroller == NULL) {
+			if (m_scroller == nullptr) {
 				m_scroller = new wxScrolledWindow(m_scroller_container, wxID_ANY);
 			}
 			else {
@@ -206,43 +206,81 @@ namespace Slic3r {
 				}
 			}
 
-			boost::sort(options);
+			for (dirty_opt& cur_opt : options) {
+				std::pair<const PageShp, const ConfigOptionsGroupShp> ptrs = tab->get_page_and_optgroup(cur_opt.key);
 
-			std::string lastCat = "";
-			dirty_opts_node* category_node;
+				if (ptrs.first != nullptr) {
+					cur_opt.page_name = ptrs.first->title();
 
-			for (dirty_opt cur_opt : options) {
-				/* Figure out Category */
-				std::string cat = cur_opt.dialog_category;
-
-				if (cur_opt.extruder_index >= 0) {
-					size_t tag_pos = cat.find("#");
-					if (tag_pos != std::string::npos)
-					{
-						cat.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
+					if (ptrs.second != nullptr) {
+						cur_opt.optgroup_name = ptrs.second->title;
 					}
 				}
 
-				if (cat == "") {
-					cat = "Other";
+				size_t tag_pos = cur_opt.page_name.find("#");
+				if (tag_pos != std::string::npos)
+				{
+					cur_opt.page_name.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
+				}
+			}
+
+			boost::sort(options);
+
+			dirty_opts_node* cur_parent_node;
+			dirty_opts_node* cur_page_node;
+
+			std::string last_page_name = "";
+			std::string last_group_name = "";
+
+			int cur_left = 0;
+
+			for (dirty_opt& cur_opt : options) {
+				std::string cur_page_name = cur_opt.page_name;
+				std::string cur_group_name = cur_opt.optgroup_name;
+
+				if (cur_page_name == "") {
+					cur_page_name = "Other";
 				}
 
-				if (cat != lastCat) {
-					lastCat = cat;
+				if (cur_page_name != last_page_name) {
+					last_page_name = cur_page_name;
+					last_group_name = "";
 
 					sizer->Add(-1, Dialog_def_border);
-					category_node = buildNode(parent, cat, parent_node);
-					wxCheckBox* cat_cb = category_node->checkbox;
+					cur_parent_node = buildNode(parent, cur_page_name, parent_node);
+					cur_page_node = cur_parent_node;
+
+					wxCheckBox* cat_cb = cur_page_node->checkbox;
 					cat_cb->SetValue(true);
 					cat_cb->SetFont(GUI::wxGetApp().bold_font());
 					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
+
+					cur_left = Dialog_def_border + Dialog_child_indentation * 2;
 				}
-				/* End Category */
+
+				if (cur_group_name != last_group_name) {
+					last_group_name = cur_group_name;
+
+					if (cur_group_name == "") {
+						cur_parent_node = cur_page_node;
+						cur_left = Dialog_def_border + Dialog_child_indentation * 2;
+					}
+					else {
+						sizer->Add(-1, Dialog_def_border);
+						cur_parent_node = buildNode(parent, cur_group_name, cur_page_node);
+						wxCheckBox* cat_cb = cur_parent_node->checkbox;
+						cat_cb->SetValue(true);
+						cat_cb->SetFont(GUI::wxGetApp().bold_font());
+						sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation * 2);
+
+						cur_left = Dialog_def_border + Dialog_child_indentation * 3;
+					}
+				}
 				
 				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, category_node, cur_opt, bg_colour, wxSize(200,-1));
+					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, wxSize(200,-1));
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 					lineSizer->Add(opt_label);
 
@@ -256,7 +294,7 @@ namespace Slic3r {
 					lineSizer->AddSpacer(30);
 					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
-				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, Dialog_def_border + Dialog_child_indentation * 2);
+				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, cur_left);
 			}
 		}
 

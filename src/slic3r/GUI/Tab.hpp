@@ -82,6 +82,7 @@ public:
     void        update_visibility(ConfigOptionMode mode);
     void        msw_rescale();
 	Field*		get_field(const t_config_option_key& opt_key, int opt_index = -1) const;
+	const ConfigOptionsGroupShp get_opt_group(const t_config_option_key& opt_key, int opt_index /*= -1*/) const;
 	bool		set_value(const t_config_option_key& opt_key, const boost::any& value);
 	ConfigOptionsGroupShp	new_optgroup(const wxString& title, int noncommon_label_width = -1);
 
@@ -296,6 +297,7 @@ public:
 	bool			set_value(const t_config_option_key& opt_key, const boost::any& value);
 	wxSizer*		description_line_widget(wxWindow* parent, ogStaticText** StaticText);
 	bool			current_preset_is_dirty();
+	std::pair<const PageShp, const ConfigOptionsGroupShp> get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index = -1) const;
 
 	DynamicPrintConfig*	get_config() { return m_config; }
 	PresetCollection*	get_presets() { return m_presets; }
@@ -454,12 +456,13 @@ public:
 class SavePresetWindow :public wxDialog
 {
 public:
-	SavePresetWindow(wxWindow* parent) : wxDialog(parent, wxID_ANY, _(L("Save preset"))) {
+	SavePresetWindow(wxWindow* parent) : wxDialog(parent, wxID_ANY, _(L("Save preset"))) 
+	{
 		m_icon_cross = create_scaled_bitmap(nullptr, "cross_red");
 		m_icon_warning = create_scaled_bitmap(nullptr, "warning");
 		m_icon_tick = create_scaled_bitmap(nullptr, "tick_mark");
 		
-		this->buildBaseLayout();
+		this->build_base_ayout();
 	}
 	~SavePresetWindow() {
 		for (Entry* cur_entry : entries) {
@@ -524,9 +527,9 @@ private:
 	wxBitmap m_icon_cross;
 	wxBitmap m_icon_warning;
 
-	void buildBaseLayout();
-	void OnComboText(Entry* entry);
-	void updateBtnAccept();
+	void build_base_ayout();
+	void On_combo_text(Entry* entry);
+	void update_btn_accept();
 	void accept();
 };
 
