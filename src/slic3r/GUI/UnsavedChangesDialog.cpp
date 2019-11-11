@@ -197,20 +197,12 @@ namespace Slic3r {
 			}
 
 			if (tab->type() == Slic3r::Preset::TYPE_PRINTER) {
-				size_t old_num_extr = tab->m_presets->get_selected_preset().get_num_extruders();
-				size_t new_num_extr = tab->m_presets->get_edited_preset().get_num_extruders();
-
-				if (new_num_extr > old_num_extr) {
-					for (int i = old_num_extr + 1; i <= new_num_extr; i++) {
-						dirty_opt opt(dirty_opt::Type::ExtruderWasAdded, i);
-						options.push_back(opt);
-					}
-				}
-				else if (new_num_extr < old_num_extr) {
-					for (int i = new_num_extr + 1; i <= old_num_extr; i++) {
-						dirty_opt opt(dirty_opt::Type::ExtruderWasRemoved, i);
-						options.push_back(opt);
-					}
+				size_t old_num_extruders = tab->m_presets->get_selected_preset().get_num_extruders();
+				size_t new_num_extruders = tab->m_presets->get_edited_preset().get_num_extruders();
+				
+				if (old_num_extruders != new_num_extruders) {
+					dirty_opt opt(dynamic_cast<TabPrinter*>(tab)->m_extruders_count_def, old_num_extruders, new_num_extruders);
+					options.push_back(opt);
 				}
 			}
 
@@ -223,11 +215,11 @@ namespace Slic3r {
 				/* Figure out Category */
 				std::string cat = cur_opt.dialog_category;
 
-				if (cur_opt.extrIdx >= 0) {
+				if (cur_opt.extruder_index >= 0) {
 					size_t tag_pos = cat.find("#");
 					if (tag_pos != std::string::npos)
 					{
-						cat.replace(tag_pos, 1, std::to_string(cur_opt.extrIdx + 1));
+						cat.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
 					}
 				}
 
@@ -250,23 +242,19 @@ namespace Slic3r {
 				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, category_node, cur_opt, wxSize(200,-1));
+					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, category_node, cur_opt, bg_colour, wxSize(200,-1));
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 					lineSizer->Add(opt_label);
 
-					if (cur_opt.type == dirty_opt::Type::ConfigOption) {
-						buildWindowsForOpt(cur_opt_entry, parent, bg_colour);
+					wxBoxSizer* old_sizer = new wxBoxSizer(wxVERTICAL);
+					old_sizer->Add(cur_opt_entry.old_win, 0, wxALIGN_CENTER_HORIZONTAL);
 
-						wxBoxSizer* old_sizer = new wxBoxSizer(wxVERTICAL);
-						old_sizer->Add(cur_opt_entry.old_win, 0, wxALIGN_CENTER_HORIZONTAL);
+					wxBoxSizer* new_sizer = new wxBoxSizer(wxVERTICAL);
+					new_sizer->Add(cur_opt_entry.new_win, 0, wxALIGN_CENTER_HORIZONTAL);
 
-						wxBoxSizer* new_sizer = new wxBoxSizer(wxVERTICAL);
-						new_sizer->Add(cur_opt_entry.new_win, 0, wxALIGN_CENTER_HORIZONTAL);
-
-						lineSizer->Add(old_sizer, 1, wxEXPAND);
-						lineSizer->AddSpacer(30);
-						lineSizer->Add(new_sizer, 1, wxEXPAND);
-					}
+					lineSizer->Add(old_sizer, 1, wxEXPAND);
+					lineSizer->AddSpacer(30);
+					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
 				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, Dialog_def_border + Dialog_child_indentation * 2);
 			}
@@ -302,38 +290,13 @@ namespace Slic3r {
 		}
 
 		void UnsavedChangesDialog::split_dirty_option_by_extruders(const dirty_opt& opt, std::vector<dirty_opt>& out) {
-			std::vector<std::string> old_vals;
-			std::vector<std::string> new_vals;
+			auto* opt_old = dynamic_cast<ConfigOptionVectorBase*>(opt.old_opt);
+			auto* opt_new = dynamic_cast<ConfigOptionVectorBase*>(opt.new_opt);
 
-			switch (opt.def->type)
-			{
-				case coFloats:
-					old_vals = ((ConfigOptionFloats*)opt.old_opt)->vserialize();
-					new_vals = ((ConfigOptionFloats*)opt.new_opt)->vserialize();
-					break;
-				case coInts:
-					old_vals = ((ConfigOptionInts*)opt.old_opt)->vserialize();
-					new_vals = ((ConfigOptionInts*)opt.new_opt)->vserialize();
-					break;
-				case coStrings:
-					old_vals = ((ConfigOptionStrings*)opt.old_opt)->vserialize();
-					new_vals = ((ConfigOptionStrings*)opt.new_opt)->vserialize();
-					break;
-				case coPercents:
-					old_vals = ((ConfigOptionPercents*)opt.old_opt)->vserialize();
-					new_vals = ((ConfigOptionPercents*)opt.new_opt)->vserialize();
-					break;
-				case coPoints:
-					old_vals = ((ConfigOptionPoints*)opt.old_opt)->vserialize();
-					new_vals = ((ConfigOptionPoints*)opt.new_opt)->vserialize();
-					break;
-				case coBools:
-					old_vals = ((ConfigOptionBools*)opt.old_opt)->v_to_string();
-					new_vals = ((ConfigOptionBools*)opt.new_opt)->v_to_string();
-					break;
-				default:
-					return;
-			}
+			assert(opt_old != nullptr && opt_new != nullptr);
+
+			std::vector<std::string> old_vals = opt_old->v_to_string();
+			std::vector<std::string> new_vals = opt_new->v_to_string();
 
 			for (size_t i = 0; i < old_vals.size() && i < new_vals.size(); i++) {
 				std::string cur_old_val = old_vals[i];
@@ -341,7 +304,7 @@ namespace Slic3r {
 
 				if (cur_old_val != cur_new_val) {
 					dirty_opt new_opt(opt);
-					new_opt.extrIdx = i;
+					new_opt.extruder_index = i;
 					new_opt.ser_old_opt = cur_old_val;
 					new_opt.ser_new_opt = cur_new_val;
 
@@ -350,26 +313,104 @@ namespace Slic3r {
 			}
 		}
 
-		void UnsavedChangesDialog::buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour){
-			const ConfigOption* old_opt = opt.val.old_opt;
-			const ConfigOption* new_opt = opt.val.new_opt;
+		void UnsavedChangesDialog::updateSaveBtn() {
+			if (m_dirty_tabs_tree->hasAnythingToSave()) {
+				m_btn_save->Enable();
+			}
+			else {
+				m_btn_save->Enable(false);
+			}
+		}
 
-			wxWindow* win_old_opt;
-			wxWindow* win_new_opt;
+		wxBoxSizer* UnsavedChangesDialog::buildYesNoBtns() {
+			wxBoxSizer* cont_stretch_sizer = new wxBoxSizer(wxHORIZONTAL);
+			wxPanel* cont_win = new wxPanel(this, wxID_ANY);
+			cont_win->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
+			wxBoxSizer* cont_sizer = new wxBoxSizer(wxHORIZONTAL);
+			wxStaticText* cont_label = new wxStaticText(cont_win, wxID_ANY, _(L("Continue? All unsaved changes will be discarded.")), wxDefaultPosition, wxDefaultSize);
+			wxButton* btn_yes = new wxButton(cont_win, wxID_ANY, "Yes");
+			btn_yes->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
+				EndModal(wxID_YES);
+			}));
 
+			wxButton* btn_no = new wxButton(cont_win, wxID_ANY, "No");
+			btn_no->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
+				EndModal(wxID_NO);
+			}));
+			btn_no->SetFocus();
+
+			cont_sizer->AddStretchSpacer();
+			cont_sizer->Add(cont_label, 0, wxALL | wxALIGN_CENTER_VERTICAL, Dialog_def_border * 3);
+
+			cont_sizer->Add(btn_yes, 0, wxALIGN_CENTER_VERTICAL);
+			cont_sizer->Add(btn_no, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, Dialog_def_border);
+
+			cont_win->SetSizer(cont_sizer);
+			cont_stretch_sizer->Add(cont_win, 1);
+
+			return cont_stretch_sizer;
+		}
+
+		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab, wxSize size) {
+			dirty_opts_node* node = new dirty_opts_node();
+
+			node->label = label;
+			node->tab = tab;
+			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
+				node->enableChilds(node->checkbox->GetValue());
+				updateSaveBtn();
+			});
+
+			parent_node->childs.push_back(node);
+			return node;
+		}
+
+		template<typename Functor>
+		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size) {
+			wxCheckBox* cb = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, size);
+			cb->SetValue(true);
+			cb->Bind(wxEVT_CHECKBOX, toggleCallback);
+
+			return cb;
+		}
+
+		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size) {
+			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size);
+
+			parent_node->opts.emplace_back(opt, cb, parent_node);
+
+			buildWindowsForOpt(parent_node->opts.back(), parent, bg_colour);
+
+			return parent_node->opts.back();
+		}
+
+		void UnsavedChangesDialog::buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour) {
 			std::string old_val;
 			std::string new_val;
 
 			dirty_opt val = opt.val;
 
-			if (val.extrIdx >= 0) {
-				old_val = val.ser_old_opt;
-				new_val = val.ser_new_opt;
+			if (opt.type() == dirty_opt::Type::ConfigOption) {
+				const ConfigOption* old_opt = opt.val.old_opt;
+				const ConfigOption* new_opt = opt.val.new_opt;
+
+
+				if (val.extruder_index >= 0) {
+					old_val = val.ser_old_opt;
+					new_val = val.ser_new_opt;
+				}
+				else {
+					old_val = old_opt->to_string();
+					new_val = new_opt->to_string();
+				}
 			}
-			else {
-				old_val = old_opt->to_string();
-				new_val = new_opt->to_string();
+			else if (opt.type() == dirty_opt::Type::ExtruderCount) {
+				old_val = std::to_string(opt.val.extruders_count_old);
+				new_val = std::to_string(opt.val.extruders_count_new);
 			}
+
+			wxWindow* win_old_opt;
+			wxWindow* win_new_opt;
 
 			if (val.def->gui_type == "color") {
 				win_old_opt = old_val == "-" ?
@@ -484,7 +525,7 @@ namespace Slic3r {
 
 			win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
 
-			std::string tooltip = getTooltipText(*opt.val.def, opt.val.extrIdx);
+			std::string tooltip = getTooltipText(*opt.val.def, opt.val.extruder_index);
 			win_new_opt->SetToolTip(tooltip);
 			win_old_opt->SetToolTip(tooltip);
 
@@ -492,7 +533,7 @@ namespace Slic3r {
 			opt.new_win = win_new_opt;
 		}
 
-		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef &def, int extrIdx) {
+		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef& def, int extrIdx) {
 			wxString default_val = def.default_value->to_string();
 
 			std::string opt_id = def.opt_key;
@@ -508,86 +549,6 @@ namespace Slic3r {
 				_(L("parameter name")) + "\t: " + opt_id;
 
 			return tooltip;
-		}
-
-		void UnsavedChangesDialog::updateSaveBtn() {
-			if (m_dirty_tabs_tree->hasAnythingToSave()) {
-				m_btn_save->Enable();
-			}
-			else {
-				m_btn_save->Enable(false);
-			}
-		}
-
-		wxBoxSizer* UnsavedChangesDialog::buildYesNoBtns() {
-			wxBoxSizer* cont_stretch_sizer = new wxBoxSizer(wxHORIZONTAL);
-			wxPanel* cont_win = new wxPanel(this, wxID_ANY);
-			cont_win->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
-			wxBoxSizer* cont_sizer = new wxBoxSizer(wxHORIZONTAL);
-			wxStaticText* cont_label = new wxStaticText(cont_win, wxID_ANY, _(L("Continue? All unsaved changes will be discarded.")), wxDefaultPosition, wxDefaultSize);
-			wxButton* btn_yes = new wxButton(cont_win, wxID_ANY, "Yes");
-			btn_yes->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
-				EndModal(wxID_YES);
-			}));
-
-			wxButton* btn_no = new wxButton(cont_win, wxID_ANY, "No");
-			btn_no->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
-				EndModal(wxID_NO);
-			}));
-			btn_no->SetFocus();
-
-			cont_sizer->AddStretchSpacer();
-			cont_sizer->Add(cont_label, 0, wxALL | wxALIGN_CENTER_VERTICAL, Dialog_def_border * 3);
-
-			cont_sizer->Add(btn_yes, 0, wxALIGN_CENTER_VERTICAL);
-			cont_sizer->Add(btn_no, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, Dialog_def_border);
-
-			cont_win->SetSizer(cont_sizer);
-			cont_stretch_sizer->Add(cont_win, 1);
-
-			return cont_stretch_sizer;
-		}
-
-		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab, wxSize size) {
-			dirty_opts_node* node = new dirty_opts_node();
-
-			node->label = label;
-			node->tab = tab;
-			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
-				node->enableChilds(node->checkbox->GetValue());
-				updateSaveBtn();
-			});
-
-			parent_node->childs.push_back(node);
-			return node;
-		}
-
-		template<typename Functor>
-		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size) {
-			wxCheckBox* cb = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, size);
-			cb->SetValue(true);
-			cb->Bind(wxEVT_CHECKBOX, toggleCallback);
-
-			return cb;
-		}
-
-		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxSize size) {
-			wxString label;
-			if (opt.type == dirty_opt::Type::ConfigOption) {
-				label = opt.def->label;
-			}
-			else if(opt.type == dirty_opt::Type::ExtruderWasAdded) {
-				label = wxString::Format(_(L("Extruder %d added")), opt.extrIdx);
-			}
-			else if (opt.type == dirty_opt::Type::ExtruderWasRemoved) {
-				label = wxString::Format(_(L("Extruder %d removed")), opt.extrIdx);
-			}
-
-			wxCheckBox* cb = buildCheckbox(parent, label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size);
-
-			parent_node->opts.push_back(dirty_opt_entry(opt, cb, parent_node));
-
-			return parent_node->opts.back();
 		}
 
 		void UnsavedChangesDialog::OnBtnSaveSelected(wxCommandEvent& e)
@@ -631,60 +592,49 @@ namespace Slic3r {
 					DynamicPrintConfig& edited_conf = cur_tab->m_presets->get_edited_preset().config;
 					DynamicPrintConfig edited_backup(edited_conf);
 
-					std::vector<dirty_opt_entry*> all_opts;
-
 					dirty_opts_node* cur_tab_node = m_dirty_tabs_tree->getTabNode(cur_tab);
-					cur_tab_node->getAllOptionEntries(all_opts);
 
-					//this loop sets all options (in the edited preset) - that the user does not want to save - to their old values (from selected preset)
-					for (dirty_opt_entry* cur_opt_to_save : all_opts) {
-						if (!cur_opt_to_save->saveMe()) {
-							int idx = cur_opt_to_save->val.extrIdx;
+					std::vector<dirty_opt_entry*> opts_to_save;
+					cur_tab_node->getAllOptionEntries(opts_to_save, true);
 
-							if (cur_opt_to_save->val.type == dirty_opt::Type::ConfigOption) {
-								if (idx >= 0) {
-									ConfigOption* old_opt = cur_opt_to_save->val.old_opt;
-									ConfigOption* new_opt = cur_opt_to_save->val.new_opt;
+					bool update_extr_count = true;
 
-									switch (cur_opt_to_save->val.def->type) {
-									case coFloats:
-										((ConfigOptionFloats*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									case coInts:
-										((ConfigOptionInts*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									case coStrings:
-										((ConfigOptionStrings*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									case coPercents:
-										((ConfigOptionPercents*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									case coPoints:
-										((ConfigOptionPoints*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									case coBools:
-										((ConfigOptionBools*)new_opt)->set_at(((ConfigOptionFloats*)old_opt), idx, idx);
-										break;
-									}
-								}
-								else {
-									ConfigOption* new_opt = edited_conf.option(cur_opt_to_save->val.key);
-									new_opt->set(cur_opt_to_save->val.old_opt);
-								}
+					//set all options (in the edited preset) - that the user does not want to save - to their old values (from selected preset)
+					for (dirty_opt_entry* cur_opt_to_save : opts_to_save) {
+						if (cur_opt_to_save->type() == dirty_opt::Type::ConfigOption) {
+							int idx = cur_opt_to_save->val.extruder_index;
+
+							if (idx >= 0) {
+								auto* old_opt = dynamic_cast<ConfigOptionVectorBase*>(cur_opt_to_save->val.old_opt);
+								auto* new_opt = dynamic_cast<ConfigOptionVectorBase*>(cur_opt_to_save->val.new_opt);
+
+								new_opt->set_at(old_opt, idx, idx);
 							}
-							else if(cur_opt_to_save->val.type == dirty_opt::Type::ExtruderWasAdded){
-
-							}
-							else if (cur_opt_to_save->val.type == dirty_opt::Type::ExtruderWasRemoved) {
-
+							else {
+								auto* new_opt = edited_conf.option(cur_opt_to_save->val.key);
+								new_opt->set(cur_opt_to_save->val.old_opt);
 							}
 						}
-					}
+						else if (cur_opt_to_save->type() == dirty_opt::Type::ExtruderCount) {
+							size_t count_old = cur_opt_to_save->val.extruders_count_old;
+							size_t count_new = cur_opt_to_save->val.extruders_count_new;
+
+							update_extr_count = false;
+
+							if (count_old > count_new) {
+								edited_conf.import_extruder_config_options(cur_tab->m_presets->get_selected_preset().config);
+							}
+							else {
+								edited_conf.set_num_extruders(count_old);
+							}
+						}
+					}			
 
 					//edited conf will become selected conf and be saved to disk
 					cur_tab->m_presets->save_current_preset(chosen_name);
 					edited_conf = DynamicPrintConfig(std::move(edited_backup));
-					cur_tab->update_after_preset_save();
+
+					cur_tab->update_after_preset_save(update_extr_count);
 				}
 
 				//refresh the ui

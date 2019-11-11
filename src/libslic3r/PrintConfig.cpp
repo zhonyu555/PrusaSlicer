@@ -3137,6 +3137,23 @@ void DynamicPrintConfig::set_num_extruders(unsigned int num_extruders)
     }
 }
 
+
+void DynamicPrintConfig::import_extruder_config_options(DynamicPrintConfig& conf) {
+	for (const t_config_option_key& key : print_config_def.extruder_option_keys()) {
+		if (key == "default_filament_profile")
+			continue;
+		auto* opt = this->option(key, false);
+		assert(opt != nullptr);
+		assert(opt->is_vector());
+
+		auto* other_opt = conf.option(key, false);
+		assert(other_opt != nullptr);
+		assert(other_opt->is_vector());
+
+		opt->set(other_opt);
+	}
+}
+
 std::string DynamicPrintConfig::validate()
 {
     // Full print config is initialized from the defaults.

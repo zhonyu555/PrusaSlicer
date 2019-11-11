@@ -15,8 +15,7 @@ namespace Slic3r {
 			enum class Type {
 				Nil,
 				ConfigOption,
-				ExtruderWasAdded,
-				ExtruderWasRemoved
+				ExtruderCount
 			};
 
 			Type type = Type::Nil;
@@ -27,32 +26,43 @@ namespace Slic3r {
 			ConfigOption* new_opt = NULL;
 			t_config_option_key key;
 
-			int extrIdx = -1;
+			int extruder_index = -1;
 			std::string ser_old_opt;
 			std::string ser_new_opt;
 
+			//Type::ExtruderCount
+			size_t extruders_count_old = 0;
+			size_t extruders_count_new = 0;
+
 			dirty_opt(){}
 
-			dirty_opt(const ConfigOptionDef* def, ConfigOption* old_opt, ConfigOption* new_opt, t_config_option_key key) :
-				def(def), old_opt(old_opt), new_opt(new_opt), key(key)
+			dirty_opt(const ConfigOptionDef* _def, Type _type) :
+				def(_def),
+				type(_type),
+				dialog_category(_def->category)
+			{}
+
+			dirty_opt(const ConfigOptionDef* def, ConfigOption* _old_opt, ConfigOption* _new_opt, t_config_option_key _key) :
+				dirty_opt(def, Type::ConfigOption)
 			{
-				this->type = Type::ConfigOption;
-				this->dialog_category = def->category;
+				this->old_opt = _old_opt;
+				this->new_opt = _new_opt;
+				this->key = _key;
 			}
 
-			dirty_opt(Type type, int extruder_index)
+			dirty_opt(const ConfigOptionDef* def, size_t _extruders_count_old, size_t _extruders_count_new) :
+				dirty_opt(def, Type::ExtruderCount)
 			{
-				this->type = type;
-				this->extrIdx = extruder_index;
-				this->dialog_category = _(L("Extruders"));
+				this->extruders_count_old = _extruders_count_old;
+				this->extruders_count_new = _extruders_count_new;
 			}
 
 
 			bool operator <(const dirty_opt& b)
 			{
-				if (this->type == Type::ConfigOption && this->dialog_category == b.dialog_category && this->extrIdx >= 0 && b.extrIdx >= 0)
+				if (this->type == Type::ConfigOption && this->dialog_category == b.dialog_category && this->extruder_index >= 0 && b.extruder_index >= 0)
 				{
-					return this->extrIdx < b.extrIdx;
+					return this->extruder_index < b.extruder_index;
 				}
 
 				return this->dialog_category < b.dialog_category;
@@ -94,6 +104,10 @@ namespace Slic3r {
 			bool saveMe() {
 				return this->isEnabled && this->checkbox->GetValue();
 			}
+
+			dirty_opt::Type type() {
+				return this->val.type;
+			}
 		};
 
 		//a node represents a tab or category in the scroll window
@@ -131,12 +145,13 @@ namespace Slic3r {
 				this->enableChilds(selected);
 			}
 
-			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts) {
+			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore = false, dirty_opt::Type type = dirty_opt::Type::Nil) {
 				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->getAllOptionEntries(_opts);
+					cur_node->getAllOptionEntries(_opts, only_opts_to_restore, type);
 				}
 
 				for (dirty_opt_entry& cur_opt : this->opts) {
+					if((!only_opts_to_restore || !cur_opt.saveMe()) && (type == dirty_opt::Type::Nil || cur_opt.val.type == type))
 					_opts.push_back(&cur_opt);
 				}
 			}
@@ -197,8 +212,6 @@ namespace Slic3r {
 			void buildScroller(wxString& dirty_tabs);		//builds m_scroller
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
 			void split_dirty_option_by_extruders(const dirty_opt& pair, std::vector<dirty_opt>& out);
-			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
-			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
 			wxBoxSizer* buildYesNoBtns();
 			wxBitmap getColourBitmap(const std::string& color);
 			void updateSaveBtn();
@@ -206,7 +219,9 @@ namespace Slic3r {
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = NULL, wxSize size = wxDefaultSize);
 			template<typename Functor>
 			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize);
-			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxSize size = wxDefaultSize);
+			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size = wxDefaultSize);
+			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
+			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
 
 			void OnBtnSaveSelected(wxCommandEvent& e);
 		};

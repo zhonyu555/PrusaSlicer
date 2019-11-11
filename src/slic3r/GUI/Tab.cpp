@@ -1796,14 +1796,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("z_offset");
 
         optgroup = page->new_optgroup(_(L("Capabilities")));
-        ConfigOptionDef def;
-            def.type =  coInt,
-            def.set_default_value(new ConfigOptionInt(1));
-            def.label = L("Extruders");
-            def.tooltip = L("Number of extruders of the printer.");
-            def.min = 1;
-            def.mode = comExpert;
-        Option option(def, "extruders_count");
+        
+        Option option(*this->m_extruders_count_def, "extruders_count");
         optgroup->append_single_option_line(option);
         optgroup->append_single_option_line("single_extruder_multi_material");
 
@@ -3013,7 +3007,7 @@ void Tab::save_preset(std::string name /*= ""*/)
 	update_after_preset_save();
 }
 
-void Tab::update_after_preset_save() {
+void Tab::update_after_preset_save(bool update_extr_count) {
 	// Mark the print & filament enabled if they are compatible with the currently selected preset.
 	m_preset_bundle->update_compatible(false);
 	// Add the new item into the UI component, remove dirty flags and activate the saved item.
@@ -3023,7 +3017,7 @@ void Tab::update_after_preset_save() {
 	// If current profile is saved, "delete preset" button have to be enabled
 	m_btn_delete_preset->Enable(true);
 
-	if (m_type == Preset::TYPE_PRINTER)
+	if (m_type == Preset::TYPE_PRINTER && update_extr_count)
 		static_cast<TabPrinter*>(this)->m_initial_extruders_count = static_cast<TabPrinter*>(this)->m_extruders_count;
 	update_changed_ui();
 

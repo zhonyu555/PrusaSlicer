@@ -264,7 +264,7 @@ public:
 	void		OnKeyDown(wxKeyEvent& event);
 
 	void		save_preset(std::string name = "");
-	void		update_after_preset_save();
+	void		update_after_preset_save(bool update_extr_count = true);
 	void		delete_preset();
 	void		toggle_show_hide_incompatible();
 	void		update_show_hide_incompatible_button();
@@ -372,22 +372,39 @@ class TabPrinter : public Tab
 
     void build_printhost(ConfigOptionsGroup *optgroup);
 public:
-	wxButton*	m_serial_test_btn = nullptr;
+	wxButton*		m_serial_test_btn = nullptr;
 	ScalableButton*	m_print_host_test_btn = nullptr;
 	ScalableButton*	m_printhost_browse_btn = nullptr;
 	ScalableButton*	m_reset_to_filament_color = nullptr;
 
-	size_t		m_extruders_count;
-	size_t		m_extruders_count_old = 0;
-	size_t		m_initial_extruders_count;
-	size_t		m_sys_extruders_count;
+	ConfigOptionDef*	m_extruders_count_def;
+	size_t				m_extruders_count;
+	size_t				m_extruders_count_old = 0;
+	size_t				m_initial_extruders_count;
+	size_t				m_sys_extruders_count;
 
     PrinterTechnology               m_printer_technology = ptFFF;
 
 // 	TabPrinter(wxNotebook* parent) : Tab(parent, _(L("Printer Settings")), L("printer")) {}
     TabPrinter(wxNotebook* parent) : 
-        Tab(parent, _(L("Printer Settings")), Slic3r::Preset::TYPE_PRINTER) {}
-	~TabPrinter() {}
+        Tab(parent, _(L("Printer Settings")), Slic3r::Preset::TYPE_PRINTER) 
+	{
+		ConfigOptionDef def;
+		def.opt_key = "extruders_count";
+		def.type = coInt;
+		def.set_default_value(new ConfigOptionInt(1));
+		def.label = L("Extruders");
+		def.category = L("General");
+		def.tooltip = L("Number of extruders of the printer.");
+		def.min = 1;
+		def.mode = comExpert;
+
+		this->m_extruders_count_def = new ConfigOptionDef(std::move(def));
+	}
+	~TabPrinter() 
+	{
+		delete this->m_extruders_count_def;
+	}
 
 	void		build() override;
     void		build_fff();

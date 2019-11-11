@@ -186,6 +186,8 @@ class ConfigOptionVectorBase : public ConfigOption {
 public:
     // Currently used only to initialize the PlaceholderParser.
     virtual std::vector<std::string> vserialize() const = 0;
+	//Better for displaying in a gui, defaults to vserialize
+	virtual std::vector<std::string> v_to_string() const { return this->vserialize(); };
     // Set from a vector of ConfigOptions. 
     // If the rhs ConfigOption is scalar, then its value is used,
     // otherwise for each of rhs, the first value of a vector is used.
