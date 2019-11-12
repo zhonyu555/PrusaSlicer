@@ -1,5 +1,6 @@
 #include "UnsavedChangesDialog.hpp"
 #include "BitmapCache.hpp"
+#include "wxExtensions.hpp"
 #include "slic3r/Utils/Diff.hpp"
 #include <boost/range/algorithm.hpp>
 #include <boost/algorithm/string/replace.hpp>
@@ -181,50 +182,8 @@ namespace Slic3r {
 
 		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour) {
 			std::vector<dirty_opt> options;
-
-			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
-				dirty_opt opt(tab->m_presets->get_selected_preset().config.def()->get(key),
-					tab->m_presets->get_selected_preset().config.option(key),
-					tab->m_presets->get_edited_preset().config.option(key),
-					key);
-
-				if (opt.def->category.find('#') != std::string::npos && opt.old_opt->type() & opt.new_opt->type() & coVectorType) {
-					split_dirty_option_by_extruders(opt, options);
-				}
-				else {
-					options.push_back(opt);
-				}
-			}
-
-			if (tab->type() == Slic3r::Preset::TYPE_PRINTER) {
-				size_t old_num_extruders = tab->m_presets->get_selected_preset().get_num_extruders();
-				size_t new_num_extruders = tab->m_presets->get_edited_preset().get_num_extruders();
-				
-				if (old_num_extruders != new_num_extruders) {
-					dirty_opt opt(dynamic_cast<TabPrinter*>(tab)->m_extruders_count_def, old_num_extruders, new_num_extruders);
-					options.push_back(opt);
-				}
-			}
-
-			for (dirty_opt& cur_opt : options) {
-				std::pair<const PageShp, const ConfigOptionsGroupShp> ptrs = tab->get_page_and_optgroup(cur_opt.key);
-
-				if (ptrs.first != nullptr) {
-					cur_opt.page_name = ptrs.first->title();
-
-					if (ptrs.second != nullptr) {
-						cur_opt.optgroup_name = ptrs.second->title;
-					}
-				}
-
-				size_t tag_pos = cur_opt.page_name.find("#");
-				if (tag_pos != std::string::npos)
-				{
-					cur_opt.page_name.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
-				}
-			}
-
-			boost::sort(options);
+			PageIconMap page_icons;
+			get_dirty_options_for_tab(tab, options, page_icons);			
 
 			dirty_opts_node* cur_parent_node;
 			dirty_opts_node* cur_page_node;
@@ -247,14 +206,39 @@ namespace Slic3r {
 					last_group_name = "";
 
 					sizer->Add(-1, Dialog_def_border);
-					cur_parent_node = buildNode(parent, cur_page_name, parent_node);
+
+					PageIconMap::iterator it = page_icons.find(cur_page_name);
+
+					if (it == page_icons.end()) {
+						cur_parent_node = buildNode(parent, cur_page_name, parent_node);
+						
+						wxCheckBox* cb = cur_parent_node->checkbox;
+						cb->SetValue(true);
+						cb->SetFont(GUI::wxGetApp().bold_font());
+						sizer->Add(cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
+					}
+					else {
+						wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
+
+							cur_parent_node = buildNode(parent, "", parent_node);
+							wxCheckBox* cb = cur_parent_node->checkbox;
+							cb->SetValue(true);
+
+							DynamicBitmap* icon = new DynamicBitmap(parent, wxID_ANY, it->second);
+							wxStaticText* label = new wxStaticText(parent, wxID_ANY, cur_page_name);
+							label->SetFont(GUI::wxGetApp().bold_font());
+
+							lineSizer->Add(cb);
+							lineSizer->Add(icon, 0, wxLEFT | wxRIGHT, Dialog_def_border);
+							lineSizer->Add(label);
+
+							cur_parent_node->icon = icon;
+							cur_parent_node->labelCtrl = label;
+
+						sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
+					}
+					
 					cur_page_node = cur_parent_node;
-
-					wxCheckBox* cat_cb = cur_page_node->checkbox;
-					cat_cb->SetValue(true);
-					cat_cb->SetFont(GUI::wxGetApp().bold_font());
-					sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
-
 					cur_left = Dialog_def_border + Dialog_child_indentation * 2;
 				}
 
@@ -296,6 +280,54 @@ namespace Slic3r {
 
 				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, cur_left);
 			}
+		}
+
+		void UnsavedChangesDialog::get_dirty_options_for_tab(Tab* tab, std::vector<dirty_opt>& out, std::map<std::string, wxBitmap>& page_icons_out) {
+			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
+				dirty_opt opt(tab->m_presets->get_selected_preset().config.def()->get(key),
+					tab->m_presets->get_selected_preset().config.option(key),
+					tab->m_presets->get_edited_preset().config.option(key),
+					key);
+
+				if (opt.def->category.find('#') != std::string::npos && opt.old_opt->type() & opt.new_opt->type() & coVectorType) {
+					split_dirty_option_by_extruders(opt, out);
+				}
+				else {
+					out.push_back(opt);
+				}
+			}
+
+			if (tab->type() == Slic3r::Preset::TYPE_PRINTER) {
+				size_t old_num_extruders = tab->m_presets->get_selected_preset().get_num_extruders();
+				size_t new_num_extruders = tab->m_presets->get_edited_preset().get_num_extruders();
+
+				if (old_num_extruders != new_num_extruders) {
+					dirty_opt opt(dynamic_cast<TabPrinter*>(tab)->m_extruders_count_def, old_num_extruders, new_num_extruders);
+					out.push_back(opt);
+				}
+			}
+
+			for (dirty_opt& cur_opt : out) {
+				std::pair<const PageShp, const ConfigOptionsGroupShp> ptrs = tab->get_page_and_optgroup(cur_opt.key);
+
+				if (ptrs.first != nullptr) {
+					cur_opt.page_name = ptrs.first->title();
+
+					if (ptrs.second != nullptr) {
+						cur_opt.optgroup_name = ptrs.second->title;
+					}
+				}
+
+				size_t tag_pos = cur_opt.page_name.find("#");
+				if (tag_pos != std::string::npos)
+				{
+					cur_opt.page_name.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
+				}
+
+				page_icons_out.insert( std::pair<std::string, wxBitmap>( cur_opt.page_name, tab->get_page_icon(ptrs.first->iconID()) ) );
+			}
+
+			boost::sort(out);
 		}
 
 		wxBitmap UnsavedChangesDialog::getColourBitmap(const std::string& color) {
@@ -404,19 +436,19 @@ namespace Slic3r {
 		}
 
 		template<typename Functor>
-		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size) {
+		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size, std::string tooltip) {
 			wxCheckBox* cb = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, size);
 			cb->SetValue(true);
 			cb->Bind(wxEVT_CHECKBOX, toggleCallback);
+			cb->SetToolTip(tooltip);
 
 			return cb;
 		}
 
 		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size) {
-			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size);
+			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size, getTooltipText(*opt.def, opt.extruder_index));
 
 			parent_node->opts.emplace_back(opt, cb, parent_node);
-
 			buildWindowsForOpt(parent_node->opts.back(), parent, bg_colour);
 
 			return parent_node->opts.back();

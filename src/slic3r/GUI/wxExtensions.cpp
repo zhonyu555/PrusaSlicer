@@ -3455,6 +3455,3 @@ void ScalableButton::msw_rescale()
     }
 }
 
-
-
-

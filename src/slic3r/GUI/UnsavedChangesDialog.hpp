@@ -128,6 +128,9 @@ namespace Slic3r {
 		struct dirty_opts_node {
 			wxString label = "";
 			wxCheckBox* checkbox;
+			DynamicBitmap* icon = nullptr;
+			wxStaticText* labelCtrl = nullptr;
+
 			Tab* tab = nullptr;
 			std::vector<dirty_opts_node*> childs;
 			std::vector<dirty_opt_entry> opts;
@@ -135,6 +138,13 @@ namespace Slic3r {
 			void enableChilds(bool enabled = true) {
 				for (dirty_opts_node* cur_node : this->childs) {
 					cur_node->checkbox->Enable(enabled);
+
+					if (cur_node->icon != nullptr) {
+						cur_node->icon->Enable(enabled);
+					}
+					if (cur_node->labelCtrl != nullptr) {
+						cur_node->labelCtrl->Enable(enabled);
+					}
 
 					if (cur_node->checkbox->GetValue()) {
 						cur_node->enableChilds(enabled);
@@ -221,10 +231,13 @@ namespace Slic3r {
 
 			dirty_opts_node* m_dirty_tabs_tree = nullptr;
 
+			typedef std::map<std::string, wxBitmap> PageIconMap;
+
 			void setCorrectSize();
 			void buildScrollWindow(wxString& dirty_tabs);	//builds m_scroller_container
 			void buildScroller(wxString& dirty_tabs);		//builds m_scroller
 			void add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour);
+			void get_dirty_options_for_tab(Tab* tab, std::vector<dirty_opt>& out, PageIconMap& page_icons_out);
 			void split_dirty_option_by_extruders(const dirty_opt& pair, std::vector<dirty_opt>& out);
 			wxBoxSizer* buildYesNoBtns();
 			wxBitmap getColourBitmap(const std::string& color);
@@ -232,7 +245,7 @@ namespace Slic3r {
 
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = nullptr, wxSize size = wxDefaultSize);
 			template<typename Functor>
-			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize);
+			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize, std::string tooltip = "");
 			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size = wxDefaultSize);
 			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
 			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);

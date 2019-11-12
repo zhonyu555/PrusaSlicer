@@ -307,6 +307,8 @@ public:
 
     void            update_wiping_button_visibility();
 
+	wxBitmap		get_page_icon(int index);
+
 protected:
 	wxSizer*		compatible_widget_create(wxWindow* parent, PresetDependencies &deps);
 	void 			compatible_widget_reload(PresetDependencies &deps);

@@ -915,6 +915,9 @@ void Tab::update_wiping_button_visibility() {
     }
 }
 
+wxBitmap Tab::get_page_icon(int index) {
+	return this->m_icons->GetIcon(index);
+}
 
 // Call a callback to update the selection of presets on the platter:
 // To update the content of the selection boxes,

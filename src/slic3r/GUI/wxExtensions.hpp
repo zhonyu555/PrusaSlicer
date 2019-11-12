@@ -1,6 +1,7 @@
 #ifndef slic3r_GUI_wxExtensions_hpp_
 #define slic3r_GUI_wxExtensions_hpp_
 
+#include <wx/dcgraph.h>
 #include <wx/checklst.h>
 #include <wx/combo.h>
 #include <wx/dataview.h>
@@ -1072,6 +1073,24 @@ private:
     wxMenuItem* m_separator_scnd { nullptr };   // use like separator between settings items
 };
 
+class DynamicBitmap : public wxStaticBitmap
+{
+public:
+	DynamicBitmap(wxWindow* parent, wxWindowID id, const wxBitmap& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = wxStaticBitmapNameStr)
+		: wxStaticBitmap(parent, id, label, pos, size, style, name) 
+	{
+		m_normal_bmp = wxBitmap(label);
+		m_disabled_bmp = label.ConvertToDisabled();
+	}
 
+	bool Enable(bool enabled = true) {
+		this->SetBitmap(enabled ? m_normal_bmp : m_disabled_bmp);
+		return this->wxStaticBitmap::Enable(enabled);
+	}
+
+private:
+	wxBitmap m_normal_bmp;
+	wxBitmap m_disabled_bmp;
+};
 
 #endif // slic3r_GUI_wxExtensions_hpp_
