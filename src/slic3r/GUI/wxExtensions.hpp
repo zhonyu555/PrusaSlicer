@@ -1073,10 +1073,10 @@ private:
     wxMenuItem* m_separator_scnd { nullptr };   // use like separator between settings items
 };
 
-class DynamicBitmap : public wxStaticBitmap
+class GrayableStaticBitmap : public wxStaticBitmap
 {
 public:
-	DynamicBitmap(wxWindow* parent, wxWindowID id, const wxBitmap& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = wxStaticBitmapNameStr)
+	GrayableStaticBitmap(wxWindow* parent, wxWindowID id, const wxBitmap& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = wxStaticBitmapNameStr)
 		: wxStaticBitmap(parent, id, label, pos, size, style, name) 
 	{
 		m_normal_bmp = wxBitmap(label);

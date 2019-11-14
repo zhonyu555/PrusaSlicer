@@ -6,12 +6,11 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
-#include <wx/html/htmlwin.h>
 
 #define Dialog_max_width 1200
 #define Dialog_max_height 800
 
-#define Dialog_min_width 600
+#define Dialog_min_width 500
 #define Dialog_min_height 200
 
 #define Dialog_def_border 5
@@ -47,7 +46,6 @@ namespace Slic3r {
 		}
 
 		UnsavedChangesDialog::~UnsavedChangesDialog() {
-			this->m_dirty_tabs_tree->~dirty_opts_node();
 			delete this->m_dirty_tabs_tree;
 		}
 
@@ -157,6 +155,15 @@ namespace Slic3r {
 				}
 			}
 
+			int max_width = this->m_dirty_tabs_tree->get_max_child_label_width();
+
+			std::vector<dirty_opt_entry*> opts;
+			this->m_dirty_tabs_tree->getAllOptionEntries(opts);
+			for (dirty_opt_entry* cur_opt : opts) {
+				cur_opt->checkbox->SetMinSize(wxSize(max_width + Dialog_child_indentation, -1));
+			}
+
+			//should only happen when the user selected everything, saved, and the dialog rebuilds
 			if (!itemCount) {
 				wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
@@ -224,18 +231,18 @@ namespace Slic3r {
 							wxCheckBox* cb = cur_parent_node->checkbox;
 							cb->SetValue(true);
 
-							DynamicBitmap* icon = new DynamicBitmap(parent, wxID_ANY, it->second);
+							GrayableStaticBitmap* icon = new GrayableStaticBitmap(parent, wxID_ANY, it->second);
 							wxStaticText* label = new wxStaticText(parent, wxID_ANY, cur_page_name);
 							label->SetFont(GUI::wxGetApp().bold_font());
 
-							lineSizer->Add(cb);
+							lineSizer->Add(cb, 0, wxLEFT, Dialog_def_border + Dialog_child_indentation);
 							lineSizer->Add(icon, 0, wxLEFT | wxRIGHT, Dialog_def_border);
 							lineSizer->Add(label);
 
 							cur_parent_node->icon = icon;
 							cur_parent_node->labelCtrl = label;
 
-						sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation);
+						sizer->Add(lineSizer, 0, wxALIGN_LEFT);
 					}
 					
 					cur_page_node = cur_parent_node;
@@ -264,21 +271,15 @@ namespace Slic3r {
 				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, wxSize(200,-1));
+					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour);
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
-					lineSizer->Add(opt_label);
 
-					wxBoxSizer* old_sizer = new wxBoxSizer(wxVERTICAL);
-					old_sizer->Add(cur_opt_entry.old_win, 0, wxALIGN_CENTER_HORIZONTAL);
-
-					wxBoxSizer* new_sizer = new wxBoxSizer(wxVERTICAL);
-					new_sizer->Add(cur_opt_entry.new_win, 0, wxALIGN_CENTER_HORIZONTAL);
-
-					lineSizer->Add(old_sizer, 1, wxEXPAND);
+					lineSizer->Add(opt_label, 0, wxLEFT, cur_left);
+					lineSizer->Add(cur_opt_entry.old_win, 1, wxEXPAND);
 					lineSizer->AddSpacer(30);
-					lineSizer->Add(new_sizer, 1, wxEXPAND);
+					lineSizer->Add(cur_opt_entry.new_win, 1, wxEXPAND);
 
-				sizer->Add(lineSizer, 0, wxLEFT | wxALIGN_LEFT | wxEXPAND, cur_left);
+				sizer->Add(lineSizer, 0, wxALIGN_LEFT | wxEXPAND);
 			}
 		}
 
@@ -324,7 +325,9 @@ namespace Slic3r {
 					cur_opt.page_name.replace(tag_pos, 1, std::to_string(cur_opt.extruder_index + 1));
 				}
 
-				page_icons_out.insert( std::pair<std::string, wxBitmap>( cur_opt.page_name, tab->get_page_icon(ptrs.first->iconID()) ) );
+				if (ptrs.first != nullptr) {
+					page_icons_out.insert(std::pair<std::string, wxBitmap>(cur_opt.page_name, tab->get_page_icon(ptrs.first->iconID())));
+				}
 			}
 
 			boost::sort(out);
@@ -445,20 +448,27 @@ namespace Slic3r {
 			return cb;
 		}
 
-		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size) {
-			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this](wxCommandEvent& e) {updateSaveBtn(); }, size, getTooltipText(*opt.def, opt.extruder_index));
+		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size) {			
+			parent_node->opts.push_back(new dirty_opt_entry(opt, nullptr, parent_node));
+			dirty_opt_entry& entry = *parent_node->opts.back();
 
-			parent_node->opts.emplace_back(opt, cb, parent_node);
-			buildWindowsForOpt(parent_node->opts.back(), parent, bg_colour);
+			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this, &entry](wxCommandEvent& e) {
+				updateSaveBtn();
+				entry.setValWinsEnabled(entry.checkbox->GetValue());
+			}, size, getTooltipText(*opt.def, opt.extruder_index));
 
-			return parent_node->opts.back();
+			entry.checkbox = cb;
+
+			buildWindowsForOpt(entry, parent, bg_colour);
+
+			return entry;
 		}
 
 		void UnsavedChangesDialog::buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour) {
 			std::string old_val;
 			std::string new_val;
 
-			dirty_opt val = opt.val;
+			dirty_opt& val = opt.val;
 
 			if (opt.type() == dirty_opt::Type::ConfigOption) {
 				const ConfigOption* old_opt = opt.val.old_opt;
@@ -485,20 +495,25 @@ namespace Slic3r {
 			if (val.def->gui_type == "color") {
 				win_old_opt = old_val == "-" ?
 					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-					: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
+					: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
 
 				win_new_opt = new_val == "-" ?
 					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-					: (wxWindow*)new wxStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
+					: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
+
+				opt.old_win_type = dirty_opt_entry::Gui_Type::Color;
+				opt.new_win_type = dirty_opt_entry::Gui_Type::Color;
 			}
 			else {
 				switch (val.def->type) {
 				case coString:
 				case coStrings: {
 					wxString sText;
-					std::string html = std::string(
-						"<html>"
-						"<body bgcolor=" + wxString::Format(wxT("#%02X%02X%02X"), bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) + ">");
+					std::string& html = *new std::string( wxString::Format("<html><body bgcolor=#%02X%02X%02X>", bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) );
+
+					//this is really silly. But wxHtmlWindow::Enable does not make the window gray (MSW). So we fake it...
+					wxColor col = wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
+					std::string& html_disabled = *new std::string(html + wxString::Format("<font color=#%02X%02X%02X>", col.Red(), col.Green(), col.Blue()));
 
 					using namespace slic3r;
 					Diff diff = Diff(old_val, new_val);
@@ -513,7 +528,7 @@ namespace Slic3r {
 					};
 
 					for (EditScriptAction cur_action : diff.getSolution()) {
-						std::string sub, font;
+						std::string sub, font, font_disabled;
 						switch (cur_action.action)
 						{
 						case EditScriptAction::ActionType::keep: {
@@ -522,31 +537,45 @@ namespace Slic3r {
 						}
 						case EditScriptAction::ActionType::remove: {
 							sub = old_val.substr(cur_action.offset, cur_action.count);
-							font = "<font bgcolor=" + fakeAlpha(wxColour(255, 0, 0, 255), bg_colour, 130) + ">";
+
+							wxColour col(255, 0, 0, 255);
+							font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
+							font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
 							break;
 						}
 						case EditScriptAction::ActionType::insert: {
 							sub = new_val.substr(cur_action.offset, cur_action.count);
-							font = "<font bgcolor=" + fakeAlpha(wxColour(0, 255, 0, 255), bg_colour, 130) + ">";
+
+							wxColour col(0, 255, 0, 255);
+							font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
+							font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
 							break;
 						}
 						}
 
 						if (font != "") {
 							html += font + sub + "</font>";
+							html_disabled += font_disabled + sub + "</font>";
 							sText += sub;
 						}
 						else {
 							html += sub;
+							html_disabled += sub;
 							sText += sub;
 						}
 					}
 
-					html += wxString(
+					html += std::string(
+						"</body>"
+						"</html>");
+
+					html_disabled += std::string(
+						"</font>"
 						"</body>"
 						"</html>");
 
 					boost::replace_all(html, "\n", "<br />");
+					boost::replace_all(html_disabled, "\n", "<br />");
 
 					//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
 					wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
@@ -568,6 +597,11 @@ namespace Slic3r {
 					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
 					win_old_opt = (wxWindow*)html_win;
 
+					opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+					opt.old_win_type = dirty_opt_entry::Gui_Type::Html;
+					opt.aux_data["html"] = &html;
+					opt.aux_data["html_disabled"] = &html_disabled;
+
 					break;
 				}
 				case coFloatOrPercent:
@@ -585,6 +619,9 @@ namespace Slic3r {
 				case coPoints: {
 					win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
 					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+					opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
+					opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+
 					break;
 				}
 				default:

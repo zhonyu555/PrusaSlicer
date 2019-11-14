@@ -4,6 +4,7 @@
 #include <wx/wx.h>
 #include <wx/checkbox.h>
 #include <wx/statline.h>
+#include <wx/html/htmlwin.h>
 #include "GUI_App.hpp"
 #include "Tab.hpp"
 #include "PresetBundle.hpp"
@@ -19,6 +20,7 @@ namespace Slic3r {
 			};
 
 			Type type = Type::Nil;
+
 			std::string page_name = "";
 			std::string optgroup_name = "";
 
@@ -59,7 +61,6 @@ namespace Slic3r {
 				this->extruders_count_new = _extruders_count_new;
 			}
 
-
 			bool operator <(const dirty_opt& b)
 			{
 				if (this->page_name != b.page_name) {
@@ -85,13 +86,27 @@ namespace Slic3r {
 
 		struct dirty_opts_node;
 
-		//this binds the gui line of an option and its definition and internal value together
+		//this binds the gui line of an option and its definition and internal value together. It's an endpoint of the tree and can't have children.
 		struct dirty_opt_entry {
+			enum class Gui_Type {
+				Nil,
+				Text,
+				Color,
+				Html
+			};
+
 			dirty_opt val;
 
 			wxCheckBox* checkbox = nullptr;
+
 			wxWindow* old_win = nullptr;
 			wxWindow* new_win = nullptr;
+
+			Gui_Type old_win_type = Gui_Type::Nil;
+			Gui_Type new_win_type = Gui_Type::Nil;
+
+			typedef std::map<std::string, void*> Aux_Data;
+			Aux_Data aux_data;
 
 			bool isEnabled = true;
 			dirty_opts_node* parent;
@@ -102,16 +117,37 @@ namespace Slic3r {
 				this->parent = parent;
 			}
 
+			~dirty_opt_entry() {
+				Aux_Data::iterator it;
+				for (it = this->aux_data.begin(); it != aux_data.end(); it++) {
+					delete it->second;
+				}
+			}
+
+			void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true) {
+				if (win != nullptr) {
+					if (_gui_type == Gui_Type::Html) {
+						std::string* html = static_cast<std::string*>(enabled ? this->aux_data["html"] : this->aux_data["html_disabled"]);
+
+						dynamic_cast<wxHtmlWindow*>(win)->SetPage(*html);
+					}
+					else {
+						win->Enable(enabled);
+					}
+				}
+			}
+
+			void setValWinsEnabled(bool enabled = true) {
+				setWinEnabled(this->old_win, this->old_win_type, enabled);
+				setWinEnabled(this->new_win, this->new_win_type, enabled);
+			}
+
 			void setEnabled(bool enabled = true) {
 				this->checkbox->Enable(enabled);
 
-				if (this->old_win != nullptr) {
-					this->old_win->Enable(enabled);
+				if (this->checkbox->GetValue()) {
+					this->setValWinsEnabled(enabled);
 				}
-				if (this->new_win != nullptr) {
-					this->new_win->Enable(enabled);
-				}
-
 				this->isEnabled = enabled;
 			}
 
@@ -119,21 +155,25 @@ namespace Slic3r {
 				return this->isEnabled && this->checkbox->GetValue();
 			}
 
+			int get_checkbox_width() {
+				return this->checkbox->GetEffectiveMinSize().GetWidth();
+			}
+
 			dirty_opt::Type type() {
 				return this->val.type;
 			}
 		};
 
-		//a node represents a tab or category in the scroll window
+		//a node represents a parent (tab, category, ...) in the scroll window
 		struct dirty_opts_node {
 			wxString label = "";
 			wxCheckBox* checkbox;
-			DynamicBitmap* icon = nullptr;
+			GrayableStaticBitmap* icon = nullptr;
 			wxStaticText* labelCtrl = nullptr;
 
 			Tab* tab = nullptr;
 			std::vector<dirty_opts_node*> childs;
-			std::vector<dirty_opt_entry> opts;
+			std::vector<dirty_opt_entry*> opts;
 
 			void enableChilds(bool enabled = true) {
 				for (dirty_opts_node* cur_node : this->childs) {
@@ -151,8 +191,8 @@ namespace Slic3r {
 					}
 				}
 
-				for (dirty_opt_entry& cur_opt : this->opts) {
-					cur_opt.setEnabled(enabled);
+				for (dirty_opt_entry* cur_opt : this->opts) {
+					cur_opt->setEnabled(enabled);
 				}
 			}
 
@@ -162,8 +202,8 @@ namespace Slic3r {
 					cur_node->selectChilds(selected);
 				}
 
-				for (dirty_opt_entry& cur_opt : this->opts) {
-					cur_opt.checkbox->SetValue(selected);
+				for (dirty_opt_entry* cur_opt : this->opts) {
+					cur_opt->checkbox->SetValue(selected);
 				}
 
 				this->enableChilds(selected);
@@ -174,9 +214,9 @@ namespace Slic3r {
 					cur_node->getAllOptionEntries(_opts, only_opts_to_restore, type);
 				}
 
-				for (dirty_opt_entry& cur_opt : this->opts) {
-					if((!only_opts_to_restore || !cur_opt.saveMe()) && (type == dirty_opt::Type::Nil || cur_opt.val.type == type))
-					_opts.push_back(&cur_opt);
+				for (dirty_opt_entry* cur_opt : this->opts) {
+					if((!only_opts_to_restore || !cur_opt->saveMe()) && (type == dirty_opt::Type::Nil || cur_opt->val.type == type))
+					_opts.push_back(cur_opt);
 				}
 			}
 
@@ -187,8 +227,8 @@ namespace Slic3r {
 					}
 				}
 
-				for (dirty_opt_entry& cur_opt : this->opts) {
-					if (cur_opt.saveMe()) {
+				for (dirty_opt_entry* cur_opt : this->opts) {
+					if (cur_opt->saveMe()) {
 						return true;
 					}
 				}
@@ -206,10 +246,40 @@ namespace Slic3r {
 				return nullptr;
 			}
 
+			int get_label_width() {
+				int w = this->checkbox->GetEffectiveMinSize().GetWidth();
+
+				if (this->icon != nullptr) {
+					w += this->icon->GetEffectiveMinSize().GetWidth();
+				}
+				if (this->labelCtrl != nullptr) {
+					w += this->labelCtrl->GetEffectiveMinSize().GetWidth();
+				}
+
+				return w;
+			}
+
+			int get_max_child_label_width() {
+				int w = 0;
+
+				for (dirty_opts_node* cur_node : this->childs) {
+					w = std::max(w, cur_node->get_max_child_label_width());
+				}
+
+				for (dirty_opt_entry* cur_opt : this->opts) {
+					w = std::max(w, cur_opt->get_checkbox_width());
+				}
+
+				return w;
+			}
+
 			~dirty_opts_node() {
 				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->~dirty_opts_node();
 					delete cur_node;
+				}
+
+				for (dirty_opt_entry* cur_opt_entry : this->opts) {
+					delete cur_opt_entry;
 				}
 			}
 		};
