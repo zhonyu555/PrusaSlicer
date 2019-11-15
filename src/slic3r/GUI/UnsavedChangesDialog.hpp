@@ -94,28 +94,27 @@ namespace Slic3r {
 				Color,
 				Html
 			};
-
-			dirty_opt val;
-
-			wxCheckBox* checkbox = nullptr;
-
-			wxWindow* old_win = nullptr;
-			wxWindow* new_win = nullptr;
-
-			Gui_Type old_win_type = Gui_Type::Nil;
-			Gui_Type new_win_type = Gui_Type::Nil;
-
 			typedef std::map<std::string, void*> Aux_Data;
-			Aux_Data aux_data;
 
-			bool isEnabled = true;
-			dirty_opts_node* parent;
+			dirty_opt			val;
 
-			dirty_opt_entry(dirty_opt val, wxCheckBox* checkbox, dirty_opts_node* parent) {
-				this->val = val;
-				this->checkbox = checkbox;
-				this->parent = parent;
-			}
+			wxCheckBox*			checkbox = nullptr;
+			wxSizer*			parent_sizer;
+
+			wxWindow*			old_win = nullptr;
+			wxWindow*			new_win = nullptr;
+
+			Gui_Type			old_win_type = Gui_Type::Nil;
+			Gui_Type			new_win_type = Gui_Type::Nil;
+
+			Aux_Data			aux_data;
+
+			bool				isEnabled = true;
+			dirty_opts_node*	parent;
+
+			dirty_opt_entry(dirty_opt _val, wxCheckBox* _checkbox, dirty_opts_node* _parent, wxSizer* _parent_sizer)
+				: val(_val), checkbox(_checkbox), parent(_parent), parent_sizer(_parent_sizer)
+			{}
 
 			~dirty_opt_entry() {
 				Aux_Data::iterator it;
@@ -155,8 +154,9 @@ namespace Slic3r {
 				return this->isEnabled && this->checkbox->GetValue();
 			}
 
-			int get_checkbox_width() {
-				return this->checkbox->GetEffectiveMinSize().GetWidth();
+			int get_checkbox_width_with_indent() {
+				return this->checkbox->GetEffectiveMinSize().GetWidth() +
+					get_wxSizerItem_border_size(this->parent_sizer->GetItem(this->checkbox)).GetWidth();
 			}
 
 			dirty_opt::Type type() {
@@ -166,14 +166,31 @@ namespace Slic3r {
 
 		//a node represents a parent (tab, category, ...) in the scroll window
 		struct dirty_opts_node {
-			wxString label = "";
-			wxCheckBox* checkbox;
-			GrayableStaticBitmap* icon = nullptr;
-			wxStaticText* labelCtrl = nullptr;
+			wxString				label = "";
+			wxCheckBox*				checkbox;
+			GrayableStaticBitmap*	icon = nullptr;
+			wxStaticText*			labelCtrl = nullptr;
+			wxSizer*				parent_sizer;
 
 			Tab* tab = nullptr;
 			std::vector<dirty_opts_node*> childs;
 			std::vector<dirty_opt_entry*> opts;
+
+			dirty_opts_node(){}
+
+			dirty_opts_node(wxSizer* _parent_sizer, const wxString& _label, Tab* _tab) 
+			: parent_sizer(_parent_sizer), label(_label), tab(_tab)
+			{}
+
+			~dirty_opts_node() {
+				for (dirty_opts_node* cur_node : this->childs) {
+					delete cur_node;
+				}
+
+				for (dirty_opt_entry* cur_opt_entry : this->opts) {
+					delete cur_opt_entry;
+				}
+			}
 
 			void enableChilds(bool enabled = true) {
 				for (dirty_opts_node* cur_node : this->childs) {
@@ -246,41 +263,32 @@ namespace Slic3r {
 				return nullptr;
 			}
 
-			int get_label_width() {
-				int w = this->checkbox->GetEffectiveMinSize().GetWidth();
+			int get_label_width_with_indent() {
+				int w = 0;
 
-				if (this->icon != nullptr) {
-					w += this->icon->GetEffectiveMinSize().GetWidth();
-				}
-				if (this->labelCtrl != nullptr) {
-					w += this->labelCtrl->GetEffectiveMinSize().GetWidth();
+				for (wxWindow* cur_win : std::vector<wxWindow*>{ checkbox, icon, labelCtrl }) {
+					if (cur_win != nullptr) {
+						w += cur_win->GetEffectiveMinSize().GetWidth();
+						w += get_wxSizerItem_border_size(parent_sizer->GetItem(cur_win)).GetWidth();
+					}
 				}
 
 				return w;
 			}
 
-			int get_max_child_label_width() {
+			int get_max_child_label_width_with_indent() {
 				int w = 0;
 
 				for (dirty_opts_node* cur_node : this->childs) {
-					w = std::max(w, cur_node->get_max_child_label_width());
+					w = std::max(w, cur_node->get_label_width_with_indent());
+					w = std::max(w, cur_node->get_max_child_label_width_with_indent());
 				}
 
 				for (dirty_opt_entry* cur_opt : this->opts) {
-					w = std::max(w, cur_opt->get_checkbox_width());
+					w = std::max(w, cur_opt->get_checkbox_width_with_indent());
 				}
 
 				return w;
-			}
-
-			~dirty_opts_node() {
-				for (dirty_opts_node* cur_node : this->childs) {
-					delete cur_node;
-				}
-
-				for (dirty_opt_entry* cur_opt_entry : this->opts) {
-					delete cur_opt_entry;
-				}
 			}
 		};
 
@@ -313,10 +321,10 @@ namespace Slic3r {
 			wxBitmap getColourBitmap(const std::string& color);
 			void updateSaveBtn();
 
-			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab = nullptr, wxSize size = wxDefaultSize);
+			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, wxSizer* parent_sizer, Tab* tab = nullptr);
 			template<typename Functor>
 			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize, std::string tooltip = "");
-			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size = wxDefaultSize);
+			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSizer* parent_sizer);
 			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
 			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
 

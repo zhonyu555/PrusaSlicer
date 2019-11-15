@@ -1093,4 +1093,6 @@ private:
 	wxBitmap m_disabled_bmp;
 };
 
+wxSize get_wxSizerItem_border_size(wxSizerItem* item, int flags = wxALL);
+
 #endif // slic3r_GUI_wxExtensions_hpp_

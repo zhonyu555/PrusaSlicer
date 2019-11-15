@@ -3455,3 +3455,15 @@ void ScalableButton::msw_rescale()
     }
 }
 
+wxSize get_wxSizerItem_border_size(wxSizerItem* item, int flags) {
+	int f = item->GetFlag() & flags;
+	int b = item->GetBorder();
+	int w = 0, h = 0;
+
+	w += f & wxLEFT ? b : 0;
+	w += f & wxRIGHT? b : 0;
+	h += f & wxTOP ? b : 0;
+	h += f & wxBOTTOM ? b : 0;
+
+	return wxSize(w, h);
+}

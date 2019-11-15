@@ -137,7 +137,7 @@ namespace Slic3r {
 
 					wxPanel* cur_tab_win = new wxPanel(m_scroller, wxID_ANY);
 					wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
-					dirty_opts_node* cur_tab_node = buildNode(cur_tab_win, cur_tab->title(), this->m_dirty_tabs_tree, cur_tab);
+					dirty_opts_node* cur_tab_node = buildNode(cur_tab_win, cur_tab->title(), this->m_dirty_tabs_tree, cur_tab_sizer, cur_tab);
 					wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
 					cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
 
@@ -155,12 +155,13 @@ namespace Slic3r {
 				}
 			}
 
-			int max_width = this->m_dirty_tabs_tree->get_max_child_label_width();
-
+			//resize all entry checkboxes so the val windows are the same distance from the left side
+			int max_width = this->m_dirty_tabs_tree->get_max_child_label_width_with_indent();
 			std::vector<dirty_opt_entry*> opts;
 			this->m_dirty_tabs_tree->getAllOptionEntries(opts);
 			for (dirty_opt_entry* cur_opt : opts) {
-				cur_opt->checkbox->SetMinSize(wxSize(max_width + Dialog_child_indentation, -1));
+				int indent = get_wxSizerItem_border_size(cur_opt->parent_sizer->GetItem(cur_opt->checkbox), wxLEFT).GetWidth();
+				cur_opt->checkbox->SetMinSize(wxSize(max_width - indent + Dialog_child_indentation, -1));
 			}
 
 			//should only happen when the user selected everything, saved, and the dialog rebuilds
@@ -198,7 +199,7 @@ namespace Slic3r {
 			std::string last_page_name = "";
 			std::string last_group_name = "";
 
-			int cur_left = 0;
+			int cur_indent = 0;
 
 			for (dirty_opt& cur_opt : options) {
 				std::string cur_page_name = cur_opt.page_name;
@@ -217,7 +218,7 @@ namespace Slic3r {
 					PageIconMap::iterator it = page_icons.find(cur_page_name);
 
 					if (it == page_icons.end()) {
-						cur_parent_node = buildNode(parent, cur_page_name, parent_node);
+						cur_parent_node = buildNode(parent, cur_page_name, parent_node, sizer);
 						
 						wxCheckBox* cb = cur_parent_node->checkbox;
 						cb->SetValue(true);
@@ -227,7 +228,7 @@ namespace Slic3r {
 					else {
 						wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
 
-							cur_parent_node = buildNode(parent, "", parent_node);
+							cur_parent_node = buildNode(parent, "", parent_node, lineSizer);
 							wxCheckBox* cb = cur_parent_node->checkbox;
 							cb->SetValue(true);
 
@@ -246,7 +247,7 @@ namespace Slic3r {
 					}
 					
 					cur_page_node = cur_parent_node;
-					cur_left = Dialog_def_border + Dialog_child_indentation * 2;
+					cur_indent = Dialog_def_border + Dialog_child_indentation * 2;
 				}
 
 				if (cur_group_name != last_group_name) {
@@ -254,27 +255,27 @@ namespace Slic3r {
 
 					if (cur_group_name == "") {
 						cur_parent_node = cur_page_node;
-						cur_left = Dialog_def_border + Dialog_child_indentation * 2;
+						cur_indent = Dialog_def_border + Dialog_child_indentation * 2;
 					}
 					else {
 						sizer->Add(-1, Dialog_def_border);
-						cur_parent_node = buildNode(parent, cur_group_name, cur_page_node);
+						cur_parent_node = buildNode(parent, cur_group_name, cur_page_node, sizer);
 						wxCheckBox* cat_cb = cur_parent_node->checkbox;
 						cat_cb->SetValue(true);
 						cat_cb->SetFont(GUI::wxGetApp().bold_font());
 						sizer->Add(cat_cb, 0, wxLEFT | wxALIGN_LEFT, Dialog_def_border + Dialog_child_indentation * 2);
 
-						cur_left = Dialog_def_border + Dialog_child_indentation * 3;
+						cur_indent = Dialog_def_border + Dialog_child_indentation * 3;
 					}
 				}
 				
 				sizer->Add(-1, Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour);
+					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, lineSizer);
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 
-					lineSizer->Add(opt_label, 0, wxLEFT, cur_left);
+					lineSizer->Add(opt_label, 0, wxLEFT, cur_indent);
 					lineSizer->Add(cur_opt_entry.old_win, 1, wxEXPAND);
 					lineSizer->AddSpacer(30);
 					lineSizer->Add(cur_opt_entry.new_win, 1, wxEXPAND);
@@ -283,7 +284,7 @@ namespace Slic3r {
 			}
 		}
 
-		void UnsavedChangesDialog::get_dirty_options_for_tab(Tab* tab, std::vector<dirty_opt>& out, std::map<std::string, wxBitmap>& page_icons_out) {
+		void UnsavedChangesDialog::get_dirty_options_for_tab(Tab* tab, std::vector<dirty_opt>& out, PageIconMap& page_icons_out) {
 			for (t_config_option_key key : tab->m_presets->current_dirty_options()) {
 				dirty_opt opt(tab->m_presets->get_selected_preset().config.def()->get(key),
 					tab->m_presets->get_selected_preset().config.option(key),
@@ -424,11 +425,9 @@ namespace Slic3r {
 			return cont_stretch_sizer;
 		}
 
-		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, Tab* tab, wxSize size) {
-			dirty_opts_node* node = new dirty_opts_node();
+		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, wxSizer* parent_sizer, Tab* tab) {
+			dirty_opts_node* node = new dirty_opts_node(parent_sizer, label, tab);
 
-			node->label = label;
-			node->tab = tab;
 			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
 				node->enableChilds(node->checkbox->GetValue());
 				updateSaveBtn();
@@ -448,14 +447,14 @@ namespace Slic3r {
 			return cb;
 		}
 
-		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSize size) {			
-			parent_node->opts.push_back(new dirty_opt_entry(opt, nullptr, parent_node));
+		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSizer* parent_sizer) {			
+			parent_node->opts.push_back(new dirty_opt_entry(opt, nullptr, parent_node, parent_sizer));
 			dirty_opt_entry& entry = *parent_node->opts.back();
 
 			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this, &entry](wxCommandEvent& e) {
 				updateSaveBtn();
 				entry.setValWinsEnabled(entry.checkbox->GetValue());
-			}, size, getTooltipText(*opt.def, opt.extruder_index));
+			}, wxDefaultSize, getTooltipText(*opt.def, opt.extruder_index));
 
 			entry.checkbox = cb;
 
