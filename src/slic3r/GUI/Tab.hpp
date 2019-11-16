@@ -110,6 +110,8 @@ wxDECLARE_EVENT(EVT_TAB_PRESETS_CHANGED, SimpleEvent);
 
 
 using PageShp = std::shared_ptr<Page>;
+typedef std::pair<const PageShp, const ConfigOptionsGroupShp> PageOptGroupShp;
+
 class Tab: public wxPanel
 {
 	wxNotebook*			m_parent;
@@ -297,7 +299,8 @@ public:
 	bool			set_value(const t_config_option_key& opt_key, const boost::any& value);
 	wxSizer*		description_line_widget(wxWindow* parent, ogStaticText** StaticText);
 	bool			current_preset_is_dirty();
-	std::pair<const PageShp, const ConfigOptionsGroupShp> get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index = -1) const;
+
+	PageOptGroupShp get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index = -1) const;
 
 	DynamicPrintConfig*	get_config() { return m_config; }
 	PresetCollection*	get_presets() { return m_presets; }

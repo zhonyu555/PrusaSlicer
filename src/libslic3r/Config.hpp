@@ -936,9 +936,11 @@ public:
 	std::string to_string() const override
 	{
 		std::ostringstream ss;
+		ss << '[';
 		ss << this->value(0);
-		ss << "x";
+		ss << ",";
 		ss << this->value(1);
+		ss << ']';
 		return ss.str();
 	}
 
@@ -976,14 +978,29 @@ public:
     
     std::vector<std::string> vserialize() const override
     {
-        std::vector<std::string> vv;
-        for (Pointfs::const_iterator it = this->values.begin(); it != this->values.end(); ++it) {
-            std::ostringstream ss;
-            ss << *it;
-            vv.push_back(ss.str());
-        }
-        return vv;
+		std::vector<std::string> vv;
+		for (Pointfs::const_iterator it = this->values.begin(); it != this->values.end(); ++it) {
+			std::ostringstream ss;
+			ss << *it;
+			vv.push_back(ss.str());
+		}
+		return vv;
     }
+
+	std::string to_string() const override
+	{
+		std::ostringstream ss;
+		for (Pointfs::const_iterator it = this->values.begin(); it != this->values.end(); ++it) {
+			if (it - this->values.begin() != 0) ss << ", ";
+
+			ss << '[';
+			ss << (*it)[0];
+			ss << ',';
+			ss << (*it)[1];
+			ss << ']';
+		}
+		return ss.str();
+	}
     
     bool deserialize(const std::string &str, bool append = false) override
     {
@@ -1054,13 +1071,7 @@ public:
 
 	std::string to_string() const override
 	{
-		std::ostringstream ss;
-		ss << this->value(0);
-		ss << "x";
-		ss << this->value(1);
-		ss << "x";
-		ss << this->value(2);
-		return ss.str();
+		return '[' + this->serialize() + ']';
 	}
 
 private:

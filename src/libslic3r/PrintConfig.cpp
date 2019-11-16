@@ -77,12 +77,14 @@ void PrintConfigDef::init_common_params()
 
     def = this->add("bed_custom_texture", coString);
     def->label = L("Bed custom texture");
-    def->mode = comAdvanced;
+	def->category = CATEGORY_NAME_GENERAL;
+	def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
 
     def = this->add("bed_custom_model", coString);
     def->label = L("Bed custom model");
-    def->mode = comAdvanced;
+	def->category = CATEGORY_NAME_GENERAL;
+	def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
 
     def = this->add("layer_height", coFloat);

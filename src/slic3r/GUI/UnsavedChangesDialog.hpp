@@ -92,7 +92,8 @@ namespace Slic3r {
 				Nil,
 				Text,
 				Color,
-				Html
+				Html,
+				Shape
 			};
 			typedef std::map<std::string, void*> Aux_Data;
 
@@ -325,7 +326,12 @@ namespace Slic3r {
 			template<typename Functor>
 			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize, std::string tooltip = "");
 			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSizer* parent_sizer);
+
 			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
+			wxWindow* buildColorWindow(wxWindow* parent, std::string col);
+			wxWindow* buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt);
+			wxWindow* buildShapeWindow(wxWindow* parent, ConfigOptionPoints* opt, bool isNew);
+
 			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
 
 			void OnBtnSaveSelected(wxCommandEvent& e);

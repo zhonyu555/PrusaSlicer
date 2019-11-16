@@ -799,7 +799,7 @@ Field* Tab::get_field(const t_config_option_key& opt_key, int opt_index/* = -1*/
     return field;
 }
 
-std::pair<const PageShp, const ConfigOptionsGroupShp> Tab::get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
+PageOptGroupShp Tab::get_page_and_optgroup(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
 {
 	for (const PageShp page : m_pages) {
 		const ConfigOptionsGroupShp optgroup = page->get_opt_group(opt_key, opt_index);
@@ -3270,8 +3270,9 @@ const ConfigOptionsGroupShp Page::get_opt_group(const t_config_option_key& opt_k
 {
     Field* field = nullptr;
     for (auto opt : m_optgroups) {
-        if (opt->get_fieldc(opt_key, opt_index) != nullptr)
-            return opt;
+		if (opt->has_opt(opt_key, opt_index)) {
+			return opt;
+		}
     }
     return nullptr;
 }

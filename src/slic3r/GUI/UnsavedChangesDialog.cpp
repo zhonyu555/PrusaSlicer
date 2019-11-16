@@ -6,12 +6,13 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
+#include <wx/numformatter.h>
 
 #define Dialog_max_width 1200
 #define Dialog_max_height 800
 
 #define Dialog_min_width 500
-#define Dialog_min_height 200
+#define Dialog_min_height 300
 
 #define Dialog_def_border 5
 #define Dialog_child_indentation 20
@@ -19,7 +20,7 @@
 namespace Slic3r {
 	namespace GUI {
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
-			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height))
+			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 		{
 			m_app = app;
 
@@ -50,18 +51,37 @@ namespace Slic3r {
 		}
 
 		void UnsavedChangesDialog::setCorrectSize() {
-			this->SetSize(wxSize(Dialog_min_width, Dialog_min_height));
+			this->SetMinSize(wxSize(Dialog_min_width, Dialog_min_height));
+			this->SetMaxSize(wxSize(Dialog_max_width, Dialog_max_height));
 			this->Layout();
-			int scrolled_add_width = m_scroller->GetVirtualSize().x - m_scroller->GetSize().x + Dialog_def_border;
 
-			int width = std::min(Dialog_min_width + scrolled_add_width, Dialog_max_width);
-			m_msg->Wrap(width - Dialog_def_border * 2);
-
+			m_msg->Wrap(this->GetSize().GetWidth() - Dialog_def_border * 2);
 			this->Layout();
-			int scrolled_add_height = m_scroller->GetVirtualSize().y - m_scroller->GetSize().y + Dialog_def_border;
-			int height = std::min(Dialog_min_height + scrolled_add_height, Dialog_max_height);
+			
+			wxSize size = this->GetSize();
 
-			this->SetSize(wxSize(width, height));
+			int margin = Dialog_def_border * 2;
+
+			int scrolled_add_width = std::max(m_scroller->GetVirtualSize().x - m_scroller->GetSize().x + margin, margin);
+			int req_width = size.GetWidth() + scrolled_add_width;
+
+			int scrolled_add_height = std::max(m_scroller->GetVirtualSize().y - m_scroller->GetSize().y + margin, margin);
+			int req_height = size.GetHeight() + scrolled_add_height;
+
+			//account for scrollbars
+			if (req_height > Dialog_max_height) {
+				req_width += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+			}
+			else {
+				if (req_width > Dialog_max_width) {
+					req_height += wxSystemSettings::GetMetric(wxSYS_HSCROLL_Y);
+				}
+				if (req_height > Dialog_max_height) {
+					req_width += wxSystemSettings::GetMetric(wxSYS_VSCROLL_X);
+				}
+			}
+
+			this->SetSize(wxSize(std::min(req_width, Dialog_max_width), std::min(req_height, Dialog_max_height)));
 		}
 
 		void UnsavedChangesDialog::buildScrollWindow(wxString& dirty_tabs) {
@@ -128,8 +148,6 @@ namespace Slic3r {
 			int itemCount = 0;
 			for (Tab* cur_tab : m_app->tabs_list) {
 				if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
-					itemCount++;
-
 					if (dirty_tabs.empty())
 						dirty_tabs = cur_tab->title();
 					else
@@ -144,14 +162,15 @@ namespace Slic3r {
 					wxColour background = highlight ? wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 					highlight = !highlight;
 
-					cur_tab_sizer->Add(cur_tab_cb, 0, wxALL | wxALIGN_LEFT | wxALIGN_TOP, Dialog_def_border);
-					add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, background);
 					cur_tab_sizer->AddSpacer(Dialog_def_border);
+					cur_tab_sizer->Add(cur_tab_cb, 0, wxLEFT | wxALIGN_LEFT | wxALIGN_TOP, Dialog_def_border);
+					add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, background);
 
 					cur_tab_win->SetSizer(cur_tab_sizer);
 					cur_tab_win->SetBackgroundColour(background);
 
 					scrolled_sizer->Add(cur_tab_win, 0, wxEXPAND);
+					itemCount++;
 				}
 			}
 
@@ -200,7 +219,7 @@ namespace Slic3r {
 			std::string last_group_name = "";
 
 			int cur_indent = 0;
-
+			bool firstPage = true;
 			for (dirty_opt& cur_opt : options) {
 				std::string cur_page_name = cur_opt.page_name;
 				std::string cur_group_name = cur_opt.optgroup_name;
@@ -213,7 +232,7 @@ namespace Slic3r {
 					last_page_name = cur_page_name;
 					last_group_name = "";
 
-					sizer->Add(-1, Dialog_def_border);
+					sizer->AddSpacer(Dialog_def_border * (firstPage ? 1 : 2));
 
 					PageIconMap::iterator it = page_icons.find(cur_page_name);
 
@@ -248,6 +267,7 @@ namespace Slic3r {
 					
 					cur_page_node = cur_parent_node;
 					cur_indent = Dialog_def_border + Dialog_child_indentation * 2;
+					firstPage = false;
 				}
 
 				if (cur_group_name != last_group_name) {
@@ -258,7 +278,7 @@ namespace Slic3r {
 						cur_indent = Dialog_def_border + Dialog_child_indentation * 2;
 					}
 					else {
-						sizer->Add(-1, Dialog_def_border);
+						sizer->AddSpacer(Dialog_def_border);
 						cur_parent_node = buildNode(parent, cur_group_name, cur_page_node, sizer);
 						wxCheckBox* cat_cb = cur_parent_node->checkbox;
 						cat_cb->SetValue(true);
@@ -269,7 +289,7 @@ namespace Slic3r {
 					}
 				}
 				
-				sizer->Add(-1, Dialog_def_border);
+				sizer->AddSpacer(Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
 					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, lineSizer);
@@ -282,6 +302,7 @@ namespace Slic3r {
 
 				sizer->Add(lineSizer, 0, wxALIGN_LEFT | wxEXPAND);
 			}
+			sizer->AddSpacer(Dialog_def_border);
 		}
 
 		void UnsavedChangesDialog::get_dirty_options_for_tab(Tab* tab, std::vector<dirty_opt>& out, PageIconMap& page_icons_out) {
@@ -310,7 +331,9 @@ namespace Slic3r {
 			}
 
 			for (dirty_opt& cur_opt : out) {
-				std::pair<const PageShp, const ConfigOptionsGroupShp> ptrs = tab->get_page_and_optgroup(cur_opt.key);
+				PageOptGroupShp ptrs = cur_opt.key == "bed_custom_texture" || cur_opt.key == "bed_custom_model" ?
+					tab->get_page_and_optgroup("bed_shape"):
+					tab->get_page_and_optgroup(cur_opt.key);
 
 				if (ptrs.first != nullptr) {
 					cur_opt.page_name = ptrs.first->title();
@@ -473,7 +496,6 @@ namespace Slic3r {
 				const ConfigOption* old_opt = opt.val.old_opt;
 				const ConfigOption* new_opt = opt.val.new_opt;
 
-
 				if (val.extruder_index >= 0) {
 					old_val = val.ser_old_opt;
 					new_val = val.ser_new_opt;
@@ -492,13 +514,8 @@ namespace Slic3r {
 			wxWindow* win_new_opt;
 
 			if (val.def->gui_type == "color") {
-				win_old_opt = old_val == "-" ?
-					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-					: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(old_val));
-
-				win_new_opt = new_val == "-" ?
-					(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-					: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(new_val));
+				win_old_opt = buildColorWindow(parent, old_val);
+				win_new_opt = buildColorWindow(parent, new_val);
 
 				opt.old_win_type = dirty_opt_entry::Gui_Type::Color;
 				opt.new_win_type = dirty_opt_entry::Gui_Type::Color;
@@ -507,99 +524,11 @@ namespace Slic3r {
 				switch (val.def->type) {
 				case coString:
 				case coStrings: {
-					wxString sText;
-					std::string& html = *new std::string( wxString::Format("<html><body bgcolor=#%02X%02X%02X>", bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()) );
-
-					//this is really silly. But wxHtmlWindow::Enable does not make the window gray (MSW). So we fake it...
-					wxColor col = wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
-					std::string& html_disabled = *new std::string(html + wxString::Format("<font color=#%02X%02X%02X>", col.Red(), col.Green(), col.Blue()));
-
-					using namespace slic3r;
-					Diff diff = Diff(old_val, new_val);
-
-					auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
-						unsigned char r, g, b;
-						r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
-						g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
-						b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
-
-						return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
-					};
-
-					for (EditScriptAction cur_action : diff.getSolution()) {
-						std::string sub, font, font_disabled;
-						switch (cur_action.action)
-						{
-						case EditScriptAction::ActionType::keep: {
-							sub = old_val.substr(cur_action.offset, cur_action.count);
-							break;
-						}
-						case EditScriptAction::ActionType::remove: {
-							sub = old_val.substr(cur_action.offset, cur_action.count);
-
-							wxColour col(255, 0, 0, 255);
-							font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
-							font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
-							break;
-						}
-						case EditScriptAction::ActionType::insert: {
-							sub = new_val.substr(cur_action.offset, cur_action.count);
-
-							wxColour col(0, 255, 0, 255);
-							font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
-							font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
-							break;
-						}
-						}
-
-						if (font != "") {
-							html += font + sub + "</font>";
-							html_disabled += font_disabled + sub + "</font>";
-							sText += sub;
-						}
-						else {
-							html += sub;
-							html_disabled += sub;
-							sText += sub;
-						}
-					}
-
-					html += std::string(
-						"</body>"
-						"</html>");
-
-					html_disabled += std::string(
-						"</font>"
-						"</body>"
-						"</html>");
-
-					boost::replace_all(html, "\n", "<br />");
-					boost::replace_all(html_disabled, "\n", "<br />");
-
-					//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
-					wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
-					wxSize size = win_test->GetSize();
-					win_test->Destroy();
-					size.x += 5;
-
-					wxFont font = GetFont();
-					const int fs = font.GetPointSize();
-					int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
-
-					wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
-					html_win->SetBorders(0);
-					html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
-					html_win->SetPage(html);
-					html_win->Layout();
-					html_win->Refresh();
-
-					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
-					win_old_opt = (wxWindow*)html_win;
+					win_old_opt = buildStringWindow(parent, bg_colour, false, old_val, new_val, opt);
+					win_new_opt = buildStringWindow(parent, bg_colour, true, old_val, new_val, opt);
 
 					opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
 					opt.old_win_type = dirty_opt_entry::Gui_Type::Html;
-					opt.aux_data["html"] = &html;
-					opt.aux_data["html_disabled"] = &html_disabled;
 
 					break;
 				}
@@ -616,10 +545,18 @@ namespace Slic3r {
 				case coPoint:
 				case coPoint3:
 				case coPoints: {
-					win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
-					win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
-					opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
-					opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+					if (val.key == "bed_shape") {
+						win_old_opt = buildShapeWindow(parent, dynamic_cast<ConfigOptionPoints*>(opt.val.old_opt), false);
+						win_new_opt = buildShapeWindow(parent, dynamic_cast<ConfigOptionPoints*>(opt.val.new_opt), true);
+						opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
+						opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+					}
+					else {
+						win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
+						win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+						opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
+						opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+					}
 
 					break;
 				}
@@ -637,6 +574,158 @@ namespace Slic3r {
 
 			opt.old_win = win_old_opt;
 			opt.new_win = win_new_opt;
+		}
+
+		wxWindow* UnsavedChangesDialog::buildColorWindow(wxWindow* parent, std::string col) {
+			return col == "-" ?
+				(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
+				: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(col));
+		}
+
+		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt) {
+			if (isNew) {
+				return new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+			}
+
+			wxString sText;
+			std::string& html = *new std::string(wxString::Format("<html><body bgcolor=#%02X%02X%02X>", bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()));
+
+			//this is really silly. But wxHtmlWindow::Enable does not make the window gray (MSW). So we fake it...
+			wxColor col = wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
+			std::string& html_disabled = *new std::string(html + wxString::Format("<font color=#%02X%02X%02X>", col.Red(), col.Green(), col.Blue()));
+
+			using namespace slic3r;
+			Diff diff = Diff(old_val, new_val);
+
+			auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
+				unsigned char r, g, b;
+				r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
+				g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
+				b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
+
+				return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
+			};
+
+			for (EditScriptAction cur_action : diff.getSolution()) {
+				std::string sub, font, font_disabled;
+				switch (cur_action.action)
+				{
+				case EditScriptAction::ActionType::keep: {
+					sub = old_val.substr(cur_action.offset, cur_action.count);
+					break;
+				}
+				case EditScriptAction::ActionType::remove: {
+					sub = old_val.substr(cur_action.offset, cur_action.count);
+
+					wxColour col(255, 0, 0, 255);
+					font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
+					font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
+					break;
+				}
+				case EditScriptAction::ActionType::insert: {
+					sub = new_val.substr(cur_action.offset, cur_action.count);
+
+					wxColour col(0, 255, 0, 255);
+					font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
+					font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
+					break;
+				}
+				}
+
+				if (font != "") {
+					html += font + sub + "</font>";
+					html_disabled += font_disabled + sub + "</font>";
+					sText += sub;
+				}
+				else {
+					html += sub;
+					html_disabled += sub;
+					sText += sub;
+				}
+			}
+
+			html += std::string(
+				"</body>"
+				"</html>");
+
+			html_disabled += std::string(
+				"</font>"
+				"</body>"
+				"</html>");
+
+			boost::replace_all(html, "\n", "<br />");
+			boost::replace_all(html_disabled, "\n", "<br />");
+
+			//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
+			wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
+			wxSize size = win_test->GetSize();
+			win_test->Destroy();
+			size.x += 5;
+
+			wxFont font = GetFont();
+			const int fs = font.GetPointSize();
+			int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
+
+			wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
+			html_win->SetBorders(0);
+			html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
+			html_win->SetPage(html);
+			html_win->Layout();
+			html_win->Refresh();
+
+			opt.aux_data["html"] = &html;
+			opt.aux_data["html_disabled"] = &html_disabled;
+
+			return (wxWindow*)html_win;
+		}
+
+		wxWindow* UnsavedChangesDialog::buildShapeWindow(wxWindow* parent, ConfigOptionPoints* opt, bool isNew) {
+			BedShape bed_shape(*opt);
+
+			wxWindow* win = new wxPanel(parent);
+			wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+			auto shape = new wxStaticText(win, wxID_ANY, _(L("Shape")) + ": " + BedShapePanel::get_shape_name(bed_shape.type));
+			if (isNew) {
+				shape->SetForegroundColour(wxGetApp().get_label_clr_modified());
+			}
+
+			sizer->Add(shape);
+
+			if (bed_shape.type == BedShape::TRectangular) {
+				ConfigOptionDef size_def = BedShapePanel::get_ConfigOptionDef("rect_size");
+				ConfigOptionDef orig_def = BedShapePanel::get_ConfigOptionDef("rect_origin");
+
+				auto s = new wxStaticText(win, wxID_ANY, size_def.label + ": " + ConfigOptionPoint(bed_shape.rectSize).to_string());
+				auto o = new wxStaticText(win, wxID_ANY, orig_def.label + ": " + ConfigOptionPoint(bed_shape.rectOrigin).to_string());
+
+				s->SetToolTip(getTooltipText(size_def, -1));
+				o->SetToolTip(getTooltipText(orig_def, -1));
+
+				if (isNew) {
+					s->SetForegroundColour(wxGetApp().get_label_clr_modified());
+					o->SetForegroundColour(wxGetApp().get_label_clr_modified());
+				}
+
+				sizer->Add(s);
+				sizer->Add(o);
+			}
+			else if (bed_shape.type == BedShape::TCircular) {
+				ConfigOptionDef diam_def = BedShapePanel::get_ConfigOptionDef("diameter");
+
+				auto d = new wxStaticText(win, wxID_ANY, diam_def.label + ": " + wxNumberFormatter::ToString(bed_shape.diameter, 0, wxNumberFormatter::Style_None));
+
+				d->SetToolTip(getTooltipText(diam_def, -1));
+
+				if (isNew) {
+					d->SetForegroundColour(wxGetApp().get_label_clr_modified());
+				}
+
+				sizer->Add(d);
+			}
+
+			win->SetSizer(sizer);
+			return win;
 		}
 
 		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef& def, int extrIdx) {
