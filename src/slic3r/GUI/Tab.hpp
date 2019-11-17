@@ -230,7 +230,13 @@ public:
 	PresetCollection*	m_presets;
 	DynamicPrintConfig*	m_config;
 	ogStaticText*		m_parent_preset_description_line;
-	wxStaticText*		m_colored_Label = nullptr;
+
+	//If an option doesn't have a field with a label in a page, it can still have a "parent" label
+	//This is the case with options that are on a new window after a button press
+	//Used to set modified_label_clr
+	typedef std::map<std::string, wxStaticText*> OptKey_Label_Map;
+	OptKey_Label_Map m_opt_parent_labels;
+
     // Counter for the updating (because of an update() function can have a recursive behavior):
     // 1. increase value from the very beginning of an update() function
     // 2. decrease value at the end of an update() function

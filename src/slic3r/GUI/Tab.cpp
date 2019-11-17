@@ -347,6 +347,7 @@ void Tab::update_labels_colour()
 {
 //	Freeze();
     //update options "decoration"
+	std::map<wxStaticText*, bool> already_modified_parent_labels;
     for (const auto opt : m_options_list)
     {
         const wxColour *color = &m_sys_label_clr;
@@ -360,10 +361,20 @@ void Tab::update_labels_colour()
             else
                 color = &m_modified_label_clr;
         }
-        if (opt.first == "bed_shape" || opt.first == "compatible_prints" || opt.first == "compatible_printers") {
-            if (m_colored_Label != nullptr)	{
-                m_colored_Label->SetForegroundColour(*color);
-                m_colored_Label->Refresh(true);
+		OptKey_Label_Map::iterator it = m_opt_parent_labels.find(opt.first);
+		if (it != m_opt_parent_labels.end()) {
+			wxStaticText* label = it->second;
+            if (label != nullptr)	{
+				std::map<wxStaticText*, bool>::iterator mod = already_modified_parent_labels.find(label);
+				if (mod == already_modified_parent_labels.end()) {
+					label->SetForegroundColour(*color);
+					label->Refresh(true);
+
+					//once the parent label color is set to modified, it should not be changed
+					if (color == &m_modified_label_clr) {
+						already_modified_parent_labels[label] = true;
+					}
+				}
             }
             continue;
         }
@@ -418,6 +429,7 @@ void Tab::update_changed_ui()
     for (auto opt_key : dirty_options)	m_options_list[opt_key] &= ~osInitValue;
     for (auto opt_key : nonsys_options)	m_options_list[opt_key] &= ~osSystemValue;
 
+	std::map<wxStaticText*, bool> already_modified_parent_labels;
 //	Freeze();
     //update options "decoration"
     for (const auto opt : m_options_list)
@@ -450,13 +462,23 @@ void Tab::update_changed_ui()
             icon = &m_bmp_white_bullet;
             tt = &m_tt_white_bullet;
         }
-        if (opt.first == "bed_shape" || opt.first == "compatible_prints" || opt.first == "compatible_printers") {
-            if (m_colored_Label != nullptr)	{
-                m_colored_Label->SetForegroundColour(*color);
-                m_colored_Label->Refresh(true);
-            }
-            continue;
-        }
+		OptKey_Label_Map::iterator it = m_opt_parent_labels.find(opt.first);
+		if (it != m_opt_parent_labels.end()) {
+			wxStaticText* label = it->second;
+			if (label != nullptr) {
+				std::map<wxStaticText*, bool>::iterator mod = already_modified_parent_labels.find(label);
+				if (mod == already_modified_parent_labels.end()) {
+					label->SetForegroundColour(*color);
+					label->Refresh(true);
+
+					//once the parent label color is set to modified, it should not be changed
+					if (color == &m_modified_label_clr) {
+						already_modified_parent_labels[label] = true;
+					}
+				}
+			}
+			continue;
+		}
 
         Field* field = get_field(opt.first);
         if (field == nullptr) continue;
@@ -572,7 +594,7 @@ void Tab::update_changed_tree_ui()
             bool sys_page = true;
             bool modified_page = false;
             if (title == _("General")) {
-                std::initializer_list<const char*> optional_keys{ "extruders_count", "bed_shape" };
+                std::initializer_list<const char*> optional_keys{ "extruders_count", "bed_shape", "bed_custom_texture", "bed_custom_model" };
                 for (auto &opt_key : optional_keys) {
                     get_sys_and_mod_flags(opt_key, sys_page, modified_page);
                 }
@@ -1249,11 +1271,15 @@ void TabPrint::build()
 
     page = add_options_page(_(L("Dependencies")), "wrench.png");
         optgroup = page->new_optgroup(_(L("Profile dependencies")));
+
         line = optgroup->create_single_option_line("compatible_printers");
         line.widget = [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_printers);
         };
-        optgroup->append_line(line, &m_colored_Label);
+		wxStaticText* label;
+        optgroup->append_line(line, &label);
+		m_opt_parent_labels["compatible_printers"] = label;
+
         option = optgroup->get_option("compatible_printers_condition");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
@@ -1537,7 +1563,10 @@ void TabFilament::build()
         line.widget = [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_printers);
         };
-        optgroup->append_line(line, &m_colored_Label);
+        wxStaticText* label;
+        optgroup->append_line(line, &label);
+		m_opt_parent_labels["compatible_printers"] = label;
+
         option = optgroup->get_option("compatible_printers_condition");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
@@ -1546,7 +1575,9 @@ void TabFilament::build()
         line.widget = [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_prints);
         };
-        optgroup->append_line(line, &m_colored_Label);
+        optgroup->append_line(line, &label);
+		m_opt_parent_labels["compatible_prints"] = label;
+
         option = optgroup->get_option("compatible_prints_condition");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
@@ -1805,7 +1836,12 @@ void TabPrinter::build_fff()
 
             return sizer;
         };
-        optgroup->append_line(line, &m_colored_Label);
+		wxStaticText* label;
+		optgroup->append_line(line, &label);
+		m_opt_parent_labels["bed_shape"] = label;
+		m_opt_parent_labels["bed_custom_texture"] = label;
+		m_opt_parent_labels["bed_custom_model"] = label;
+
         optgroup->append_single_option_line("max_print_height");
         optgroup->append_single_option_line("z_offset");
 
@@ -2044,7 +2080,12 @@ void TabPrinter::build_sla()
 
         return sizer;
     };
-    optgroup->append_line(line, &m_colored_Label);
+	wxStaticText* label;
+	optgroup->append_line(line, &label);
+	m_opt_parent_labels["bed_shape"] = label;
+	m_opt_parent_labels["bed_custom_texture"] = label;
+	m_opt_parent_labels["bed_custom_model"] = label;
+
     optgroup->append_single_option_line("max_print_height");
 
     optgroup = page->new_optgroup(_(L("Display")));
@@ -3570,7 +3611,10 @@ void TabSLAMaterial::build()
     line.widget = [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_printers);
     };
-    optgroup->append_line(line, &m_colored_Label);
+	wxStaticText* label;
+	optgroup->append_line(line, &label);
+	m_opt_parent_labels["compatible_printers"] = label;
+
     option = optgroup->get_option("compatible_printers_condition");
     option.opt.full_width = true;
     optgroup->append_single_option_line(option);
@@ -3579,7 +3623,9 @@ void TabSLAMaterial::build()
     line.widget = [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_prints);
     };
-    optgroup->append_line(line, &m_colored_Label);
+	optgroup->append_line(line, &label);
+	m_opt_parent_labels["compatible_prints"] = label;
+
     option = optgroup->get_option("compatible_prints_condition");
     option.opt.full_width = true;
     optgroup->append_single_option_line(option);
@@ -3691,7 +3737,9 @@ void TabSLAPrint::build()
     line.widget = [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_printers);
     };
-    optgroup->append_line(line, &m_colored_Label);
+	wxStaticText* label;
+	optgroup->append_line(line, &label);
+	m_opt_parent_labels["compatible_printers"] = label;
 
     option = optgroup->get_option("compatible_printers_condition");
     option.opt.full_width = true;
