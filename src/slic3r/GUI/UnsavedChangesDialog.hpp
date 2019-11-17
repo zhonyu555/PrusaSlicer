@@ -97,6 +97,7 @@ namespace Slic3r {
 			};
 			typedef std::map<std::string, void*> Aux_Data;
 
+			dirty_opts_node*	parent;
 			dirty_opt			val;
 
 			wxCheckBox*			checkbox = nullptr;
@@ -110,9 +111,6 @@ namespace Slic3r {
 
 			Aux_Data			aux_data;
 
-			bool				isEnabled = true;
-			dirty_opts_node*	parent;
-
 			dirty_opt_entry(dirty_opt _val, wxCheckBox* _checkbox, dirty_opts_node* _parent, wxSizer* _parent_sizer)
 				: val(_val), checkbox(_checkbox), parent(_parent), parent_sizer(_parent_sizer)
 			{}
@@ -124,63 +122,35 @@ namespace Slic3r {
 				}
 			}
 
-			void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true) {
-				if (win != nullptr) {
-					if (_gui_type == Gui_Type::Html) {
-						std::string* html = static_cast<std::string*>(enabled ? this->aux_data["html"] : this->aux_data["html_disabled"]);
-
-						dynamic_cast<wxHtmlWindow*>(win)->SetPage(*html);
-					}
-					else {
-						win->Enable(enabled);
-					}
-				}
-			}
-
-			void setValWinsEnabled(bool enabled = true) {
-				setWinEnabled(this->old_win, this->old_win_type, enabled);
-				setWinEnabled(this->new_win, this->new_win_type, enabled);
-			}
-
-			void setEnabled(bool enabled = true) {
-				this->checkbox->Enable(enabled);
-
-				if (this->checkbox->GetValue()) {
-					this->setValWinsEnabled(enabled);
-				}
-				this->isEnabled = enabled;
-			}
-
-			bool saveMe() {
-				return this->isEnabled && this->checkbox->GetValue();
-			}
-
-			int get_checkbox_width_with_indent() {
-				return this->checkbox->GetEffectiveMinSize().GetWidth() +
-					get_wxSizerItem_border_size(this->parent_sizer->GetItem(this->checkbox)).GetWidth();
-			}
-
-			dirty_opt::Type type() {
-				return this->val.type;
-			}
+			void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true);
+			void setValWinsEnabled(bool enabled = true);
+			void set_checkbox(bool checked);
+			void on_checkbox_toggled();
+			void on_parent_checkbox_toggled(bool checked);
+			bool saveMe();
+			int get_checkbox_width_with_indent();
+			dirty_opt::Type type();
 		};
 
 		//a node represents a parent (tab, category, ...) in the scroll window
 		struct dirty_opts_node {
-			wxString				label = "";
-			wxCheckBox*				checkbox;
+			dirty_opts_node* parent = nullptr;
+
+			wxString				label;
+			wxCheckBox*				checkbox = nullptr;
 			GrayableStaticBitmap*	icon = nullptr;
 			wxStaticText*			labelCtrl = nullptr;
-			wxSizer*				parent_sizer;
+			wxSizer*				parent_sizer = nullptr;
 
 			Tab* tab = nullptr;
 			std::vector<dirty_opts_node*> childs;
 			std::vector<dirty_opt_entry*> opts;
 
+
 			dirty_opts_node(){}
 
-			dirty_opts_node(wxSizer* _parent_sizer, const wxString& _label, Tab* _tab) 
-			: parent_sizer(_parent_sizer), label(_label), tab(_tab)
+			dirty_opts_node(dirty_opts_node* _parent, wxSizer* _parent_sizer, const wxString& _label, Tab* _tab) 
+			: parent(_parent), parent_sizer(_parent_sizer), label(_label), tab(_tab)
 			{}
 
 			~dirty_opts_node() {
@@ -193,104 +163,16 @@ namespace Slic3r {
 				}
 			}
 
-			void enableChilds(bool enabled = true) {
-				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->checkbox->Enable(enabled);
-
-					if (cur_node->icon != nullptr) {
-						cur_node->icon->Enable(enabled);
-					}
-					if (cur_node->labelCtrl != nullptr) {
-						cur_node->labelCtrl->Enable(enabled);
-					}
-
-					if (cur_node->checkbox->GetValue()) {
-						cur_node->enableChilds(enabled);
-					}
-				}
-
-				for (dirty_opt_entry* cur_opt : this->opts) {
-					cur_opt->setEnabled(enabled);
-				}
-			}
-
-			void selectChilds(bool selected = true) {
-				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->checkbox->SetValue(selected);
-					cur_node->selectChilds(selected);
-				}
-
-				for (dirty_opt_entry* cur_opt : this->opts) {
-					cur_opt->checkbox->SetValue(selected);
-				}
-
-				this->enableChilds(selected);
-			}
-
-			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore = false, dirty_opt::Type type = dirty_opt::Type::Nil) {
-				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->getAllOptionEntries(_opts, only_opts_to_restore, type);
-				}
-
-				for (dirty_opt_entry* cur_opt : this->opts) {
-					if((!only_opts_to_restore || !cur_opt->saveMe()) && (type == dirty_opt::Type::Nil || cur_opt->val.type == type))
-					_opts.push_back(cur_opt);
-				}
-			}
-
-			bool hasAnythingToSave() {
-				for (dirty_opts_node* cur_node : this->childs) {
-					if (cur_node->hasAnythingToSave()) {
-						return true;
-					}
-				}
-
-				for (dirty_opt_entry* cur_opt : this->opts) {
-					if (cur_opt->saveMe()) {
-						return true;
-					}
-				}
-
-				return false;
-			}
-
-			dirty_opts_node* getTabNode(Tab* tab) {
-				for (dirty_opts_node* cur_node : this->childs) {
-					if (cur_node->tab == tab) {
-						return cur_node;
-					}
-				}
-
-				return nullptr;
-			}
-
-			int get_label_width_with_indent() {
-				int w = 0;
-
-				for (wxWindow* cur_win : std::vector<wxWindow*>{ checkbox, icon, labelCtrl }) {
-					if (cur_win != nullptr) {
-						w += cur_win->GetEffectiveMinSize().GetWidth();
-						w += get_wxSizerItem_border_size(parent_sizer->GetItem(cur_win)).GetWidth();
-					}
-				}
-
-				return w;
-			}
-
-			int get_max_child_label_width_with_indent() {
-				int w = 0;
-
-				for (dirty_opts_node* cur_node : this->childs) {
-					w = std::max(w, cur_node->get_label_width_with_indent());
-					w = std::max(w, cur_node->get_max_child_label_width_with_indent());
-				}
-
-				for (dirty_opt_entry* cur_opt : this->opts) {
-					w = std::max(w, cur_opt->get_checkbox_width_with_indent());
-				}
-
-				return w;
-			}
+			void on_checkbox_toggled();
+			void on_child_checkbox_toggled(bool checked);
+			void on_parent_checkbox_toggled(bool checked);
+			void set_checkbox(bool checked);
+			void selectChilds(bool selected = true);
+			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore = false, dirty_opt::Type type = dirty_opt::Type::Nil);
+			bool hasAnythingToSave();
+			dirty_opts_node* getTabNode(Tab* tab);
+			int get_label_width_with_indent();
+			int get_max_child_label_width_with_indent();
 		};
 
 		class UnsavedChangesDialog : public wxDialog
