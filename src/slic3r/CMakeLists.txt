@@ -136,6 +136,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/ProgressStatusBar.cpp
     GUI/PrintHostDialogs.cpp
     GUI/PrintHostDialogs.hpp
+    GUI/UnsavedChangesDialog.cpp
+    GUI/UnsavedChangesDialog.hpp
     Utils/Http.cpp
     Utils/Http.hpp
     Utils/FixModelByWin10.cpp
@@ -144,6 +146,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/OctoPrint.hpp
     Utils/Duet.cpp
     Utils/Duet.hpp
+    Utils/Diff.cpp
+    Utils/Diff.hpp
     Utils/FlashAir.cpp
     Utils/FlashAir.hpp
     Utils/PrintHost.cpp
