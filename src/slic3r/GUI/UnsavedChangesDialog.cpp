@@ -89,11 +89,34 @@ namespace Slic3r {
 		}
 
 		void dirty_opts_node::on_child_checkbox_toggled(bool checked) {
-			if (checked && this->checkbox != nullptr && !this->checkbox->GetValue()) {
-				this->set_checkbox(true);
+			if (this->checkbox != nullptr) {
+				if (checked && !this->checkbox->GetValue()) {
+					this->set_checkbox(true);
 
-				if (this->parent != nullptr) {
-					this->parent->on_child_checkbox_toggled(true);
+					if (this->parent != nullptr) {
+						this->parent->on_child_checkbox_toggled(true);
+					}
+				}
+				if (!checked && this->checkbox->GetValue()) {
+					bool checked_child = false;
+					for (dirty_opts_node* cur_node : this->childs) {
+						if (cur_node->checkbox->GetValue()) {
+							checked_child = true;
+							break;
+						}
+					}
+					for (size_t i = 0; i < this->opts.size() && !checked_child; i++) {
+						if (this->opts[i]->checkbox->GetValue()) {
+							checked_child = true;
+						}
+					}
+
+					if (!checked_child) {
+						this->set_checkbox(false);
+						if (this->parent != nullptr) {
+							this->parent->on_child_checkbox_toggled(false);
+						}
+					}
 				}
 			}
 		}
@@ -481,9 +504,16 @@ namespace Slic3r {
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 
 					lineSizer->Add(opt_label, 0, wxLEFT, cur_indent);
-					lineSizer->Add(cur_opt_entry.old_win, 1, wxEXPAND);
+
+					wxBoxSizer* old_sizer = new wxBoxSizer(wxHORIZONTAL);
+					old_sizer->Add(cur_opt_entry.old_win);
+
+					wxBoxSizer* new_sizer = new wxBoxSizer(wxHORIZONTAL);
+					new_sizer->Add(cur_opt_entry.new_win);
+
+					lineSizer->Add(old_sizer, 1, wxEXPAND);
 					lineSizer->AddSpacer(30);
-					lineSizer->Add(cur_opt_entry.new_win, 1, wxEXPAND);
+					lineSizer->Add(new_sizer, 1, wxEXPAND);
 
 				sizer->Add(lineSizer, 0, wxALIGN_LEFT | wxEXPAND);
 			}
@@ -649,7 +679,7 @@ namespace Slic3r {
 			parent_node->opts.push_back(new dirty_opt_entry(opt, nullptr, parent_node, parent_sizer));
 			dirty_opt_entry& entry = *parent_node->opts.back();
 
-			wxCheckBox* cb = buildCheckbox(parent, opt.def->label, [this, &entry](wxCommandEvent& e) {
+			wxCheckBox* cb = buildCheckbox(parent, _(opt.def->label), [this, &entry](wxCommandEvent& e) {
 				updateSaveBtn();
 				entry.on_checkbox_toggled();
 			}, wxDefaultSize, getTooltipText(*opt.def, opt.extruder_index));
@@ -763,8 +793,8 @@ namespace Slic3r {
 
 		wxWindow* UnsavedChangesDialog::buildColorWindow(wxWindow* parent, std::string col) {
 			return col == "-" ?
-				(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize)
-				: (wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(col));
+				(wxWindow*)new wxStaticText(parent, wxID_ANY, "-", wxDefaultPosition, wxDefaultSize) :
+				(wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(col));
 		}
 
 		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt) {
