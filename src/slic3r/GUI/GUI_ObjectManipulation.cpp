@@ -57,7 +57,7 @@ static wxBitmapComboBox* create_word_local_combo(wxWindow *parent)
 #endif //__WXOSX__
 
     temp->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-    temp->SetBackgroundStyle(wxBG_STYLE_PAINT);
+    if (!wxOSX) temp->SetBackgroundStyle(wxBG_STYLE_PAINT);
 
     temp->Append(_(L("World coordinates")));
     temp->Append(_(L("Local coordinates")));
@@ -632,7 +632,11 @@ void ObjectManipulation::update_reset_buttons_visibility()
         show_drop_to_bed = (std::abs(min_z) > EPSILON);
     }
 
-    wxGetApp().CallAfter([this, show_rotation, show_scale, show_drop_to_bed]{
+    wxGetApp().CallAfter([this, show_rotation, show_scale, show_drop_to_bed] {
+        // There is a case (under OSX), when this function is called after the Manipulation panel is hidden
+        // So, let check if Manipulation panel is still shown for this moment
+        if (!this->IsShown())
+            return;
         m_reset_rotation_button->Show(show_rotation);
         m_reset_scale_button->Show(show_scale);
         m_drop_to_bed_button->Show(show_drop_to_bed);

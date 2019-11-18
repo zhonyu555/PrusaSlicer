@@ -30,7 +30,7 @@ enum GCodeFlavor : unsigned char {
 };
 
 enum PrintHostType {
-    htOctoPrint, htDuet
+    htOctoPrint, htDuet, htFlashAir
 };
 
 enum InfillPattern {
@@ -102,6 +102,7 @@ template<> inline const t_config_enum_values& ConfigOptionEnum<PrintHostType>::g
     if (keys_map.empty()) {
         keys_map["octoprint"]       = htOctoPrint;
         keys_map["duet"]            = htDuet;
+        keys_map["flashair"]        = htFlashAir;
     }
     return keys_map;
 }
@@ -214,6 +215,8 @@ private:
 // This definition is constant.
 extern const PrintConfigDef print_config_def;
 
+class StaticPrintConfig;
+
 // Slic3r dynamic configuration, used to override the configuration
 // per object, per modification volume or per printing material.
 // The dynamic configuration is also used to store user modifications of the print global parameters,
@@ -224,9 +227,11 @@ class DynamicPrintConfig : public DynamicConfig
 {
 public:
     DynamicPrintConfig() {}
-    DynamicPrintConfig(const DynamicPrintConfig &other) : DynamicConfig(other) {}
+    DynamicPrintConfig(const DynamicPrintConfig &rhs) : DynamicConfig(rhs) {}
+    explicit DynamicPrintConfig(const StaticPrintConfig &rhs);
+    explicit DynamicPrintConfig(const ConfigBase &rhs) : DynamicConfig(rhs) {}
 
-    static DynamicPrintConfig* new_from_defaults();
+    static DynamicPrintConfig  full_print_config();
     static DynamicPrintConfig* new_from_defaults_keys(const std::vector<std::string> &keys);
 
     // Overrides ConfigBase::def(). Static configuration definition. Any value stored into this ConfigBase shall have its definition here.
@@ -265,6 +270,8 @@ public:
 
     // Overrides ConfigBase::def(). Static configuration definition. Any value stored into this ConfigBase shall have its definition here.
     const ConfigDef*    def() const override { return &print_config_def; }
+    // Reference to the cached list of keys.
+	virtual const t_config_option_keys& keys_ref() const = 0;
 
 protected:
     // Verify whether the opt_key has not been obsoleted or renamed.
@@ -353,6 +360,7 @@ public: \
         { return s_cache_##CLASS_NAME.optptr(opt_key, this); } \
     /* Overrides ConfigBase::keys(). Collect names of all configuration values maintained by this configuration store. */ \
     t_config_option_keys     keys() const override { return s_cache_##CLASS_NAME.keys(); } \
+    const t_config_option_keys& keys_ref() const override { return s_cache_##CLASS_NAME.keys(); } \
     static const CLASS_NAME& defaults() { initialize_cache(); return s_cache_##CLASS_NAME.defaults(); } \
 private: \
     static void initialize_cache() \
@@ -664,6 +672,7 @@ public:
     ConfigOptionStrings             start_filament_gcode;
     ConfigOptionBool                single_extruder_multi_material;
     ConfigOptionBool                single_extruder_multi_material_priming;
+    ConfigOptionBool                wipe_tower_no_sparse_layers;
     ConfigOptionString              toolchange_gcode;
     ConfigOptionFloat               travel_speed;
     ConfigOptionBool                use_firmware_retraction;
@@ -734,6 +743,7 @@ protected:
         OPT_PTR(retract_speed);
         OPT_PTR(single_extruder_multi_material);
         OPT_PTR(single_extruder_multi_material_priming);
+        OPT_PTR(wipe_tower_no_sparse_layers);
         OPT_PTR(start_gcode);
         OPT_PTR(start_filament_gcode);
         OPT_PTR(toolchange_gcode);
@@ -1121,6 +1131,10 @@ class SLAMaterialConfig : public StaticPrintConfig
     STATIC_PRINT_CONFIG_CACHE(SLAMaterialConfig)
 public:
     ConfigOptionFloat                       initial_layer_height;
+    ConfigOptionFloat                       bottle_cost;
+    ConfigOptionFloat                       bottle_volume;
+    ConfigOptionFloat                       bottle_weight;
+    ConfigOptionFloat                       material_density;
     ConfigOptionFloat                       exposure_time;
     ConfigOptionFloat                       initial_exposure_time;
     ConfigOptionFloats                      material_correction;
@@ -1128,6 +1142,10 @@ protected:
     void initialize(StaticCacheBase &cache, const char *base_ptr)
     {
         OPT_PTR(initial_layer_height);
+        OPT_PTR(bottle_cost);
+        OPT_PTR(bottle_volume);
+        OPT_PTR(bottle_weight);
+        OPT_PTR(material_density);
         OPT_PTR(exposure_time);
         OPT_PTR(initial_exposure_time);
         OPT_PTR(material_correction);
