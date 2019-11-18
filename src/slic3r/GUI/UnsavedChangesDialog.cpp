@@ -54,8 +54,8 @@ namespace Slic3r {
 		}
 
 		void dirty_opt_entry::on_parent_checkbox_toggled(bool checked) {
-			if (!checked && this->checkbox->GetValue()) {
-				this->set_checkbox(false);
+			if (checked != this->checkbox->GetValue()) {
+				this->set_checkbox(checked);
 			}
 		}
 
@@ -122,14 +122,14 @@ namespace Slic3r {
 		}
 
 		void dirty_opts_node::on_parent_checkbox_toggled(bool checked) {
-			if (!checked && this->checkbox->GetValue()) {
-				this->set_checkbox(false);
+			if (checked != this->checkbox->GetValue()) {
+				this->set_checkbox(checked);
 
 				for (dirty_opts_node* cur_node : this->childs) {
-					cur_node->on_parent_checkbox_toggled(false);
+					cur_node->on_parent_checkbox_toggled(checked);
 				}
 				for (dirty_opt_entry* cur_opt_entry : this->opts) {
-					cur_opt_entry->on_parent_checkbox_toggled(false);
+					cur_opt_entry->on_parent_checkbox_toggled(checked);
 				}
 			}
 		}
