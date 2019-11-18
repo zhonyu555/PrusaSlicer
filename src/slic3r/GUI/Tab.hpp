@@ -473,7 +473,7 @@ public:
 		m_icon_warning = create_scaled_bitmap(nullptr, "warning");
 		m_icon_tick = create_scaled_bitmap(nullptr, "tick_mark");
 		
-		this->build_base_ayout();
+		this->build_base_layout();
 	}
 	~SavePresetWindow() {
 		for (Entry* cur_entry : entries) {
@@ -498,7 +498,6 @@ private:
 		PresetCollection* preset;
 		Tab* tab;
 
-		wxBoxSizer* status_sizer;
 		wxStaticBitmap* status_icon = NULL;
 		wxStaticText* status_text = NULL;
 		std::string str_status_text = "nil";
@@ -507,11 +506,10 @@ private:
 		bool hasValidChosenName = false;
 		std::string chosenName;
 
-		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxBoxSizer* _status_sizer, wxStaticBitmap* _icon, wxStaticText* _text, Tab* _tab) : 
+		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxStaticBitmap* _icon, wxStaticText* _text, Tab* _tab) : 
 			combo(_combo),
 			title(_title),
 			preset(_preset),
-			status_sizer(_status_sizer),
 			status_icon(_icon),
 			status_text(_text),
 			tab(_tab)
@@ -538,7 +536,7 @@ private:
 	wxBitmap m_icon_cross;
 	wxBitmap m_icon_warning;
 
-	void build_base_ayout();
+	void build_base_layout();
 	void On_combo_text(Entry* entry);
 	void update_btn_accept();
 	void accept();

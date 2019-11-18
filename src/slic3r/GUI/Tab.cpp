@@ -3392,7 +3392,7 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
     return optgroup;
 }
 
-void SavePresetWindow::build_base_ayout() {
+void SavePresetWindow::build_base_layout() {
 	auto buttons = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
 
 	m_sizer = new wxBoxSizer(wxVERTICAL);
@@ -3406,38 +3406,34 @@ void SavePresetWindow::build_base_ayout() {
 
 void SavePresetWindow::build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets, Tab* tab)
 {
+	size_t em = Slic3r::GUI::wxGetApp().em_unit();
     // TRN Preset
     wxStaticText* text = new wxStaticText(this, wxID_ANY, wxString::Format(_(L("Save %s as:")), title),
                                     wxDefaultPosition, wxDefaultSize);
 
-    wxComboBox* combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
-                            wxDefaultPosition, wxDefaultSize, 0, 0, wxTE_PROCESS_ENTER);
-    for (auto value : values)
-		combo->Append(from_u8(value));
-    
-	size_t em = Slic3r::GUI::wxGetApp().em_unit();
-	wxWindow* status_win = new wxWindow(this, wxID_ANY, wxDefaultPosition, wxSize(30 * em, 3 * em));
-	wxBoxSizer* status_sizer = new wxBoxSizer(wxHORIZONTAL);
-		wxStaticBitmap* status_icon = new wxStaticBitmap(status_win, wxID_ANY, wxNullBitmap);
-		status_sizer->Add(status_icon, 0, wxALIGN_CENTER_VERTICAL);
+	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
+		wxStaticBitmap* status_icon = new wxStaticBitmap(this, wxID_ANY, wxNullBitmap);
+		wxComboBox* combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
+									wxDefaultPosition, wxSize(30 * em, -1), 0, 0, wxTE_PROCESS_ENTER);
+		for (auto value : values)
+			combo->Append(from_u8(value));
 
-		wxStaticText* status_text = new wxStaticText(status_win, wxID_ANY, "");
-		status_sizer->Add(status_text, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, 5);
+	sizer->Add(status_icon, 0, wxALIGN_CENTER_VERTICAL);
+	sizer->Add(combo, 0, wxLEFT | wxEXPAND, 5);
 
-	status_win->SetSizer(status_sizer);
+	wxStaticText* status_text = new wxStaticText(this, wxID_ANY, "", wxDefaultPosition, wxSize(-1, 3 * em));
 
 	if (this->entries.size()) {
 		m_sizer->InsertSpacer(cur_entry_insert_offset, 10);
 	}
 
 	m_sizer->Insert(cur_entry_insert_offset++, text, 0, wxEXPAND | wxALL, 10);
-	m_sizer->Insert(cur_entry_insert_offset++, combo, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
-	m_sizer->Insert(cur_entry_insert_offset++, status_win, 0, wxALL, 10);
+	m_sizer->Insert(cur_entry_insert_offset++, sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
+	m_sizer->Insert(cur_entry_insert_offset++, status_text, 0, wxALIGN_CENTER_HORIZONTAL |wxALL, 10);
 
-	this->entries.push_back(new Entry(combo, std::string(title), presets, status_sizer, status_icon, status_text, tab));
+	this->entries.push_back(new Entry(combo, std::string(title), presets, status_icon, status_text, tab));
 
 	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ On_combo_text(entry); });
-	//combo->Bind(wxEVT_TEXT_ENTER, [this](wxCommandEvent& e) { accept(); });
 
 	On_combo_text(this->entries.back());
 }
@@ -3516,7 +3512,7 @@ void SavePresetWindow::On_combo_text(Entry* entry) {
 		entry->chosenName = chosen_name;
 	}
 	else {
-		finalMsg = "";
+		finalMsg = _(L("The supplied name is valid."));
 		icon = m_icon_tick;
 		font = GUI::wxGetApp().normal_font();
 
@@ -3548,16 +3544,31 @@ void SavePresetWindow::update_btn_accept() {
 
 void SavePresetWindow::accept()
 {
+	std::string msg_overwrite;
+
 	for(Entry* cur_entry : entries){
 		if (!cur_entry->hasValidChosenName) {
 			return;
 		}
+		if (cur_entry->mustDeleteOld) {
+			msg_overwrite += GUI::from_u8((boost::format(_utf8(L("%1%: \"%2%\"\n"))) % cur_entry->title % cur_entry->chosenName).str());
+		}
 	}
 
-	for (Entry* cur_entry : entries) {
-		if (cur_entry->mustDeleteOld) {
-			// Remove the preset from the list.
-			cur_entry->preset->delete_preset(cur_entry->chosenName);
+	if (!msg_overwrite.empty()) {
+		msg_overwrite = _(L("Overwrite presets?")) + "\n" + msg_overwrite;
+
+		wxMessageDialog dialog(nullptr, msg_overwrite, _(L("Warning")), wxICON_WARNING | wxYES | wxNO);
+		if (dialog.ShowModal() == wxID_NO) {
+			return;
+		}
+		else {
+			for (Entry* cur_entry : entries) {
+				if (cur_entry->mustDeleteOld) {
+					// Remove the preset from the list.
+					cur_entry->preset->delete_preset(cur_entry->chosenName);
+				}
+			}
 		}
 	}
 
