@@ -1,6 +1,6 @@
 @echo off
 
-REM This is a convenience script written to make building PrusaSlicer on Windows 10
+REM This is a convenience script written to make building PrusaSlicer on Windows easier
 REM This script will only be maintained for the version of the toolset the main project supports. 
 
 REM This script expects to be executed from "Native Tools Command Prompt for VS 2019"
@@ -24,7 +24,7 @@ REM set BUILD_CFG=Debug
 REM set BUILD_CFG=MinSizeRel
 REM set BUILD_CFG=RelWithDebInfo
 REM set BUILD_CFG=Release
-set BUILD_CFG=Debug
+set BUILD_CFG=Release
 
 REM USER: Choose if prerequisites cmake/built as necessary 
 REM (this will not check to see if they are up to date)
@@ -202,9 +202,12 @@ REM ==== BUILD PrusaSlicer DEPS FUNCTION ====
     if not exist deps\build\CMakeCache.txt (   
         echo cmake doesn't appear to have been run for dependencies.
         if "%DO_PREREQS%"=="true" (
-            echo DO_PREREQS is enabled. 
+            echo.
             echo Will run cmake for dependencies.
             echo.
+            if "%DO_WARN%"=="true" (
+                pause
+            )
             call :cmake_deps
             if errorlevel 1 (
                 echo Dependencies build failed 
@@ -248,9 +251,12 @@ REM ==== BUILD PrusaSlicer FUNCTION ====
     if not exist "%PREFIX_PATH%" (
         echo Dependencies don't appear to have been built.
         if "%DO_PREREQS%"=="true" (
-            echo DO_PREREQS is enabled. 
+            echo.
             echo Will run build dependencies.
             echo.
+            if "%DO_WARN%"=="true" (
+                pause
+            )
             call :build_deps
             if errorlevel 1 (
                 echo Issue building dependencies. 
@@ -271,9 +277,12 @@ REM ==== BUILD PrusaSlicer FUNCTION ====
     if not exist build\CMakeCache.txt (   
         echo cmake doesn't appear to have been run for PS.
         if "%DO_PREREQS%"=="true" (
-            echo DO_PREREQS is enabled. 
+            echo.
             echo Will run run cmake for PrusaSlicer.
             echo.
+            if "%DO_WARN%"=="true" (
+                pause
+            )
             call :cmake_ps
             if errorlevel 1 (
                 echo PrusaSlicer build failed.
