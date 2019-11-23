@@ -1,10 +1,7 @@
 #ifndef slic3r_GUI_UnsavedChangesDialog_hpp_
 #define slic3r_GUI_UnsavedChangesDialog_hpp_
 
-#include <wx/wx.h>
 #include <wx/checkbox.h>
-#include <wx/statline.h>
-#include <wx/html/htmlwin.h>
 #include "GUI_App.hpp"
 #include "Tab.hpp"
 #include "PresetBundle.hpp"
@@ -12,175 +9,175 @@
 
 namespace Slic3r {
 	namespace GUI {
-		struct dirty_opt {
-			enum class Type {
-				Nil,
-				ConfigOption,
-				ExtruderCount
-			};
-
-			Type type = Type::Nil;
-
-			std::string page_name = "";
-			std::string optgroup_name = "";
-
-			const ConfigOptionDef* def = nullptr;
-			ConfigOption* old_opt = nullptr;
-			ConfigOption* new_opt = nullptr;
-			t_config_option_key key;
-
-			int extruder_index = -1;
-			std::string ser_old_opt;
-			std::string ser_new_opt;
-
-			//Type::ExtruderCount
-			size_t extruders_count_old = 0;
-			size_t extruders_count_new = 0;
-
-			dirty_opt(){}
-
-			dirty_opt(const ConfigOptionDef* _def, Type _type) :
-				def(_def),
-				type(_type),
-				key(_def->opt_key),
-				page_name(_def->category)
-			{}
-
-			dirty_opt(const ConfigOptionDef* def, ConfigOption* _old_opt, ConfigOption* _new_opt, t_config_option_key _key) :
-				dirty_opt(def, Type::ConfigOption)
-			{
-				this->old_opt = _old_opt;
-				this->new_opt = _new_opt;
-				this->key = _key;
-			}
-
-			dirty_opt(const ConfigOptionDef* def, size_t _extruders_count_old, size_t _extruders_count_new) :
-				dirty_opt(def, Type::ExtruderCount)
-			{
-				this->extruders_count_old = _extruders_count_old;
-				this->extruders_count_new = _extruders_count_new;
-			}
-
-			bool operator <(const dirty_opt& b)
-			{
-				if (this->page_name != b.page_name) {
-					return this->page_name < b.page_name;
-				}
-				else if (this->optgroup_name != b.optgroup_name) {
-					if (this->optgroup_name.empty()) {
-						return false;
-					}
-					if (b.optgroup_name.empty()) {
-						return true;
-					}
-
-					return this->optgroup_name < b.optgroup_name;
-				}
-				else if(this->def != nullptr && b.def != nullptr){
-					return this->def->label < b.def->label;
-				}
-
-				return false;
-			}
-		};
-
-		struct dirty_opts_node;
-
-		//this binds the gui line of an option and its definition and internal value together. It's an endpoint of the tree and can't have children.
-		struct dirty_opt_entry {
-			enum class Gui_Type {
-				Nil,
-				Text,
-				Color,
-				Html,
-				Shape
-			};
-			typedef std::map<std::string, void*> Aux_Data;
-
-			dirty_opts_node*	parent;
-			dirty_opt			val;
-
-			wxCheckBox*			checkbox = nullptr;
-			wxSizer*			parent_sizer;
-
-			wxWindow*			old_win = nullptr;
-			wxWindow*			new_win = nullptr;
-
-			Gui_Type			old_win_type = Gui_Type::Nil;
-			Gui_Type			new_win_type = Gui_Type::Nil;
-
-			Aux_Data			aux_data;
-
-			dirty_opt_entry(dirty_opt _val, wxCheckBox* _checkbox, dirty_opts_node* _parent, wxSizer* _parent_sizer)
-				: val(_val), checkbox(_checkbox), parent(_parent), parent_sizer(_parent_sizer)
-			{}
-
-			~dirty_opt_entry() {
-				Aux_Data::iterator it;
-				for (it = this->aux_data.begin(); it != aux_data.end(); it++) {
-					delete it->second;
-				}
-			}
-
-			void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true);
-			void setValWinsEnabled(bool enabled = true);
-			void set_checkbox(bool checked);
-			void on_checkbox_toggled();
-			void on_parent_checkbox_toggled(bool checked);
-			bool saveMe();
-			int get_checkbox_width_with_indent();
-			dirty_opt::Type type();
-		};
-
-		//a node represents a parent (tab, category, ...) in the scroll window
-		struct dirty_opts_node {
-			dirty_opts_node* parent = nullptr;
-
-			wxString				label;
-			wxCheckBox*				checkbox = nullptr;
-			GrayableStaticBitmap*	icon = nullptr;
-			wxStaticText*			labelCtrl = nullptr;
-			wxSizer*				parent_sizer = nullptr;
-
-			Tab* tab = nullptr;
-			std::vector<dirty_opts_node*> childs;
-			std::vector<dirty_opt_entry*> opts;
-
-
-			dirty_opts_node(){}
-
-			dirty_opts_node(dirty_opts_node* _parent, wxSizer* _parent_sizer, const wxString& _label, Tab* _tab) 
-			: parent(_parent), parent_sizer(_parent_sizer), label(_label), tab(_tab)
-			{}
-
-			~dirty_opts_node() {
-				for (dirty_opts_node* cur_node : this->childs) {
-					delete cur_node;
-				}
-
-				for (dirty_opt_entry* cur_opt_entry : this->opts) {
-					delete cur_opt_entry;
-				}
-			}
-
-			void on_checkbox_toggled();
-			void on_child_checkbox_toggled(bool checked);
-			void on_parent_checkbox_toggled(bool checked);
-			void set_checkbox(bool checked);
-			void selectChilds(bool selected = true);
-			void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore = false, dirty_opt::Type type = dirty_opt::Type::Nil);
-			bool hasAnythingToSave();
-			dirty_opts_node* getTabNode(Tab* tab);
-			int get_label_width_with_indent();
-			int get_max_child_label_width_with_indent();
-		};
-
 		class UnsavedChangesDialog : public wxDialog
 		{
 		public:
 			UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption = wxMessageBoxCaptionStr, long style = wxOK | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
 			~UnsavedChangesDialog();
 		private:
+			struct dirty_opt {
+				enum class Type {
+					Nil,
+					ConfigOption,
+					ExtruderCount
+				};
+
+				Type type = Type::Nil;
+
+				std::string page_name = "";
+				std::string optgroup_name = "";
+
+				const ConfigOptionDef* def = nullptr;
+				ConfigOption* old_opt = nullptr;
+				ConfigOption* new_opt = nullptr;
+				t_config_option_key key;
+
+				int extruder_index = -1;
+				std::string ser_old_opt;
+				std::string ser_new_opt;
+
+				//Type::ExtruderCount
+				size_t extruders_count_old = 0;
+				size_t extruders_count_new = 0;
+
+				dirty_opt() {}
+
+				dirty_opt(const ConfigOptionDef* _def, Type _type) :
+					def(_def),
+					type(_type),
+					key(_def->opt_key),
+					page_name(_def->category)
+				{}
+
+				dirty_opt(const ConfigOptionDef* def, ConfigOption* _old_opt, ConfigOption* _new_opt, t_config_option_key _key) :
+					dirty_opt(def, Type::ConfigOption)
+				{
+					this->old_opt = _old_opt;
+					this->new_opt = _new_opt;
+					this->key = _key;
+				}
+
+				dirty_opt(const ConfigOptionDef* def, size_t _extruders_count_old, size_t _extruders_count_new) :
+					dirty_opt(def, Type::ExtruderCount)
+				{
+					this->extruders_count_old = _extruders_count_old;
+					this->extruders_count_new = _extruders_count_new;
+				}
+
+				bool operator <(const dirty_opt& b)
+				{
+					if (this->page_name != b.page_name) {
+						return this->page_name < b.page_name;
+					}
+					else if (this->optgroup_name != b.optgroup_name) {
+						if (this->optgroup_name.empty()) {
+							return false;
+						}
+						if (b.optgroup_name.empty()) {
+							return true;
+						}
+
+						return this->optgroup_name < b.optgroup_name;
+					}
+					else if (this->def != nullptr && b.def != nullptr) {
+						return this->def->label < b.def->label;
+					}
+
+					return false;
+				}
+			};
+
+			struct dirty_opts_node;
+
+			//this binds the gui line of an option and its definition and internal value together. It's an endpoint of the tree and can't have children.
+			struct dirty_opt_entry {
+				enum class Gui_Type {
+					Nil,
+					Text,
+					Color,
+					Diff,
+					Shape
+				};
+				typedef std::map<std::string, void*> Aux_Data;
+
+				dirty_opts_node* parent;
+				dirty_opt			val;
+
+				wxCheckBox* checkbox = nullptr;
+				wxSizer* parent_sizer;
+
+				wxWindow* old_win = nullptr;
+				wxWindow* new_win = nullptr;
+
+				Gui_Type			old_win_type = Gui_Type::Nil;
+				Gui_Type			new_win_type = Gui_Type::Nil;
+
+				Aux_Data			aux_data;
+
+				dirty_opt_entry(dirty_opt _val, wxCheckBox* _checkbox, dirty_opts_node* _parent, wxSizer* _parent_sizer)
+					: val(_val), checkbox(_checkbox), parent(_parent), parent_sizer(_parent_sizer)
+				{}
+
+				~dirty_opt_entry() {
+					Aux_Data::iterator it;
+					for (it = this->aux_data.begin(); it != aux_data.end(); it++) {
+						delete it->second;
+					}
+				}
+
+				void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true);
+				void setValWinsEnabled(bool enabled = true);
+				void set_checkbox(bool checked);
+				void on_checkbox_toggled();
+				void on_parent_checkbox_toggled(bool checked);
+				bool saveMe();
+				int get_checkbox_width_with_indent();
+				dirty_opt::Type type();
+			};
+
+			//a node represents a parent (tab, category, ...) in the scroll window
+			struct dirty_opts_node {
+				dirty_opts_node* parent = nullptr;
+
+				wxString				label;
+				wxCheckBox* checkbox = nullptr;
+				GrayableStaticBitmap* icon = nullptr;
+				wxStaticText* labelCtrl = nullptr;
+				wxSizer* parent_sizer = nullptr;
+
+				Tab* tab = nullptr;
+				std::vector<dirty_opts_node*> childs;
+				std::vector<dirty_opt_entry*> opts;
+
+
+				dirty_opts_node() {}
+
+				dirty_opts_node(dirty_opts_node* _parent, wxSizer* _parent_sizer, const wxString& _label, Tab* _tab)
+					: parent(_parent), parent_sizer(_parent_sizer), label(_label), tab(_tab)
+				{}
+
+				~dirty_opts_node() {
+					for (dirty_opts_node* cur_node : this->childs) {
+						delete cur_node;
+					}
+
+					for (dirty_opt_entry* cur_opt_entry : this->opts) {
+						delete cur_opt_entry;
+					}
+				}
+
+				void on_checkbox_toggled();
+				void on_child_checkbox_toggled(bool checked);
+				void on_parent_checkbox_toggled(bool checked);
+				void set_checkbox(bool checked);
+				void selectChilds(bool selected = true);
+				void getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore = false, dirty_opt::Type type = dirty_opt::Type::Nil);
+				bool hasAnythingToSave();
+				dirty_opts_node* getTabNode(Tab* tab);
+				int get_label_width_with_indent();
+				int get_max_child_label_width_with_indent();
+			};
+
 			GUI_App* m_app;
 			wxStaticText* m_msg;
 			wxWindow* m_scroller_container;
@@ -211,7 +208,7 @@ namespace Slic3r {
 
 			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour);
 			wxWindow* buildColorWindow(wxWindow* parent, std::string col);
-			wxWindow* buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt);
+			wxWindow* buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt, const std::string& tooltip);
 			wxWindow* buildShapeWindow(wxWindow* parent, ConfigOptionPoints* opt, bool isNew);
 
 			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);

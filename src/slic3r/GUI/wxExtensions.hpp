@@ -12,11 +12,13 @@
 #include <wx/sizer.h>
 #include <wx/slider.h>
 #include <wx/menu.h>
+#include <wx/generic/stattextg.h>
 #include <wx/wx.h>
 
 #include <vector>
 #include <set>
 #include <functional>
+#include <regex>
 
 namespace Slic3r {
     enum class ModelVolumeType : int;
@@ -1091,6 +1093,16 @@ public:
 private:
 	wxBitmap m_normal_bmp;
 	wxBitmap m_disabled_bmp;
+};
+
+class GrayableMarkupText : public wxGenericStaticText
+{
+public:
+	GrayableMarkupText(wxWindow* parent, wxWindowID id, const wxString& label, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = wxStaticTextNameStr);
+	bool Enable(bool enabled = true);
+
+private:
+	wxString text, text_disabled;
 };
 
 wxSize get_wxSizerItem_border_size(wxSizerItem* item, int flags = wxALL);

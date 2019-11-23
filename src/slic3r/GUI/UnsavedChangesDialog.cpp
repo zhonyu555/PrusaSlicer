@@ -7,6 +7,11 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <wx/clrpicker.h>
 #include <wx/numformatter.h>
+#include <wx/statline.h>
+#include <wx/html/htmlwin.h>
+#include <wx/generic/stattextg.h>
+#include <sstream>
+#include <string>
 
 #define Dialog_max_width 1200
 #define Dialog_max_height 800
@@ -19,25 +24,32 @@
 
 namespace Slic3r {
 	namespace GUI {
-		void dirty_opt_entry::setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled) {
-			if (win != nullptr) {
-				if (_gui_type == Gui_Type::Html) {
-					std::string* html = static_cast<std::string*>(enabled ? this->aux_data["html"] : this->aux_data["html_disabled"]);
+		typedef UnsavedChangesDialog UCD;
 
-					dynamic_cast<wxHtmlWindow*>(win)->SetPage(*html);
+		void UCD::dirty_opt_entry::setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled) {
+			if (win != nullptr) {
+				if (_gui_type == Gui_Type::Diff) {
+					const wxSizerItemList& children = win->GetSizer()->GetChildren();
+					wxSizerItemList::const_iterator it_wins;
+
+					for (it_wins = children.begin(); it_wins != children.end(); it_wins++) {
+						(*it_wins)->GetWindow()->Enable(enabled);
+					}
 				}
 				else {
 					win->Enable(enabled);
 				}
+
+				win->Refresh();
 			}
 		}
 
-		void dirty_opt_entry::setValWinsEnabled(bool enabled) {
+		void UCD::dirty_opt_entry::setValWinsEnabled(bool enabled) {
 			setWinEnabled(this->old_win, this->old_win_type, enabled);
 			setWinEnabled(this->new_win, this->new_win_type, enabled);
 		}
 
-		void dirty_opt_entry::set_checkbox(bool checked) {
+		void UCD::dirty_opt_entry::set_checkbox(bool checked) {
 			this->checkbox->SetValue(checked);
 
 			this->checkbox->SetForegroundColour(checked ?
@@ -47,48 +59,47 @@ namespace Slic3r {
 			this->setValWinsEnabled(checked);
 		}
 
-		void dirty_opt_entry::on_checkbox_toggled() {
+		void UCD::dirty_opt_entry::on_checkbox_toggled() {
 			bool checked = this->checkbox->GetValue();
 			this->set_checkbox(checked);
 			this->parent->on_child_checkbox_toggled(checked);
 		}
 
-		void dirty_opt_entry::on_parent_checkbox_toggled(bool checked) {
+		void UCD::dirty_opt_entry::on_parent_checkbox_toggled(bool checked) {
 			if (checked != this->checkbox->GetValue()) {
 				this->set_checkbox(checked);
 			}
 		}
 
-		bool dirty_opt_entry::saveMe() {
+		bool UCD::dirty_opt_entry::saveMe() {
 			return this->checkbox->GetValue();
 		}
 
-		int dirty_opt_entry::get_checkbox_width_with_indent() {
+		int UCD::dirty_opt_entry::get_checkbox_width_with_indent() {
 			return this->checkbox->GetEffectiveMinSize().GetWidth() +
 				get_wxSizerItem_border_size(this->parent_sizer->GetItem(this->checkbox)).GetWidth();
 		}
 
-		dirty_opt::Type dirty_opt_entry::type() {
+		UCD::dirty_opt::Type UCD::dirty_opt_entry::type() {
 			return this->val.type;
 		}
 
-
-		void dirty_opts_node::on_checkbox_toggled() {
+		void UCD::dirty_opts_node::on_checkbox_toggled() {
 			bool checked = this->checkbox->GetValue();
 			this->set_checkbox(checked);
 
 			if (this->parent != nullptr) {
 				this->parent->on_child_checkbox_toggled(checked);
 			}
-			for (dirty_opts_node* cur_node : this->childs) {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				cur_node->on_parent_checkbox_toggled(checked);
 			}
-			for (dirty_opt_entry* cur_opt_entry : this->opts) {
+			for (UCD::dirty_opt_entry* cur_opt_entry : this->opts) {
 				cur_opt_entry->on_parent_checkbox_toggled(checked);
 			}
 		}
 
-		void dirty_opts_node::on_child_checkbox_toggled(bool checked) {
+		void UCD::dirty_opts_node::on_child_checkbox_toggled(bool checked) {
 			if (this->checkbox != nullptr) {
 				if (checked && !this->checkbox->GetValue()) {
 					this->set_checkbox(true);
@@ -99,7 +110,7 @@ namespace Slic3r {
 				}
 				if (!checked && this->checkbox->GetValue()) {
 					bool checked_child = false;
-					for (dirty_opts_node* cur_node : this->childs) {
+					for (UCD::dirty_opts_node* cur_node : this->childs) {
 						if (cur_node->checkbox->GetValue()) {
 							checked_child = true;
 							break;
@@ -121,20 +132,20 @@ namespace Slic3r {
 			}
 		}
 
-		void dirty_opts_node::on_parent_checkbox_toggled(bool checked) {
+		void UCD::dirty_opts_node::on_parent_checkbox_toggled(bool checked) {
 			if (checked != this->checkbox->GetValue()) {
 				this->set_checkbox(checked);
 
-				for (dirty_opts_node* cur_node : this->childs) {
+				for (UCD::dirty_opts_node* cur_node : this->childs) {
 					cur_node->on_parent_checkbox_toggled(checked);
 				}
-				for (dirty_opt_entry* cur_opt_entry : this->opts) {
+				for (UCD::dirty_opt_entry* cur_opt_entry : this->opts) {
 					cur_opt_entry->on_parent_checkbox_toggled(checked);
 				}
 			}
 		}
 
-		void dirty_opts_node::set_checkbox(bool checked) {
+		void UCD::dirty_opts_node::set_checkbox(bool checked) {
 			if (this->checkbox != nullptr) {
 				this->checkbox->SetValue(checked);
 
@@ -151,36 +162,36 @@ namespace Slic3r {
 			}
 		}
 
-		void dirty_opts_node::selectChilds(bool selected) {
-			for (dirty_opts_node* cur_node : this->childs) {
+		void UCD::dirty_opts_node::selectChilds(bool selected) {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				cur_node->set_checkbox(selected);
 				cur_node->selectChilds(selected);
 			}
 
-			for (dirty_opt_entry* cur_opt : this->opts) {
+			for (UCD::dirty_opt_entry* cur_opt : this->opts) {
 				cur_opt->set_checkbox(selected);
 			}
 		}
 
-		void dirty_opts_node::getAllOptionEntries(std::vector<dirty_opt_entry*>& _opts, bool only_opts_to_restore, dirty_opt::Type type) {
-			for (dirty_opts_node* cur_node : this->childs) {
+		void UCD::dirty_opts_node::getAllOptionEntries(std::vector<UCD::dirty_opt_entry*>& _opts, bool only_opts_to_restore, UCD::dirty_opt::Type type) {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				cur_node->getAllOptionEntries(_opts, only_opts_to_restore, type);
 			}
 
-			for (dirty_opt_entry* cur_opt : this->opts) {
-				if ((!only_opts_to_restore || !cur_opt->saveMe()) && (type == dirty_opt::Type::Nil || cur_opt->val.type == type))
+			for (UCD::dirty_opt_entry* cur_opt : this->opts) {
+				if ((!only_opts_to_restore || !cur_opt->saveMe()) && (type == UCD::dirty_opt::Type::Nil || cur_opt->val.type == type))
 					_opts.push_back(cur_opt);
 			}
 		}
 
-		bool dirty_opts_node::hasAnythingToSave() {
-			for (dirty_opts_node* cur_node : this->childs) {
+		bool UCD::dirty_opts_node::hasAnythingToSave() {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				if (cur_node->hasAnythingToSave()) {
 					return true;
 				}
 			}
 
-			for (dirty_opt_entry* cur_opt : this->opts) {
+			for (UCD::dirty_opt_entry* cur_opt : this->opts) {
 				if (cur_opt->saveMe()) {
 					return true;
 				}
@@ -189,8 +200,8 @@ namespace Slic3r {
 			return false;
 		}
 
-		dirty_opts_node* dirty_opts_node::getTabNode(Tab* tab) {
-			for (dirty_opts_node* cur_node : this->childs) {
+		UCD::dirty_opts_node* UCD::dirty_opts_node::getTabNode(Tab* tab) {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				if (cur_node->tab == tab) {
 					return cur_node;
 				}
@@ -199,7 +210,7 @@ namespace Slic3r {
 			return nullptr;
 		}
 
-		int dirty_opts_node::get_label_width_with_indent() {
+		int UCD::dirty_opts_node::get_label_width_with_indent() {
 			int w = 0;
 
 			for (wxWindow* cur_win : std::vector<wxWindow*>{ checkbox, icon, labelCtrl }) {
@@ -212,15 +223,15 @@ namespace Slic3r {
 			return w;
 		}
 
-		int dirty_opts_node::get_max_child_label_width_with_indent() {
+		int UCD::dirty_opts_node::get_max_child_label_width_with_indent() {
 			int w = 0;
 
-			for (dirty_opts_node* cur_node : this->childs) {
+			for (UCD::dirty_opts_node* cur_node : this->childs) {
 				w = std::max(w, cur_node->get_label_width_with_indent());
 				w = std::max(w, cur_node->get_max_child_label_width_with_indent());
 			}
 
-			for (dirty_opt_entry* cur_opt : this->opts) {
+			for (UCD::dirty_opt_entry* cur_opt : this->opts) {
 				w = std::max(w, cur_opt->get_checkbox_width_with_indent());
 			}
 
@@ -305,7 +316,7 @@ namespace Slic3r {
 
 			wxBoxSizer* btn_sizer = new wxBoxSizer(wxHORIZONTAL);
 				m_btn_save = new ScalableButton(m_scroller_container, wxID_ANY, "save", _(L("Save selected")), wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
-				m_btn_save->Bind(wxEVT_BUTTON, &UnsavedChangesDialog::OnBtnSaveSelected, this);
+				m_btn_save->Bind(wxEVT_BUTTON, &UCD::OnBtnSaveSelected, this);
 
 				m_btn_select_all = new wxButton(m_scroller_container, wxID_ANY, _(L("Select All")));
 				m_btn_select_all->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
@@ -333,10 +344,9 @@ namespace Slic3r {
 
 		void UnsavedChangesDialog::buildScroller(wxString& dirty_tabs) {
 			if (m_dirty_tabs_tree != nullptr) {
-				m_dirty_tabs_tree->~dirty_opts_node();
 				delete m_dirty_tabs_tree;
 			}
-			m_dirty_tabs_tree = new dirty_opts_node();
+			m_dirty_tabs_tree = new UCD::dirty_opts_node();
 
 			if (m_scroller == nullptr) {
 				m_scroller = new wxScrolledWindow(m_scroller_container, wxID_ANY);
@@ -359,7 +369,7 @@ namespace Slic3r {
 
 					wxPanel* cur_tab_win = new wxPanel(m_scroller, wxID_ANY);
 					wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
-					dirty_opts_node* cur_tab_node = buildNode(cur_tab_win, cur_tab->title(), this->m_dirty_tabs_tree, cur_tab_sizer, cur_tab);
+					UCD::dirty_opts_node* cur_tab_node = buildNode(cur_tab_win, cur_tab->title(), this->m_dirty_tabs_tree, cur_tab_sizer, cur_tab);
 					wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
 					cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
 
@@ -380,9 +390,9 @@ namespace Slic3r {
 
 			//resize all entry checkboxes so the val windows are the same distance from the left side
 			int max_width = this->m_dirty_tabs_tree->get_max_child_label_width_with_indent();
-			std::vector<dirty_opt_entry*> opts;
+			std::vector<UCD::dirty_opt_entry*> opts;
 			this->m_dirty_tabs_tree->getAllOptionEntries(opts);
-			for (dirty_opt_entry* cur_opt : opts) {
+			for (UCD::dirty_opt_entry* cur_opt : opts) {
 				int indent = get_wxSizerItem_border_size(cur_opt->parent_sizer->GetItem(cur_opt->checkbox), wxLEFT).GetWidth();
 				cur_opt->checkbox->SetMinSize(wxSize(max_width - indent + Dialog_child_indentation, -1));
 			}
@@ -415,13 +425,13 @@ namespace Slic3r {
 			m_scroller->SetScrollRate(2, 2);
 		}
 
-		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, dirty_opts_node* parent_node, wxColour bg_colour) {
+		void UnsavedChangesDialog::add_dirty_options(Tab* tab, wxWindow* parent, wxBoxSizer* sizer, UCD::dirty_opts_node* parent_node, wxColour bg_colour) {
 			std::vector<dirty_opt> options;
 			PageIconMap page_icons;
 			get_dirty_options_for_tab(tab, options, page_icons);			
 
-			dirty_opts_node* cur_parent_node;
-			dirty_opts_node* cur_page_node;
+			UCD::dirty_opts_node* cur_parent_node;
+			UCD::dirty_opts_node* cur_page_node;
 
 			std::string last_page_name = "";
 			std::string last_group_name = "";
@@ -500,7 +510,7 @@ namespace Slic3r {
 				sizer->AddSpacer(Dialog_def_border);
 
 				wxBoxSizer* lineSizer = new wxBoxSizer(wxHORIZONTAL);
-					dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, lineSizer);
+					UCD::dirty_opt_entry& cur_opt_entry = buildOptionEntry(parent, cur_parent_node, cur_opt, bg_colour, lineSizer);
 					wxCheckBox* opt_label = cur_opt_entry.checkbox;
 
 					lineSizer->Add(opt_label, 0, wxLEFT, cur_indent);
@@ -663,8 +673,8 @@ namespace Slic3r {
 			return cont_stretch_sizer;
 		}
 
-		dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, wxSizer* parent_sizer, Tab* tab) {
-			dirty_opts_node* node = new dirty_opts_node(parent_node, parent_sizer, label, tab);
+		UCD::dirty_opts_node* UnsavedChangesDialog::buildNode(wxWindow* parent, const wxString& label, UCD::dirty_opts_node* parent_node, wxSizer* parent_sizer, Tab* tab) {
+			UCD::dirty_opts_node* node = new UCD::dirty_opts_node(parent_node, parent_sizer, label, tab);
 
 			node->checkbox = buildCheckbox(parent, label, [this, node](wxCommandEvent& e) {
 				node->on_checkbox_toggled();
@@ -675,9 +685,9 @@ namespace Slic3r {
 			return node;
 		}
 
-		dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSizer* parent_sizer) {			
-			parent_node->opts.push_back(new dirty_opt_entry(opt, nullptr, parent_node, parent_sizer));
-			dirty_opt_entry& entry = *parent_node->opts.back();
+		UCD::dirty_opt_entry& UnsavedChangesDialog::buildOptionEntry(wxWindow* parent, UCD::dirty_opts_node* parent_node, dirty_opt opt, wxColour bg_colour, wxSizer* parent_sizer) {
+			parent_node->opts.push_back(new UCD::dirty_opt_entry(opt, nullptr, parent_node, parent_sizer));
+			UCD::dirty_opt_entry& entry = *parent_node->opts.back();
 
 			wxCheckBox* cb = buildCheckbox(parent, _(opt.def->label), [this, &entry](wxCommandEvent& e) {
 				updateSaveBtn();
@@ -701,7 +711,7 @@ namespace Slic3r {
 			return cb;
 		}
 
-		void UnsavedChangesDialog::buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour) {
+		void UnsavedChangesDialog::buildWindowsForOpt(UCD::dirty_opt_entry& opt, wxWindow* parent, wxColour bg_colour) {
 			std::string old_val;
 			std::string new_val;
 
@@ -728,22 +738,24 @@ namespace Slic3r {
 			wxWindow* win_old_opt;
 			wxWindow* win_new_opt;
 
+			std::string tooltip = getTooltipText(*opt.val.def, opt.val.extruder_index);
+
 			if (val.def->gui_type == "color") {
 				win_old_opt = buildColorWindow(parent, old_val);
 				win_new_opt = buildColorWindow(parent, new_val);
 
-				opt.old_win_type = dirty_opt_entry::Gui_Type::Color;
-				opt.new_win_type = dirty_opt_entry::Gui_Type::Color;
+				opt.old_win_type = UCD::dirty_opt_entry::Gui_Type::Color;
+				opt.new_win_type = UCD::dirty_opt_entry::Gui_Type::Color;
 			}
 			else {
 				switch (val.def->type) {
 				case coString:
 				case coStrings: {
-					win_old_opt = buildStringWindow(parent, bg_colour, false, old_val, new_val, opt);
-					win_new_opt = buildStringWindow(parent, bg_colour, true, old_val, new_val, opt);
+					win_old_opt = buildStringWindow(parent, bg_colour, false, old_val, new_val, opt, tooltip);
+					win_new_opt = buildStringWindow(parent, bg_colour, true, old_val, new_val, opt, tooltip);
 
-					opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
-					opt.old_win_type = dirty_opt_entry::Gui_Type::Html;
+					opt.new_win_type = UCD::dirty_opt_entry::Gui_Type::Text;
+					opt.old_win_type = UCD::dirty_opt_entry::Gui_Type::Diff;
 
 					break;
 				}
@@ -763,14 +775,14 @@ namespace Slic3r {
 					if (val.key == "bed_shape") {
 						win_old_opt = buildShapeWindow(parent, dynamic_cast<ConfigOptionPoints*>(opt.val.old_opt), false);
 						win_new_opt = buildShapeWindow(parent, dynamic_cast<ConfigOptionPoints*>(opt.val.new_opt), true);
-						opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
-						opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+						opt.old_win_type = UCD::dirty_opt_entry::Gui_Type::Text;
+						opt.new_win_type = UCD::dirty_opt_entry::Gui_Type::Text;
 					}
 					else {
 						win_old_opt = new wxStaticText(parent, wxID_ANY, old_val, wxDefaultPosition, wxDefaultSize);
 						win_new_opt = new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
-						opt.old_win_type = dirty_opt_entry::Gui_Type::Text;
-						opt.new_win_type = dirty_opt_entry::Gui_Type::Text;
+						opt.old_win_type = UCD::dirty_opt_entry::Gui_Type::Text;
+						opt.new_win_type = UCD::dirty_opt_entry::Gui_Type::Text;
 					}
 
 					break;
@@ -783,7 +795,6 @@ namespace Slic3r {
 
 			win_new_opt->SetForegroundColour(wxGetApp().get_label_clr_modified());
 
-			std::string tooltip = getTooltipText(*opt.val.def, opt.val.extruder_index);
 			win_new_opt->SetToolTip(tooltip);
 			win_old_opt->SetToolTip(tooltip);
 
@@ -797,101 +808,115 @@ namespace Slic3r {
 				(wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(col));
 		}
 
-		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt) {
+		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, UCD::dirty_opt_entry& opt, const std::string& tooltip) {
 			if (isNew) {
-				return new wxStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+				wxGenericStaticText* txt = new wxGenericStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
+				wxFont f = GUI::wxGetApp().normal_font();
+				f.SetFamily(wxFONTFAMILY_TELETYPE);
+				txt->SetFont(f);
+				return txt;
 			}
 
-			wxString sText;
-			std::string& html = *new std::string(wxString::Format("<html><body bgcolor=#%02X%02X%02X>", bg_colour.Red(), bg_colour.Green(), bg_colour.Blue()));
-
-			//this is really silly. But wxHtmlWindow::Enable does not make the window gray (MSW). So we fake it...
-			wxColor col = wxSystemSettings::GetColour(wxSYS_COLOUR_GRAYTEXT);
-			std::string& html_disabled = *new std::string(html + wxString::Format("<font color=#%02X%02X%02X>", col.Red(), col.Green(), col.Blue()));
-
-			using namespace slic3r;
-			Diff diff = Diff(old_val, new_val);
-
-			auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> wxString {
+			auto fakeAlpha = [](wxColour front, wxColour back, unsigned char alpha) -> std::string {
 				unsigned char r, g, b;
 				r = front.Red() * alpha / 255 + back.Red() * (255 - alpha) / 255;
 				g = front.Green() * alpha / 255 + back.Green() * (255 - alpha) / 255;
 				b = front.Blue() * alpha / 255 + back.Blue() * (255 - alpha) / 255;
 
-				return wxString::Format(wxT("#%02X%02X%02X"), r, g, b);
+				return wxString::Format(wxT("#%02X%02X%02X"), r, g, b).ToStdString();
 			};
 
-			for (EditScriptAction cur_action : diff.getSolution()) {
-				std::string sub, font, font_disabled;
-				switch (cur_action.action)
+			wxPanel* win = new wxPanel(parent);
+			wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+
+			auto add_line = [win, sizer, tooltip](const std::string& line) {
+				GrayableMarkupText* txt = new GrayableMarkupText(win, wxID_ANY, line);
+				//txt->SetLabelMarkup(line);
+				wxFont f = GUI::wxGetApp().normal_font();
+				f.SetFamily(wxFONTFAMILY_TELETYPE);
+				txt->SetFont(f);
+				txt->SetToolTip(tooltip);
+
+				sizer->Add(txt);
+			};
+
+			using namespace slic3r;
+			Diff diff = Diff(old_val, new_val, true);
+
+			std::string cur_line;
+
+			for (const Diff::EditScriptAction& cur_action : diff.getSolution()) {
+				std::string sub;
+				wxColour color;
+				bool useColor = false;
+				bool lb = false;
+
+				switch (cur_action.actionType)
 				{
-				case EditScriptAction::ActionType::keep: {
-					sub = old_val.substr(cur_action.offset, cur_action.count);
-					break;
+					case Diff::EditScriptAction::ActionType::keep: {
+						sub = old_val.substr(cur_action.offset, cur_action.count);
+						break;
+					}
+					case Diff::EditScriptAction::ActionType::remove: {
+						sub = old_val.substr(cur_action.offset, cur_action.count);
+						color = wxColour(255, 0, 0, 255);
+						useColor = true;
+						break;
+					}
+					case Diff::EditScriptAction::ActionType::insert: {
+						sub = new_val.substr(cur_action.offset, cur_action.count);
+						color = wxColour(0, 255, 0, 255);
+						useColor = true;
+						break;
+					}
+					case Diff::EditScriptAction::ActionType::keep_lineBreak: {
+						lb = true;
+						break;
+					}
+					case Diff::EditScriptAction::ActionType::remove_lineBreak: {
+						sub = "\\n";
+						lb = true;
+						color = wxColour(255, 0, 0, 255);
+						useColor = true;
+						break;
+					}
+					case Diff::EditScriptAction::ActionType::insert_lineBreak: {
+						sub = "\\n";
+						color = wxColour(0, 255, 0, 255);
+						useColor = true;
+						break;
+					}
 				}
-				case EditScriptAction::ActionType::remove: {
-					sub = old_val.substr(cur_action.offset, cur_action.count);
 
-					wxColour col(255, 0, 0, 255);
-					font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
-					font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
-					break;
-				}
-				case EditScriptAction::ActionType::insert: {
-					sub = new_val.substr(cur_action.offset, cur_action.count);
+				boost::replace_all(sub, "&", "&amp;");
+				boost::replace_all(sub, "'", "&apos;");
+				boost::replace_all(sub, "\"", "&quot;");
+				boost::replace_all(sub, "<", "&lt;");
+				boost::replace_all(sub, ">", "&gt;");
 
-					wxColour col(0, 255, 0, 255);
-					font = "<font bgcolor=" + fakeAlpha(col, bg_colour, 130) + ">";
-					font_disabled = "<font bgcolor=" + fakeAlpha(col.MakeDisabled(), bg_colour, 130) + ">";
-					break;
-				}
-				}
+				if (useColor) {
+					boost::format fmter("<span bgcolor=\"%1%\">%2%</span>");
+					fmter %
+						fakeAlpha(color, bg_colour, 130) %
+						sub;
 
-				if (font != "") {
-					html += font + sub + "</font>";
-					html_disabled += font_disabled + sub + "</font>";
-					sText += sub;
+					cur_line += fmter.str();
 				}
 				else {
-					html += sub;
-					html_disabled += sub;
-					sText += sub;
+					cur_line += sub;
+				}
+
+				if (lb) {
+					cur_line = cur_line.empty() ? " " : cur_line;
+					add_line(cur_line);
+					cur_line = "";
 				}
 			}
+			add_line(cur_line);
 
-			html += std::string(
-				"</body>"
-				"</html>");
-
-			html_disabled += std::string(
-				"</font>"
-				"</body>"
-				"</html>");
-
-			boost::replace_all(html, "\n", "<br />");
-			boost::replace_all(html_disabled, "\n", "<br />");
-
-			//wxHtmlWindow seems to need a fixed size, so we find out what size a staticText with the same content would have and use that.
-			wxStaticText* win_test = new wxStaticText(parent, wxID_ANY, sText, wxDefaultPosition, wxDefaultSize);
-			wxSize size = win_test->GetSize();
-			win_test->Destroy();
-			size.x += 5;
-
-			wxFont font = GetFont();
-			const int fs = font.GetPointSize();
-			int fSize[] = { fs,fs,fs,fs,fs,fs,fs };
-
-			wxHtmlWindow* html_win = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, size, wxHW_SCROLLBAR_NEVER);
-			html_win->SetBorders(0);
-			html_win->SetFonts(font.GetFaceName(), font.GetFaceName(), fSize);
-			html_win->SetPage(html);
-			html_win->Layout();
-			html_win->Refresh();
-
-			opt.aux_data["html"] = &html;
-			opt.aux_data["html_disabled"] = &html_disabled;
-
-			return (wxWindow*)html_win;
+			win->SetSizer(sizer);
+			
+			return win;
 		}
 
 		wxWindow* UnsavedChangesDialog::buildShapeWindow(wxWindow* parent, ConfigOptionPoints* opt, bool isNew) {
@@ -965,7 +990,7 @@ namespace Slic3r {
 		{
 			SavePresetWindow dlg(this);
 
-			for (dirty_opts_node* cur_tab : m_dirty_tabs_tree->childs) {
+			for (UCD::dirty_opts_node* cur_tab : m_dirty_tabs_tree->childs) {
 				if (!cur_tab->hasAnythingToSave()) {
 					continue;
 				}
@@ -1002,15 +1027,15 @@ namespace Slic3r {
 					DynamicPrintConfig& edited_conf = cur_tab->m_presets->get_edited_preset().config;
 					DynamicPrintConfig edited_backup(edited_conf);
 
-					dirty_opts_node* cur_tab_node = m_dirty_tabs_tree->getTabNode(cur_tab);
+					UCD::dirty_opts_node* cur_tab_node = m_dirty_tabs_tree->getTabNode(cur_tab);
 
-					std::vector<dirty_opt_entry*> opts_to_save;
+					std::vector<UCD::dirty_opt_entry*> opts_to_save;
 					cur_tab_node->getAllOptionEntries(opts_to_save, true);
 
 					bool update_extr_count = true;
 
 					//set all options (in the edited preset) - that the user does not want to save - to their old values (from selected preset)
-					for (dirty_opt_entry* cur_opt_to_save : opts_to_save) {
+					for (UCD::dirty_opt_entry* cur_opt_to_save : opts_to_save) {
 						if (cur_opt_to_save->type() == dirty_opt::Type::ConfigOption) {
 							int idx = cur_opt_to_save->val.extruder_index;
 

@@ -52,13 +52,56 @@ struct Point {
 };
 
 namespace slic3r {
-	Diff::Diff(std::string _str1, std::string _str2)
-	{
-		solve(_str1, _str2);
+	const std::string& Diff::EditScriptAction::get_target_str(const std::string& str1, const std::string& str2) {
+		if (this->actionType == Diff::EditScriptAction::ActionType::keep || this->actionType == Diff::EditScriptAction::ActionType::remove) {
+			return str1;
+		}
+		return str2;
 	}
 
-	void Diff::solve(std::string str1, std::string str2) {
-		if (str1 == "" && str2 == "") {
+	Diff::EditScript Diff::EditScriptAction::split_by_newline(const std::string& str1, const std::string& str2) {
+		std::vector<Diff::EditScriptAction> acts;
+
+		const std::string& str = get_target_str(str1, str2);
+
+		size_t cur_off = this->offset;
+		size_t end_off = cur_off + this->count;
+
+		//0123456789
+		//1n2n3n4n
+		//-------	keep
+		//       -	add
+
+		bool cont = true;
+		int lb_type = this->actionType + Diff::EditScriptAction::ActionType::lineBreakType;
+
+		while (cont && cur_off < end_off) {
+			size_t pos = str.find("\n", cur_off);
+
+			if (pos == std::string::npos || pos >= end_off) {
+				pos = end_off;
+				cont = false;
+			}
+
+			acts.emplace_back(pos == cur_off ? lb_type : this->actionType, cur_off, pos - cur_off);
+			if (cont) {
+				if (pos != cur_off) {
+					acts.emplace_back(lb_type, 0, 0);
+				}
+				cur_off = pos + 1;
+			}
+		}
+
+		return acts;
+	}
+
+	Diff::Diff(const std::string& _str1, const std::string& _str2, bool split_newline)
+	{
+		solve(_str1, _str2, split_newline);
+	}
+
+	void Diff::solve(const std::string& str1, const std::string& str2, bool split_newline) {
+		if (str1.empty() && str2.empty()) {
 			return;
 		}
 
@@ -152,7 +195,7 @@ namespace slic3r {
 				if (yMid > 0) { //ignore the stub starting point (V[1]=0)
 					size_t off = (size_t)yMid - 1;
 
-					if (solution.size() > 0 && solution[0].action == EditScriptAction::ActionType::insert) {
+					if (solution.size() > 0 && solution[0].actionType == EditScriptAction::ActionType::insert) {
 						solution[0].offset = off;
 						solution[0].count++;
 					}
@@ -165,7 +208,7 @@ namespace slic3r {
 			else { //remove from A
 				size_t off = (size_t)xMid - 1;
 
-				if (solution.size() > 0 && solution[0].action == EditScriptAction::ActionType::remove) {
+				if (solution.size() > 0 && solution[0].actionType == EditScriptAction::ActionType::remove) {
 					solution[0].offset = off;
 					solution[0].count++;
 				}
@@ -178,9 +221,20 @@ namespace slic3r {
 			p.x = xStart;
 			p.y = yStart;
 		}
+
+		if (split_newline) {
+			EditScript new_sol;
+
+			for (EditScriptAction& cur_action : solution) {
+				EditScript acts = cur_action.split_by_newline(str1, str2);
+				new_sol.insert(new_sol.end(), acts.begin(), acts.end());
+			}
+
+			solution = EditScript(std::move(new_sol));
+		}
 	}
 
-	const std::vector<EditScriptAction>& Diff::getSolution() {
+	const Diff::EditScript& Diff::getSolution() {
 		return this->solution;
 	}
 
@@ -231,7 +285,7 @@ namespace slic3r {
 			std::string testStr = "";
 
 			for (EditScriptAction cur_action : diff.getSolution()) {
-				switch (cur_action.action)
+				switch (cur_action.actionType)
 				{
 					case EditScriptAction::ActionType::insert: {
 						testStr += s2.substr(cur_action.offset, cur_action.count) ;
