@@ -18,6 +18,9 @@
 #include <boost/foreach.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/log/trivial.hpp>
+#if ENABLE_THUMBNAIL_GENERATOR
+#include <boost/beast/core/detail/base64.hpp>
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 #include <boost/nowide/iostream.hpp>
 #include <boost/nowide/cstdio.hpp>
@@ -28,6 +31,10 @@
 #include <tbb/parallel_for.h>
 
 #include <Shiny/Shiny.h>
+
+#if ENABLE_THUMBNAIL_GENERATOR_PNG_TO_GCODE
+#include "miniz_extension.hpp"
+#endif // ENABLE_THUMBNAIL_GENERATOR_PNG_TO_GCODE
 
 #if 0
 // Enable debugging and asserts, even in the release build.
@@ -275,7 +282,7 @@ static inline Point wipe_tower_point_to_object_point(GCode &gcodegen, const Vec2
     return Point(scale_(wipe_tower_pt.x() - gcodegen.origin()(0)), scale_(wipe_tower_pt.y() - gcodegen.origin()(1)));
 }
 
-std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::ToolChangeResult &tcr, int new_extruder_id) const
+std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::ToolChangeResult &tcr, int new_extruder_id, double z) const
 {
     if (new_extruder_id != -1 && new_extruder_id != tcr.new_tool)
         throw std::invalid_argument("Error: WipeTowerIntegration::append_tcr was asked to do a toolchange it didn't expect.");
@@ -309,6 +316,15 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
             erMixed,
             "Travel to a Wipe Tower");
         gcode += gcodegen.unretract();
+    }
+
+    double current_z = gcodegen.writer().get_position().z();
+    if (z == -1.) // in case no specific z was provided, print at current_z pos
+        z = current_z;
+    if (! is_approx(z, current_z)) {
+        gcode += gcodegen.writer().retract();
+        gcode += gcodegen.writer().travel_to_z(z, "Travel down to the last wipe tower layer.");
+        gcode += gcodegen.writer().unretract();
     }
 
 
@@ -377,16 +393,23 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
     // A phony move to the end position at the wipe tower.
     gcodegen.writer().travel_to_xy(end_pos.cast<double>());
     gcodegen.set_last_pos(wipe_tower_point_to_object_point(gcodegen, end_pos));
+    if (! is_approx(z, current_z)) {
+        gcode += gcodegen.writer().retract();
+        gcode += gcodegen.writer().travel_to_z(current_z, "Travel back up to the topmost object layer.");
+        gcode += gcodegen.writer().unretract();
+    }
 
-    // Prepare a future wipe.
-    gcodegen.m_wipe.path.points.clear();
-    if (new_extruder_id >= 0) {
-        // Start the wipe at the current position.
-        gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, end_pos));
-        // Wipe end point: Wipe direction away from the closer tower edge to the further tower edge.
-        gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, 
-            Vec2f((std::abs(m_left - end_pos.x()) < std::abs(m_right - end_pos.x())) ? m_right : m_left,
-            end_pos.y())));
+    else {
+        // Prepare a future wipe.
+        gcodegen.m_wipe.path.points.clear();
+        if (new_extruder_id >= 0) {
+            // Start the wipe at the current position.
+            gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, end_pos));
+            // Wipe end point: Wipe direction away from the closer tower edge to the further tower edge.
+            gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen,
+                Vec2f((std::abs(m_left - end_pos.x()) < std::abs(m_right - end_pos.x())) ? m_right : m_left,
+                end_pos.y())));
+        }
     }
 
     // Let the planner know we are traveling between objects.
@@ -512,7 +535,23 @@ std::string WipeTowerIntegration::tool_change(GCode &gcodegen, int extruder_id, 
 		if (m_layer_idx < (int)m_tool_changes.size()) {
 			if (! (size_t(m_tool_change_idx) < m_tool_changes[m_layer_idx].size()))
                 throw std::runtime_error("Wipe tower generation failed, possibly due to empty first layer.");
-			gcode += append_tcr(gcodegen, m_tool_changes[m_layer_idx][m_tool_change_idx++], extruder_id);
+
+
+            // Calculate where the wipe tower layer will be printed. -1 means that print z will not change,
+            // resulting in a wipe tower with sparse layers.
+            double wipe_tower_z = -1;
+            bool ignore_sparse = false;
+            if (gcodegen.config().wipe_tower_no_sparse_layers.value) {
+                wipe_tower_z = m_last_wipe_tower_print_z;
+                ignore_sparse = (m_brim_done && m_tool_changes[m_layer_idx].size() == 1 && m_tool_changes[m_layer_idx].front().initial_tool == m_tool_changes[m_layer_idx].front().new_tool);
+                if (m_tool_change_idx == 0 && ! ignore_sparse)
+                   wipe_tower_z = m_last_wipe_tower_print_z + m_tool_changes[m_layer_idx].front().layer_height;
+            }
+
+            if (! ignore_sparse) {
+                gcode += append_tcr(gcodegen, m_tool_changes[m_layer_idx][m_tool_change_idx++], extruder_id, wipe_tower_z);
+                m_last_wipe_tower_print_z = wipe_tower_z;
+            }
 		}
         m_brim_done = true;
     }
@@ -543,7 +582,7 @@ std::vector<GCode::LayerToPrint> GCode::collect_layers_to_print(const PrintObjec
 	//FIXME should we use the printing extruders instead?
 	double gap_over_supports = object.config().support_material_contact_distance;
 	// FIXME should we test object.config().support_material_synchronize_layers ? Currently the support layers are synchronized with object layers iff soluble supports.
-    assert(gap_over_supports != 0. || object.config().support_material_synchronize_layers);
+    assert(! object.config().support_material || gap_over_supports != 0. || object.config().support_material_synchronize_layers);
     if (gap_over_supports != 0.) {
         gap_over_supports = std::max(0., gap_over_supports);
 		// Not a soluble support,
@@ -652,7 +691,11 @@ std::vector<std::pair<coordf_t, std::vector<GCode::LayerToPrint>>> GCode::collec
     return layers_to_print;
 }
 
+#if ENABLE_THUMBNAIL_GENERATOR
+void GCode::do_export(Print* print, const char* path, GCodePreviewData* preview_data, ThumbnailsGeneratorCallback thumbnail_cb)
+#else
 void GCode::do_export(Print *print, const char *path, GCodePreviewData *preview_data)
+#endif // ENABLE_THUMBNAIL_GENERATOR
 {
     PROFILE_CLEAR();
 
@@ -678,7 +721,11 @@ void GCode::do_export(Print *print, const char *path, GCodePreviewData *preview_
 
     try {
         m_placeholder_parser_failed_templates.clear();
+#if ENABLE_THUMBNAIL_GENERATOR
+        this->_do_export(*print, file, thumbnail_cb);
+#else
         this->_do_export(*print, file);
+#endif // ENABLE_THUMBNAIL_GENERATOR
         fflush(file);
         if (ferror(file)) {
             fclose(file);
@@ -742,7 +789,11 @@ void GCode::do_export(Print *print, const char *path, GCodePreviewData *preview_
     PROFILE_OUTPUT(debug_out_path("gcode-export-profile.txt").c_str());
 }
 
-void GCode::_do_export(Print &print, FILE *file)
+#if ENABLE_THUMBNAIL_GENERATOR
+void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thumbnail_cb)
+#else
+void GCode::_do_export(Print& print, FILE* file)
+#endif // ENABLE_THUMBNAIL_GENERATOR
 {
     PROFILE_FUNC();
 
@@ -758,42 +809,46 @@ void GCode::_do_export(Print &print, FILE *file)
     // shall be adjusted as well to produce a G-code block compatible with the particular firmware flavor.
     if (print.config().gcode_flavor.value == gcfMarlin) {
         m_normal_time_estimator.set_max_acceleration((float)print.config().machine_max_acceleration_extruding.values[0]);
-		m_normal_time_estimator.set_retract_acceleration((float)print.config().machine_max_acceleration_retracting.values[0]);
-		m_normal_time_estimator.set_minimum_feedrate((float)print.config().machine_min_extruding_rate.values[0]);
-		m_normal_time_estimator.set_minimum_travel_feedrate((float)print.config().machine_min_travel_rate.values[0]);
-		m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::X, (float)print.config().machine_max_acceleration_x.values[0]);
-		m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Y, (float)print.config().machine_max_acceleration_y.values[0]);
-		m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Z, (float)print.config().machine_max_acceleration_z.values[0]);
-		m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::E, (float)print.config().machine_max_acceleration_e.values[0]);
-		m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::X, (float)print.config().machine_max_feedrate_x.values[0]);
-		m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Y, (float)print.config().machine_max_feedrate_y.values[0]);
-		m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Z, (float)print.config().machine_max_feedrate_z.values[0]);
-		m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::E, (float)print.config().machine_max_feedrate_e.values[0]);
-		m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::X, (float)print.config().machine_max_jerk_x.values[0]);
-		m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)print.config().machine_max_jerk_y.values[0]);
-		m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)print.config().machine_max_jerk_z.values[0]);
-		m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)print.config().machine_max_jerk_e.values[0]);
+        m_normal_time_estimator.set_retract_acceleration((float)print.config().machine_max_acceleration_retracting.values[0]);
+        m_normal_time_estimator.set_minimum_feedrate((float)print.config().machine_min_extruding_rate.values[0]);
+        m_normal_time_estimator.set_minimum_travel_feedrate((float)print.config().machine_min_travel_rate.values[0]);
+        m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::X, (float)print.config().machine_max_acceleration_x.values[0]);
+        m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Y, (float)print.config().machine_max_acceleration_y.values[0]);
+        m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Z, (float)print.config().machine_max_acceleration_z.values[0]);
+        m_normal_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::E, (float)print.config().machine_max_acceleration_e.values[0]);
+        m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::X, (float)print.config().machine_max_feedrate_x.values[0]);
+        m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Y, (float)print.config().machine_max_feedrate_y.values[0]);
+        m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Z, (float)print.config().machine_max_feedrate_z.values[0]);
+        m_normal_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::E, (float)print.config().machine_max_feedrate_e.values[0]);
+        m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::X, (float)print.config().machine_max_jerk_x.values[0]);
+        m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)print.config().machine_max_jerk_y.values[0]);
+        m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)print.config().machine_max_jerk_z.values[0]);
+        m_normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)print.config().machine_max_jerk_e.values[0]);
 
         if (m_silent_time_estimator_enabled)
         {
             m_silent_time_estimator.reset();
             m_silent_time_estimator.set_dialect(print.config().gcode_flavor);
-			m_silent_time_estimator.set_max_acceleration((float)print.config().machine_max_acceleration_extruding.values[1]);
-			m_silent_time_estimator.set_retract_acceleration((float)print.config().machine_max_acceleration_retracting.values[1]);
-			m_silent_time_estimator.set_minimum_feedrate((float)print.config().machine_min_extruding_rate.values[1]);
-			m_silent_time_estimator.set_minimum_travel_feedrate((float)print.config().machine_min_travel_rate.values[1]);
-			m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::X, (float)print.config().machine_max_acceleration_x.values[1]);
-			m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Y, (float)print.config().machine_max_acceleration_y.values[1]);
-			m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Z, (float)print.config().machine_max_acceleration_z.values[1]);
-			m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::E, (float)print.config().machine_max_acceleration_e.values[1]);
-			m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::X, (float)print.config().machine_max_feedrate_x.values[1]);
-			m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Y, (float)print.config().machine_max_feedrate_y.values[1]);
-			m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Z, (float)print.config().machine_max_feedrate_z.values[1]);
-			m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::E, (float)print.config().machine_max_feedrate_e.values[1]);
-			m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::X, (float)print.config().machine_max_jerk_x.values[1]);
-			m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)print.config().machine_max_jerk_y.values[1]);
-			m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)print.config().machine_max_jerk_z.values[1]);
-			m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)print.config().machine_max_jerk_e.values[1]);
+            /* "Stealth mode" values can be just a copy of "normal mode" values
+            * (when they aren't input for a printer preset).
+            * Thus, use back value from values, instead of second one, which could be absent
+            */
+            m_silent_time_estimator.set_max_acceleration((float)print.config().machine_max_acceleration_extruding.values.back());
+            m_silent_time_estimator.set_retract_acceleration((float)print.config().machine_max_acceleration_retracting.values.back());
+            m_silent_time_estimator.set_minimum_feedrate((float)print.config().machine_min_extruding_rate.values.back());
+            m_silent_time_estimator.set_minimum_travel_feedrate((float)print.config().machine_min_travel_rate.values.back());
+            m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::X, (float)print.config().machine_max_acceleration_x.values.back());
+            m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Y, (float)print.config().machine_max_acceleration_y.values.back());
+            m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::Z, (float)print.config().machine_max_acceleration_z.values.back());
+            m_silent_time_estimator.set_axis_max_acceleration(GCodeTimeEstimator::E, (float)print.config().machine_max_acceleration_e.values.back());
+            m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::X, (float)print.config().machine_max_feedrate_x.values.back());
+            m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Y, (float)print.config().machine_max_feedrate_y.values.back());
+            m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::Z, (float)print.config().machine_max_feedrate_z.values.back());
+            m_silent_time_estimator.set_axis_max_feedrate(GCodeTimeEstimator::E, (float)print.config().machine_max_feedrate_e.values.back());
+            m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::X, (float)print.config().machine_max_jerk_x.values.back());
+            m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)print.config().machine_max_jerk_y.values.back());
+            m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)print.config().machine_max_jerk_z.values.back());
+            m_silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)print.config().machine_max_jerk_e.values.back());
             if (print.config().single_extruder_multi_material) {
                 // As of now the fields are shown at the UI dialog in the same combo box as the ramming values, so they
                 // are considered to be active for the single extruder multi-material printers only.
@@ -851,7 +906,8 @@ void GCode::_do_export(Print &print, FILE *file)
             std::sort(zs.begin(), zs.end());
             m_layer_count += (unsigned int)(object->copies().size() * (std::unique(zs.begin(), zs.end()) - zs.begin()));
         }
-    } else {
+    }
+    else {
         // Print all objects with the same print_z together.
         std::vector<coordf_t> zs;
         for (auto object : print.objects()) {
@@ -869,7 +925,7 @@ void GCode::_do_export(Print &print, FILE *file)
     m_enable_cooling_markers = true;
     this->apply_print_config(print.config());
     this->set_extruders(print.extruders());
-    
+
     // Initialize colorprint.
     m_colorprint_heights = cast<float>(print.config().colorprint_heights.values);
 
@@ -878,31 +934,31 @@ void GCode::_do_export(Print &print, FILE *file)
         // get the minimum cross-section used in the print
         std::vector<double> mm3_per_mm;
         for (auto object : print.objects()) {
-            for (size_t region_id = 0; region_id < object->region_volumes.size(); ++ region_id) {
+            for (size_t region_id = 0; region_id < object->region_volumes.size(); ++region_id) {
                 const PrintRegion* region = print.regions()[region_id];
                 for (auto layer : object->layers()) {
                     const LayerRegion* layerm = layer->regions()[region_id];
-                    if (region->config().get_abs_value("perimeter_speed"          ) == 0 || 
-                        region->config().get_abs_value("small_perimeter_speed"    ) == 0 || 
-                        region->config().get_abs_value("external_perimeter_speed" ) == 0 || 
-                        region->config().get_abs_value("bridge_speed"             ) == 0)
+                    if (region->config().get_abs_value("perimeter_speed") == 0 ||
+                        region->config().get_abs_value("small_perimeter_speed") == 0 ||
+                        region->config().get_abs_value("external_perimeter_speed") == 0 ||
+                        region->config().get_abs_value("bridge_speed") == 0)
                         mm3_per_mm.push_back(layerm->perimeters.min_mm3_per_mm());
-                    if (region->config().get_abs_value("infill_speed"             ) == 0 || 
-                        region->config().get_abs_value("solid_infill_speed"       ) == 0 || 
-                        region->config().get_abs_value("top_solid_infill_speed"   ) == 0 || 
-                        region->config().get_abs_value("bridge_speed"             ) == 0)
+                    if (region->config().get_abs_value("infill_speed") == 0 ||
+                        region->config().get_abs_value("solid_infill_speed") == 0 ||
+                        region->config().get_abs_value("top_solid_infill_speed") == 0 ||
+                        region->config().get_abs_value("bridge_speed") == 0)
                         mm3_per_mm.push_back(layerm->fills.min_mm3_per_mm());
                 }
             }
-            if (object->config().get_abs_value("support_material_speed"           ) == 0 || 
-                object->config().get_abs_value("support_material_interface_speed" ) == 0)
+            if (object->config().get_abs_value("support_material_speed") == 0 ||
+                object->config().get_abs_value("support_material_interface_speed") == 0)
                 for (auto layer : object->support_layers())
                     mm3_per_mm.push_back(layer->support_fills.min_mm3_per_mm());
         }
         print.throw_if_canceled();
         // filter out 0-width segments
         mm3_per_mm.erase(std::remove_if(mm3_per_mm.begin(), mm3_per_mm.end(), [](double v) { return v < 0.000001; }), mm3_per_mm.end());
-        if (! mm3_per_mm.empty()) {
+        if (!mm3_per_mm.empty()) {
             // In order to honor max_print_speed we need to find a target volumetric
             // speed that we can use throughout the print. So we define this target 
             // volumetric speed as the volumetric speed produced by printing the 
@@ -915,7 +971,7 @@ void GCode::_do_export(Print &print, FILE *file)
         }
     }
     print.throw_if_canceled();
-    
+
     m_cooling_buffer = make_unique<CoolingBuffer>(*this);
     if (print.config().spiral_vase.value)
         m_spiral_vase = make_unique<SpiralVase>(print.config());
@@ -930,6 +986,83 @@ void GCode::_do_export(Print &print, FILE *file)
 
     // Write information on the generator.
     _write_format(file, "; %s\n\n", Slic3r::header_slic3r_generated().c_str());
+
+#if ENABLE_THUMBNAIL_GENERATOR
+    // Write thumbnails using base64 encoding
+    if (thumbnail_cb != nullptr)
+    {
+        const size_t max_row_length = 78;
+        ThumbnailsList thumbnails;
+        thumbnail_cb(thumbnails, print.full_print_config().option<ConfigOptionPoints>("thumbnails")->values, true, true, false);
+        for (const ThumbnailData& data : thumbnails)
+        {
+            if (data.is_valid())
+            {
+#if ENABLE_THUMBNAIL_GENERATOR_PNG_TO_GCODE
+                size_t png_size = 0;
+                void* png_data = tdefl_write_image_to_png_file_in_memory_ex((const void*)data.pixels.data(), data.width, data.height, 4, &png_size, MZ_DEFAULT_LEVEL, 1);
+                if (png_data != nullptr)
+                {
+                    std::string encoded;
+                    encoded.resize(boost::beast::detail::base64::encoded_size(png_size));
+                    encoded.resize(boost::beast::detail::base64::encode((void*)&encoded[0], (const void*)png_data, png_size));
+
+                    _write_format(file, "\n;\n; thumbnail begin %dx%d %d\n", data.width, data.height, encoded.size());
+
+                    unsigned int row_count = 0;
+                    while (encoded.size() > max_row_length)
+                    {
+                        _write_format(file, "; %s\n", encoded.substr(0, max_row_length).c_str());
+                        encoded = encoded.substr(max_row_length);
+                        ++row_count;
+                    }
+
+                    if (encoded.size() > 0)
+                        _write_format(file, "; %s\n", encoded.c_str());
+
+                    _write(file, "; thumbnail end\n;\n");
+
+                    mz_free(png_data);
+                }
+#else
+                _write_format(file, "\n;\n; thumbnail begin %dx%d\n", data.width, data.height);
+
+                size_t row_size = 4 * data.width;
+                for (int r = (int)data.height - 1; r >= 0; --r)
+                {
+                    std::string encoded;
+                    encoded.resize(boost::beast::detail::base64::encoded_size(row_size));
+                    encoded.resize(boost::beast::detail::base64::encode((void*)&encoded[0], (const void*)(data.pixels.data() + r * row_size), row_size));
+
+                    unsigned int row_count = 0;
+                    while (encoded.size() > max_row_length)
+                    {
+                        if (row_count == 0)
+                            _write_format(file, "; %s\n", encoded.substr(0, max_row_length).c_str());
+                        else
+                            _write_format(file, ";>%s\n", encoded.substr(0, max_row_length).c_str());
+
+                        encoded = encoded.substr(max_row_length);
+                        ++row_count;
+                    }
+
+                    if (encoded.size() > 0)
+                    {
+                        if (row_count == 0)
+                            _write_format(file, "; %s\n", encoded.c_str());
+                        else
+                            _write_format(file, ";>%s\n", encoded.c_str());
+                    }
+                }
+
+                _write(file, "; thumbnail end\n;\n");
+#endif // ENABLE_THUMBNAIL_GENERATOR_PNG_TO_GCODE
+            }
+            print.throw_if_canceled();
+        }
+    }
+#endif // ENABLE_THUMBNAIL_GENERATOR
+
     // Write notes (content of the Print Settings tab -> Notes)
     {
         std::list<std::string> lines;
@@ -970,6 +1103,9 @@ void GCode::_do_export(Print &print, FILE *file)
         if (m_silent_time_estimator_enabled)
             _writeln(file, GCodeTimeEstimator::Silent_First_M73_Output_Placeholder_Tag);
     }
+
+	// Hold total number of print toolchanges. Check for negative toolchanges (single extruder mode) and set to 0 (no tool change).
+    int total_toolchanges = std::max(0, print.wipe_tower_data().number_of_toolchanges);
 
     // Prepare the helper object for replacing placeholders in custom G-code and output filename.
     m_placeholder_parser = print.placeholder_parser();
@@ -1033,6 +1169,7 @@ void GCode::_do_export(Print &print, FILE *file)
     // For the start / end G-code to do the priming and final filament pull in case there is no wipe tower provided.
     m_placeholder_parser.set("has_wipe_tower", has_wipe_tower);
     m_placeholder_parser.set("has_single_extruder_multi_material_priming", has_wipe_tower && print.config().single_extruder_multi_material_priming);
+    m_placeholder_parser.set("total_toolchanges", total_toolchanges);
     std::string start_gcode = this->placeholder_parser_process("start_gcode", print.config().start_gcode.value, initial_extruder_id);
     // Set bed temperature if the start G-code does not contain any bed temp control G-codes.
     this->_print_first_layer_bed_temperature(file, print, start_gcode, initial_extruder_id, true);
@@ -1283,7 +1420,7 @@ void GCode::_do_export(Print &print, FILE *file)
     print.m_print_statistics.estimated_normal_color_print_times = m_normal_time_estimator.get_color_times_dhms(true);
     if (m_silent_time_estimator_enabled)
         print.m_print_statistics.estimated_silent_color_print_times = m_silent_time_estimator.get_color_times_dhms(true);
-
+    print.m_print_statistics.total_toolchanges = total_toolchanges;
     std::vector<Extruder> extruders = m_writer.extruders();
     if (! extruders.empty()) {
         std::pair<std::string, unsigned int> out_filament_used_mm ("; filament used [mm] = ", 0);
@@ -1333,6 +1470,8 @@ void GCode::_do_export(Print &print, FILE *file)
     }
     _write_format(file, "; total filament used [g] = %.1lf\n", print.m_print_statistics.total_weight);
     _write_format(file, "; total filament cost = %.1lf\n", print.m_print_statistics.total_cost);
+    if (print.m_print_statistics.total_toolchanges > 0)
+    	_write_format(file, "; total toolchanges = %i\n", print.m_print_statistics.total_toolchanges);
     _write_format(file, "; estimated printing time (normal mode) = %s\n", m_normal_time_estimator.get_time_dhms().c_str());
     if (m_silent_time_estimator_enabled)
         _write_format(file, "; estimated printing time (silent mode) = %s\n", m_silent_time_estimator.get_time_dhms().c_str());

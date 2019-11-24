@@ -7,6 +7,9 @@
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/GCode/PreviewData.hpp"
+#if ENABLE_THUMBNAIL_GENERATOR
+#include "libslic3r/GCode/ThumbnailData.hpp"
+#endif // ENABLE_THUMBNAIL_GENERATOR
 #include "libslic3r/Geometry.hpp"
 #include "libslic3r/ExtrusionEntity.hpp"
 #include "libslic3r/Utils.hpp"
@@ -22,6 +25,7 @@
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
 #include "GUI_ObjectManipulation.hpp"
+#include "Mouse3DController.hpp"
 #include "I18N.hpp"
 
 #if ENABLE_RETINA_GL
@@ -127,6 +131,9 @@ GLCanvas3D::LayersEditing::LayersEditing()
     , m_object_max_z(0.f)
     , m_slicing_parameters(nullptr)
     , m_layer_height_profile_modified(false)
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    , m_adaptive_cusp(0.2f)
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
     , state(Unknown)
     , band_width(2.0f)
     , strength(0.005f)
@@ -147,7 +154,9 @@ GLCanvas3D::LayersEditing::~LayersEditing()
 }
 
 const float GLCanvas3D::LayersEditing::THICKNESS_BAR_WIDTH = 70.0f;
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 const float GLCanvas3D::LayersEditing::THICKNESS_RESET_BUTTON_HEIGHT = 22.0f;
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
 bool GLCanvas3D::LayersEditing::init(const std::string& vertex_shader_filename, const std::string& fragment_shader_filename)
 {
@@ -214,13 +223,103 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     if (!m_enabled)
         return;
 
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    static const ImVec4 orange(0.757f, 0.404f, 0.216f, 1.0f);
+
+    const Size& cnv_size = canvas.get_canvas_size();
+    float canvas_w = (float)cnv_size.get_width();
+    float canvas_h = (float)cnv_size.get_height();
+
+    ImGuiWrapper& imgui = *wxGetApp().imgui();
+    imgui.set_next_window_pos(canvas_w - imgui.get_style_scaling() * THICKNESS_BAR_WIDTH, canvas_h, ImGuiCond_Always, 1.0f, 1.0f);
+    imgui.set_next_window_bg_alpha(0.5f);
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+
+    imgui.begin(_(L("Layer height profile")), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+
+    ImGui::PushStyleColor(ImGuiCol_Text, orange);
+    imgui.text(_(L("Left mouse button:")));
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    imgui.text(_(L("Add detail")));
+
+    ImGui::PushStyleColor(ImGuiCol_Text, orange);
+    imgui.text(_(L("Right mouse button:")));
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    imgui.text(_(L("Remove detail")));
+
+    ImGui::PushStyleColor(ImGuiCol_Text, orange);
+    imgui.text(_(L("Shift + Left mouse button:")));
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    imgui.text(_(L("Reset to base")));
+
+    ImGui::PushStyleColor(ImGuiCol_Text, orange);
+    imgui.text(_(L("Shift + Right mouse button:")));
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    imgui.text(_(L("Smoothing")));
+
+    ImGui::PushStyleColor(ImGuiCol_Text, orange);
+    imgui.text(_(L("Mouse wheel:")));
+    ImGui::PopStyleColor();
+    ImGui::SameLine();
+    imgui.text(_(L("Increase/decrease edit area")));
+    
+    ImGui::Separator();
+    if (imgui.button(_(L("Adaptive"))))
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), Event<float>(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, m_adaptive_cusp));
+
+    ImGui::SameLine();
+    float text_align = ImGui::GetCursorPosX();
+    imgui.text(_(L("Cusp (mm)")));
+    ImGui::SameLine();
+    float widget_align = ImGui::GetCursorPosX();
+    ImGui::PushItemWidth(120.0f);
+    m_adaptive_cusp = std::min(m_adaptive_cusp, (float)m_slicing_parameters->max_layer_height);
+    ImGui::SliderFloat("", &m_adaptive_cusp, 0.0f, (float)m_slicing_parameters->max_layer_height, "%.2f");
+
+    ImGui::Separator();
+    if (imgui.button(_(L("Smooth"))))
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileSmoothEvent(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, m_smooth_params ));
+
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(text_align);
+    imgui.text(_(L("Radius")));
+    ImGui::SameLine();
+    ImGui::PushItemWidth(120.0f);
+    ImGui::SetCursorPosX(widget_align);
+    int radius = (int)m_smooth_params.radius;
+    if (ImGui::SliderInt("##1", &radius, 1, 10))
+        m_smooth_params.radius = (unsigned int)radius;
+
+    ImGui::SetCursorPosX(text_align);
+    imgui.text(_(L("Keep min")));
+    ImGui::SameLine();
+    ImGui::PushItemWidth(120.0f);
+    ImGui::SetCursorPosX(widget_align);
+    imgui.checkbox("##2", m_smooth_params.keep_min);
+
+    ImGui::Separator();
+    if (imgui.button(_(L("Reset"))))
+        wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), SimpleEvent(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE));
+
+    imgui.end();
+
+    ImGui::PopStyleVar();
+
+    const Rect& bar_rect = get_bar_rect_viewport(canvas);
+#else
     const Rect& bar_rect = get_bar_rect_viewport(canvas);
     const Rect& reset_rect = get_reset_rect_viewport(canvas);
 
     _render_tooltip_texture(canvas, bar_rect, reset_rect);
     _render_reset_texture(reset_rect);
-    _render_active_object_annotations(canvas, bar_rect);
-    _render_profile(bar_rect);
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    render_active_object_annotations(canvas, bar_rect);
+    render_profile(bar_rect);
 }
 
 float GLCanvas3D::LayersEditing::get_cursor_z_relative(const GLCanvas3D& canvas)
@@ -245,11 +344,13 @@ bool GLCanvas3D::LayersEditing::bar_rect_contains(const GLCanvas3D& canvas, floa
     return (rect.get_left() <= x) && (x <= rect.get_right()) && (rect.get_top() <= y) && (y <= rect.get_bottom());
 }
 
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 bool GLCanvas3D::LayersEditing::reset_rect_contains(const GLCanvas3D& canvas, float x, float y)
 {
     const Rect& rect = get_reset_rect_screen(canvas);
     return (rect.get_left() <= x) && (x <= rect.get_right()) && (rect.get_top() <= y) && (y <= rect.get_bottom());
 }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
 Rect GLCanvas3D::LayersEditing::get_bar_rect_screen(const GLCanvas3D& canvas)
 {
@@ -257,9 +358,14 @@ Rect GLCanvas3D::LayersEditing::get_bar_rect_screen(const GLCanvas3D& canvas)
     float w = (float)cnv_size.get_width();
     float h = (float)cnv_size.get_height();
 
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    return Rect(w - thickness_bar_width(canvas), 0.0f, w, h);
+#else
     return Rect(w - thickness_bar_width(canvas), 0.0f, w, h - reset_button_height(canvas));
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 }
 
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 Rect GLCanvas3D::LayersEditing::get_reset_rect_screen(const GLCanvas3D& canvas)
 {
     const Size& cnv_size = canvas.get_canvas_size();
@@ -268,6 +374,7 @@ Rect GLCanvas3D::LayersEditing::get_reset_rect_screen(const GLCanvas3D& canvas)
 
     return Rect(w - thickness_bar_width(canvas), h - reset_button_height(canvas), w, h);
 }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
 Rect GLCanvas3D::LayersEditing::get_bar_rect_viewport(const GLCanvas3D& canvas)
 {
@@ -278,9 +385,14 @@ Rect GLCanvas3D::LayersEditing::get_bar_rect_viewport(const GLCanvas3D& canvas)
     float zoom = (float)canvas.get_camera().get_zoom();
     float inv_zoom = (zoom != 0.0f) ? 1.0f / zoom : 0.0f;
 
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    return Rect((half_w - thickness_bar_width(canvas)) * inv_zoom, half_h * inv_zoom, half_w * inv_zoom, -half_h * inv_zoom);
+#else
     return Rect((half_w - thickness_bar_width(canvas)) * inv_zoom, half_h * inv_zoom, half_w * inv_zoom, (-half_h + reset_button_height(canvas)) * inv_zoom);
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 }
 
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 Rect GLCanvas3D::LayersEditing::get_reset_rect_viewport(const GLCanvas3D& canvas)
 {
     const Size& cnv_size = canvas.get_canvas_size();
@@ -292,13 +404,14 @@ Rect GLCanvas3D::LayersEditing::get_reset_rect_viewport(const GLCanvas3D& canvas
 
     return Rect((half_w - thickness_bar_width(canvas)) * inv_zoom, (-half_h + reset_button_height(canvas)) * inv_zoom, half_w * inv_zoom, -half_h * inv_zoom);
 }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
-
-bool GLCanvas3D::LayersEditing::_is_initialized() const
+bool GLCanvas3D::LayersEditing::is_initialized() const
 {
     return m_shader.is_initialized();
 }
 
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 void GLCanvas3D::LayersEditing::_render_tooltip_texture(const GLCanvas3D& canvas, const Rect& bar_rect, const Rect& reset_rect) const
 {
     // TODO: do this with ImGui
@@ -344,8 +457,9 @@ void GLCanvas3D::LayersEditing::_render_reset_texture(const Rect& reset_rect) co
 
     GLTexture::render_texture(m_reset_texture.get_id(), reset_rect.get_left(), reset_rect.get_right(), reset_rect.get_bottom(), reset_rect.get_top());
 }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
-void GLCanvas3D::LayersEditing::_render_active_object_annotations(const GLCanvas3D& canvas, const Rect& bar_rect) const
+void GLCanvas3D::LayersEditing::render_active_object_annotations(const GLCanvas3D& canvas, const Rect& bar_rect) const
 {
     m_shader.start_using();
 
@@ -376,7 +490,7 @@ void GLCanvas3D::LayersEditing::_render_active_object_annotations(const GLCanvas
     m_shader.stop_using();
 }
 
-void GLCanvas3D::LayersEditing::_render_profile(const Rect& bar_rect) const
+void GLCanvas3D::LayersEditing::render_profile(const Rect& bar_rect) const
 {
     //FIXME show some kind of legend.
 
@@ -493,6 +607,24 @@ void GLCanvas3D::LayersEditing::reset_layer_height_profile(GLCanvas3D& canvas)
     canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
 }
 
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+void GLCanvas3D::LayersEditing::adaptive_layer_height_profile(GLCanvas3D& canvas, float cusp)
+{
+    m_layer_height_profile = layer_height_profile_adaptive(*m_slicing_parameters, *m_model_object, cusp);
+    const_cast<ModelObject*>(m_model_object)->layer_height_profile = m_layer_height_profile;
+    m_layers_texture.valid = false;
+    canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+}
+
+void GLCanvas3D::LayersEditing::smooth_layer_height_profile(GLCanvas3D& canvas, const HeightProfileSmoothingParams& smoothing_params)
+{
+    m_layer_height_profile = smooth_height_profile(m_layer_height_profile, *m_slicing_parameters, smoothing_params);
+    const_cast<ModelObject*>(m_model_object)->layer_height_profile = m_layer_height_profile;
+    m_layers_texture.valid = false;
+    canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+}
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+
 void GLCanvas3D::LayersEditing::generate_layer_height_texture()
 {
 	this->update_slicing_parameters();
@@ -554,6 +686,7 @@ float GLCanvas3D::LayersEditing::thickness_bar_width(const GLCanvas3D &canvas)
          * THICKNESS_BAR_WIDTH;
 }
 
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 float GLCanvas3D::LayersEditing::reset_button_height(const GLCanvas3D &canvas)
 {
     return
@@ -564,6 +697,7 @@ float GLCanvas3D::LayersEditing::reset_button_height(const GLCanvas3D &canvas)
 #endif
          * THICKNESS_RESET_BUTTON_HEIGHT;
 }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
 
 const Point GLCanvas3D::Mouse::Drag::Invalid_2D_Point(INT_MAX, INT_MAX);
@@ -1115,6 +1249,15 @@ wxDEFINE_EVENT(EVT_GLCANVAS_MOVE_DOUBLE_SLIDER, wxKeyEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_EDIT_COLOR_CHANGE, wxKeyEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_UNDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_REDO, SimpleEvent);
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+wxDEFINE_EVENT(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE, SimpleEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, Event<float>);
+wxDEFINE_EVENT(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, HeightProfileSmoothEvent);
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+
+#if ENABLE_THUMBNAIL_GENERATOR
+const double GLCanvas3D::DefaultCameraZoomToBoxMarginFactor = 1.25;
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 GLCanvas3D::GLCanvas3D(wxGLCanvas* canvas, Bed3D& bed, Camera& camera, GLToolbar& view_toolbar)
     : m_canvas(canvas)
@@ -1365,7 +1508,7 @@ void GLCanvas3D::set_model(Model* model)
 
 void GLCanvas3D::bed_shape_changed()
 {
-    m_camera.set_scene_box(scene_bounding_box());
+    refresh_camera_scene_box();
     m_camera.requires_zoom_to_bed = true;
     m_dirty = true;
     if (m_bed.is_prusa())
@@ -1391,7 +1534,7 @@ BoundingBoxf3 GLCanvas3D::volumes_bounding_box() const
 BoundingBoxf3 GLCanvas3D::scene_bounding_box() const
 {
     BoundingBoxf3 bb = volumes_bounding_box();
-    bb.merge(m_bed.get_bounding_box(false));
+    bb.merge(m_bed.get_bounding_box(true));
 
     if (m_config != nullptr)
     {
@@ -1412,6 +1555,29 @@ bool GLCanvas3D::is_layers_editing_allowed() const
 {
     return m_layers_editing.is_allowed();
 }
+
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+void GLCanvas3D::reset_layer_height_profile()
+{
+    m_layers_editing.reset_layer_height_profile(*this);
+    m_layers_editing.state = LayersEditing::Completed;
+    m_dirty = true;
+}
+
+void GLCanvas3D::adaptive_layer_height_profile(float cusp)
+{
+    m_layers_editing.adaptive_layer_height_profile(*this, cusp);
+    m_layers_editing.state = LayersEditing::Completed;
+    m_dirty = true;
+}
+
+void GLCanvas3D::smooth_layer_height_profile(const HeightProfileSmoothingParams& smoothing_params)
+{
+    m_layers_editing.smooth_layer_height_profile(*this, smoothing_params);
+    m_layers_editing.state = LayersEditing::Completed;
+    m_dirty = true;
+}
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
 bool GLCanvas3D::is_reload_delayed() const
 {
@@ -1539,10 +1705,11 @@ void GLCanvas3D::render()
         return;
     }
 
+    const Size& cnv_size = get_canvas_size();
+
     if (m_camera.requires_zoom_to_bed)
     {
         zoom_to_bed();
-        const Size& cnv_size = get_canvas_size();
         _resize((unsigned int)cnv_size.get_width(), (unsigned int)cnv_size.get_height());
         m_camera.requires_zoom_to_bed = false;
     }
@@ -1633,6 +1800,8 @@ void GLCanvas3D::render()
     m_camera.debug_render();
 #endif // ENABLE_CAMERA_STATISTICS
 
+    wxGetApp().plater()->get_mouse3d_controller().render_settings_dialog((unsigned int)cnv_size.get_width(), (unsigned int)cnv_size.get_height());
+
     wxGetApp().imgui()->render();
 
     m_canvas->SwapBuffers();
@@ -1642,6 +1811,18 @@ void GLCanvas3D::render()
     m_render_stats.last_frame = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
 #endif // ENABLE_RENDER_STATISTICS
 }
+
+#if ENABLE_THUMBNAIL_GENERATOR
+void GLCanvas3D::render_thumbnail(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background)
+{
+    switch (GLCanvas3DManager::get_framebuffers_type())
+    {
+    case GLCanvas3DManager::FB_Arb: { _render_thumbnail_framebuffer(thumbnail_data, w, h, printable_only, parts_only, transparent_background); break; }
+    case GLCanvas3DManager::FB_Ext: { _render_thumbnail_framebuffer_ext(thumbnail_data, w, h, printable_only, parts_only, transparent_background); break; }
+    default: { _render_thumbnail_legacy(thumbnail_data, w, h, printable_only, parts_only, transparent_background); break; }
+    }
+}
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 void GLCanvas3D::select_all()
 {
@@ -1926,7 +2107,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                 if (it->new_geometry()) {
                     // New volume.
                     unsigned int old_id = find_old_volume_id(it->composite_id);
-                    if (old_id != -1)
+                    if (old_id != (unsigned int)-1)
                         map_glvolume_old_to_new[old_id] = m_volumes.volumes.size();
                     m_volumes.load_object_volume(&model_object, obj_idx, volume_idx, instance_idx, m_color_by, m_initialized);
                     m_volumes.volumes.back()->geometry_id = key.geometry_id;
@@ -2071,20 +2252,6 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
         post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, 
                                contained_min_one && !m_model->objects.empty() && state != ModelInstance::PVS_Partly_Outside));
-
-// #ys_FIXME_delete_after_testing
-//         bool contained = m_volumes.check_outside_state(m_config, &state);
-//         if (!contained)
-//         {
-//             _set_warning_texture(WarningTexture::ObjectOutside, true);
-//             post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, state == ModelInstance::PVS_Fully_Outside));
-//         }
-//         else
-//         {
-//             m_volumes.reset_outside_state();
-//             _set_warning_texture(WarningTexture::ObjectOutside, false);
-//             post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, !m_model->objects.empty()));
-//         }
     }
     else
     {
@@ -2093,7 +2260,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
         post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, false));
     }
 
-    m_camera.set_scene_box(scene_bounding_box());
+    refresh_camera_scene_box();
 
     if (m_selection.is_empty())
     {
@@ -2129,11 +2296,11 @@ static void reserve_new_volume_finalize_old_volume(GLVolume& vol_new, GLVolume& 
 
 static void load_gcode_retractions(const GCodePreviewData::Retraction& retractions, GLCanvas3D::GCodePreviewVolumeIndex::EType extrusion_type, GLVolumeCollection &volumes, GLCanvas3D::GCodePreviewVolumeIndex &volume_index, bool gl_initialized)
 {
-	volume_index.first_volumes.emplace_back(extrusion_type, 0, (unsigned int)volumes.volumes.size());
-
 	// nothing to render, return
 	if (retractions.positions.empty())
 		return;
+
+	volume_index.first_volumes.emplace_back(extrusion_type, 0, (unsigned int)volumes.volumes.size());
 
 	GLVolume *volume = volumes.new_nontoolpath_volume(retractions.color.rgba, VERTEX_BUFFER_RESERVE_SIZE);
 
@@ -2200,6 +2367,9 @@ void GLCanvas3D::load_gcode_preview(const GCodePreviewData& preview_data, const 
 	                		++ idx_volume_index_src;
 	                		idx_volume_of_this_type_last = (idx_volume_index_src + 1 == m_gcode_preview_volume_index.first_volumes.size()) ? m_volumes.volumes.size() : m_gcode_preview_volume_index.first_volumes[idx_volume_index_src + 1].id;
 	                		idx_volume_of_this_type_first_new = idx_volume_dst;
+	                		if (idx_volume_src == idx_volume_of_this_type_last)
+	                			// Empty sequence of volumes for the current index item.
+	                			continue;
 	                	}
 	                	if (! m_volumes.volumes[idx_volume_src]->print_zs.empty())
                 			m_volumes.volumes[idx_volume_dst ++] = m_volumes.volumes[idx_volume_src];
@@ -2333,14 +2503,21 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
     m_dirty |= m_main_toolbar.update_items_state();
     m_dirty |= m_undoredo_toolbar.update_items_state();
     m_dirty |= m_view_toolbar.update_items_state();
+    bool mouse3d_controller_applied = wxGetApp().plater()->get_mouse3d_controller().apply(m_camera);
+    m_dirty |= mouse3d_controller_applied;
 
     if (!m_dirty)
         return;
 
     _refresh_if_shown_on_screen();
 
-    if (m_keep_dirty)
+    if (m_keep_dirty || mouse3d_controller_applied)
+    {
         m_dirty = true;
+        evt.RequestMore();
+    }
+    else
+        m_dirty = false;
 }
 
 void GLCanvas3D::on_char(wxKeyEvent& evt)
@@ -2385,6 +2562,20 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
 #endif /* __APPLE__ */
             post_event(SimpleEvent(EVT_GLTOOLBAR_COPY));
         break;
+
+#ifdef __APPLE__
+        case 'm':
+        case 'M':
+#else /* __APPLE__ */
+        case WXK_CONTROL_M:
+#endif /* __APPLE__ */
+            {
+                Mouse3DController& controller = wxGetApp().plater()->get_mouse3d_controller();
+                controller.show_settings_dialog(!controller.is_settings_dialog_shown());
+                m_dirty = true;
+                break;
+            }
+
 #ifdef __APPLE__
         case 'v':
         case 'V':
@@ -2452,11 +2643,11 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         case 'B':
         case 'b': { zoom_to_bed(); break; }
         case 'I':
-        case 'i': { set_camera_zoom(1.0); break; }
+        case 'i': { _update_camera_zoom(1.0); break; }
         case 'K':
         case 'k': { m_camera.select_next_type(); m_dirty = true; break; }
         case 'O':
-        case 'o': { set_camera_zoom(-1.0); break; }
+        case 'o': { _update_camera_zoom(-1.0); break; }
 #if ENABLE_RENDER_PICKING_PASS
         case 'T':
         case 't': {
@@ -2559,6 +2750,11 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
 
 void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
 {
+    // try to filter out events coming from mouse 3d 
+    Mouse3DController& controller = wxGetApp().plater()->get_mouse3d_controller();
+    if (controller.process_mouse_wheel())
+        return;
+
     if (!m_initialized)
         return;
 
@@ -2603,7 +2799,7 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
         return;
 
     // Calculate the zoom delta and apply it to the current zoom factor
-    set_camera_zoom((double)evt.GetWheelRotation() / (double)evt.GetWheelDelta());
+    _update_camera_zoom((double)evt.GetWheelRotation() / (double)evt.GetWheelDelta());
 }
 
 void GLCanvas3D::on_timer(wxTimerEvent& evt)
@@ -2795,6 +2991,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             m_layers_editing.state = LayersEditing::Editing;
             _perform_layer_editing_action(&evt);
         }
+#if !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
         else if ((layer_editing_object_idx != -1) && m_layers_editing.reset_rect_contains(*this, pos(0), pos(1)))
         {
             if (evt.LeftDown())
@@ -2807,6 +3004,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                 m_dirty = true;
             }
         }
+#endif // !ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
         else if (evt.LeftDown() && (evt.ShiftDown() || evt.AltDown()) && m_picking_enabled)
         {
             if (m_gizmos.get_current_type() != GLGizmosManager::SlaSupports)
@@ -2868,6 +3066,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                     volume_bbox.offset(1.0);
                     if (volume_bbox.contains(m_mouse.scene_position))
                     {
+                        m_volumes.volumes[volume_idx]->hover = GLVolume::HS_None;
                         // The dragging operation is initiated.
                         m_mouse.drag.move_volume_idx = volume_idx;
                         m_selection.start_dragging();
@@ -3385,13 +3584,6 @@ void GLCanvas3D::do_mirror(const std::string& snapshot_type)
     m_dirty = true;
 }
 
-void GLCanvas3D::set_camera_zoom(double zoom)
-{
-    const Size& cnv_size = get_canvas_size();
-    m_camera.set_zoom(zoom, _max_bounding_box(false, true), cnv_size.get_width(), cnv_size.get_height());
-    m_dirty = true;
-}
-
 void GLCanvas3D::update_gizmos_on_off_state()
 {
     set_as_dirty();
@@ -3552,6 +3744,341 @@ void GLCanvas3D::_render_undo_redo_stack(const bool is_undo, float pos_x)
 
     imgui->end();
 }
+
+#if ENABLE_THUMBNAIL_GENERATOR
+#define ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT 0
+#if ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+static void debug_output_thumbnail(const ThumbnailData& thumbnail_data)
+{
+    // debug export of generated image
+    wxImage image(thumbnail_data.width, thumbnail_data.height);
+    image.InitAlpha();
+
+    for (unsigned int r = 0; r < thumbnail_data.height; ++r)
+    {
+        unsigned int rr = (thumbnail_data.height - 1 - r) * thumbnail_data.width;
+        for (unsigned int c = 0; c < thumbnail_data.width; ++c)
+        {
+            unsigned char* px = (unsigned char*)thumbnail_data.pixels.data() + 4 * (rr + c);
+            image.SetRGB((int)c, (int)r, px[0], px[1], px[2]);
+            image.SetAlpha((int)c, (int)r, px[3]);
+        }
+    }
+
+    image.SaveFile("C:/prusa/test/test.png", wxBITMAP_TYPE_PNG);
+}
+#endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+
+
+static void render_volumes_in_thumbnail(Shader& shader, const GLVolumePtrs& volumes, ThumbnailData& thumbnail_data, bool printable_only, bool parts_only, bool transparent_background)
+{
+    auto is_visible = [](const GLVolume& v) -> bool
+    {
+        bool ret = v.printable;
+        ret &= (!v.shader_outside_printer_detection_enabled || !v.is_outside);
+        return ret;
+    };
+
+    static const GLfloat orange[] = { 0.923f, 0.504f, 0.264f, 1.0f };
+    static const GLfloat gray[] = { 0.64f, 0.64f, 0.64f, 1.0f };
+
+    GLVolumePtrs visible_volumes;
+
+    for (GLVolume* vol : volumes)
+    {
+        if (!vol->is_modifier && !vol->is_wipe_tower && (!parts_only || (vol->composite_id.volume_id >= 0)))
+        {
+            if (!printable_only || is_visible(*vol))
+                visible_volumes.push_back(vol);
+        }
+    }
+
+    if (visible_volumes.empty())
+        return;
+
+    BoundingBoxf3 box;
+    for (const GLVolume* vol : visible_volumes)
+    {
+        box.merge(vol->transformed_bounding_box());
+    }
+
+    Camera camera;
+    camera.set_type(Camera::Ortho);
+    camera.zoom_to_volumes(visible_volumes, thumbnail_data.width, thumbnail_data.height);
+    camera.apply_viewport(0, 0, thumbnail_data.width, thumbnail_data.height);
+    camera.apply_view_matrix();
+    camera.apply_projection(box);
+
+    if (transparent_background)
+        glsafe(::glClearColor(1.0f, 1.0f, 1.0f, 0.0f));
+
+    glsafe(::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+    glsafe(::glEnable(GL_DEPTH_TEST));
+
+    shader.start_using();
+
+    GLint shader_id = shader.get_shader_program_id();
+    GLint color_id = ::glGetUniformLocation(shader_id, "uniform_color");
+    GLint print_box_detection_id = ::glGetUniformLocation(shader_id, "print_box.volume_detection");
+    glcheck();
+
+    if (print_box_detection_id != -1)
+        glsafe(::glUniform1i(print_box_detection_id, 0));
+
+    for (const GLVolume* vol : visible_volumes)
+    {
+        if (color_id >= 0)
+            glsafe(::glUniform4fv(color_id, 1, (vol->printable && !vol->is_outside) ? orange : gray));
+        else
+            glsafe(::glColor4fv((vol->printable && !vol->is_outside) ? orange : gray));
+
+        vol->render();
+    }
+
+    shader.stop_using();
+
+    glsafe(::glDisable(GL_DEPTH_TEST));
+
+    if (transparent_background)
+        glsafe(::glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
+}
+
+void GLCanvas3D::_render_thumbnail_framebuffer(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background)
+{
+    thumbnail_data.set(w, h);
+    if (!thumbnail_data.is_valid())
+        return;
+
+    bool multisample = m_multisample_allowed;
+    if (multisample)
+        glsafe(::glEnable(GL_MULTISAMPLE));
+
+    GLint max_samples;
+    glsafe(::glGetIntegerv(GL_MAX_SAMPLES, &max_samples));
+    GLsizei num_samples = max_samples / 2;
+
+    GLuint render_fbo;
+    glsafe(::glGenFramebuffers(1, &render_fbo));
+    glsafe(::glBindFramebuffer(GL_FRAMEBUFFER, render_fbo));
+
+    GLuint render_tex = 0;
+    GLuint render_tex_buffer = 0;
+    if (multisample)
+    {
+        // use renderbuffer instead of texture to avoid the need to use glTexImage2DMultisample which is available only since OpenGL 3.2
+        glsafe(::glGenRenderbuffers(1, &render_tex_buffer));
+        glsafe(::glBindRenderbuffer(GL_RENDERBUFFER, render_tex_buffer));
+        glsafe(::glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_RGBA8, w, h));
+        glsafe(::glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_tex_buffer));
+    }
+    else
+    {
+        glsafe(::glGenTextures(1, &render_tex));
+        glsafe(::glBindTexture(GL_TEXTURE_2D, render_tex));
+        glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+        glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        glsafe(::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_tex, 0));
+    }
+
+    GLuint render_depth;
+    glsafe(::glGenRenderbuffers(1, &render_depth));
+    glsafe(::glBindRenderbuffer(GL_RENDERBUFFER, render_depth));
+    if (multisample)
+        glsafe(::glRenderbufferStorageMultisample(GL_RENDERBUFFER, num_samples, GL_DEPTH_COMPONENT24, w, h));
+    else
+        glsafe(::glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, w, h));
+
+    glsafe(::glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_depth));
+
+    GLenum drawBufs[] = { GL_COLOR_ATTACHMENT0 };
+    glsafe(::glDrawBuffers(1, drawBufs));
+
+    if (::glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        render_volumes_in_thumbnail(m_shader, m_volumes.volumes, thumbnail_data, printable_only, parts_only, transparent_background);
+
+        if (multisample)
+        {
+            GLuint resolve_fbo;
+            glsafe(::glGenFramebuffers(1, &resolve_fbo));
+            glsafe(::glBindFramebuffer(GL_FRAMEBUFFER, resolve_fbo));
+
+            GLuint resolve_tex;
+            glsafe(::glGenTextures(1, &resolve_tex));
+            glsafe(::glBindTexture(GL_TEXTURE_2D, resolve_tex));
+            glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+            glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            glsafe(::glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, resolve_tex, 0));
+
+            glsafe(::glDrawBuffers(1, drawBufs));
+
+            if (::glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+            {
+                glsafe(::glBindFramebuffer(GL_READ_FRAMEBUFFER, render_fbo));
+                glsafe(::glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolve_fbo));
+                glsafe(::glBlitFramebuffer(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_LINEAR));
+
+                glsafe(::glBindFramebuffer(GL_READ_FRAMEBUFFER, resolve_fbo));
+                glsafe(::glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)thumbnail_data.pixels.data()));
+            }
+
+            glsafe(::glDeleteTextures(1, &resolve_tex));
+            glsafe(::glDeleteFramebuffers(1, &resolve_fbo));
+        }
+        else
+            glsafe(::glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)thumbnail_data.pixels.data()));
+
+#if ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+        debug_output_thumbnail(thumbnail_data);
+#endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+    }
+
+    glsafe(::glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    glsafe(::glDeleteRenderbuffers(1, &render_depth));
+    if (render_tex_buffer != 0)
+        glsafe(::glDeleteRenderbuffers(1, &render_tex_buffer));
+    if (render_tex != 0)
+        glsafe(::glDeleteTextures(1, &render_tex));
+    glsafe(::glDeleteFramebuffers(1, &render_fbo));
+
+    if (multisample)
+        glsafe(::glDisable(GL_MULTISAMPLE));
+}
+
+void GLCanvas3D::_render_thumbnail_framebuffer_ext(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background)
+{
+    thumbnail_data.set(w, h);
+    if (!thumbnail_data.is_valid())
+        return;
+
+    bool multisample = m_multisample_allowed;
+    if (multisample)
+        glsafe(::glEnable(GL_MULTISAMPLE));
+
+    GLint max_samples;
+    glsafe(::glGetIntegerv(GL_MAX_SAMPLES_EXT, &max_samples));
+    GLsizei num_samples = max_samples / 2;
+
+    GLuint render_fbo;
+    glsafe(::glGenFramebuffersEXT(1, &render_fbo));
+    glsafe(::glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, render_fbo));
+
+    GLuint render_tex = 0;
+    GLuint render_tex_buffer = 0;
+    if (multisample)
+    {
+        // use renderbuffer instead of texture to avoid the need to use glTexImage2DMultisample which is available only since OpenGL 3.2
+        glsafe(::glGenRenderbuffersEXT(1, &render_tex_buffer));
+        glsafe(::glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, render_tex_buffer));
+        glsafe(::glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, num_samples, GL_RGBA8, w, h));
+        glsafe(::glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, render_tex_buffer));
+    }
+    else
+    {
+        glsafe(::glGenTextures(1, &render_tex));
+        glsafe(::glBindTexture(GL_TEXTURE_2D, render_tex));
+        glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+        glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+        glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+        glsafe(::glFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, render_tex, 0));
+    }
+
+    GLuint render_depth;
+    glsafe(::glGenRenderbuffersEXT(1, &render_depth));
+    glsafe(::glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, render_depth));
+    if (multisample)
+        glsafe(::glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, num_samples, GL_DEPTH_COMPONENT24, w, h));
+    else
+        glsafe(::glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, w, h));
+
+    glsafe(::glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, render_depth));
+
+    GLenum drawBufs[] = { GL_COLOR_ATTACHMENT0 };
+    glsafe(::glDrawBuffers(1, drawBufs));
+
+    if (::glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) == GL_FRAMEBUFFER_COMPLETE_EXT)
+    {
+        render_volumes_in_thumbnail(m_shader, m_volumes.volumes, thumbnail_data, printable_only, parts_only, transparent_background);
+
+        if (multisample)
+        {
+            GLuint resolve_fbo;
+            glsafe(::glGenFramebuffersEXT(1, &resolve_fbo));
+            glsafe(::glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, resolve_fbo));
+
+            GLuint resolve_tex;
+            glsafe(::glGenTextures(1, &resolve_tex));
+            glsafe(::glBindTexture(GL_TEXTURE_2D, resolve_tex));
+            glsafe(::glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr));
+            glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+            glsafe(::glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+            glsafe(::glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_2D, resolve_tex, 0));
+
+            glsafe(::glDrawBuffers(1, drawBufs));
+
+            if (::glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) == GL_FRAMEBUFFER_COMPLETE_EXT)
+            {
+                glsafe(::glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, render_fbo));
+                glsafe(::glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, resolve_fbo));
+                glsafe(::glBlitFramebufferEXT(0, 0, w, h, 0, 0, w, h, GL_COLOR_BUFFER_BIT, GL_LINEAR));
+
+                glsafe(::glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, resolve_fbo));
+                glsafe(::glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)thumbnail_data.pixels.data()));
+            }
+
+            glsafe(::glDeleteTextures(1, &resolve_tex));
+            glsafe(::glDeleteFramebuffersEXT(1, &resolve_fbo));
+        }
+        else
+            glsafe(::glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)thumbnail_data.pixels.data()));
+
+#if ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+        debug_output_thumbnail(thumbnail_data);
+#endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+    }
+
+    glsafe(::glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0));
+    glsafe(::glDeleteRenderbuffersEXT(1, &render_depth));
+    if (render_tex_buffer != 0)
+        glsafe(::glDeleteRenderbuffersEXT(1, &render_tex_buffer));
+    if (render_tex != 0)
+        glsafe(::glDeleteTextures(1, &render_tex));
+    glsafe(::glDeleteFramebuffersEXT(1, &render_fbo));
+
+    if (multisample)
+        glsafe(::glDisable(GL_MULTISAMPLE));
+}
+
+void GLCanvas3D::_render_thumbnail_legacy(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background)
+{
+    // check that thumbnail size does not exceed the default framebuffer size
+    const Size& cnv_size = get_canvas_size();
+    unsigned int cnv_w = (unsigned int)cnv_size.get_width();
+    unsigned int cnv_h = (unsigned int)cnv_size.get_height();
+    if ((w > cnv_w) || (h > cnv_h))
+    {
+        float ratio = std::min((float)cnv_w / (float)w, (float)cnv_h / (float)h);
+        w = (unsigned int)(ratio * (float)w);
+        h = (unsigned int)(ratio * (float)h);
+    }
+
+    thumbnail_data.set(w, h);
+    if (!thumbnail_data.is_valid())
+        return;
+
+    render_volumes_in_thumbnail(m_shader, m_volumes.volumes, thumbnail_data, printable_only, parts_only, transparent_background);
+
+    glsafe(::glReadPixels(0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, (void*)thumbnail_data.pixels.data()));
+#if ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+    debug_output_thumbnail(thumbnail_data);
+#endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG_OUTPUT
+
+    // restore the default framebuffer size to avoid flickering on the 3D scene
+    m_camera.apply_viewport(0, 0, cnv_size.get_width(), cnv_size.get_height());
+}
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 bool GLCanvas3D::_init_toolbars()
 {
@@ -3842,8 +4369,6 @@ void GLCanvas3D::_resize(unsigned int w, unsigned int h)
 
     // updates camera
     m_camera.apply_viewport(0, 0, w, h);
-
-    m_dirty = false;
 }
 
 BoundingBoxf3 GLCanvas3D::_max_bounding_box(bool include_gizmos, bool include_bed_model) const
@@ -3864,10 +4389,25 @@ BoundingBoxf3 GLCanvas3D::_max_bounding_box(bool include_gizmos, bool include_be
     return bb;
 }
 
+#if ENABLE_THUMBNAIL_GENERATOR
+void GLCanvas3D::_zoom_to_box(const BoundingBoxf3& box, double margin_factor)
+{
+    const Size& cnv_size = get_canvas_size();
+    m_camera.zoom_to_box(box, cnv_size.get_width(), cnv_size.get_height(), margin_factor);
+    m_dirty = true;
+}
+#else
 void GLCanvas3D::_zoom_to_box(const BoundingBoxf3& box)
 {
     const Size& cnv_size = get_canvas_size();
     m_camera.zoom_to_box(box, cnv_size.get_width(), cnv_size.get_height());
+    m_dirty = true;
+}
+#endif // ENABLE_THUMBNAIL_GENERATOR
+
+void GLCanvas3D::_update_camera_zoom(double zoom)
+{
+    m_camera.update_zoom(zoom);
     m_dirty = true;
 }
 
@@ -4066,7 +4606,9 @@ void GLCanvas3D::_render_objects() const
     if (m_volumes.empty())
         return;
 
+#if !ENABLE_THUMBNAIL_GENERATOR
     glsafe(::glEnable(GL_LIGHTING));
+#endif // !ENABLE_THUMBNAIL_GENERATOR
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     m_camera_clipping_plane = m_gizmos.get_sla_clipping_plane();
@@ -4110,7 +4652,9 @@ void GLCanvas3D::_render_objects() const
     m_shader.stop_using();
 
     m_camera_clipping_plane = ClippingPlane::ClipsNothing();
+#if !ENABLE_THUMBNAIL_GENERATOR
     glsafe(::glDisable(GL_LIGHTING));
+#endif // !ENABLE_THUMBNAIL_GENERATOR
 }
 
 void GLCanvas3D::_render_selection() const

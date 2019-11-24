@@ -32,6 +32,9 @@
 #include "libslic3r/Format/AMF.hpp"
 #include "libslic3r/Format/3mf.hpp"
 #include "libslic3r/GCode/PreviewData.hpp"
+#if ENABLE_THUMBNAIL_GENERATOR
+#include "libslic3r/GCode/ThumbnailData.hpp"
+#endif // ENABLE_THUMBNAIL_GENERATOR
 #include "libslic3r/Model.hpp"
 #include "libslic3r/Polygon.hpp"
 #include "libslic3r/Print.hpp"
@@ -62,6 +65,7 @@
 #include "GUI_Preview.hpp"
 #include "3DBed.hpp"
 #include "Camera.hpp"
+#include "Mouse3DController.hpp"
 #include "Tab.hpp"
 #include "PresetBundle.hpp"
 #include "BackgroundSlicingProcess.hpp"
@@ -72,6 +76,7 @@
 #include "../Utils/PrintHost.hpp"
 #include "../Utils/FixModelByWin10.hpp"
 #include "../Utils/UndoRedo.hpp"
+#include "../Utils/Thread.hpp"
 
 #include <wx/glcanvas.h>    // Needs to be last because reasons :-/
 #include "WipeTowerDialog.hpp"
@@ -82,6 +87,9 @@ using Slic3r::_3DScene;
 using Slic3r::Preset;
 using Slic3r::PrintHostJob;
 
+#if ENABLE_THUMBNAIL_GENERATOR
+static const std::pair<unsigned int, unsigned int> THUMBNAIL_SIZE_3MF = { 256, 256 };
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 namespace Slic3r {
 namespace GUI {
@@ -175,7 +183,7 @@ void ObjectInfo::msw_rescale()
     manifold_warning_icon->SetBitmap(create_scaled_bitmap(nullptr, "exclamation"));
 }
 
-enum SlisedInfoIdx
+enum SlicedInfoIdx
 {
     siFilament_m,
     siFilament_mm3,
@@ -192,7 +200,7 @@ class SlicedInfo : public wxStaticBoxSizer
 {
 public:
     SlicedInfo(wxWindow *parent);
-    void SetTextAndShow(SlisedInfoIdx idx, const wxString& text, const wxString& new_label="");
+    void SetTextAndShow(SlicedInfoIdx idx, const wxString& text, const wxString& new_label="");
 
 private:
     std::vector<std::pair<wxStaticText*, wxStaticText*>> info_vec;
@@ -222,7 +230,7 @@ SlicedInfo::SlicedInfo(wxWindow *parent) :
     init_info_label(_(L("Used Filament (mm³)")));
     init_info_label(_(L("Used Filament (g)")));
     init_info_label(_(L("Used Material (unit)")));
-    init_info_label(_(L("Cost")));
+    init_info_label(_(L("Cost (money)")));
     init_info_label(_(L("Estimated printing time")));
     init_info_label(_(L("Number of tool changes")));
 
@@ -230,7 +238,7 @@ SlicedInfo::SlicedInfo(wxWindow *parent) :
     this->Show(false);
 }
 
-void SlicedInfo::SetTextAndShow(SlisedInfoIdx idx, const wxString& text, const wxString& new_label/*=""*/)
+void SlicedInfo::SetTextAndShow(SlicedInfoIdx idx, const wxString& text, const wxString& new_label/*=""*/)
 {
     const bool show = text != "N/A";
     if (show)
@@ -1120,12 +1128,10 @@ void Sidebar::show_info_sizer()
     }
 }
 
-void Sidebar::show_sliced_info_sizer(const bool show)
+void Sidebar::update_sliced_info_sizer()
 {
-    wxWindowUpdateLocker freeze_guard(this);
-
-    p->sliced_info->Show(show);
-    if (show) {
+    if (p->sliced_info->IsShown(size_t(0)))
+    {
         if (p->plater->printer_technology() == ptSLA)
         {
             const SLAPrintStatistics& ps = p->plater->sla_print().print_statistics();
@@ -1141,7 +1147,18 @@ void Sidebar::show_sliced_info_sizer(const bool show)
                 wxString::Format("%.2f", (ps.objects_used_material + ps.support_used_material) / 1000);
             p->sliced_info->SetTextAndShow(siMateril_unit, info_text, new_label);
 
-            p->sliced_info->SetTextAndShow(siCost, "N/A"/*wxString::Format("%.2f", ps.total_cost)*/);
+            wxString str_total_cost = "N/A";
+
+            DynamicPrintConfig* cfg = wxGetApp().get_tab(Preset::TYPE_SLA_MATERIAL)->get_config();
+            if (cfg->option("bottle_cost")->getFloat() > 0.0 &&
+                cfg->option("bottle_volume")->getFloat() > 0.0)
+            {
+                double material_cost = cfg->option("bottle_cost")->getFloat() / 
+                                       cfg->option("bottle_volume")->getFloat();
+                str_total_cost = wxString::Format("%.2f", material_cost*(ps.objects_used_material + ps.support_used_material) / 1000);                
+            }
+            p->sliced_info->SetTextAndShow(siCost, str_total_cost);
+
             wxString t_est = std::isnan(ps.estimated_print_time) ? "N/A" : get_time_dhms(float(ps.estimated_print_time));
             p->sliced_info->SetTextAndShow(siEstimatedTime, t_est, _(L("Estimated printing time")) + " :");
 
@@ -1209,12 +1226,21 @@ void Sidebar::show_sliced_info_sizer(const bool show)
             }
 
             // if there is a wipe tower, insert number of toolchanges info into the array:
-            p->sliced_info->SetTextAndShow(siWTNumbetOfToolchanges, is_wipe_tower ? wxString::Format("%.d", p->plater->fff_print().wipe_tower_data().number_of_toolchanges) : "N/A");
+            p->sliced_info->SetTextAndShow(siWTNumbetOfToolchanges, is_wipe_tower ? wxString::Format("%.d", ps.total_toolchanges) : "N/A");
 
             // Hide non-FFF sliced info parameters
             p->sliced_info->SetTextAndShow(siMateril_unit, "N/A");
         }
     }
+}
+
+void Sidebar::show_sliced_info_sizer(const bool show)
+{
+    wxWindowUpdateLocker freeze_guard(this);
+
+    p->sliced_info->Show(show);
+    if (show)
+        update_sliced_info_sizer();
 
     Layout();
     p->scrolled->Refresh();
@@ -1370,6 +1396,7 @@ struct Plater::priv
     Sidebar *sidebar;
     Bed3D bed;
     Camera camera;
+    Mouse3DController mouse3d_controller;
     View3D* view3D;
     GLToolbar view_toolbar;
     Preview *preview;
@@ -1428,7 +1455,7 @@ struct Plater::priv
     class Job : public wxEvtHandler
     {
         int               m_range = 100;
-        std::future<void> m_ftr;
+        boost::thread     m_thread;
         priv *            m_plater = nullptr;
         std::atomic<bool> m_running{false}, m_canceled{false};
         bool              m_finalized = false;
@@ -1469,7 +1496,8 @@ struct Plater::priv
             // Do a full refresh of scene tree, including regenerating
             // all the GLVolumes. FIXME The update function shall just
             // reload the modified matrices.
-            if (!was_canceled()) plater().update((unsigned int)UpdateParams::FORCE_FULL_SCREEN_REFRESH);
+            if (!was_canceled())
+                plater().update(unsigned(UpdateParams::FORCE_FULL_SCREEN_REFRESH));
         }
 
     public:
@@ -1498,9 +1526,9 @@ struct Plater::priv
         }
 
         Job(const Job &) = delete;
-        Job(Job &&)      = default;
+        Job(Job &&)      = delete;
         Job &operator=(const Job &) = delete;
-        Job &operator=(Job &&) = default;
+        Job &operator=(Job &&) = delete;
 
         virtual void process() = 0;
 
@@ -1524,7 +1552,7 @@ struct Plater::priv
                 wxBeginBusyCursor();
 
                 try { // Execute the job
-                    m_ftr = std::async(std::launch::async, &Job::run, this);
+                    m_thread = create_thread([this] { this->run(); });
                 } catch (std::exception &) {
                     update_status(status_range(),
                                   _(L("ERROR: not enough resources to "
@@ -1540,16 +1568,15 @@ struct Plater::priv
         // returned if the timeout has been reached and the job is still
         // running. Call cancel() before this fn if you want to explicitly
         // end the job.
-        bool join(int timeout_ms = 0) const
+        bool join(int timeout_ms = 0)
         {
-            if (!m_ftr.valid()) return true;
-
+            if (!m_thread.joinable()) return true;
+            
             if (timeout_ms <= 0)
-                m_ftr.wait();
-            else if (m_ftr.wait_for(std::chrono::milliseconds(
-                         timeout_ms)) == std::future_status::timeout)
+                m_thread.join();
+            else if (!m_thread.try_join_for(boost::chrono::milliseconds(timeout_ms)))
                 return false;
-
+            
             return true;
         }
 
@@ -1916,6 +1943,11 @@ struct Plater::priv
     bool can_mirror() const;
     bool can_reload_from_disk() const;
 
+#if ENABLE_THUMBNAIL_GENERATOR
+    void generate_thumbnail(ThumbnailData& data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background);
+    void generate_thumbnails(ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool transparent_background);
+#endif // ENABLE_THUMBNAIL_GENERATOR
+
     void msw_rescale_object_menu();
 
     // returns the path to project file with the given extension (none if extension == wxEmptyString)
@@ -1983,6 +2015,17 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     background_process.set_fff_print(&fff_print);
     background_process.set_sla_print(&sla_print);
     background_process.set_gcode_preview_data(&gcode_preview_data);
+#if ENABLE_THUMBNAIL_GENERATOR
+    background_process.set_thumbnail_cb([this](ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool transparent_background)
+        {
+            std::packaged_task<void(ThumbnailsList&, const Vec2ds&, bool, bool, bool)> task([this](ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool transparent_background) {
+                generate_thumbnails(thumbnails, sizes, printable_only, parts_only, transparent_background);
+                });
+            std::future<void> result = task.get_future();
+            wxTheApp->CallAfter([&]() { task(thumbnails, sizes, printable_only, parts_only, transparent_background); });
+            result.wait();
+        });
+#endif // ENABLE_THUMBNAIL_GENERATOR
     background_process.set_slicing_completed_event(EVT_SLICING_COMPLETED);
     background_process.set_finished_event(EVT_PROCESS_COMPLETED);
     // Default printer technology for default config.
@@ -2052,6 +2095,11 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     view3D_canvas->Bind(EVT_GLCANVAS_RESETGIZMOS, [this](SimpleEvent&) { reset_all_gizmos(); });
     view3D_canvas->Bind(EVT_GLCANVAS_UNDO, [this](SimpleEvent&) { this->undo(); });
     view3D_canvas->Bind(EVT_GLCANVAS_REDO, [this](SimpleEvent&) { this->redo(); });
+#if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
+    view3D_canvas->Bind(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE, [this](SimpleEvent&) { this->view3D->get_canvas3d()->reset_layer_height_profile(); });
+    view3D_canvas->Bind(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, [this](Event<float>& evt) { this->view3D->get_canvas3d()->adaptive_layer_height_profile(evt.data); });
+    view3D_canvas->Bind(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, [this](HeightProfileSmoothEvent& evt) { this->view3D->get_canvas3d()->smooth_layer_height_profile(evt.data); });
+#endif // ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 
     // 3DScene/Toolbar:
     view3D_canvas->Bind(EVT_GLTOOLBAR_ADD, &priv::on_action_add, this);
@@ -2101,12 +2149,16 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     // updates camera type from .ini file
     camera.set_type(get_config("use_perspective_camera"));
 
+    mouse3d_controller.init();
+
     // Initialize the Undo / Redo stack with a first snapshot.
     this->take_snapshot(_(L("New Project")));
 }
 
 Plater::priv::~priv()
 {
+    mouse3d_controller.shutdown();
+
     if (config != nullptr)
         delete config;
 }
@@ -3273,6 +3325,7 @@ void Plater::priv::set_current_panel(wxPanel* panel)
             } else
                 view3D->reload_scene(true);
         }
+
         // sets the canvas as dirty to force a render at the 1st idle event (wxWidgets IsShownOnScreen() is buggy and cannot be used reliably)
         view3D->set_as_dirty();
         view_toolbar.select_item("3D");
@@ -3287,6 +3340,7 @@ void Plater::priv::set_current_panel(wxPanel* panel)
             this->q->reslice();
         // keeps current gcode preview, if any
         preview->reload_print(true);
+
         preview->set_canvas_as_dirty();
         view_toolbar.select_item("Preview");
     }
@@ -3588,6 +3642,26 @@ bool Plater::priv::init_object_menu()
 
     return true;
 }
+
+#if ENABLE_THUMBNAIL_GENERATOR
+void Plater::priv::generate_thumbnail(ThumbnailData& data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool transparent_background)
+{
+    view3D->get_canvas3d()->render_thumbnail(data, w, h, printable_only, parts_only, transparent_background);
+}
+
+void Plater::priv::generate_thumbnails(ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool transparent_background)
+{
+    thumbnails.clear();
+    for (const Vec2d& size : sizes)
+    {
+        thumbnails.push_back(ThumbnailData());
+        Point isize(size); // round to ints
+        generate_thumbnail(thumbnails.back(), isize.x(), isize.y(), printable_only, parts_only, transparent_background);
+        if (!thumbnails.back().is_valid())
+            thumbnails.pop_back();
+    }
+}
+#endif // ENABLE_THUMBNAIL_GENERATOR
 
 void Plater::priv::msw_rescale_object_menu()
 {
@@ -4627,7 +4701,13 @@ void Plater::export_3mf(const boost::filesystem::path& output_path)
     DynamicPrintConfig cfg = wxGetApp().preset_bundle->full_config_secure();
     const std::string path_u8 = into_u8(path);
     wxBusyCursor wait;
+#if ENABLE_THUMBNAIL_GENERATOR
+    ThumbnailData thumbnail_data;
+    p->generate_thumbnail(thumbnail_data, THUMBNAIL_SIZE_3MF.first, THUMBNAIL_SIZE_3MF.second, false, true, true);
+    if (Slic3r::store_3mf(path_u8.c_str(), &p->model, export_config ? &cfg : nullptr, &thumbnail_data)) {
+#else
     if (Slic3r::store_3mf(path_u8.c_str(), &p->model, export_config ? &cfg : nullptr)) {
+#endif // ENABLE_THUMBNAIL_GENERATOR
         // Success
         p->statusbar()->set_status_text(wxString::Format(_(L("3MF file exported to %s")), path));
         p->set_project_filename(path);
@@ -4791,7 +4871,7 @@ bool Plater::undo_redo_string_getter(const bool is_undo, int idx, const char** o
     const std::vector<UndoRedo::Snapshot>& ss_stack = p->undo_redo_stack().snapshots();
     const int idx_in_ss_stack = p->get_active_snapshot_index() + (is_undo ? -(++idx) : idx);
 
-    if (0 < idx_in_ss_stack && idx_in_ss_stack < ss_stack.size() - 1) {
+    if (0 < idx_in_ss_stack && (size_t)idx_in_ss_stack < ss_stack.size() - 1) {
         *out_text = ss_stack[idx_in_ss_stack].name.c_str();
         return true;
     }
@@ -4804,7 +4884,7 @@ void Plater::undo_redo_topmost_string_getter(const bool is_undo, std::string& ou
     const std::vector<UndoRedo::Snapshot>& ss_stack = p->undo_redo_stack().snapshots();
     const int idx_in_ss_stack = p->get_active_snapshot_index() + (is_undo ? -1 : 0);
 
-    if (0 < idx_in_ss_stack && idx_in_ss_stack < ss_stack.size() - 1) {
+    if (0 < idx_in_ss_stack && (size_t)idx_in_ss_stack < ss_stack.size() - 1) {
         out_text = ss_stack[idx_in_ss_stack].name;
         return;
     }
@@ -5141,6 +5221,16 @@ void Plater::msw_rescale()
 const Camera& Plater::get_camera() const
 {
     return p->camera;
+}
+
+const Mouse3DController& Plater::get_mouse3d_controller() const
+{
+    return p->mouse3d_controller;
+}
+
+Mouse3DController& Plater::get_mouse3d_controller()
+{
+    return p->mouse3d_controller;
 }
 
 bool Plater::can_delete() const { return p->can_delete(); }

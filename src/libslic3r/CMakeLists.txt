@@ -22,6 +22,8 @@ add_library(libslic3r STATIC
     Config.hpp
     EdgeGrid.cpp
     EdgeGrid.hpp
+    ElephantFootCompensation.cpp
+    ElephantFootCompensation.hpp
     ExPolygon.cpp
     ExPolygon.hpp
     ExPolygonCollection.cpp
@@ -71,6 +73,8 @@ add_library(libslic3r STATIC
     Format/STL.hpp
     GCode/Analyzer.cpp
     GCode/Analyzer.hpp
+    GCode/ThumbnailData.cpp
+    GCode/ThumbnailData.hpp
     GCode/CoolingBuffer.cpp
     GCode/CoolingBuffer.hpp
     GCode/PostProcessor.cpp
@@ -204,7 +208,7 @@ if (SLIC3R_PCH AND NOT SLIC3R_SYNTAXONLY)
     add_precompiled_header(libslic3r pchheader.hpp FORCEINCLUDE)
 endif ()
 
-target_compile_definitions(libslic3r PUBLIC -DUSE_TBB)
+target_compile_definitions(libslic3r PUBLIC -DUSE_TBB -DTBB_USE_CAPTURED_EXCEPTION=0)
 target_include_directories(libslic3r PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${LIBNEST2D_INCLUDES} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(libslic3r
     libnest2d
@@ -221,7 +225,8 @@ target_link_libraries(libslic3r
     poly2tri
     qhull
     semver
-    tbb
+    TBB::tbb
+    # OpenVDB::openvdb
     ${CMAKE_DL_LIBS}
     )
 
