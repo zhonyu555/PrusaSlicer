@@ -841,48 +841,55 @@ namespace Slic3r {
 			};
 
 			using namespace slic3r;
-			Diff diff = Diff(old_val, new_val, true);
+			Diff diff(old_val, new_val, true);
+			Diff::EditScript& editScript = diff.get_edit_script();
+			editScript.split_by_newline(old_val, new_val);
+			//diff.selfTest();
 
 			std::string cur_line;
 
-			for (const Diff::EditScriptAction& cur_action : diff.getSolution()) {
+			wxColour* col_rem = &wxColour(255, 75, 75);
+			wxColour* col_ins = &wxColour(75, 255, 75);
+
+			for (const Diff::EditScript::Action& cur_action : editScript.actions) {
 				std::string sub;
-				wxColour color;
+				wxColour* color;
 				bool useColor = false;
 				bool lb = false;
 
-				switch (cur_action.actionType)
+				switch (cur_action.type)
 				{
-					case Diff::EditScriptAction::ActionType::keep: {
+					case Diff::EditScript::Action::Type::keep: {
 						sub = old_val.substr(cur_action.offset, cur_action.count);
 						break;
 					}
-					case Diff::EditScriptAction::ActionType::remove: {
+					case Diff::EditScript::Action::Type::remove: {
 						sub = old_val.substr(cur_action.offset, cur_action.count);
-						color = wxColour(255, 0, 0, 255);
+						color = col_rem;
 						useColor = true;
 						break;
 					}
-					case Diff::EditScriptAction::ActionType::insert: {
+					case Diff::EditScript::Action::Type::insert: {
 						sub = new_val.substr(cur_action.offset, cur_action.count);
-						color = wxColour(0, 255, 0, 255);
+						color = col_ins;
 						useColor = true;
 						break;
 					}
-					case Diff::EditScriptAction::ActionType::keep_lineBreak: {
+					case Diff::EditScript::Action::Type::lineBreak: {
 						lb = true;
 						break;
 					}
-					case Diff::EditScriptAction::ActionType::remove_lineBreak: {
+					case Diff::EditScript::Action::Type::remove_lineBreak: {
 						sub = "\\n";
 						lb = true;
-						color = wxColour(255, 0, 0, 255);
+						color = col_rem;
 						useColor = true;
 						break;
 					}
-					case Diff::EditScriptAction::ActionType::insert_lineBreak: {
+					case Diff::EditScript::Action::Type::insert_lineBreak: {
 						sub = "\\n";
-						color = wxColour(0, 255, 0, 255);
+						lb = true;
+						color = col_ins;
 						useColor = true;
 						break;
 					}
@@ -895,12 +902,14 @@ namespace Slic3r {
 				boost::replace_all(sub, ">", "&gt;");
 
 				if (useColor) {
-					boost::format fmter("<span bgcolor=\"%1%\">%2%</span>");
-					fmter %
-						fakeAlpha(color, bg_colour, 130) %
-						sub;
+					if (!lb || cur_line.empty()) {
+						boost::format fmter("<span bgcolor=\"%1%\">%2%</span>");
+						fmter%
+							fakeAlpha(*color, bg_colour, 130) %
+							sub;
 
-					cur_line += fmter.str();
+						cur_line += fmter.str();
+					}
 				}
 				else {
 					cur_line += sub;
