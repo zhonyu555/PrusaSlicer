@@ -1373,7 +1373,7 @@ std::string Print::validate() const
         	} else if (extrusion_width_min <= layer_height) {
         		err_msg = (boost::format(L("%1%=%2% mm is too low to be printable at a layer height %3% mm")) % opt_key % extrusion_width_min % layer_height).str();
 				return false;
-			} else if (extrusion_width_max >= max_nozzle_diameter * 3.) {
+			} else if (extrusion_width_max >= max_nozzle_diameter * 4.) {
 				err_msg = (boost::format(L("Excessive %1%=%2% mm to be printable with a nozzle diameter %3% mm")) % opt_key % extrusion_width_max % max_nozzle_diameter).str();
 				return false;
 			}
@@ -1418,12 +1418,12 @@ std::string Print::validate() const
                 // if we don't have raft layers, any nozzle diameter is potentially used in first layer
                 first_layer_min_nozzle_diameter = min_nozzle_diameter;
             }
-            if (first_layer_height > first_layer_min_nozzle_diameter)
+            if (first_layer_height > first_layer_min_nozzle_diameter * 2.0)
                 return L("First layer height can't be greater than nozzle diameter");
             
             // validate layer_height
-            double layer_height = object->config().layer_height.value;
-            if (layer_height > min_nozzle_diameter)
+            const double layer_height = object->config().layer_height.value;
+            if (layer_height > min_nozzle_diameter * 2.0)
                 return L("Layer height can't be greater than nozzle diameter");
 
             // Validate extrusion widths.
