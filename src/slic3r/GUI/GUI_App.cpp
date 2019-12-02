@@ -201,8 +201,19 @@ bool GUI_App::on_init_inner()
     // Unix: ~/ .Slic3r
     // Windows : "C:\Users\username\AppData\Roaming\Slic3r" or "C:\Documents and Settings\username\Application Data\Slic3r"
     // Mac : "~/Library/Application Support/Slic3r"
-    if (data_dir().empty())
-        set_data_dir(wxStandardPaths::Get().GetUserDataDir().ToUTF8().data());
+	if (data_dir().empty()) {
+		std::string dir = wxStandardPaths::Get().GetUserDataDir().ToUTF8().data();
+
+#ifdef _DEBUG
+		std::string dbg_dir = dir + "_DEBUG";
+		if (!wxDirExists(dbg_dir) && wxDirExists(dir)) {
+			copy_dir_recursive(dir, dbg_dir);
+		}
+		set_data_dir(dbg_dir);
+#else
+		set_data_dir(dir);
+#endif
+	}
 
     app_config = new AppConfig();
     preset_bundle = new PresetBundle();
