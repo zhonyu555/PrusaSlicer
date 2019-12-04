@@ -1053,6 +1053,15 @@ wxString GUI_App::current_language_code_safe() const
 	return language_code;
 }
 
+Tab* GUI_App::find_tab_for_presets(const PresetCollection* preset) {
+	for (Tab* cur_tab : this->tabs_list) {
+		if (cur_tab->m_presets == preset) {
+			return cur_tab;
+		}
+	}
+	return nullptr;
+}
+
 void GUI_App::open_web_page_localized(const std::string &http_address)
 {
     wxLaunchDefaultBrowser(http_address + "&lng=" + this->current_language_code_safe());

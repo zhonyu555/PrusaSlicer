@@ -238,26 +238,48 @@ namespace Slic3r {
 			return w;
 		}
 
+/*----------------------------------------------------------------------------------*/
 
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
 			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 		{
-			m_app = app;
+			PrinterTechnology printer_technology = app->preset_bundle->printers.get_edited_preset().printer_technology();
 
+			for (Tab* cur_tab : app->tabs_list) {
+				if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
+					m_tabs.emplace_back(cur_tab);
+				}
+			}
+			m_external_header_str = header;
+			build();
+		}
+
+		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, Tab* tab, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
+			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+		{
+			m_tabs = { tab };
+			m_external_header_str = header;
+			build();
+		}
+
+		UnsavedChangesDialog::~UnsavedChangesDialog() {
+			delete this->m_dirty_tabs_tree;
+		}
+
+		void UnsavedChangesDialog::build() {
 			SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
 			wxBoxSizer* main_sizer = new wxBoxSizer(wxVERTICAL);
 
 			wxString dirty_tabs;
 			buildScrollWindow(dirty_tabs);
+			
+			wxFont font = GUI::wxGetApp().normal_font();
+			font.SetPointSize(10);
+			m_header = new wxStaticText(this, wxID_ANY, get_header_msg(dirty_tabs), wxDefaultPosition, wxDefaultSize);
+			m_header->SetFont(font);
 
-			m_msg = new wxStaticText(this, wxID_ANY, _(L("The presets on the following tabs were modified")) + ": " + dirty_tabs, wxDefaultPosition, wxDefaultSize);
-				wxFont msg_font = GUI::wxGetApp().normal_font();
-				msg_font.SetPointSize(10);
-				m_msg->SetFont(msg_font);
-
-
-			main_sizer->Add(m_msg, 0, wxALL, Dialog_def_border);
+			main_sizer->Add(m_header, 0, wxALL, Dialog_def_border);
 			main_sizer->Add(-1, Dialog_def_border);
 			main_sizer->Add(m_scroller_container, 1, wxEXPAND | wxALL, Dialog_def_border);
 			main_sizer->Add(buildYesNoBtns(), 0, wxEXPAND | wxTOP, Dialog_def_border * 2);
@@ -266,17 +288,14 @@ namespace Slic3r {
 			this->Center();
 		}
 
-		UnsavedChangesDialog::~UnsavedChangesDialog() {
-			delete this->m_dirty_tabs_tree;
-		}
-
 		void UnsavedChangesDialog::setCorrectSize() {
 			this->SetMinSize(wxSize(Dialog_min_width, Dialog_min_height));
 			//this->SetMaxSize(wxSize(Dialog_max_width, Dialog_max_height)); 
 			this->SetSize(wxSize(Dialog_min_width, Dialog_min_height));
 			this->Layout();
 
-			m_msg->Wrap(this->GetSize().GetWidth() - Dialog_def_border * 2);
+			m_header->Wrap(this->GetSize().GetWidth() - Dialog_def_border * 2);
+
 			this->Layout();
 			
 			wxSize size = this->GetSize();
@@ -303,6 +322,12 @@ namespace Slic3r {
 			}
 
 			this->SetSize(wxSize(std::min(req_width, Dialog_max_width), std::min(req_height, Dialog_max_height)));
+		}
+
+		wxString UnsavedChangesDialog::get_header_msg(const wxString& dirty_tabs) {
+			return m_external_header_str.empty() ?
+				_(L("The presets on the following tabs were modified")) + ": " + dirty_tabs :
+				m_external_header_str;
 		}
 
 		void UnsavedChangesDialog::buildScrollWindow(wxString& dirty_tabs) {
@@ -357,39 +382,40 @@ namespace Slic3r {
 
 			wxBoxSizer* scrolled_sizer = new wxBoxSizer(wxVERTICAL);
 
-			PrinterTechnology printer_technology = m_app->preset_bundle->printers.get_edited_preset().printer_technology();
-
 			wxColour_toggle bg_color(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW), wxSystemSettings::GetColour(wxSYS_COLOUR_FRAMEBK));
 
 			int itemCount = 0;
-			for (Tab* cur_tab : m_app->tabs_list) {
-				if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
-					if (dirty_tabs.empty())
-						dirty_tabs = cur_tab->title();
-					else
-						dirty_tabs += wxString(", ") + cur_tab->title();
+			for (Tab* cur_tab : m_tabs) {
+				std::string title = cur_tab->title();
 
-					wxPanel* cur_tab_win = new wxPanel(m_scroller, wxID_ANY);
-					wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
-
-					wxPanel* line_panel;
-					wxBoxSizer* line_sizer;
-					buildLineContainer(cur_tab_win, line_panel, line_sizer, bg_color, wxPoint(Dialog_def_border, Dialog_def_border /2));
-
-					UCD::dirty_opts_node* cur_tab_node = buildNode(line_panel, cur_tab->title(), this->m_dirty_tabs_tree, line_sizer, cur_tab);
-					wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
-					cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
-
-					line_sizer->Add(cur_tab_cb, 0, wxLEFT | wxALIGN_LEFT | wxALIGN_TOP, Dialog_def_border);
-					cur_tab_sizer->Add(line_panel, 0, wxEXPAND);
-					add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, bg_color);
-
-					cur_tab_win->SetSizer(cur_tab_sizer);
-					//cur_tab_win->SetBackgroundColour(background);
-
-					scrolled_sizer->Add(cur_tab_win, 0, wxEXPAND);
-					itemCount++;
+				if (dirty_tabs.empty()) {
+					dirty_tabs = title;
 				}
+				else {
+					dirty_tabs += wxString(", ") + title;
+				}
+
+				wxPanel* cur_tab_win = new wxPanel(m_scroller, wxID_ANY);
+				wxBoxSizer* cur_tab_sizer = new wxBoxSizer(wxVERTICAL);
+
+				wxPanel* line_panel;
+				wxBoxSizer* line_sizer;
+				buildLineContainer(cur_tab_win, line_panel, line_sizer, bg_color, wxPoint(Dialog_def_border, Dialog_def_border /2));
+
+				title += " - \"" + cur_tab->m_presets->get_edited_preset().name + "\"";
+				UCD::dirty_opts_node* cur_tab_node = buildNode(line_panel, title, this->m_dirty_tabs_tree, line_sizer, cur_tab);
+				wxCheckBox* cur_tab_cb = cur_tab_node->checkbox;
+				cur_tab_cb->SetFont(GUI::wxGetApp().bold_font());
+
+				line_sizer->Add(cur_tab_cb, 0, wxLEFT | wxALIGN_LEFT | wxALIGN_TOP, Dialog_def_border);
+				cur_tab_sizer->Add(line_panel, 0, wxEXPAND);
+				add_dirty_options(cur_tab, cur_tab_win, cur_tab_sizer, cur_tab_node, bg_color);
+
+				cur_tab_win->SetSizer(cur_tab_sizer);
+				//cur_tab_win->SetBackgroundColour(background);
+
+				scrolled_sizer->Add(cur_tab_win, 0, wxEXPAND);
+				itemCount++;
 			}
 
 			//resize all entry checkboxes so the val windows are the same distance from the left side
@@ -406,7 +432,7 @@ namespace Slic3r {
 				wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 
 				wxStaticBitmap* icon = new wxStaticBitmap(m_scroller, wxID_ANY, create_scaled_bitmap(nullptr, "tick_mark", 32));
-				wxStaticText* msg = new wxStaticText(m_scroller, wxID_ANY, _(L("Successfully saved")));
+				wxStaticText* msg = new wxStaticText(m_scroller, wxID_ANY, _(L("Nothing to save")));
 				wxFont msg_font = GUI::wxGetApp().normal_font();
 				msg_font.SetPointSize(12);
 				msg->SetFont(msg_font);
@@ -1018,7 +1044,7 @@ namespace Slic3r {
 				opt_id += "[" + std::to_string(extrIdx) + "]";
 			}
 
-			std::string tooltip = def.tooltip;
+			std::string tooltip = _(def.tooltip);
 			if (tooltip.length() > 0)
 				tooltip = tooltip + "\n" + _(L("default value")) + "\t: " +
 				(boost::iends_with(opt_id, "_gcode") ? "\n" : "") + default_val +
@@ -1117,7 +1143,7 @@ namespace Slic3r {
 				//refresh the ui
 				wxString dirty_tabs;
 				buildScroller(dirty_tabs);
-				m_msg->SetLabel(_(L("The presets on the following tabs were modified")) + ": " + dirty_tabs);
+				m_header->SetLabel(get_header_msg(dirty_tabs));
 				setCorrectSize();
 			}
 		}

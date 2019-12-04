@@ -4,6 +4,7 @@
 #include <wx/checkbox.h>
 #include "GUI_App.hpp"
 #include "Tab.hpp"
+#include "Preset.hpp"
 #include "PresetBundle.hpp"
 #include "libslic3r/Config.hpp"
 
@@ -12,7 +13,12 @@ namespace Slic3r {
 		class UnsavedChangesDialog : public wxDialog
 		{
 		public:
+			//Show all dirty tabs
 			UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption = wxMessageBoxCaptionStr, long style = wxOK | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
+
+			//Show single tab
+			UnsavedChangesDialog(wxWindow* parent, Tab* tab, const wxString& header, const wxString& caption = wxMessageBoxCaptionStr, long style = wxOK | wxCENTRE, const wxPoint& pos = wxDefaultPosition);
+
 			~UnsavedChangesDialog();
 		private:
 			struct dirty_opt {
@@ -137,13 +143,13 @@ namespace Slic3r {
 
 			//a node represents a parent (tab, category, ...) in the scroll window
 			struct dirty_opts_node {
-				dirty_opts_node* parent = nullptr;
+				dirty_opts_node*		parent = nullptr;
 
 				wxString				label;
-				wxCheckBox* checkbox = nullptr;
-				GrayableStaticBitmap* icon = nullptr;
-				wxStaticText* labelCtrl = nullptr;
-				wxSizer* parent_sizer = nullptr;
+				wxCheckBox*				checkbox = nullptr;
+				GrayableStaticBitmap*	icon = nullptr;
+				wxStaticText*			labelCtrl = nullptr;
+				wxSizer*				parent_sizer = nullptr;
 
 				Tab* tab = nullptr;
 				std::vector<dirty_opts_node*> childs;
@@ -201,10 +207,12 @@ namespace Slic3r {
 				}
 			};
 
-			GUI_App* m_app;
-			wxStaticText* m_msg;
-			wxWindow* m_scroller_container;
-			wxScrolledWindow* m_scroller = nullptr;
+			std::vector<Tab*>	m_tabs;
+
+			wxStaticText*		m_header;
+			wxString			m_external_header_str;
+			wxWindow*			m_scroller_container;
+			wxScrolledWindow*	m_scroller = nullptr;
 
 			ScalableButton* m_btn_save;
 			wxButton*		m_btn_select_all;
@@ -214,6 +222,8 @@ namespace Slic3r {
 
 			typedef std::map<std::string, wxBitmap> PageIconMap;
 
+			void build();
+			wxString get_header_msg(const wxString& dirty_tabs);
 			void setCorrectSize();
 			void buildScrollWindow(wxString& dirty_tabs);	//builds m_scroller_container
 			void buildScroller(wxString& dirty_tabs);		//builds m_scroller

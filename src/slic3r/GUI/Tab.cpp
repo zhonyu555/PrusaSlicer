@@ -9,6 +9,7 @@
 #include "slic3r/Utils/PrintHost.hpp"
 #include "BonjourDialog.hpp"
 #include "WipeTowerDialog.hpp"
+#include "UnsavedChangesDialog.hpp"
 #include "ButtonsDescription.hpp"
 
 #include <wx/app.h>
@@ -2910,46 +2911,82 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
     }
 }
 
-// If the current preset is dirty, the user is asked whether the changes may be discarded.
+// If the current preset is dirty, the user is asked whether the changes may be discarded and can optionally save them.
 // if the current preset was not dirty, or the user agreed to discard the changes, 1 is returned.
 bool Tab::may_discard_current_dirty_preset(PresetCollection* presets /*= nullptr*/, const std::string& new_printer_name /*= ""*/)
 {
-    if (presets == nullptr) presets = m_presets;
-    // Display a dialog showing the dirty options in a human readable form.
-    const Preset& old_preset = presets->get_edited_preset();
-    std::string   type_name  = presets->name();
-    wxString      tab        = "          ";
-    wxString      name       = old_preset.is_default ?
-        wxString::Format(_(L("Default preset (%s)")), _(type_name)) :
-        wxString::Format(_(L("Preset (%s)")), _(type_name)) + "\n" + tab + old_preset.name;
+	Tab* tab;
+	if (presets == nullptr) {
+		presets = m_presets;
+		tab = this;
+	}
+	else {
+		tab = wxGetApp().find_tab_for_presets(presets);
+	}
 
-    // Collect descriptions of the dirty options.
-    wxString changes;
-    for (const std::string &opt_key : presets->current_dirty_options()) {
-        const ConfigOptionDef &opt = m_config->def()->options.at(opt_key);
-        /*std::string*/wxString name = "";
-        if (! opt.category.empty())
-            name += _(opt.category) + " > ";
-        name += !opt.full_label.empty() ?
-                _(opt.full_label) :
-                _(opt.label);
-        changes += tab + /*from_u8*/(name) + "\n";
-    }
-    // Show a confirmation dialog with the list of dirty options.
-    wxString message = name + "\n\n";
-    if (new_printer_name.empty())
-        message += _(L("has the following unsaved changes:"));
-    else {
-        message += (m_type == Slic3r::Preset::TYPE_PRINTER) ?
-                _(L("is not compatible with printer")) :
-                _(L("is not compatible with print profile"));
-        message += wxString("\n") + tab + from_u8(new_printer_name) + "\n\n";
-        message += _(L("and it has the following unsaved changes:"));
-    }
-    wxMessageDialog confirm(parent(),
-        message + "\n" + changes + "\n\n" + _(L("Discard changes and continue anyway?")),
-        _(L("Unsaved Changes")), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
-    return confirm.ShowModal() == wxID_YES;
+	if (tab != nullptr) {
+		const Preset& old_preset = presets->get_edited_preset();
+		std::string   type_name = presets->name();
+
+		 std::string header = (old_preset.is_default ?
+			wxString::Format(_(L("Default preset (%s)")), _(type_name)) :
+			wxString::Format(_(L("Preset (%s)")), _(type_name))) + " \"" + old_preset.name + "\" ";
+
+		 if (new_printer_name.empty()) {
+			 header += _(L("has the following unsaved changes:"));
+		 } 
+		 else {
+
+			header += (m_type == Slic3r::Preset::TYPE_PRINTER) ?
+				_(L("is not compatible with printer")) :
+				_(L("is not compatible with print profile"));
+
+			header += " (\"" + from_u8(new_printer_name) + "\") ";
+			header += _(L("and it has the following unsaved changes:"));
+		}
+
+		UnsavedChangesDialog dialog(parent(), tab, header, wxString(SLIC3R_APP_NAME) + " - " + _(L("Unsaved Presets")));
+		return dialog.ShowModal() == wxID_YES;
+	}
+	else {
+		if (presets == nullptr) presets = m_presets;
+		// Display a dialog showing the dirty options in a human readable form.
+		const Preset& old_preset = presets->get_edited_preset();
+		std::string   type_name = presets->name();
+		wxString      tab = "          ";
+		wxString      name = old_preset.is_default ?
+			wxString::Format(_(L("Default preset (%s)")), _(type_name)) :
+			wxString::Format(_(L("Preset (%s)")), _(type_name)) + "\n" + tab + old_preset.name;
+
+		// Collect descriptions of the dirty options.
+		wxString changes;
+		for (const std::string& opt_key : presets->current_dirty_options()) {
+			const ConfigOptionDef& opt = m_config->def()->options.at(opt_key);
+			/*std::string*/wxString name = "";
+			if (!opt.category.empty())
+				name += _(opt.category) + " > ";
+			name += !opt.full_label.empty() ?
+				_(opt.full_label) :
+				_(opt.label);
+			changes += tab + /*from_u8*/(name)+"\n";
+		}
+		// Show a confirmation dialog with the list of dirty options.
+		wxString message = name + "\n\n";
+		if (new_printer_name.empty())
+			message += _(L("has the following unsaved changes:"));
+		else {
+			message += (m_type == Slic3r::Preset::TYPE_PRINTER) ?
+				_(L("is not compatible with printer")) :
+				_(L("is not compatible with print profile"));
+			message += wxString("\n") + tab + from_u8(new_printer_name) + "\n\n";
+			message += _(L("and it has the following unsaved changes:"));
+		}
+		wxMessageDialog dialog(parent(),
+			message + "\n" + changes + "\n\n" + _(L("Discard changes and continue anyway?")),
+			_(L("Unsaved Changes")), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION);
+
+		return dialog.ShowModal() == wxID_YES;
+	}
 }
 
 // If we are switching from the FFF-preset to the SLA, we should to control the printed objects if they have a part(s).
