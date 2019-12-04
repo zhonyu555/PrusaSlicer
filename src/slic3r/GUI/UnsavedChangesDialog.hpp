@@ -218,6 +218,8 @@ namespace Slic3r {
 			wxButton*		m_btn_select_all;
 			wxButton*		m_btn_select_none;
 
+			PrinterTechnology m_print_tech;
+
 			dirty_opts_node* m_dirty_tabs_tree = nullptr;
 
 			typedef std::map<std::string, wxBitmap> PageIconMap;
@@ -233,6 +235,7 @@ namespace Slic3r {
 			wxBoxSizer* buildYesNoBtns();
 			wxBitmap getColourBitmap(const std::string& color);
 			void updateSaveBtn();
+			void refresh_tab_list();
 
 			void buildLineContainer(wxWindow* parent, wxPanel*& cont_out, wxBoxSizer*& cont_sizer_out, wxColour_toggle& bg_colour, wxPoint v_padding, bool toggle_col = false);
 			void buildLineContainer(wxWindow* parent, wxPanel*& cont_out, wxBoxSizer*& cont_sizer_out, wxColour_toggle& bg_colour, int v_padding, bool toggle_col = false);

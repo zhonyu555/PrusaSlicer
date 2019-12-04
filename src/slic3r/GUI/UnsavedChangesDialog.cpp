@@ -243,10 +243,10 @@ namespace Slic3r {
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, GUI_App* app, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
 			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 		{
-			PrinterTechnology printer_technology = app->preset_bundle->printers.get_edited_preset().printer_technology();
+			m_print_tech = app->preset_bundle->printers.get_edited_preset().printer_technology();
 
 			for (Tab* cur_tab : app->tabs_list) {
-				if (cur_tab->supports_printer_technology(printer_technology) && cur_tab->current_preset_is_dirty()) {
+				if (cur_tab->supports_printer_technology(m_print_tech) && cur_tab->current_preset_is_dirty()) {
 					m_tabs.emplace_back(cur_tab);
 				}
 			}
@@ -257,6 +257,7 @@ namespace Slic3r {
 		UnsavedChangesDialog::UnsavedChangesDialog(wxWindow* parent, Tab* tab, const wxString& header, const wxString& caption, long style, const wxPoint& pos)
 			: wxDialog(parent, -1, caption, pos, wxSize(Dialog_min_width, Dialog_min_height), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 		{
+			m_print_tech = PrinterTechnology::ptUnknown;
 			m_tabs = { tab };
 			m_external_header_str = header;
 			build();
@@ -675,6 +676,18 @@ namespace Slic3r {
 			else {
 				m_btn_save->Enable(false);
 			}
+		}
+
+		void UnsavedChangesDialog::refresh_tab_list() {
+			std::vector<Tab*> new_tabs;
+
+			for (Tab* cur_tab : m_tabs) {
+				if ((m_print_tech == PrinterTechnology::ptUnknown || cur_tab->supports_printer_technology(m_print_tech)) && cur_tab->current_preset_is_dirty()) {
+					new_tabs.emplace_back(cur_tab);
+				}
+			}
+
+			m_tabs = std::move(new_tabs);
 		}
 
 		wxBoxSizer* UnsavedChangesDialog::buildYesNoBtns() {
@@ -1139,6 +1152,8 @@ namespace Slic3r {
 
 					cur_tab->update_after_preset_save(update_extr_count);
 				}
+
+				refresh_tab_list();
 
 				//refresh the ui
 				wxString dirty_tabs;
