@@ -326,9 +326,13 @@ namespace Slic3r {
 		}
 
 		wxString UnsavedChangesDialog::get_header_msg(const wxString& dirty_tabs) {
-			return m_external_header_str.empty() ?
-				_(L("The presets on the following tabs were modified")) + ": " + dirty_tabs :
-				m_external_header_str;
+			if (m_external_header_str.empty()) {
+				return dirty_tabs.empty() ?
+					"" :
+					_(L("The presets on the following tabs were modified")) + ": " + dirty_tabs;
+			}
+
+			return m_external_header_str;
 		}
 
 		void UnsavedChangesDialog::buildScrollWindow(wxString& dirty_tabs) {
@@ -448,8 +452,6 @@ namespace Slic3r {
 				m_btn_save->Enable(false);
 				m_btn_select_all->Enable(false);
 				m_btn_select_none->Enable(false);
-
-				dirty_tabs = "-";
 			}
 
 			m_scroller->SetSizer(scrolled_sizer, true);
@@ -831,6 +833,17 @@ namespace Slic3r {
 
 					break;
 				}
+				case coEnum: {
+					const ConfigOptionDef* def = opt.val.def;
+					for (size_t i = 0; i < def->enum_values.size() && i < def->enum_labels.size(); i++) {
+						if (old_val == def->enum_values[i]) {
+							old_val = _(def->enum_labels[i]);
+						}
+						if (new_val == def->enum_values[i]) {
+							new_val = _(def->enum_labels[i]);
+						}
+					}
+				}
 				case coFloatOrPercent:
 				case coFloat:
 				case coFloats:
@@ -840,7 +853,6 @@ namespace Slic3r {
 				case coInts:
 				case coBool:
 				case coBools:
-				case coEnum:
 				case coPoint:
 				case coPoint3:
 				case coPoints: {
@@ -1017,8 +1029,8 @@ namespace Slic3r {
 				ConfigOptionDef size_def = BedShapePanel::get_ConfigOptionDef("rect_size");
 				ConfigOptionDef orig_def = BedShapePanel::get_ConfigOptionDef("rect_origin");
 
-				auto s = new wxStaticText(win, wxID_ANY, size_def.label + ": " + ConfigOptionPoint(bed_shape.rectSize).to_string());
-				auto o = new wxStaticText(win, wxID_ANY, orig_def.label + ": " + ConfigOptionPoint(bed_shape.rectOrigin).to_string());
+				auto s = new wxStaticText(win, wxID_ANY, _(size_def.label) + ": " + ConfigOptionPoint(bed_shape.rectSize).to_string());
+				auto o = new wxStaticText(win, wxID_ANY, _(orig_def.label) + ": " + ConfigOptionPoint(bed_shape.rectOrigin).to_string());
 
 				s->SetToolTip(getTooltipText(size_def, -1));
 				o->SetToolTip(getTooltipText(orig_def, -1));
@@ -1034,7 +1046,7 @@ namespace Slic3r {
 			else if (bed_shape.type == BedShape::TCircular) {
 				ConfigOptionDef diam_def = BedShapePanel::get_ConfigOptionDef("diameter");
 
-				auto d = new wxStaticText(win, wxID_ANY, diam_def.label + ": " + wxNumberFormatter::ToString(bed_shape.diameter, 0, wxNumberFormatter::Style_None));
+				auto d = new wxStaticText(win, wxID_ANY, _(diam_def.label) + ": " + wxNumberFormatter::ToString(bed_shape.diameter, 0, wxNumberFormatter::Style_None));
 
 				d->SetToolTip(getTooltipText(diam_def, -1));
 
@@ -1157,9 +1169,12 @@ namespace Slic3r {
 
 				//refresh the ui
 				wxString dirty_tabs;
+				this->Freeze();
 				buildScroller(dirty_tabs);
 				m_header->SetLabel(get_header_msg(dirty_tabs));
 				setCorrectSize();
+				this->Thaw();
+				this->Refresh();
 			}
 		}
 	}

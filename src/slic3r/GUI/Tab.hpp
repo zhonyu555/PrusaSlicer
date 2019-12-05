@@ -506,26 +506,28 @@ private:
 		bool hasValidChosenName = false;
 		std::string chosenName;
 
-		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxStaticBitmap* _icon, wxStaticText* _text, Tab* _tab) : 
+		size_t max_width;
+
+		Entry(wxComboBox* _combo, std::string _title, PresetCollection* _preset, wxStaticBitmap* _icon, wxStaticText* _text, Tab* _tab, size_t _max_width) : 
 			combo(_combo),
 			title(_title),
 			preset(_preset),
 			status_icon(_icon),
 			status_text(_text),
-			tab(_tab)
+			tab(_tab),
+			max_width(_max_width)
 		{}
 
 		void setStatus(const wxBitmap& icon, std::string text, wxFont font) {
 			this->status_icon->SetBitmap(icon);
 			this->status_text->SetLabel(text);
-
 			this->status_text->SetFont(font);
 
-			int x = this->status_text->GetParent()->GetSize().GetWidth() - 22;
-			this->status_text->Wrap(x);
+			this->status_text->Wrap(max_width);
 		}
 	};
 
+	size_t						m_max_width;
 	std::vector<Entry*>			entries;
 	size_t						cur_entry_insert_offset = 0;
 	wxBoxSizer*					m_sizer;

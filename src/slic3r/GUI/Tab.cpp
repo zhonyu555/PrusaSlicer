@@ -3445,6 +3445,9 @@ void SavePresetWindow::build_base_layout() {
 	m_btn_accept->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { accept(); });
 
 	SetSizer(m_sizer);
+
+	size_t em = Slic3r::GUI::wxGetApp().em_unit();
+	m_max_width = 30 * em;
 }
 
 void SavePresetWindow::build_entry(const wxString& title, const std::string& default_name, std::vector<std::string> &values, PresetCollection* presets, Tab* tab)
@@ -3457,7 +3460,7 @@ void SavePresetWindow::build_entry(const wxString& title, const std::string& def
 	wxBoxSizer* sizer = new wxBoxSizer(wxHORIZONTAL);
 		wxStaticBitmap* status_icon = new wxStaticBitmap(this, wxID_ANY, wxNullBitmap);
 		wxComboBox* combo = new wxComboBox(this, wxID_ANY, from_u8(default_name),
-									wxDefaultPosition, wxSize(30 * em, -1), 0, 0, wxTE_PROCESS_ENTER);
+									wxDefaultPosition, wxSize(m_max_width, -1), 0, 0, wxTE_PROCESS_ENTER);
 		for (auto value : values)
 			combo->Append(from_u8(value));
 
@@ -3474,7 +3477,7 @@ void SavePresetWindow::build_entry(const wxString& title, const std::string& def
 	m_sizer->Insert(cur_entry_insert_offset++, sizer, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 	m_sizer->Insert(cur_entry_insert_offset++, status_text, 0, wxALIGN_CENTER_HORIZONTAL |wxALL, 10);
 
-	this->entries.push_back(new Entry(combo, std::string(title), presets, status_icon, status_text, tab));
+	this->entries.push_back(new Entry(combo, std::string(title), presets, status_icon, status_text, tab, m_max_width + 10));
 
 	combo->Bind(wxEVT_TEXT, [this, entry = entries.back()](wxCommandEvent& e){ On_combo_text(entry); });
 
