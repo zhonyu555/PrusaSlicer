@@ -52,10 +52,10 @@
 #include <Shlobj.h>
 #endif // __WXMSW__
 
-#if ENABLE_THUMBNAIL_GENERATOR
+#if ENABLE_THUMBNAIL_GENERATOR_DEBUG
 #include <boost/beast/core/detail/base64.hpp>
 #include <boost/nowide/fstream.hpp>
-#endif // ENABLE_THUMBNAIL_GENERATOR
+#endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG
 
 namespace Slic3r {
 namespace GUI {
@@ -186,7 +186,9 @@ bool GUI_App::on_init_inner()
     wxCHECK_MSG(wxDirExists(resources_dir), false,
         wxString::Format("Resources path does not exist or is not a directory: %s", resources_dir));
 
-    SetAppName(SLIC3R_APP_KEY);
+    // Profiles for the alpha are stored into the PrusaSlicer-alpha directory to not mix with the current release.
+    // SetAppName(SLIC3R_APP_KEY);
+    SetAppName(SLIC3R_APP_KEY "-alpha");
     SetAppDisplayName(SLIC3R_APP_NAME);
 
 // Enable this to get the default Win32 COMCTRL32 behavior of static boxes.
@@ -293,7 +295,7 @@ bool GUI_App::on_init_inner()
 
             PresetUpdater::UpdateResult updater_result;
             try {
-                updater_result = preset_updater->config_update();
+                updater_result = preset_updater->config_update(app_config->orig_version());
                 if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
                     mainframe->Close();
                 } else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {

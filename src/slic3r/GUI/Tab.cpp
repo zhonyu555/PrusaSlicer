@@ -2805,7 +2805,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
         PrinterTechnology  printer_technology = m_preset_bundle->printers.get_edited_preset().printer_technology();
         PresetCollection  &dependent = (printer_technology == ptFFF) ? m_preset_bundle->filaments : m_preset_bundle->sla_materials;
         bool 			   old_preset_dirty = dependent.current_is_dirty();
-        bool 			   new_preset_compatible = dependent.get_edited_preset().is_compatible_with_print(*m_presets->find_preset(preset_name, true));
+        bool 			   new_preset_compatible = is_compatible_with_print(dependent.get_edited_preset_with_vendor_profile(), m_presets->get_preset_with_vendor_profile(*m_presets->find_preset(preset_name, true)));
         if (! canceled)
             canceled = old_preset_dirty && ! new_preset_compatible && ! may_discard_current_dirty_preset(&dependent, preset_name);
         if (! canceled) {
@@ -2823,6 +2823,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
         // With the introduction of the SLA printer types, we need to support switching between
         // the FFF and SLA printers.
         const Preset 		&new_printer_preset     = *m_presets->find_preset(preset_name, true);
+		const PresetWithVendorProfile new_printer_preset_with_vendor_profile = m_presets->get_preset_with_vendor_profile(new_printer_preset);
         PrinterTechnology    old_printer_technology = m_presets->get_edited_preset().printer_technology();
         PrinterTechnology    new_printer_technology = new_printer_preset.printer_technology();
         if (new_printer_technology == ptSLA && old_printer_technology == ptFFF && !may_switch_to_SLA_preset())
@@ -2843,7 +2844,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
             };
             for (PresetUpdate &pu : updates) {
                 pu.old_preset_dirty = (old_printer_technology == pu.technology) && pu.presets->current_is_dirty();
-                pu.new_preset_compatible = (new_printer_technology == pu.technology) && pu.presets->get_edited_preset().is_compatible_with_printer(new_printer_preset);
+                pu.new_preset_compatible = (new_printer_technology == pu.technology) && is_compatible_with_printer(pu.presets->get_edited_preset_with_vendor_profile(), new_printer_preset_with_vendor_profile);
                 if (!canceled)
                     canceled = pu.old_preset_dirty && !pu.new_preset_compatible && !may_discard_current_dirty_preset(pu.presets, preset_name);
             }
@@ -3015,7 +3016,13 @@ void Tab::OnTreeSelChange(wxTreeEvent& event)
 #ifdef __linux__
     std::unique_ptr<wxWindowUpdateLocker> no_updates(new wxWindowUpdateLocker(this));
 #else
-//	wxWindowUpdateLocker noUpdates(this);
+    /* On Windows we use DoubleBuffering during rendering,
+     * so on Window is no needed to call a Freeze/Thaw functions.
+     * But under OSX (builds compiled with MacOSX10.14.sdk) wxStaticBitmap rendering is broken without Freeze/Thaw call.
+     */
+#ifdef __WXOSX__
+	wxWindowUpdateLocker noUpdates(this);
+#endif
 #endif
 
     if (m_pages.empty())
@@ -3076,7 +3083,8 @@ void Tab::save_preset(std::string name /*= ""*/)
     if (name.empty()) {
         const Preset &preset = m_presets->get_selected_preset();
         auto default_name = preset.is_default ? "Untitled" :
-                            preset.is_system ? (boost::format(_utf8(L("%1% - Copy"))) % preset.name).str() :
+//                            preset.is_system ? (boost::format(_utf8(L("%1% - Copy"))) % preset.name).str() :
+                            preset.is_system ? (boost::format(_CTX_utf8(L_CONTEXT("%1% - Copy", "PresetName"), "PresetName")) % preset.name).str() :
                             preset.name;
 
         bool have_extention = boost::iends_with(default_name, ".ini");
