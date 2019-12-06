@@ -17,7 +17,7 @@
 #define Dialog_max_height 800
 
 #define Dialog_min_width 500
-#define Dialog_min_height 300
+#define Dialog_min_height 350
 
 #define Dialog_def_border 6
 #define Dialog_child_indentation 20
@@ -594,7 +594,7 @@ namespace Slic3r {
 			for (dirty_opt& cur_opt : out) {
 				PageOptGroupShp ptrs = cur_opt.key == "bed_custom_texture" || cur_opt.key == "bed_custom_model" ?
 					tab->get_page_and_optgroup("bed_shape"):
-					tab->get_page_and_optgroup(cur_opt.key);
+					tab->get_page_and_optgroup(cur_opt.key, cur_opt.extruder_index);
 
 				if (ptrs.first != nullptr) {
 					cur_opt.page_name = ptrs.first->title();
