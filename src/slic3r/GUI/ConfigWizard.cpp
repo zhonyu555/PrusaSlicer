@@ -655,14 +655,6 @@ void PageMaterials::update_lists(int sel1, int sel2)
 
         sel2_prev = sel2;
     }
-
-    // for the very begining
-    if ((wizard_p()->run_reason == ConfigWizard::RR_DATA_EMPTY || wizard_p()->run_reason == ConfigWizard::RR_DATA_LEGACY)
-        && list_l3->size() > 0 )
-    {
-        list_l3->Check(0, true);
-        wizard_p()->update_presets_in_config(materials->appconfig_section(), list_l3->get_data(0), true);
-    }
 }
 
 void PageMaterials::select_material(int i)
@@ -778,8 +770,8 @@ PageMode::PageMode(ConfigWizard *parent)
 {
     append_text(_(L("PrusaSlicer's user interfaces comes in three variants:\nSimple, Advanced, and Expert.\n"
         "The Simple mode shows only the most frequently used settings relevant for regular 3D printing. "
-        "The other two offer progressivly more sophisticated fine-tuning, "
-        "they are suitable for advanced and expert usiser, respectively.")));
+        "The other two offer progressively more sophisticated fine-tuning, "
+        "they are suitable for advanced and expert users, respectively.")));
 
     radio_simple = new wxRadioButton(this, wxID_ANY, _(L("Simple mode")));
     radio_advanced = new wxRadioButton(this, wxID_ANY, _(L("Advanced mode")));
@@ -821,7 +813,7 @@ PageVendors::PageVendors(ConfigWizard *parent)
 {
     const AppConfig &appconfig = this->wizard_p()->appconfig_new;
 
-    append_text(wxString::Format(_(L("Pick another vendor supported by %s: (FIXME: this text)")), SLIC3R_APP_NAME));
+    append_text(wxString::Format(_(L("Pick another vendor supported by %s")), SLIC3R_APP_NAME) + ":");
 
     auto boldfont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
     boldfont.SetWeight(wxFONTWEIGHT_BOLD);
@@ -1254,7 +1246,7 @@ const std::string Materials::UNKNOWN = "(Unknown)";
 
 void Materials::push(const Preset *preset)
 {
-    presets.insert(preset);
+    presets.push_back(preset);
     types.insert(technology & T_FFF
         ? Materials::get_filament_type(preset)
         : Materials::get_material_type(preset));
@@ -1516,23 +1508,21 @@ void ConfigWizard::priv::update_materials(Technology technology)
         for (const auto &pair : bundles) {
             for (const auto &filament : pair.second.preset_bundle->filaments) {
                 // Check if filament is already added
-                if (filaments.containts(&filament)) { continue; }
-
+                if (filaments.containts(&filament)) 
+                	continue;
                 // Iterate printers in all bundles
-                for (const auto &pair : bundles) {
-                    for (const auto &printer : pair.second.preset_bundle->printers) {
+                // For now, we only allow the profiles to be compatible with another profiles inside the same bundle.
+//                for (const auto &pair : bundles)
+                    for (const auto &printer : pair.second.preset_bundle->printers)
                         // Filter out inapplicable printers
-                        if (!printer.is_visible || printer.printer_technology() != ptFFF) {
-                            continue;
-                        }
-
-                        if (filament.is_compatible_with_printer(printer)) {
+                        if (printer.is_visible && printer.printer_technology() == ptFFF && 
+                        	is_compatible_with_printer(PresetWithVendorProfile(filament, nullptr), PresetWithVendorProfile(printer, nullptr)) &&
+                            // Check if filament is already added
+                        	! filaments.containts(&filament)) {
                             filaments.push(&filament);
                             if (!filament.alias.empty())
                                 aliases_fff[filament.alias].insert(filament.name);
                         }
-                    }
-                }
             }
         }
     }
@@ -1545,23 +1535,21 @@ void ConfigWizard::priv::update_materials(Technology technology)
         for (const auto &pair : bundles) {
             for (const auto &material : pair.second.preset_bundle->sla_materials) {
                 // Check if material is already added
-                if (sla_materials.containts(&material)) { continue; }
-
+                if (sla_materials.containts(&material))
+                	continue;
                 // Iterate printers in all bundles
-                for (const auto &pair : bundles) {
-                    for (const auto &printer : pair.second.preset_bundle->printers) {
+				// For now, we only allow the profiles to be compatible with another profiles inside the same bundle.
+//                for (const auto &pair : bundles) 
+                    for (const auto &printer : pair.second.preset_bundle->printers)
                         // Filter out inapplicable printers
-                        if (!printer.is_visible || printer.printer_technology() != ptSLA) {
-                            continue;
-                        }
-
-                        if (material.is_compatible_with_printer(printer)) {
+                        if (printer.is_visible && printer.printer_technology() == ptSLA && 
+                        	is_compatible_with_printer(PresetWithVendorProfile(material, nullptr), PresetWithVendorProfile(printer, nullptr)) &&
+                            // Check if material is already added
+                        	! sla_materials.containts(&material)) {
                             sla_materials.push(&material);
                             if (!material.alias.empty())
                                 aliases_sla[material.alias].insert(material.name);
                         }
-                    }
-                }
             }
         }
     }
@@ -1813,7 +1801,7 @@ bool ConfigWizard::priv::check_sla_selected()
 // Public
 
 ConfigWizard::ConfigWizard(wxWindow *parent)
-    : DPIDialog(parent, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + name(), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+    : DPIDialog(parent, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _(name().ToStdString()), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
     , p(new priv(this))
 {
     this->SetFont(wxGetApp().normal_font());
@@ -1905,14 +1893,23 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
     });
 
     p->btn_prev->Bind(wxEVT_BUTTON, [this](const wxCommandEvent &) { this->p->index->go_prev(); });
-    p->btn_next->Bind(wxEVT_BUTTON, [this](const wxCommandEvent &) { this->p->index->go_next(); });
+
+    p->btn_next->Bind(wxEVT_BUTTON, [this](const wxCommandEvent &)
+    {
+        // check, that there is selected at least one filament/material
+        ConfigWizardPage* active_page = this->p->index->active_page();
+        if ( (active_page == p->page_filaments || active_page == p->page_sla_materials)
+            && !p->check_material_config())
+            return;
+        this->p->index->go_next();
+    });
+
     p->btn_finish->Bind(wxEVT_BUTTON, [this](const wxCommandEvent &)
     {
         if (!p->check_material_config())
             return;
         this->EndModal(wxID_OK);
     });
-//    p->btn_finish->Hide();
 
     p->btn_sel_all->Bind(wxEVT_BUTTON, [this](const wxCommandEvent &) {
         p->any_sla_selected = true;
@@ -1925,7 +1922,6 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
     p->index->Bind(EVT_INDEX_PAGE, [this](const wxCommandEvent &) {
         const bool is_last = p->index->active_is_last();
         p->btn_next->Show(! is_last);
-//        p->btn_finish->Show(is_last);
         if (is_last)
             p->btn_finish->SetFocus();
 

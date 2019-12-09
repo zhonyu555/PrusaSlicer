@@ -237,7 +237,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
 
-    imgui.begin(_(L("Layer height profile")), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+    imgui.begin(_(L("Variable layer height")), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
     ImGui::PushStyleColor(ImGuiCol_Text, orange);
     imgui.text(_(L("Left mouse button:")));
@@ -299,7 +299,8 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     ImGui::SetCursorPosX(text_align);
     imgui.text(_(L("Keep min")));
     ImGui::SameLine();
-    ImGui::SetCursorPosX(widget_align);
+    if (ImGui::GetCursorPosX() < widget_align)  // because of line lenght after localization
+        ImGui::SetCursorPosX(widget_align);
     ImGui::PushItemWidth(imgui.get_style_scaling() * 120.0f);
     imgui.checkbox("##2", m_smooth_params.keep_min);
 
@@ -692,7 +693,7 @@ void GLCanvas3D::LayersEditing::accept_changes(GLCanvas3D& canvas)
 {
     if (last_object_id >= 0) {
         if (m_layer_height_profile_modified) {
-            wxGetApp().plater()->take_snapshot(_(L("Layer height profile-Manual edit")));
+            wxGetApp().plater()->take_snapshot(_(L("Variable layer height - Manual edit")));
             const_cast<ModelObject*>(m_model_object)->layer_height_profile = m_layer_height_profile;
 			canvas.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
         }
@@ -1377,7 +1378,6 @@ GLCanvas3D::GLCanvas3D(wxGLCanvas* canvas, Bed3D& bed, Camera& camera, GLToolbar
     , m_retina_helper(nullptr)
 #endif
     , m_in_render(false)
-    , m_render_enabled(true)
     , m_bed(bed)
     , m_camera(camera)
     , m_view_toolbar(view_toolbar)
@@ -1670,7 +1670,7 @@ bool GLCanvas3D::is_layers_editing_allowed() const
 #if ENABLE_ADAPTIVE_LAYER_HEIGHT_PROFILE
 void GLCanvas3D::reset_layer_height_profile()
 {
-    wxGetApp().plater()->take_snapshot(_(L("Layer height profile-Reset")));
+    wxGetApp().plater()->take_snapshot(_(L("Variable layer height - Reset")));
     m_layers_editing.reset_layer_height_profile(*this);
     m_layers_editing.state = LayersEditing::Completed;
     m_dirty = true;
@@ -1678,7 +1678,7 @@ void GLCanvas3D::reset_layer_height_profile()
 
 void GLCanvas3D::adaptive_layer_height_profile(float cusp)
 {
-    wxGetApp().plater()->take_snapshot(_(L("Layer height profile-Adaptive")));
+    wxGetApp().plater()->take_snapshot(_(L("Variable layer height - Adaptive")));
     m_layers_editing.adaptive_layer_height_profile(*this, cusp);
     m_layers_editing.state = LayersEditing::Completed;
     m_dirty = true;
@@ -1686,7 +1686,7 @@ void GLCanvas3D::adaptive_layer_height_profile(float cusp)
 
 void GLCanvas3D::smooth_layer_height_profile(const HeightProfileSmoothingParams& smoothing_params)
 {
-    wxGetApp().plater()->take_snapshot(_(L("Layer height profile-Smooth all")));
+    wxGetApp().plater()->take_snapshot(_(L("Variable layer height - Smooth all")));
     m_layers_editing.smooth_layer_height_profile(*this, smoothing_params);
     m_layers_editing.state = LayersEditing::Completed;
     m_dirty = true;
@@ -1790,7 +1790,7 @@ void GLCanvas3D::update_volumes_colors_by_extruder()
 
 void GLCanvas3D::render()
 {
-    if (!m_render_enabled || m_in_render)
+    if (m_in_render)
     {
         // if called recursively, return
         m_dirty = true;
@@ -4362,7 +4362,7 @@ bool GLCanvas3D::_init_main_toolbar()
 
     item.name = "layersediting";
     item.icon_filename = "layers_white.svg";
-    item.tooltip = _utf8(L("Height ranges"));
+    item.tooltip = _utf8(L("Variable layer height"));
     item.sprite_id = 10;
     item.left.toggable = true;
     item.left.action_callback = [this]() { if (m_canvas != nullptr) wxPostEvent(m_canvas, SimpleEvent(EVT_GLTOOLBAR_LAYERSEDITING)); };

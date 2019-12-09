@@ -427,39 +427,44 @@ std::string WipeTowerIntegration::post_process_wipe_tower_moves(const WipeTower:
     Vec2f pos = tcr.start_pos;
     Vec2f transformed_pos = pos;
     Vec2f old_pos(-1000.1f, -1000.1f);
+    std::string never_skip_tag = WipeTower::never_skip_tag();
 
     while (gcode_str) {
         std::getline(gcode_str, line);  // we read the gcode line by line
 
-        // All G1 commands should be translated and rotated
+        // All G1 commands should be translated and rotated. X and Y coords are
+        // only pushed to the output when they differ from last time.
+        // WT generator can override this by appending the never_skip_tag
         if (line.find("G1 ") == 0) {
+            bool never_skip = false;
+            auto it = line.find(never_skip_tag);
+            if (it != std::string::npos) {
+                // remove the tag and remember we saw it
+                never_skip = true;
+                line.erase(it, it+never_skip_tag.size());
+            }
             std::ostringstream line_out;
             std::istringstream line_str(line);
             line_str >> std::noskipws;  // don't skip whitespace
             char ch = 0;
             while (line_str >> ch) {
-                if (ch == 'X')
-                    line_str >> pos.x();
+                if (ch == 'X' || ch =='Y')
+                    line_str >> (ch == 'X' ? pos.x() : pos.y());
                 else
-                    if (ch == 'Y')
-                        line_str >> pos.y();
-                    else
-                        line_out << ch;
+                    line_out << ch;
             }
 
-            transformed_pos = pos;
-            transformed_pos = Eigen::Rotation2Df(angle) * transformed_pos;
-            transformed_pos += translation;
+            transformed_pos = Eigen::Rotation2Df(angle) * pos + translation;
 
-            if (transformed_pos != old_pos) {
+            if (transformed_pos != old_pos || never_skip) {
                 line = line_out.str();
                 std::ostringstream oss;
                 oss << std::fixed << std::setprecision(3) << "G1 ";
-                if (transformed_pos.x() != old_pos.x())
+                if (transformed_pos.x() != old_pos.x() || never_skip)
                     oss << " X" << transformed_pos.x() - extruder_offset.x();
-                if (transformed_pos.y() != old_pos.y())
+                if (transformed_pos.y() != old_pos.y() || never_skip)
                     oss << " Y" << transformed_pos.y() - extruder_offset.y();
-
+                oss << " ";
                 line.replace(line.find("G1 "), 3, oss.str());
                 old_pos = transformed_pos;
             }
@@ -626,7 +631,7 @@ std::vector<GCode::LayerToPrint> GCode::collect_layers_to_print(const PrintObjec
 
             if (layer_to_print.print_z() > maximal_print_z + 2. * EPSILON)
                 throw std::runtime_error(_(L("Empty layers detected, the output would not be printable.")) + "\n\n" +
-                    _(L("Object name: ")) + object.model_object()->name + "\n" + _(L("Print z: ")) +
+                    _(L("Object name")) + ": " + object.model_object()->name + "\n" + _(L("Print z")) + ": " +
                     std::to_string(layers_to_print.back().print_z()) + "\n\n" + _(L("This is "
                     "usually caused by negligibly small extrusions or by a faulty model. Try to repair "
                     " the model or change its orientation on the bed.")));
@@ -798,6 +803,7 @@ void GCode::_do_export(Print& print, FILE* file)
     // resets time estimators
     m_normal_time_estimator.reset();
     m_normal_time_estimator.set_dialect(print.config().gcode_flavor);
+    m_normal_time_estimator.set_extrusion_axis(print.config().get_extrusion_axis()[0]);
     m_silent_time_estimator_enabled = (print.config().gcode_flavor == gcfMarlin) && print.config().silent_mode;
 
     // Until we have a UI support for the other firmwares than the Marlin, use the hardcoded default values
@@ -827,6 +833,7 @@ void GCode::_do_export(Print& print, FILE* file)
         {
             m_silent_time_estimator.reset();
             m_silent_time_estimator.set_dialect(print.config().gcode_flavor);
+            m_silent_time_estimator.set_extrusion_axis(print.config().get_extrusion_axis()[0]);
             /* "Stealth mode" values can be just a copy of "normal mode" values
             * (when they aren't input for a printer preset).
             * Thus, use back value from values, instead of second one, which could be absent
@@ -875,6 +882,9 @@ void GCode::_do_export(Print& print, FILE* file)
             extruder_offsets[extruder_id] = offset;
     }
     m_analyzer.set_extruder_offsets(extruder_offsets);
+
+    // tell analyzer about the extrusion axis
+    m_analyzer.set_extrusion_axis(print.config().get_extrusion_axis()[0]);
 
     // send extruders count to analyzer to allow it to detect invalid extruder idxs
     const ConfigOptionStrings* extruders_opt = dynamic_cast<const ConfigOptionStrings*>(print.config().option("extruder_colour"));

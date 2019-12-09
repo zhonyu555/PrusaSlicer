@@ -185,7 +185,9 @@ bool GUI_App::on_init_inner()
     wxCHECK_MSG(wxDirExists(resources_dir), false,
         wxString::Format("Resources path does not exist or is not a directory: %s", resources_dir));
 
-    SetAppName(SLIC3R_APP_KEY);
+    // Profiles for the alpha are stored into the PrusaSlicer-alpha directory to not mix with the current release.
+    // SetAppName(SLIC3R_APP_KEY);
+    SetAppName(SLIC3R_APP_KEY "-alpha");
     SetAppDisplayName(SLIC3R_APP_NAME);
 
 // Enable this to get the default Win32 COMCTRL32 behavior of static boxes.
@@ -281,7 +283,7 @@ bool GUI_App::on_init_inner()
 
             PresetUpdater::UpdateResult updater_result;
             try {
-                updater_result = preset_updater->config_update();
+                updater_result = preset_updater->config_update(app_config->orig_version());
                 if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
                     mainframe->Close();
                 } else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {
@@ -464,6 +466,9 @@ void GUI_App::recreate_GUI()
 
         dlg.Update(30, _(L("Recreating")) + dots);
         topwindow->Destroy();
+
+        // For this moment ConfigWizard is deleted, invalidate it
+        m_wizard = nullptr;
     }
 
     dlg.Update(80, _(L("Loading of current presets")) + dots);

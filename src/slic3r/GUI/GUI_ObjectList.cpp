@@ -328,7 +328,7 @@ wxString ObjectList::get_mesh_errors_list(const int obj_idx, const int vol_idx /
         return ""; // hide tooltip
 
     // Create tooltip string, if there are errors 
-    wxString tooltip = wxString::Format(_(L("Auto-repaired (%d errors):\n")), errors);
+    wxString tooltip = wxString::Format(_(L("Auto-repaired (%d errors):")), errors) + "\n";
 
     const stl_stats& stats = vol_idx == -1 ?
                             (*m_objects)[obj_idx]->get_object_stl_stats() :
@@ -524,6 +524,8 @@ void ObjectList::update_extruder_in_config(const wxDataViewItem& item)
 
     if (!m_config)
         return;
+
+    take_snapshot(_(L("Change Extruder")));
 
     const int extruder = m_objects_model->GetExtruderNumber(item);
     m_config->set_key_value("extruder", new ConfigOptionInt(extruder));
@@ -3845,6 +3847,9 @@ void ObjectList::set_extruder_for_selected_items(const int extruder) const
 {
     wxDataViewItemArray sels;
     GetSelections(sels);
+
+    if (!sels.empty())
+        take_snapshot(_(L("Change Extruders")));
 
     for (const wxDataViewItem& item : sels)
     {
