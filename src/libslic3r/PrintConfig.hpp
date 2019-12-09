@@ -437,6 +437,8 @@ public:
     ConfigOptionFloat               support_material_spacing;
     ConfigOptionFloat               support_material_speed;
     ConfigOptionBool                support_material_synchronize_layers;
+    // Density of first layer support material lines
+    ConfigOptionFloat               first_layer_support_material_density;
     // Overhang angle threshold.
     ConfigOptionInt                 support_material_threshold;
     ConfigOptionBool                support_material_with_sheath;
@@ -477,6 +479,7 @@ protected:
         OPT_PTR(support_material_spacing);
         OPT_PTR(support_material_speed);
         OPT_PTR(support_material_synchronize_layers);
+        OPT_PTR(first_layer_support_material_density);
         OPT_PTR(support_material_xy_spacing);
         OPT_PTR(support_material_threshold);
         OPT_PTR(support_material_with_sheath);
