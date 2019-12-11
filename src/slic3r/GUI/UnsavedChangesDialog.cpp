@@ -773,7 +773,7 @@ namespace Slic3r {
 		}
 
 		template<typename Functor>
-		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size, std::string tooltip) {
+		wxCheckBox* UnsavedChangesDialog::buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size, wxString tooltip) {
 			wxCheckBox* cb = new wxCheckBox(parent, wxID_ANY, label, wxDefaultPosition, size);
 			cb->SetValue(true);
 			cb->Bind(wxEVT_CHECKBOX, toggleCallback);
@@ -889,7 +889,7 @@ namespace Slic3r {
 				(wxWindow*)new GrayableStaticBitmap(parent, wxID_ANY, getColourBitmap(col));
 		}
 
-		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour_toggle& bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, UCD::dirty_opt_entry& opt, const std::string& tooltip) {
+		wxWindow* UnsavedChangesDialog::buildStringWindow(wxWindow* parent, wxColour_toggle& bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, UCD::dirty_opt_entry& opt, const wxString& tooltip) {
 			if (isNew) {
 				wxGenericStaticText* txt = new wxGenericStaticText(parent, wxID_ANY, new_val, wxDefaultPosition, wxDefaultSize);
 				wxFont f = GUI::wxGetApp().normal_font();
@@ -1058,15 +1058,15 @@ namespace Slic3r {
 			return win;
 		}
 
-		std::string UnsavedChangesDialog::getTooltipText(const ConfigOptionDef& def, int extrIdx) {
-			wxString default_val = def.default_value->to_string();
+		wxString UnsavedChangesDialog::getTooltipText(const ConfigOptionDef& def, int extrIdx) {
+			wxString default_val(def.default_value->to_string());
 
-			std::string opt_id = def.opt_key;
+			wxString opt_id = def.opt_key;
 			if (extrIdx >= 0) {
-				opt_id += "[" + std::to_string(extrIdx) + "]";
+				opt_id += wxString::Format(wxT("[%i]"), extrIdx);
 			}
 
-            std::string tooltip = _(def.tooltip).ToStdString();
+			wxString tooltip = _(def.tooltip);
 			if (tooltip.length() > 0)
 				tooltip = tooltip + "\n" + _(L("default value")) + "\t: " +
 				(boost::iends_with(opt_id, "_gcode") ? "\n" : "") + default_val +

@@ -104,7 +104,6 @@ namespace Slic3r {
 					Diff,
 					Shape
 				};
-				typedef std::map<std::string, void*> Aux_Data;
 
 				dirty_opts_node* parent;
 				dirty_opt			val;
@@ -118,18 +117,9 @@ namespace Slic3r {
 				Gui_Type			old_win_type = Gui_Type::Nil;
 				Gui_Type			new_win_type = Gui_Type::Nil;
 
-				Aux_Data			aux_data;
-
 				dirty_opt_entry(dirty_opt _val, wxCheckBox* _checkbox, dirty_opts_node* _parent, wxSizer* _parent_sizer)
 					: val(_val), checkbox(_checkbox), parent(_parent), parent_sizer(_parent_sizer)
 				{}
-
-				~dirty_opt_entry() {
-					Aux_Data::iterator it;
-					for (it = this->aux_data.begin(); it != aux_data.end(); it++) {
-						delete it->second;
-					}
-				}
 
 				void setWinEnabled(wxWindow* win, Gui_Type _gui_type, bool enabled = true);
 				void setValWinsEnabled(bool enabled = true);
@@ -241,15 +231,15 @@ namespace Slic3r {
 			void buildLineContainer(wxWindow* parent, wxPanel*& cont_out, wxBoxSizer*& cont_sizer_out, wxColour_toggle& bg_colour, int v_padding, bool toggle_col = false);
 			dirty_opts_node* buildNode(wxWindow* parent, const wxString& label, dirty_opts_node* parent_node, wxSizer* parent_sizer, Tab* tab = nullptr);
 			template<typename Functor>
-			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize, std::string tooltip = "");
+			wxCheckBox* buildCheckbox(wxWindow* parent, const wxString& label, const Functor& toggleCallback, wxSize size = wxDefaultSize, wxString tooltip = "");
 			dirty_opt_entry& buildOptionEntry(wxWindow* parent, dirty_opts_node* parent_node, dirty_opt opt, wxColour_toggle& bg_colour, wxSizer* parent_sizer);
 
 			void buildWindowsForOpt(dirty_opt_entry& opt, wxWindow* parent, wxColour_toggle& bg_colour);
 			wxWindow* buildColorWindow(wxWindow* parent, std::string col);
-			wxWindow* buildStringWindow(wxWindow* parent, wxColour_toggle& bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt, const std::string& tooltip);
+			wxWindow* buildStringWindow(wxWindow* parent, wxColour_toggle& bg_colour, bool isNew, const std::string& old_val, const std::string& new_val, dirty_opt_entry& opt, const wxString& tooltip);
 			wxWindow* buildShapeWindow(wxWindow* parent, ConfigOptionPoints* opt, bool isNew);
 
-			std::string getTooltipText(const ConfigOptionDef& def, int extrIdx);
+			wxString getTooltipText(const ConfigOptionDef& def, int extrIdx);
 
 			void OnBtnSaveSelected(wxCommandEvent& e);
 		};
