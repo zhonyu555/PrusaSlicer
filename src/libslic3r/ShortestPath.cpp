@@ -20,29 +20,46 @@ namespace Slic3r {
 template<typename EndPointType, typename KDTreeType, typename CouldReverseFunc>
 std::vector<std::pair<size_t, bool>> chain_segments_closest_point(std::vector<EndPointType> &end_points, KDTreeType &kdtree, CouldReverseFunc &could_reverse_func, EndPointType &first_point)
 {
+	//check pair
 	assert((end_points.size() & 1) == 0);
 	size_t num_segments = end_points.size() / 2;
 	assert(num_segments >= 2);
+	//set all points to "ungrabbed"
 	for (EndPointType &ep : end_points)
 		ep.chain_id = 0;
+	//create output struct idx_seg, reversed
 	std::vector<std::pair<size_t, bool>> out;
 	out.reserve(num_segments);
+	//put first point (idx/2 = segment_id ; first_point_idx & 1 => 0 if seg_start, !0 if seg_end)
 	size_t first_point_idx = &first_point - end_points.data();
 	out.emplace_back(first_point_idx / 2, (first_point_idx & 1) != 0);
+	//set the fisrt point as taken
 	first_point.chain_id = 1;
+	//now switch to the other end of the segment
 	size_t this_idx = first_point_idx ^ 1;
+	//add all other segments
 	for (int iter = (int)num_segments - 2; iter >= 0; -- iter) {
 		EndPointType &this_point = end_points[this_idx];
-    	this_point.chain_id = 1;
-    	// Find the closest point to this end_point, which lies on a different extrusion path (filtered by the lambda).
-    	// Ignore the starting point as the starting point is considered to be occupied, no end point coud connect to it.
+		//set the current point as taken
+		this_point.chain_id = 1;
+		// Find the closest point to this end_point, which lies on a different extrusion path (filtered by the lambda).
+		// Ignore the starting point as the starting point is considered to be occupied, no end point coud connect to it.
 		size_t next_idx = find_closest_point(kdtree, this_point.pos,
 			[this_idx, &end_points, &could_reverse_func](size_t idx) {
-				return (idx ^ this_idx) > 1 && end_points[idx].chain_id == 0 && ((idx ^ 1) == 0 || could_reverse_func(idx >> 1));
+				return
+					// ????
+					//(idx ^ this_idx) > 1 &&
+					// only consider untaken points
+					end_points[idx].chain_id == 0 
+					// only consider seg_start if can't be reversed
+					&& ((idx & 1) == 0 || could_reverse_func(idx >> 1));
 		});
 		assert(next_idx < end_points.size());
 		EndPointType &end_point = end_points[next_idx];
+		//set the new entry point as taken
 		end_point.chain_id = 1;
+		out.emplace_back(next_idx / 2, (next_idx & 1) != 0);
+		//now switch to the other end of the segment
 		this_idx = next_idx ^ 1;
 	}
 #ifndef NDEBUG
@@ -72,8 +89,11 @@ std::vector<std::pair<size_t, bool>> chain_segments_greedy_constrained_reversals
 	else if (num_segments == 1)
 	{
 		// Just sort the end points so that the first point visited is closest to start_near.
-		out.emplace_back(0, start_near != nullptr && 
-            (end_point_func(0, true) - *start_near).template cast<double>().squaredNorm() < (end_point_func(0, false) - *start_near).template cast<double>().squaredNorm());
+		if (could_reverse_func(0))
+			out.emplace_back(0, start_near != nullptr &&
+			(end_point_func(0, true) - *start_near).template cast<double>().squaredNorm() < (end_point_func(0, false) - *start_near).template cast<double>().squaredNorm());
+		else
+			out.emplace_back(0, false);
 	} 
 	else
 	{
@@ -999,13 +1019,13 @@ std::vector<std::pair<size_t, bool>> chain_extrusion_entities(std::vector<Extrus
 	auto segment_end_point = [&entities](size_t idx, bool first_point) -> const Point& { return first_point ? entities[idx]->first_point() : entities[idx]->last_point(); };
 	auto could_reverse = [&entities](size_t idx) { const ExtrusionEntity *ee = entities[idx]; return ee->is_loop() || ee->can_reverse(); };
 	std::vector<std::pair<size_t, bool>> out = chain_segments_greedy_constrained_reversals<Point, decltype(segment_end_point), decltype(could_reverse)>(segment_end_point, could_reverse, entities.size(), start_near);
-	for (size_t i = 0; i < entities.size(); ++ i) {
-		ExtrusionEntity *ee = entities[i];
+	for (size_t i = 0; i < out.size(); ++ i) {
+		ExtrusionEntity *ee = entities[out[i].first];
 		if (ee->is_loop())
 			// Ignore reversals for loops, as the start point equals the end point.
 			out[i].second = false;
 		// Is can_reverse() respected by the reversals?
-		assert(entities[i]->can_reverse() || ! out[i].second);
+		assert(entities[out[i].first]->can_reverse() || ! out[i].second);
 	}
 	return out;
 }
