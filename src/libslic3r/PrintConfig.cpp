@@ -1304,7 +1304,7 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Generate no less than the number of skirt loops required to consume "
                    "the specified amount of filament on the bottom layer. For multi-extruder machines, "
                    "this minimum applies to each extruder.");
-    def->sidetext = L("mm");
+    def->sidetext = L("cm");
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0));
