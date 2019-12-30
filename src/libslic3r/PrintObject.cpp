@@ -2396,7 +2396,10 @@ void PrintObject::discover_horizontal_shells()
                                     // is grown, and that little space is an internal solid shell so 
                                     // it triggers this too_narrow logic.)
                                     internal));
-                            solid = new_internal_solid;
+
+                            // grow the solid region to be supported for the next layer to include the extra
+                            // area generated here
+                            polygons_append(solid, new_internal_solid);
                         }
                     }
                     
