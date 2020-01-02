@@ -7,5 +7,11 @@ pipeline {
       }
     }
 
+    stage('Druhá') {
+      steps {
+        echo 'Druhá zpráva'
+      }
+    }
+
   }
 }
