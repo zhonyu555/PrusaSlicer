@@ -7,9 +7,16 @@ pipeline {
       }
     }
 
-    stage('Druh·') {
+    stage('Druh√°') {
       steps {
-        echo 'Druh· zpr·va'
+        echo 'Druh√° zpr√°va'
+      }
+    }
+
+    stage('Cekej') {
+      steps {
+        sleep 3
+        echo 'Cekej 3 s'
       }
     }
 
