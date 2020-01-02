@@ -1,21 +1,21 @@
 pipeline {
   agent any
   stages {
-    stage('Prvni') {
+    stage('Hlavni_1') {
       parallel {
-        stage('Prvni') {
+        stage('Prvni_msg') {
           steps {
             echo 'Prvni zprava'
           }
         }
 
-        stage('spi 1') {
+        stage('wait 1') {
           steps {
             sleep 1
           }
         }
 
-        stage('spi 2') {
+        stage('Wait 2') {
           steps {
             sleep 2
           }
@@ -24,15 +24,15 @@ pipeline {
       }
     }
 
-    stage('Druhá') {
+    stage('Hlavni_2') {
       parallel {
-        stage('Druhá') {
+        stage('msg') {
           steps {
-            echo 'Druhá zpráva'
+            echo 'Druha zprava'
           }
         }
 
-        stage('a cekej') {
+        stage('wait 2') {
           steps {
             sleep 3
           }
@@ -41,14 +41,14 @@ pipeline {
       }
     }
 
-    stage('Cekej') {
+    stage('Hlavni_3; msg, wait') {
       steps {
         sleep 3
         echo 'Cekej 3 s'
       }
     }
 
-    stage('Posledni') {
+    stage('Hlavni_4; msg, wait') {
       steps {
         sleep 2
         echo 'Cekej 2s a posledni zprava'
