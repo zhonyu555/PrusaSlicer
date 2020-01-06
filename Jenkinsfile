@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'docker build . -t marek9336/PrusaSlicer'
+        sh 'build marek9336/PrusaSlicer'
       }
     }
 
