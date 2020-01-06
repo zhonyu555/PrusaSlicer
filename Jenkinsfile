@@ -1,9 +1,9 @@
 pipeline {
   agent any
   stages {
-    stage('') {
+    stage('Build') {
       steps {
-        build 'marek93366/PrusaSlicer'
+        build 'marek9336/PrusaSlicer'
       }
     }
 
