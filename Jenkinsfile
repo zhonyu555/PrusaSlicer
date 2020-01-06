@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        sh 'build marek9336/PrusaSlicer'
+        build 'master'
       }
     }
 
