@@ -277,7 +277,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     if (ImGui::IsItemHovered())
     {
         ImGui::BeginTooltip();
-        ImGui::TextUnformatted(_(L("Higher print quality versus higher print speed.")));
+        ImGui::TextUnformatted(_(L("Higher print quality versus higher print speed.")).mb_str());
         ImGui::EndTooltip();
     }
 
