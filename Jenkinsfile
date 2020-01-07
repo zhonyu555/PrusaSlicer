@@ -8,5 +8,12 @@ ls'''
       }
     }
 
+    stage('') {
+      steps {
+        sh '''mkdir build
+cd build'''
+      }
+    }
+
   }
 }
