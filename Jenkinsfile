@@ -12,9 +12,10 @@ ls'''
       }
     }
 
-    stage('') {
+    stage('error') {
       steps {
-        sh 'pwd'
+        sh '''pwd
+ls'''
       }
     }
 
