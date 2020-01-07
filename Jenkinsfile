@@ -21,7 +21,7 @@ ls'''
 
     stage('cmake') {
       steps {
-        cmakeBuild(installation: 'InSearchPath', buildType: 'debug', cleanBuild: true, buildDir: 'build', generator: 'Ninja')
+        cmakeBuild(installation: 'cmake', buildType: 'debug', cleanBuild: true, buildDir: 'build', generator: 'Ninja')
       }
     }
 
