@@ -3,7 +3,7 @@ pipeline {
   stages {
     stage('Build') {
       steps {
-        build 'master'
+        build 'origin/tags/version_2.2.0-alpha2'
       }
     }
 
