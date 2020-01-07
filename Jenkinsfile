@@ -12,5 +12,11 @@ ls'''
       }
     }
 
+    stage('') {
+      steps {
+        sh 'cmake ..'
+      }
+    }
+
   }
 }
