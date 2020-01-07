@@ -12,9 +12,10 @@ ls'''
       }
     }
 
-    stage('') {
+    stage('error') {
       steps {
         sh 'cmake ..'
+        cmake(installation: 'cmake', arguments: '..')
       }
     }
 
