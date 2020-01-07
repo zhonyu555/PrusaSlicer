@@ -19,5 +19,11 @@ ls'''
       }
     }
 
+    stage('cmake') {
+      steps {
+        cmakeBuild(installation: 'cmake', buildType: 'debug', cleanBuild: true, buildDir: 'build')
+      }
+    }
+
   }
 }
