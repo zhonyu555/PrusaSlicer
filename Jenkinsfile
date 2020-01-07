@@ -1,11 +1,9 @@
 pipeline {
   agent any
   stages {
-    stage('error') {
+    stage('') {
       steps {
         sh 'pwd'
-        sh 'cd build'
-        sh 'makec --version'
       }
     }
 
