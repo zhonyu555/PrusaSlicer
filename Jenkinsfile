@@ -12,7 +12,7 @@ ls'''
       }
     }
 
-    stage('error') {
+    stage('vypis_slozek') {
       steps {
         sh '''pwd
 ls'''
