@@ -1,17 +1,19 @@
 pipeline {
   agent any
   stages {
-    stage('pwd,ls') {
+    stage('pwd_ls') {
       steps {
         sh '''pwd
 ls'''
       }
     }
 
-    stage('') {
+    stage('mk_build') {
       steps {
         sh '''mkdir build
-cd build'''
+cd build
+pwd
+ls'''
       }
     }
 
