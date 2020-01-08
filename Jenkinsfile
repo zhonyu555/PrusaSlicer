@@ -21,7 +21,7 @@ ls'''
 
     stage('error') {
       steps {
-        cmake(installation: 'cmake', workingDir: 'build')
+        cmake(installation: 'cmake', arguments: '-S PrusaSlicer -B PrusaSlicer/build')
       }
     }
 
