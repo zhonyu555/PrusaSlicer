@@ -12,5 +12,14 @@ pipeline
 				cd build
 			}
 		}
+		stage('Build')
+		{
+			steps
+			{
+				echo 'První build'
+				cmake ..
+				make -jN
+			}
+		}
 	}
 }
