@@ -29,7 +29,7 @@ ls'''
 
         stage('cmake 2') {
           steps {
-            cmakeBuild(installation: 'cmake', buildDir: 'build', cleanBuild: true, generator: 'Ninja')
+            cmakeBuild(installation: 'cmake', buildDir: 'build', cleanBuild: true)
           }
         }
 
