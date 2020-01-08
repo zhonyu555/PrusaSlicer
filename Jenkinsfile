@@ -25,9 +25,9 @@ ls'''
       }
     }
 
-    stage('') {
+    stage('error') {
       steps {
-        cmake(installation: 'cmake', arguments: '. -B build')
+        cmake(installation: 'cmake', arguments: '.')
       }
     }
 
