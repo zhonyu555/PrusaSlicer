@@ -9,6 +9,7 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				sh 'mkdir -p build'
+				sh 'make install'
 			}
 		}
 		stage('Build')
