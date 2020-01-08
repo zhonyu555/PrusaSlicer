@@ -9,16 +9,15 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				mkdir build
-				cd build
 			}
 		}
 		stage('Build')
 		{
 			steps
 			{
+				cd build
 				echo 'První build'
 				cmake ..
-				make -jN
 			}
 		}
 	}
