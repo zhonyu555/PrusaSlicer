@@ -8,7 +8,7 @@ pipeline
 			steps
 			{
 				echo 'Vytvoření složky build'
-				sh 'mkdir build'
+				sh 'mkdir -p build'
 			}
 		}
 		stage('Build')
