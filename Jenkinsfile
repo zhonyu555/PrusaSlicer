@@ -19,9 +19,9 @@ ls'''
       }
     }
 
-    stage('cmake') {
+    stage('') {
       steps {
-        cmakeBuild(installation: 'cmake', buildType: 'debug', cleanBuild: true, buildDir: 'build')
+        cmake(installation: 'cmake', arguments: '..', workingDir: 'build')
       }
     }
 
