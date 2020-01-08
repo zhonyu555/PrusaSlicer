@@ -21,7 +21,7 @@ ls'''
 
     stage('cmake') {
       steps {
-        cmake 'cmake'
+        cmake(installation: 'cmake', arguments: '[options] build')
       }
     }
 
