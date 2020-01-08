@@ -9,7 +9,7 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				pwd
-				mkdir -p build
+				mkdir build
 				cd build
 			}
 		}
