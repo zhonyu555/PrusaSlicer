@@ -1,0 +1,29 @@
+pipeline
+{
+	agent any
+	stages 
+	{
+		stage('Prepare')
+		{
+			steps
+			{
+				echo 'Vytvoření složky build'
+				pwd
+				mkdir -p build
+				cd build
+				echo 'build 1'
+				cmake ..
+				make -jN
+			}
+		}
+		stage('Dependency_resolution')
+		{
+			steps
+			{
+				cmake .. -DSLIC3R_STATIC=1
+				cmake .. -DDESTDIR=./build/
+				cmake .. -DSLIC3R_STATIC=1 -DCMAKE_PREFIX_PATH=./build/usr/local
+			}
+		}
+	}
+}
