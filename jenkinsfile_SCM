@@ -15,9 +15,8 @@ pipeline
 		{
 			steps
 			{
-				sh 'cd build'
 				echo 'První build'
-				cmake(installation: 'cmake', arguments: '-S .. -B build')
+				cmake(installation: 'cmake', arguments: '-S $workspace -B build')
 			}
 		}
 	}
