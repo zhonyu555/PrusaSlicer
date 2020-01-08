@@ -25,5 +25,11 @@ ls'''
       }
     }
 
+    stage('') {
+      steps {
+        sh 'cmake --help'
+      }
+    }
+
   }
 }
