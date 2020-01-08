@@ -18,7 +18,7 @@ pipeline
 			{
 				sh 'cd build'
 				echo 'První build'
-				sh 'cmake --help'
+				cmake(installation: 'cmake', arguments: '-S $Workspace -B build')
 			}
 		}
 	}
