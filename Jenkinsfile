@@ -20,8 +20,19 @@ ls'''
     }
 
     stage('cmake') {
-      steps {
-        cmake(installation: 'cmake', arguments: '-S $Workspace -B build')
+      parallel {
+        stage('cmake') {
+          steps {
+            cmake(installation: 'cmake', arguments: '-S $Workspace -B build')
+          }
+        }
+
+        stage('cmake 2') {
+          steps {
+            cmakeBuild(installation: 'cmake', buildDir: 'build', cleanBuild: true, generator: 'Ninja')
+          }
+        }
+
       }
     }
 
