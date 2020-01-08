@@ -19,9 +19,9 @@ ls'''
       }
     }
 
-    stage('') {
+    stage('error') {
       steps {
-        cmake(installation: 'cmake', arguments: '..', workingDir: 'build')
+        cmake(installation: 'cmake', workingDir: 'build')
       }
     }
 
