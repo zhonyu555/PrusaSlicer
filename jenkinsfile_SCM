@@ -3,21 +3,21 @@ pipeline
 	agent any
 	stages 
 	{
-		stage('Prepare')
+		stage('Preparation')
 		{
 			steps
 			{
 				echo 'Vytvoření složky build'
-				mkdir build
+				sh 'mkdir build'
 			}
 		}
 		stage('Build')
 		{
 			steps
 			{
-				cd build
+				sh 'pwd'
+				sh 'cd build'
 				echo 'První build'
-				cmake ..
 			}
 		}
 	}
