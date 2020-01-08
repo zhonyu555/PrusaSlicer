@@ -28,8 +28,7 @@ ls'''
     stage('error') {
       steps {
         sh '''cd "/var/jenkins_home/tools/hudson.plugins.cmake.CmakeTool/3.16.2/bin/"
-
-cmake --help'''
+cmake'''
       }
     }
 
