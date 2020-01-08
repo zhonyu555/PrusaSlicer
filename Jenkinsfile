@@ -23,13 +23,13 @@ ls'''
       parallel {
         stage('cmake') {
           steps {
-            cmake(installation: 'cmake', arguments: '-S $Workspace -B build')
+            cmake(installation: 'cmake', arguments: 'install -S $Workspace -B build ')
           }
         }
 
         stage('cmake 2') {
           steps {
-            cmakeBuild(installation: 'cmake', buildDir: 'build', cleanBuild: true)
+            cmakeBuild(installation: 'cmake', buildDir: 'build', cleanBuild: true, buildType: 'debug')
           }
         }
 
