@@ -9,7 +9,6 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				sh 'mkdir -p build'
-				sh 'sudo apt-get install build-essential cmake'
 			}
 		}
 		stage('Build')
