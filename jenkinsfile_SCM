@@ -11,15 +11,6 @@ pipeline
 				pwd
 				mkdir -p build
 				cd build
-				echo 'build 1'
-
-			}
-		}
-		stage('Dependency_resolution')
-		{
-			steps
-			{
-
 			}
 		}
 	}
