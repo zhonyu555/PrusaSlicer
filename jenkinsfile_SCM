@@ -8,7 +8,6 @@ pipeline
 			steps
 			{
 				echo 'Vytvoření složky build'
-				pwd
 				mkdir build
 				cd build
 			}
