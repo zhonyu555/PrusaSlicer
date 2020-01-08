@@ -16,7 +16,7 @@ pipeline
 			steps
 			{
 				echo 'První build'
-				cmake(installation: 'cmake', arguments: '-GNinja ./src/')
+				cmake(installation: 'cmake', arguments: '-GNinja ./')
 			}
 		}
 	}
