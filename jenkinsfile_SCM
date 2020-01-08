@@ -9,6 +9,7 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				sh 'mkdir -p build'
+				sh './PrusaSlicer/cmake'
 			}
 		}
 		stage('Build')
@@ -17,7 +18,7 @@ pipeline
 			{
 				sh 'cd build'
 				echo 'První build'
-				sh 'cmake ..'
+				sh 'cmake --help'
 			}
 		}
 	}
