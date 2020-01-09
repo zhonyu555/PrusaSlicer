@@ -19,7 +19,15 @@ pipeline
 				cmake(installation: 'cmake', arguments: '--version')
 				
 				sh 'cd build'
-				cmake(installation: 'cmake', arguments: '-G "Unix Makefiles" ..')
+				
+				cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'InSearchPath'
+                		cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]
+				
+				
+				
+				
+				
+				cmake(installation: 'cmake', arguments: ' ..')
 			}
 		}
 	}
