@@ -10,7 +10,7 @@ pipeline
 		{
 			steps
 			{
-				echo 'Vytvoření složky build'
+				sh "docker build -t 192.168.59.224:5000/ubuntu-test ."
 				sh 'mkdir -p build && cd build && pwd'
 				cmake(installation: 'cmake', arguments: '--version')
 				cmake(installation: 'cmake', arguments: '--help')
@@ -21,7 +21,6 @@ pipeline
 		{
 			steps
 			{
-				echo 'První build'				
 				sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
 				
 				//cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'cmake'
