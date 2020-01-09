@@ -4,7 +4,7 @@ pipeline
 	{
 		docker
 		{
-			image 'nginx:1.11'
+			image 'ubuntu:16.10'
 			args '-u root:root'
 		}
 	}
