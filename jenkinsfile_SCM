@@ -9,6 +9,8 @@ pipeline
 			{
 				echo 'Vytvoření složky build'
 				sh 'mkdir -p build'
+				set(CMAKE_GENERATOR "Ninja")
+				message("generator is set to ${CMAKE_GENERATOR}")
 			}
 		}
 		stage('Build')
