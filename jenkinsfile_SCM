@@ -1,6 +1,11 @@
 pipeline
 {
 	agent docker
+	{
+      		image "ubuntu:16.04"
+      		label "docker-nodes"
+      		args "-v /tmp:/tmp"
+    	}
 	stages 
 	{
 		stage('Preparation')
