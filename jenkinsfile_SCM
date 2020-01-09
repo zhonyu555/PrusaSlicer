@@ -1,9 +1,12 @@
 pipeline
 {
-	agent docker
+	agent 
 	{
-      		image "ubuntu:19.10"
-    	}
+        	docker
+		{
+			image 'node:7-alpine'
+		}
+	}
 	stages 
 	{
 		stage('Preparation')
