@@ -24,7 +24,7 @@ pipeline
                 		//cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]
 								
 				
-				cmakeBuild(installation: 'cmake', arguments: ' ..')
+				cmake(installation: 'cmake', arguments: ' ..')
 			}
 		}
 	}
