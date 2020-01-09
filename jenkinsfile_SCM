@@ -1,6 +1,9 @@
 pipeline
 {
-	agent docker
+	agent 
+	{
+		docker
+	}
 	stages 
 	{
 		stage('Preparation')
