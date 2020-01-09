@@ -8,7 +8,7 @@ pipeline
 			steps
 			{
 				echo 'Vytvoření složky build'
-				sh 'mkdir -p build'
+				sh 'mkdir -p build && cd build && pwd'
 				cmake(installation: 'cmake', arguments: '--version')
 				cmake(installation: 'cmake', arguments: '--help')
 			}
@@ -18,8 +18,6 @@ pipeline
 			steps
 			{
 				echo 'První build'				
-				sh 'mkdir -p build && cd build && pwd'
-				sh 'cd ${WORKSPACE}/Build && pwd'
 				
 				//cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'cmake'
                 		//cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]				
