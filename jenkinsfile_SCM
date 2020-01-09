@@ -20,10 +20,10 @@ pipeline
 				echo 'První build'				
 				sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
 				
-				
-				
 				//cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'cmake'
                 		//cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]				
+				
+				sh 'pwd'
 				
 				cmake(installation: 'cmake', arguments: '-S . -B ./build')
 				//make -j8
