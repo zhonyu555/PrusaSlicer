@@ -1,10 +1,11 @@
 pipeline
 {
-	agent 
+	agent
 	{
-        	docker
+		docker
 		{
-			image 'node:7-alpine'
+			image 'nginx:1.11'
+			args '-u root:root'
 		}
 	}
 	stages 
