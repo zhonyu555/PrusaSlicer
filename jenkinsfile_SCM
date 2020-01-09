@@ -20,7 +20,7 @@ pipeline
 				
 				sh 'cd build'
 				
-				cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'InSearchPath'
+				cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'cmake'
                 		cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]
 				
 				
