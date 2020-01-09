@@ -5,7 +5,6 @@ pipeline
     		docker
 		{
         		image 'maven:3-alpine'
-
         		args  '-v /tmp:/tmp'
     		}
     	}
@@ -25,8 +24,8 @@ pipeline
 			{
 				
 				sh 'mkdir -p build && cd build && pwd'
-				cmake(installation: 'cmake', arguments: '--version')
-				cmake(installation: 'cmake', arguments: '--help')
+				//cmake(installation: 'cmake', arguments: '--version')
+				//cmake(installation: 'cmake', arguments: '--help')
 				sh 'apt-get install make'
 			}
 		}
