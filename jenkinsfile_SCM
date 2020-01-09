@@ -2,9 +2,13 @@ pipeline
 {
 	agent 
 	{
-		docker
-		sh "docker build -t 192.168.59.224:5000/ubuntu-test ."
-	}
+    		docker
+		{
+        		image 'maven:3-alpine'
+        		label 'my-defined-label'
+        		args  '-v /tmp:/tmp'
+    		}
+    	}
 	stages 
 	{
 		stage('Preparation')
