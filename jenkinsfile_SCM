@@ -26,7 +26,7 @@ pipeline
 				sh 'pwd'
 				
 				cmake(installation: 'cmake', arguments: ' ..')
-				make -j8
+				//make -j8
 			}
 		}
 	}
