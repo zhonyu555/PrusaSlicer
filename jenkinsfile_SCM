@@ -4,8 +4,6 @@ pipeline
 	{
     		docker
 		{
-			image 'ubuntu'
-        		args  '-v /tmp:/tmp'
     		}
     	}
 	stages 
