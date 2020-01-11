@@ -431,6 +431,32 @@ void PrintConfigDef::init_fff_params()
     def->aliases = def_top_fill_pattern->aliases;
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipRectilinear));
 
+    def = this->add("gradient_infill", coBool);
+    def->label = L("Automatically vary infill width");
+    def->category = L("Infill");
+    def->tooltip = L("Automatically vary infill width based on distance from perimeters");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("gradient_infill_min", coFloatOrPercent);
+    def->label = L("Minimum width");
+    def->tooltip = L("Minimum gradient infill width as a percentage of the default width");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent { 50, true });
+
+    def = this->add("gradient_infill_max", coFloatOrPercent);
+    def->label = L("Maximum width");
+    def->tooltip = L("Maximum gradient infill width as a percentage of the default width");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloatOrPercent { 250, true });
+
+    def = this->add("gradient_infill_distance", coFloat);
+    def->label = L("Gradient transition distance");
+    def->tooltip = L("The distance over which the gradient should transition from max to min width");
+    def->sidetext = L("mm");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat { 6 });
+
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
     def->label = L("External perimeters");
     def->category = L("Extrusion Width");

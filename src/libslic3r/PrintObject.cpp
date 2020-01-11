@@ -521,7 +521,11 @@ bool PrintObject::invalidate_state_by_config_options(const std::vector<t_config_
             || opt_key == "fill_pattern"
             || opt_key == "fill_link_max_length"
             || opt_key == "top_infill_extrusion_width"
-            || opt_key == "first_layer_extrusion_width") {
+            || opt_key == "first_layer_extrusion_width"
+            || opt_key == "gradient_infill"
+            || opt_key == "gradient_infill_min"
+            || opt_key == "gradient_infill_max"
+            || opt_key == "gradient_infill_distance") {
             steps.emplace_back(posInfill);
         } else if (
                opt_key == "fill_density"
