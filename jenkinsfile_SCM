@@ -18,20 +18,14 @@ pipeline
 				sh 'docker info'
 			}
 		}
-		//stage('Initialize')
-		{
-			steps
-			{
-		 		def dockerHome = tool 'myDocker'
-				env.PATH = "${dockerHome}/bin:${env.PATH}"
-			}
-		}
 		stage('Preparation')
 		{
 			steps
 			{
-				
+				sh 'apt-get install cmake'
+				sh 'apt-get install make'
 				sh 'mkdir -p build && cd build && pwd'
+				sh 'cmake --version'
 				//cmake(installation: 'cmake', arguments: '--version')
 				//cmake(installation: 'cmake', arguments: '--help')
 				sh 'apt-get install make'
@@ -42,10 +36,6 @@ pipeline
 			steps
 			{
 				sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
-				
-				//cmake arguments: '-DCMAKE_TOOLCHAIN_FILE=~/Projects/vcpkg/scripts/buildsystems/vcpkg.cmake', installation: 'cmake'
-                		//cmakeBuild buildType: 'Release', cleanBuild: true, installation: 'cmake', steps: [[withCmake: true]]				
-				
 				sh 'pwd'
 				
 				cmake(installation: 'cmake', arguments: '-S . -B ./build')
