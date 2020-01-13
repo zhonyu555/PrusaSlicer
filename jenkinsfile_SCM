@@ -16,30 +16,30 @@ pipeline
 			steps
 			{
 				echo "docker info"
-				sh 'docker info'
+				//sh 'docker info'
 			}
 		}
 		stage('Preparation')
 		{
 			steps
 			{
-				sh 'apt-get install cmake'
-				sh 'apt-get install make'
-				sh 'mkdir -p build && cd build && pwd'
-				sh 'cmake --version'
+				//sh 'apt-get install cmake'
+				//sh 'apt-get install make'
+				//sh 'mkdir -p build && cd build && pwd'
+				//sh 'cmake --version'
 				//cmake(installation: 'cmake', arguments: '--version')
 				//cmake(installation: 'cmake', arguments: '--help')
-				sh 'apt-get install make'
+				/sh 'apt-get install make'
 			}
 		}
 		stage('Build')
 		{
 			steps
 			{
-				sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
-				sh 'pwd'
+				//sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
+				//sh 'pwd'
 				
-				cmake(installation: 'cmake', arguments: '-S . -B ./build')
+				//cmake(installation: 'cmake', arguments: '-S . -B ./build')
 				//make -j8
 			}
 		}
