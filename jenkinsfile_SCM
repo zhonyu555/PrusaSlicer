@@ -2,10 +2,10 @@ pipeline
 {
 	agent 
 	{
-    		docker
+    		label 'slave-docker'
+		docker
 		{
-        		image 'maven:3-alpine'
-        		args  '-v /tmp:/tmp'
+        		image 'ubuntu'
     		}
     	}
 	stages 
