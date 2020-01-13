@@ -23,6 +23,7 @@ pipeline
 		{
 			steps
 			{
+				echo "Preparation"
 				//sh 'apt-get install cmake'
 				//sh 'apt-get install make'
 				//sh 'mkdir -p build && cd build && pwd'
@@ -36,6 +37,7 @@ pipeline
 		{
 			steps
 			{
+				echo "Build"
 				//sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
 				//sh 'pwd'
 				
