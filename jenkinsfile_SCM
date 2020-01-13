@@ -2,10 +2,11 @@ pipeline
 {
 	agent 
 	{
-    		label 'slave-docker'
+    		
 		docker
 		{
-        		image 'ubuntu'
+        		image 'slave-docker'
+			label 'slave-docker'
     		}
     	}
 	stages 
