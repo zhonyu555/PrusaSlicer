@@ -29,7 +29,7 @@ pipeline
 				//sh 'cmake --version'
 				//cmake(installation: 'cmake', arguments: '--version')
 				//cmake(installation: 'cmake', arguments: '--help')
-				/sh 'apt-get install make'
+				//sh 'apt-get install make'
 			}
 		}
 		stage('Build')
