@@ -15,7 +15,7 @@ pipeline
 		{
 			steps
 			{
-				sh 'echo "docker info"'
+				echo "docker info"
 				sh 'docker info'
 			}
 		}
