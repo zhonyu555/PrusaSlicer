@@ -32,6 +32,14 @@ pipeline
 				sh 'make --version'
 			}
 		}
+		stage('clean')
+		{
+			steps
+			{
+				echo "Clean"
+				sh 'echo "jenkins" | sudo -S  mv build/ build_old/
+			}
+		}
 		stage('Build')
 		{
 			steps
