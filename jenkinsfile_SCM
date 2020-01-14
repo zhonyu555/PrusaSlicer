@@ -19,6 +19,7 @@ pipeline
 		{
 			steps
 			{
+				USER ROOT
 				echo "Preparation"
 				sh 'apt-get install cmake'
 				sh 'apt-get install make'
