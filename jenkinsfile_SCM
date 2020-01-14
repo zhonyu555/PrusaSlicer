@@ -5,7 +5,7 @@ pipeline
     		
 		docker
 		{
-        		image 'ubuntu'
+        		image 'jnlp-slave'
 			label 'slave-docker'
 			args '-u root:root'
     		}
