@@ -22,7 +22,7 @@ pipeline
 				echo "Preparation"
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
-				sh 'mkdir -p build; cd build; pwd'
+				sh 'mkdir -p build'
 				sh 'cmake --version'
 				sh 'make --version'
 			}
@@ -32,7 +32,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd build; pwd; cmake ..; make -j8 '
+				sh 'cd build; pwd; cmake ..; make -j8'
 			}
 		}
 	}
