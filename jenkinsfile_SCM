@@ -24,8 +24,7 @@ pipeline
 				sh 'echo "jenkins" | sudo -S apt-get install make'
 				sh 'mkdir -p build; cd build; pwd'
 				sh 'cmake --version'
-				//cmake(installation: 'cmake', arguments: '--version')
-				//cmake(installation: 'cmake', arguments: '--help')
+				sh 'make -- version'
 			}
 		}
 		stage('Build')
@@ -33,8 +32,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				//sh 'cat /var/jenkins_home/workspace/slicer_pipe/build/CMakeFiles/CMakeOutput.log'
-				//sh 'pwd'
+				sh 'cd build; cmake ..'
 				
 				//cmake(installation: 'cmake', arguments: '-S . -B ./build')
 				//make -j8
