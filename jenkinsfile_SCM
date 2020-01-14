@@ -21,6 +21,7 @@ pipeline
 			{
 				echo "Preparation"
 				sh 'echo "jenkins" | sudo -S apt-get -y install libtbb-dev'
+				sh 'echo "jenkins" | sudo -S apt-get install cmake libblkid-dev e2fslibs-dev libboost-all-dev libaudit-dev'
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
 				sh 'mkdir -p build'
