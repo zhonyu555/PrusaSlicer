@@ -19,9 +19,8 @@ pipeline
 		{
 			steps
 			{
-				USER ROOT
 				echo "Preparation"
-				sh 'apt-get install cmake'
+				sh 'sudo apt-get install cmake'
 				sh 'apt-get install make'
 				sh 'mkdir -p build && cd build && pwd'
 				sh 'cmake --version'
