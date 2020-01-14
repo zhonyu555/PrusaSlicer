@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd deps; mkdir -p build;cd build; mkdir -p destd/usr/local/; pwd; cmake .. -DDESTDIR=/destd/'
+				sh 'cd deps; mkdir build;cd build; mkdir destd/usr/local/; pwd; cmake .. -DDESTDIR=/destd/'
 			}
 		}
 	}
