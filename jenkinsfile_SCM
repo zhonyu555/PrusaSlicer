@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd build; pwd; cmake .. -DSLIC3R_STATIC=1'
+				sh 'cd build; pwd; cmake .. -DSLIC3R_STATIC=1 -DCMAKE_PREFIX_PATH=/build/usr/local'
 			}
 		}
 	}
