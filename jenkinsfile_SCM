@@ -7,7 +7,7 @@ pipeline
 		{
         		image 'ubuntu'
 			label 'slave-docker'
-			args '-u jenkins:jenkins'
+			args '-u root:root'
     		}
     	}
 	stages 
