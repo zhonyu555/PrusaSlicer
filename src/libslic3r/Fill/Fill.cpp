@@ -13,9 +13,9 @@
 
 #include "FillBase.hpp"
 
-// What length of segments the infill should be divided into to allow a gradient to be applied to them, in millimetres:
-#define GRADIENT_INFILL_MAX_SEGMENT_LEN scale_(1.0)
-#define GRADIENT_INFILL_MAX_SEGMENT_LEN_SQR (GRADIENT_INFILL_MAX_SEGMENT_LEN * GRADIENT_INFILL_MAX_SEGMENT_LEN)
+// What length of fragments the infill should be divided into to allow a gradient to be applied to them, in millimetres:
+#define GRADIENT_INFILL_MAX_FRAGMENT_LEN scale_(0.5)
+#define GRADIENT_INFILL_MAX_FRAGMENT_LEN_SQR (GRADIENT_INFILL_MAX_FRAGMENT_LEN * GRADIENT_INFILL_MAX_FRAGMENT_LEN)
 
 namespace Slic3r {
 
@@ -342,97 +342,107 @@ void export_group_fills_to_svg(const char *path, const std::vector<SurfaceFill> 
 }
 #endif
 
-static void applyGradientInfill(ExtrusionEntitiesPtr &dst, Polylines &&polylines, double mm3_per_mm, 
+// Compute the width of an infill fragment based on its distance from the given set of perimeters
+static double gradient_infill_scale_for_fragment(Point &fragmentCenter, std::vector<const Polygon*> &perimeters, float width, float maxWidth, const SurfaceFillParams &params)
+{
+    double distanceToWallSqr = std::numeric_limits<double>::infinity();
+
+    for (const Polygon* perimeter : perimeters) {
+        for (int i = 0; i < perimeter->points.size(); i++) {
+            double dist = Line::distance_to_squared(fragmentCenter, perimeter->points[i],
+                perimeter->points[(i + 1) % perimeter->points.size()]);
+
+            if (dist < distanceToWallSqr) {
+                distanceToWallSqr = dist;
+            }
+        }
+    }
+
+    double distanceToWall = unscale<double>(sqrt(distanceToWallSqr));
+    double scale;
+
+    if (distanceToWall > params.gradient_fill_thickness) {
+        scale = params.gradient_fill_min;
+    } else {
+        scale = (params.gradient_fill_max - params.gradient_fill_min) * (1 - distanceToWall / params.gradient_fill_thickness) + params.gradient_fill_min;
+    }
+
+    // Quantize the scale factor in 5% chunks so we can combine similar segments together 
+    scale = round(scale * 20) / 20;
+
+    // Don't allow the infill to be thicker than the spacing between infill lines
+    scale = fmin(scale, maxWidth / width);
+
+    return scale;
+}
+
+static void apply_gradient_infill(ExtrusionEntitiesPtr &dst, Polylines &&polylines, double mm3_per_mm, 
     float width, float height, float maxWidth, const ExPolygon &boundary, const SurfaceFillParams &params)
 {
+    std::vector<const Polygon*> perimeters;
+
+    // We make infill dense when it nears any of these perimeters:
+    perimeters.push_back(&boundary.contour);
+    for (const Polygon &p : boundary.holes) {
+        perimeters.push_back(&p);
+    }
+    
     for (Polyline &polyline : polylines) {
         if (!polyline.is_valid()) {
             continue;
         }
-
-        // Chunk the line into fragments of at most GRADIENT_INFILL_MAX_SEGMENT_LEN long
-        Polyline newLine;
-        newLine.points.reserve(polyline.points.size());
         
-        newLine.append(polyline.points[0]);
-
-        for (int j = 1; j < polyline.points.size(); j++) {
-            Point prevPoint(polyline.points[j - 1]);
-            Point thisPoint(polyline.points[j]);
-
-            auto segment(thisPoint.cast<coordf_t>() - prevPoint.cast<coordf_t>());
-            double segLengthSqr = segment.squaredNorm();
-
-            // Do we need to add intermediate fragments before the end of this segment?
-            if (segLengthSqr > GRADIENT_INFILL_MAX_SEGMENT_LEN_SQR) {
-                int numSegments = ceil(sqrt(segLengthSqr) / GRADIENT_INFILL_MAX_SEGMENT_LEN);
-                
-                for (int seg = 1; seg < numSegments; seg++) {
-                    auto newPoint(prevPoint.cast<coordf_t>() + segment * ((double) seg / numSegments));
-                    newLine.append(Point(newPoint(0), newPoint(1)));
-                }
-            }
-
-            newLine.append(polyline.points[j]);
-        }
-
-        // Compute extrusion widths for each segment of the infill and group similar ones together into ExtrusionPaths
-        ExtrusionPath *extrusionPath = 0;
+        ExtrusionPath *extrusionPath = nullptr;
         double lastScale = -1;
-        extrusionPath = 0;
 
-        std::vector<const Polygon*> perimeters;
+        for (int i = 1; i < polyline.points.size(); i++) {
+            Vec2d prevPoint(polyline.points[i - 1].cast<double>());
+            Vec2d thisPoint(polyline.points[i].cast<double>());
 
-        perimeters.push_back(&boundary.contour);
-        for (const Polygon &p : boundary.holes) {
-            perimeters.push_back(&p);
-        }
-
-        for (int i = 0; i < newLine.points.size() - 1; i++) {
-            Point startPoint(newLine.points[i]);
-            Point endPoint(newLine.points[i + 1]);
+            auto thisLineVec = thisPoint - prevPoint;
+            double segLengthSqr = thisLineVec.squaredNorm();
             
-            Point infillSegCenter((startPoint(0) + endPoint(0)) / 2, (startPoint(1) + endPoint(1)) / 2);
+            /* Break this line up into fragments of GRADIENT_INFILL_MAX_FRAGMENT_LEN and compute an extrusion width for each fragment.
+             * 
+             * If we need to change the width of a fragment we have to start a new extrusionPath, otherwise we can just
+             * combine the fragment with the previous one.
+             */
+            int numFragments = segLengthSqr > GRADIENT_INFILL_MAX_FRAGMENT_LEN_SQR 
+                ? ceil(sqrt(segLengthSqr) / GRADIENT_INFILL_MAX_FRAGMENT_LEN) 
+                : 1;
             
-            double distanceToWallSqr = std::numeric_limits<double>::infinity();
-
-            for (const Polygon* perimeterPtr : perimeters) {
-                const Polygon &perimeter = *perimeterPtr;
+            Vec2d fragmentStart(prevPoint);
                 
-                for (int j = 0; j < perimeter.points.size(); j++) {
-                    double dist = Line::distance_to_squared(infillSegCenter, perimeter.points[j],
-                        perimeter.points[(j + 1) % perimeter.points.size()]);
+            for (int seg = 1; seg <= numFragments; seg++) {
+                auto fragmentEnd = 
+                    seg == numFragments 
+                        ? thisPoint 
+                        : prevPoint + thisLineVec * ((double) seg / numFragments);
 
-                    if (dist < distanceToWallSqr) {
-                        distanceToWallSqr = dist;
+                Point fragmentCenter((fragmentStart(0) + fragmentEnd(0)) / 2, (fragmentStart(1) + fragmentEnd(1)) / 2);
+                double gradientScale = gradient_infill_scale_for_fragment(fragmentCenter, perimeters, width, maxWidth,
+                    params);
+                
+                // Do we need to start a new extrusion for this width?
+                if (!extrusionPath || gradientScale != lastScale) {
+                    if (extrusionPath && seg > 1) {
+                        // Finish off a fragment we already began during this segment
+                        extrusionPath->polyline.append(Point(fragmentStart));
                     }
+                    
+                    extrusionPath = new ExtrusionPath(erInternalInfill, mm3_per_mm * gradientScale, (float) (width * gradientScale), height);
+                    dst.push_back(extrusionPath);
+
+                    lastScale = gradientScale;
+
+                    extrusionPath->polyline.append(Point(fragmentStart));
                 }
-            }
-            
-            double distanceToWall = unscale<double>(sqrt(distanceToWallSqr));
-            double gradientScale;
-            
-            if (distanceToWall > params.gradient_fill_thickness) {
-                gradientScale = params.gradient_fill_min;
-            } else {
-                gradientScale = (params.gradient_fill_max - params.gradient_fill_min) * (1 - distanceToWall / params.gradient_fill_thickness) + params.gradient_fill_min;
-                // Quantize the scale factor in 5% chunks so we can combine similar line segments together 
-                gradientScale = round(gradientScale * 20) / 20;
-            }
-            
-            // Don't allow the infill to be thicker than the spacing between infill lines
-            gradientScale = fmin(gradientScale, maxWidth / width);
-            
-            if (!extrusionPath || gradientScale != lastScale) {
-                extrusionPath = new ExtrusionPath(erInternalInfill, mm3_per_mm * gradientScale, width * gradientScale, height);
-                dst.push_back(extrusionPath);
                 
-                lastScale = gradientScale;
-                
-                extrusionPath->polyline.append(startPoint);
+                fragmentStart = fragmentEnd;
             }
             
-            extrusionPath->polyline.append(endPoint);
+            // Finish up this polyline segment
+            extrusionPath->polyline.append(Point(thisPoint));
         }
     }
 }
@@ -515,7 +525,7 @@ void Layer::make_fills()
 		        eec->no_sort = f->no_sort();
 		        
 		        if (surface_fill.params.gradient_fill && surface_fill.params.extrusion_role == erInternalInfill) {
-		            applyGradientInfill(
+		            apply_gradient_infill(
 		                eec->entities, std::move(polylines),
 		                flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height, 
 		                f->spacing * 100.0 / surface_fill.params.density,
