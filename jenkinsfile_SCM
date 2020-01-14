@@ -34,7 +34,8 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd deps; mkdir -p build/destd/usr/local/;cd build; pwd; cmake .. -DDESTDIR=destd/; pwd; mkdir -p make_output; make -j8 make_output'
+				sh 'cd deps; mkdir -p build/destd/usr/local/;cd build; pwd; cmake .. -DDESTDIR=destd/; pwd; mkdir -p make_output; make -j8'
+				sh 'cpdir cp '/home/jenkins/jenkins_slave/workspace/slicer_pipe/deps/build' '/home/marek/Plocha/work/Unicorn/PrusaSlicer'
 			}
 		}
 	}
