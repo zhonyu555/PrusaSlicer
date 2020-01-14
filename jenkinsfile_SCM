@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				//sh 'cd build; pwd; cmake ..; make -j8'
+				sh 'cd build; pwd; cmake ..'
 			}
 		}
 	}
