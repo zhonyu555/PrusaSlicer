@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd deps; echo "jenkins" | sudo -S rmdir build --ignore-fail-on-non-empty; mkdir build;cd build; mkdir destd/usr/local/; pwd; cmake .. -DDESTDIR=/destd/'
+				sh 'cd deps; mkdir -p build/destd/usr/local/;cd build; pwd; cmake .. -DDESTDIR=/destd/'
 			}
 		}
 	}
