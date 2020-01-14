@@ -15,8 +15,8 @@ pipeline
 		{
 			steps
 			{
-				echo "docker info"
-				//sh 'docker info'
+				echo "Validate Docker"
+				sh 'docker info'
 			}
 		}
 		stage('Preparation')
@@ -24,13 +24,12 @@ pipeline
 			steps
 			{
 				echo "Preparation"
-				//sh 'apt-get install cmake'
-				//sh 'apt-get install make'
-				//sh 'mkdir -p build && cd build && pwd'
-				//sh 'cmake --version'
+				sh 'apt-get install cmake'
+				sh 'apt-get install make'
+				sh 'mkdir -p build && cd build && pwd'
+				sh 'cmake --version'
 				//cmake(installation: 'cmake', arguments: '--version')
 				//cmake(installation: 'cmake', arguments: '--help')
-				//sh 'apt-get install make'
 			}
 		}
 		stage('Build')
