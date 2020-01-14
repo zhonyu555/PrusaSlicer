@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Clean"
-				sh 'echo "jenkins" | sudo -S  mv build/ build_old/
+				sh 'echo "jenkins" | sudo -S  mv build/ build_old/'
 			}
 		}
 		stage('Build')
