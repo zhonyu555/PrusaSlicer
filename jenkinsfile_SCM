@@ -33,7 +33,7 @@ pipeline
 			steps
 			{
 				echo "Clean"
-				sh 'cd deps; echo "jenkins" | sudo -S  mv build/ build_old/'
+				sh 'cd deps; echo "jenkins" | sudo -S  mvdir build build_old'
 			}
 		}
 		stage('Build')
