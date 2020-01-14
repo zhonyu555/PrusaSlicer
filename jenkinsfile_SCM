@@ -24,7 +24,6 @@ pipeline
 				sh 'echo "jenkins" | sudo -S apt-get -y install cmake libblkid-dev e2fslibs-dev libboost-all-dev libaudit-dev'
 				sh 'echo "jenkins" | sudo -S apt-get install curl'
 				sh 'echo "jenkins" | sudo -S apt-get install libcurl4-openssl-dev'
-				sh 'echo "jenkins" | sudo -S apt-get install libgl1-mesa-glx-lts-wily:i386 libglapi-mesa-lts-wily:i386 libgl1-mesa-dev-lts-wily:i386 libudev1:i386'
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
 				sh 'mkdir -p build'
