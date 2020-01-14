@@ -20,7 +20,7 @@ pipeline
 			steps
 			{
 				echo "Preparation"
-				sh 'echo "jenkins" | sudo -S apt-get install libtbb-dev'
+				sh 'echo "jenkins" | sudo -S apt-get install libtbb-dev; Y'
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
 				sh 'mkdir -p build'
