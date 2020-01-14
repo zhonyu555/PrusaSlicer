@@ -442,13 +442,13 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Minimum width");
     def->tooltip = L("Minimum gradient infill width as a percentage of the default width");
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionFloatOrPercent { 50, true });
+    def->set_default_value(new ConfigOptionFloatOrPercent { 25, true });
 
     def = this->add("gradient_infill_max", coFloatOrPercent);
     def->label = L("Maximum width");
     def->tooltip = L("Maximum gradient infill width as a percentage of the default width");
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionFloatOrPercent { 250, true });
+    def->set_default_value(new ConfigOptionFloatOrPercent { 110, true });
 
     def = this->add("gradient_infill_distance", coFloat);
     def->label = L("Gradient transition distance");
