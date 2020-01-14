@@ -3,7 +3,7 @@ pipeline
 	agent 
 	{
 		label 'slave-docker'
-		arg '-u jenkins:jenkins'
+        	args '-u root:root'
     	}
 	stages 
 	{
