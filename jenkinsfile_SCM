@@ -20,7 +20,9 @@ pipeline
 			steps
 			{
 				echo "Preparation"
-				sh 'echo "jenkins" | sudo -S apt-get install cmake && apt-get install make; mkdir -p build; cd build; pwd'
+				sh 'echo "jenkins" | sudo -S apt-get install cmake'
+				sh 'echo "jenkins" | sudo -S apt-get install make'
+				sh 'mkdir -p build; cd build; pwd'
 				sh 'cmake --version'
 				//cmake(installation: 'cmake', arguments: '--version')
 				//cmake(installation: 'cmake', arguments: '--help')
