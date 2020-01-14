@@ -22,11 +22,11 @@ pipeline
 				echo "Preparation"
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
-				sh 'echo "jenkins" | sudo -S apt-get -y install libtbb-dev'
-				sh 'echo "jenkins" | sudo -S apt-get -y install cmake libblkid-dev e2fslibs-dev libboost-all-dev libaudit-dev'
-				sh 'echo "jenkins" | sudo -S apt-get install curl'
-				sh 'echo "jenkins" | sudo -S apt-get install libcurl4-openssl-dev'
-				sh 'echo "jenkins" | sudo -S apt-get -y install freeglut3 freeglut3-dev'
+				//sh 'echo "jenkins" | sudo -S apt-get -y install libtbb-dev'
+				//sh 'echo "jenkins" | sudo -S apt-get -y install cmake libblkid-dev e2fslibs-dev libboost-all-dev libaudit-dev'
+				//sh 'echo "jenkins" | sudo -S apt-get install curl'
+				//sh 'echo "jenkins" | sudo -S apt-get install libcurl4-openssl-dev'
+				//sh 'echo "jenkins" | sudo -S apt-get -y install freeglut3 freeglut3-dev'
 				sh 'mkdir -p build'
 				sh 'cmake --version'
 				sh 'make --version'
@@ -37,7 +37,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				//sh 'cd build; pwd; cmake ..'
+				sh 'cd build; pwd; cmake .. -DSLIC3R_STATIC=1'
 			}
 		}
 	}
