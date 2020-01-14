@@ -32,14 +32,8 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd build; cmake ..'
-				
-				//cmake(installation: 'cmake', arguments: '-S . -B ./build')
-				//make -j8
+				sh 'cd build; cmake ..; make -j8'
 			}
 		}
 	}
 }
-
-
-        		label 'Docker_label'
