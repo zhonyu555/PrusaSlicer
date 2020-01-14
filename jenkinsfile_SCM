@@ -16,7 +16,7 @@ pipeline
 			steps
 			{
 				echo "Validate Docker"
-				docker version
+				sh 'docker version'
 				//sh 'docker info'
 			}
 		}
