@@ -28,14 +28,6 @@ pipeline
 				sh 'make --version'
 			}
 		}
-		stage('clean')
-		{
-			steps
-			{
-				echo "Clean"
-				sh 'cd deps; echo "jenkins" | sudo -S  mvdir build build_old'
-			}
-		}
 		stage('Build')
 		{
 			steps
