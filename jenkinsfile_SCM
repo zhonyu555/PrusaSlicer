@@ -16,7 +16,7 @@ pipeline
 			steps
 			{
 				echo "Validate Docker"
-				sh 'docker info'
+				//sh 'docker info'
 			}
 		}
 		stage('Preparation')
