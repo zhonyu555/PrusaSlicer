@@ -5,7 +5,7 @@ pipeline
     		
 		docker
 		{
-        		image 'slave-docker'
+        		image 'ubuntu'
 			label 'slave-docker'
     		}
     	}
