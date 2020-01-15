@@ -34,7 +34,7 @@ pipeline
 			steps
 			{
 				echo "Build"
-				sh 'cd deps; mkdir -p build/destd/usr/local/;cd build; pwd; cmake .. -DDESTDIR=destd/; pwd; mkdir -p make_output; make -j8'
+				sh 'cd deps; mkdir -p build/destd/usr/local/;cd build; pwd; cmake .. -DDESTDIR=destd/; pwd; make -j8'
 				sh 'sleep 1000'
 			}
 		}
