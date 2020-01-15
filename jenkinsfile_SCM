@@ -12,7 +12,6 @@ pipeline
 			{
 				echo "Validate Docker"
 				sh 'docker version'
-				//sh 'docker info'
 			}
 		}
 		stage('Preparation')
@@ -23,8 +22,6 @@ pipeline
 				sh 'echo "jenkins" | sudo -S apt-get install cmake'
 				sh 'echo "jenkins" | sudo -S apt-get install make'
 				sh 'echo "jenkins" | sudo -S apt-get -y install libgtk2.0-dev libgtk-3-dev libpulse-dev'
-				//sh 'echo "jenkins" | sudo -S apt-get -y install make'
-				sh 'mkdir -p build'
 				sh 'cmake --version'
 				sh 'make --version'
 			}
