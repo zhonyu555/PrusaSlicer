@@ -144,8 +144,8 @@ ToolOrdering::ToolOrdering(const Print &print, unsigned int first_extruder, bool
     this->reorder_extruders(first_extruder);
 
     this->fill_wipe_tower_partitions(print.config(), object_bottom_z);
-
     this->collect_extruder_statistics(prime_multi_material);
+    this->calculate_wipe_volumes(print);
 }
 
 void ToolOrdering::initialize_layers(std::vector<coordf_t> &zs)
@@ -317,6 +317,51 @@ void ToolOrdering::reorder_extruders(unsigned int last_extruder_id)
             assert(extruder_id > 0);
             -- extruder_id;
         }    
+}
+
+void ToolOrdering::calculate_wipe_volumes(const Print &print)
+{
+    m_layer_wipe_volumes.clear();
+    if (m_layer_tools.empty())
+        return;
+
+    // Much of this code is lifted from Print::_make_wipe_tower, if it's broken, that's the place to check
+    // and see what changed recenly...
+
+    // Get wiping matrix to get number of extruders and convert vector<double> to vector<float>:
+    std::vector<float> wiping_matrix(cast<float>(print.config().wiping_volumes_matrix.values));
+    // Extract purging volumes for each extruder pair:
+    std::vector<std::vector<float>> wipe_volumes;
+    const unsigned int number_of_extruders = (unsigned int)(sqrt(wiping_matrix.size())+EPSILON);
+    for (unsigned int i = 0; i<number_of_extruders; ++i)
+        wipe_volumes.push_back(std::vector<float>(wiping_matrix.begin()+i*number_of_extruders, wiping_matrix.begin()+(i+1)*number_of_extruders));
+
+    unsigned int current_extruder_id = all_extruders().back();
+    for (auto &layer_tools : m_layer_tools) { // for all layers
+        if (!layer_tools.has_wipe_tower) continue;
+        bool first_layer = &layer_tools == &front();
+        for (const auto extruder_id : layer_tools.extruders) {
+            if ((first_layer && extruder_id == all_extruders().back()) || extruder_id != current_extruder_id) {
+                float volume_to_wipe = wipe_volumes[current_extruder_id][extruder_id];             // total volume to wipe after this toolchange
+                // Not all of that can be used for infill purging:
+                volume_to_wipe -= (float)print.config().filament_minimal_purge_on_wipe_tower.get_at(extruder_id);
+
+                // try to assign some infills/objects for the wiping:
+                volume_to_wipe = layer_tools.wiping_extrusions().mark_wiping_extrusions(print, current_extruder_id, extruder_id, volume_to_wipe);
+
+                // add back the minimal amount toforce on the wipe tower:
+                volume_to_wipe += (float)print.config().filament_minimal_purge_on_wipe_tower.get_at(extruder_id);
+
+                std::tuple key(layer_tools.print_z,current_extruder_id,extruder_id);
+                m_layer_wipe_volumes.insert(std::make_pair(key,volume_to_wipe));
+
+                current_extruder_id = extruder_id;
+
+            }
+        }
+        layer_tools.wiping_extrusions().ensure_perimeters_infills_order(print);
+    }
+
 }
 
 void ToolOrdering::fill_wipe_tower_partitions(const PrintConfig &config, coordf_t object_bottom_z)

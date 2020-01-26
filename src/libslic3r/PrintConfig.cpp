@@ -2083,7 +2083,8 @@ void PrintConfigDef::init_fff_params()
     def = this->add("toolchange_gcode", coString);
     def->label = L("Tool change G-code");
     def->tooltip = L("This custom code is inserted before every toolchange. Placeholder variables for all PrusaSlicer settings "
-                     "as well as {previous_extruder} and {next_extruder} can be used. When a tool-changing command "
+                     "as well as {previous_extruder} and {next_extruder} can be used. If the wipe tower is disabled, {extruder_purge_volume} is also"
+                     " available and provides the volume to purged, accounting for any infill/object wiping settings. When a tool-changing command "
                      "which changes to the correct extruder is included (such as T{next_extruder}), PrusaSlicer will emit no other such command. "
                      "It is therefore possible to script custom behaviour both before and after the toolchange.");
     def->multiline = true;
