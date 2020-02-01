@@ -578,7 +578,7 @@ namespace PerlUtils {
 };
 
 
-std::string string_printf(const char *format, ...)
+std::string string_printf(const char *const format, ...)
 {
     va_list args1;
     va_start(args1, format);
@@ -591,6 +591,7 @@ std::string string_printf(const char *format, ...)
     std::string res(needed_size, '\0');
     ::vsnprintf(&res.front(), res.size(), format, args2);
     va_end(args2);
+	res.resize(needed_size-1);
 
     return res;
 }
