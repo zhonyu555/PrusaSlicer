@@ -392,8 +392,13 @@ if (NOT GLEW_FOUND)
 endif ()
 
 # Find the Cereal serialization library
+include(CheckIncludeFiles)
 add_library(cereal INTERFACE)
 target_include_directories(cereal INTERFACE include)
+CHECK_INCLUDE_FILES (cereal/cereal.hpp HAVE_CEREAL_H LANGUAGE CXX)
+if (NOT HAVE_CEREAL_H)
+  message(FATAL_ERROR "Cereal library not found. Please install the dependency.")
+endif()
 
 # l10n
 set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/localization")
