@@ -6,6 +6,7 @@
 #include <wx/wxprec.h>
 #ifndef WX_PRECOMP
     #include <wx/wx.h>
+#include <vector>
 #endif
 
 namespace Slic3r { namespace GUI {
