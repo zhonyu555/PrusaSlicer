@@ -128,6 +128,16 @@ void OptionsGroup::append_line(const Line& line, wxStaticText**	full_Label/* = n
 	for (auto opt : option_set) 
 		m_options.emplace(opt.opt_id, opt);
 
+	// Set sidetext width for a better alignment of options in line
+	// "m_show_modified_btns==true" means that options groups are in tabs
+	if (option_set.size() > 1 && m_show_modified_btns) {
+		sidetext_width = Field::def_width_thinner();
+		/* Temporary commented till UI-review will be completed
+		if (m_show_modified_btns) // means that options groups are in tabs
+		    sublabel_width = Field::def_width();
+	    */
+	}
+
     // add mode value for current line to m_options_mode
     if (!option_set.empty())
         m_options_mode.push_back(option_set[0].opt.mode);
@@ -244,15 +254,16 @@ void OptionsGroup::append_line(const Line& line, wxStaticText**	full_Label/* = n
 		ConfigOptionDef option = opt.opt;
 		wxSizer* sizer_tmp = sizer;
 		// add label if any
-		if (option.label != "") {
+		if (!option.label.empty()) {
 //!			To correct translation by context have to use wxGETTEXT_IN_CONTEXT macro from wxWidget 3.1.1
 			wxString str_label = (option.label == L_CONTEXT("Top", "Layers") || option.label == L_CONTEXT("Bottom", "Layers")) ?
 								_CTX(option.label, "Layers") :
 								_(option.label);
-			label = new wxStaticText(this->ctrl_parent(), wxID_ANY, str_label + ": ", wxDefaultPosition, wxDefaultSize);
+			label = new wxStaticText(this->ctrl_parent(), wxID_ANY, str_label + ": ", wxDefaultPosition, //wxDefaultSize); 
+				wxSize(sublabel_width != -1 ? sublabel_width * wxGetApp().em_unit() : -1, -1), wxALIGN_RIGHT);
 			label->SetBackgroundStyle(wxBG_STYLE_PAINT);
             label->SetFont(wxGetApp().normal_font());
-			sizer_tmp->Add(label, 0, /*wxALIGN_RIGHT |*/ wxALIGN_CENTER_VERTICAL, 0);
+			sizer_tmp->Add(label, 0, wxALIGN_CENTER_VERTICAL, 0);
 		}
 
 		// add field
@@ -274,9 +285,9 @@ void OptionsGroup::append_line(const Line& line, wxStaticText**	full_Label/* = n
 			sizer_tmp->Add(field->getWindow(), 0, wxALIGN_CENTER_VERTICAL, 0);
 		
 		// add sidetext if any
-		if (option.sidetext != "") {
+		if (!option.sidetext.empty() || sidetext_width > 0) {
 			auto sidetext = new wxStaticText(	this->ctrl_parent(), wxID_ANY, _(option.sidetext), wxDefaultPosition, 
-												wxSize(sidetext_width != -1 ? sidetext_width*wxGetApp().em_unit() : -1, -1) /*wxDefaultSize*/, wxALIGN_LEFT);
+												wxSize(sidetext_width != -1 ? sidetext_width*wxGetApp().em_unit() : -1, -1), wxALIGN_LEFT);
 			sidetext->SetBackgroundStyle(wxBG_STYLE_PAINT);
             sidetext->SetFont(wxGetApp().normal_font());
 			sizer_tmp->Add(sidetext, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, 4);
@@ -498,7 +509,7 @@ void ConfigOptionsGroup::msw_rescale()
 
     // update undo buttons : rescale bitmaps
     for (const auto& field : m_fields)
-        field.second->msw_rescale();
+        field.second->msw_rescale(sidetext_width>0);
 
     const int em = em_unit(parent());
 
@@ -703,7 +714,7 @@ Field* ConfigOptionsGroup::get_fieldc(const t_config_option_key& opt_key, int op
 void ogStaticText::SetText(const wxString& value, bool wrap/* = true*/)
 {
 	SetLabel(value);
-    if (wrap) Wrap(40 * wxGetApp().em_unit());
+    if (wrap) Wrap(60 * wxGetApp().em_unit());
 	GetParent()->Layout();
 }
 

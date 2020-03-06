@@ -61,6 +61,10 @@ public:
         PrinterTechnology           technology;
         std::string                 family;
         std::vector<PrinterVariant> variants;
+        std::vector<std::string>	default_materials;
+        // Vendor & Printer Model specific print bed model & texture.
+        std::string 			 	bed_model;
+        std::string 				bed_texture;
 
         PrinterVariant*       variant(const std::string &name) {
             for (auto &v : this->variants)
@@ -162,7 +166,7 @@ public:
     DynamicPrintConfig  config;
 
     // Alias of the preset
-    std::string         alias = "";
+    std::string         alias;
     // List of profile names, from which this profile was renamed at some point of time.
     // This list is then used to match profiles by their names when loaded from .gcode, .3mf, .amf,
     // and to match the "inherits" field of user profiles with updated system profiles.
@@ -243,9 +247,18 @@ protected:
     static std::string  remove_suffix_modified(const std::string &name);
 };
 
-bool is_compatible_with_print  (const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_print);
+bool is_compatible_with_print  (const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_print, const PresetWithVendorProfile &active_printer);
 bool is_compatible_with_printer(const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_printer, const DynamicPrintConfig *extra_config);
 bool is_compatible_with_printer(const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_printer);
+
+enum class PresetSelectCompatibleType {
+	// Never select a compatible preset if the newly selected profile is not compatible.
+	Never,
+	// Only select a compatible preset if the active profile used to be compatible, but it is no more.
+	OnlyIfWasCompatible,
+	// Always select a compatible preset if the active profile is no more compatible.
+	Always
+};
 
 // Collections of presets of the same type (one of the Print, Filament or Printer type).
 class PresetCollection
@@ -309,10 +322,10 @@ public:
     bool            delete_preset(const std::string& name);
 
     // Load default bitmap to be placed at the wxBitmapComboBox of a MainFrame.
-    void            load_bitmap_default(wxWindow *window, const std::string &file_name);
+    void            load_bitmap_default(const std::string &file_name);
 
     // Load "add new printer" bitmap to be placed at the wxBitmapComboBox of a MainFrame.
-    void            load_bitmap_add(wxWindow *window, const std::string &file_name);
+    void            load_bitmap_add(const std::string &file_name);
 
     // Compatible & incompatible marks, to be placed at the wxBitmapComboBox items.
     void            set_bitmap_compatible  (const wxBitmap *bmp) { m_bitmap_compatible   = bmp; }
@@ -352,7 +365,7 @@ public:
 
 	// used to update preset_choice from Tab
 	const std::deque<Preset>&	get_presets() const	{ return m_presets; }
-	int						get_idx_selected()	{ return m_idx_selected; }
+	int							get_idx_selected()	{ return m_idx_selected; }
 	static const std::string&	get_suffix_modified();
 
     // Return a preset possibly with modifications.
@@ -380,7 +393,8 @@ public:
         size_t n = this->m_presets.size();
         size_t i_compatible = n;
         for (; i < n; ++ i)
-            if (m_presets[i].is_compatible) {
+            // Since we use the filament selection from Wizard, it's needed to control the preset visibility too 
+            if (m_presets[i].is_compatible && m_presets[i].is_visible) {
                 if (prefered_condition(m_presets[i].name))
                     return i;
                 if (i_compatible == n)
@@ -407,13 +421,13 @@ public:
 
     // For Print / Filament presets, disable those, which are not compatible with the printer.
     template<typename PreferedCondition>
-    void            update_compatible(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, bool select_other_if_incompatible, PreferedCondition prefered_condition)
+    void            update_compatible(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, PresetSelectCompatibleType select_other_if_incompatible, PreferedCondition prefered_condition)
     {
         if (this->update_compatible_internal(active_printer, active_print, select_other_if_incompatible) == (size_t)-1)
             // Find some other compatible preset, or the "-- default --" preset.
             this->select_preset(this->first_compatible_idx(prefered_condition));        
     }
-    void            update_compatible(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, bool select_other_if_incompatible)
+    void            update_compatible(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, PresetSelectCompatibleType select_other_if_incompatible)
         { this->update_compatible(active_printer, active_print, select_other_if_incompatible, [](const std::string&){return true;}); }
 
     size_t          num_visible() const { return std::count_if(m_presets.begin(), m_presets.end(), [](const Preset &preset){return preset.is_visible;}); }
@@ -437,7 +451,7 @@ public:
     // Update the choice UI from the list of presets.
     // Only the compatible presets are shown.
     // If an incompatible preset is selected, it is shown as well.
-    void            update_platter_ui(GUI::PresetComboBox *ui);
+    void            update_plater_ui(GUI::PresetComboBox *ui);
 
     // Update a dirty floag of the current preset, update the labels of the UI component accordingly.
     // Return true if the dirty flag changed.
@@ -469,6 +483,9 @@ protected:
 
     // Merge one vendor's presets with the other vendor's presets, report duplicates.
     std::vector<std::string> merge_presets(PresetCollection &&other, const VendorMap &new_vendors);
+
+    // Update m_map_alias_to_profile_name from loaded system profiles.
+	void 			update_map_alias_to_profile_name();
 
     // Update m_map_system_profile_renamed from loaded system profiles.
     void 			update_map_system_profile_renamed();
@@ -507,7 +524,7 @@ private:
     std::deque<Preset>::const_iterator find_preset_renamed(const std::string &name) const
         { return const_cast<PresetCollection*>(this)->find_preset_renamed(name); }
 
-    size_t update_compatible_internal(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, bool unselect_if_incompatible);
+    size_t update_compatible_internal(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, PresetSelectCompatibleType unselect_if_incompatible);
 
     static std::vector<std::string> dirty_options(const Preset *edited, const Preset *reference, const bool is_printer_type = false);
 
@@ -517,6 +534,8 @@ private:
     // Use deque to force the container to allocate an object per each entry, 
     // so that the addresses of the presets don't change during resizing of the container.
     std::deque<Preset>      m_presets;
+    // System profiles may have aliases. Map to the full profile name.
+    std::vector<std::pair<std::string, std::string>> m_map_alias_to_profile_name;
     // Map from old system profile name to a current system profile name.
     std::map<std::string, std::string> m_map_system_profile_renamed;
     // Initially this preset contains a copy of the selected preset. Later on, this copy may be modified by the user.
@@ -526,7 +545,7 @@ private:
     // Is the "- default -" preset suppressed?
     bool                    m_default_suppressed  = true;
     size_t                  m_num_default_presets = 0;
-    // Compatible & incompatible marks, to be placed at the wxBitmapComboBox items of a Platter.
+    // Compatible & incompatible marks, to be placed at the wxBitmapComboBox items of a Plater.
     // These bitmaps are not owned by PresetCollection, but by a PresetBundle.
     const wxBitmap         *m_bitmap_compatible   = nullptr;
     const wxBitmap         *m_bitmap_incompatible = nullptr;
@@ -558,6 +577,11 @@ public:
 
     const Preset*   find_by_model_id(const std::string &model_id) const;
 };
+
+namespace PresetUtils {
+	// PrinterModel of a system profile, from which this preset is derived, or null if it is not derived from a system profile.
+	const VendorProfile::PrinterModel* system_printer_model(const Preset &preset);
+} // namespace PresetUtils
 
 } // namespace Slic3r
 

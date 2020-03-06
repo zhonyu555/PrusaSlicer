@@ -120,7 +120,7 @@ protected:
     Preset::Type        m_type;
 	std::string			m_name;
 	const wxString		m_title;
-	wxBitmapComboBox*	m_presets_choice;
+	PresetBitmapComboBox*	m_presets_choice;
 	ScalableButton*		m_btn_save_preset;
 	ScalableButton*		m_btn_delete_preset;
 	ScalableButton*		m_btn_hide_incompatible_presets;
@@ -218,7 +218,7 @@ protected:
 
     int                 m_em_unit;
     // To avoid actions with no-completed Tab
-    bool                m_complited { false };
+    bool                m_completed { false };
     ConfigOptionMode    m_mode = comExpert; // to correct first Tab update_visibility() set mode to Expert
 
 public:
@@ -231,7 +231,7 @@ public:
     // Counter for the updating (because of an update() function can have a recursive behavior):
     // 1. increase value from the very beginning of an update() function
     // 2. decrease value at the end of an update() function
-    // 3. propagate changed configuration to the Platter when (m_update_cnt == 0) only
+    // 3. propagate changed configuration to the Plater when (m_update_cnt == 0) only
     int                 m_update_cnt = 0;
 
 public:
@@ -244,7 +244,8 @@ public:
 // 	std::string	name()	 const { return m_name; }
 	std::string	name()	 const { return m_presets->name(); }
     Preset::Type type()  const { return m_type; }
-    bool complited()     const { return m_complited; }
+    // The tab is already constructed.
+    bool 		completed() const { return m_completed; }
     virtual bool supports_printer_technology(const PrinterTechnology tech) = 0;
 
 	void		create_preset_tab();
@@ -290,7 +291,7 @@ public:
 	virtual void	reload_config();
     void            update_mode();
     void            update_visibility();
-    void            msw_rescale();
+    virtual void    msw_rescale();
 	Field*			get_field(const t_config_option_key& opt_key, int opt_index = -1) const;
 	bool			set_value(const t_config_option_key& opt_key, const boost::any& value);
 	wxSizer*		description_line_widget(wxWindow* parent, ogStaticText** StaticText);
@@ -327,8 +328,9 @@ public:
         Tab(parent, _(L("Print Settings")), Slic3r::Preset::TYPE_PRINT) {}
 	~TabPrint() {}
 
-	ogStaticText*	m_recommended_thin_wall_thickness_description_line;
-	bool		m_support_material_overhangs_queried = false;
+	ogStaticText*	m_recommended_thin_wall_thickness_description_line = nullptr;
+	ogStaticText*	m_top_bottom_shell_thickness_explanation = nullptr;
+	bool			m_support_material_overhangs_queried = false;
 
 	void		build() override;
 	void		reload_config() override;
@@ -336,6 +338,7 @@ public:
 	void		OnActivate() override;
     bool 		supports_printer_technology(const PrinterTechnology tech) override { return tech == ptFFF; }
 };
+
 class TabFilament : public Tab
 {
 	ogStaticText*	m_volumetric_speed_description_line;
@@ -401,6 +404,7 @@ public:
 	void		build_unregular_pages();
 	void		on_preset_loaded() override;
 	void		init_options_list() override;
+	void		msw_rescale() override;
     bool 		supports_printer_technology(const PrinterTechnology /* tech */) override { return true; }
 };
 

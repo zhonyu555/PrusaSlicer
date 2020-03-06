@@ -126,7 +126,8 @@ Model Model::read_from_file(const std::string& input_file, DynamicPrintConfig* c
     if (add_default_instances)
         model.add_default_instances();
 
-    update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, config);
+    CustomGCode::update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, config);
+    CustomGCode::check_mode_for_custom_gcode_per_print_z(model.custom_gcode_per_print_z);
 
     return model;
 }
@@ -163,7 +164,8 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
     if (add_default_instances)
         model.add_default_instances();
 
-    update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, config);
+    CustomGCode::update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, config);
+    CustomGCode::check_mode_for_custom_gcode_per_print_z(model.custom_gcode_per_print_z);
 
     return model;
 }
@@ -598,21 +600,6 @@ std::string Model::propose_export_file_name_and_path(const std::string &new_exte
     return boost::filesystem::path(this->propose_export_file_name_and_path()).replace_extension(new_extension).string();
 }
 
-std::vector<std::pair<double, DynamicPrintConfig>> Model::get_custom_tool_changes(double default_layer_height, size_t num_extruders) const
-{
-    std::vector<std::pair<double, DynamicPrintConfig>> custom_tool_changes;
-    for (const CustomGCode& custom_gcode : custom_gcode_per_print_z)
-        if (custom_gcode.gcode == ExtruderChangeCode) {
-            DynamicPrintConfig config;
-            // If extruder count in PrinterSettings was changed, use default (0) extruder for extruders, more than num_extruders
-            config.set_key_value("extruder", new ConfigOptionInt(custom_gcode.extruder > num_extruders ? 0 : custom_gcode.extruder));
-            // For correct extruders(tools) changing, we should decrease custom_gcode.height value by one default layer height
-            custom_tool_changes.push_back({ custom_gcode.print_z - default_layer_height, config });
-        }
-
-    return custom_tool_changes;
-}
-
 ModelObject::~ModelObject()
 {
     this->clear_volumes();
@@ -633,6 +620,7 @@ ModelObject& ModelObject::assign_copy(const ModelObject &rhs)
     assert(this->config.id() == rhs.config.id());
     this->sla_support_points          = rhs.sla_support_points;
     this->sla_points_status           = rhs.sla_points_status;
+    this->sla_drain_holes             = rhs.sla_drain_holes;
     this->layer_config_ranges         = rhs.layer_config_ranges;    // #ys_FIXME_experiment
     this->layer_height_profile        = rhs.layer_height_profile;
     this->printable                   = rhs.printable;
@@ -673,6 +661,7 @@ ModelObject& ModelObject::assign_copy(ModelObject &&rhs)
     assert(this->config.id() == rhs.config.id());
     this->sla_support_points          = std::move(rhs.sla_support_points);
     this->sla_points_status           = std::move(rhs.sla_points_status);
+    this->sla_drain_holes             = std::move(rhs.sla_drain_holes);
     this->layer_config_ranges         = std::move(rhs.layer_config_ranges); // #ys_FIXME_experiment
     this->layer_height_profile        = std::move(rhs.layer_height_profile);
     this->origin_translation          = std::move(rhs.origin_translation);
@@ -858,7 +847,7 @@ TriangleMesh ModelObject::mesh() const
 }
 
 // Non-transformed (non-rotated, non-scaled, non-translated) sum of non-modifier object volumes.
-// Currently used by ModelObject::mesh(), to calculate the 2D envelope for 2D platter
+// Currently used by ModelObject::mesh(), to calculate the 2D envelope for 2D plater
 // and to display the object statistics at ModelObject::print_info().
 TriangleMesh ModelObject::raw_mesh() const
 {
@@ -918,10 +907,8 @@ const BoundingBoxf3& ModelObject::raw_bounding_box() const
 
         const Transform3d& inst_matrix = this->instances.front()->get_transformation().get_matrix(true);
         for (const ModelVolume *v : this->volumes)
-        {
             if (v->is_model_part())
                 m_raw_bounding_box.merge(v->mesh().transformed_bounding_box(inst_matrix * v->get_matrix()));
-        }
     }
 	return m_raw_bounding_box;
 }
@@ -1126,17 +1113,19 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
     if (keep_upper) {
         upper->set_model(nullptr);
         upper->sla_support_points.clear();
+        upper->sla_drain_holes.clear();
         upper->sla_points_status = sla::PointsStatus::NoPoints;
         upper->clear_volumes();
-        upper->input_file = "";
+        upper->input_file.clear();
     }
 
     if (keep_lower) {
         lower->set_model(nullptr);
         lower->sla_support_points.clear();
+        lower->sla_drain_holes.clear();
         lower->sla_points_status = sla::PointsStatus::NoPoints;
         lower->clear_volumes();
-        lower->input_file = "";
+        lower->input_file.clear();
     }
 
     // Because transformations are going to be applied to meshes directly,
@@ -1169,7 +1158,8 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
             if (keep_upper) { upper->add_volume(*volume); }
             if (keep_lower) { lower->add_volume(*volume); }
         }
-        else {
+        else if (! volume->mesh().empty()) {
+            
             TriangleMesh upper_mesh, lower_mesh;
 
             // Transform the mesh by the combined transformation matrix.
@@ -1177,7 +1167,9 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
 			TriangleMesh mesh(volume->mesh());
 			mesh.transform(instance_matrix * volume_matrix, true);
 			volume->reset_mesh();
-
+            
+            mesh.require_shared_vertices();
+            
             // Perform cut
             TriangleMeshSlicer tms(&mesh);
             tms.cut(float(z), &upper_mesh, &lower_mesh);
@@ -1942,28 +1934,6 @@ extern bool model_has_advanced_features(const Model &model)
             	return true;
     }
     return false;
-}
-
-extern void update_custom_gcode_per_print_z_from_config(std::vector<Model::CustomGCode>& custom_gcode_per_print_z, DynamicPrintConfig* config)
-{
-	auto *colorprint_heights = config->option<ConfigOptionFloats>("colorprint_heights");
-    if (colorprint_heights == nullptr)
-        return;
-
-	if (custom_gcode_per_print_z.empty() && ! colorprint_heights->values.empty()) {
-		// Convert the old colorprint_heighs only if there is no equivalent data in a new format.
-	    const std::vector<std::string>& colors = GCodePreviewData::ColorPrintColors();
-	    const auto& colorprint_values = colorprint_heights->values;
-        custom_gcode_per_print_z.clear();
-        custom_gcode_per_print_z.reserve(colorprint_values.size());
-        int i = 0;
-        for (auto val : colorprint_values)
-            custom_gcode_per_print_z.emplace_back(Model::CustomGCode{ val, ColorChangeCode, 1, colors[(++i)%7] });
-	}
-
-	// The "colorprint_heights" config value has been deprecated. At this point of time it has been converted
-	// to a new format and therefore it shall be erased.
-    config->erase("colorprint_heights");
 }
 
 #ifndef NDEBUG
