@@ -28,6 +28,7 @@ std::vector<std::pair<size_t, bool>> chain_segments_closest_point(std::vector<En
 	std::vector<std::pair<size_t, bool>> out;
 	out.reserve(num_segments);
 	size_t first_point_idx = &first_point - end_points.data();
+	assert((first_point_idx & 1) == 0 || could_reverse_func(first_point_idx >> 1));
 	out.emplace_back(first_point_idx / 2, (first_point_idx & 1) != 0);
 	first_point.chain_id = 1;
 	size_t this_idx = first_point_idx ^ 1;
@@ -161,11 +162,12 @@ std::vector<std::pair<size_t, bool>> chain_segments_greedy_constrained_reversals
 			std::vector<size_t> m_equivalent_with;
 		} equivalent_chain(num_segments);
 
-		// Find the first end point closest to start_near.
+		// Find the first end point closest to start_near with matching orientation.
 		EndPoint *first_point = nullptr;
 		size_t    first_point_idx = std::numeric_limits<size_t>::max();
 		if (start_near != nullptr) {
-            size_t idx = find_closest_point(kdtree, start_near->template cast<double>());
+            size_t idx = find_closest_point(kdtree, start_near->template cast<double>(),
+                    [&could_reverse_func](size_t idx) { return (idx & 1) == 0 || could_reverse_func(idx >> 1); });
 			assert(idx < end_points.size());
 			first_point = &end_points[idx];
 			first_point->distance_out = 0.;
