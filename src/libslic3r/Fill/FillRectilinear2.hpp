@@ -18,6 +18,9 @@ public:
 
 protected:
 	bool fill_surface_by_lines(const Surface *surface, const FillParams &params, float angleBase, float pattern_shift, Polylines &polylines_out);
+
+	// Enabled for uniform infill to enforce a consistent filling direction
+	virtual bool _uniform_direction() const { return false; }
 };
 
 class FillGrid2 : public FillRectilinear2
@@ -68,6 +71,16 @@ protected:
     virtual float _layer_angle(size_t idx) const { return 0.f; }
 };
 
+class FillUniform : public FillRectilinear2
+{
+public:
+    virtual Fill* clone() const { return new FillUniform(*this); };
+    virtual ~FillUniform() {}
+    virtual bool no_sort() const { return true; }
+
+protected:
+    virtual bool _uniform_direction() const { return true; }
+};
 
 }; // namespace Slic3r
 

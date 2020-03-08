@@ -1035,6 +1035,8 @@ bool FillRectilinear2::fill_surface_by_lines(const Surface *surface, const FillP
         }
     }
 
+    bool uniform = this->_uniform_direction();
+
     // Now construct a graph.
     // Find the first point.
     // Naively one would expect to achieve best results by chaining the paths by the shortest distance,
@@ -1060,6 +1062,12 @@ bool FillRectilinear2::fill_surface_by_lines(const Surface *surface, const FillP
                     assert((seg.intersections.size() & 1) == 0);
                     assert(seg.intersections.front().type == SegmentIntersection::OUTER_LOW);
                     for (size_t i = 0; i < seg.intersections.size(); ++ i) {
+
+                        // In uniform mode, pick the first intersection according to an even/odd rule to set the
+                        // vertical direction in a consistent alternating pattern
+                        if (uniform && (i_vline2 & 1))
+                            i = (i + 1) % seg.intersections.size();
+
                         const SegmentIntersection &intrsctn = seg.intersections[i];
                         if (intrsctn.is_outer()) {
                             assert(intrsctn.is_low() || i > 0);
@@ -1227,7 +1235,8 @@ bool FillRectilinear2::fill_surface_by_lines(const Surface *surface, const FillP
 
             // 4) Try to connect to a previous or next vertical line, making a zig-zag pattern.
             if (intrsctn_type_prev == INTERSECTION_TYPE_OTHER_VLINE_OK || intrsctn_type_next == INTERSECTION_TYPE_OTHER_VLINE_OK) {
-                coordf_t distPrev = (intrsctn_type_prev != INTERSECTION_TYPE_OTHER_VLINE_OK) ? std::numeric_limits<coord_t>::max() :
+                // In uniform mode, always pick the _same_ direction
+                coordf_t distPrev = (intrsctn_type_prev != INTERSECTION_TYPE_OTHER_VLINE_OK || uniform) ? std::numeric_limits<coord_t>::max() :
                     measure_perimeter_prev_segment_length(poly_with_offset, segs, i_vline, intrsctn->iContour, i_intersection, iPrev);
                 coordf_t distNext = (intrsctn_type_next != INTERSECTION_TYPE_OTHER_VLINE_OK) ? std::numeric_limits<coord_t>::max() :
                     measure_perimeter_next_segment_length(poly_with_offset, segs, i_vline, intrsctn->iContour, i_intersection, iNext);

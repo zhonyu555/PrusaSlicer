@@ -37,6 +37,7 @@ Fill* Fill::new_from_type(const InfillPattern type)
     case ipArchimedeanChords:   return new FillArchimedeanChords();
     case ipHilbertCurve:        return new FillHilbertCurve();
     case ipOctagramSpiral:      return new FillOctagramSpiral();
+    case ipUniform:             return new FillUniform();
     default: throw std::invalid_argument("unknown type");
     }
 }
