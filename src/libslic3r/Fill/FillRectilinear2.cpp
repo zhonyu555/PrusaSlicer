@@ -1061,12 +1061,25 @@ bool FillRectilinear2::fill_surface_by_lines(const Surface *surface, const FillP
                     // Even number of intersections with the loops.
                     assert((seg.intersections.size() & 1) == 0);
                     assert(seg.intersections.front().type == SegmentIntersection::OUTER_LOW);
-                    for (size_t i = 0; i < seg.intersections.size(); ++ i) {
 
-                        // In uniform mode, pick the first intersection according to an even/odd rule to set the
-                        // vertical direction in a consistent alternating pattern
-                        if (uniform && (i_vline2 & 1))
-                            i = (i + 1) % seg.intersections.size();
+                    // In uniform mode, pick intersections according to an even/odd rule to set the
+                    // vertical direction in a consistent alternating pattern.
+                    size_t i;
+                    if (uniform) {
+                        // select initial set
+                        i = (i_vline2 & 1);
+                    }
+
+                    for (size_t n = 0; n < seg.intersections.size(); ++ n) {
+                        if (!uniform) {
+                            // iterate normally
+                            i = n;
+                        } else {
+                            // cycle through same parity sets in two passes
+                            i += 2;
+                            if (i >= seg.intersections.size())
+                                i = !(i % 2);
+                        }
 
                         const SegmentIntersection &intrsctn = seg.intersections[i];
                         if (intrsctn.is_outer()) {
