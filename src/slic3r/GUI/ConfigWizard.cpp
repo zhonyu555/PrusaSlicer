@@ -42,16 +42,27 @@ using Config::SnapshotDB;
 
 // Configuration data structures extensions needed for the wizard
 
-Bundle::Bundle(fs::path source_path, bool is_in_resources, bool is_prusa_bundle)
-    : preset_bundle(new PresetBundle)
-    , vendor_profile(nullptr)
-    , is_in_resources(is_in_resources)
-    , is_prusa_bundle(is_prusa_bundle)
+bool Bundle::load(fs::path source_path, bool ais_in_resources, bool ais_prusa_bundle)
 {
-    preset_bundle->load_configbundle(source_path.string(), PresetBundle::LOAD_CFGBNDLE_SYSTEM);
+    this->preset_bundle = std::make_unique<PresetBundle>();
+    this->is_in_resources = ais_in_resources;
+    this->is_prusa_bundle = ais_prusa_bundle;
+
+    std::string path_string = source_path.string();
+    size_t presets_loaded = preset_bundle->load_configbundle(path_string, PresetBundle::LOAD_CFGBNDLE_SYSTEM);
     auto first_vendor = preset_bundle->vendors.begin();
-    wxCHECK_RET(first_vendor != preset_bundle->vendors.end(), "Failed to load preset bundle");
-    vendor_profile = &first_vendor->second;
+    if (first_vendor == preset_bundle->vendors.end()) {
+        BOOST_LOG_TRIVIAL(error) << boost::format("Vendor bundle: `%1%`: No vendor information defined, cannot install.") % path_string;
+        return false;
+    }
+    if (presets_loaded == 0) {
+        BOOST_LOG_TRIVIAL(error) << boost::format("Vendor bundle: `%1%`: No profile loaded.") % path_string;
+        return false;
+    } 
+
+    BOOST_LOG_TRIVIAL(trace) << boost::format("Vendor bundle: `%1%`: %2% profiles loaded.") % path_string % presets_loaded;
+    this->vendor_profile = &first_vendor->second;
+    return true;
 }
 
 Bundle::Bundle(Bundle &&other)
@@ -76,8 +87,11 @@ BundleMap BundleMap::load()
         prusa_bundle_path = (rsrc_vendor_dir / PresetBundle::PRUSA_BUNDLE).replace_extension(".ini");
         prusa_bundle_rsrc = true;
     }
-    Bundle prusa_bundle(std::move(prusa_bundle_path), prusa_bundle_rsrc, true);
-    res.emplace(PresetBundle::PRUSA_BUNDLE, std::move(prusa_bundle));
+    {
+        Bundle prusa_bundle;
+        if (prusa_bundle.load(std::move(prusa_bundle_path), prusa_bundle_rsrc, true))
+            res.emplace(PresetBundle::PRUSA_BUNDLE, std::move(prusa_bundle)); 
+    }
 
     // Load the other bundles in the datadir/vendor directory
     // and then additionally from resources/profiles.
@@ -90,8 +104,9 @@ BundleMap BundleMap::load()
                 // Don't load this bundle if we've already loaded it.
                 if (res.find(id) != res.end()) { continue; }
 
-                Bundle bundle(dir_entry.path(), is_in_resources);
-                res.emplace(std::move(id), std::move(bundle));
+                Bundle bundle;
+                if (bundle.load(dir_entry.path(), is_in_resources))
+                    res.emplace(std::move(id), std::move(bundle));
             }
         }
 
@@ -173,7 +188,7 @@ PrinterPicker::PrinterPicker(wxWindow *parent, const VendorProfile &vendor, wxSt
 
         wxBitmap bitmap;
         int bitmap_width = 0;
-        const wxString bitmap_file = GUI::from_u8(Slic3r::var((boost::format("printers/%1%_%2%.png") % vendor.id % model.id).str()));
+        const wxString bitmap_file = GUI::from_u8(Slic3r::resources_dir() + "/profiles/" + vendor.id + "/" + model.id + "_thumbnail.png");
         if (wxFileExists(bitmap_file)) {
             bitmap.LoadFile(bitmap_file, wxBITMAP_TYPE_PNG);
             bitmap_width = bitmap.GetWidth();
@@ -1911,6 +1926,7 @@ void ConfigWizard::priv::update_presets_in_config(const std::string& section, co
     const PresetAliases& aliases = section == AppConfig::SECTION_FILAMENTS ? aliases_fff : aliases_sla;
 
     auto update = [this, add](const std::string& s, const std::string& key) {
+    	assert(! s.empty());
         if (add)
             appconfig_new.set(s, key, "1");
         else

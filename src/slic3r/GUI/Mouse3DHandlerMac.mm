@@ -152,6 +152,9 @@ static void DeviceAdded(uint32_t unused)
 static void DeviceRemoved(uint32_t unused)
 {
   BOOST_LOG_TRIVIAL(info) << "3dx device removed\n";
+// not accessible in a free function
+//  assert(m_connected);
+//  assert(! m_device_str.empty());
   mouse_3d_controller->disconnected();
 }
 
@@ -214,6 +217,8 @@ void Mouse3DController::shutdown()
     CleanupConnexionHandlers();
     unload_driver();
   }
+  // Copy the current parameters to parameter database, mark the device as disconnected.
+  this->disconnected();
   mouse_3d_controller = nullptr;
 }
 

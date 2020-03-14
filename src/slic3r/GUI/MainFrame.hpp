@@ -100,6 +100,9 @@ public:
     MainFrame();
     ~MainFrame() = default;
 
+	// Called when closing the application and when switching the application language.
+	void 		shutdown();
+
     Plater*     plater() { return m_plater; }
 
     void        update_title();
@@ -138,6 +141,10 @@ public:
     wxNotebook*         m_tabpanel { nullptr };
     wxProgressDialog*   m_progress_dialog { nullptr };
     std::shared_ptr<ProgressStatusBar>  m_statusbar;
+
+#ifdef _WIN32
+    void*				m_hDeviceNotify { nullptr };
+#endif // _WIN32
 };
 
 } // GUI

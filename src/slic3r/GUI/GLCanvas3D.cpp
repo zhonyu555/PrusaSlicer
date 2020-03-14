@@ -663,7 +663,7 @@ void GLCanvas3D::WarningTexture::activate(WarningTexture::Warning warning, bool 
         if (it != m_warnings.end()) // this warning is already set to be shown
             return;
 
-        m_warnings.push_back(warning);
+        m_warnings.emplace_back(warning);
         std::sort(m_warnings.begin(), m_warnings.end());
     }
     else {
@@ -1289,7 +1289,7 @@ void GLCanvas3D::Labels::render(const std::vector<const ModelInstance*>& sorted_
                 if (model_object->instances.size() > 1)
                     owner.label += " (" + std::to_string(inst_idx + 1) + ")";
                 owner.selected = volume->selected;
-                owners.push_back(owner);
+                owners.emplace_back(owner);
             }
         }
     }
@@ -2029,7 +2029,7 @@ std::vector<int> GLCanvas3D::load_object(const ModelObject& model_object, int ob
     {
         for (unsigned int i = 0; i < model_object.instances.size(); ++i)
         {
-            instance_idxs.push_back(i);
+            instance_idxs.emplace_back(i);
         }
     }
     return m_volumes.load_object(&model_object, obj_idx, instance_idxs, m_color_by, m_initialized);
@@ -2469,9 +2469,9 @@ static void load_gcode_retractions(const GCodePreviewData::Retraction& retractio
 
 	for (const GCodePreviewData::Retraction::Position& position : copy)
 	{
-		volume->print_zs.push_back(unscale<double>(position.position(2)));
-		volume->offsets.push_back(volume->indexed_vertex_array.quad_indices.size());
-		volume->offsets.push_back(volume->indexed_vertex_array.triangle_indices.size());
+		volume->print_zs.emplace_back(unscale<double>(position.position(2)));
+		volume->offsets.emplace_back(volume->indexed_vertex_array.quad_indices.size());
+		volume->offsets.emplace_back(volume->indexed_vertex_array.triangle_indices.size());
 
 		_3DScene::point3_to_verts(position.position, position.width, position.height, *volume);
 
@@ -3191,6 +3191,9 @@ std::string format_mouse_event_debug_message(const wxMouseEvent &evt)
 
 void GLCanvas3D::on_mouse(wxMouseEvent& evt)
 {
+    if (!m_initialized || !_set_current())
+        return;
+
 #if ENABLE_RETINA_GL
     const float scale = m_retina_helper->get_scale_factor();
     evt.SetX(evt.GetX() * scale);
@@ -3259,9 +3262,6 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         m_mouse.set_start_position_3D_as_invalid();
         return;
     }
-
-    if (m_picking_enabled)
-        _set_current();
 
     int selected_object_idx = m_selection.get_object_idx();
     int layer_editing_object_idx = is_layers_editing_enabled() ? selected_object_idx : -1;
@@ -3932,7 +3932,6 @@ void GLCanvas3D::handle_layers_data_focus_event(const t_layer_height_range range
 
 void GLCanvas3D::update_ui_from_settings()
 {
-    m_camera.set_type(wxGetApp().app_config->get("use_perspective_camera"));
     m_dirty = true;
 
 #if ENABLE_RETINA_GL
@@ -4110,7 +4109,7 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, bool 
         if (!vol->is_modifier && !vol->is_wipe_tower && (!parts_only || (vol->composite_id.volume_id >= 0)))
         {
             if (!printable_only || is_visible(*vol))
-                visible_volumes.push_back(vol);
+                visible_volumes.emplace_back(vol);
         }
     }
 
@@ -4814,7 +4813,7 @@ void GLCanvas3D::_picking_pass() const
         }
         if ((0 <= volume_id) && (volume_id < (int)m_volumes.volumes.size()))
         {
-            m_hover_volume_idxs.push_back(volume_id);
+            m_hover_volume_idxs.emplace_back(volume_id);
             m_gizmos.set_hover_id(-1);
         }
         else
@@ -5032,6 +5031,19 @@ void GLCanvas3D::_render_overlays() const
     _render_gizmos_overlay();
     _render_warning_texture();
     _render_legend_texture();
+
+    // main toolbar and undoredo toolbar need to be both updated before rendering because both their sizes are needed
+    // to correctly place them
+#if ENABLE_RETINA_GL
+    const float scale = m_retina_helper->get_scale_factor() * wxGetApp().toolbar_icon_scale(true);
+    m_main_toolbar.set_scale(scale);
+    m_undoredo_toolbar.set_scale(scale);
+#else
+    const float size = int(GLToolbar::Default_Icons_Size * wxGetApp().toolbar_icon_scale(true));
+    m_main_toolbar.set_icons_size(size);
+    m_undoredo_toolbar.set_icons_size(size);
+#endif // ENABLE_RETINA_GL
+
     _render_main_toolbar();
     _render_undoredo_toolbar();
     _render_view_toolbar();
@@ -5045,7 +5057,7 @@ void GLCanvas3D::_render_overlays() const
     if (sequential_print) {
         for (ModelObject* model_object : m_model->objects)
             for (ModelInstance* model_instance : model_object->instances) {
-                sorted_instances.push_back(model_instance);
+                sorted_instances.emplace_back(model_instance);
             }
     }
     m_labels.render(sorted_instances);
@@ -5124,17 +5136,6 @@ void GLCanvas3D::_render_main_toolbar() const
     if (!m_main_toolbar.is_enabled())
         return;
 
-#if ENABLE_RETINA_GL
-//     m_main_toolbar.set_scale(m_retina_helper->get_scale_factor());
-    const float scale = m_retina_helper->get_scale_factor() * wxGetApp().toolbar_icon_scale(true);
-    m_main_toolbar.set_scale(scale); //! #ys_FIXME_experiment
-#else
-//     m_main_toolbar.set_scale(m_canvas->GetContentScaleFactor());
-//     m_main_toolbar.set_scale(wxGetApp().em_unit()*0.1f);
-    const float size = int(GLToolbar::Default_Icons_Size * wxGetApp().toolbar_icon_scale(true));
-    m_main_toolbar.set_icons_size(size); //! #ys_FIXME_experiment
-#endif // ENABLE_RETINA_GL
-
     Size cnv_size = get_canvas_size();
     float inv_zoom = (float)m_camera.get_inv_zoom();
 
@@ -5149,17 +5150,6 @@ void GLCanvas3D::_render_undoredo_toolbar() const
 {
     if (!m_undoredo_toolbar.is_enabled())
         return;
-
-#if ENABLE_RETINA_GL
-//     m_undoredo_toolbar.set_scale(m_retina_helper->get_scale_factor());
-    const float scale = m_retina_helper->get_scale_factor() * wxGetApp().toolbar_icon_scale(true);
-    m_undoredo_toolbar.set_scale(scale); //! #ys_FIXME_experiment
-#else
-//     m_undoredo_toolbar.set_scale(m_canvas->GetContentScaleFactor());
-//     m_undoredo_toolbar.set_scale(wxGetApp().em_unit()*0.1f);
-    const float size = int(GLToolbar::Default_Icons_Size * wxGetApp().toolbar_icon_scale(true));
-    m_undoredo_toolbar.set_icons_size(size); //! #ys_FIXME_experiment
-#endif // ENABLE_RETINA_GL
 
     Size cnv_size = get_canvas_size();
     float inv_zoom = (float)m_camera.get_inv_zoom();
@@ -5525,29 +5515,26 @@ void GLCanvas3D::_load_print_toolpaths()
     if ((skirt_height == 0) && (print->config().brim_width.value > 0))
         skirt_height = 1;
 
-    // get first skirt_height layers (maybe this should be moved to a PrintObject method?)
-    const PrintObject* object0 = print->objects().front();
+    // Get first skirt_height layers.
+    //FIXME This code is fishy. It may not work for multiple objects with different layering due to variable layer height feature.
+    // This is not critical as this is just an initial preview.
+    const PrintObject* highest_object = *std::max_element(print->objects().begin(), print->objects().end(), [](auto l, auto r){ return l->layers().size() < r->layers().size(); });
     std::vector<float> print_zs;
     print_zs.reserve(skirt_height * 2);
-    for (size_t i = 0; i < std::min(skirt_height, object0->layers().size()); ++i)
-    {
-        print_zs.push_back(float(object0->layers()[i]->print_z));
-    }
-    //FIXME why there are support layers?
-    for (size_t i = 0; i < std::min(skirt_height, object0->support_layers().size()); ++i)
-    {
-        print_zs.push_back(float(object0->support_layers()[i]->print_z));
-    }
+    for (size_t i = 0; i < std::min(skirt_height, highest_object->layers().size()); ++ i)
+        print_zs.emplace_back(float(highest_object->layers()[i]->print_z));
+    // Only add skirt for the raft layers.
+    for (size_t i = 0; i < std::min(skirt_height, std::min(highest_object->slicing_parameters().raft_layers(), highest_object->support_layers().size())); ++ i)
+        print_zs.emplace_back(float(highest_object->support_layers()[i]->print_z));
     sort_remove_duplicates(print_zs);
-    if (print_zs.size() > skirt_height)
-        print_zs.erase(print_zs.begin() + skirt_height, print_zs.end());
-
+    skirt_height = std::min(skirt_height, print_zs.size());
+    print_zs.erase(print_zs.begin() + skirt_height, print_zs.end());
 
     GLVolume *volume = m_volumes.new_toolpath_volume(color, VERTEX_BUFFER_RESERVE_SIZE);
-    for (size_t i = 0; i < skirt_height; ++i) {
-        volume->print_zs.push_back(print_zs[i]);
-        volume->offsets.push_back(volume->indexed_vertex_array.quad_indices.size());
-        volume->offsets.push_back(volume->indexed_vertex_array.triangle_indices.size());
+    for (size_t i = 0; i < skirt_height; ++ i) {
+        volume->print_zs.emplace_back(print_zs[i]);
+        volume->offsets.emplace_back(volume->indexed_vertex_array.quad_indices.size());
+        volume->offsets.emplace_back(volume->indexed_vertex_array.triangle_indices.size());
         if (i == 0)
             _3DScene::extrusionentity_to_verts(print->brim(), print_zs[i], Point(0, 0), *volume);
         _3DScene::extrusionentity_to_verts(print->skirt(), print_zs[i], Point(0, 0), *volume);
@@ -5713,10 +5700,10 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
     }
     if (ctxt.has_perimeters || ctxt.has_infill)
         for (const Layer *layer : print_object.layers())
-            ctxt.layers.push_back(layer);
+            ctxt.layers.emplace_back(layer);
     if (ctxt.has_support)
         for (const Layer *layer : print_object.support_layers())
-            ctxt.layers.push_back(layer);
+            ctxt.layers.emplace_back(layer);
     std::sort(ctxt.layers.begin(), ctxt.layers.end(), [](const Layer *l1, const Layer *l2) { return l1->print_z < l2->print_z; });
 
     // Maximum size of an allocation block: 32MB / sizeof(float)
@@ -5785,9 +5772,9 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
 
             for (GLVolume *vol : vols)
                 if (vol->print_zs.empty() || vol->print_zs.back() != layer->print_z) {
-                    vol->print_zs.push_back(layer->print_z);
-                    vol->offsets.push_back(vol->indexed_vertex_array.quad_indices.size());
-                    vol->offsets.push_back(vol->indexed_vertex_array.triangle_indices.size());
+                    vol->print_zs.emplace_back(layer->print_z);
+                    vol->offsets.emplace_back(vol->indexed_vertex_array.quad_indices.size());
+                    vol->offsets.emplace_back(vol->indexed_vertex_array.triangle_indices.size());
                 }
             for (const PrintInstance &instance : *ctxt.shifted_copies) {
                 const Point &copy = instance.shift;
@@ -5943,9 +5930,9 @@ void GLCanvas3D::_load_wipe_tower_toolpaths(const std::vector<std::string>& str_
             for (size_t i = 0; i < vols.size(); ++i) {
                 GLVolume &vol = *vols[i];
                 if (vol.print_zs.empty() || vol.print_zs.back() != layer.front().print_z) {
-                    vol.print_zs.push_back(layer.front().print_z);
-                    vol.offsets.push_back(vol.indexed_vertex_array.quad_indices.size());
-                    vol.offsets.push_back(vol.indexed_vertex_array.triangle_indices.size());
+                    vol.print_zs.emplace_back(layer.front().print_z);
+                    vol.offsets.emplace_back(vol.indexed_vertex_array.quad_indices.size());
+                    vol.offsets.emplace_back(vol.indexed_vertex_array.triangle_indices.size());
                 }
             }
             for (const WipeTower::ToolChangeResult &extrusions : layer) {
@@ -6158,9 +6145,9 @@ void GLCanvas3D::_load_gcode_extrusion_paths(const GCodePreviewData& preview_dat
 				assert(it_filter != filters.end() && key.first == it_filter->first);
 
 				GLVolume& vol = *it_filter->second;
-				vol.print_zs.push_back(layer.z);
-				vol.offsets.push_back(vol.indexed_vertex_array.quad_indices.size());
-				vol.offsets.push_back(vol.indexed_vertex_array.triangle_indices.size());
+				vol.print_zs.emplace_back(layer.z);
+				vol.offsets.emplace_back(vol.indexed_vertex_array.quad_indices.size());
+				vol.offsets.emplace_back(vol.indexed_vertex_array.triangle_indices.size());
 
 				_3DScene::extrusionentity_to_verts(path.polyline, path.width, path.height, layer.z, vol);
 			}
@@ -6232,9 +6219,9 @@ inline void travel_paths_internal(
 		assert(it != by_type.end() && it->first == func_value(polyline));
 
 		GLVolume& vol = *it->second;
-		vol.print_zs.push_back(unscale<double>(polyline.polyline.bounding_box().min(2)));
-		vol.offsets.push_back(vol.indexed_vertex_array.quad_indices.size());
-		vol.offsets.push_back(vol.indexed_vertex_array.triangle_indices.size());
+		vol.print_zs.emplace_back(unscale<double>(polyline.polyline.bounding_box().min(2)));
+		vol.offsets.emplace_back(vol.indexed_vertex_array.quad_indices.size());
+		vol.offsets.emplace_back(vol.indexed_vertex_array.triangle_indices.size());
 
 		_3DScene::polyline3_to_verts(polyline.polyline, preview_data.travel.width, preview_data.travel.height, vol);
 
