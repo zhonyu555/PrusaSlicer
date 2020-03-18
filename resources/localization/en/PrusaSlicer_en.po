@@ -153,3 +153,7 @@ msgstr "When set to zero, the distance the filament is moved from parking positi
 #: src/slic3r/GUI/Tab.cpp:3285
 msgid "WHITE BULLET icon indicates a non system (or non default) preset."
 msgstr "WHITE BULLET icon indicates a non-system (or non-default) preset."
+
+#: src/slic3r/GUI/GUI_Preview.cpp:255
+msgid "Unretractions"
+msgstr "Deretractions"
