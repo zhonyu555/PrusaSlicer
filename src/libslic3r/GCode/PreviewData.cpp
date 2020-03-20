@@ -241,6 +241,7 @@ void GCodePreviewData::reset()
     ranges.width.reset();
     ranges.height.reset();
     ranges.feedrate.reset();
+    ranges.fan_speed.reset();
     ranges.volumetric_rate.reset();
     ranges.fan_speed.reset();
     ranges.layer_time.reset();
