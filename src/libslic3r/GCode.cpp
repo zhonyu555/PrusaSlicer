@@ -1357,6 +1357,9 @@ void GCode::_do_export(Print& print, FILE* file)
     if (! (has_wipe_tower && print.config().single_extruder_multi_material_priming)) {
         // Set initial extruder only after custom start G-code.
         // Ugly hack: Do not set the initial extruder if the extruder is primed using the MMU priming towers at the edge of the print bed.
+        DynamicConfig config;
+        config.set_key_value("extruder_purge_volume",new ConfigOptionFloat(0.0f)); // No wipe volume at initial Tx
+        m_placeholder_parser.set("extruder_purge_volume",new ConfigOptionFloat(0.0f));
         _write(file, this->set_extruder(initial_extruder_id, 0.));
     }
 
@@ -2180,6 +2183,18 @@ void GCode::process_layer(
     std::vector<std::unique_ptr<EdgeGrid::Grid>> lower_layer_edge_grids(layers.size());
     for (unsigned int extruder_id : layer_tools.extruders)
     {
+        int old_extruder_id = m_writer.extruder()->id();
+        std::tuple<float,int,int> key (print_z,old_extruder_id,extruder_id);
+        DynamicConfig config;
+
+        // Lookup the purge volume for this tool change and set it for use in custom gcode.
+        float purge_volume = 0.0f;
+        auto entry = print.tool_ordering().all_purge_volumes().find(key);
+        if (entry!=print.tool_ordering().all_purge_volumes().end())
+            purge_volume = entry->second;
+
+        config.set_key_value("extruder_purge_volume",new ConfigOptionFloat(purge_volume));
+        m_placeholder_parser.set("extruder_purge_volume",new ConfigOptionFloat(purge_volume));
         gcode += (layer_tools.has_wipe_tower && m_wipe_tower) ?
             m_wipe_tower->tool_change(*this, extruder_id, extruder_id == layer_tools.extruders.back()) :
             this->set_extruder(extruder_id, print_z);
