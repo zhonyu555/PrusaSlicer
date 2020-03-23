@@ -5,7 +5,7 @@
 
 #include <boost/format.hpp>
 
-//! macro used to mark string used at localization, 
+//! macro used to mark string used at localization,
 #define L(s) (s)
 
 namespace Slic3r {
@@ -78,18 +78,18 @@ float GCodePreviewData::RangeBase::step_size(bool geometric_scale) const
 
 Color GCodePreviewData::RangeBase::get_color_at(float value, bool geometric_scale) const
 {
-    // Input value scaled to the color range
-    float step = step_size(geometric_scale);
-    float global_t;
-    if (geometric_scale)
-    {
-        float min_range = min();
-        if (min_range == 0)
-            min_range = 0.001f;
-        global_t = (step != 0.0f) ? std::max(0.0f, log(value / min_range)) / step : 0.0f; // lower limit of 0.0f
-    }
-    else
-        global_t = (step != 0.0f) ? std::max(0.0f, value - min()) / step : 0.0f; // lower limit of 0.0f
+  // Input value scaled to the color range
+  float step = step_size(geometric_scale);
+  float global_t;
+  if (geometric_scale)
+  {
+      float min_range = min();
+      if (min_range == 0)
+          min_range = 0.001f;
+      global_t = (step != 0.0f) ? std::max(0.0f, log(value / min_range)) / step : 0.0f; // lower limit of 0.0f
+  }
+  else
+      global_t = (step != 0.0f) ? std::max(0.0f, value - min()) / step : 0.0f; // lower limit of 0.0f
 
     constexpr std::size_t color_max_idx = range_rainbow_colors.size() - 1;
 
@@ -247,7 +247,7 @@ void GCodePreviewData::set_default()
     retraction.set_default();
     unretraction.set_default();
     shell.set_default();
-    
+
     // Configure the color range for feedrate to match the default for travels and to enable extrusions since they are always visible
     ranges.feedrate.set_mode(FeedrateKind::TRAVEL, travel.is_visible);
     ranges.feedrate.set_mode(FeedrateKind::EXTRUSION, true);
@@ -398,7 +398,7 @@ std::string GCodePreviewData::get_legend_title() const
     return "";
 }
 
-GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::vector<float>& tool_colors, 
+GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::vector<float>& tool_colors,
                                                                      const std::vector<std::string>& cp_items) const
 {
     struct Helper
@@ -414,7 +414,7 @@ GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::
                 ::sprintf(buffer, "%.*fs", 1, time_in_secs);
             return buffer;
         }
-        
+
         static void FillListFromRange(LegendItemsList& list, const RangeBase& range, unsigned int decimals, float scale_factor, bool istime = false, bool geometric_scale = false)
         {
             list.reserve(range_rainbow_colors.size());
@@ -539,7 +539,7 @@ GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::
             {
                 Color color;
                 ::memcpy((void*)color.rgba.data(), (const void*)(tool_colors.data() + i * 4), 4 * sizeof(float));
-                
+
                 items.emplace_back(cp_items[i], color);
             }
             break;
@@ -554,11 +554,11 @@ GCodePreviewData::LegendItemsList GCodePreviewData::get_legend_items(const std::
 // Return an estimate of the memory consumed by the time estimator.
 size_t GCodePreviewData::memory_used() const
 {
-    return 
-        this->extrusion.memory_used() + 
-        this->travel.memory_used() + 
-        this->retraction.memory_used() + 
-        this->unretraction.memory_used() + 
+    return
+        this->extrusion.memory_used() +
+        this->travel.memory_used() +
+        this->retraction.memory_used() +
+        this->unretraction.memory_used() +
         sizeof(shell) + sizeof(ranges);
 }
 
