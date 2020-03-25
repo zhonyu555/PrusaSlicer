@@ -617,6 +617,11 @@ public:
     ConfigOptionStrings             filament_type;
     ConfigOptionBools               filament_soluble;
     ConfigOptionFloats              filament_cost;
+// dribbling
+    ConfigOptionInts                filament_mintemp;
+    ConfigOptionInts                filament_maxtemp;
+    ConfigOptionInts                dribbling_temperature;	
+// dribbling	
     ConfigOptionFloats              filament_max_volumetric_speed;
     ConfigOptionFloats              filament_loading_speed;
     ConfigOptionFloats              filament_loading_speed_start;
@@ -629,7 +634,11 @@ public:
     ConfigOptionFloats              filament_cooling_initial_speed;
     ConfigOptionFloats              filament_minimal_purge_on_wipe_tower;
     ConfigOptionFloats              filament_cooling_final_speed;
-    ConfigOptionStrings             filament_ramming_parameters;
+    ConfigOptionStrings             filament_ramming_parameters;    
+// dribbling    
+    ConfigOptionBool                dribbling_enabled;
+    ConfigOptionInts                dribbling_moves;	
+// dribbling end
     ConfigOptionBool                gcode_comments;
     ConfigOptionEnum<GCodeFlavor>   gcode_flavor;
     ConfigOptionBool                gcode_label_objects;
@@ -667,6 +676,7 @@ public:
     ConfigOptionBool                remaining_times;
     ConfigOptionBool                silent_mode;
     ConfigOptionFloat               extra_loading_move;
+    ConfigOptionFloat               dribbling_meltingzone;    
 
     std::string get_extrusion_axis() const
     {
@@ -690,6 +700,11 @@ protected:
         OPT_PTR(filament_type);
         OPT_PTR(filament_soluble);
         OPT_PTR(filament_cost);
+// dribbling		
+        OPT_PTR(filament_mintemp);
+        OPT_PTR(filament_maxtemp);
+        OPT_PTR(dribbling_temperature);
+// dribbling		
         OPT_PTR(filament_max_volumetric_speed);
         OPT_PTR(filament_loading_speed);
         OPT_PTR(filament_loading_speed_start);
@@ -702,8 +717,12 @@ protected:
         OPT_PTR(filament_cooling_initial_speed);
         OPT_PTR(filament_minimal_purge_on_wipe_tower);
         OPT_PTR(filament_cooling_final_speed);
-        OPT_PTR(filament_ramming_parameters);
-        OPT_PTR(gcode_comments);
+        OPT_PTR(filament_ramming_parameters);     
+// dribbling        
+        OPT_PTR(dribbling_enabled);
+        OPT_PTR(dribbling_moves);
+// end dribbling				
+		OPT_PTR(gcode_comments);
         OPT_PTR(gcode_flavor);
         OPT_PTR(gcode_label_objects);
         OPT_PTR(layer_gcode);
@@ -740,6 +759,7 @@ protected:
         OPT_PTR(remaining_times);
         OPT_PTR(silent_mode);
         OPT_PTR(extra_loading_move);
+        OPT_PTR(dribbling_meltingzone);
     }
 };
 
