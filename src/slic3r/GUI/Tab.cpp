@@ -1268,6 +1268,7 @@ void TabPrint::build()
 
         optgroup = page->new_optgroup(_(L("Advanced")));
         optgroup->append_single_option_line("interface_shells");
+        optgroup->append_single_option_line("dribbling_enabled");		
 
     page = add_options_page(_(L("Advanced")), "wrench");
         optgroup = page->new_optgroup(_(L("Extrusion width")));
@@ -1497,7 +1498,13 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_cost");
 
         optgroup = page->new_optgroup(_(L("Temperature")) + wxString(" °C", wxConvUTF8));
-        Line line = { _(L("Extruder")), "" };
+// dribbling        
+		Line line = { _(L("Manufacturer")), "" };
+        line.append_option(optgroup->get_option("filament_mintemp"));
+        line.append_option(optgroup->get_option("filament_maxtemp"));
+        optgroup->append_line(line);
+// dribbling
+        line = { _(L("Extruder")), "" };
         line.append_option(optgroup->get_option("first_layer_temperature"));
         line.append_option(optgroup->get_option("temperature"));
         optgroup->append_line(line);
@@ -1506,6 +1513,12 @@ void TabFilament::build()
         line.append_option(optgroup->get_option("first_layer_bed_temperature"));
         line.append_option(optgroup->get_option("bed_temperature"));
         optgroup->append_line(line);
+
+// dribbling        
+        line = { _(L("Dribbling")), "" };        
+        line.append_option(optgroup->get_option("dribbling_temperature"));
+        optgroup->append_line(line);
+// dribbling        
 
     page = add_options_page(_(L("Cooling")), "cooling");
         optgroup = page->new_optgroup(_(L("Enable")));
@@ -1565,6 +1578,9 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_cooling_moves");
         optgroup->append_single_option_line("filament_cooling_initial_speed");
         optgroup->append_single_option_line("filament_cooling_final_speed");
+// dribbling        
+        optgroup->append_single_option_line("dribbling_moves");		    
+// end dribbling
 
         line = optgroup->create_single_option_line("filament_ramming_parameters");// { _(L("Ramming")), "" };
         line.widget = [this](wxWindow* parent) {
@@ -2304,6 +2320,7 @@ void TabPrinter::build_unregular_pages()
         optgroup->append_single_option_line("cooling_tube_length");
         optgroup->append_single_option_line("parking_pos_retraction");
         optgroup->append_single_option_line("extra_loading_move");
+        optgroup->append_single_option_line("dribbling_meltingzone");
         optgroup->append_single_option_line("high_current_on_filament_swap");
         m_pages.insert(m_pages.end() - n_after_single_extruder_MM, page);
         m_has_single_extruder_MM_page = true;
