@@ -168,6 +168,13 @@ void MainFrame::shutdown()
     if (m_plater)
     	m_plater->stop_jobs();
 
+#if ENABLE_NON_STATIC_CANVAS_MANAGER
+    // Unbinding of wxWidgets event handling in canvases needs to be done here because on MAC,
+    // when closing the application using Command+Q, a mouse event is triggered after this lambda is completed,
+    // causing a crash
+    if (m_plater) m_plater->unbind_canvas_event_handlers();
+#endif // ENABLE_NON_STATIC_CANVAS_MANAGER
+
     // Weird things happen as the Paint messages are floating around the windows being destructed.
     // Avoid the Paint messages by hiding the main window.
     // Also the application closes much faster without these unnecessary screen refreshes.
@@ -188,7 +195,9 @@ void MainFrame::shutdown()
     wxGetApp().app_config->save();
 //         if (m_plater)
 //             m_plater->print = undef;
+#if !ENABLE_NON_STATIC_CANVAS_MANAGER
     _3DScene::remove_all_canvases();
+#endif // !ENABLE_NON_STATIC_CANVAS_MANAGER
 //         Slic3r::GUI::deregister_on_request_update_callback();
 
     // set to null tabs and a plater
@@ -214,7 +223,8 @@ void MainFrame::update_title()
     if (idx_plus != build_id.npos) {
     	// Parse what is behind the '+'. If there is a number, then it is a build number after the label, and full build ID is shown.
     	int commit_after_label;
-    	if (! boost::starts_with(build_id.data() + idx_plus + 1, "UNKNOWN") && sscanf(build_id.data() + idx_plus + 1, "%d-", &commit_after_label) == 0) {
+    	if (! boost::starts_with(build_id.data() + idx_plus + 1, "UNKNOWN") && 
+            (build_id.at(idx_plus + 1) == '-' || sscanf(build_id.data() + idx_plus + 1, "%d-", &commit_after_label) == 0)) {
     		// It is a release build.
     		build_id.erase(build_id.begin() + idx_plus, build_id.end());    		
 #if defined(_WIN32) && ! defined(_WIN64)
@@ -754,9 +764,20 @@ void MainFrame::init_menubar()
         append_menu_item(viewMenu, wxID_ANY, _(L("Right")) + sep + "&6", _(L("Right View")), [this](wxCommandEvent&) { select_view("right"); },
             "", nullptr, [this](){return can_change_view(); }, this);
         viewMenu->AppendSeparator();
+#if ENABLE_SLOPE_RENDERING
+        wxMenu* options_menu = new wxMenu();
+        append_menu_check_item(options_menu, wxID_ANY, _(L("Show &labels")) + sep + "E", _(L("Show object/instance labels in 3D scene")),
+            [this](wxCommandEvent&) { m_plater->show_view3D_labels(!m_plater->are_view3D_labels_shown()); }, this,
+            [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_labels_shown(); }, this);
+        append_menu_check_item(options_menu, wxID_ANY, _(L("Show &slope")) + sep + "D", _(L("Objects coloring using faces' slope")),
+            [this](wxCommandEvent&) { m_plater->show_view3D_slope(!m_plater->is_view3D_slope_shown()); }, this,
+            [this]() { return m_plater->is_view3D_shown() && !m_plater->is_view3D_layers_editing_enabled(); }, [this]() { return m_plater->is_view3D_slope_shown(); }, this);
+        append_submenu(viewMenu, options_menu, wxID_ANY, _(L("&Options")), "");
+#else
         append_menu_check_item(viewMenu, wxID_ANY, _(L("Show &labels")) + sep + "E", _(L("Show object/instance labels in 3D scene")),
             [this](wxCommandEvent&) { m_plater->show_view3D_labels(!m_plater->are_view3D_labels_shown()); }, this,
             [this]() { return m_plater->is_view3D_shown(); }, [this]() { return m_plater->are_view3D_labels_shown(); }, this);
+#endif // ENABLE_SLOPE_RENDERING
     }
 
     // Help menu
