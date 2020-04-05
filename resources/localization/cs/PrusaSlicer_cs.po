@@ -8059,7 +8059,7 @@ msgstr "Toto experimentální nastavení používá příkazy G10 a G11, aby si 
 
 #: src/libslic3r/PrintConfig.cpp:2176
 msgid "This experimental setting uses outputs the E values in cubic millimeters instead of linear millimeters. If your firmware doesn't already know filament diameter(s), you can put commands like 'M200 D[filament_diameter_0] T0' in your start G-code in order to turn volumetric mode on and use the filament diameter associated to the filament selected in Slic3r. This is only supported in recent Marlin."
-msgstr "Toto experimentální nastavení používá výstupní hodnoty E v kubických milimetrech místo lineárních milimetrů. Pokud firmware dosud nezná průměr (průměry) filamentu, můžete v počátečním G-code zadat příkazy jako “M200 D [filament_diameter_0] T0”, pro se zapnutí volumetrického režimu a použití průměru filamentu přidruženého k vybranému filamentu ve Slic3ru. Toto je podporováno pouze v posledních verzích firmwaru Marlin."
+msgstr "Toto experimentální nastavení používá výstupní hodnoty E v kubických milimetrech místo lineárních milimetrů. Pokud firmware dosud nezná průměr (průměry) filamentu, můžete v počátečním G-code zadat příkazy jako “M200 D [filament_diameter_0] T0”, pro zapnutí volumetrického režimu a použití průměru filamentu přidruženého k vybranému filamentu ve Slic3ru. Toto je podporováno pouze v posledních verzích firmwaru Marlin."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3972
 msgid "This extruder will be set for selected items"
