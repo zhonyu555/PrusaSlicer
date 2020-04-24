@@ -488,6 +488,11 @@ public:
     ConfigOptionInt                 infill_every_layers;
     ConfigOptionFloatOrPercent      infill_overlap;
     ConfigOptionFloat               infill_speed;
+    // Gradient infill
+    ConfigOptionBool                gradient_infill;
+    ConfigOptionFloatOrPercent      gradient_infill_min;
+    ConfigOptionFloatOrPercent      gradient_infill_max;
+    ConfigOptionFloat               gradient_infill_distance;
     // Detect bridging perimeters
     ConfigOptionBool                overhangs;
     ConfigOptionInt                 perimeter_extruder;
@@ -533,6 +538,10 @@ protected:
         OPT_PTR(infill_every_layers);
         OPT_PTR(infill_overlap);
         OPT_PTR(infill_speed);
+        OPT_PTR(gradient_infill);
+        OPT_PTR(gradient_infill_min);
+        OPT_PTR(gradient_infill_max);
+        OPT_PTR(gradient_infill_distance);
         OPT_PTR(overhangs);
         OPT_PTR(perimeter_extruder);
         OPT_PTR(perimeter_extrusion_width);

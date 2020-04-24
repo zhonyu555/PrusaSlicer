@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <memory>
 
+#include "../libslic3r.h"
+
 #include "../ClipperUtils.hpp"
 #include "../Geometry.hpp"
 #include "../Layer.hpp"
@@ -10,6 +12,10 @@
 #include "../Surface.hpp"
 
 #include "FillBase.hpp"
+
+// What length of fragments the infill should be divided into to allow a gradient to be applied to them, in millimetres:
+#define GRADIENT_INFILL_MAX_FRAGMENT_LEN scale_(0.5)
+#define GRADIENT_INFILL_MAX_FRAGMENT_LEN_SQR (GRADIENT_INFILL_MAX_FRAGMENT_LEN * GRADIENT_INFILL_MAX_FRAGMENT_LEN)
 
 namespace Slic3r {
 
@@ -37,6 +43,11 @@ struct SurfaceFillParams
     // Don't adjust spacing to fill the space evenly.
     bool        	dont_adjust = false;
 
+    // Gradient infill
+    bool            gradient_fill = false;
+    double          gradient_fill_min = 0.5, gradient_fill_max = 2;
+    double          gradient_fill_thickness = 6;
+    
     // width, height of extrusion, nozzle diameter, is bridge
     // For the output, for fill generator.
     Flow 			flow = Flow(0.f, 0.f, 0.f, false);
@@ -71,6 +82,10 @@ struct SurfaceFillParams
 		RETURN_COMPARE_NON_EQUAL(flow.nozzle_diameter);
 		RETURN_COMPARE_NON_EQUAL_TYPED(unsigned, flow.bridge);
 		RETURN_COMPARE_NON_EQUAL_TYPED(unsigned, extrusion_role);
+		RETURN_COMPARE_NON_EQUAL_TYPED(unsigned, gradient_fill);
+		RETURN_COMPARE_NON_EQUAL(gradient_fill_min);
+		RETURN_COMPARE_NON_EQUAL(gradient_fill_max);
+		RETURN_COMPARE_NON_EQUAL(gradient_fill_thickness);
 		return false;
 	}
 
@@ -85,7 +100,11 @@ struct SurfaceFillParams
 				this->dont_connect  	== rhs.dont_connect 	&&
 				this->dont_adjust   	== rhs.dont_adjust 		&&
 				this->flow 				== rhs.flow 			&&
-				this->extrusion_role	== rhs.extrusion_role;
+				this->extrusion_role	== rhs.extrusion_role   &&
+				this->gradient_fill   	== rhs.gradient_fill	&&
+				this->gradient_fill_min	== rhs.gradient_fill_min    	        &&
+				this->gradient_fill_max	== rhs.gradient_fill_max	            &&
+				this->gradient_fill_thickness == rhs.gradient_fill_thickness;
 	}
 };
 
@@ -119,14 +138,21 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		        params.extruder 	 = layerm.region()->extruder(extrusion_role);
 		        params.pattern 		 = layerm.region()->config().fill_pattern.value;
 		        params.density       = float(layerm.region()->config().fill_density);
-
+		        params.gradient_fill = false;
+		        
 		        if (surface.is_solid()) {
 		            params.density = 100.f;
 		            params.pattern = (surface.is_external() && ! is_bridge) ? 
 						(surface.is_top() ? layerm.region()->config().top_fill_pattern.value : layerm.region()->config().bottom_fill_pattern.value) :
 		                ipRectilinear;
-		        } else if (params.density <= 0)
+		        } else if (params.density <= 0) {
 		            continue;
+		        } else {
+		            params.gradient_fill = layerm.region()->config().gradient_infill;
+		            params.gradient_fill_min = layerm.region()->config().gradient_infill_min.get_abs_value(1);
+		            params.gradient_fill_max = layerm.region()->config().gradient_infill_max.get_abs_value(1);
+		            params.gradient_fill_thickness = layerm.region()->config().gradient_infill_distance;
+		        }
 
 		        params.extrusion_role =
 		            is_bridge ?
@@ -316,6 +342,111 @@ void export_group_fills_to_svg(const char *path, const std::vector<SurfaceFill> 
 }
 #endif
 
+// Compute the width of an infill fragment based on its distance from the given set of perimeters
+static double gradient_infill_scale_for_fragment(Point &fragmentCenter, std::vector<const Polygon*> &perimeters, float width, float maxWidth, const SurfaceFillParams &params)
+{
+    double distanceToWallSqr = std::numeric_limits<double>::infinity();
+
+    for (const Polygon* perimeter : perimeters) {
+        for (int i = 0; i < perimeter->points.size(); i++) {
+            double dist = Line::distance_to_squared(fragmentCenter, perimeter->points[i],
+                perimeter->points[(i + 1) % perimeter->points.size()]);
+
+            if (dist < distanceToWallSqr) {
+                distanceToWallSqr = dist;
+            }
+        }
+    }
+
+    double distanceToWall = unscale<double>(sqrt(distanceToWallSqr));
+    double scale;
+
+    if (distanceToWall > params.gradient_fill_thickness) {
+        scale = params.gradient_fill_min;
+    } else {
+        scale = (params.gradient_fill_max - params.gradient_fill_min) * (1 - distanceToWall / params.gradient_fill_thickness) + params.gradient_fill_min;
+    }
+
+    // Quantize the scale factor in 5% chunks so we can combine similar segments together 
+    scale = round(scale * 20) / 20;
+
+    // Don't allow the infill to be thicker than the spacing between infill lines
+    scale = fmin(scale, maxWidth / width);
+
+    return scale;
+}
+
+static void apply_gradient_infill(ExtrusionEntitiesPtr &dst, Polylines &&polylines, double mm3_per_mm, 
+    float width, float height, float maxWidth, const ExPolygon &boundary, const SurfaceFillParams &params)
+{
+    std::vector<const Polygon*> perimeters;
+
+    // We make infill dense when it nears any of these perimeters:
+    perimeters.push_back(&boundary.contour);
+    for (const Polygon &p : boundary.holes) {
+        perimeters.push_back(&p);
+    }
+    
+    for (Polyline &polyline : polylines) {
+        if (!polyline.is_valid()) {
+            continue;
+        }
+        
+        ExtrusionPath *extrusionPath = nullptr;
+        double lastScale = -1;
+
+        for (int i = 1; i < polyline.points.size(); i++) {
+            Vec2d prevPoint(polyline.points[i - 1].cast<double>());
+            Vec2d thisPoint(polyline.points[i].cast<double>());
+
+            auto thisLineVec = thisPoint - prevPoint;
+            double segLengthSqr = thisLineVec.squaredNorm();
+            
+            /* Break this line up into fragments of GRADIENT_INFILL_MAX_FRAGMENT_LEN and compute an extrusion width for each fragment.
+             * 
+             * If we need to change the width of a fragment we have to start a new extrusionPath, otherwise we can just
+             * combine the fragment with the previous one.
+             */
+            int numFragments = segLengthSqr > GRADIENT_INFILL_MAX_FRAGMENT_LEN_SQR 
+                ? ceil(sqrt(segLengthSqr) / GRADIENT_INFILL_MAX_FRAGMENT_LEN) 
+                : 1;
+            
+            Vec2d fragmentStart(prevPoint);
+                
+            for (int seg = 1; seg <= numFragments; seg++) {
+                auto fragmentEnd = 
+                    seg == numFragments 
+                        ? thisPoint 
+                        : prevPoint + thisLineVec * ((double) seg / numFragments);
+
+                Point fragmentCenter((fragmentStart(0) + fragmentEnd(0)) / 2, (fragmentStart(1) + fragmentEnd(1)) / 2);
+                double gradientScale = gradient_infill_scale_for_fragment(fragmentCenter, perimeters, width, maxWidth,
+                    params);
+                
+                // Do we need to start a new extrusion for this width?
+                if (!extrusionPath || gradientScale != lastScale) {
+                    if (extrusionPath && seg > 1) {
+                        // Finish off a fragment we already began during this segment
+                        extrusionPath->polyline.append(Point(fragmentStart));
+                    }
+                    
+                    extrusionPath = new ExtrusionPath(erInternalInfill, mm3_per_mm * gradientScale, (float) (width * gradientScale), height);
+                    dst.push_back(extrusionPath);
+
+                    lastScale = gradientScale;
+
+                    extrusionPath->polyline.append(Point(fragmentStart));
+                }
+                
+                fragmentStart = fragmentEnd;
+            }
+            
+            // Finish up this polyline segment
+            extrusionPath->polyline.append(Point(thisPoint));
+        }
+    }
+}
+
 // friend to Layer
 void Layer::make_fills()
 {
@@ -371,7 +502,7 @@ void Layer::make_fills()
         for (ExPolygon &expoly : surface_fill.expolygons) {
 			// Spacing is modified by the filler to indicate adjustments. Reset it for each expolygon.
 			f->spacing = surface_fill.params.spacing;
-			surface_fill.surface.expolygon = std::move(expoly);
+			surface_fill.surface.expolygon = expoly;
 			Polylines polylines = f->fill_surface(&surface_fill.surface, params);
 	        if (! polylines.empty()) {
 		        // calculate actual flow from spacing (which might have been adjusted by the infill
@@ -392,10 +523,19 @@ void Layer::make_fills()
 		        m_regions[surface_fill.region_id]->fills.entities.push_back(eec);
 		        // Only concentric fills are not sorted.
 		        eec->no_sort = f->no_sort();
-		        extrusion_entities_append_paths(
-		            eec->entities, std::move(polylines),
-		            surface_fill.params.extrusion_role,
-		            flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height);
+		        
+		        if (surface_fill.params.gradient_fill && surface_fill.params.extrusion_role == erInternalInfill) {
+		            apply_gradient_infill(
+		                eec->entities, std::move(polylines),
+		                flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height, 
+		                f->spacing * 100.0 / surface_fill.params.density,
+		                expoly, surface_fill.params);
+		        } else {
+		            extrusion_entities_append_paths(
+		                eec->entities, std::move(polylines),
+		                surface_fill.params.extrusion_role,
+		                flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height);
+		        }
 		    }
 		}
     }

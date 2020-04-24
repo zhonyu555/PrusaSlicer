@@ -1161,6 +1161,12 @@ void TabPrint::build()
         optgroup->append_single_option_line("fill_pattern");
         optgroup->append_single_option_line("top_fill_pattern");
         optgroup->append_single_option_line("bottom_fill_pattern");
+    
+        optgroup = page->new_optgroup(_(L("Variable width infill")));
+        optgroup->append_single_option_line("gradient_infill");
+        optgroup->append_single_option_line("gradient_infill_min");
+        optgroup->append_single_option_line("gradient_infill_max");
+        optgroup->append_single_option_line("gradient_infill_distance");
 
         optgroup = page->new_optgroup(_(L("Reducing printing time")));
         optgroup->append_single_option_line("infill_every_layers");
