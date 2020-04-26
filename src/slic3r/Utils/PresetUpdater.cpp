@@ -144,6 +144,7 @@ struct PresetUpdater::priv
 
 	bool enabled_version_check;
 	bool enabled_config_update;
+	bool enabled_allow_foreign;
 	std::string version_check_url;
 
 	fs::path cache_path;
@@ -185,6 +186,7 @@ void PresetUpdater::priv::set_download_prefs(AppConfig *app_config)
 	enabled_version_check = app_config->get("version_check") == "1";
 	version_check_url = app_config->version_check_url();
 	enabled_config_update = app_config->get("preset_update") == "1" && !app_config->legacy_datadir();
+	enabled_allow_foreign = app_config->get("preset_update_allow_foreign") == "1";
 }
 
 // Downloads a file (http get operation). Cancels if the Updater is being destroyed.
@@ -302,7 +304,8 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors)
 		const auto idx_url = vendor.config_update_url + "/" + INDEX_FILENAME;
 		const std::string idx_path = (cache_path / (vendor.id + ".idx")).string();
 		const std::string idx_path_temp = idx_path + "-update";
-		//check if idx_url is leading to our site 
+		//check if idx_url is leading to our site
+		if (! enabled_allow_foreign)
 		if (! boost::starts_with(idx_url, "http://files.prusa3d.com/wp-content/uploads/repository/"))
 		{
 			BOOST_LOG_TRIVIAL(warning) << "unsafe url path for vendor \"" << vendor.name << "\" rejected: " << idx_url;

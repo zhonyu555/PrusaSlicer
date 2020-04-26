@@ -84,6 +84,14 @@ void PreferencesDialog::build()
 	option = Option (def, "preset_update");
 	m_optgroup_general->append_single_option_line(option);
 
+	// Please keep in sync with ../Utils/PresetUpdater.cpp
+	def.label = L("Allow updating Presets from non-Prusa sites");
+	def.type = coBool;
+	def.tooltip = L("If enabled, Slic3r will also allow updates of built-in system presets from URLs other than the official Prusa URL.");
+	def.set_default_value(new ConfigOptionBool(app_config->get("preset_update_allow_foreign") == "1"));
+	option = Option (def, "preset_update_allow_foreign");
+	m_optgroup_general->append_single_option_line(option);
+
 	def.label = L("Suppress \" - default - \" presets");
 	def.type = coBool;
 	def.tooltip = L("Suppress \" - default - \" presets in the Print / Filament / Printer "
