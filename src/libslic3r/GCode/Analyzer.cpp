@@ -1008,7 +1008,6 @@ void GCodeAnalyzer::_calc_gcode_preview_extrusion_layers(GCodePreviewData& previ
     unsigned int cancel_callback_threshold = (unsigned int)std::max((int)extrude_moves->second.size() / 25, 1);
     unsigned int cancel_callback_curr = 0;
 
-    time_estimator.calculate_layer_time();
     for (GCodeMove& move : extrude_moves->second)
     {
         z = (float)move.start_position.z();

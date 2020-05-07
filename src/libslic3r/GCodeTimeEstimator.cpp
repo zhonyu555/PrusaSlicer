@@ -806,10 +806,10 @@ namespace Slic3r {
             block_time += block.cruise_time();
             block_time += block.deceleration_time();
             m_time += block_time;
-            block.elapsed_time = m_time;
-            block.time = block_time;
             if (block.g1_line_id >= 0)
 	            m_g1_times.emplace_back(block.g1_line_id, m_time);
+            if (block.no_delta_Z)
+                add_block_to_layer_time(block.z, block_time);
 
 #if ENABLE_MOVE_STATS
             MovesStatsMap::iterator it = _moves_stats.find(block.move_type);
@@ -999,7 +999,6 @@ namespace Slic3r {
 
         // updates axes positions from line
         float new_pos[Num_Axis];
-        long raw_axis_absolute_position;
         for (unsigned char a = X; a < Num_Axis; ++a)
         {
             new_pos[a] = axis_absolute_position((EAxis)a, line);
@@ -1021,6 +1020,8 @@ namespace Slic3r {
             max_abs_delta = std::max(max_abs_delta, std::abs(delta_pos[a]));
         }
         block.z = new_pos[Z];
+        // test if we can really attribute a layer to the block
+        block.no_delta_Z == delta_pos[Z] == 0;
 
         // is it a move ?
         if (max_abs_delta == 0.0f)
@@ -1660,26 +1661,20 @@ namespace Slic3r {
         m_layers.clear();
     }
 
-    void GCodeTimeEstimator::calculate_layer_time()
+    void GCodeTimeEstimator::add_block_to_layer_time(float z, float time)
     {
-        for (int i = 0; i < (int)m_blocks.size(); ++i)
+        int j = 0;
+        bool layer_found = false;
+        while (j < (int)m_layers.size())
         {
-            if (m_blocks[i].delta_pos[Z] == 0)
-            {
-                int j = 0;
-                bool layer_found = false;
-                while (j < (int)m_layers.size())
-                {
-                    if (m_blocks[i].z == m_layers[j].z) {
-                        m_layers[j].time += m_blocks[i].time;
-                        layer_found = true;
-                    }
-                    j++;
-                }
-                if (!layer_found) {
-                    m_layers.push_back({ m_blocks[i].z, m_blocks[i].time });
-                }
+            if (m_layers[j].z == z) {
+                m_layers[j].time += time;
+                layer_found = true;
             }
+            j++;
+        }
+        if (!layer_found) {
+            m_layers.push_back({ z, time });
         }
     }
 

@@ -151,17 +151,15 @@ namespace Slic3r {
 #endif // ENABLE_MOVE_STATS
             Flags flags;
 
-            float distance; // mm
-            float delta_pos[Num_Axis]; // mm
             float z;
+            bool no_delta_Z;
+            float distance; // mm
             float acceleration;        // mm/s^2
             float max_entry_speed;     // mm/s
             float safe_feedrate;       // mm/s
 
             FeedrateProfile feedrate;
             Trapezoid trapezoid;
-            float elapsed_time;
-            float time;
 
             // Ordnary index of this G1 line in the file.
             int   g1_line_id { -1 };
@@ -235,10 +233,6 @@ namespace Slic3r {
         Feedrates m_prev;
         BlocksList m_blocks;
         LayersList m_layers;
-        // Map between g1 line id and blocks id, used to speed up export of remaining times
-        G1LineIdToBlockIdMap m_g1_line_ids;
-        // Index of the last block already st_synchronized
-        int m_last_st_synchronized_block_id;
         // Size of the firmware planner queue. The old 8-bit Marlins usually just managed 16 trapezoidal blocks.
         // Let's be conservative and plan for newer boards with more memory.
         static constexpr size_t planner_queue_size = 64;
@@ -357,13 +351,9 @@ namespace Slic3r {
         unsigned int get_extruder_id() const;
         void reset_extruder_id();
 
-        void add_additional_time(float timeSec);
-        void set_additional_time(float timeSec);
-        float get_additional_time() const;
-
-        void calculate_layer_time();
         float get_layer_time(float z);
         void reset_layers();
+        void add_block_to_layer_time(float z, float time);
 
         void set_default();
 
