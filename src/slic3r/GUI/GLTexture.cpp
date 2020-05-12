@@ -369,7 +369,7 @@ void GLTexture::render_sub_texture(unsigned int tex_id, float left, float right,
 
 bool GLTexture::load_from_png(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy)
 {
-    bool compression_enabled = (compression_type != None) && GLEW_EXT_texture_compression_s3tc;
+    bool compression_enabled = (compression_type != None_) && GLEW_EXT_texture_compression_s3tc;
 
     // Load a PNG with an alpha channel.
     wxImage image;
