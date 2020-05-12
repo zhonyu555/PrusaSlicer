@@ -57,7 +57,7 @@ namespace CommonGizmosDataObjects {
 // Each gizmo can tell which of the data it wants to use through
 // on_get_requirements() method.
 enum class CommonGizmosDataID {
-    None                 = 0,
+    None_                = 0,
     SelectionInfo        = 1 << 0,
     InstancesHider       = 1 << 1,
     HollowedMesh         = 1 << 2,
