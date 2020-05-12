@@ -57,7 +57,7 @@ namespace GUI {
     public:
         enum ECompressionType : unsigned char
         {
-            None,
+            None_,
             SingleThreaded,
             MultiThreaded
         };
