@@ -1097,6 +1097,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("ironing_type", coEnum);
     def->label = L("Ironingy Type");
+    def->category = L("Ironing");
     def->tooltip = L("Ironingy Type");
     def->enum_keys_map = &ConfigOptionEnum<IroningType>::get_enum_values();
     def->enum_values.push_back("top");
@@ -1120,6 +1121,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("ironing_spacing", coFloat);
     def->label = L("Spacing between ironing passes");
+    def->category = L("Ironing");
     def->tooltip = L("Distance between ironing lins");
     def->sidetext = L("mm");
     def->min = 0;
