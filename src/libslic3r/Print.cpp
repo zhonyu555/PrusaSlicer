@@ -1224,10 +1224,10 @@ std::string Print::validate() const
         return L("The supplied settings will cause an empty print.");
 
     if (m_config.complete_objects) {
-    	if (! sequential_print_horizontal_clearance_valid(*this))
-            return L("Some objects are too close; your extruder will collide with them.");
         if (! sequential_print_vertical_clearance_valid(*this))
-	        return L("Some objects are too tall and cannot be printed without extruder collisions.");
+            return L("Some objects are too tall and cannot be printed without extruder collisions.");
+        if (! sequential_print_horizontal_clearance_valid(*this))
+            return L("Some objects are too close; your extruder will collide with them.");
     }
 
     if (m_config.spiral_vase) {
