@@ -1223,8 +1223,11 @@ std::string Print::validate() const
     if (extruders().empty())
         return L("The supplied settings will cause an empty print.");
 
-    if (m_config.complete_objects && m_config.extruder_clearance_radius.value > 0) {
-    	if (! sequential_print_horizontal_clearance_valid(*this))
+    // If sequential object printing is selected, check clearance
+    if (m_config.complete_objects) {
+        // A horizontal clearance radius of 0 means checking disabled
+    	if (m_config.extruder_clearance_radius.value > 0
+	    && ! sequential_print_horizontal_clearance_valid(*this))
             return L("Some objects are too close; your extruder will collide with them.");
         if (! sequential_print_vertical_clearance_valid(*this))
 	        return L("Some objects are too tall and cannot be printed without extruder collisions.");
