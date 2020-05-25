@@ -19,7 +19,7 @@ enum class SLAGizmoEventType : unsigned char;
 class GLGizmoFdmSupports : public GLGizmoBase
 {
 private:
-    const ModelObject* m_old_mo = nullptr;
+    ObjectID m_old_mo_id;
     size_t m_old_volumes_size = 0;
 
     GLUquadricObj* m_quadric;
@@ -33,14 +33,16 @@ private:
     // individual facets (one of the enum values above).
     std::vector<std::vector<FacetSupportType>> m_selected_facets;
 
-    // Store two vertex buffer arrays (for enforcers/blockers)
-    // for each model-part volume.
-    std::vector<std::array<GLIndexedVertexArray, 2>> m_ivas;
+    // Vertex buffer arrays for each model-part volume. There is a vector of
+    // arrays so that adding triangles can be done without regenerating all
+    // other triangles. Enforcers and blockers are of course separate.
+    std::vector<std::array<std::vector<GLIndexedVertexArray>, 2>> m_ivas;
 
-    void update_vertex_buffers(const ModelVolume* mv,
+    void update_vertex_buffers(const TriangleMesh* mesh,
                                int mesh_id,
-                               bool update_enforcers,
-                               bool update_blockers);
+                               FacetSupportType type, // enforcers / blockers
+                               const std::vector<size_t>* new_facets = nullptr); // nullptr -> regenerate all
+
 
 public:
     GLGizmoFdmSupports(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id);
@@ -53,14 +55,23 @@ public:
 private:
     bool on_init() override;
     void on_render() const override;
-    void on_render_for_picking() const override;
+    void on_render_for_picking() const override {}
 
     void render_triangles(const Selection& selection) const;
     void render_cursor_circle() const;
-    void update_mesh();
+
+    void update_model_object() const;
+    void update_from_model_object();
+
+    void select_facets_by_angle(float threshold, bool overwrite, bool block);
+    bool m_overwrite_selected = false;
+    float m_angle_threshold_deg = 45.f;
+
+    bool is_mesh_point_clipped(const Vec3d& point) const;
 
     float m_clipping_plane_distance = 0.f;
     std::unique_ptr<ClippingPlane> m_clipping_plane;
+    bool m_setting_angle = false;
 
     // This map holds all translated description texts, so they can be easily referenced during layout calculations
     // etc. When language changes, GUI is recreated and this class constructed again, so the change takes effect.

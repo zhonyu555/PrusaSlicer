@@ -7,7 +7,7 @@
 #include <wx/menu.h>
 #include <wx/progdlg.h>
 #include <wx/tooltip.h>
-#include <wx/glcanvas.h>
+//#include <wx/glcanvas.h>
 #include <wx/debug.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -28,6 +28,7 @@
 #include "RemovableDriveManager.hpp"
 #include "InstanceCheck.hpp"
 #include "I18N.hpp"
+#include "GLCanvas3D.hpp"
 
 #include <fstream>
 #include "GUI_App.hpp"
@@ -241,7 +242,7 @@ void MainFrame::shutdown()
     // Stop the background thread of the removable drive manager, so that no new updates will be sent to the Plater.
     wxGetApp().removable_drive_manager()->shutdown();
 	//stop listening for messages from other instances
-	wxGetApp().other_instance_message_handler()->shutdown();
+	wxGetApp().other_instance_message_handler()->shutdown(this);
     // Save the slic3r.ini.Usually the ini file is saved from "on idle" callback,
     // but in rare cases it may not have been called yet.
     wxGetApp().app_config->save();
@@ -476,6 +477,11 @@ bool MainFrame::can_slice() const
 
 bool MainFrame::can_change_view() const
 {
+    if (m_layout == slNew)
+        return m_plater->IsShown();
+    if (m_layout == slDlg)
+        return true;
+    // slOld layout mode
     int page_id = m_tabpanel->GetSelection();
     return page_id != wxNOT_FOUND && dynamic_cast<const Slic3r::GUI::Plater*>(m_tabpanel->GetPage((size_t)page_id)) != nullptr;
 }
@@ -615,6 +621,10 @@ void MainFrame::init_menubar()
         wxMenu* import_menu = new wxMenu();
         append_menu_item(import_menu, wxID_ANY, _(L("Import STL/OBJ/AM&F/3MF")) + dots + "\tCtrl+I", _(L("Load a model")),
             [this](wxCommandEvent&) { if (m_plater) m_plater->add_model(); }, "import_plater", nullptr,
+            [this](){return m_plater != nullptr; }, this);
+        
+        append_menu_item(import_menu, wxID_ANY, _L("Import STL (imperial units)"), _L("Load an model saved with imperial units"),
+            [this](wxCommandEvent&) { if (m_plater) m_plater->add_model(true); }, "import_plater", nullptr,
             [this](){return m_plater != nullptr; }, this);
         
         append_menu_item(import_menu, wxID_ANY, _(L("Import SL1 archive")) + dots, _(L("Load an SL1 output archive")),
@@ -1258,17 +1268,28 @@ void MainFrame::select_tab(size_t tab/* = size_t(-1)*/)
         if (tab==0) {
             if (m_settings_dialog->IsShown())
                 this->SetFocus();
+            // plater should be focused for correct navigation inside search window
+            if (m_plater->canvas3D()->is_search_pressed())
+                m_plater->SetFocus();
             return;
         }
         // Show/Activate Settings Dialog
         if (m_settings_dialog->IsShown())
+#ifdef __WXOSX__ // Don't call SetFont under OSX to avoid name cutting in ObjectList
+            m_settings_dialog->Hide();
+#else
             m_settings_dialog->SetFocus();
         else
-            m_settings_dialog->Show();
+#endif
+        m_settings_dialog->Show();
     }
     else if (m_layout == slNew) {
         m_plater->Show(tab == 0);
         m_tabpanel->Show(tab != 0);
+
+        // plater should be focused for correct navigation inside search window
+        if (tab == 0 && m_plater->canvas3D()->is_search_pressed())
+            m_plater->SetFocus();
         Layout();
     }
 
@@ -1417,6 +1438,12 @@ SettingsDialog::SettingsDialog(MainFrame* mainframe)
             case '2': { m_main_frame->select_tab(1); break; }
             case '3': { m_main_frame->select_tab(2); break; }
             case '4': { m_main_frame->select_tab(3); break; }
+#ifdef __APPLE__
+            case 'f':
+#else /* __APPLE__ */
+            case WXK_CONTROL_F:
+#endif /* __APPLE__ */
+            case 'F': { m_main_frame->plater()->search(false); break; }
             default:break;
             }
         }

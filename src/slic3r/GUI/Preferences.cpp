@@ -102,7 +102,11 @@ void PreferencesDialog::build()
 
 	def.label = L("Single Instance");
 	def.type = coBool;
-	def.tooltip = L("If this is enabled, when staring PrusaSlicer and another instance is running, that instance will be reactivated instead.");
+#if __APPLE__
+	def.tooltip = L("On OSX there is always only one instance of app running by default. However it is allowed to run multiple instances of same app from the command line. In such case this settings will allow only one instance.");
+#else
+	def.tooltip = L("If this is enabled, when staring PrusaSlicer and another instance of same PrusaSlicer is running, that instance will be reactivated instead.");
+#endif
 	def.set_default_value(new ConfigOptionBool{ app_config->has("single_instance") ? app_config->get("single_instance") == "1" : false });
 	option = Option(def, "single_instance");
 	m_optgroup_general->append_single_option_line(option);
@@ -116,14 +120,16 @@ void PreferencesDialog::build()
 	option = Option (def, "use_retina_opengl");
 	m_optgroup_general->append_single_option_line(option);
 #endif
-
-	def.label = L("Show the button for the collapse sidebar");
+/*  // ysFIXME THis part is temporary commented
+    // The using of inches is implemented just for object's size and position
+    
+	def.label = L("Use inches instead of millimeters");
 	def.type = coBool;
-	def.tooltip = L("If enabled, the button for the collapse sidebar will be appeared in top right corner of the 3D Scene");
-	def.set_default_value(new ConfigOptionBool{ app_config->get("show_collapse_button") == "1" });
-	option = Option(def, "show_collapse_button");
+	def.tooltip = L("Use inches instead of millimeters for the object's size");
+	def.set_default_value(new ConfigOptionBool{ app_config->get("use_inches") == "1" });
+	option = Option(def, "use_inches");
 	m_optgroup_general->append_single_option_line(option);
-
+*/
 	m_optgroup_camera = std::make_shared<ConfigOptionsGroup>(this, _(L("Camera")));
 	m_optgroup_camera->label_width = 40;
 	m_optgroup_camera->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
@@ -153,6 +159,13 @@ void PreferencesDialog::build()
 			this->layout();
 		}
 	};
+
+	def.label = L("Show the button for the collapse sidebar");
+	def.type = coBool;
+	def.tooltip = L("If enabled, the button for the collapse sidebar will be appeared in top right corner of the 3D Scene");
+	def.set_default_value(new ConfigOptionBool{ app_config->get("show_collapse_button") == "1" });
+	option = Option(def, "show_collapse_button");
+	m_optgroup_gui->append_single_option_line(option);
 
 	def.label = L("Use custom size for toolbar icons");
 	def.type = coBool;
@@ -190,11 +203,19 @@ void PreferencesDialog::accept()
 
     auto app_config = get_app_config();
 
-	bool settings_layout_changed =	m_values.find("old_settings_layout_mode") != m_values.end() ||
-		                            m_values.find("new_settings_layout_mode") != m_values.end() ||
-		                            m_values.find("dlg_settings_layout_mode") != m_values.end();
+	m_settings_layout_changed = false;
+	for (const std::string& key : {"old_settings_layout_mode",
+								   "new_settings_layout_mode",
+								   "dlg_settings_layout_mode" })
+	{
+	    auto it = m_values.find(key);
+	    if (it != m_values.end() && app_config->get(key) != it->second) {
+			m_settings_layout_changed = true;
+			break;
+	    }
+	}
 
-	if (settings_layout_changed) {
+	if (m_settings_layout_changed) {
 		// the dialog needs to be destroyed before the call to recreate_gui()
 		// or sometimes the application crashes into wxDialogBase() destructor
 		// so we put it into an inner scope
@@ -222,9 +243,8 @@ void PreferencesDialog::accept()
 	app_config->save();
 	EndModal(wxID_OK);
 
-	if (settings_layout_changed)
-		// recreate application, if settings layout was changed
-		wxGetApp().recreate_GUI();
+	if (m_settings_layout_changed)
+		;// application will be recreated after Preference dialog will be destroyed
 	else
 	    // Nothify the UI to update itself from the ini file.
         wxGetApp().update_ui_from_settings();

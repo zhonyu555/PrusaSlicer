@@ -411,6 +411,11 @@ public:
         return timestamp == other.get_timestamp();
     }
 
+    template<class Archive> void serialize(Archive &ar)
+    {
+        ar(m_data);
+    }
+
 private:
     std::map<int, FacetSupportType> m_data;
 
@@ -613,7 +618,8 @@ private:
 	}
 	template<class Archive> void load(Archive &ar) {
 		bool has_convex_hull;
-        ar(name, source, m_mesh, m_type, m_material_id, m_transformation, m_is_splittable, has_convex_hull);
+        ar(name, source, m_mesh, m_type, m_material_id, m_transformation,
+           m_is_splittable, has_convex_hull, m_supported_facets);
         cereal::load_by_value(ar, config);
 		assert(m_mesh);
 		if (has_convex_hull) {
@@ -626,7 +632,8 @@ private:
 	}
 	template<class Archive> void save(Archive &ar) const {
 		bool has_convex_hull = m_convex_hull.get() != nullptr;
-        ar(name, source, m_mesh, m_type, m_material_id, m_transformation, m_is_splittable, has_convex_hull);
+        ar(name, source, m_mesh, m_type, m_material_id, m_transformation,
+           m_is_splittable, has_convex_hull, m_supported_facets);
         cereal::save_by_value(ar, config);
 		if (has_convex_hull)
 			cereal::save_optional(ar, m_convex_hull);
@@ -844,6 +851,8 @@ public:
 
     bool 		  looks_like_multipart_object() const;
     void 		  convert_multipart_object(unsigned int max_extruders);
+    bool          looks_like_imperial_units() const;
+    void          convert_from_imperial_units();
 
     // Ensures that the min z of the model is not negative
     void 		  adjust_min_z();

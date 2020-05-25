@@ -323,6 +323,12 @@ void GUI_App::init_app_config()
 	}
 }
 
+void GUI_App::init_single_instance_checker(const std::string &name, const std::string &path)
+{
+    BOOST_LOG_TRIVIAL(debug) << "init wx instance checker " << name << " "<< path; 
+    m_single_instance_checker = std::make_unique<wxSingleInstanceChecker>(boost::nowide::widen(name), boost::nowide::widen(path));
+}
+
 bool GUI_App::OnInit()
 {
     try {
@@ -451,6 +457,10 @@ bool GUI_App::on_init_inner()
 				preset_updater->slic3r_update_notify();
 				preset_updater->sync(preset_bundle);
 				});
+#ifdef _WIN32
+			//sets window property to mainframe so other instances can indentify it
+			OtherInstanceMessageHandler::init_windows_properties(mainframe, m_instance_hash_int);
+#endif //WIN32
         }
     });
 
@@ -580,22 +590,39 @@ float GUI_App::toolbar_icon_scale(const bool is_limited/* = false*/) const
 
     const std::string& use_val  = app_config->get("use_custom_toolbar_size");
     const std::string& val      = app_config->get("custom_toolbar_size");
+    const std::string& auto_val = app_config->get("auto_toolbar_size");
 
-    if (val.empty() || use_val.empty() || use_val == "0")
+    if (val.empty() || auto_val.empty() || use_val.empty())
         return icon_sc;
 
-    int int_val = atoi(val.c_str());
+    int int_val = use_val == "0" ? 100 : atoi(val.c_str());
+    // correct value in respect to auto_toolbar_size
+    int_val = std::min(atoi(auto_val.c_str()), int_val);
+
     if (is_limited && int_val < 50)
         int_val = 50;
 
     return 0.01f * int_val * icon_sc;
 }
 
-void GUI_App::recreate_GUI()
+void GUI_App::set_auto_toolbar_icon_scale(float scale) const
+{
+#ifdef __APPLE__
+    const float icon_sc = 1.0f; // for Retina display will be used its own scale
+#else
+    const float icon_sc = m_em_unit * 0.1f;
+#endif // __APPLE__
+
+    long int_val = std::min(int(std::lround(scale / icon_sc * 100)), 100);
+    std::string val = std::to_string(int_val);
+
+    app_config->set("auto_toolbar_size", val);
+}
+
+void GUI_App::recreate_GUI(const wxString& msg_name)
 {
     mainframe->shutdown();
 
-    const auto msg_name = _(L("Changing of an application language")) + dots;
     wxProgressDialog dlg(msg_name, msg_name);
     dlg.Pulse();
     dlg.Update(10, _(L("Recreating")) + dots);
@@ -707,12 +734,6 @@ void GUI_App::load_project(wxWindow *parent, wxString& input_file) const
 
 void GUI_App::import_model(wxWindow *parent, wxArrayString& input_files) const
 {
-#if ENABLE_CANVAS_TOOLTIP_USING_IMGUI
-    if (this->plater_ != nullptr)
-        // hides the tooltip
-        plater_->get_current_canvas3D()->set_tooltip("");
-#endif // ENABLE_CANVAS_TOOLTIP_USING_IMGUI
-
     input_files.Clear();
     wxFileDialog dialog(parent ? parent : GetTopWindow(),
         _(L("Choose one or more files (STL/OBJ/AMF/3MF/PRUSA):")),
@@ -726,7 +747,7 @@ void GUI_App::import_model(wxWindow *parent, wxArrayString& input_files) const
 bool GUI_App::switch_language()
 {
     if (select_language()) {
-        recreate_GUI();
+        recreate_GUI(_L("Changing of an application language") + dots);
         return true;
     } else {
         return false;
@@ -1030,8 +1051,17 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
             break;
         case ConfigMenuPreferences:
         {
-            PreferencesDialog dlg(mainframe);
-            dlg.ShowModal();
+            bool recreate_app = false;
+            {
+                // the dialog needs to be destroyed before the call to recreate_GUI()
+                // or sometimes the application crashes into wxDialogBase() destructor
+                // so we put it into an inner scope
+                PreferencesDialog dlg(mainframe);
+                dlg.ShowModal();
+                recreate_app = dlg.settings_layout_changed();
+            }
+            if (recreate_app)
+                recreate_GUI(_L("Changing of the settings layout") + dots);
             break;
         }
         case ConfigMenuLanguage:
