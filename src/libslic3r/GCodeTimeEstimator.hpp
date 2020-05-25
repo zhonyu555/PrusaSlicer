@@ -353,7 +353,6 @@ namespace Slic3r {
 
         float get_layer_time(float z);
         void reset_layers();
-        void add_block_to_layer_time(float z, float time);
 
         void set_default();
 
@@ -488,6 +487,8 @@ namespace Slic3r {
 
         // Returns the given, in minutes (integer)
         static std::string _get_time_minutes(float time_in_secs);
+
+        void _add_block_to_layer_time(float z, float time);
 
 #if ENABLE_MOVE_STATS
         void _log_moves_stats() const;

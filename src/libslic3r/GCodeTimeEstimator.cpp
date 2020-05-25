@@ -809,7 +809,7 @@ namespace Slic3r {
             if (block.g1_line_id >= 0)
 	            m_g1_times.emplace_back(block.g1_line_id, m_time);
             if (block.no_delta_Z)
-                add_block_to_layer_time(block.z, block_time);
+                _add_block_to_layer_time(block.z, block_time);
 
 #if ENABLE_MOVE_STATS
             MovesStatsMap::iterator it = _moves_stats.find(block.move_type);
@@ -1661,7 +1661,7 @@ namespace Slic3r {
         m_layers.clear();
     }
 
-    void GCodeTimeEstimator::add_block_to_layer_time(float z, float time)
+    void GCodeTimeEstimator::_add_block_to_layer_time(float z, float time)
     {
         int j = 0;
         bool layer_found = false;
