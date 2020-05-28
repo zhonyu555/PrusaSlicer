@@ -3,11 +3,8 @@
 
 #include <stddef.h>
 #include <memory>
-#if ENABLE_CANVAS_TOOLTIP_USING_IMGUI
 #include <chrono>
-#endif // ENABLE_CANVAS_TOOLTIP_USING_IMGUI
 
-#include "3DScene.hpp"
 #include "GLToolbar.hpp"
 #include "GLShader.hpp"
 #include "Event.hpp"
@@ -16,6 +13,8 @@
 #include "GUI_ObjectLayers.hpp"
 #include "GLSelectionRectangle.hpp"
 #include "MeshUtils.hpp"
+
+#include "libslic3r/Slicing.hpp"
 
 #include <float.h>
 
@@ -35,13 +34,16 @@ class wxGLContext;
 
 namespace Slic3r {
 
-class Bed3D;
 struct Camera;
 class BackgroundSlicingProcess;
 class GCodePreviewData;
 struct ThumbnailData;
-struct SlicingParameters;
-enum LayerHeightEditActionType : unsigned int;
+class ModelObject;
+class ModelInstance;
+class PrintObject;
+class Print;
+class SLAPrint;
+namespace CustomGCode { struct Item; }
 
 namespace GUI {
 
@@ -387,7 +389,6 @@ private:
         void render(const std::vector<const ModelInstance*>& sorted_instances) const;
     };
 
-#if ENABLE_CANVAS_TOOLTIP_USING_IMGUI
     class Tooltip
     {
         std::string m_text;
@@ -403,7 +404,6 @@ private:
         void set_in_imgui(bool b) { m_in_imgui = b; }
         bool is_in_imgui() const { return m_in_imgui; }
     };
-#endif // ENABLE_CANVAS_TOOLTIP_USING_IMGUI
 
 #if ENABLE_SLOPE_RENDERING
     class Slope
@@ -506,10 +506,8 @@ private:
     int m_selected_extruder;
 
     Labels m_labels;
-#if ENABLE_CANVAS_TOOLTIP_USING_IMGUI
     mutable Tooltip m_tooltip;
     mutable bool m_tooltip_enabled{ true };
-#endif // ENABLE_CANVAS_TOOLTIP_USING_IMGUI
 #if ENABLE_SLOPE_RENDERING
     Slope m_slope;
 #endif // ENABLE_SLOPE_RENDERING
@@ -641,9 +639,7 @@ public:
     void on_timer(wxTimerEvent& evt);
     void on_mouse(wxMouseEvent& evt);
     void on_paint(wxPaintEvent& evt);
-#if ENABLE_CANVAS_TOOLTIP_USING_IMGUI
     void on_set_focus(wxFocusEvent& evt);
-#endif // ENABLE_CANVAS_TOOLTIP_USING_IMGUI
 
     Size get_canvas_size() const;
     Vec2d get_local_mouse_position() const;

@@ -85,6 +85,8 @@ void PrintConfigDef::init_common_params()
     def->label = L("Max print height");
     def->tooltip = L("Set this to the maximum height that can be reached by your extruder while printing.");
     def->sidetext = L("mm");
+    def->min = 0;
+    def->max = 1200;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(200.0));
 
@@ -118,7 +120,7 @@ void PrintConfigDef::init_common_params()
                    "If left blank, the default OS CA certificate repository is used.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
-    
+
     def = this->add("elefant_foot_compensation", coFloat);
     def->label = L("Elephant foot compensation");
     def->category = L("Advanced");
@@ -1096,9 +1098,9 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("ironing_type", coEnum);
-    def->label = L("Ironingy Type");
+    def->label = L("Ironing Type");
     def->category = L("Ironing");
-    def->tooltip = L("Ironingy Type");
+    def->tooltip = L("Ironing Type");
     def->enum_keys_map = &ConfigOptionEnum<IroningType>::get_enum_values();
     def->enum_values.push_back("top");
     def->enum_values.push_back("topmost");
@@ -2511,7 +2513,7 @@ void PrintConfigDef::init_sla_params()
                       "to the sign of the correction.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.0));
-    
+
     def = this->add("elefant_foot_min_width", coFloat);
     def->label = L("Elephant foot minimum width");
     def->category = L("Advanced");
@@ -2722,7 +2724,7 @@ void PrintConfigDef::init_sla_params()
     def->max = 15;
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionFloat(1.0));
-    
+
     def = this->add("support_max_bridges_on_pillar", coInt);
     def->label = L("Max bridges on a pillar");
     def->tooltip = L(
@@ -2885,7 +2887,7 @@ void PrintConfigDef::init_sla_params()
     def->max = 30;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.));
-    
+
     def = this->add("pad_brim_size", coFloat);
     def->label = L("Pad brim size");
     def->tooltip = L("How far should the pad extend around the contained geometry");
@@ -2936,7 +2938,7 @@ void PrintConfigDef::init_sla_params()
     def->tooltip = L("Create pad around object and ignore the support elevation");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
-    
+
     def = this->add("pad_around_object_everywhere", coBool);
     def->label = L("Pad around object everywhere");
     def->category = L("Pad");
@@ -2982,14 +2984,14 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.3));
-    
+
     def = this->add("hollowing_enable", coBool);
     def->label = L("Enable hollowing");
     def->category = L("Hollowing");
     def->tooltip = L("Hollow out a model to have an empty interior");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(false));
-    
+
     def = this->add("hollowing_min_thickness", coFloat);
     def->label = L("Wall thickness");
     def->category = L("Hollowing");
@@ -2999,7 +3001,7 @@ void PrintConfigDef::init_sla_params()
     def->max = 10;
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionFloat(3.));
-    
+
     def = this->add("hollowing_quality", coFloat);
     def->label = L("Accuracy");
     def->category = L("Hollowing");
@@ -3008,7 +3010,7 @@ void PrintConfigDef::init_sla_params()
     def->max = 1;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.5));
-    
+
     def = this->add("hollowing_closing_distance", coFloat);
     def->label = L("Closing distance");
     def->category = L("Hollowing");
@@ -3123,9 +3125,9 @@ DynamicPrintConfig* DynamicPrintConfig::new_from_defaults_keys(const std::vector
 }
 
 double min_object_distance(const ConfigBase &cfg)
-{   
+{
     double ret = 0.;
-    
+
     if (printer_technology(cfg) == ptSLA) ret = 6.;
     else {
         auto ecr_opt = cfg.option<ConfigOptionFloat>("extruder_clearance_radius");
@@ -3146,15 +3148,15 @@ double min_object_distance(const ConfigBase &cfg)
 PrinterTechnology printer_technology(const ConfigBase &cfg)
 {
     const ConfigOptionEnum<PrinterTechnology> *opt = cfg.option<ConfigOptionEnum<PrinterTechnology>>("printer_technology");
-    
+
     if (opt) return opt->value;
-    
+
     const ConfigOptionBool *export_opt = cfg.option<ConfigOptionBool>("export_sla");
     if (export_opt && export_opt->getBool()) return ptSLA;
-    
+
     export_opt = cfg.option<ConfigOptionBool>("export_gcode");
-    if (export_opt && export_opt->getBool()) return ptFFF;    
-    
+    if (export_opt && export_opt->getBool()) return ptFFF;
+
     return ptUnknown;
 }
 
@@ -3642,22 +3644,22 @@ static Points to_points(const std::vector<Vec2d> &dpts)
     Points pts; pts.reserve(dpts.size());
     for (auto &v : dpts)
         pts.emplace_back( coord_t(scale_(v.x())), coord_t(scale_(v.y())) );
-    return pts;    
+    return pts;
 }
 
 Points get_bed_shape(const DynamicPrintConfig &config)
 {
     const auto *bed_shape_opt = config.opt<ConfigOptionPoints>("bed_shape");
     if (!bed_shape_opt) {
-        
+
         // Here, it is certain that the bed shape is missing, so an infinite one
         // has to be used, but still, the center of bed can be queried
         if (auto center_opt = config.opt<ConfigOptionPoint>("center"))
             return { scaled(center_opt->value) };
-        
+
         return {};
     }
-    
+
     return to_points(bed_shape_opt->values);
 }
 
