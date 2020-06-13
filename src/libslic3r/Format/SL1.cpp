@@ -76,7 +76,9 @@ void fill_slicerconf(ConfMap &m, const SLAPrint &print)
         "compatible_prints"sv,
         "print_host"sv,
         "printhost_apikey"sv,
-        "printhost_cafile"sv
+        "printhost_cafile"sv,
+        "repetier_group"sv,
+        "repetier_slug"sv
     };
     
     assert(std::is_sorted(banned_keys.begin(), banned_keys.end()));

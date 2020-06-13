@@ -1942,6 +1942,12 @@ void TabPrinter::build_printhost(ConfigOptionsGroup *optgroup)
     option = optgroup->get_option("printhost_apikey");
     option.opt.width = Field::def_width_wider();
     optgroup->append_single_option_line(option);
+    option = optgroup->get_option("repetier_slug");
+    option.opt.width = Field::def_width_wider();
+    optgroup->append_single_option_line(option);
+    option = optgroup->get_option("repetier_group");
+    option.opt.width = Field::def_width_wider();
+    optgroup->append_single_option_line(option);
 
     const auto ca_file_hint = _utf8(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate."));
 
@@ -2783,6 +2789,19 @@ void TabPrinter::update_fff()
         bool toolchange_retraction = m_config->opt_float("retract_length_toolchange", i) > 0;
         get_field("retract_restart_extra_toolchange", i)->toggle
             (have_multiple_extruders && toolchange_retraction);
+    }
+    
+    bool is_repetier = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type")->value == htRepetier;
+    {
+        Field *rs = get_field("repetier_slug");
+        Field *rg = get_field("repetier_group");
+        if (is_repetier) {
+            rs->enable();
+            rg->enable();
+        } else {
+            rs->disable();
+            rg->disable();
+        }
     }
 
 //	Thaw();
