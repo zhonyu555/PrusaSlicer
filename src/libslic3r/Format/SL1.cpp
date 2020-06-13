@@ -77,7 +77,6 @@ void fill_slicerconf(ConfMap &m, const SLAPrint &print)
         "print_host"sv,
         "printhost_apikey"sv,
         "printhost_cafile"sv,
-        "repetier_group"sv,
         "repetier_slug"sv
     };
     
