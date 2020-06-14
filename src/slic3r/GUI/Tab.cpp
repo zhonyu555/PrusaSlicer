@@ -1931,27 +1931,19 @@ void TabPrinter::build_printhost(ConfigOptionsGroup *optgroup)
 
         return sizer;
     };
-    
-    auto repetier_slug_browse = [=](wxWindow* parent) {
-        add_scaled_button(parent, &m_repetier_slug_browse_btn, "printers", _(L("Printers")) + " "+ dots, wxBU_LEFT | wxBU_EXACTFIT);
+
+    auto print_host_printers = [this](wxWindow* parent) {
+        add_scaled_button(parent, &m_repetier_slug_browse_btn, "browse", _(L("Refresh Printers")), wxBU_LEFT | wxBU_EXACTFIT);
         ScalableButton* btn = m_repetier_slug_browse_btn;
         btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
 
         auto sizer = new wxBoxSizer(wxHORIZONTAL);
         sizer->Add(btn);
-
-        btn->Bind(wxEVT_BUTTON, [=](wxCommandEvent &e) {
-            BonjourDialog dialog(parent, tech);
-            if (dialog.show_and_lookup()) {
-                optgroup->set_value("repetier_slug", std::move(dialog.get_selected()), true);
-                optgroup->get_field("repetier_slug")->field_changed();
-            }
-        });
-
+        
+        btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) { update_printers(); });
         return sizer;
     };
-
-
+    
     // Set a wider width for a better alignment
     Option option = optgroup->get_option("print_host");
     option.opt.width = Field::def_width_wider();
@@ -1965,7 +1957,9 @@ void TabPrinter::build_printhost(ConfigOptionsGroup *optgroup)
     
     option = optgroup->get_option("repetier_slug");
     option.opt.width = Field::def_width_wider();
-    optgroup->append_single_option_line(option);
+    Line slug_line = optgroup->create_single_option_line(option);
+    slug_line.append_widget(print_host_printers);
+    optgroup->append_line(slug_line);
     
     const auto ca_file_hint = _utf8(L("HTTPS CA file is optional. It is only needed if you use HTTPS with a self-signed certificate."));
 
@@ -2359,6 +2353,32 @@ void TabPrinter::update_serial_ports()
     choice->set_values(Utils::scan_serial_ports());
 }
 
+void TabPrinter::update_printers()
+{
+    std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+    
+    wxArrayString printers;
+    Field *rs = get_field("repetier_slug");
+    if (!host->get_printers(printers)) {
+        std::vector<std::string> slugs;
+        
+        Choice *choice = dynamic_cast<Choice *>(rs);
+        choice->set_values(slugs);
+
+        rs->disable();
+    } else {
+        std::vector<std::string> slugs;
+        for (int i = 0; i < printers.size(); i++) {
+            slugs.push_back(printers[i].ToStdString());
+        }
+                
+        Choice *choice = dynamic_cast<Choice *>(rs);
+        choice->set_values(slugs);
+        
+        rs->enable();
+    }
+}
+
 void TabPrinter::extruders_count_changed(size_t extruders_count)
 {
     bool is_count_changed = false;
@@ -2727,6 +2747,15 @@ void TabPrinter::update_fff()
         std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
         m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
         m_printhost_browse_btn->Enable(host->has_auto_discovery());
+        m_repetier_slug_browse_btn->Enable(host->can_support_multiple_printers());
+    
+        Field *rs = get_field("repetier_slug");
+        if (host->can_support_multiple_printers()) {
+            update_printers();
+            rs->enable();
+        } else {
+            rs->disable();
+        }
     }
 
     bool have_multiple_extruders = m_extruders_count > 1;
@@ -2807,16 +2836,6 @@ void TabPrinter::update_fff()
         bool toolchange_retraction = m_config->opt_float("retract_length_toolchange", i) > 0;
         get_field("retract_restart_extra_toolchange", i)->toggle
             (have_multiple_extruders && toolchange_retraction);
-    }
-    
-    bool is_repetier = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type")->value == htRepetier;
-    {
-        Field *rs = get_field("repetier_slug");
-        if (is_repetier) {
-            rs->enable();
-        } else {
-            rs->disable();
-        }
     }
 
 //	Thaw();
