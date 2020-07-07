@@ -220,6 +220,7 @@ private:
         const LayerTools  				&layer_tools,
 		// Pairs of PrintObject index and its instance index.
 		const std::vector<const PrintInstance*> *ordering,
+        unsigned int                    first_printing_extruder_id,
         // If set to size_t(-1), then print all copies of all objects.
         // Otherwise print a single copy of a single object.
         const size_t                     single_object_idx = size_t(-1));

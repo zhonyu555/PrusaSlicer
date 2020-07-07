@@ -1411,7 +1411,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
             for (const LayerToPrint &ltp : layers_to_print) {
                 std::vector<LayerToPrint> lrs;
                 lrs.emplace_back(std::move(ltp));
-                this->process_layer(file, print, lrs, tool_ordering.tools_for_layer(ltp.print_z()), nullptr, *print_object_instance_sequential_active - object.instances().data());
+                this->process_layer(file, print, lrs, tool_ordering.tools_for_layer(ltp.print_z()), nullptr, initial_extruder_id, *print_object_instance_sequential_active - object.instances().data());
                 print.throw_if_canceled();
             }
 #ifdef HAS_PRESSURE_EQUALIZER
@@ -1463,7 +1463,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
             const LayerTools &layer_tools = tool_ordering.tools_for_layer(layer.first);
             if (m_wipe_tower && layer_tools.has_wipe_tower)
                 m_wipe_tower->next_layer();
-            this->process_layer(file, print, layer.second, layer_tools, &print_object_instances_ordering, size_t(-1));
+            this->process_layer(file, print, layer.second, layer_tools, &print_object_instances_ordering, initial_extruder_id, size_t(-1));
             print.throw_if_canceled();
         }
 #ifdef HAS_PRESSURE_EQUALIZER
@@ -1934,6 +1934,7 @@ void GCode::process_layer(
     const LayerTools        		        &layer_tools,
 	// Pairs of PrintObject index and its instance index.
 	const std::vector<const PrintInstance*> *ordering,
+    unsigned int                            first_printing_extruder_id,
     // If set to size_t(-1), then print all copies of all objects.
     // Otherwise print a single copy of a single object.
     const size_t                     		 single_object_instance_idx)
@@ -2015,7 +2016,7 @@ void GCode::process_layer(
             if (temperature > 0 && temperature != print.config().first_layer_temperature.get_at(extruder.id()))
                 gcode += m_writer.set_temperature(temperature, false, extruder.id());
         }
-        gcode += m_writer.set_bed_temperature(print.config().bed_temperature.get_at(first_extruder_id));
+        gcode += m_writer.set_bed_temperature(print.config().bed_temperature.get_at(first_printing_extruder_id));
         // Mark the temperature transition from 1st to 2nd layer to be finished.
         m_second_layer_things_done = true;
     }
