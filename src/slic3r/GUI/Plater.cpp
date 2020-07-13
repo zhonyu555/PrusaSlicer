@@ -2041,7 +2041,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     this->q->Bind(EVT_REMOVABLE_DRIVE_EJECTED, [this](RemovableDriveEjectEvent &evt) {
 		if (evt.data.second) {
 			this->show_action_buttons(this->ready_to_slice);
-			Slic3r::GUI::show_info(this->q, format_wxstr(_L("Unmounting successful. The device %s(%s) can now be safely removed from the computer."),
+			Slic3r::GUI::show_info(this->q, format_wxstr(_L("Successfully unmounted. The device %s(%s) can now be safely removed from the computer."),
 				evt.data.first.name, evt.data.first.path));
 		} else
 			Slic3r::GUI::show_info(this->q, format_wxstr(_L("Ejecting of device %s(%s) has failed."),
