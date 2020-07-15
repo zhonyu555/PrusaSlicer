@@ -405,7 +405,7 @@ const std::vector<std::string>& Preset::print_options()
         "extra_perimeters", "ensure_vertical_shell_thickness", "avoid_crossing_perimeters", "thin_walls", "overhangs",
         "seam_position", "external_perimeters_first", "fill_density", "fill_pattern", "top_fill_pattern", "bottom_fill_pattern",
         "infill_every_layers", "infill_only_where_needed", "solid_infill_every_layers", "fill_angle", "bridge_angle",
-        "solid_infill_below_area", "only_retract_when_crossing_perimeters", "infill_first", 
+        "solid_infill_below_area", "only_retract_when_crossing_perimeters", "infill_first", "gap_fill_minimum_area",
     	"ironing", "ironing_type", "ironing_flowrate", "ironing_speed", "ironing_spacing",
         "max_print_speed", "max_volumetric_speed",
 #ifdef HAS_PRESSURE_EQUALIZER

@@ -217,6 +217,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
 
+    def = this->add("gap_fill_minimum_area", coFloat);
+    def->label = L("Gap fill minimum area");
+    def->category = L("Infill");
+    def->tooltip = L("The minimum area of a section of gap fill. Areas below this threshold will not be gap-filled.");
+    def->sidetext = L("mm²");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("bridge_fan_speed", coInts);
     def->label = L("Bridges fan speed");
     def->tooltip = L("This fan speed is enforced during all bridges and overhangs.");
