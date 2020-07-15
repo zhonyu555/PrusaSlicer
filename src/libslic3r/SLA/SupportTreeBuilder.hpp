@@ -340,17 +340,6 @@ public:
         return pillar.id;
     }
     
-    const Pillar& head_pillar(unsigned headid) const
-    {
-        std::lock_guard<Mutex> lk(m_mutex);
-        assert(headid < m_head_indices.size());
-        
-        const Head& h = m_heads[m_head_indices[headid]];
-        assert(h.pillar_id >= 0 && h.pillar_id < long(m_pillars.size()));
-        
-        return m_pillars[size_t(h.pillar_id)];
-    }
-    
     template<class...Args> const Junction& add_junction(Args&&... args)
     {
         std::lock_guard<Mutex> lk(m_mutex);
