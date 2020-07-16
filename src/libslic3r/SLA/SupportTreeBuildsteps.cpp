@@ -496,7 +496,8 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &hjp,
             search_widening_path(jp, dir, radius, m_cfg.head_back_radius_mm);
 
         if (diffbr && diffbr->endp.z() > jp_gnd) {
-            m_builder.add_diffbridge(diffbr.value());
+            auto &br = m_builder.add_diffbridge(diffbr.value());
+            if (head_id >= 0) m_builder.head(head_id).bridge_id = br.id;
             endp = diffbr->endp;
             radius = diffbr->end_r;
             m_builder.add_junction(endp, radius);
@@ -551,7 +552,9 @@ bool SupportTreeBuildsteps::create_ground_pillar(const Vec3d &hjp,
         if (dlast < gap_dist) return false;
 
         if (t > 0.) { // Need to make additional bridge
-            m_builder.add_bridge(endp, nexp, radius);
+            const Bridge& br = m_builder.add_bridge(endp, nexp, radius);
+            if (head_id >= 0) m_builder.head(head_id).bridge_id = br.id;
+
             m_builder.add_junction(nexp, radius);
             endp = nexp;
             non_head = true;
@@ -670,10 +673,10 @@ void SupportTreeBuildsteps::filter()
         auto [polar, azimuth] = dir_to_spheric(n);
 
         // skip if the tilt is not sane
-        if(polar < PI - m_cfg.normal_cutoff_angle) return;
+        if (polar < PI - m_cfg.normal_cutoff_angle) return;
 
         // We saturate the polar angle to 3pi/4
-        polar = std::max(polar, 3*PI / 4);
+        polar = std::max(polar, PI - m_cfg.bridge_slope);
 
         // save the head (pinpoint) position
         Vec3d hp = m_points.row(fidx);

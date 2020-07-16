@@ -42,12 +42,9 @@ public:
     double max() const noexcept { return m_max; }
 };
 
-template<size_t N> using Bounds = std::array<Bound, N>;
-template<size_t N> Bounds<N> bounds(const Bound (&b) [N]) { return to_arr(b); }
-
-// Helper type for the input (function) values of optimization
+// Helper types for optimization function input and bounds
 template<size_t N> using Input = std::array<double, N>;
-template<size_t N> Input<N> initvals(const double (&a) [N]) { return to_arr(a); }
+template<size_t N> using Bounds = std::array<Bound, N>;
 
 // A type for specifying the stop criteria. Setter methods can be concatenated
 class StopCriteria {
@@ -127,7 +124,7 @@ public:
     template<class Func, size_t N>
     Result<N> optimize(Func&& func,
                        const Input<N> &initvals,
-                       const Bounds<N>& bounds);
+                       const Bounds<N>& bounds) { return {}; }
 
     // optional for randomized methods:
     void seed(long /*s*/) {}
@@ -143,19 +140,35 @@ template<nlopt_algorithm alg> struct NLoptAlg {};
 template<nlopt_algorithm gl_alg, nlopt_algorithm lc_alg = NLOPT_LN_NELDERMEAD>
 struct NLoptAlgComb {};
 
+template<class M> struct IsNLoptAlg {
+    static const constexpr bool value = false;
+};
+
+template<nlopt_algorithm a> struct IsNLoptAlg<NLoptAlg<a>> {
+    static const constexpr bool value = true;
+};
+
+template<nlopt_algorithm a1, nlopt_algorithm a2>
+struct IsNLoptAlg<NLoptAlgComb<a1, a2>> {
+    static const constexpr bool value = true;
+};
+
+template<class M, class T = void>
+using NLoptOnly = std::enable_if_t<IsNLoptAlg<M>::value, T>;
+
 // Convert any collection to tuple. This is useful for object functions taking
 // an argument list of doubles. Make things cleaner on the call site of
 // optimize().
 template<size_t I, std::size_t N, class T, class C> struct to_tuple_ {
     static auto call(const C &c)
     {
-        return std::tuple_cat(std::tuple<T>{c[I]},
+        return std::tuple_cat(std::tuple<T>(c[N-I]),
                               to_tuple_<I-1, N, T, C>::call(c));
     }
 };
 
 template<size_t N, class T, class C> struct to_tuple_<0, N, T, C> {
-    static auto call(const C &) { return std::tuple<>{}; }
+    static auto call(const C &c) { return std::tuple<>(); }
 };
 
 // C array to tuple
@@ -165,7 +178,7 @@ template<std::size_t N, class T> auto carray_tuple(const T *v)
 }
 
 // Helper to convert C style array to std::array
-template<class T, size_t N> auto to_arr(const T (&a) [N])
+template<size_t N, class T> auto to_arr(const T (&a) [N])
 {
     std::array<T, N> r;
     std::copy(std::begin(a), std::end(a), std::begin(r));
@@ -198,29 +211,29 @@ protected:
     StopCriteria m_stopcr;
     OptDir m_dir;
 
-    template<class Fn> using TData =
+    template<class Fn> using TOptData =
         std::tuple<std::remove_reference_t<Fn>*, NLoptOpt*, nlopt_opt>;
 
     template<class Fn, size_t N>
     static double optfunc(unsigned n, const double *params,
-                          double */*gradient*/,
+                          double *gradient,
                           void *data)
     {
         assert(n >= N);
 
-        auto tdata = static_cast<TData<Fn>*>(data);
+        auto tdata = static_cast<TOptData<Fn>*>(data);
 
         if (std::get<1>(*tdata)->m_stopcr.stop_condition())
             nlopt_force_stop(std::get<2>(*tdata));
 
-        auto fnptr = std::get<0>(*tdata);
+        auto fnptr  = std::get<0>(*tdata);
         auto funval = carray_tuple<N>(params);
 
         return std::apply(*fnptr, funval);
     }
 
-    template<class Func, size_t N>
-    void set_up(NLopt &nl, Func&& func, const Bounds<N>& bounds)
+    template<size_t N>
+    void set_up(NLopt &nl, const Bounds<N>& bounds)
     {
         std::array<double, N> lb, ub;
 
@@ -241,21 +254,21 @@ protected:
 
         if(this->m_stopcr.max_iterations() > 0)
             nlopt_set_maxeval(nl.ptr, this->m_stopcr.max_iterations());
+    }
 
-        TData<Func> data = std::make_tuple(&func, this, nl.ptr);
+    template<class Fn, size_t N>
+    Result<N> optimize(NLopt &nl, Fn &&fn, const Input<N> &initvals)
+    {
+        Result<N> r;
+
+        TOptData<Fn> data = std::make_tuple(&fn, this, nl.ptr);
 
         switch(m_dir) {
         case OptDir::MIN:
-            nlopt_set_min_objective(nl.ptr, optfunc<Func, N>, &data); break;
+            nlopt_set_min_objective(nl.ptr, optfunc<Fn, N>, &data); break;
         case OptDir::MAX:
-            nlopt_set_max_objective(nl.ptr, optfunc<Func, N>, &data); break;
+            nlopt_set_max_objective(nl.ptr, optfunc<Fn, N>, &data); break;
         }
-    }
-
-    template<size_t N>
-    Result<N> optimize(NLopt &nl, const Input<N> &initvals)
-    {
-        Result<N> r;
 
         r.optimum = initvals;
         r.resultcode = nlopt_optimize(nl.ptr, r.optimum.data(), &r.score);
@@ -271,9 +284,9 @@ public:
                        const Bounds<N>& bounds)
     {
         NLopt nl{alg, N};
-        set_up(nl, std::forward<Func>(func), bounds);
+        set_up(nl, bounds);
 
-        return optimize(nl, initvals);
+        return optimize(nl, std::forward<Func>(func), initvals);
     }
 
     explicit NLoptOpt(StopCriteria stopcr = {}) : m_stopcr(stopcr) {}
@@ -291,18 +304,18 @@ class NLoptOpt<NLoptAlgComb<glob, loc>>: public NLoptOpt<NLoptAlg<glob>>
     using Base = NLoptOpt<NLoptAlg<glob>>;
 public:
 
-    template<class Func, size_t N>
-    Result<N> optimize(Func&& func,
+    template<class Fn, size_t N>
+    Result<N> optimize(Fn&& f,
                        const Input<N> &initvals,
                        const Bounds<N>& bounds)
     {
         NLopt nl_glob{glob, N}, nl_loc{loc, N};
 
-        Base::set_up(nl_glob, std::forward<Func>(func), bounds);
-        Base::set_up(nl_loc, std::forward<Func>(func), bounds);
+        Base::set_up(nl_glob, bounds);
+        Base::set_up(nl_loc, bounds);
         nlopt_set_local_optimizer(nl_glob.ptr, nl_loc.ptr);
 
-        return Base::optimize(nl_glob, initvals);
+        return Base::optimize(nl_glob, std::forward<Fn>(f), initvals);
     }
 
     explicit NLoptOpt(StopCriteria stopcr = {}) : Base{stopcr} {}
@@ -311,7 +324,7 @@ public:
 } // namespace detail;
 
 // Optimizers based on NLopt.
-template<class M> class Optimizer<detail::NLoptOpt<M>> {
+template<class M> class Optimizer<M, detail::NLoptOnly<M>> {
     detail::NLoptOpt<M> m_opt;
 
 public:
@@ -338,6 +351,9 @@ public:
 
     void seed(long s) { m_opt.seed(s); }
 };
+
+template<size_t N> Bounds<N> bounds(const Bound (&b) [N]) { return detail::to_arr(b); }
+template<size_t N> Input<N> initvals(const double (&a) [N]) { return detail::to_arr(a); }
 
 // Predefinded NLopt algorithms that are used in the codebase
 using AlgNLoptGenetic = detail::NLoptAlgComb<NLOPT_GN_ESCH>;
