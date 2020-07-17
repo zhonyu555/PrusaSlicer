@@ -735,7 +735,7 @@ private:
     BoundingBoxf3 _max_bounding_box(bool include_gizmos, bool include_bed_model) const;
 
     void _zoom_to_box(const BoundingBoxf3& box, double margin_factor = DefaultCameraZoomToBoxMarginFactor);
-    void _update_camera_zoom(double zoom);
+    void _update_camera_zoom(double zoom, bool is_from_scroll = false);
 
     void _refresh_if_shown_on_screen();
 

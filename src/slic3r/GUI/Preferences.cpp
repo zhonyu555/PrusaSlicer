@@ -151,6 +151,13 @@ void PreferencesDialog::build()
 	option = Option(def, "use_free_camera");
 	m_optgroup_camera->append_single_option_line(option);
 
+	def.label = L("Invert Scroll Wheel For Zoom");
+	def.type = coBool;
+	def.tooltip = L("Inverts the direction of the scroll wheel or touch pad for zooming");
+	def.set_default_value(new ConfigOptionBool(app_config->get("invert_scroll_zoom") == "1"));
+	option = Option(def, "invert_scroll_zoom");
+	m_optgroup_camera->append_single_option_line(option);
+
 	m_optgroup_gui = std::make_shared<ConfigOptionsGroup>(this, _(L("GUI")));
 	m_optgroup_gui->label_width = 40;
 	m_optgroup_gui->m_on_change = [this](t_config_option_key opt_key, boost::any value) {

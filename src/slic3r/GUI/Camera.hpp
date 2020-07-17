@@ -33,6 +33,7 @@ private:
     Vec3d m_target;
     float m_zenit;
     double m_zoom;
+    bool   m_invert_scroll_zoom;
     // Distance between camera position and camera target measured along the camera Z axis
     mutable double m_distance;
     mutable double m_gui_scale;
@@ -56,6 +57,10 @@ public:
     void set_type(const std::string& type);
     void select_next_type();
 
+    bool get_invert_scroll_zoom() const { return m_invert_scroll_zoom; }
+    void set_invert_scroll_zoom(bool invert_scroll_zoom);
+    void set_invert_scroll_zoom(const std::string& invert_scroll_zoom);
+
     const Vec3d& get_target() const { return m_target; }
     void set_target(const Vec3d& target);
 
@@ -64,7 +69,7 @@ public:
 
     double get_zoom() const { return m_zoom; }
     double get_inv_zoom() const { assert(m_zoom != 0.0); return 1.0 / m_zoom; }
-    void update_zoom(double delta_zoom);
+    void update_zoom(double delta_zoom, bool is_from_scroll = false);
     void set_zoom(double zoom);
 
     const BoundingBoxf3& get_scene_box() const { return m_scene_box; }

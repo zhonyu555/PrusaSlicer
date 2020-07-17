@@ -93,6 +93,9 @@ void AppConfig::set_defaults()
     if (get("use_free_camera").empty())
         set("use_free_camera", "0");
 
+    if (get("invert_scroll_zoom").empty())
+        set("invert_scroll_zoom", "0");
+
 #if ENABLE_ENVIRONMENT_MAP
     if (get("use_environment_map").empty())
         set("use_environment_map", "0");

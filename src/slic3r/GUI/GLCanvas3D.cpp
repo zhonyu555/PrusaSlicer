@@ -3346,7 +3346,7 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
         return;
 
     // Calculate the zoom delta and apply it to the current zoom factor
-    _update_camera_zoom((double)evt.GetWheelRotation() / (double)evt.GetWheelDelta());
+    _update_camera_zoom((double)evt.GetWheelRotation() / (double)evt.GetWheelDelta(), true);
 }
 
 void GLCanvas3D::on_timer(wxTimerEvent& evt)
@@ -5099,9 +5099,9 @@ void GLCanvas3D::_zoom_to_box(const BoundingBoxf3& box, double margin_factor)
     m_dirty = true;
 }
 
-void GLCanvas3D::_update_camera_zoom(double zoom)
+void GLCanvas3D::_update_camera_zoom(double zoom, bool is_from_scroll)
 {
-    wxGetApp().plater()->get_camera().update_zoom(zoom);
+    wxGetApp().plater()->get_camera().update_zoom(zoom, is_from_scroll);
     m_dirty = true;
 }
 

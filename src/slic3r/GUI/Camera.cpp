@@ -35,6 +35,7 @@ Camera::Camera()
     , m_target(Vec3d::Zero())
     , m_zenit(45.0f)
     , m_zoom(1.0)
+    , m_invert_scroll_zoom(false)
     , m_distance(DefaultDistance)
     , m_gui_scale(1.0)
     , m_view_matrix(Transform3d::Identity())
@@ -79,6 +80,21 @@ void Camera::select_next_type()
     set_type((EType)next);
 }
 
+void Camera::set_invert_scroll_zoom(bool invert_scroll_zoom)
+{
+    if (m_invert_scroll_zoom != invert_scroll_zoom)
+    {
+        m_invert_scroll_zoom = invert_scroll_zoom;
+        wxGetApp().app_config->set("invert_scroll_zoom", m_invert_scroll_zoom ? "1" : "0");
+        wxGetApp().app_config->save();
+    }
+}
+
+void Camera::set_invert_scroll_zoom(const std::string& invert_scroll_zoom)
+{
+    set_invert_scroll_zoom((invert_scroll_zoom == "1") ? true : false);
+}
+
 void Camera::set_target(const Vec3d& target)
 {
     Vec3d new_target = validate_target(target);
@@ -90,8 +106,12 @@ void Camera::set_target(const Vec3d& target)
     }
 }
 
-void Camera::update_zoom(double delta_zoom)
+void Camera::update_zoom(double delta_zoom, bool is_from_scroll)
 {
+    if (is_from_scroll && m_invert_scroll_zoom)
+    {
+      delta_zoom = -delta_zoom;
+    }
     set_zoom(m_zoom / (1.0 - std::max(std::min(delta_zoom, 4.0), -4.0) * 0.1));
 }
 

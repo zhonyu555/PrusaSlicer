@@ -2024,6 +2024,9 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     // updates camera type from .ini file
     camera.set_type(get_config("use_perspective_camera"));
 
+    // updates camera scroll zoom invert from .ini file
+    camera.set_invert_scroll_zoom(get_config("invert_scroll_zoom"));
+
     // Load the 3DConnexion device database.
     mouse3d_controller.load_config(*wxGetApp().app_config);
 	// Start the background thread to detect and connect to a HID device (Windows and Linux).
@@ -2156,6 +2159,8 @@ void Plater::priv::update_ui_from_settings()
     camera.set_type(wxGetApp().app_config->get("use_perspective_camera"));
     if (wxGetApp().app_config->get("use_free_camera") != "1")
         camera.recover_from_free_camera();
+
+    camera.set_invert_scroll_zoom(wxGetApp().app_config->get("invert_scroll_zoom"));
 
     view3D->get_canvas3d()->update_ui_from_settings();
     preview->get_canvas3d()->update_ui_from_settings();
