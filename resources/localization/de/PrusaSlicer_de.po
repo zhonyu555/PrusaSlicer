@@ -6775,11 +6775,11 @@ msgstr "Konturhüllen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:249
 msgid "Shift + Left mouse button:"
-msgstr "Umschalt + Linke Maustaste:"
+msgstr "Shift + Linke Maustaste:"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:255
 msgid "Shift + Right mouse button:"
-msgstr "Umschalt + Rechte Maustaste:"
+msgstr "Shift + Rechte Maustaste:"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:231
 msgid "Show"
