@@ -107,14 +107,14 @@ msgid ""
 "\n"
 "The application will now terminate."
 msgstr ""
-"%s ist auf einen Fehler gestoßen. Es wurde wahrscheinlich dadurch verursacht, dass der Speicher knapp wird. Wenn Sie sicher sind, dass Sie genügend RAM auf Ihrem System haben, kann dies auch ein Programmfehler sein, und wir würden uns freuen, wenn Sie ihn melden würden.\n"
+"%s ist auf einen Fehler gestoßen. Es wurde wahrscheinlich dadurch verursacht, dass der Speicher knapp wird. Wenn Sie sicher sind, dass Sie genügend RAM in Ihrem System haben, kann dies auch ein Programmfehler sein, und wir würden uns freuen, wenn Sie ihn melden würden.\n"
 "\n"
 "Die Anwendung wird nun beendet."
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:222
 #, c-format
 msgid "%s has encountered an error. It was likely caused by running out of memory. If you are sure you have enough RAM on your system, this may also be a bug and we would be glad if you reported it."
-msgstr "%s ist auf einen Fehler gestoßen. Es wurde wahrscheinlich dadurch verursacht, dass der Speicher knapp wird. Wenn Sie sicher sind, dass Sie genügend RAM auf Ihrem System haben, kann dies auch ein Programmfehler sein, und wir würden uns freuen, wenn Sie ihn melden würden."
+msgstr "%s ist auf einen Fehler gestoßen. Es wurde wahrscheinlich dadurch verursacht, dass der Speicher knapp wird. Wenn Sie sicher sind, dass Sie genügend RAM in Ihrem System haben, kann dies auch ein Programmfehler sein, und wir würden uns freuen, wenn Sie ihn melden würden."
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:308
 #, c-format
@@ -246,7 +246,11 @@ msgstr "&Beenden"
 
 #: src/slic3r/GUI/MainFrame.cpp:583
 msgid "&Redo"
-msgstr "&Redo"
+msgstr "&Wiederherstellen"
+
+#: src/slic3r/GUI/MainFrame.cpp
+msgid "Searc&h"
+msgstr "Suc&hen"
 
 #: src/slic3r/GUI/MainFrame.cpp:536
 msgid "&Repair STL file"
@@ -262,7 +266,7 @@ msgstr "Alle&s auswählen"
 
 #: src/slic3r/GUI/MainFrame.cpp:580
 msgid "&Undo"
-msgstr "&Undo"
+msgstr "&Rückgängig"
 
 #: src/slic3r/GUI/MainFrame.cpp:724
 msgid "&View"
@@ -347,11 +351,11 @@ msgstr "Ein Daumenwert ist 160 bis 230 °C für PLA, und 215 bis 250 °C für AB
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1048
 msgid "A rule of thumb is 60 °C for PLA and 110 °C for ABS. Leave zero if you have no heated bed."
-msgstr "Ein Daumenwert ist 60 °C für PLA und 110 °C für ABS. Auf 0 setzen, falls kein beheiztes Druckbett vorhanden ist."
+msgstr "Ein Daumenwert ist 60 °C für PLA und 110 °C für ABS. Auf 0 setzen, falls keine beheizte Druckplatte vorhanden ist."
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:686
 msgid "A toolpath outside the print area was detected"
-msgstr "Ein Werkzeugweg außerhalb des Druckbereichs wurde erkannt"
+msgstr "Ein Werkzeugpfad außerhalb des Druckbereichs wurde erkannt"
 
 #: src/slic3r/GUI/AboutDialog.cpp:199
 #, c-format
@@ -618,7 +622,7 @@ msgstr "Nach einem Werkzeugwechsel ist die genaue Position des neu geladenen Fil
 
 #: src/slic3r/GUI/Tab.cpp:1994 src/libslic3r/PrintConfig.cpp:1080
 msgid "After layer change G-code"
-msgstr "G-Code am Schichtende"
+msgstr "G-Code am Schichtwechsel"
 
 #: src/libslic3r/PrintConfig.cpp:3398
 msgid "Align the model to the given point."
@@ -651,7 +655,7 @@ msgstr "Alles standard"
 
 #: src/libslic3r/Zipper.cpp:62
 msgid "allocation failed"
-msgstr "Allokation fehlgeschlagen"
+msgstr "Zuweisung fehlgeschlagen"
 
 #: src/slic3r/GUI/Plater.cpp:3995
 msgid "Along X axis"
@@ -766,7 +770,7 @@ msgstr "Auswahl anordnen"
 
 #: src/libslic3r/PrintConfig.cpp:3443
 msgid "Arrange the supplied models in a plate and merge them in a single model in order to perform actions once."
-msgstr "Die zur Verfügung stehenden Modelle in einer Platte anordnen und zu einem einzigen Modell zusammenführen, um Aktionen zusammen durchführen zu können."
+msgstr "Die zur Verfügung stehenden Modelle in einer Druckplatte anordnen und zu einem einzigen Modell zusammenführen, um Aktionen zusammen durchführen zu können."
 
 #: src/slic3r/GUI/Plater.cpp:2813
 msgid "Arranging"
@@ -898,39 +902,39 @@ msgstr "basiert auf Slic3r"
 
 #: src/slic3r/GUI/Tab.cpp:1439
 msgid "Bed"
-msgstr "Druckbett"
+msgstr "Druckplatte"
 
 #: src/libslic3r/PrintConfig.cpp:61
 msgid "Bed custom model"
-msgstr "Druckbett individuelles Modell"
+msgstr "Druckplatte individuelles Modell"
 
 #: src/libslic3r/PrintConfig.cpp:56
 msgid "Bed custom texture"
-msgstr "Druckbett individuelle Textur"
+msgstr "Druckplatte individuelle Textur"
 
 #: src/slic3r/GUI/BedShapeDialog.hpp:59 src/slic3r/GUI/ConfigWizard.cpp:929
 msgid "Bed Shape"
-msgstr "Druckbrettprofil"
+msgstr "Druckplatteprofil"
 
 #: src/libslic3r/PrintConfig.cpp:51
 msgid "Bed shape"
-msgstr "Druckbettkontur"
+msgstr "Druckplattekontur"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:929
 msgid "Bed Shape and Size"
-msgstr "Druckbettform und -größe"
+msgstr "Druckplatteform und -größe"
 
 #: src/libslic3r/PrintConfig.cpp:147
 msgid "Bed temperature"
-msgstr "Druckbetttemperatur"
+msgstr "Druckplattetemperatur"
 
 #: src/libslic3r/PrintConfig.cpp:145
 msgid "Bed temperature for layers after the first one. Set this to zero to disable bed temperature control commands in the output."
-msgstr "Druckbetttemperatur für Schichten nach der ersten Schicht. Setzen Sie diesen Wert auf null, um die Befehle zur Steuerung der Betttemperatur im Output zu deaktivieren."
+msgstr "Druckplattentemperatur für Schichten nach der ersten Schicht. Setzen Sie diesen Wert auf null, um die Befehle zur Steuerung der Plattentemperatur im Output zu deaktivieren."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1051
 msgid "Bed Temperature:"
-msgstr "Druckbetttemperatur:"
+msgstr "Druckplattentemperatur:"
 
 #: src/slic3r/GUI/Tab.cpp:1988 src/libslic3r/PrintConfig.cpp:153
 msgid "Before layer change G-code"
@@ -1213,7 +1217,7 @@ msgstr "Nach &Updates suchen"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:532
 msgid "Choose a file to import bed texture from (PNG/SVG):"
-msgstr "Wählen Sie eine Datei aus, aus der Sie die Druckbetttextur importieren möchten (PNG/SVG):"
+msgstr "Wählen Sie eine Datei aus, aus der Sie die Druckplattentextur importieren möchten (PNG/SVG):"
 
 #: src/slic3r/GUI/MainFrame.cpp:773
 msgid "Choose a file to slice (STL/OBJ/AMF/3MF/PRUSA):"
@@ -1221,11 +1225,11 @@ msgstr "Wählen Sie eine Datei zum Slicen (STL/OBJ/AMF/3MF/PRUSA):"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:555
 msgid "Choose an STL file to import bed model from:"
-msgstr "Wählen Sie eine STL-Datei aus, aus der Sie das Druckbettmodell importieren möchten:"
+msgstr "Wählen Sie eine STL-Datei aus, aus der Sie das Druckplattenmodell importieren möchten:"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:487
 msgid "Choose an STL file to import bed shape from:"
-msgstr "Wählen Sie eine STL-Datei aus, aus der Sie die Druckbettform importieren möchten:"
+msgstr "Wählen Sie eine STL-Datei aus, aus der Sie die Druckplattenform importieren möchten:"
 
 #: src/slic3r/GUI/GUI_App.cpp:555
 msgid "Choose one file (3MF/AMF):"
@@ -1299,11 +1303,11 @@ msgstr "Farbwechsel für Extruder %d bei %.2f mm"
 #: src/slic3r/GUI/GUI_Preview.cpp:228 src/slic3r/GUI/GUI_Preview.cpp:572
 #: src/libslic3r/GCode/PreviewData.cpp:359
 msgid "Color Print"
-msgstr "Color Print"
+msgstr "Farbdruck"
 
 #: src/libslic3r/PrintConfig.cpp:260
 msgid "Colorprint height"
-msgstr "Colorprint Höhe"
+msgstr "Farbdruck Höhe"
 
 #: src/libslic3r/PrintConfig.cpp:990
 msgid "Combine infill every"
@@ -1503,7 +1507,7 @@ msgstr "Das Kopieren des temporären G-Codes auf den Ausgabe-G-Code ist fehlgesc
 
 #: src/slic3r/GUI/AboutDialog.cpp:127 src/slic3r/GUI/AboutDialog.cpp:256
 msgid "Copyright"
-msgstr "Urheberrecht"
+msgstr "Copyright"
 
 #: src/libslic3r/PrintConfig.cpp:2571 src/libslic3r/PrintConfig.cpp:2572
 msgid "Correction for expansion"
@@ -1532,19 +1536,19 @@ msgstr "Konnte keine Verbindung zur AstroBox herstellen"
 
 #: src/slic3r/Utils/Duet.cpp:54
 msgid "Could not connect to Duet"
-msgstr "Ich konnte keine Verbindung zum Duet herstellen"
+msgstr "Konnte keine Verbindung zum Duet herstellen"
 
 #: src/slic3r/Utils/FlashAir.cpp:73
 msgid "Could not connect to FlashAir"
-msgstr "Die Verbindung zu FlashAir konnte nicht hergestellt werden"
+msgstr "Konnte keine Verbindung zu FlashAir hergestellt"
 
 #: src/slic3r/Utils/OctoPrint.cpp:89
 msgid "Could not connect to OctoPrint"
-msgstr "Ich konnte keine Verbindung zu OctoPrint herstellen"
+msgstr "Konnte keine Verbindung zu OctoPrint herstellen"
 
 #: src/slic3r/Utils/OctoPrint.cpp:181
 msgid "Could not connect to Prusa SLA"
-msgstr "Ich konnte keine Verbindung zum Prusa SLA herstellen"
+msgstr "Konnte keine Verbindung zum Prusa SLA herstellen"
 
 #: src/slic3r/GUI/Tab.cpp:1687
 msgid "Could not get a valid Printer Host reference"
@@ -1948,7 +1952,7 @@ msgstr "Durchmesser der Spitzenseite des Kopfes"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:94
 msgid "Diameter of the print bed. It is assumed that origin (0,0) is located in the center."
-msgstr "Durchmesser des Druckbettes. Es wird angenommen, dass der Ursprung (0,0) sich im Mittelpunkt befindet."
+msgstr "Durchmesser der Druckplatte. Es wird angenommen, dass der Ursprung (0,0) sich im Mittelpunkt befindet."
 
 #: src/libslic3r/PrintConfig.cpp:1639
 msgid "Direction"
@@ -2115,7 +2119,7 @@ msgstr "Das Bohren von Löchern in das Netz ist fehlgeschlagen. Dies wird normal
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:337
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:349
 msgid "Drop to bed"
-msgstr "Auf das Druckbett fallen lassen"
+msgstr "Auf die Druckplatte fallen lassen"
 
 #: src/libslic3r/PrintConfig.cpp:3433
 msgid "Duplicate"
@@ -2287,7 +2291,7 @@ msgstr "Geben Sie eine kurze Nachricht ein, die auf dem Druckerdisplay angezeigt
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1047
 msgid "Enter the bed temperature needed for getting your filament to stick to your heated bed."
-msgstr "Geben Sie die Druckbetttemperatur ein, die erforderlich ist, damit Ihr Filament an Ihrem beheizten Druckbett haftet."
+msgstr "Geben Sie die Druckplattentemperatur ein, die erforderlich ist, damit Ihr Filament an Ihrer beheizten Druckplatte haftet."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:979
 msgid "Enter the diameter of your filament."
@@ -2474,23 +2478,23 @@ msgstr "Exportiere die aktuelle Konfiguration in eine Datei"
 
 #: src/slic3r/GUI/MainFrame.cpp:492
 msgid "Export current plate as AMF"
-msgstr "Exportiere die aktuelle Plattenbelegung als AMF"
+msgstr "Exportiere die aktuelle Druckplattenbelegung als AMF"
 
 #: src/slic3r/GUI/MainFrame.cpp:477
 msgid "Export current plate as G-code"
-msgstr "Exportiere die aktuelle Plattenbelegung als G-Code"
+msgstr "Exportiere die aktuelle Druckplattenbelegung als G-Code"
 
 #: src/slic3r/GUI/MainFrame.cpp:521
 msgid "Export current plate as G-code to SD card / Flash drive"
-msgstr "Aktuelle Druckplatte als G-Code auf SD-Karte/Flash-Laufwerk exportieren"
+msgstr "Aktuelle Druckplattenbelegung als G-Code auf SD-Karte/Flash-Laufwerk exportieren"
 
 #: src/slic3r/GUI/MainFrame.cpp:486
 msgid "Export current plate as STL"
-msgstr "Exportiere die aktuelle Plattenbelegung als STL"
+msgstr "Exportiere die aktuelle Druckplattenbelegung als STL"
 
 #: src/slic3r/GUI/MainFrame.cpp:489
 msgid "Export current plate as STL including supports"
-msgstr "Exportiert die aktuelle Plattenbelegung als STL einschließlich Stützstrukturen"
+msgstr "Exportiert die aktuelle Druckplattenbelegung als STL einschließlich Stützstrukturen"
 
 #: src/slic3r/GUI/Plater.cpp:3664
 msgid "Export failed"
@@ -2523,15 +2527,15 @@ msgstr "Export einer temporären 3MF Datei fehlgeschlagen"
 
 #: src/slic3r/GUI/MainFrame.cpp:492
 msgid "Export plate as &AMF"
-msgstr "Exportiere die Plattenbelegung als &AMF"
+msgstr "Exportiere die Druckplattenbelegung als &AMF"
 
 #: src/slic3r/GUI/MainFrame.cpp:486
 msgid "Export plate as &STL"
-msgstr "Exportiere die Plattenbelegung als &STL"
+msgstr "Exportiere die Druckplattenbelegung als &STL"
 
 #: src/slic3r/GUI/MainFrame.cpp:489
 msgid "Export plate as STL &including supports"
-msgstr "Export&iere Plattenbelegung als STL einschließlich Stützstrukturen"
+msgstr "Export&iere Druckplattenbelegung als STL einschließlich Stützstrukturen"
 
 #: src/libslic3r/PrintConfig.cpp:3332
 msgid "Export SLA"
@@ -2648,7 +2652,7 @@ msgstr "Extruder (Werkzeug) ist geändert auf Extruder \"%1%\""
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1017
 msgid "Extruder and Bed Temperatures"
-msgstr "Extruder- und Druckbetttemperatur"
+msgstr "Extruder- und Druckplattentemperatur"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:255
 msgid "Extruder changed to"
@@ -2987,7 +2991,7 @@ msgstr "Flashen misslungen. Bitte überprüfen Sie das Avrdude log unterhalb."
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:152
 msgid "Flashing in progress. Please do not disconnect the printer!"
-msgstr "Es wird geflashed. Bitte nicht den Drucker abklemmen!"
+msgstr "Es wird geflashed. Bitte nicht den Drucker entfernen!"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:282
 msgid "Flashing succeeded!"
@@ -3242,7 +3246,7 @@ msgstr "Die Kopfeindringung sollte nicht größer als die Kopfbreite sein."
 
 #: src/libslic3r/PrintConfig.cpp:869
 msgid "Heated build plate temperature for the first layer. Set this to zero to disable bed temperature control commands in the output."
-msgstr "Druckbetttemperatur für die erste Schicht. Setzen Sie diesen Wert auf null, um die Befehle zur Steuerung der Betttemperatur im Ausgang zu deaktivieren."
+msgstr "Druckplattentemperatur für die erste Schicht. Setzen Sie diesen Wert auf null, um die Befehle zur Steuerung der Druckplattentemperatur im Ausgang zu deaktivieren."
 
 #: src/slic3r/GUI/GUI_Preview.cpp:222 src/libslic3r/PrintConfig.cpp:500
 msgid "Height"
@@ -3303,11 +3307,11 @@ msgstr "Höhere Druckqualität versus höhere Druckgeschwindigkeit."
 
 #: src/libslic3r/PrintConfig.cpp:427 src/libslic3r/PrintConfig.cpp:853
 msgid "Hilbert Curve"
-msgstr "HIlbertkurve"
+msgstr "Hilbertkurve"
 
 #: src/slic3r/GUI/Plater.cpp:1042
 msgid "Hold Shift to Slice & Export G-code"
-msgstr "Halten Sie die Umschalttaste gedrückt, um zu slicen und den G-Code zu exportieren"
+msgstr "Halten Sie die Shift-Taste gedrückt, um zu slicen und den G-Code zu exportieren"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:47
 msgid "Hole depth"
@@ -3450,7 +3454,7 @@ msgstr "Wenn aktiviert, lädt %s Updates der eingebauten Systemvoreinstellungen 
 
 #: src/libslic3r/PrintConfig.cpp:1852
 msgid "If enabled, all printing extruders will be primed at the front edge of the print bed at the start of the print."
-msgstr "Wenn aktiviert, werden alle Druckextruder zu Beginn des Druckvorgangs an der Vorderkante des Druckbetts geprimt."
+msgstr "Wenn aktiviert, werden alle Druckextruder zu Beginn des Druckvorgangs an der Vorderkante der Druckplatte geprimt."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:805
 msgid ""
@@ -3478,7 +3482,7 @@ msgstr "Wenn aktiviert, wird die 3D-Szene in Retina-Auflösung gerendert. Wenn S
 
 #: src/libslic3r/PrintConfig.cpp:1696
 msgid "If enabled, the skirt will be as tall as a highest printed object. This is useful to protect an ABS or ASA print from warping and detaching from print bed due to wind draft."
-msgstr "Wenn diese Option aktiviert ist, wird die Schürze so hoch wie das höchste gedruckte Objekt sein. Dies ist nützlich, um einen ABS- oder ASA-Druck vor dem Verziehen und Ablösen vom Druckbett aufgrund von Zugluft zu schützen."
+msgstr "Wenn diese Option aktiviert ist, wird die Schürze so hoch wie das höchste gedruckte Objekt sein. Dies ist nützlich, um einen ABS- oder ASA-Druck vor dem Verziehen und Ablösen von der Druckplatte aufgrund von Zugluft zu schützen."
 
 #: src/libslic3r/PrintConfig.cpp:1858
 msgid "If enabled, the wipe tower will not be printed on layers with no toolchanges. On layers with a toolchange, extruder will travel downward to print the wipe tower. User is responsible for ensuring there is no collision with the print."
@@ -3522,7 +3526,7 @@ msgstr "Wenn diese Option aktiviert ist, wird der Lüfter niemals deaktiviert un
 
 #: src/slic3r/GUI/Preferences.cpp:49
 msgid "If this is enabled, Slic3r will auto-center objects around the print bed center."
-msgstr "Wenn diese Option aktiviert ist, zentriert PrusaSlicer Objekte automatisch um die Mitte des Druckbettes."
+msgstr "Wenn diese Option aktiviert ist, zentriert PrusaSlicer Objekte automatisch um die Mitte der Druckplatte."
 
 #: src/slic3r/GUI/Preferences.cpp:57
 msgid "If this is enabled, Slic3r will pre-process objects as soon as they're loaded in order to save time when exporting G-code."
@@ -3741,7 +3745,7 @@ msgstr "Schnittstellenmuster Abstand"
 
 #: src/libslic3r/PrintConfig.cpp:1071
 msgid "Interface shells"
-msgstr "Schnittstellenshells"
+msgstr "Schnittstellenkonturhülle"
 
 #: src/libslic3r/Zipper.cpp:84
 msgid "internal error"
@@ -4817,11 +4821,11 @@ msgstr "Neue Version:"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4673
 msgid "Next Redo action: %1%"
-msgstr "Nächste Redo Aktion: %1%"
+msgstr "Nächste Wiederherstellen-Aktion: %1%"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4641
 msgid "Next Undo action: %1%"
-msgstr "Nächste Undo-Aktion: %1%"
+msgstr "Nächste Rückgängig-Aktion: %1%"
 
 #: src/libslic3r/PrintConfig.cpp:960
 msgid "No extrusion"
@@ -4879,11 +4883,11 @@ msgstr "Hinweis"
 
 #: src/slic3r/Utils/AstroBox.cpp:89
 msgid "Note: AstroBox version at least 1.1.0 is required."
-msgstr "Hinweis: Die AstroBox-Version 1.1.0 oder höher ist erforderlich."
+msgstr "Hinweis: Es ist mindestens die AstroBox-Version 1.1.0 oder höher ist erforderlich."
 
 #: src/slic3r/Utils/FlashAir.cpp:73
 msgid "Note: FlashAir with firmware 2.00.02 or newer and activated upload function is required."
-msgstr "Hinweis: FlashAir mit Firmware 2.00.02 oder neuer und aktivierter Upload-Funktion ist erforderlich."
+msgstr "Hinweis: Es ist mindestens FlashAir mit Firmware 2.00.02 oder neuer und aktivierter Upload-Funktion ist erforderlich."
 
 #: src/slic3r/Utils/OctoPrint.cpp:89
 msgid "Note: OctoPrint version at least 1.1.0 is required."
@@ -5038,7 +5042,7 @@ msgstr "Eines oder mehrere Objekte wurden einem Extruder zugewiesen, der auf die
 
 #: src/libslic3r/PrintConfig.cpp:1903 src/libslic3r/PrintConfig.cpp:2676
 msgid "Only create support if it lies on a build plate. Don't create support on a print."
-msgstr "Nur dann Stützen schaffen, wenn sie auf der Druckplattform aufbauen. Erstellt keine Stützstrukturen, die auf dem Ausdruck gründen würden."
+msgstr "Nur dann Stützen schaffen, wenn sie auf der Druckplatte aufbauen. Erstellt keine Stützstrukturen, die auf dem Druck stehen würden."
 
 #: src/libslic3r/PrintConfig.cpp:1027
 msgid "Only infill where needed"
@@ -5248,11 +5252,11 @@ msgstr "Grundschicht Wandstärke"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:171
 msgid "Page Down"
-msgstr "Page Down"
+msgstr "Bild ab"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:170
 msgid "Page Up"
-msgstr "Page Up"
+msgstr "Bild auf"
 
 #: src/slic3r/GUI/Field.cpp:139
 msgid "parameter name"
@@ -5352,7 +5356,7 @@ msgstr "Wählen Sie einen anderen Hersteller, der von %s unterstützt wird"
 
 #: src/libslic3r/PrintConfig.cpp:66
 msgid "Picture sizes to be stored into a .gcode and .sl1 files"
-msgstr "Bildgrößen, die in einer.gcode und .sl1 Datei gespeichert werden sollen"
+msgstr "Bildgrößen, die in einer .gcode und .sl1 Datei gespeichert werden sollen"
 
 #: src/libslic3r/PrintConfig.cpp:2681
 msgid "Pillar widening factor"
@@ -5388,7 +5392,7 @@ msgstr "Bitte wählen Sie die neu zu ladende Datei aus"
 
 #: src/slic3r/GUI/AboutDialog.cpp:39 src/slic3r/GUI/AboutDialog.cpp:291
 msgid "Portions copyright"
-msgstr "Teile des Urheberrechts"
+msgstr "Teil-Lizenzsbedingungen"
 
 #: src/libslic3r/PrintConfig.cpp:2400
 msgid "Portrait"
@@ -5847,18 +5851,18 @@ msgstr "Rechtwinkliges Gitter"
 #: src/slic3r/GUI/GLCanvas3D.cpp:4657 src/slic3r/GUI/KBShortcutsDialog.cpp:131
 #: src/slic3r/GUI/MainFrame.cpp:584
 msgid "Redo"
-msgstr "Redo"
+msgstr "Wiederherstellen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4065
 #, c-format
 msgid "Redo %1$d Action"
 msgid_plural "Redo %1$d Actions"
-msgstr[0] "Redo %1$d Aktion"
-msgstr[1] "Redo %1$d Aktionen"
+msgstr[0] "Wiederherstellen %1$d Aktion"
+msgstr[1] "Wiederherstellen %1$d Aktionen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4047
 msgid "Redo History"
-msgstr "Redo Verlauf"
+msgstr "Wiederherstellung Verlauf"
 
 #: src/slic3r/GUI/Tab.cpp:1098
 msgid "Reducing printing time"
@@ -6552,7 +6556,7 @@ msgstr "Alle Objekte auswählen"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:123 src/slic3r/GUI/Plater.cpp:5522
 msgid "Send G-code"
-msgstr "Sende G-code"
+msgstr "Sende G-Code"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:33
 msgid "Send G-Code to printer host"
@@ -6667,7 +6671,7 @@ msgstr "Setzt die aktuelle Ausrichtung der LCD-Anzeige im SLA-Drucker. Der Hochf
 
 #: src/slic3r/GUI/ConfigWizard.cpp:932
 msgid "Set the shape of your printer's bed."
-msgstr "Stellen Sie die Konturen Ihres Druckerbettes ein."
+msgstr "Stellen Sie die Konturen Ihrer Druckplatte ein."
 
 #: src/libslic3r/PrintConfig.cpp:556
 msgid "Set this to a non-zero value to allow a manual extrusion width. If left to zero, Slic3r derives extrusion widths from the nozzle diameter (see the tooltips for perimeter extrusion width, infill extrusion width etc). If expressed as percentage (for example: 230%), it will be computed over layer height."
@@ -6771,11 +6775,11 @@ msgstr "Konturhüllen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:249
 msgid "Shift + Left mouse button:"
-msgstr "Gross + Linke Maustaste:"
+msgstr "Umschalt + Linke Maustaste:"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:255
 msgid "Shift + Right mouse button:"
-msgstr "Gross + Rechte Maustaste:"
+msgstr "Umschalt + Rechte Maustaste:"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:231
 msgid "Show"
@@ -6891,7 +6895,7 @@ msgstr "Einfacher Modus"
 
 #: src/slic3r/GUI/GUI_App.cpp:813
 msgid "Simple View Mode"
-msgstr "EInfacher Anzeigemodus"
+msgstr "Einfacher Anzeigemodus"
 
 #: src/slic3r/GUI/Tab.cpp:2298 src/slic3r/GUI/Tab.cpp:2306
 msgid "Single extruder MM setup"
@@ -7064,15 +7068,15 @@ msgstr "Slice"
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:134
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:184
 msgid "Slicing complete"
-msgstr "Slicing abgeschlossen"
+msgstr "Slicen abgeschlossen"
 
 #: src/libslic3r/SLAPrint.cpp:760
 msgid "Slicing done"
-msgstr "Slicing abgeschlossen"
+msgstr "Slicen abgeschlossen"
 
 #: src/slic3r/GUI/MainFrame.cpp:874
 msgid "Slicing Done!"
-msgstr "Slicing abgeschlossen!"
+msgstr "Slicen abgeschlossen!"
 
 #: src/libslic3r/SLAPrintSteps.cpp:245
 msgid "Slicing had to be stopped due to an internal error: Inconsistent slice index."
@@ -7461,7 +7465,7 @@ msgstr "Stützstrukturen/Raft/Schürzen Extruder"
 #: src/slic3r/GUI/Plater.cpp:500 src/libslic3r/PrintConfig.cpp:1901
 #: src/libslic3r/PrintConfig.cpp:2674
 msgid "Support on build plate only"
-msgstr "Stützstrukturen nur auf dem Druckbrett"
+msgstr "Stützstrukturen nur auf der Druckplatte"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:888
 msgid "Support parameter change"
@@ -7786,7 +7790,7 @@ msgid ""
 "If the print area exceeds the specified value, \n"
 "then a slow tilt will be used, otherwise - a fast tilt"
 msgstr ""
-"Der Prozentsatz der Druckbettfläche.\n"
+"Der Prozentsatz der Druckplattenfläche.\n"
 "Wenn der Druckbereich den angegebenen Wert überschreitet,\n"
 "wird eine langsame Verkippung verwendet, andernfalls - eine schnelle Verkippung"
 
@@ -7842,7 +7846,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2846
 msgid "The slope of the pad wall relative to the bed plane. 90 degrees means straight walls."
-msgstr "Die Neigung der Grundschichtwand in Bezug auf die Druckbettebene. 90 Grad bedeutet gerade Wände."
+msgstr "Die Neigung der Grundschichtwand in Bezug auf die Druckplattenebene. 90 Grad bedeutet gerade Wände."
 
 #: src/libslic3r/PrintConfig.cpp:1614
 msgid "The speed for loading of a filament into extruder after retraction (it only applies to the extruder motor). If left to zero, the retraction speed is used."
@@ -8011,7 +8015,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:165
 msgid "This code is inserted between objects when using sequential printing. By default extruder and bed temperature are reset using non-wait command; however if M104, M109, M140 or M190 are detected in this custom code, Slic3r will not add temperature commands. Note that you can use placeholder variables for all Slic3r settings, so you can put a \"M109 S[first_layer_temperature]\" command wherever you want."
-msgstr "Dieser Code wird beim sequentiellen Drucken zwischen Objekten eingefügt. Standardmäßig werden Extruder- und Betttemperatur mit dem Befehl, der nicht auf die Änderung wartet, zurückgesetzt. Wenn jedoch M104, M109, M140 oder M190 in diesem benutzerdefinierten Code erkannt werden, fügt Slic3r keine Temperaturbefehle hinzu. Beachten Sie, dass Sie Platzhaltervariablen für alle PrusaSlicer-Einstellungen verwenden können, so dass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
+msgstr "Dieser Code wird beim sequentiellen Drucken zwischen Objekten eingefügt. Standardmäßig werden Extruder- und Druckplattentemperatur mit dem Befehl, der nicht auf die Änderung wartet, zurückgesetzt. Wenn jedoch M104, M109, M140 oder M190 in diesem benutzerdefinierten Code erkannt werden, fügt Slic3r keine Temperaturbefehle hinzu. Beachten Sie, dass Sie Platzhaltervariablen für alle PrusaSlicer-Einstellungen verwenden können, so dass Sie einen \"M109 S[first_layer_temperature]\"-Befehl an beliebiger Stelle platzieren können."
 
 #: src/libslic3r/PrintConfig.cpp:1081
 msgid "This custom code is inserted at every layer change, right after the Z move and before the extruder moves to the first layer point. Note that you can use placeholder variables for all Slic3r settings as well as [layer_num] and [layer_z]."
@@ -8176,7 +8180,7 @@ msgstr "Dies ist die niedrigste druckbare Schichthöhe für diesen Extruder und 
 
 #: src/libslic3r/GCode.cpp:639
 msgid "This is usually caused by negligibly small extrusions or by a faulty model. Try to repair the model or change its orientation on the bed."
-msgstr "Dies wird in der Regel durch vernachlässigbar kleine Extrusionen oder durch ein fehlerhaftes Modell verursacht. Versuchen Sie, das Modell zu reparieren oder seine Ausrichtung auf dem Druckbett zu ändern."
+msgstr "Dies wird in der Regel durch vernachlässigbar kleine Extrusionen oder durch ein fehlerhaftes Modell verursacht. Versuchen Sie, das Modell zu reparieren oder seine Ausrichtung auf der Druckplatte zu ändern."
 
 #: src/libslic3r/PrintConfig.cpp:2215
 msgid "This matrix describes volumes (in cubic milimetres) required to purge the new filament on the wipe tower for any given pair of tools."
@@ -8236,7 +8240,7 @@ msgstr "Dieser Startvorgang wird am Anfang, nach jedem Drucker-Startgcode (und n
 
 #: src/libslic3r/PrintConfig.cpp:1814
 msgid "This start procedure is inserted at the beginning, after bed has reached the target temperature and extruder just started heating, and before extruder has finished heating. If PrusaSlicer detects M104 or M190 in your custom codes, such commands will not be prepended automatically so you're free to customize the order of heating commands and other custom actions. Note that you can use placeholder variables for all PrusaSlicer settings, so you can put a \"M109 S[first_layer_temperature]\" command wherever you want."
-msgstr "Dieser Startvorgang wird am Anfang eingefügt, nachdem das Bett die Solltemperatur erreicht hat und der Extruder gerade mit dem Erwärmen begonnen hat, und bevor der Extruder das Erwärmen beendet hat. Wenn PrusaSlicer M104 oder M190 in Ihren benutzerdefinierten Codes erkennt, werden solche Befehle nicht automatisch vorangestellt, so dass Sie die Reihenfolge der Heizbefehle und andere benutzerdefinierte Aktionen anpassen können. Beachten Sie, dass Sie Platzhaltervariablen für alle PrusaSlicer-Einstellungen verwenden können, so dass Sie einen Befehl \"M109 S[first_layer_temperature]\" beliebig platzieren können."
+msgstr "Dieser Startvorgang wird am Anfang eingefügt, nachdem die Druckplatte die Solltemperatur erreicht hat und der Extruder gerade mit dem Erwärmen begonnen hat, und bevor der Extruder das Erwärmen beendet hat. Wenn PrusaSlicer M104 oder M190 in Ihren benutzerdefinierten Codes erkennt, werden solche Befehle nicht automatisch vorangestellt, so dass Sie die Reihenfolge der Heizbefehle und andere benutzerdefinierte Aktionen anpassen können. Beachten Sie, dass Sie Platzhaltervariablen für alle PrusaSlicer-Einstellungen verwenden können, so dass Sie einen Befehl \"M109 S[first_layer_temperature]\" beliebig platzieren können."
 
 #: src/libslic3r/PrintConfig.cpp:695
 msgid "This string is edited by RammingDialog and contains ramming specific parameters."
@@ -8446,18 +8450,18 @@ msgstr "unbekannter Fehler"
 #: src/slic3r/GUI/GLCanvas3D.cpp:4624 src/slic3r/GUI/KBShortcutsDialog.cpp:130
 #: src/slic3r/GUI/MainFrame.cpp:581
 msgid "Undo"
-msgstr "Undo"
+msgstr "Rückgängig"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4065
 #, c-format
 msgid "Undo %1$d Action"
 msgid_plural "Undo %1$d Actions"
-msgstr[0] "Undo %1$d Aktion"
-msgstr[1] "Undo %1$d Aktionen"
+msgstr[0] "Rückgängig %1$d Aktion"
+msgstr[1] "Rückgängig %1$d Aktionen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4047
 msgid "Undo History"
-msgstr "Undo Verlauf"
+msgstr "Rückgängig Verlauf"
 
 #: src/libslic3r/Zipper.cpp:56
 msgid "unexpected decompressed size"
@@ -9072,7 +9076,7 @@ msgstr "Sie können die Objekte aus %s nicht hinzufügen, weil eines oder einige
 
 #: src/slic3r/GUI/Plater.cpp:2311
 msgid "You cannot load SLA project with a multi-part object on the bed"
-msgstr "Sie können kein SLA-Projekt mit einem mehrteiligen Objekt auf das Druckbett laden"
+msgstr "Sie können kein SLA-Projekt mit einem mehrteiligen Objekt auf die Druckplatte laden"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:578
 msgid "You cannot use non-uniform scaling mode for multiple objects/parts selection"
@@ -9155,7 +9159,7 @@ msgstr "Herauszoomen"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:181
 msgid "Zoom to Bed"
-msgstr "Zoom aufs Druckbett"
+msgstr "Zoom auf die Druckplatte"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:182
 msgid ""
