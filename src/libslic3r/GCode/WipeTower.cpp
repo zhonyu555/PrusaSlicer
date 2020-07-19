@@ -21,7 +21,11 @@ TODO LIST
 #include <vector>
 #include <numeric>
 
+#if ENABLE_GCODE_VIEWER
+#include "GCodeProcessor.hpp"
+#else
 #include "Analyzer.hpp"
+#endif // ENABLE_GCODE_VIEWER
 #include "BoundingBox.hpp"
 
 #if defined(__linux) || defined(__GNUC__ )
@@ -53,9 +57,17 @@ public:
         {
             // adds tag for analyzer:
             char buf[64];
+#if ENABLE_GCODE_VIEWER
+            sprintf(buf, ";%s%f\n", GCodeProcessor::Height_Tag.c_str(), m_layer_height); // don't rely on GCodeAnalyzer knowing the layer height - it knows nothing at priming
+#else
             sprintf(buf, ";%s%f\n", GCodeAnalyzer::Height_Tag.c_str(), m_layer_height); // don't rely on GCodeAnalyzer knowing the layer height - it knows nothing at priming
+#endif // ENABLE_GCODE_VIEWER
             m_gcode += buf;
+#if ENABLE_GCODE_VIEWER
+            sprintf(buf, ";%s%d\n", GCodeProcessor::Extrusion_Role_Tag.c_str(), erWipeTower);
+#else
             sprintf(buf, ";%s%d\n", GCodeAnalyzer::Extrusion_Role_Tag.c_str(), erWipeTower);
+#endif // ENABLE_GCODE_VIEWER
             m_gcode += buf;
             change_analyzer_line_width(line_width);
         }
@@ -63,7 +75,11 @@ public:
     WipeTowerWriter&              change_analyzer_line_width(float line_width) {
             // adds tag for analyzer:
             char buf[64];
+#if ENABLE_GCODE_VIEWER
+            sprintf(buf, ";%s%f\n", GCodeProcessor::Width_Tag.c_str(), line_width);
+#else
             sprintf(buf, ";%s%f\n", GCodeAnalyzer::Width_Tag.c_str(), line_width);
+#endif // ENABLE_GCODE_VIEWER
             m_gcode += buf;
             return *this;
     }
@@ -73,7 +89,11 @@ public:
             float mm3_per_mm = (len == 0.f ? 0.f : area * e / len);
             // adds tag for analyzer:
             char buf[64];
+#if ENABLE_GCODE_VIEWER
+            sprintf(buf, ";%s%f\n", GCodeProcessor::Mm3_Per_Mm_Tag.c_str(), mm3_per_mm);
+#else
             sprintf(buf, ";%s%f\n", GCodeAnalyzer::Mm3_Per_Mm_Tag.c_str(), mm3_per_mm);
+#endif // ENABLE_GCODE_VIEWER
             m_gcode += buf;
             return *this;
     }

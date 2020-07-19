@@ -33,7 +33,13 @@
 #include "libslic3r/Format/STL.hpp"
 #include "libslic3r/Format/AMF.hpp"
 #include "libslic3r/Format/3mf.hpp"
+#if ENABLE_GCODE_VIEWER_AS_STATE
+#include "libslic3r/GCode/GCodeProcessor.hpp"
+#else
+#if !ENABLE_GCODE_VIEWER
 #include "libslic3r/GCode/PreviewData.hpp"
+#endif // !ENABLE_GCODE_VIEWER
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 #include "libslic3r/GCode/ThumbnailData.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/SLA/Hollowing.hpp"
@@ -1316,7 +1322,11 @@ void Sidebar::update_sliced_info_sizer()
                         wxString::Format("%.2f", ps.total_cost);
             p->sliced_info->SetTextAndShow(siCost, info_text,      new_label);
 
+#if ENABLE_GCODE_VIEWER
+            if (ps.estimated_normal_print_time_str == "N/A" && ps.estimated_silent_print_time_str == "N/A")
+#else
             if (ps.estimated_normal_print_time == "N/A" && ps.estimated_silent_print_time == "N/A")
+#endif // ENABLE_GCODE_VIEWER
                 p->sliced_info->SetTextAndShow(siEstimatedTime, "N/A");
             else {
                 new_label = _L("Estimated printing time") +":";
@@ -1324,8 +1334,12 @@ void Sidebar::update_sliced_info_sizer()
                 wxString str_color = _L("Color");
                 wxString str_pause = _L("Pause");
 
-                auto fill_labels = [str_color, str_pause](const std::vector<std::pair<CustomGCode::Type, std::string>>& times, 
-                                                          wxString& new_label, wxString& info_text)
+#if ENABLE_GCODE_VIEWER
+                auto fill_labels = [str_color, str_pause](const std::vector<std::pair<CustomGCode::Type, std::pair<std::string, std::string>>>& times,
+#else
+                auto fill_labels = [str_color, str_pause](const std::vector<std::pair<CustomGCode::Type, std::string>>& times,
+#endif // ENABLE_GCODE_VIEWER
+                    wxString& new_label, wxString& info_text)
                 {
                     int color_change_count = 0;
                     for (auto time : times)
@@ -1342,10 +1356,25 @@ void Sidebar::update_sliced_info_sizer()
                         if (i != (int)times.size() - 1 && times[i].first == CustomGCode::PausePrint)
                             new_label += format_wxstr(" -> %1%", str_pause);
 
+#if ENABLE_GCODE_VIEWER
+                        info_text += format_wxstr("\n%1% (%2%)", times[i].second.first, times[i].second.second);
+#else
                         info_text += format_wxstr("\n%1%", times[i].second);
+#endif // ENABLE_GCODE_VIEWER
                     }
                 };
 
+#if ENABLE_GCODE_VIEWER
+                if (ps.estimated_normal_print_time_str != "N/A") {
+                    new_label += format_wxstr("\n   - %1%", _L("normal mode"));
+                    info_text += format_wxstr("\n%1%", ps.estimated_normal_print_time_str);
+                    fill_labels(ps.estimated_normal_custom_gcode_print_times_str, new_label, info_text);
+                }
+                if (ps.estimated_silent_print_time_str != "N/A") {
+                    new_label += format_wxstr("\n   - %1%", _L("stealth mode"));
+                    info_text += format_wxstr("\n%1%", ps.estimated_silent_print_time_str);
+                    fill_labels(ps.estimated_silent_custom_gcode_print_times_str, new_label, info_text);
+#else
                 if (ps.estimated_normal_print_time != "N/A") {
                     new_label += format_wxstr("\n   - %1%", _L("normal mode"));
                     info_text += format_wxstr("\n%1%", ps.estimated_normal_print_time);
@@ -1355,6 +1384,7 @@ void Sidebar::update_sliced_info_sizer()
                     new_label += format_wxstr("\n   - %1%", _L("stealth mode"));
                     info_text += format_wxstr("\n%1%", ps.estimated_silent_print_time);
                     fill_labels(ps.estimated_silent_custom_gcode_print_times, new_label, info_text);
+#endif // ENABLE_GCODE_VIEWER
                 }
                 p->sliced_info->SetTextAndShow(siEstimatedTime,  info_text,      new_label);
             }
@@ -1574,7 +1604,11 @@ struct Plater::priv
     Slic3r::SLAPrint            sla_print;
     Slic3r::Model               model;
     PrinterTechnology           printer_technology = ptFFF;
+#if ENABLE_GCODE_VIEWER
+    Slic3r::GCodeProcessor::Result gcode_result;
+#else
     Slic3r::GCodePreviewData    gcode_preview_data;
+#endif // ENABLE_GCODE_VIEWER
 
     // GUI elements
     wxSizer* panel_sizer{ nullptr };
@@ -1685,6 +1719,15 @@ struct Plater::priv
 
     bool init_view_toolbar();
     bool init_collapse_toolbar();
+
+#if ENABLE_GCODE_VIEWER
+    void update_preview_bottom_toolbar();
+    void update_preview_moves_slider();
+#endif // ENABLE_GCODE_VIEWER
+
+#if ENABLE_GCODE_VIEWER
+    void reset_gcode_toolpaths();
+#endif // ENABLE_GCODE_VIEWER
 
     void reset_all_gizmos();
     void update_ui_from_settings();
@@ -1887,7 +1930,11 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 
     background_process.set_fff_print(&fff_print);
     background_process.set_sla_print(&sla_print);
+#if ENABLE_GCODE_VIEWER
+    background_process.set_gcode_result(&gcode_result);
+#else
     background_process.set_gcode_preview_data(&gcode_preview_data);
+#endif // ENABLE_GCODE_VIEWER
     background_process.set_thumbnail_cb([this](ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool show_bed, bool transparent_background)
         {
             std::packaged_task<void(ThumbnailsList&, const Vec2ds&, bool, bool, bool, bool)> task([this](ThumbnailsList& thumbnails, const Vec2ds& sizes, bool printable_only, bool parts_only, bool show_bed, bool transparent_background) {
@@ -1911,7 +1958,11 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     this->q->Bind(EVT_SLICING_UPDATE, &priv::on_slicing_update, this);
 
     view3D = new View3D(q, &model, config, &background_process);
+#if ENABLE_GCODE_VIEWER
+    preview = new Preview(q, &model, config, &background_process, &gcode_result, [this]() { schedule_background_process(); });
+#else
     preview = new Preview(q, &model, config, &background_process, &gcode_preview_data, [this]() { schedule_background_process(); });
+#endif // ENABLE_GCODE_VIEWER
 
 #ifdef __APPLE__
     // set default view_toolbar icons size equal to GLGizmosManager::Default_Icons_Size
@@ -1991,24 +2042,19 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     view3D_canvas->Bind(EVT_GLTOOLBAR_SPLIT_OBJECTS, &priv::on_action_split_objects, this);
     view3D_canvas->Bind(EVT_GLTOOLBAR_SPLIT_VOLUMES, &priv::on_action_split_volumes, this);
     view3D_canvas->Bind(EVT_GLTOOLBAR_LAYERSEDITING, &priv::on_action_layersediting, this);
-    view3D_canvas->Bind(EVT_GLCANVAS_UPDATE_BED_SHAPE, [this](SimpleEvent&)
-        {
-            set_bed_shape(config->option<ConfigOptionPoints>("bed_shape")->values,
-                config->option<ConfigOptionString>("bed_custom_texture")->value,
-                config->option<ConfigOptionString>("bed_custom_model")->value);
-        });
+    view3D_canvas->Bind(EVT_GLCANVAS_UPDATE_BED_SHAPE, [q](SimpleEvent&) { q->set_bed_shape(); });
 
     // Preview events:
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_QUESTION_MARK, [this](SimpleEvent&) { wxGetApp().keyboard_shortcuts(); });
-    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_UPDATE_BED_SHAPE, [this](SimpleEvent&)
-        {
-            set_bed_shape(config->option<ConfigOptionPoints>("bed_shape")->values,
-                config->option<ConfigOptionString>("bed_custom_texture")->value,
-                config->option<ConfigOptionString>("bed_custom_model")->value);
-        });
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_UPDATE_BED_SHAPE, [q](SimpleEvent&) { q->set_bed_shape(); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_TAB, [this](SimpleEvent&) { select_next_view_3D(); });
+#if ENABLE_GCODE_VIEWER
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_MOVE_LAYERS_SLIDER, [this](wxKeyEvent& evt) { preview->move_layers_slider(evt); });
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_EDIT_COLOR_CHANGE, [this](wxKeyEvent& evt) { preview->edit_layers_slider(evt); });
+#else
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_MOVE_DOUBLE_SLIDER, [this](wxKeyEvent& evt) { preview->move_double_slider(evt); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_EDIT_COLOR_CHANGE, [this](wxKeyEvent& evt) { preview->edit_double_slider(evt); });
+#endif // ENABLE_GCODE_VIEWER
 
     q->Bind(EVT_SLICING_COMPLETED, &priv::on_slicing_completed, this);
     q->Bind(EVT_PROCESS_COMPLETED, &priv::on_process_completed, this);
@@ -2646,8 +2692,10 @@ void Plater::priv::deselect_all()
 
 void Plater::priv::remove(size_t obj_idx)
 {
+#if !ENABLE_GCODE_VIEWER
     // Prevent toolpaths preview from rendering while we modify the Print object
     preview->set_enabled(false);
+#endif // !ENABLE_GCODE_VIEWER
 
     if (view3D->is_layers_editing_enabled())
         view3D->enable_layers_editing(false);
@@ -2677,11 +2725,20 @@ void Plater::priv::reset()
 
     set_project_filename(wxEmptyString);
 
+#if !ENABLE_GCODE_VIEWER
     // Prevent toolpaths preview from rendering while we modify the Print object
     preview->set_enabled(false);
+#endif // !ENABLE_GCODE_VIEWER
 
     if (view3D->is_layers_editing_enabled())
         view3D->enable_layers_editing(false);
+
+#if ENABLE_GCODE_VIEWER
+    reset_gcode_toolpaths();
+#endif // ENABLE_GCODE_VIEWER
+#if ENABLE_GCODE_VIEWER_AS_STATE
+    gcode_result.reset();
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 
     // Stop and reset the Print content.
     this->background_process.reset();
@@ -2828,10 +2885,19 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
         this->sidebar->show_sliced_info_sizer(false);
         // Reset preview canvases. If the print has been invalidated, the preview canvases will be cleared.
         // Otherwise they will be just refreshed.
+#if ENABLE_GCODE_VIEWER
+        if (this->preview != nullptr) {
+            // If the preview is not visible, the following line just invalidates the preview,
+            // but the G-code paths or SLA preview are calculated first once the preview is made visible.
+            this->preview->get_canvas3d()->reset_gcode_toolpaths();
+            this->preview->reload_print();
+        }
+#else
         if (this->preview != nullptr)
             // If the preview is not visible, the following line just invalidates the preview,
             // but the G-code paths or SLA preview are calculated first once the preview is made visible.
             this->preview->reload_print();
+#endif // ENABLE_GCODE_VIEWER
         // In FDM mode, we need to reload the 3D scene because of the wipe tower preview box.
         // In SLA mode, we need to reload the 3D scene every time to show the support structures.
         if (this->printer_technology == ptSLA || (this->printer_technology == ptFFF && this->config->opt_bool("wipe_tower")))
@@ -3988,6 +4054,25 @@ bool Plater::priv::init_collapse_toolbar()
     return true;
 }
 
+#if ENABLE_GCODE_VIEWER
+void Plater::priv::update_preview_bottom_toolbar()
+{
+    preview->update_bottom_toolbar();
+}
+
+void Plater::priv::update_preview_moves_slider()
+{
+    preview->update_moves_slider();
+}
+#endif // ENABLE_GCODE_VIEWER
+
+#if ENABLE_GCODE_VIEWER
+void Plater::priv::reset_gcode_toolpaths()
+{
+    preview->get_canvas3d()->reset_gcode_toolpaths();
+}
+#endif // ENABLE_GCODE_VIEWER
+
 bool Plater::priv::can_set_instance_to_object() const
 {
     const int obj_idx = get_selected_object_idx();
@@ -4514,6 +4599,42 @@ void Plater::extract_config_from_project()
     load_files(input_paths, false, true);
 }
 
+#if ENABLE_GCODE_VIEWER_AS_STATE
+void Plater::load_gcode()
+{
+    // Ask user for a gcode file name.
+    wxString input_file;
+    wxGetApp().load_gcode(this, input_file);
+    // And finally load the gcode file.
+    load_gcode(input_file);
+}
+
+void Plater::load_gcode(const wxString& filename)
+{
+    if (filename.empty() || m_last_loaded_gcode == filename)
+        return;
+
+    m_last_loaded_gcode = filename;
+
+    // cleanup view before to start loading/processing
+    p->gcode_result.reset();
+    p->preview->reload_print(false);
+    p->get_current_canvas3D()->render();
+
+    wxBusyCursor wait;
+
+    // process gcode
+    GCodeProcessor processor;
+//    processor.apply_config(config);
+    processor.process_file(filename.ToUTF8().data());
+    p->gcode_result = std::move(processor.extract_result());
+
+    // show results
+    p->preview->reload_print(false);
+    p->preview->get_canvas3d()->zoom_to_gcode();
+}
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
+
 std::vector<size_t> Plater::load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool imperial_units /*= false*/) { return p->load_files(input_files, load_model, load_config, imperial_units); }
 
 // To be called when providing a list of files to the GUI slic3r on command line.
@@ -5012,6 +5133,9 @@ void Plater::reslice()
     if ((state & priv::UPDATE_BACKGROUND_PROCESS_INVALID) != 0)
         return;
 
+#if ENABLE_GCODE_VIEWER
+    bool clean_gcode_toolpaths = true;
+#endif // ENABLE_GCODE_VIEWER
     if (p->background_process.running())
     {
         if (wxGetApp().get_mode() == comSimple)
@@ -5024,9 +5148,19 @@ void Plater::reslice()
     }
     else if (!p->background_process.empty() && !p->background_process.idle())
         p->show_action_buttons(true);
+#if ENABLE_GCODE_VIEWER
+    else
+        clean_gcode_toolpaths = false;
+
+    if (clean_gcode_toolpaths)
+        reset_gcode_toolpaths();
 
     // update type of preview
+    p->preview->update_view_type(!clean_gcode_toolpaths);
+#else
+    // update type of preview
     p->preview->update_view_type(true);
+#endif // ENABLE_GCODE_VIEWER
 }
 
 void Plater::reslice_SLA_supports(const ModelObject &object, bool postpone_error_messages)
@@ -5262,9 +5396,7 @@ void Plater::on_config_change(const DynamicPrintConfig &config)
     }
 
     if (bed_shape_changed)
-        p->set_bed_shape(p->config->option<ConfigOptionPoints>("bed_shape")->values,
-            p->config->option<ConfigOptionString>("bed_custom_texture")->value,
-            p->config->option<ConfigOptionString>("bed_custom_model")->value);
+        set_bed_shape();
 
     if (update_scheduled)
         update();
@@ -5275,10 +5407,23 @@ void Plater::on_config_change(const DynamicPrintConfig &config)
 
 void Plater::set_bed_shape() const
 {
-	p->set_bed_shape(p->config->option<ConfigOptionPoints>("bed_shape")->values,
+#if ENABLE_GCODE_VIEWER_AS_STATE
+    set_bed_shape(p->config->option<ConfigOptionPoints>("bed_shape")->values,
+        p->config->option<ConfigOptionString>("bed_custom_texture")->value,
+        p->config->option<ConfigOptionString>("bed_custom_model")->value);
+#else
+    p->set_bed_shape(p->config->option<ConfigOptionPoints>("bed_shape")->values,
 		p->config->option<ConfigOptionString>("bed_custom_texture")->value,
 		p->config->option<ConfigOptionString>("bed_custom_model")->value);
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 }
+
+#if ENABLE_GCODE_VIEWER_AS_STATE
+void Plater::set_bed_shape(const Pointfs& shape, const std::string& custom_texture, const std::string& custom_model) const
+{
+    p->set_bed_shape(shape, custom_texture, custom_model);
+}
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 
 void Plater::force_filament_colors_update()
 {
@@ -5452,8 +5597,12 @@ void Plater::set_printer_technology(PrinterTechnology printer_technology)
     p->label_btn_export = printer_technology == ptFFF ? L("Export G-code") : L("Export");
     p->label_btn_send   = printer_technology == ptFFF ? L("Send G-code")   : L("Send to printer");
 
-    if (wxGetApp().mainframe)
+    if (wxGetApp().mainframe != nullptr)
+#if ENABLE_GCODE_VIEWER_AS_STATE
+        wxGetApp().mainframe->update_editor_menubar();
+#else
         wxGetApp().mainframe->update_menubar();
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 
     p->update_main_toolbar_tooltips();
 
@@ -5605,10 +5754,24 @@ bool Plater::init_view_toolbar()
     return p->init_view_toolbar();
 }
 
+#if ENABLE_GCODE_VIEWER_AS_STATE
+void Plater::enable_view_toolbar(bool enable)
+{
+    p->view_toolbar.set_enabled(enable);
+}
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
+
 bool Plater::init_collapse_toolbar()
 {
     return p->init_collapse_toolbar();
 }
+
+#if ENABLE_GCODE_VIEWER_AS_STATE
+void Plater::enable_collapse_toolbar(bool enable)
+{
+    p->collapse_toolbar.set_enabled(enable);
+}
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 
 const Camera& Plater::get_camera() const
 {
@@ -5662,6 +5825,23 @@ GLToolbar& Plater::get_collapse_toolbar()
 {
     return p->collapse_toolbar;
 }
+
+#if ENABLE_GCODE_VIEWER
+void Plater::update_preview_bottom_toolbar()
+{
+    p->update_preview_bottom_toolbar();
+}
+
+void Plater::update_preview_moves_slider()
+{
+    p->update_preview_moves_slider();
+}
+
+void Plater::reset_gcode_toolpaths()
+{
+    p->reset_gcode_toolpaths();
+}
+#endif // ENABLE_GCODE_VIEWER
 
 const Mouse3DController& Plater::get_mouse3d_controller() const
 {
@@ -5720,6 +5900,9 @@ bool Plater::can_undo() const { return p->undo_redo_stack().has_undo_snapshot();
 bool Plater::can_redo() const { return p->undo_redo_stack().has_redo_snapshot(); }
 bool Plater::can_reload_from_disk() const { return p->can_reload_from_disk(); }
 const UndoRedo::Stack& Plater::undo_redo_stack_main() const { return p->undo_redo_stack_main(); }
+#if ENABLE_GCODE_VIEWER_AS_STATE
+void Plater::clear_undo_redo_stack_main() { p->undo_redo_stack_main().clear(); }
+#endif // ENABLE_GCODE_VIEWER_AS_STATE
 void Plater::enter_gizmos_stack() { p->enter_gizmos_stack(); }
 void Plater::leave_gizmos_stack() { p->leave_gizmos_stack(); }
 bool Plater::inside_snapshot_capture() { return p->inside_snapshot_capture(); }

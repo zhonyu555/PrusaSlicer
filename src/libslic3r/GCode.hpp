@@ -13,9 +13,13 @@
 #include "GCode/SpiralVase.hpp"
 #include "GCode/ToolOrdering.hpp"
 #include "GCode/WipeTower.hpp"
+#if ENABLE_GCODE_VIEWER
+#include "GCode/GCodeProcessor.hpp"
+#else
+#include "GCode/Analyzer.hpp"
+#endif // ENABLE_GCODE_VIEWER
 #include "GCodeTimeEstimator.hpp"
 #include "EdgeGrid.hpp"
-#include "GCode/Analyzer.hpp"
 #include "GCode/ThumbnailData.hpp"
 
 #include <memory>
@@ -29,7 +33,9 @@ namespace Slic3r {
 
 // Forward declarations.
 class GCode;
+#if !ENABLE_GCODE_VIEWER
 class GCodePreviewData;
+#endif // !ENABLE_GCODE_VIEWER
 
 namespace { struct Item; }
 struct PrintInstance;
@@ -138,6 +144,15 @@ private:
     double                                                       m_last_wipe_tower_print_z = 0.f;
 };
 
+#if ENABLE_GCODE_VIEWER
+class ColorPrintColors
+{
+    static const std::vector<std::string> Colors;
+public:
+    static const std::vector<std::string>& get() { return Colors; }
+};
+#endif // ENABLE_GCODE_VIEWER
+
 class GCode {
 public:        
     GCode() : 
@@ -145,17 +160,27 @@ public:
         m_enable_loop_clipping(true), 
         m_enable_cooling_markers(false), 
         m_enable_extrusion_role_markers(false), 
+#if ENABLE_GCODE_VIEWER
+        m_last_processor_extrusion_role(erNone),
+#else
         m_enable_analyzer(false),
         m_last_analyzer_extrusion_role(erNone),
+#endif // ENABLE_GCODE_VIEWER
         m_layer_count(0),
         m_layer_index(-1), 
         m_layer(nullptr), 
         m_volumetric_speed(0),
         m_last_pos_defined(false),
         m_last_extrusion_role(erNone),
+#if ENABLE_GCODE_VIEWER
+        m_last_mm3_per_mm(0.0f),
+        m_last_width(0.0f),
+        m_last_height(0.0f),
+#else
         m_last_mm3_per_mm(GCodeAnalyzer::Default_mm3_per_mm),
         m_last_width(GCodeAnalyzer::Default_Width),
         m_last_height(GCodeAnalyzer::Default_Height),
+#endif // ENABLE_GCODE_VIEWER
         m_brim_done(false),
         m_second_layer_things_done(false),
         m_normal_time_estimator(GCodeTimeEstimator::Normal),
@@ -167,7 +192,11 @@ public:
 
     // throws std::runtime_exception on error,
     // throws CanceledException through print->throw_if_canceled().
+#if ENABLE_GCODE_VIEWER
+    void            do_export(Print* print, const char* path, GCodeProcessor::Result* result = nullptr, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
+#else
     void            do_export(Print* print, const char* path, GCodePreviewData* preview_data = nullptr, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
+#endif // ENABLE_GCODE_VIEWER
 
     // Exported for the helper classes (OozePrevention, Wipe) and for the Perl binding for unit tests.
     const Vec2d&    origin() const { return m_origin; }
@@ -327,11 +356,16 @@ private:
     // Markers for the Pressure Equalizer to recognize the extrusion type.
     // The Pressure Equalizer removes the markers from the final G-code.
     bool                                m_enable_extrusion_role_markers;
+#if ENABLE_GCODE_VIEWER
+    // Keeps track of the last extrusion role passed to the processor
+    ExtrusionRole                       m_last_processor_extrusion_role;
+#else
     // Enableds the G-code Analyzer.
     // Extended markers will be added during G-code generation.
     // The G-code Analyzer will remove these comments from the final G-code.
     bool                                m_enable_analyzer;
     ExtrusionRole                       m_last_analyzer_extrusion_role;
+#endif // ENABLE_GCODE_VIEWER
     // How many times will change_layer() be called?
     // change_layer() will update the progress bar.
     unsigned int                        m_layer_count;
@@ -373,8 +407,13 @@ private:
     GCodeTimeEstimator m_silent_time_estimator;
     bool m_silent_time_estimator_enabled;
 
+#if ENABLE_GCODE_VIEWER
+    // Processor
+    GCodeProcessor m_processor;
+#else
     // Analyzer
     GCodeAnalyzer m_analyzer;
+#endif // ENABLE_GCODE_VIEWER
 
     // Write a string into a file.
     void _write(FILE* file, const std::string& what) { this->_write(file, what.c_str()); }

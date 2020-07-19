@@ -1,3 +1,4 @@
+#include "libslic3r/libslic3r.h"
 #include "KBShortcutsDialog.hpp"
 #include "I18N.hpp"
 #include "libslic3r/Utils.hpp"
@@ -29,7 +30,7 @@ namespace Slic3r {
 namespace GUI {
 
 KBShortcutsDialog::KBShortcutsDialog()
-    : DPIDialog(NULL, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _(L("Keyboard Shortcuts")),
+    : DPIDialog(NULL, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
 #if ENABLE_SCROLLABLE
     wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 #else
@@ -146,7 +147,7 @@ void KBShortcutsDialog::fill_shortcuts()
         { "?", L("Show keyboard shortcuts list") }
     };
 
-    m_full_shortcuts.push_back(std::make_pair(_(L("Commands")), commands_shortcuts));
+    m_full_shortcuts.push_back(std::make_pair(_L("Commands"), commands_shortcuts));
 
     Shortcuts plater_shortcuts = {
         { "A", L("Arrange") },
@@ -182,11 +183,11 @@ void KBShortcutsDialog::fill_shortcuts()
 #endif // __linux__
 #if ENABLE_RENDER_PICKING_PASS
         // Don't localize debugging texts.
-        { "T", "Toggle picking pass texture rendering on/off" },
+        { "P", "Toggle picking pass texture rendering on/off" },
 #endif // ENABLE_RENDER_PICKING_PASS
     };
 
-    m_full_shortcuts.push_back(std::make_pair(_(L("Plater")), plater_shortcuts));
+    m_full_shortcuts.push_back(std::make_pair(_L("Plater"), plater_shortcuts));
 
     Shortcuts gizmos_shortcuts = {
         { "Shift+", L("Press to snap by 5% in Gizmo scale\nor to snap by 1mm in Gizmo move") },
@@ -195,17 +196,18 @@ void KBShortcutsDialog::fill_shortcuts()
         { alt, L("Press to scale (in Gizmo scale) or rotate (in Gizmo rotate)\nselected objects around their own center") },
     };
 
-    m_full_shortcuts.push_back(std::make_pair(_(L("Gizmos")), gizmos_shortcuts));
+    m_full_shortcuts.push_back(std::make_pair(_L("Gizmos"), gizmos_shortcuts));
 
     Shortcuts preview_shortcuts = {
         { L("Arrow Up"), L("Upper Layer") },
         { L("Arrow Down"), L("Lower Layer") },
         { "U", L("Upper Layer") },
         { "D", L("Lower Layer") },
-        { "L", L("Show/Hide Legend") }
+        { "L", L("Show/Hide Legend") },
+        { "T", L("Show/Hide Estimated printing time") }
     };
 
-    m_full_shortcuts.push_back(std::make_pair(_(L("Preview")), preview_shortcuts));
+    m_full_shortcuts.push_back(std::make_pair(_L("Preview"), preview_shortcuts));
 
     Shortcuts layers_slider_shortcuts = {
         { L("Arrow Up"), L("Move current slider thumb Up") },
@@ -213,10 +215,23 @@ void KBShortcutsDialog::fill_shortcuts()
         { L("Arrow Left"), L("Set upper thumb to current slider thumb") },
         { L("Arrow Right"), L("Set lower thumb to current slider thumb") },
         { "+", L("Add color change marker for current layer") },
-        { "-", L("Delete color change marker for current layer") }
+        { "-", L("Delete color change marker for current layer") },
+        { "Shift+", L("Press to speed up 5 times while moving thumb\nwith arrow keys or mouse wheel") },
+        { ctrl, L("Press to speed up 5 times while moving thumb\nwith arrow keys or mouse wheel") },
     };
 
-    m_full_shortcuts.push_back(std::make_pair(_(L("Layers Slider")), layers_slider_shortcuts));
+    m_full_shortcuts.push_back(std::make_pair(_L("Layers Slider"), layers_slider_shortcuts));
+
+#if ENABLE_GCODE_VIEWER
+    Shortcuts sequential_slider_shortcuts = {
+        { L("Arrow Left"), L("Move current slider thumb Left") },
+        { L("Arrow Right"), L("Move current slider thumb Right") },
+        { "Shift+", L("Press to speed up 5 times while moving thumb\nwith arrow keys or mouse wheel") },
+        { ctrl, L("Press to speed up 5 times while moving thumb\nwith arrow keys or mouse wheel") },
+    };
+
+    m_full_shortcuts.push_back(std::make_pair(_L("Sequential Slider"), sequential_slider_shortcuts));
+#endif // ENABLE_GCODE_VIEWER
 }
 
 wxPanel* KBShortcutsDialog::create_header(wxWindow* parent, const wxFont& bold_font)
@@ -239,7 +254,7 @@ wxPanel* KBShortcutsDialog::create_header(wxWindow* parent, const wxFont& bold_f
     sizer->Add(m_header_bitmap, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 
     // text
-    wxStaticText* text = new wxStaticText(panel, wxID_ANY, _(L("Keyboard shortcuts")));
+    wxStaticText* text = new wxStaticText(panel, wxID_ANY, _L("Keyboard shortcuts"));
     text->SetFont(header_font);
     sizer->Add(text, 0, wxALIGN_CENTER_VERTICAL);
 
