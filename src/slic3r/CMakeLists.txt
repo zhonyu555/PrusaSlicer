@@ -67,10 +67,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/GCodeViewer.cpp    
     GUI/Preferences.cpp
     GUI/Preferences.hpp
-    GUI/Preset.cpp
-    GUI/Preset.hpp
-    GUI/PresetBundle.cpp
-    GUI/PresetBundle.hpp
     GUI/PresetHints.cpp
     GUI/PresetHints.hpp
     GUI/GUI.cpp
@@ -86,6 +82,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/MainFrame.cpp
     GUI/MainFrame.hpp
     GUI/Plater.cpp
+    GUI/PresetComboBoxes.hpp
+    GUI/PresetComboBoxes.cpp
     GUI/Plater.hpp
     GUI/GUI_ObjectList.cpp
     GUI/GUI_ObjectList.hpp

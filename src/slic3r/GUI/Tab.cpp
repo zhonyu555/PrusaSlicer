@@ -1,8 +1,8 @@
 // #include "libslic3r/GCodeSender.hpp"
 #include "slic3r/Utils/Serial.hpp"
 #include "Tab.hpp"
-#include "PresetBundle.hpp"
 #include "PresetHints.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
 
@@ -27,11 +27,11 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include "wxExtensions.hpp"
+#include "PresetComboBoxes.hpp"
 #include <wx/wupdlock.h>
 
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
-#include "ConfigWizard.hpp"
 #include "Plater.hpp"
 #include "MainFrame.hpp"
 #include "format.hpp"
@@ -160,10 +160,13 @@ void Tab::create_preset_tab()
 #endif //__WXOSX__
 
     // preset chooser
-    m_presets_choice = new PresetBitmapComboBox(panel, wxSize(35 * m_em_unit, -1));
-
-    // search combox
-//    m_search = new Search::SearchCtrl(panel);
+    m_presets_choice = new TabPresetComboBox(panel, m_type);
+    m_presets_choice->set_selection_changed_function([this](int selection) {
+        std::string selected_string = m_presets_choice->GetString(selection).ToUTF8().data();
+        update_physical_printers(selected_string);
+        // select preset
+        select_preset(selected_string);
+    });
 
     auto color = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 
@@ -277,35 +280,6 @@ void Tab::create_preset_tab()
 
     m_treectrl->Bind(wxEVT_TREE_SEL_CHANGED, &Tab::OnTreeSelChange, this);
     m_treectrl->Bind(wxEVT_KEY_DOWN, &Tab::OnKeyDown, this);
-
-    m_presets_choice->Bind(wxEVT_COMBOBOX, ([this](wxCommandEvent e) {
-        //! Because of The MSW and GTK version of wxBitmapComboBox derived from wxComboBox, 
-        //! but the OSX version derived from wxOwnerDrawnCombo, instead of:
-        //! select_preset(m_presets_choice->GetStringSelection().ToUTF8().data()); 
-        //! we doing next:
-        // int selected_item = m_presets_choice->GetSelection();
-
-        // see https://github.com/prusa3d/PrusaSlicer/issues/3889
-        // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
-        // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
-        // So, use GetSelection() from event parameter 
-        int selected_item = e.GetSelection();
-        if (m_selected_preset_item == size_t(selected_item) && !m_presets->current_is_dirty())
-            return;
-        if (selected_item >= 0) {
-            std::string selected_string = m_presets_choice->GetString(selected_item).ToUTF8().data();
-            if (selected_string.find(PresetCollection::separator_head()) == 0
-                /*selected_string == "------- System presets -------" ||
-                selected_string == "-------  User presets  -------"*/) {
-                m_presets_choice->SetSelection(m_selected_preset_item);
-                if (wxString::FromUTF8(selected_string.c_str()) == PresetCollection::separator(L("Add a new printer")))
-                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER); });
-                return;
-            }
-            m_selected_preset_item = selected_item;
-            select_preset(selected_string);
-        }
-    }));
 
     m_btn_save_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { save_preset(); }));
     m_btn_delete_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { delete_preset(); }));
@@ -778,14 +752,40 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
 // comparing the selected preset config with $self->{config}.
 void Tab::update_dirty()
 {
-    m_presets->update_dirty_ui(m_presets_choice);
+    m_presets_choice->update_dirty();
     on_presets_changed();
     update_changed_ui();
 }
 
 void Tab::update_tab_ui()
 {
-    m_selected_preset_item = m_presets->update_tab_ui(m_presets_choice, m_show_incompatible_presets, m_em_unit);
+    m_presets_choice->update();
+}
+
+void Tab::update_physical_printers(std::string preset_name)
+{
+    if (m_type == Preset::TYPE_PRINTER && m_preset_bundle->physical_printers.has_selection())
+    {
+        std::string printer_name = m_preset_bundle->physical_printers.get_selected_full_printer_name();
+        wxString msg_text = from_u8((boost::format(_u8L("You have selected physical printer \"%1%\".")) % printer_name).str());
+        msg_text += "\n\n" + _L("Would you like to change related preset for this printer?") + "\n\n" +
+                    _L("Select YES if you want to change related preset for this printer \n"
+                       "or NO to switch to the another preset (logical printer).");
+        wxMessageDialog dialog(nullptr, msg_text, _L("Warning"), wxICON_WARNING | wxYES | wxNO);
+
+        if (dialog.ShowModal() == wxID_YES) {
+            preset_name = Preset::remove_suffix_modified(preset_name);
+            Preset* preset = m_presets->find_preset(preset_name);
+            assert(preset);
+            Preset& edited_preset = m_presets->get_edited_preset();
+            if (preset->name == edited_preset.name)
+                preset = &edited_preset;
+            m_preset_bundle->physical_printers.get_selected_printer().update_from_preset(*preset);
+        }
+        else
+            // unselect physical printer, if it was selected
+            m_preset_bundle->physical_printers.unselect_printer();
+    }
 }
 
 // Load a provied DynamicConfig into the tab, modifying the active preset.
@@ -847,20 +847,20 @@ void Tab::update_visibility()
 
 void Tab::msw_rescale()
 {
-    m_em_unit = wxGetApp().em_unit();
+    m_em_unit = em_unit(m_parent);
 
     m_mode_sizer->msw_rescale();
+    m_presets_choice->msw_rescale();
 
-    m_presets_choice->SetSize(35 * m_em_unit, -1);
     m_treectrl->SetMinSize(wxSize(20 * m_em_unit, -1));
-
-    update_tab_ui();
 
     // rescale buttons and cached bitmaps
     for (const auto btn : m_scaled_buttons)
         btn->msw_rescale();
     for (const auto bmp : m_scaled_bitmaps)
         bmp->msw_rescale();
+    for (const auto ikon : m_blinking_ikons)
+        ikon.second->msw_rescale();
     for (ScalableBitmap& bmp : m_mode_bitmap_cache)
         bmp.msw_rescale();
 
@@ -963,7 +963,7 @@ void Tab::load_key_value(const std::string& opt_key, const boost::any& value, bo
         // Don't select another profile if this profile happens to become incompatible.
         m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
     }
-    m_presets->update_dirty_ui(m_presets_choice);
+    m_presets_choice->update_dirty();
     on_presets_changed();
     update();
 }
@@ -3054,6 +3054,9 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
 
     if (canceled) {
         update_tab_ui();
+        // unselect physical printer selection to the correct synchronization of the printer presets between Tab and Plater
+        if (m_type == Preset::TYPE_PRINTER)
+            m_preset_bundle->physical_printers.unselect_printer();
         // Trigger the on_presets_changed event so that we also restore the previous value in the plater selector,
         // if this action was initiated from the plater.
         on_presets_changed();
@@ -3291,6 +3294,8 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
     // Mark the print & filament enabled if they are compatible with the currently selected preset.
     // If saving the preset changes compatibility with other presets, keep the now incompatible dependent presets selected, however with a "red flag" icon showing that they are no more compatible.
     m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
+    //update physical printer's related printer preset if it's needed 
+    update_physical_printers(name);
     // Add the new item into the UI component, remove dirty flags and activate the saved item.
     update_tab_ui();
     // Update the selection boxes at the plater.
@@ -3360,6 +3365,7 @@ void Tab::delete_preset()
 void Tab::toggle_show_hide_incompatible()
 {
     m_show_incompatible_presets = !m_show_incompatible_presets;
+    m_presets_choice->set_show_incompatible_presets(m_show_incompatible_presets);
     update_show_hide_incompatible_button();
     update_tab_ui();
 }

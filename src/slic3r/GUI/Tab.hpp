@@ -33,11 +33,13 @@
 #include "Event.hpp"
 #include "wxExtensions.hpp"
 #include "ConfigManipulation.hpp"
-#include "Preset.hpp"
 #include "OptionsGroup.hpp"
+#include "libslic3r/Preset.hpp"
 
 namespace Slic3r {
 namespace GUI {
+
+class TabPresetComboBox;
 
 // Single Tab page containing a{ vsizer } of{ optgroups }
 // package Slic3r::GUI::Tab::Page;
@@ -113,7 +115,7 @@ protected:
     Preset::Type        m_type;
 	std::string			m_name;
 	const wxString		m_title;
-	PresetBitmapComboBox*	m_presets_choice;
+	TabPresetComboBox*	m_presets_choice;
 	ScalableButton*		m_search_btn;
 	ScalableButton*		m_btn_save_preset;
 	ScalableButton*		m_btn_delete_preset;
@@ -205,8 +207,6 @@ protected:
 	bool				m_is_modified_values{ false };
 	bool				m_is_nonsys_values{ true };
 	bool				m_postpone_update_ui {false};
-
-	size_t				m_selected_preset_item{ 0 };
 
     void                set_type();
 
@@ -306,6 +306,7 @@ public:
 	void			load_initial_data();
 	void			update_dirty();
 	void			update_tab_ui();
+    void			update_physical_printers(std::string preset_name);
 	void			load_config(const DynamicPrintConfig& config);
 	virtual void	reload_config();
     void            update_mode();
@@ -320,7 +321,6 @@ public:
 
 	DynamicPrintConfig*	get_config() { return m_config; }
 	PresetCollection*	get_presets() { return m_presets; }
-	size_t				get_selected_preset_item() { return m_selected_preset_item; }
 
 	void			on_value_change(const std::string& opt_key, const boost::any& value);
 
