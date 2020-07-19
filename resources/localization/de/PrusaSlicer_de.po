@@ -182,7 +182,7 @@ msgstr "&Kopieren"
 
 #: src/slic3r/GUI/MainFrame.cpp:572
 msgid "&Delete selected"
-msgstr "Löschen aus&gewählt"
+msgstr "Auswahl &löschen"
 
 #: src/slic3r/GUI/MainFrame.cpp:722
 msgid "&Edit"
@@ -622,7 +622,7 @@ msgstr "Nach einem Werkzeugwechsel ist die genaue Position des neu geladenen Fil
 
 #: src/slic3r/GUI/Tab.cpp:1994 src/libslic3r/PrintConfig.cpp:1080
 msgid "After layer change G-code"
-msgstr "G-Code am Schichtwechsel"
+msgstr "G-Code nach dem Schichtwechsel"
 
 #: src/libslic3r/PrintConfig.cpp:3398
 msgid "Align the model to the given point."
@@ -1651,7 +1651,7 @@ msgstr "Zylinder"
 
 #: src/slic3r/GUI/MainFrame.cpp:568
 msgid "D&eselect all"
-msgstr "All&es Abwählen"
+msgstr "All&es abwählen"
 
 #: src/libslic3r/PrintConfig.cpp:3504
 msgid "Data directory"
@@ -5857,8 +5857,8 @@ msgstr "Wiederherstellen"
 #, c-format
 msgid "Redo %1$d Action"
 msgid_plural "Redo %1$d Actions"
-msgstr[0] "Wiederherstellen %1$d Aktion"
-msgstr[1] "Wiederherstellen %1$d Aktionen"
+msgstr[0] "Wiederherstellen: %1$d Aktion"
+msgstr[1] "Wiederherstellen: %1$d Aktionen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4047
 msgid "Redo History"
@@ -6249,7 +6249,7 @@ msgstr "s"
 
 #: src/slic3r/GUI/MainFrame.cpp:481 src/slic3r/GUI/MainFrame.cpp:750
 msgid "S&end G-code"
-msgstr "S&ende G-code"
+msgstr "S&ende G-Code"
 
 #: src/slic3r/GUI/MainFrame.cpp:750
 msgid "S&end to print"
@@ -6793,13 +6793,21 @@ msgstr "Zeige &Konfigurationsordner"
 msgid "Show &labels"
 msgstr "Anzeigen &Beschriftungen"
 
+#: src/slic3r/GUI/MainFrame.cpp
+msgid "&Options"
+msgstr "&Optionen"
+
+#: src/slic3r/GUI/MainFrame.cpp
+msgid "&Collapse sidebar"
+msgstr "&Seitenleiste einklappen"
+
 #: src/slic3r/GUI/MainFrame.cpp:705
 msgid "Show about dialog"
 msgstr "\"Über\"-Dialog anzeigen"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:377
 msgid "Show advanced settings"
-msgstr "Ausführliche Einstellungen anzeigen"
+msgstr "Erweiterte Einstellungen anzeigen"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:159
 msgid "Show error message"
@@ -8456,8 +8464,8 @@ msgstr "Rückgängig"
 #, c-format
 msgid "Undo %1$d Action"
 msgid_plural "Undo %1$d Actions"
-msgstr[0] "Rückgängig %1$d Aktion"
-msgstr[1] "Rückgängig %1$d Aktionen"
+msgstr[0] "Rückgängig: %1$d Aktion"
+msgstr[1] "Rückgängig: %1$d Aktionen"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4047
 msgid "Undo History"
@@ -9180,3 +9188,15 @@ msgstr "°"
 #: src/slic3r/GUI/ConfigWizard.cpp:1038 src/slic3r/GUI/ConfigWizard.cpp:1052
 msgid "°C"
 msgstr "°C"
+
+#: src/slic3r/GUI/MainFrame.cpp:1274
+msgid "Show &slope"
+msgstr "Zeige &Neigung"
+
+#: src/slic3r/GUI/GLCanvas3D.cpp:5076
+msgid "Click right mouse button to open/close History"
+msgstr "Rechtsklick zum öffnen/schließen des Verlaufs"
+
+#: src/slic3r/GUI/GLCanvas3D.cpp:5027
+msgid "Search"
+msgstr "Suchen"
