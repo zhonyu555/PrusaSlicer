@@ -39,6 +39,7 @@ class ModelVolume;
 class ModelWipeTower;
 class Print;
 class SLAPrint;
+class TriangleSelector;
 
 namespace UndoRedo {
 	class StackImpl;
@@ -394,6 +395,7 @@ enum class ModelVolumeType : int {
 };
 
 enum class FacetSupportType : int8_t {
+    // Maximum is 3. The value is serialized in TriangleSelector into 2 bits!
     NONE      = 0,
     ENFORCER  = 1,
     BLOCKER   = 2
@@ -403,8 +405,9 @@ class FacetsAnnotation {
 public:
     using ClockType = std::chrono::steady_clock;
 
-    std::vector<int> get_facets(FacetSupportType type) const;
-    void set_facet(int idx, FacetSupportType type);
+    const std::map<int, std::vector<bool>>& get_data() const { return m_data; }
+    bool set(const TriangleSelector& selector);
+    indexed_triangle_set get_facets(const ModelVolume& mv, FacetSupportType type) const;
     void clear();
 
     ClockType::time_point get_timestamp() const { return timestamp; }
@@ -418,7 +421,7 @@ public:
     }
 
 private:
-    std::map<int, FacetSupportType> m_data;
+    std::map<int, std::vector<bool>> m_data;
 
     ClockType::time_point timestamp;
     void update_timestamp() {

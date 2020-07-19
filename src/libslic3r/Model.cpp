@@ -2,6 +2,7 @@
 #include "ModelArrange.hpp"
 #include "Geometry.hpp"
 #include "MTUtils.hpp"
+#include "TriangleSelector.hpp"
 
 #include "Format/AMF.hpp"
 #include "Format/OBJ.hpp"
@@ -1832,28 +1833,25 @@ arrangement::ArrangePolygon ModelInstance::get_arrange_polygon() const
 }
 
 
-std::vector<int> FacetsAnnotation::get_facets(FacetSupportType type) const
+indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, FacetSupportType type) const
 {
-    std::vector<int> out;
-    for (auto& [facet_idx, this_type] : m_data)
-        if (this_type == type)
-            out.push_back(facet_idx);
+    TriangleSelector selector(mv.mesh());
+    selector.deserialize(m_data);
+    indexed_triangle_set out = selector.get_facets(type);
     return out;
 }
 
 
 
-void FacetsAnnotation::set_facet(int idx, FacetSupportType type)
+bool FacetsAnnotation::set(const TriangleSelector& selector)
 {
-    bool changed = true;
-
-    if (type == FacetSupportType::NONE)
-        changed = m_data.erase(idx) != 0;
-    else
-        m_data[idx] = type;
-
-    if (changed)
+    std::map<int, std::vector<bool>> sel_map = selector.serialize();
+    if (sel_map != m_data) {
+        m_data = sel_map;
         update_timestamp();
+        return true;
+    }
+    return false;
 }
 
 
@@ -1937,7 +1935,7 @@ bool model_custom_supports_data_changed(const ModelObject& mo, const ModelObject
             return true;
     }
     return false;
-};
+}
 
 extern bool model_has_multi_part_objects(const Model &model)
 {
