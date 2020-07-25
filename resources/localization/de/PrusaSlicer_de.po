@@ -4109,11 +4109,11 @@ msgstr "GESCHLOSSENES SCHLOSS"
 
 #: src/slic3r/GUI/Tab.cpp:3280
 msgid "LOCKED LOCK icon indicates that the settings are the same as the system (or default) values for the current option group"
-msgstr "Das Symbol LOCKED LOCK zeigt an, dass die Einstellungen mit den System- (oder Standard-) Werten für die aktuelle Optionsgruppe übereinstimmen"
+msgstr "Das Symbol GESCHLOSSENES SCHLOSS zeigt an, dass die Einstellungen mit den System- (oder Standard-) Werten für die aktuelle Optionsgruppe übereinstimmen"
 
 #: src/slic3r/GUI/Tab.cpp:3296
 msgid "LOCKED LOCK icon indicates that the value is the same as the system (or default) value."
-msgstr "Das Symbol LOCKED LOCK zeigt an, dass der Wert mit dem System- (oder Standard-) Wert übereinstimmt."
+msgstr "Das Symbol GESCHLOSSENES SCHLOSS zeigt an, dass der Wert mit dem System- (oder Standard-) Wert übereinstimmt."
 
 #: src/libslic3r/PrintConfig.cpp:3508
 msgid "Logging level"
