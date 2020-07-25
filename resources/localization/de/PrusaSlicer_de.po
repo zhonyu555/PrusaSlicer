@@ -542,7 +542,7 @@ msgstr "Form hinzufügen"
 
 #: src/libslic3r/PrintConfig.cpp:409
 msgid "Add solid infill near sloping surfaces to guarantee the vertical shell thickness (top+bottom solid layers)."
-msgstr "Fügen Sie massives Infill in der Nähe von schrägen Flächen hinzu, um die vertikale Schalenstärke zu gewährleisten (obere und untere massive Schichten)."
+msgstr "Fügen Sie massives Infill in der Nähe von schrägen Flächen hinzu, um die vertikale Hüllenstärke zu gewährleisten (obere und untere massive Schichten)."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:54
 msgid "Add support blocker"
@@ -910,7 +910,7 @@ msgstr "Druckbett individuelle Textur"
 
 #: src/slic3r/GUI/BedShapeDialog.hpp:59 src/slic3r/GUI/ConfigWizard.cpp:929
 msgid "Bed Shape"
-msgstr "Druckbrettprofil"
+msgstr "Druckbettprofil"
 
 #: src/libslic3r/PrintConfig.cpp:51
 msgid "Bed shape"
@@ -982,7 +982,7 @@ msgstr "Boden ist offen."
 
 #: src/slic3r/GUI/PresetHints.cpp:336
 msgid "Bottom shell is %1% mm thick for layer height %2% mm."
-msgstr "Die Bodenschale ist %1% mm stark für eine Schichthöhe von %2% mm."
+msgstr "Die Bodenhülle ist %1% mm stark für eine Schichthöhe von %2% mm."
 
 #: src/libslic3r/PrintConfig.cpp:177
 msgid "Bottom solid layers"
@@ -3038,7 +3038,7 @@ msgstr "Massives Infill für Bereiche, die eine kleinere Fläche als die angegeb
 
 #: src/libslic3r/PrintConfig.cpp:1072
 msgid "Force the generation of solid shells between adjacent materials/volumes. Useful for multi-extruder prints with translucent materials or manual soluble support material."
-msgstr "Erzwingt die Erzeugung von massiven Schalen zwischen benachbarten Materialien/Volumina. Geeignet für Multiextruderdrucke mit transluzenten Materialien oder manuell löslichen Trägermaterialien."
+msgstr "Erzwingt die Erzeugung von massiven Hüllen zwischen benachbarten Materialien/Volumina. Geeignet für Multiextruderdrucke mit transluzenten Materialien oder manuell löslichen Trägermaterialien."
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:300
 msgid "From"
@@ -3108,7 +3108,7 @@ msgstr "Generiere Stützstrukturen"
 
 #: src/libslic3r/PrintConfig.cpp:1926
 msgid "Generate support material for the specified number of layers counting from bottom, regardless of whether normal support material is enabled or not and regardless of any angle threshold. This is useful for getting more adhesion of objects having a very thin or poor footprint on the build plate."
-msgstr "Generiere Stützstrukturen für die angegebene Anzahl von Schichten, die von unten gezählt werden, unabhängig davon, ob normale Stützstrukturen aktiviert sind oder nicht und unabhängig von einer Winkelschwelle. Dies ist nützlich, um die Haftung von Objekten mit einem sehr dünnen oder schlechten Standfuß auf der Bauplatte zu erhöhen."
+msgstr "Generiere Stützstrukturen für die angegebene Anzahl von Schichten, die von unten gezählt werden, unabhängig davon, ob normale Stützstrukturen aktiviert sind oder nicht und unabhängig von einer Winkelschwelle. Dies ist nützlich, um die Haftung von Objekten mit einem sehr dünnen oder schlechten Standfuß auf dem Druckbett zu erhöhen."
 
 #: src/libslic3r/PrintConfig.cpp:2613
 msgid "Generate supports"
@@ -3741,7 +3741,7 @@ msgstr "Schnittstellenmuster Abstand"
 
 #: src/libslic3r/PrintConfig.cpp:1071
 msgid "Interface shells"
-msgstr "Schnittstellenshells"
+msgstr "Schnittstellenhülle"
 
 #: src/libslic3r/Zipper.cpp:84
 msgid "internal error"
@@ -4402,11 +4402,11 @@ msgstr "Minimale Wischmenge im Wischturm"
 
 #: src/libslic3r/PrintConfig.cpp:187
 msgid "Minimum bottom shell thickness"
-msgstr "Minimale Stärke der Bodenschale"
+msgstr "Minimale Stärke der Bodenhülle"
 
 #: src/slic3r/GUI/PresetHints.cpp:339
 msgid "Minimum bottom shell thickness is %1% mm."
-msgstr "Die Mindeststärke der Bodenschale beträgt %1% mm."
+msgstr "Die Mindeststärke der Bodenhülle beträgt %1% mm."
 
 #: src/libslic3r/PrintConfig.cpp:1512
 msgid "Minimum detail resolution, used to simplify the input file for speeding up the slicing job and reducing memory usage. High-resolution models often carry more detail than printers can render. Set to zero to disable any simplification and use full resolution from input."
@@ -4434,19 +4434,19 @@ msgstr "Minimale Anfang-Belichtungszeit"
 
 #: src/slic3r/GUI/Tab.cpp:1069
 msgid "Minimum shell thickness"
-msgstr "Minimale Schalenstärke"
+msgstr "Minimale Hüllenstärke"
 
 #: src/libslic3r/PrintConfig.cpp:1787 src/libslic3r/PrintConfig.cpp:1788
 msgid "Minimum thickness of a top / bottom shell"
-msgstr "Mindeststärke einer Ober-/Bodenschale"
+msgstr "Mindeststärke einer Ober-/Bodenhülle"
 
 #: src/libslic3r/PrintConfig.cpp:2146
 msgid "Minimum top shell thickness"
-msgstr "Mindeststärke der oberen Schale"
+msgstr "Mindeststärke der oberen Hülle"
 
 #: src/slic3r/GUI/PresetHints.cpp:320
 msgid "Minimum top shell thickness is %1% mm."
-msgstr "Die Mindeststärke der Oberschale beträgt %1% mm."
+msgstr "Die Mindeststärke der Oberhülle beträgt %1% mm."
 
 #: src/libslic3r/PrintConfig.cpp:1522
 msgid "Minimum travel after retraction"
@@ -7461,7 +7461,7 @@ msgstr "Stützstrukturen/Raft/Schürzen Extruder"
 #: src/slic3r/GUI/Plater.cpp:500 src/libslic3r/PrintConfig.cpp:1901
 #: src/libslic3r/PrintConfig.cpp:2674
 msgid "Support on build plate only"
-msgstr "Stützstrukturen nur auf dem Druckbrett"
+msgstr "Stützstrukturen nur auf dem Druckbett"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:888
 msgid "Support parameter change"
@@ -7766,11 +7766,11 @@ msgstr "Der Mindestabstand des Säulenfußes zum Modell in mm. Sinnvoll im Nullh
 
 #: src/libslic3r/PrintConfig.cpp:185
 msgid "The number of bottom solid layers is increased above bottom_solid_layers if necessary to satisfy minimum thickness of bottom shell."
-msgstr "Die Anzahl der unteren Massivschichten wird über bottom_solid_layers erhöht, wenn es notwendig ist, um die Mindeststärke der Bodenschale zu erfüllen."
+msgstr "Die Anzahl der unteren Massivschichten wird über bottom_solid_layers erhöht, wenn es notwendig ist, um die Mindeststärke der Bodenhülle zu erfüllen."
 
 #: src/libslic3r/PrintConfig.cpp:2143
 msgid "The number of top solid layers is increased above top_solid_layers if necessary to satisfy minimum thickness of top shell. This is useful to prevent pillowing effect when printing with variable layer height."
-msgstr "Die Anzahl der obersten Massivschichten wird über top_solid_layers erhöht, wenn es notwendig ist, um die Mindeststärke der Oberschale zu erfüllen. Dies ist nützlich, um einen Kisseneffekt beim Drucken mit variabler Lagenhöhe zu verhindern."
+msgstr "Die Anzahl der obersten Massivschichten wird über top_solid_layers erhöht, wenn es notwendig ist, um die Mindeststärke der Oberhülle zu erfüllen. Dies ist nützlich, um einen Kisseneffekt beim Drucken mit variabler Lagenhöhe zu verhindern."
 
 #: src/libslic3r/PrintConfig.cpp:2277
 msgid "The object will be grown/shrunk in the XY plane by the configured value (negative = inwards, positive = outwards). This might be useful for fine-tuning hole sizes."
@@ -7868,7 +7868,7 @@ msgstr ""
 "- keine oberen massiven Schichten\n"
 "- 0% Fülldichte\n"
 "- kein Stützmaterial\n"
-"- Vertikale Schalenstärke sicherstellen aktiv\n"
+"- Vertikale Hüllenstärke sicherstellen aktiv\n"
 "- Dünne Wände erkennen nicht aktiv"
 
 #: src/libslic3r/Print.cpp:1237
@@ -8363,7 +8363,7 @@ msgstr "Decke"
 
 #: src/slic3r/GUI/PresetHints.cpp:304
 msgid "Top / bottom shell thickness hint: Not available due to invalid layer height."
-msgstr "Hinweis zur Ober-/Bodenschalestärke: Nicht verfügbar wegen ungültiger Schichthöhe."
+msgstr "Hinweis zur Ober-/Bodenhüllestärke: Nicht verfügbar wegen ungültiger Schichthöhe."
 
 #: src/libslic3r/PrintConfig.cpp:415
 msgid "Top fill pattern"
@@ -8375,7 +8375,7 @@ msgstr "Oben ist offen."
 
 #: src/slic3r/GUI/PresetHints.cpp:317
 msgid "Top shell is %1% mm thick for layer height %2% mm."
-msgstr "Die obere Schale ist %1% mm stark für eine Schichthöhe von %2% mm."
+msgstr "Die obere Hülle ist %1% mm stark für eine Schichthöhe von %2% mm."
 
 #: src/slic3r/GUI/PresetHints.cpp:192
 msgid "top solid infill"
