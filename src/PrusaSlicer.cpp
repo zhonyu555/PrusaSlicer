@@ -643,7 +643,13 @@ bool CLI::setup(int argc, char **argv)
             m_config.option(optdef.first, true);
 
     set_data_dir(m_config.opt_string("datadir"));
-    
+
+    if (data_dir().empty()) {
+        const char *env_data_dir = boost::nowide::getenv("PRUSASLICER_DATA");
+        if (env_data_dir != nullptr)
+            set_data_dir(env_data_dir);
+    }
+
     if (!validity.empty()) {
         boost::nowide::cerr << "error: " << validity << std::endl;
         return false;
