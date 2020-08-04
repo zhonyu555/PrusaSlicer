@@ -472,6 +472,7 @@ bool PrintObject::invalidate_state_by_config_options(const std::vector<t_config_
         if (   opt_key == "perimeters"
             || opt_key == "extra_perimeters"
             || opt_key == "gap_fill_speed"
+            || opt_key == "gap_fill_minimum_area"
             || opt_key == "overhangs"
             || opt_key == "first_layer_extrusion_width"
             || opt_key == "perimeter_extrusion_width"

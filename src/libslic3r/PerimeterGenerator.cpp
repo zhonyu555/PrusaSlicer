@@ -334,13 +334,23 @@ void PerimeterGenerator::process()
                         // leads to overflows, as in prusa3d/Slic3r GH #32
                         offset_ex(last, - float(distance));
                     // look for gaps
-                    if (has_gap_fill)
+                    if (has_gap_fill) {
                         // not using safety offset here would "detect" very narrow gaps
                         // (but still long enough to escape the area threshold) that gap fill
                         // won't be able to fill but we'd still remove from infill area
-                        append(gaps, diff_ex(
-                            offset(last,    - float(0.5 * distance)),
-                            offset(offsets,   float(0.5 * distance + 10))));  // safety offset
+                        ExPolygons gap =
+                            diff_ex(
+                                offset(last, -float(0.5 * distance)),
+                                offset(offsets, float(0.5 * distance + 10)));  // safety offset
+
+                        double gap_area = 0;
+                        for (const ExPolygon& p : gap) gap_area += p.area();
+                        
+                        double gap_area_mm2 = gap_area * SCALING_FACTOR * SCALING_FACTOR;
+
+                        if (gap_area_mm2 >= this->config->gap_fill_minimum_area )
+                            append(gaps, gap);
+                    }
                 }
                 if (offsets.empty()) {
                     // Store the number of loops actually generated.
