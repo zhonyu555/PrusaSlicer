@@ -259,6 +259,87 @@ Point Polygon::point_projection(const Point &point) const
     return proj;
 }
 
+void Polygon::fuzzy(FuzzyShape shape, int deepness)
+{
+	Point last = points.at(points.size() - 1);
+	Point last_processed = last;
+
+	double max_length = scale_(2);
+	double min_length = scale_(1);
+
+	deepness *= 3;
+
+	bool triangle_or_sawtooth;
+	switch (shape) {
+		case FuzzyShape::Triangle:
+			triangle_or_sawtooth = false;
+			break;
+		case FuzzyShape::Sawtooth:
+			triangle_or_sawtooth = true;
+			break;
+	}
+
+	double length_sum = 0;
+	Points::iterator it = points.begin();
+    while (it != points.end()) {
+		Point &pt = *it;
+
+		Line line(last, pt);
+		double length = line.length();
+
+		// split long line
+		if (length > max_length) {
+			int parts = ceil(length / max_length);			
+			if (parts == 2) {
+				Point point_to_insert(line.midpoint());
+				it = points.insert(it, point_to_insert);
+			}
+			else {
+				Vector part_vector = line.vector() / parts;
+
+				Points points_to_insert;
+				Point point_to_insert(last);
+				while (--parts) {
+					point_to_insert += part_vector;
+					Point point_to_insert_2(point_to_insert);
+					points_to_insert.push_back(point_to_insert_2);
+				}
+
+				it = points.insert(it, points_to_insert.begin(), points_to_insert.end());
+			}
+			continue;
+		}
+
+		length_sum += length;
+
+		// join short lines
+		if (length_sum < min_length) {
+			last = pt;
+			it = points.erase(it);
+			continue;
+		}
+
+		line = Line(last_processed, pt);
+		last = pt;
+		last_processed = pt;
+
+		if (shape == FuzzyShape::Random) {
+			triangle_or_sawtooth = !(rand() % 2);
+		}
+
+		Point point_to_insert(triangle_or_sawtooth ? pt : line.midpoint());
+
+		int scale = (rand() % deepness) + 1;
+
+		Vector normal = line.normal();
+		normal /= line.length() / scale_(1.) / ((double)scale / 20.);		
+
+		it = points.insert(it, point_to_insert + normal) + 2;
+
+		length_sum = 0;
+	}
+}
+
 BoundingBox get_extents(const Points &points)
 { 
 	return BoundingBox(points);

@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <chrono>
 
 namespace Slic3r {
 
@@ -232,6 +233,10 @@ static ExtrusionEntityCollection traverse_loops(const PerimeterGenerator &perime
 
 void PerimeterGenerator::process()
 {
+	// nasty hack! initialize random generator
+	long time_us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::time_point_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+	srand(this->layer_id * time_us);
+
     // other perimeters
     m_mm3_per_mm               		= this->perimeter_flow.mm3_per_mm();
     coord_t perimeter_width         = this->perimeter_flow.scaled_width();
@@ -271,6 +276,46 @@ void PerimeterGenerator::process()
         double nozzle_diameter = this->print_config->nozzle_diameter.get_at(this->config->perimeter_extruder-1);
         m_lower_slices_polygons = offset(*this->lower_slices, float(scale_(+nozzle_diameter/2)));
     }
+
+	// fuzzy skin configuration
+	int fuzzy_skin_deepness;
+	FuzzyShape fuzzy_skin_shape;
+	if (this->object_config->fuzzy_skin_perimeter_mode != FuzzySkinPerimeterMode::None) {
+		switch (this->object_config->fuzzy_skin_shape) {
+			case FuzzySkinShape::Triangle1:
+			case FuzzySkinShape::Sawtooth1:
+			case FuzzySkinShape::Random1:
+				fuzzy_skin_deepness = 1;
+				break;
+			case FuzzySkinShape::Triangle2:
+			case FuzzySkinShape::Sawtooth2:
+			case FuzzySkinShape::Random2:
+				fuzzy_skin_deepness = 2;
+				break;
+			case FuzzySkinShape::Triangle3:
+			case FuzzySkinShape::Sawtooth3:
+			case FuzzySkinShape::Random3:
+				fuzzy_skin_deepness = 3;
+				break;
+			}
+			switch (this->object_config->fuzzy_skin_shape) {
+			case FuzzySkinShape::Triangle1:
+			case FuzzySkinShape::Triangle2:
+			case FuzzySkinShape::Triangle3:
+				fuzzy_skin_shape = FuzzyShape::Triangle;
+				break;
+			case FuzzySkinShape::Sawtooth1:
+			case FuzzySkinShape::Sawtooth2:
+			case FuzzySkinShape::Sawtooth3:
+				fuzzy_skin_shape = FuzzyShape::Sawtooth;
+				break;
+			case FuzzySkinShape::Random1:
+			case FuzzySkinShape::Random2:
+			case FuzzySkinShape::Random3:
+				fuzzy_skin_shape = FuzzyShape::Random;
+				break;
+		}
+	}
     
     // we need to process each island separately because we might have different
     // extra perimeters for each one
@@ -352,13 +397,37 @@ void PerimeterGenerator::process()
                     // If i > loop_number, we were looking just for gaps.
                     break;
                 }
-                for (const ExPolygon &expolygon : offsets) {
+                for (ExPolygon &expolygon : offsets) {
 	                // Outer contour may overlap with an inner contour,
 	                // inner contour may overlap with another inner contour,
 	                // outer contour may overlap with itself.
 	                //FIXME evaluate the overlaps, annotate each point with an overlap depth,
-	                // compensate for the depth of intersection.
-                    contours[i].emplace_back(PerimeterGeneratorLoop(expolygon.contour, i, true));
+
+					bool skip_polygon = false;
+
+					if (this->object_config->fuzzy_skin_perimeter_mode != FuzzySkinPerimeterMode::None) {
+						if (i == 0 && (this->object_config->fuzzy_skin_perimeter_mode != FuzzySkinPerimeterMode::ExternalSkipFirst || this->layer_id > 0)) {
+							if (
+								this->object_config->fuzzy_skin_perimeter_mode == FuzzySkinPerimeterMode::External ||
+								this->object_config->fuzzy_skin_perimeter_mode ==  FuzzySkinPerimeterMode::ExternalSkipFirst
+							) {
+								ExPolygon expolygon_fuzzy(expolygon);
+								expolygon_fuzzy.contour.fuzzy(fuzzy_skin_shape, fuzzy_skin_deepness);
+								// compensate for the depth of intersection.
+								contours[i].emplace_back(PerimeterGeneratorLoop(expolygon_fuzzy.contour, i, true)); 
+								skip_polygon = true;
+							}
+							else {
+								expolygon.contour.fuzzy(fuzzy_skin_shape, fuzzy_skin_deepness);
+							}
+						}
+					}
+
+					if (!skip_polygon) {
+						// compensate for the depth of intersection.
+						contours[i].emplace_back(PerimeterGeneratorLoop(expolygon.contour, i, true));
+					}
+
                     if (! expolygon.holes.empty()) {
                         holes[i].reserve(holes[i].size() + expolygon.holes.size());
                         for (const Polygon &hole : expolygon.holes)
@@ -373,7 +442,7 @@ void PerimeterGenerator::process()
                 }
             }
 
-            // nest loops: holes first
+			// nest loops: holes first
             for (int d = 0; d <= loop_number; ++ d) {
                 PerimeterGeneratorLoops &holes_d = holes[d];
                 // loop through all holes having depth == d

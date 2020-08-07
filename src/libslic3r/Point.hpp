@@ -116,6 +116,8 @@ public:
 
     Point& operator+=(const Point& rhs) { (*this)(0) += rhs(0); (*this)(1) += rhs(1); return *this; }
     Point& operator-=(const Point& rhs) { (*this)(0) -= rhs(0); (*this)(1) -= rhs(1); return *this; }
+	Point& operator/=(const int &rhs) { (*this)(0) = coord_t((double)(*this)(0) / (double)rhs); (*this)(1) = coord_t((double)(*this)(1) / (double)rhs); return *this; }
+	Point& operator/=(const double &rhs) { (*this)(0) = coord_t((double)(*this)(0) / rhs); (*this)(1) = coord_t((double)(*this)(1) / rhs); return *this; }
 	Point& operator*=(const double &rhs) { (*this)(0) = coord_t((*this)(0) * rhs); (*this)(1) = coord_t((*this)(1) * rhs); return *this; }
     Point operator*(const double &rhs) { return Point((*this)(0) * rhs, (*this)(1) * rhs); }
 

@@ -131,6 +131,50 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.2));
 
+    def = this->add("fuzzy_skin_perimeter_mode", coEnum);
+    def->label = L("Fuzzy skin perimeter mode");
+    def->category = L("Advanced");
+    def->tooltip = L("Fuzzy skin perimeter mode.");
+
+    def->enum_keys_map = &ConfigOptionEnum<FuzzySkinPerimeterMode>::get_enum_values();
+    def->enum_values.push_back("none");
+    def->enum_values.push_back("external_only");
+    def->enum_values.push_back("external_only_skip_first_layer");
+    def->enum_values.push_back("all");
+    def->enum_labels.push_back(L("None"));
+    def->enum_labels.push_back(L("External"));
+    def->enum_labels.push_back(L("External (skip first layer)"));
+    def->enum_labels.push_back(L("All perimeters"));
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionEnum<FuzzySkinPerimeterMode>(FuzzySkinPerimeterMode::None));
+
+    def = this->add("fuzzy_skin_shape", coEnum);
+    def->label = L("Fuzzy skin shape");
+    def->category = L("Advanced");
+    def->tooltip = L("Fuzzy skin shape.");
+
+	def->enum_keys_map = &ConfigOptionEnum<FuzzySkinShape>::get_enum_values();
+    def->enum_values.push_back("triangle1");
+    def->enum_values.push_back("triangle2");
+    def->enum_values.push_back("triangle3");
+    def->enum_values.push_back("sawtooth1");
+    def->enum_values.push_back("sawtooth2");
+    def->enum_values.push_back("sawtooth3");
+    def->enum_values.push_back("random1");
+    def->enum_values.push_back("random2");
+    def->enum_values.push_back("random3");
+    def->enum_labels.push_back(L("Triangle (1)"));
+    def->enum_labels.push_back(L("Triangle (2)"));
+    def->enum_labels.push_back(L("Triangle (3)"));
+    def->enum_labels.push_back(L("Sawtooth (1)"));
+    def->enum_labels.push_back(L("Sawtooth (2)"));
+    def->enum_labels.push_back(L("Sawtooth (3)"));
+    def->enum_labels.push_back(L("Random (1)"));
+    def->enum_labels.push_back(L("Random (2)"));
+    def->enum_labels.push_back(L("Random (3)"));
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionEnum<FuzzySkinShape>(FuzzySkinShape::Triangle1));
+
     // Options used by physical printers
     
     def = this->add("login", coString);

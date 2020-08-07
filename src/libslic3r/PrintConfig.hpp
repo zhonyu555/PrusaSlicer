@@ -49,6 +49,25 @@ enum class IroningType {
 	Count,
 };
 
+enum class FuzzySkinPerimeterMode {
+	None,
+    External,
+	ExternalSkipFirst,
+	All
+};
+
+enum class FuzzySkinShape {
+	Triangle1,
+	Triangle2,
+	Triangle3,
+	Sawtooth1,
+	Sawtooth2,
+	Sawtooth3,
+	Random1,
+	Random2,
+	Random3
+};
+
 enum SupportMaterialPattern {
     smpRectilinear, smpRectilinearGrid, smpHoneycomb,
 };
@@ -149,6 +168,33 @@ template<> inline const t_config_enum_values& ConfigOptionEnum<IroningType>::get
         keys_map["top"]                 = int(IroningType::TopSurfaces);
         keys_map["topmost"]             = int(IroningType::TopmostOnly);
         keys_map["solid"]               = int(IroningType::AllSolid);
+    }
+    return keys_map;
+}
+
+template<> inline const t_config_enum_values& ConfigOptionEnum<FuzzySkinPerimeterMode>::get_enum_values() {
+    static t_config_enum_values keys_map;
+    if (keys_map.empty()) {
+        keys_map["none"]                           = int(FuzzySkinPerimeterMode::None);
+        keys_map["external_only"]                  = int(FuzzySkinPerimeterMode::External);
+        keys_map["external_only_skip_first_layer"] = int(FuzzySkinPerimeterMode::ExternalSkipFirst);
+        keys_map["all"]                            = int(FuzzySkinPerimeterMode::All);
+    }
+    return keys_map;
+}
+
+template<> inline const t_config_enum_values& ConfigOptionEnum<FuzzySkinShape>::get_enum_values() {
+    static t_config_enum_values keys_map;
+    if (keys_map.empty()) {
+        keys_map["triangle1"]           = int(FuzzySkinShape::Triangle1);
+        keys_map["triangle2"]           = int(FuzzySkinShape::Triangle2);
+        keys_map["triangle3"]           = int(FuzzySkinShape::Triangle3);
+        keys_map["sawtooth1"]           = int(FuzzySkinShape::Sawtooth1);
+        keys_map["sawtooth2"]           = int(FuzzySkinShape::Sawtooth2);
+        keys_map["sawtooth3"]           = int(FuzzySkinShape::Sawtooth3);
+        keys_map["random1"]             = int(FuzzySkinShape::Random1);
+        keys_map["random2"]             = int(FuzzySkinShape::Random2);
+        keys_map["random3"]             = int(FuzzySkinShape::Random3);
     }
     return keys_map;
 }
@@ -413,7 +459,9 @@ public:
     ConfigOptionBool                clip_multipart_objects;
     ConfigOptionBool                dont_support_bridges;
     ConfigOptionFloat               elefant_foot_compensation;
-    ConfigOptionFloatOrPercent      extrusion_width;
+    ConfigOptionEnum<FuzzySkinPerimeterMode>	fuzzy_skin_perimeter_mode;
+	ConfigOptionEnum<FuzzySkinShape>			fuzzy_skin_shape;
+	ConfigOptionFloatOrPercent      extrusion_width;
     ConfigOptionFloatOrPercent      first_layer_height;
     ConfigOptionBool                infill_only_where_needed;
     // Force the generation of solid shells between adjacent materials/volumes.
@@ -458,6 +506,8 @@ protected:
         OPT_PTR(clip_multipart_objects);
         OPT_PTR(dont_support_bridges);
         OPT_PTR(elefant_foot_compensation);
+		OPT_PTR(fuzzy_skin_perimeter_mode);
+		OPT_PTR(fuzzy_skin_shape);
         OPT_PTR(extrusion_width);
         OPT_PTR(first_layer_height);
         OPT_PTR(infill_only_where_needed);
