@@ -261,7 +261,7 @@ Point Polygon::point_projection(const Point &point) const
 
 void Polygon::fuzzy(FuzzyShape shape, int deepness)
 {
-	Point last = points.at(points.size() - 1);
+	Point last = this->points.at(points.size() - 1);
 	Point last_processed = last;
 
 	double max_length = scale_(2);
@@ -284,8 +284,8 @@ void Polygon::fuzzy(FuzzyShape shape, int deepness)
 	}
 
 	double length_sum = 0;
-	Points::iterator it = points.begin();
-    while (it != points.end()) {
+	Points::iterator it = this->points.begin();
+    while (it != this->points.end()) {
 		Point &pt = *it;
 
 		Line line(last, pt);
