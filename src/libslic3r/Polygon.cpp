@@ -267,6 +267,10 @@ void Polygon::fuzzy(FuzzyShape shape, int deepness)
 	double max_length = scale_(2);
 	double min_length = scale_(1);
 
+	if (this->length() < scale_(5)) {
+		return;
+	}
+
 	deepness *= 3;
 
 	bool triangle_or_sawtooth;
