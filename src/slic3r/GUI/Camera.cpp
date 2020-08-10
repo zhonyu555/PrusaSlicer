@@ -1,8 +1,8 @@
 #include "libslic3r/libslic3r.h"
+#include "libslic3r/AppConfig.hpp"
 
 #include "Camera.hpp"
 #include "GUI_App.hpp"
-#include "AppConfig.hpp"
 #if ENABLE_CAMERA_STATISTICS
 #include "Mouse3DController.hpp"
 #endif // ENABLE_CAMERA_STATISTICS
@@ -424,9 +424,6 @@ double Camera::calc_zoom_to_bounding_box_factor(const BoundingBoxf3& box, double
     double dy = max_y - min_y;
     if ((dx <= 0.0) || (dy <= 0.0))
         return -1.0f;
-
-    double med_x = 0.5 * (max_x + min_x);
-    double med_y = 0.5 * (max_y + min_y);
 
     dx *= margin_factor;
     dy *= margin_factor;

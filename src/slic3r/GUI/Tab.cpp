@@ -1,8 +1,8 @@
 // #include "libslic3r/GCodeSender.hpp"
 #include "slic3r/Utils/Serial.hpp"
 #include "Tab.hpp"
-#include "PresetBundle.hpp"
 #include "PresetHints.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
 
@@ -27,12 +27,15 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include "wxExtensions.hpp"
+#include "PresetComboBoxes.hpp"
 #include <wx/wupdlock.h>
 
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
-#include "ConfigWizard.hpp"
+#include "Plater.hpp"
+#include "MainFrame.hpp"
 #include "format.hpp"
+#include "PhysicalPrinterDialog.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -158,10 +161,17 @@ void Tab::create_preset_tab()
 #endif //__WXOSX__
 
     // preset chooser
-    m_presets_choice = new PresetBitmapComboBox(panel, wxSize(35 * m_em_unit, -1));
+    m_presets_choice = new TabPresetComboBox(panel, m_type);
+    m_presets_choice->set_selection_changed_function([this](int selection) {
+        if (!m_presets_choice->selection_is_changed_according_to_physical_printers())
+        {
+            if (m_type == Preset::TYPE_PRINTER && !m_presets_choice->is_selected_physical_printer())
+                m_preset_bundle->physical_printers.unselect_printer();
 
-    // search combox
-//    m_search = new Search::SearchCtrl(panel);
+            // select preset
+            select_preset(m_presets_choice->GetString(selection).ToUTF8().data());
+        }
+    });
 
     auto color = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 
@@ -171,6 +181,8 @@ void Tab::create_preset_tab()
 
     add_scaled_button(panel, &m_btn_save_preset, "save");
     add_scaled_button(panel, &m_btn_delete_preset, "cross");
+    if (m_type == Preset::Type::TYPE_PRINTER)
+        add_scaled_button(panel, &m_btn_edit_ph_printer, "cog");
 
     m_show_incompatible_presets = false;
     add_scaled_bitmap(this, m_bmp_show_incompatible_presets, "flag_red");
@@ -182,6 +194,8 @@ void Tab::create_preset_tab()
     m_btn_save_preset->SetToolTip(from_u8((boost::format(_utf8(L("Save current %s"))) % m_title).str()));
     m_btn_delete_preset->SetToolTip(_(L("Delete this preset")));
     m_btn_delete_preset->Disable();
+    if (m_btn_edit_ph_printer)
+        m_btn_edit_ph_printer->Disable();
 
     add_scaled_button(panel, &m_question_btn, "question");
     m_question_btn->SetToolTip(_(L("Hover the cursor over buttons to find more information \n"
@@ -190,15 +204,13 @@ void Tab::create_preset_tab()
     add_scaled_button(panel, &m_search_btn, "search");
     m_search_btn->SetToolTip(format_wxstr(_L("Click to start a search or use %1% shortcut"), "Ctrl+F"));
 
-    // Determine the theme color of OS (dark or light)
-    auto luma = wxGetApp().get_colour_approx_luma(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
     // Bitmaps to be shown on the "Revert to system" aka "Lock to system" button next to each input field.
-    add_scaled_bitmap(this, m_bmp_value_lock  , luma >= 128 ? "lock_closed" : "lock_closed_white");
+    add_scaled_bitmap(this, m_bmp_value_lock  , "lock_closed");
     add_scaled_bitmap(this, m_bmp_value_unlock, "lock_open");
     m_bmp_non_system = &m_bmp_white_bullet;
     // Bitmaps to be shown on the "Undo user changes" button next to each input field.
     add_scaled_bitmap(this, m_bmp_value_revert, "undo");
-    add_scaled_bitmap(this, m_bmp_white_bullet, luma >= 128 ? "dot" : "dot_white");
+    add_scaled_bitmap(this, m_bmp_white_bullet, "dot");
 
     fill_icon_descriptions();
     set_tooltips_text();
@@ -238,6 +250,10 @@ void Tab::create_preset_tab()
     m_hsizer->Add(m_btn_save_preset, 0, wxALIGN_CENTER_VERTICAL);
     m_hsizer->AddSpacer(int(4 * scale_factor));
     m_hsizer->Add(m_btn_delete_preset, 0, wxALIGN_CENTER_VERTICAL);
+    if (m_btn_edit_ph_printer) {
+        m_hsizer->AddSpacer(int(4 * scale_factor));
+        m_hsizer->Add(m_btn_edit_ph_printer, 0, wxALIGN_CENTER_VERTICAL);
+    }
     m_hsizer->AddSpacer(int(/*16*/8 * scale_factor));
     m_hsizer->Add(m_btn_hide_incompatible_presets, 0, wxALIGN_CENTER_VERTICAL);
     m_hsizer->AddSpacer(int(8 * scale_factor));
@@ -278,40 +294,18 @@ void Tab::create_preset_tab()
     m_treectrl->Bind(wxEVT_TREE_SEL_CHANGED, &Tab::OnTreeSelChange, this);
     m_treectrl->Bind(wxEVT_KEY_DOWN, &Tab::OnKeyDown, this);
 
-    m_presets_choice->Bind(wxEVT_COMBOBOX, ([this](wxCommandEvent e) {
-        //! Because of The MSW and GTK version of wxBitmapComboBox derived from wxComboBox, 
-        //! but the OSX version derived from wxOwnerDrawnCombo, instead of:
-        //! select_preset(m_presets_choice->GetStringSelection().ToUTF8().data()); 
-        //! we doing next:
-        // int selected_item = m_presets_choice->GetSelection();
-
-        // see https://github.com/prusa3d/PrusaSlicer/issues/3889
-        // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
-        // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
-        // So, use GetSelection() from event parameter 
-        int selected_item = e.GetSelection();
-        if (m_selected_preset_item == size_t(selected_item) && !m_presets->current_is_dirty())
-            return;
-        if (selected_item >= 0) {
-            std::string selected_string = m_presets_choice->GetString(selected_item).ToUTF8().data();
-            if (selected_string.find(PresetCollection::separator_head()) == 0
-                /*selected_string == "------- System presets -------" ||
-                selected_string == "-------  User presets  -------"*/) {
-                m_presets_choice->SetSelection(m_selected_preset_item);
-                if (wxString::FromUTF8(selected_string.c_str()) == PresetCollection::separator(L("Add a new printer")))
-                    wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER); });
-                return;
-            }
-            m_selected_preset_item = selected_item;
-            select_preset(selected_string);
-        }
-    }));
-
     m_btn_save_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { save_preset(); }));
     m_btn_delete_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { delete_preset(); }));
     m_btn_hide_incompatible_presets->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) {
         toggle_show_hide_incompatible();
     }));
+
+    if (m_btn_edit_ph_printer)
+        m_btn_edit_ph_printer->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { 
+        PhysicalPrinterDialog dlg(m_presets_choice->GetString(m_presets_choice->GetSelection()));
+        if (dlg.ShowModal() == wxID_OK)
+            update_tab_ui(); 
+     }));
 
     // Fill cache for mode bitmaps
     m_mode_bitmap_cache.reserve(3);
@@ -590,6 +584,18 @@ void TabPrinter::msw_rescale()
     Layout();
 }
 
+void TabPrinter::sys_color_changed() 
+{
+    Tab::sys_color_changed();
+
+    // update missed options_groups
+    const std::vector<PageShp>& pages = m_printer_technology == ptFFF ? m_pages_sla : m_pages_fff;
+    for (auto page : pages)
+        page->sys_color_changed();
+
+    Layout();
+}
+
 void TabSLAMaterial::init_options_list()
 {
     if (!m_options_list.empty())
@@ -766,14 +772,14 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
 // comparing the selected preset config with $self->{config}.
 void Tab::update_dirty()
 {
-    m_presets->update_dirty_ui(m_presets_choice);
+    m_presets_choice->update_dirty();
     on_presets_changed();
     update_changed_ui();
 }
 
 void Tab::update_tab_ui()
 {
-    m_selected_preset_item = m_presets->update_tab_ui(m_presets_choice, m_show_incompatible_presets, m_em_unit);
+    m_presets_choice->update();
 }
 
 // Load a provied DynamicConfig into the tab, modifying the active preset.
@@ -835,20 +841,20 @@ void Tab::update_visibility()
 
 void Tab::msw_rescale()
 {
-    m_em_unit = wxGetApp().em_unit();
+    m_em_unit = em_unit(m_parent);
 
     m_mode_sizer->msw_rescale();
+    m_presets_choice->msw_rescale();
 
-    m_presets_choice->SetSize(35 * m_em_unit, -1);
     m_treectrl->SetMinSize(wxSize(20 * m_em_unit, -1));
-
-    update_tab_ui();
 
     // rescale buttons and cached bitmaps
     for (const auto btn : m_scaled_buttons)
         btn->msw_rescale();
     for (const auto bmp : m_scaled_bitmaps)
         bmp->msw_rescale();
+    for (const auto ikon : m_blinking_ikons)
+        ikon.second->msw_rescale();
     for (ScalableBitmap& bmp : m_mode_bitmap_cache)
         bmp.msw_rescale();
 
@@ -865,6 +871,40 @@ void Tab::msw_rescale()
     // rescale options_groups
     for (auto page : m_pages)
         page->msw_rescale();
+
+    Layout();
+}
+
+void Tab::sys_color_changed()
+{
+    update_tab_ui();
+
+    // update buttons and cached bitmaps
+    for (const auto btn : m_scaled_buttons)
+        btn->msw_rescale();
+    for (const auto bmp : m_scaled_bitmaps)
+        bmp->msw_rescale();
+//    for (ScalableBitmap& bmp : m_mode_bitmap_cache)
+//        bmp.msw_rescale();
+
+    // update icons for tree_ctrl
+    for (ScalableBitmap& bmp : m_scaled_icons_list)
+        bmp.msw_rescale();
+    // recreate and set new ImageList for tree_ctrl
+    m_icons->RemoveAll();
+    m_icons = new wxImageList(m_scaled_icons_list.front().bmp().GetWidth(), m_scaled_icons_list.front().bmp().GetHeight());
+    for (ScalableBitmap& bmp : m_scaled_icons_list)
+        m_icons->Add(bmp.bmp());
+    m_treectrl->AssignImageList(m_icons);
+
+    // Colors for ui "decoration"
+    m_sys_label_clr = wxGetApp().get_label_clr_sys();
+    m_modified_label_clr = wxGetApp().get_label_clr_modified();
+    update_labels_colour();
+
+    // update options_groups
+    for (auto page : m_pages)
+        page->sys_color_changed();
 
     Layout();
 }
@@ -917,7 +957,7 @@ void Tab::load_key_value(const std::string& opt_key, const boost::any& value, bo
         // Don't select another profile if this profile happens to become incompatible.
         m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
     }
-    m_presets->update_dirty_ui(m_presets_choice);
+    m_presets_choice->update_dirty();
     on_presets_changed();
     update();
 }
@@ -2102,11 +2142,10 @@ void TabPrinter::build_fff()
             line.append_widget(serial_test);
             optgroup->append_line(line);
         }
-#endif
 
         optgroup = page->new_optgroup(L("Print Host upload"));
         build_printhost(optgroup.get());
-
+#endif
         optgroup = page->new_optgroup(L("Firmware"));
         optgroup->append_single_option_line("gcode_flavor");
         optgroup->append_single_option_line("silent_mode");
@@ -2169,6 +2208,21 @@ void TabPrinter::build_fff()
         optgroup = page->new_optgroup(L("Between objects G-code (for sequential printing)"), 0);
         option = optgroup->get_option("between_objects_gcode");
         option.opt.full_width = true;
+        option.opt.height = gcode_field_height;//150;
+        optgroup->append_single_option_line(option);
+
+        optgroup = page->new_optgroup(L("Color Change G-code"), 0);
+        option = optgroup->get_option("color_change_gcode");
+        option.opt.height = gcode_field_height;//150;
+        optgroup->append_single_option_line(option);
+
+        optgroup = page->new_optgroup(L("Pause Print G-code"), 0);
+        option = optgroup->get_option("pause_print_gcode");
+        option.opt.height = gcode_field_height;//150;
+        optgroup->append_single_option_line(option);
+
+        optgroup = page->new_optgroup(L("Template Custom G-code"), 0);
+        option = optgroup->get_option("template_custom_gcode");
         option.opt.height = gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
@@ -2249,8 +2303,10 @@ void TabPrinter::build_sla()
     optgroup->append_single_option_line("min_initial_exposure_time");
     optgroup->append_single_option_line("max_initial_exposure_time");
 
+    /*
     optgroup = page->new_optgroup(L("Print Host upload"));
     build_printhost(optgroup.get());
+    */
 
     const int notes_field_height = 25; // 250
 
@@ -2638,11 +2694,13 @@ void TabPrinter::update_fff()
             m_serial_test_btn->Disable();
     }
 
+    /*
     {
         std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
         m_print_host_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
         m_printhost_browse_btn->Enable(host->has_auto_discovery());
     }
+    */
 
     bool have_multiple_extruders = m_extruders_count > 1;
     get_field("toolchange_gcode")->toggle(have_multiple_extruders);
@@ -2744,7 +2802,7 @@ void Tab::load_current_preset()
 {
     const Preset& preset = m_presets->get_edited_preset();
 
-    (preset.is_default || preset.is_system) ? m_btn_delete_preset->Disable() : m_btn_delete_preset->Enable(true);
+    update_btns_enabling();
 
     update();
     if (m_type == Slic3r::Preset::TYPE_PRINTER) {
@@ -2881,10 +2939,31 @@ void Tab::update_page_tree_visibility()
 
 }
 
+void Tab::update_btns_enabling()
+{
+    // we can't delete last preset from the physical printer
+    if (m_type == Preset::TYPE_PRINTER && m_preset_bundle->physical_printers.has_selection())
+        m_btn_delete_preset->Enable(m_preset_bundle->physical_printers.get_selected_printer().preset_names.size() > 1);
+    else {
+        const Preset& preset = m_presets->get_edited_preset();
+        m_btn_delete_preset->Enable(!preset.is_default && !preset.is_system);
+    }
+
+    // we can edit physical printer only if it's selected in the list 
+    if (m_btn_edit_ph_printer)
+        m_btn_edit_ph_printer->Enable(m_preset_bundle->physical_printers.has_selection());
+}
+
+void Tab::update_preset_choice()
+{
+    m_presets_choice->update();
+    update_btns_enabling();
+}
+
 // Called by the UI combo box when the user switches profiles, and also to delete the current profile.
 // Select a preset by a name.If !defined(name), then the default preset is selected.
 // If the current profile is modified, user is asked to save the changes.
-void Tab::select_preset(std::string preset_name, bool delete_current)
+void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/, const std::string& last_selected_ph_printer_name/* =""*/)
 {
     if (preset_name.empty()) {
         if (delete_current) {
@@ -2992,7 +3071,16 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
     }
 
     if (canceled) {
+        if (m_type == Preset::TYPE_PRINTER) {
+            if (!last_selected_ph_printer_name.empty() &&
+                m_presets->get_edited_preset().name == PhysicalPrinter::get_preset_name(last_selected_ph_printer_name)) {
+                // If preset selection was canceled and previously was selected physical printer, we should select it back
+                m_preset_bundle->physical_printers.select_printer(last_selected_ph_printer_name);
+            }
+        }
+
         update_tab_ui();
+
         // Trigger the on_presets_changed event so that we also restore the previous value in the plater selector,
         // if this action was initiated from the plater.
         on_presets_changed();
@@ -3034,6 +3122,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current)
             else if (printer_technology == ptSLA && m_dependent_tabs.front() != Preset::Type::TYPE_SLA_PRINT)
                 m_dependent_tabs = { Preset::Type::TYPE_SLA_PRINT, Preset::Type::TYPE_SLA_MATERIAL };
         }
+
         load_current_preset();
     }
 }
@@ -3173,56 +3262,10 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
     std::string suffix = detach ? _utf8(L("Detached")) : _CTX_utf8(L_CONTEXT("Copy", "PresetName"), "PresetName");
 
     if (name.empty()) {
-        const Preset &preset = m_presets->get_selected_preset();
-        auto default_name = preset.is_default ? "Untitled" :
-//                            preset.is_system ? (boost::format(_CTX_utf8(L_CONTEXT("%1% - Copy", "PresetName"), "PresetName")) % preset.name).str() :
-                            preset.is_system ? (boost::format(("%1% - %2%")) % preset.name % suffix).str() :
-                            preset.name;
-
-        bool have_extention = boost::iends_with(default_name, ".ini");
-        if (have_extention) {
-            size_t len = default_name.length()-4;
-            default_name.resize(len);
-        }
-        //[map $_->name, grep !$_->default && !$_->external, @{$self->{presets}}],
-        std::vector<std::string> values;
-        for (size_t i = 0; i < m_presets->size(); ++i) {
-            const Preset &preset = m_presets->preset(i);
-            if (preset.is_default || preset.is_system || preset.is_external)
-                continue;
-            values.push_back(preset.name);
-        }
-
-        SavePresetWindow dlg(parent());
-        dlg.build(title(), default_name, values);
+        SavePresetDialog dlg(m_type, suffix);
         if (dlg.ShowModal() != wxID_OK)
             return;
         name = dlg.get_name();
-        if (name == "") {
-            show_error(this, _(L("The supplied name is empty. It can't be saved.")));
-            return;
-        }
-        const Preset *existing = m_presets->find_preset(name, false);
-        if (existing && (existing->is_default || existing->is_system)) {
-            show_error(this, _(L("Cannot overwrite a system profile.")));
-            return;
-        }
-        if (existing && (existing->is_external)) {
-            show_error(this, _(L("Cannot overwrite an external profile.")));
-            return;
-        }
-        if (existing && name != preset.name)
-        {
-            wxString msg_text = GUI::from_u8((boost::format(_utf8(L("Preset with name \"%1%\" already exists."))) % name).str());
-            msg_text += "\n" + _(L("Replace?"));
-            wxMessageDialog dialog(nullptr, msg_text, _(L("Warning")), wxICON_WARNING | wxYES | wxNO);
-
-            if (dialog.ShowModal() == wxID_NO)
-                return;
-
-            // Remove the preset from the list.
-            m_presets->delete_preset(name);
-        }
     }
 
     // Save the preset into Slic3r::data_dir / presets / section_name / preset_name.ini
@@ -3253,28 +3296,28 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
         wxGetApp().plater()->force_filament_colors_update();
 
     {
-    	// Profile compatiblity is updated first when the profile is saved.
-    	// Update profile selection combo boxes at the depending tabs to reflect modifications in profile compatibility.
-	    std::vector<Preset::Type> dependent;
-	    switch (m_type) {
-	    case Preset::TYPE_PRINT:
-	    	dependent = { Preset::TYPE_FILAMENT };
-	    	break;
-	    case Preset::TYPE_SLA_PRINT:
-	    	dependent = { Preset::TYPE_SLA_MATERIAL };
-	    	break;
-	    case Preset::TYPE_PRINTER:
+        // Profile compatiblity is updated first when the profile is saved.
+        // Update profile selection combo boxes at the depending tabs to reflect modifications in profile compatibility.
+        std::vector<Preset::Type> dependent;
+        switch (m_type) {
+        case Preset::TYPE_PRINT:
+            dependent = { Preset::TYPE_FILAMENT };
+            break;
+        case Preset::TYPE_SLA_PRINT:
+            dependent = { Preset::TYPE_SLA_MATERIAL };
+            break;
+        case Preset::TYPE_PRINTER:
             if (static_cast<const TabPrinter*>(this)->m_printer_technology == ptFFF)
                 dependent = { Preset::TYPE_PRINT, Preset::TYPE_FILAMENT };
             else
                 dependent = { Preset::TYPE_SLA_PRINT, Preset::TYPE_SLA_MATERIAL };
-	        break;
+            break;
         default:
-	        break;
-	    }
-	    for (Preset::Type preset_type : dependent)
-			wxGetApp().get_tab(preset_type)->update_tab_ui();
-	}
+            break;
+        }
+        for (Preset::Type preset_type : dependent)
+            wxGetApp().get_tab(preset_type)->update_tab_ui();
+    }
 }
 
 // Called for a currently selected preset.
@@ -3284,13 +3327,70 @@ void Tab::delete_preset()
     // Don't let the user delete the ' - default - ' configuration.
     std::string action = current_preset.is_external ? _utf8(L("remove")) : _utf8(L("delete"));
     // TRN  remove/delete
-    const wxString msg = from_u8((boost::format(_utf8(L("Are you sure you want to %1% the selected preset?"))) % action).str());
+
+    PhysicalPrinterCollection& physical_printers = m_preset_bundle->physical_printers;
+    wxString msg;
+    if (m_presets_choice->is_selected_physical_printer())
+        msg = from_u8((boost::format(_u8L("Are you sure you want to delete \"%1%\" preset from the physical printer \"%2%\"?")) 
+                                     % current_preset.name % physical_printers.get_selected_printer_name()).str());
+    else
+    {
+        if (m_type == Preset::TYPE_PRINTER && !physical_printers.empty())
+        {
+            // Check preset for delete in physical printers
+            // Ask a customer about next action, if there is a printer with just one preset and this preset is equal to delete
+            std::vector<std::string> ph_printers        = physical_printers.get_printers_with_preset(current_preset.name);
+            std::vector<std::string> ph_printers_only   = physical_printers.get_printers_with_only_preset(current_preset.name);
+
+            if (!ph_printers.empty()) {
+                msg += _L("Next physical printer(s) has/have selected preset") + ":";
+                for (const std::string& printer : ph_printers)
+                    msg += "\n    \"" + from_u8(printer) + "\",";
+                msg.RemoveLast();
+                msg += "\n" + _L("Note, that selected preset will be deleted from this/those printer(s) too.")+ "\n\n";
+            }
+
+            if (!ph_printers_only.empty()) {
+                msg += _L("Next physical printer(s) has/have one and only selected preset") + ":";
+                for (const std::string& printer : ph_printers_only)
+                    msg += "\n    \"" + from_u8(printer) + "\",";
+                msg.RemoveLast();
+                msg += "\n" + _L("Note, that this/those printer(s) will be deleted after deleting of the selected preset.") + "\n\n";
+            }
+        }
+    
+        msg += from_u8((boost::format(_u8L("Are you sure you want to %1% the selected preset?")) % action).str());
+    }
+
     action = current_preset.is_external ? _utf8(L("Remove")) : _utf8(L("Delete"));
     // TRN  Remove/Delete
     wxString title = from_u8((boost::format(_utf8(L("%1% Preset"))) % action).str());  //action + _(L(" Preset"));
     if (current_preset.is_default ||
         wxID_YES != wxMessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
         return;
+
+    // if we just delete preset from the physical printer
+    if (m_presets_choice->is_selected_physical_printer()) {
+        PhysicalPrinter& printer = physical_printers.get_selected_printer();
+
+        if (printer.preset_names.size() == 1) {
+            wxMessageDialog dialog(nullptr, _L("It's a last for this physical printer. We can't delete it"), _L("Information"), wxICON_INFORMATION | wxOK);
+            dialog.ShowModal();
+            return;
+        }
+        // just delete this preset from the current physical printer
+        printer.delete_preset(m_presets->get_edited_preset().name);
+        // select first from the possible presets for this printer
+        physical_printers.select_printer(printer);
+
+        this->select_preset(physical_printers.get_selected_printer_preset_name());
+        return;
+    }
+
+    // delete selected preset from printers and printer, if it's needed
+    if (m_type == Preset::TYPE_PRINTER && !physical_printers.empty())
+        physical_printers.delete_preset_from_printers(current_preset.name);
+
     // Select will handle of the preset dependencies, of saving & closing the depending profiles, and
     // finally of deleting the preset.
     this->select_preset("", true);
@@ -3299,6 +3399,7 @@ void Tab::delete_preset()
 void Tab::toggle_show_hide_incompatible()
 {
     m_show_incompatible_presets = !m_show_incompatible_presets;
+    m_presets_choice->set_show_incompatible_presets(m_show_incompatible_presets);
     update_show_hide_incompatible_button();
     update_tab_ui();
 }
@@ -3538,6 +3639,18 @@ void Tab::set_tooltips_text()
                                 "Click to reset current value to the last saved preset."));
 }
 
+Page::Page(wxWindow* parent, const wxString& title, const int iconID, const std::vector<ScalableBitmap>& mode_bmp_cache) :
+        m_parent(parent),
+        m_title(title),
+        m_iconID(iconID),
+        m_mode_bitmap_cache(mode_bmp_cache)
+{
+    Create(m_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
+    m_vsizer = new wxBoxSizer(wxVERTICAL);
+    m_item_color = &wxGetApp().get_label_clr_default();
+    SetSizer(m_vsizer);
+}
+
 void Page::reload_config()
 {
     for (auto group : m_optgroups)
@@ -3557,6 +3670,12 @@ void Page::msw_rescale()
 {
     for (auto group : m_optgroups)
         group->msw_rescale();
+}
+
+void Page::sys_color_changed()
+{
+    for (auto group : m_optgroups)
+        group->sys_color_changed();
 }
 
 Field* Page::get_field(const t_config_option_key& opt_key, int opt_index /*= -1*/) const
@@ -3840,6 +3959,7 @@ void TabSLAPrint::build()
 
     optgroup = page->new_optgroup(L("Support pillar"));
     optgroup->append_single_option_line("support_pillar_diameter");
+    optgroup->append_single_option_line("support_small_pillar_diameter_percent");
     optgroup->append_single_option_line("support_max_bridges_on_pillar");
     
     optgroup->append_single_option_line("support_pillar_connection_mode");

@@ -2,6 +2,7 @@
 #include "ModelArrange.hpp"
 #include "Geometry.hpp"
 #include "MTUtils.hpp"
+#include "TriangleSelector.hpp"
 
 #include "Format/AMF.hpp"
 #include "Format/OBJ.hpp"
@@ -453,24 +454,19 @@ bool Model::looks_like_imperial_units() const
     if (this->objects.size() == 0)
         return false;
 
-    stl_vertex size = this->objects[0]->get_object_stl_stats().size;
+    for (ModelObject* obj : this->objects)
+        if (obj->get_object_stl_stats().volume < 9.0) // 9 = 3*3*3;
+            return true;
 
-    for (ModelObject* o : this->objects) {
-        auto sz = o->get_object_stl_stats().size;
-
-        if (size[0] < sz[0]) size[0] = sz[0];
-        if (size[1] < sz[1]) size[1] = sz[1];
-        if (size[2] < sz[2]) size[2] = sz[2];
-    }
-
-    return (size[0] < 3 && size[1] < 3 && size[2] < 3);
+    return false;
 }
 
 void Model::convert_from_imperial_units()
 {
     double in_to_mm = 25.4;
-    for (ModelObject* o : this->objects)
-        o->scale_mesh_after_creation(Vec3d(in_to_mm, in_to_mm, in_to_mm));
+    for (ModelObject* obj : this->objects)
+        if (obj->get_object_stl_stats().volume < 9.0) // 9 = 3*3*3;
+            obj->scale_mesh_after_creation(Vec3d(in_to_mm, in_to_mm, in_to_mm));
 }
 
 void Model::adjust_min_z()
@@ -991,6 +987,56 @@ void ModelObject::scale_mesh_after_creation(const Vec3d &versor)
     this->invalidate_bounding_box();
 }
 
+void ModelObject::convert_units(ModelObjectPtrs& new_objects, bool from_imperial, std::vector<int> volume_idxs)
+{
+    BOOST_LOG_TRIVIAL(trace) << "ModelObject::convert_units - start";
+
+    ModelObject* new_object = new_clone(*this);
+
+    double koef = from_imperial ? 25.4 : 0.0393700787;
+    const Vec3d versor = Vec3d(koef, koef, koef);
+
+    new_object->set_model(nullptr);
+    new_object->sla_support_points.clear();
+    new_object->sla_drain_holes.clear();
+    new_object->sla_points_status = sla::PointsStatus::NoPoints;
+    new_object->clear_volumes();
+    new_object->input_file.clear();
+
+    int vol_idx = 0;
+    for (ModelVolume* volume : volumes)
+    {
+        volume->m_supported_facets.clear();
+        if (!volume->mesh().empty()) {
+            TriangleMesh mesh(volume->mesh());
+            mesh.require_shared_vertices();
+
+            ModelVolume* vol = new_object->add_volume(mesh);
+            vol->name = volume->name;
+            // Don't copy the config's ID.
+            static_cast<DynamicPrintConfig&>(vol->config) = static_cast<const DynamicPrintConfig&>(volume->config);
+            assert(vol->config.id().valid());
+            assert(vol->config.id() != volume->config.id());
+            vol->set_material(volume->material_id(), *volume->material());
+
+            // Perform conversion
+            if (volume_idxs.empty() || 
+                std::find(volume_idxs.begin(), volume_idxs.end(), vol_idx) != volume_idxs.end()) {
+                vol->scale_geometry_after_creation(versor);
+                vol->set_offset(versor.cwiseProduct(vol->get_offset()));
+            }
+            else
+                vol->set_offset(volume->get_offset());
+        }
+        vol_idx ++;
+    }
+    new_object->invalidate_bounding_box();
+
+    new_objects.push_back(new_object);
+
+    BOOST_LOG_TRIVIAL(trace) << "ModelObject::convert_units - end";
+}
+
 size_t ModelObject::materials_count() const
 {
     std::set<t_model_material_id> material_ids;
@@ -1221,6 +1267,27 @@ void ModelObject::split(ModelObjectPtrs* new_objects)
     return;
 }
 
+void ModelObject::merge()
+{
+    if (this->volumes.size() == 1) {
+        // We can't merge meshes if there's just one volume
+        return;
+    }
+
+    TriangleMesh mesh;
+
+    for (ModelVolume* volume : volumes)
+        if (!volume->mesh().empty())
+            mesh.merge(volume->mesh());
+    mesh.repair();
+
+    this->clear_volumes();
+    ModelVolume* vol = this->add_volume(mesh);
+
+    if (!vol)
+        return;
+}
+
 // Support for non-uniform scaling of instances. If an instance is rotated by angles, which are not multiples of ninety degrees,
 // then the scaling in world coordinate system is not representable by the Geometry::Transformation structure.
 // This situation is solved by baking in the instance transformation into the mesh vertices.
@@ -1333,8 +1400,8 @@ unsigned int ModelObject::check_instances_print_volume_state(const BoundingBoxf3
                     inside_outside |= OUTSIDE;
             }
         model_instance->print_volume_state = 
-            (inside_outside == (INSIDE | OUTSIDE)) ? ModelInstance::PVS_Partly_Outside :
-            (inside_outside == INSIDE) ? ModelInstance::PVS_Inside : ModelInstance::PVS_Fully_Outside;
+            (inside_outside == (INSIDE | OUTSIDE)) ? ModelInstancePVS_Partly_Outside :
+            (inside_outside == INSIDE) ? ModelInstancePVS_Inside : ModelInstancePVS_Fully_Outside;
         if (inside_outside == INSIDE)
             ++ num_printable;
     }
@@ -1414,9 +1481,6 @@ stl_stats ModelObject::get_object_stl_stats() const
     // fill full_stats from all objet's meshes
     for (ModelVolume* volume : this->volumes)
     {
-        if (volume->id() == this->volumes[0]->id())
-            continue;
-
         const stl_stats& stats = volume->mesh().stl.stats;
 
         // initialize full_stats (for repaired errors)
@@ -1767,28 +1831,25 @@ arrangement::ArrangePolygon ModelInstance::get_arrange_polygon() const
 }
 
 
-std::vector<int> FacetsAnnotation::get_facets(FacetSupportType type) const
+indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, FacetSupportType type) const
 {
-    std::vector<int> out;
-    for (auto& [facet_idx, this_type] : m_data)
-        if (this_type == type)
-            out.push_back(facet_idx);
+    TriangleSelector selector(mv.mesh());
+    selector.deserialize(m_data);
+    indexed_triangle_set out = selector.get_facets(type);
     return out;
 }
 
 
 
-void FacetsAnnotation::set_facet(int idx, FacetSupportType type)
+bool FacetsAnnotation::set(const TriangleSelector& selector)
 {
-    bool changed = true;
-
-    if (type == FacetSupportType::NONE)
-        changed = m_data.erase(idx) != 0;
-    else
-        m_data[idx] = type;
-
-    if (changed)
+    std::map<int, std::vector<bool>> sel_map = selector.serialize();
+    if (sel_map != m_data) {
+        m_data = sel_map;
         update_timestamp();
+        return true;
+    }
+    return false;
 }
 
 
@@ -1797,6 +1858,64 @@ void FacetsAnnotation::clear()
 {
     m_data.clear();
     update_timestamp();
+}
+
+
+
+// Following function takes data from a triangle and encodes it as string
+// of hexadecimal numbers (one digit per triangle). Used for 3MF export,
+// changing it may break backwards compatibility !!!!!
+std::string FacetsAnnotation::get_triangle_as_string(int triangle_idx) const
+{
+    std::string out;
+
+    auto triangle_it = m_data.find(triangle_idx);
+    if (triangle_it != m_data.end()) {
+        const std::vector<bool>& code = triangle_it->second;
+        int offset = 0;
+        while (offset < int(code.size())) {
+            int next_code = 0;
+            for (int i=3; i>=0; --i) {
+                next_code = next_code << 1;
+                next_code |= int(code[offset + i]);
+            }
+            offset += 4;
+
+            assert(next_code >=0 && next_code <= 15);
+            char digit = next_code < 10 ? next_code + '0' : (next_code-10)+'A';
+            out.insert(out.begin(), digit);
+        }
+    }
+    return out;
+}
+
+
+
+// Recover triangle splitting & state from string of hexadecimal values previously
+// generated by get_triangle_as_string. Used to load from 3MF.
+void FacetsAnnotation::set_triangle_from_string(int triangle_id, const std::string& str)
+{
+    assert(! str.empty());
+    m_data[triangle_id] = std::vector<bool>(); // zero current state or create new
+    std::vector<bool>& code = m_data[triangle_id];
+
+    for (auto it = str.crbegin(); it != str.crend(); ++it) {
+        const char ch = *it;
+        int dec = 0;
+        if (ch >= '0' && ch<='9')
+            dec = int(ch - '0');
+        else if (ch >='A' && ch <= 'F')
+            dec = 10 + int(ch - 'A');
+        else
+            assert(false);
+
+        // Convert to binary and append into code.
+        for (int i=0; i<4; ++i) {
+            code.insert(code.end(), bool(dec & (1 << i)));
+        }
+    }
+
+
 }
 
 
@@ -1872,7 +1991,7 @@ bool model_custom_supports_data_changed(const ModelObject& mo, const ModelObject
             return true;
     }
     return false;
-};
+}
 
 extern bool model_has_multi_part_objects(const Model &model)
 {

@@ -151,6 +151,8 @@ public:
     virtual wxSizer*	getSizer()  { return nullptr; }
     virtual wxWindow*	getWindow() { return nullptr; }
 
+	wxStaticText*		getLabel()	{ return m_Label; }
+
 	bool				is_matched(const std::string& string, const std::string& pattern);
 	void				get_value_by_opt_type(wxString& str, const bool check_value = true);
 
@@ -221,6 +223,7 @@ public:
     }
 
     virtual void msw_rescale(bool rescale_sidetext = false);
+    void sys_color_changed();
 
     bool get_enter_pressed() const { return bEnterPressed; }
     void set_enter_pressed(bool pressed) { bEnterPressed = pressed; }

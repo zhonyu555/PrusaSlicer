@@ -15,12 +15,11 @@
 #include "libslic3r/Print.hpp"
 #include "libslic3r/Polygon.hpp"
 #include "libslic3r/SLAPrint.hpp"
+#include "libslic3r/PresetBundle.hpp"
 
 #include "Tab.hpp"
-#include "PresetBundle.hpp"
 #include "ProgressStatusBar.hpp"
 #include "3DScene.hpp"
-#include "AppConfig.hpp"
 #include "PrintHostDialogs.hpp"
 #include "wxExtensions.hpp"
 #include "GUI_ObjectList.hpp"
@@ -29,6 +28,7 @@
 #include "InstanceCheck.hpp"
 #include "I18N.hpp"
 #include "GLCanvas3D.hpp"
+#include "Plater.hpp"
 
 #include <fstream>
 #include "GUI_App.hpp"
@@ -41,10 +41,40 @@
 namespace Slic3r {
 namespace GUI {
 
+enum class ERescaleTarget
+{
+    Mainframe,
+    SettingsDialog
+};
+
+static void rescale_dialog_after_dpi_change(MainFrame& mainframe, SettingsDialog& dialog, ERescaleTarget target)
+{
+    int mainframe_dpi = get_dpi_for_window(&mainframe);
+    int dialog_dpi = get_dpi_for_window(&dialog);
+    if (mainframe_dpi != dialog_dpi) {
+        if (target == ERescaleTarget::SettingsDialog) {
+            dialog.enable_force_rescale();
+#if wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
+            dialog.GetEventHandler()->AddPendingEvent(wxDPIChangedEvent(wxSize(mainframe_dpi, mainframe_dpi), wxSize(dialog_dpi, dialog_dpi)));
+#else
+            dialog.GetEventHandler()->AddPendingEvent(DpiChangedEvent(EVT_DPI_CHANGED_SLICER, dialog_dpi, dialog.GetRect()));
+#endif // wxVERSION_EQUAL_OR_GREATER_THAN
+        } else {
+#if wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
+            mainframe.GetEventHandler()->AddPendingEvent(wxDPIChangedEvent(wxSize(dialog_dpi, dialog_dpi), wxSize(mainframe_dpi, mainframe_dpi)));
+#else
+            mainframe.enable_force_rescale();
+            mainframe.GetEventHandler()->AddPendingEvent(DpiChangedEvent(EVT_DPI_CHANGED_SLICER, mainframe_dpi, mainframe.GetRect()));
+#endif // wxVERSION_EQUAL_OR_GREATER_THAN
+        }
+    }
+}
+
 MainFrame::MainFrame() :
 DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE, "mainframe"),
     m_printhost_queue_dlg(new PrintHostQueueDialog(this))
     , m_recent_projects(9)
+    , m_settings_dialog(this)
 {
     // Fonts were created by the DPIFrame constructor for the monitor, on which the window opened.
     wxGetApp().update_fonts(this);
@@ -71,12 +101,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
 	m_statusbar->embed(this);
     m_statusbar->set_status_text(_(L("Version")) + " " +
 		SLIC3R_VERSION +
-		_(L(" - Remember to check for updates at http://github.com/prusa3d/PrusaSlicer/releases")));
-
-    /* Load default preset bitmaps before a tabpanel initialization,
-     * but after filling of an em_unit value 
-     */
-    wxGetApp().preset_bundle->load_default_preset_bitmaps();
+		_(L(" - Remember to check for updates at https://github.com/prusa3d/PrusaSlicer/releases")));
 
     // initialize tabpanel and menubar
     init_tabpanel();
@@ -90,18 +115,16 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     m_loaded = true;
 
     // initialize layout
-    auto sizer = new wxBoxSizer(wxVERTICAL);
-    if (m_plater && m_layout != slOld)
-        sizer->Add(m_plater, 1, wxEXPAND);
-
-    if (m_tabpanel && m_layout != slDlg)
-        sizer->Add(m_tabpanel, 1, wxEXPAND);
-
-    sizer->SetSizeHints(this);
+    m_main_sizer = new wxBoxSizer(wxVERTICAL);
+    wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
+    sizer->Add(m_main_sizer, 1, wxEXPAND);
     SetSizer(sizer);
+    // initialize layout from config
+    update_layout();
+    sizer->SetSizeHints(this);
     Fit();
 
-    const wxSize min_size = wxSize(76*wxGetApp().em_unit(), 49*wxGetApp().em_unit());
+    const wxSize min_size = wxGetApp().get_min_size(); //wxSize(76*wxGetApp().em_unit(), 49*wxGetApp().em_unit());
 #ifdef __APPLE__
     // Using SetMinSize() on Mac messes up the window position in some cases
     // cf. https://groups.google.com/forum/#!topic/wx-users/yUKPBBfXWO0
@@ -191,11 +214,127 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     });
 
     wxGetApp().persist_window_geometry(this, true);
+    wxGetApp().persist_window_geometry(&m_settings_dialog, true);
 
     update_ui_from_settings();    // FIXME (?)
 
     if (m_plater != nullptr)
         m_plater->show_action_buttons(true);
+}
+
+void MainFrame::update_layout()
+{
+    auto restore_to_creation = [this]() {
+        auto clean_sizer = [](wxSizer* sizer) {
+            while (!sizer->GetChildren().IsEmpty()) {
+                sizer->Detach(0);
+            }
+        };
+
+        // On Linux m_plater needs to be removed from m_tabpanel before to reparent it
+        int plater_page_id = m_tabpanel->FindPage(m_plater);
+        if (plater_page_id != wxNOT_FOUND)
+            m_tabpanel->RemovePage(plater_page_id);
+
+        if (m_plater->GetParent() != this)
+            m_plater->Reparent(this);
+
+        if (m_tabpanel->GetParent() != this)
+            m_tabpanel->Reparent(this);
+
+        plater_page_id = (m_plater_page != nullptr) ? m_tabpanel->FindPage(m_plater_page) : wxNOT_FOUND;
+        if (plater_page_id != wxNOT_FOUND) {
+            m_tabpanel->DeletePage(plater_page_id);
+            m_plater_page = nullptr;
+        }
+
+        if (m_layout == ESettingsLayout::Dlg)
+            rescale_dialog_after_dpi_change(*this, m_settings_dialog, ERescaleTarget::Mainframe);
+
+        clean_sizer(m_main_sizer);
+        clean_sizer(m_settings_dialog.GetSizer());
+
+        if (m_settings_dialog.IsShown())
+            m_settings_dialog.Close();
+
+        m_tabpanel->Hide();
+        m_plater->Hide();
+
+        Layout();
+    };
+
+    ESettingsLayout layout = wxGetApp().app_config->get("old_settings_layout_mode") == "1" ? ESettingsLayout::Old :
+        wxGetApp().app_config->get("new_settings_layout_mode") == "1" ? ESettingsLayout::New :
+        wxGetApp().app_config->get("dlg_settings_layout_mode") == "1" ? ESettingsLayout::Dlg : ESettingsLayout::Old;
+
+    if (m_layout == layout)
+        return;
+
+    wxBusyCursor busy;
+
+    Freeze();
+
+    // Remove old settings
+    if (m_layout != ESettingsLayout::Unknown)
+        restore_to_creation();
+
+    m_layout = layout;
+
+    // From the very beginning the Print settings should be selected
+    m_last_selected_tab = m_layout == ESettingsLayout::Dlg ? 0 : 1;
+
+    // Set new settings
+    switch (m_layout)
+    {
+    case ESettingsLayout::Old:
+    {
+        m_plater->Reparent(m_tabpanel);
+        m_tabpanel->InsertPage(0, m_plater, _L("Plater"));
+        m_main_sizer->Add(m_tabpanel, 1, wxEXPAND);
+        m_plater->Show();
+        m_tabpanel->Show();
+        break;
+    }
+    case ESettingsLayout::New:
+    {
+        m_main_sizer->Add(m_plater, 1, wxEXPAND);
+        m_tabpanel->Hide();
+        m_main_sizer->Add(m_tabpanel, 1, wxEXPAND);
+        m_plater_page = new wxPanel(m_tabpanel);
+        m_tabpanel->InsertPage(0, m_plater_page, _L("Plater")); // empty panel just for Plater tab */
+        m_plater->Show();
+        break;
+    }
+    case ESettingsLayout::Dlg:
+    {
+        m_main_sizer->Add(m_plater, 1, wxEXPAND);
+        m_tabpanel->Reparent(&m_settings_dialog);
+        m_settings_dialog.GetSizer()->Add(m_tabpanel, 1, wxEXPAND);
+
+        rescale_dialog_after_dpi_change(*this, m_settings_dialog, ERescaleTarget::SettingsDialog);
+
+        m_tabpanel->Show();
+        m_plater->Show();
+        break;
+    }
+    }
+
+//#ifdef __APPLE__
+//    // Using SetMinSize() on Mac messes up the window position in some cases
+//    // cf. https://groups.google.com/forum/#!topic/wx-users/yUKPBBfXWO0
+//    // So, if we haven't possibility to set MinSize() for the MainFrame, 
+//    // set the MinSize() as a half of regular  for the m_plater and m_tabpanel, when settings layout is in slNew mode
+//    // Otherwise, MainFrame will be maximized by height
+//    if (m_layout == ESettingsLayout::New) {
+//        wxSize size = wxGetApp().get_min_size();
+//        size.SetHeight(int(0.5 * size.GetHeight()));
+//        m_plater->SetMinSize(size);
+//        m_tabpanel->SetMinSize(size);
+//    }
+//#endif
+    
+    Layout();
+    Thaw();
 }
 
 // Called when closing the application and when switching the application language.
@@ -230,8 +369,9 @@ void MainFrame::shutdown()
     // In addition, there were some crashes due to the Paint events sent to already destructed windows.
     this->Show(false);
 
-    if (m_settings_dialog)
-        m_settings_dialog->Destroy();
+    if (m_settings_dialog.IsShown())
+        // call Close() to trigger call to lambda defined into GUI_App::persist_window_geometry()
+        m_settings_dialog.Close();
 
 	// Stop the background thread (Windows and Linux).
 	// Disconnect from a 3DConnextion driver (OSX).
@@ -290,52 +430,37 @@ void MainFrame::update_title()
 
 void MainFrame::init_tabpanel()
 {
-    m_layout = wxGetApp().app_config->get("old_settings_layout_mode") == "1" ? slOld :
-               wxGetApp().app_config->get("new_settings_layout_mode") == "1" ? slNew :
-               wxGetApp().app_config->get("dlg_settings_layout_mode") == "1" ? slDlg : slOld;
-
-    // From the very beginning the Print settings should be selected
-    m_last_selected_tab = m_layout == slDlg ? 0 : 1;
-
-    if (m_layout == slDlg) {
-        m_settings_dialog = new SettingsDialog(this);
-        m_tabpanel = m_settings_dialog->get_tabpanel();
-    }
-    else {
-        // wxNB_NOPAGETHEME: Disable Windows Vista theme for the Notebook background. The theme performance is terrible on Windows 10
-        // with multiple high resolution displays connected.
-        m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
+    // wxNB_NOPAGETHEME: Disable Windows Vista theme for the Notebook background. The theme performance is terrible on Windows 10
+    // with multiple high resolution displays connected.
+    m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
 #ifndef __WXOSX__ // Don't call SetFont under OSX to avoid name cutting in ObjectList
-        m_tabpanel->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+    m_tabpanel->SetFont(Slic3r::GUI::wxGetApp().normal_font());
 #endif
-    }
+    m_tabpanel->Hide();
+    m_settings_dialog.set_tabpanel(m_tabpanel);
 
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxEvent&) {
-        auto panel = m_tabpanel->GetCurrentPage();
+        wxWindow* panel = m_tabpanel->GetCurrentPage();
+        Tab* tab = dynamic_cast<Tab*>(panel);
 
-        if (panel == nullptr)
+        // There shouldn't be a case, when we try to select a tab, which doesn't support a printer technology
+        if (panel == nullptr || (tab != nullptr && !tab->supports_printer_technology(m_plater->printer_technology())))
             return;
 
         auto& tabs_list = wxGetApp().tabs_list;
-        if (find(tabs_list.begin(), tabs_list.end(), panel) != tabs_list.end()) {
+        if (tab && std::find(tabs_list.begin(), tabs_list.end(), tab) != tabs_list.end()) {
             // On GTK, the wxEVT_NOTEBOOK_PAGE_CHANGED event is triggered
             // before the MainFrame is fully set up.
-            static_cast<Tab*>(panel)->OnActivate();
+            tab->OnActivate();
             m_last_selected_tab = m_tabpanel->GetSelection();
         }
         else
-            select_tab(0);
+            select_tab(0); // select Plater
     });
 
-    if (m_layout == slOld) {
-        m_plater = new Plater(m_tabpanel, this);
-        m_tabpanel->AddPage(m_plater, _L("Plater"));
-    }
-    else {
-        m_plater = new Plater(this, this);
-        if (m_layout == slNew)
-            m_tabpanel->AddPage(new wxPanel(m_tabpanel), _L("Plater")); // empty panel just for Plater tab
-    }
+    m_plater = new Plater(this, this);
+    m_plater->Hide();
+
     wxGetApp().plater_ = m_plater;
 
     wxGetApp().obj_list()->create_popup_menus();
@@ -477,13 +602,16 @@ bool MainFrame::can_slice() const
 
 bool MainFrame::can_change_view() const
 {
-    if (m_layout == slNew)
-        return m_plater->IsShown();
-    if (m_layout == slDlg)
-        return true;
-    // slOld layout mode
-    int page_id = m_tabpanel->GetSelection();
-    return page_id != wxNOT_FOUND && dynamic_cast<const Slic3r::GUI::Plater*>(m_tabpanel->GetPage((size_t)page_id)) != nullptr;
+    switch (m_layout)
+    {
+    default:                   { return false; }
+    case ESettingsLayout::New: { return m_plater->IsShown(); }
+    case ESettingsLayout::Dlg: { return true; }
+    case ESettingsLayout::Old: { 
+        int page_id = m_tabpanel->GetSelection();
+        return page_id != wxNOT_FOUND && dynamic_cast<const Slic3r::GUI::Plater*>(m_tabpanel->GetPage((size_t)page_id)) != nullptr;
+    }
+    }
 }
 
 bool MainFrame::can_select() const
@@ -511,22 +639,22 @@ bool MainFrame::can_reslice() const
     return (m_plater != nullptr) && !m_plater->model().objects.empty();
 }
 
-void MainFrame::on_dpi_changed(const wxRect &suggested_rect)
+void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
 {
+#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
+    wxGetApp().update_fonts(this);
+#else
     wxGetApp().update_fonts();
+#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
     this->SetFont(this->normal_font());
-
-    /* Load default preset bitmaps before a tabpanel initialization,
-     * but after filling of an em_unit value
-     */
-    wxGetApp().preset_bundle->load_default_preset_bitmaps();
 
     // update Plater
     wxGetApp().plater()->msw_rescale();
 
     // update Tabs
-    for (auto tab : wxGetApp().tabs_list)
-        tab->msw_rescale();
+    if (m_layout != ESettingsLayout::Dlg) // Do not update tabs if the Settings are in the separated dialog
+        for (auto tab : wxGetApp().tabs_list)
+            tab->msw_rescale();
 
     wxMenuBar* menu_bar = this->GetMenuBar();
     for (size_t id = 0; id < menu_bar->GetMenuCount(); id++)
@@ -534,7 +662,7 @@ void MainFrame::on_dpi_changed(const wxRect &suggested_rect)
 
     // Workarounds for correct Window rendering after rescale
 
-    /* Even if Window is maximized during moving, 
+    /* Even if Window is maximized during moving,
      * first of all we should imitate Window resizing. So:
      * 1. cancel maximization, if it was set
      * 2. imitate resizing
@@ -552,6 +680,29 @@ void MainFrame::on_dpi_changed(const wxRect &suggested_rect)
     this->SetSize(sz);
 
     this->Maximize(is_maximized);
+
+    if (m_layout == ESettingsLayout::Dlg)
+        rescale_dialog_after_dpi_change(*this, m_settings_dialog, ERescaleTarget::SettingsDialog);
+}
+
+void MainFrame::on_sys_color_changed()
+{
+    wxBusyCursor wait;
+
+    // update label colors in respect to the system mode
+    wxGetApp().init_label_colours();
+
+    // update Plater
+    wxGetApp().plater()->sys_color_changed();
+
+    // update Tabs
+    for (auto tab : wxGetApp().tabs_list)
+        tab->sys_color_changed();
+
+    // msw_rescale_menu updates just icons, so use it
+    wxMenuBar* menu_bar = this->GetMenuBar();
+    for (size_t id = 0; id < menu_bar->GetMenuCount(); id++)
+        msw_rescale_menu(menu_bar->GetMenu(id));
 }
 
 void MainFrame::init_menubar()
@@ -646,7 +797,7 @@ void MainFrame::init_menubar()
 
         wxMenu* export_menu = new wxMenu();
         wxMenuItem* item_export_gcode = append_menu_item(export_menu, wxID_ANY, _(L("Export &G-code")) + dots +"\tCtrl+G", _(L("Export current plate as G-code")),
-            [this](wxCommandEvent&) { if (m_plater) m_plater->export_gcode(); }, "export_gcode", nullptr,
+            [this](wxCommandEvent&) { if (m_plater) m_plater->export_gcode(false); }, "export_gcode", nullptr,
             [this](){return can_export_gcode(); }, this);
         m_changeable_menu_items.push_back(item_export_gcode);
         wxMenuItem* item_send_gcode = append_menu_item(export_menu, wxID_ANY, _(L("S&end G-code")) + dots +"\tCtrl+Shift+G", _(L("Send to print current plate as G-code")),
@@ -878,7 +1029,7 @@ void MainFrame::init_menubar()
         append_menu_item(helpMenu, wxID_ANY, _(L("Prusa 3D &Drivers")), _(L("Open the Prusa3D drivers download page in your browser")), 
             [this](wxCommandEvent&) { wxGetApp().open_web_page_localized("https://www.prusa3d.com/downloads"); }); 
         append_menu_item(helpMenu, wxID_ANY, _(L("Software &Releases")), _(L("Open the software releases page in your browser")), 
-            [this](wxCommandEvent&) { wxLaunchDefaultBrowser("http://github.com/prusa3d/PrusaSlicer/releases"); });
+            [this](wxCommandEvent&) { wxLaunchDefaultBrowser("https://github.com/prusa3d/PrusaSlicer/releases"); });
 //#        my $versioncheck = $self->_append_menu_item($helpMenu, "Check for &Updates...", "Check for new Slic3r versions", sub{
 //#            wxTheApp->check_version(1);
 //#        });
@@ -895,7 +1046,7 @@ void MainFrame::init_menubar()
         append_menu_item(helpMenu, wxID_ANY, _(L("Show &Configuration Folder")), _(L("Show user configuration folder (datadir)")),
             [this](wxCommandEvent&) { Slic3r::GUI::desktop_open_datadir_folder(); });
         append_menu_item(helpMenu, wxID_ANY, _(L("Report an I&ssue")), wxString::Format(_(L("Report an issue on %s")), SLIC3R_APP_NAME), 
-            [this](wxCommandEvent&) { wxLaunchDefaultBrowser("http://github.com/prusa3d/slic3r/issues/new"); });
+            [this](wxCommandEvent&) { wxLaunchDefaultBrowser("https://github.com/prusa3d/slic3r/issues/new"); });
         append_menu_item(helpMenu, wxID_ANY, wxString::Format(_(L("&About %s")), SLIC3R_APP_NAME), _(L("Show about dialog")),
             [this](wxCommandEvent&) { Slic3r::GUI::about(); });
         helpMenu->AppendSeparator();
@@ -1040,10 +1191,10 @@ void MainFrame::quick_slice(const int qs)
     }
 
     // show processbar dialog
-    m_progress_dialog = new wxProgressDialog(_(L("Slicing")) + dots, 
-    // TRN "Processing input_file_basename"
-                                             from_u8((boost::format(_utf8(L("Processing %s"))) % (input_file_basename + dots)).str()),
-        100, this, 4);
+    m_progress_dialog = new wxProgressDialog(_L("Slicing") + dots,
+        // TRN "Processing input_file_basename"
+        from_u8((boost::format(_utf8(L("Processing %s"))) % (input_file_basename + dots)).str()),
+        100, nullptr, wxPD_AUTO_HIDE);
     m_progress_dialog->Pulse();
     {
 //         my @warnings = ();
@@ -1264,9 +1415,10 @@ void MainFrame::load_config(const DynamicPrintConfig& config)
 
 void MainFrame::select_tab(size_t tab/* = size_t(-1)*/)
 {
-    if (m_layout == slDlg) {
+    bool tabpanel_was_hidden = false;
+    if (m_layout == ESettingsLayout::Dlg) {
         if (tab==0) {
-            if (m_settings_dialog->IsShown())
+            if (m_settings_dialog.IsShown())
                 this->SetFocus();
             // plater should be focused for correct navigation inside search window
             if (m_plater->canvas3D()->is_search_pressed())
@@ -1274,18 +1426,26 @@ void MainFrame::select_tab(size_t tab/* = size_t(-1)*/)
             return;
         }
         // Show/Activate Settings Dialog
-        if (m_settings_dialog->IsShown())
 #ifdef __WXOSX__ // Don't call SetFont under OSX to avoid name cutting in ObjectList
-            m_settings_dialog->Hide();
+        if (m_settings_dialog.IsShown())
+            m_settings_dialog.Hide();
+
+        m_tabpanel->Show();
+        m_settings_dialog.Show();
 #else
-            m_settings_dialog->SetFocus();
-        else
+        if (m_settings_dialog.IsShown())
+            m_settings_dialog.SetFocus();
+        else {
+            tabpanel_was_hidden = true;
+            m_tabpanel->Show();
+            m_settings_dialog.Show();
+        }
 #endif
-        m_settings_dialog->Show();
     }
-    else if (m_layout == slNew) {
-        m_plater->Show(tab == 0);
-        m_tabpanel->Show(tab != 0);
+    else if (m_layout == ESettingsLayout::New) {
+        m_main_sizer->Show(m_plater, tab == 0);
+        tabpanel_was_hidden = !m_main_sizer->IsShown(m_tabpanel);
+        m_main_sizer->Show(m_tabpanel, tab != 0);
 
         // plater should be focused for correct navigation inside search window
         if (tab == 0 && m_plater->canvas3D()->is_search_pressed())
@@ -1293,8 +1453,16 @@ void MainFrame::select_tab(size_t tab/* = size_t(-1)*/)
         Layout();
     }
 
-    // when tab == -1, it means we should to show the last selected tab 
-    m_tabpanel->SetSelection(tab == (size_t)(-1) ? m_last_selected_tab : (m_layout == slDlg && tab != 0) ? tab-1 : tab);
+    // When we run application in ESettingsLayout::New or ESettingsLayout::Dlg mode, tabpanel is hidden from the very beginning
+    // and as a result Tab::update_changed_tree_ui() function couldn't update m_is_nonsys_values values,
+    // which are used for update TreeCtrl and "revert_buttons".
+    // So, force the call of this function for Tabs, if tab panel was hidden
+    if (tabpanel_was_hidden)
+        for (auto tab : wxGetApp().tabs_list)
+            tab->update_changed_tree_ui();
+
+    // when tab == -1, it means we should show the last selected tab
+    m_tabpanel->SetSelection(tab == (size_t)(-1) ? m_last_selected_tab : (m_layout == ESettingsLayout::Dlg && tab != 0) ? tab - 1 : tab);
 }
 
 // Set a camera direction, zoom to all objects.
@@ -1405,13 +1573,12 @@ std::string MainFrame::get_dir_name(const wxString &full_name) const
 // ----------------------------------------------------------------------------
 
 SettingsDialog::SettingsDialog(MainFrame* mainframe)
-: DPIDialog(nullptr, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _L("Settings")),
+: DPIDialog(mainframe, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _L("Settings"), wxDefaultPosition, wxDefaultSize,
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMINIMIZE_BOX | wxMAXIMIZE_BOX, "settings_dialog"),
     m_main_frame(mainframe)
 {
     this->SetFont(wxGetApp().normal_font());
-
-    wxColour bgr_clr = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
-    this->SetBackgroundColour(bgr_clr);
+    this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
     // Load the icon either from the exe, or from the ico file.
 #if _WIN32
@@ -1424,34 +1591,38 @@ SettingsDialog::SettingsDialog(MainFrame* mainframe)
     SetIcon(wxIcon(var("PrusaSlicer_128px.png"), wxBITMAP_TYPE_PNG));
 #endif // _WIN32
 
-    // wxNB_NOPAGETHEME: Disable Windows Vista theme for the Notebook background. The theme performance is terrible on Windows 10
-    // with multiple high resolution displays connected.
-    m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
-#ifndef __WXOSX__ // Don't call SetFont under OSX to avoid name cutting in ObjectList
-    m_tabpanel->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-#endif
+    this->Bind(wxEVT_SHOW, [this](wxShowEvent& evt) {
 
-    m_tabpanel->Bind(wxEVT_KEY_UP, [this](wxKeyEvent& evt) {
-        if ((evt.GetModifiers() & wxMOD_CONTROL) != 0) {
-            switch (evt.GetKeyCode()) {
-            case '1': { m_main_frame->select_tab(0); break; }
-            case '2': { m_main_frame->select_tab(1); break; }
-            case '3': { m_main_frame->select_tab(2); break; }
-            case '4': { m_main_frame->select_tab(3); break; }
+        auto key_up_handker = [this](wxKeyEvent& evt) {
+            if ((evt.GetModifiers() & wxMOD_CONTROL) != 0) {
+                switch (evt.GetKeyCode()) {
+                case '1': { m_main_frame->select_tab(0); break; }
+                case '2': { m_main_frame->select_tab(1); break; }
+                case '3': { m_main_frame->select_tab(2); break; }
+                case '4': { m_main_frame->select_tab(3); break; }
 #ifdef __APPLE__
-            case 'f':
+                case 'f':
 #else /* __APPLE__ */
-            case WXK_CONTROL_F:
+                case WXK_CONTROL_F:
 #endif /* __APPLE__ */
-            case 'F': { m_main_frame->plater()->search(false); break; }
-            default:break;
+                case 'F': { m_main_frame->plater()->search(false); break; }
+                default:break;
+                }
             }
+        };
+
+        if (evt.IsShown()) {
+            if (m_tabpanel != nullptr)
+                m_tabpanel->Bind(wxEVT_KEY_UP, key_up_handker);
         }
-    });
+        else {
+            if (m_tabpanel != nullptr)
+                m_tabpanel->Unbind(wxEVT_KEY_UP, key_up_handker);
+        }
+        });
 
     // initialize layout
     auto sizer = new wxBoxSizer(wxVERTICAL);
-    sizer->Add(m_tabpanel, 1, wxEXPAND);
     sizer->SetSizeHints(this);
     SetSizer(sizer);
     Fit();
@@ -1472,6 +1643,10 @@ void SettingsDialog::on_dpi_changed(const wxRect& suggested_rect)
 {
     const int& em = em_unit();
     const wxSize& size = wxSize(85 * em, 50 * em);
+
+    // update Tabs
+    for (auto tab : wxGetApp().tabs_list)
+        tab->msw_rescale();
 
     SetMinSize(size);
     Fit();

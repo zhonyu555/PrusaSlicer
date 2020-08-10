@@ -5,14 +5,15 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <boost/filesystem/path.hpp>
-
 #include <wx/event.h>
 
-#include "libslic3r/Print.hpp"
+#include "libslic3r/PrintBase.hpp"
+#include "libslic3r/GCode/ThumbnailData.hpp"
 #include "libslic3r/Format/SL1.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
 
+
+namespace boost { namespace filesystem { class path; } }
 
 namespace Slic3r {
 
@@ -20,7 +21,6 @@ class DynamicPrintConfig;
 class GCodePreviewData;
 class Model;
 class SLAPrint;
-class SL1Archive;
 
 class SlicingStatusEvent : public wxEvent
 {
@@ -60,6 +60,10 @@ public:
 	// The following wxCommandEvent will be sent to the UI thread / Plater window, when the G-code export is finished.
 	// The wxCommandEvent is sent to the UI thread asynchronously without waiting for the event to be processed.
 	void set_finished_event(int event_id) { m_event_finished_id = event_id; }
+	// The following wxCommandEvent will be sent to the UI thread / Plater window, when the G-code is being exported to
+	// specified path or uploaded.
+	// The wxCommandEvent is sent to the UI thread asynchronously without waiting for the event to be processed.
+	void set_export_began_event(int event_id) { m_event_export_began_id = event_id; }
 
 	// Activate either m_fff_print or m_sla_print.
 	// Return true if changed.
@@ -86,7 +90,7 @@ public:
 
 	// Apply config over the print. Returns false, if the new config values caused any of the already
 	// processed steps to be invalidated, therefore the task will need to be restarted.
-	Print::ApplyStatus apply(const Model &model, const DynamicPrintConfig &config);
+    PrintBase::ApplyStatus apply(const Model &model, const DynamicPrintConfig &config);
 	// After calling the apply() function, set_task() may be called to limit the task to be processed by process().
 	// This is useful for calculating SLA supports for a single object only.
 	void 		set_task(const PrintBase::TaskParams &params);
@@ -190,6 +194,9 @@ private:
 	int 						m_event_slicing_completed_id 	= 0;
 	// wxWidgets command ID to be sent to the plater to inform that the task finished.
 	int 						m_event_finished_id  			= 0;
+	// wxWidgets command ID to be sent to the plater to inform that the G-code is being exported.
+	int                         m_event_export_began_id         = 0;
+
 };
 
 }; // namespace Slic3r

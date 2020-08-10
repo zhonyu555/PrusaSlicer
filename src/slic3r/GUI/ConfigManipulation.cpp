@@ -2,7 +2,7 @@
 #include "ConfigManipulation.hpp"
 #include "I18N.hpp"
 #include "GUI_App.hpp"
-#include "PresetBundle.hpp"
+#include "libslic3r/PresetBundle.hpp"
 
 #include <wx/msgdlg.h>
 
@@ -310,7 +310,8 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("standby_temperature_delta", have_ooze_prevention);
 
     bool have_wipe_tower = config->opt_bool("wipe_tower");
-    for (auto el : { "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_bridging" })
+    for (auto el : { "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle",
+                     "wipe_tower_bridging", "wipe_tower_no_sparse_layers", "single_extruder_multi_material_priming" })
         toggle_field(el, have_wipe_tower);
 }
 
@@ -352,6 +353,7 @@ void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
     toggle_field("support_head_penetration", supports_en);
     toggle_field("support_head_width", supports_en);
     toggle_field("support_pillar_diameter", supports_en);
+    toggle_field("support_small_pillar_diameter_percent", supports_en);
     toggle_field("support_max_bridges_on_pillar", supports_en);
     toggle_field("support_pillar_connection_mode", supports_en);
     toggle_field("support_buildplate_only", supports_en);

@@ -3,11 +3,10 @@
 
 #include <memory>
 #include <string>
-#include "libslic3r/PrintConfig.hpp"
-#include "MainFrame.hpp"
 #include "ImGuiWrapper.hpp"
 #include "ConfigWizard.hpp"
 #include "OpenGLManager.hpp"
+#include "libslic3r/Preset.hpp"
 
 #include <wx/app.h>
 #include <wx/colour.h>
@@ -30,11 +29,21 @@ class PresetBundle;
 class PresetUpdater;
 class ModelObject;
 class PrintHostJobQueue;
-
+class Model;
 
 namespace GUI{
 class RemovableDriveManager;
 class OtherInstanceMessageHandler;
+class MainFrame;
+class Sidebar;
+class ObjectManipulation;
+class ObjectSettings;
+class ObjectList;
+class ObjectLayers;
+class Plater;
+
+
+
 enum FileType
 {
     FT_STL,
@@ -138,8 +147,10 @@ public:
     const wxFont&   bold_font()             { return m_bold_font; }
     const wxFont&   normal_font()           { return m_normal_font; }
     int             em_unit() const         { return m_em_unit; }
+    wxSize          get_min_size() const;
     float           toolbar_icon_scale(const bool is_limited = false) const;
     void            set_auto_toolbar_icon_scale(float scale) const;
+    void            check_printer_presets();
 
     void            recreate_GUI(const wxString& message);
     void            system_info();
@@ -184,11 +195,14 @@ public:
     Plater*             plater();
     Model&      		model();
 
+
     AppConfig*      app_config{ nullptr };
     PresetBundle*   preset_bundle{ nullptr };
     PresetUpdater*  preset_updater{ nullptr };
     MainFrame*      mainframe{ nullptr };
     Plater*         plater_{ nullptr };
+
+	PresetUpdater* get_preset_updater() { return preset_updater; }
 
     wxNotebook*     tab_panel() const ;
     int             extruders_cnt() const;

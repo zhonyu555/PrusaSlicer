@@ -33,10 +33,13 @@
 #include "Event.hpp"
 #include "wxExtensions.hpp"
 #include "ConfigManipulation.hpp"
+#include "OptionsGroup.hpp"
+#include "libslic3r/Preset.hpp"
 
 namespace Slic3r {
 namespace GUI {
 
+class TabPresetComboBox;
 
 // Single Tab page containing a{ vsizer } of{ optgroups }
 // package Slic3r::GUI::Tab::Page;
@@ -49,17 +52,8 @@ class Page : public wxScrolledWindow
 	wxBoxSizer*		m_vsizer;
     bool            m_show = true;
 public:
-    Page(wxWindow* parent, const wxString& title, const int iconID, const std::vector<ScalableBitmap>& mode_bmp_cache) :
-			m_parent(parent),
-			m_title(title),
-			m_iconID(iconID),
-            m_mode_bitmap_cache(mode_bmp_cache)
-	{
-		Create(m_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL);
-		m_vsizer = new wxBoxSizer(wxVERTICAL);
-        m_item_color = &wxGetApp().get_label_clr_default();
-		SetSizer(m_vsizer);
-	}
+    Page(wxWindow* parent, const wxString& title, const int iconID,
+         const std::vector<ScalableBitmap>& mode_bmp_cache);
 	~Page() {}
 
 	bool				m_is_modified_values{ false };
@@ -81,6 +75,7 @@ public:
 	void		reload_config();
     void        update_visibility(ConfigOptionMode mode);
     void        msw_rescale();
+    void        sys_color_changed();
 	Field*		get_field(const t_config_option_key& opt_key, int opt_index = -1) const;
 	bool		set_value(const t_config_option_key& opt_key, const boost::any& value);
 	ConfigOptionsGroupShp	new_optgroup(const wxString& title, int noncommon_label_width = -1);
@@ -120,10 +115,11 @@ protected:
     Preset::Type        m_type;
 	std::string			m_name;
 	const wxString		m_title;
-	PresetBitmapComboBox*	m_presets_choice;
+	TabPresetComboBox*	m_presets_choice;
 	ScalableButton*		m_search_btn;
 	ScalableButton*		m_btn_save_preset;
 	ScalableButton*		m_btn_delete_preset;
+	ScalableButton*		m_btn_edit_ph_printer {nullptr};
 	ScalableButton*		m_btn_hide_incompatible_presets;
 	wxBoxSizer*			m_hsizer;
 	wxBoxSizer*			m_left_sizer;
@@ -213,8 +209,6 @@ protected:
 	bool				m_is_nonsys_values{ true };
 	bool				m_postpone_update_ui {false};
 
-	size_t				m_selected_preset_item{ 0 };
-
     void                set_type();
 
     int                 m_em_unit;
@@ -282,8 +276,10 @@ public:
     void		load_current_preset();
 	void        rebuild_page_tree();
 	void        update_page_tree_visibility();
-	// Select a new preset, possibly delete the current one.
-	void		select_preset(std::string preset_name = "", bool delete_current = false);
+    void		update_btns_enabling();
+    void		update_preset_choice();
+    // Select a new preset, possibly delete the current one.
+	void		select_preset(std::string preset_name = "", bool delete_current = false, const std::string& last_selected_ph_printer_name = "");
 	bool		may_discard_current_dirty_preset(PresetCollection* presets = nullptr, const std::string& new_printer_name = "");
     bool        may_switch_to_SLA_preset();
 
@@ -318,6 +314,7 @@ public:
     void            update_mode();
     void            update_visibility();
     virtual void    msw_rescale();
+    virtual void	sys_color_changed();
 	Field*			get_field(const t_config_option_key& opt_key, int opt_index = -1) const;
     Field*          get_field(const t_config_option_key &opt_key, Page** selected_page, int opt_index = -1);
 	bool			set_value(const t_config_option_key& opt_key, const boost::any& value);
@@ -326,7 +323,6 @@ public:
 
 	DynamicPrintConfig*	get_config() { return m_config; }
 	PresetCollection*	get_presets() { return m_presets; }
-	size_t				get_selected_preset_item() { return m_selected_preset_item; }
 
 	void			on_value_change(const std::string& opt_key, const boost::any& value);
 
@@ -436,6 +432,7 @@ public:
 	void		on_preset_loaded() override;
 	void		init_options_list() override;
 	void		msw_rescale() override;
+	void		sys_color_changed() override;
     bool 		supports_printer_technology(const PrinterTechnology /* tech */) override { return true; }
 
 	wxSizer*	create_bed_shape_widget(wxWindow* parent);

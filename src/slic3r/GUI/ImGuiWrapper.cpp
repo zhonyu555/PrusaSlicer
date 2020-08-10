@@ -37,11 +37,17 @@ namespace GUI {
 
 
 static const std::map<const char, std::string> font_icons = {
-    {ImGui::PrintIconMarker     , "cog"        },
-    {ImGui::PrinterIconMarker   , "printer"    },
-    {ImGui::PrinterSlaIconMarker, "sla_printer"},
-    {ImGui::FilamentIconMarker  , "spool"      },
-    {ImGui::MaterialIconMarker  , "resin"      }
+    {ImGui::PrintIconMarker     , "cog"               },
+    {ImGui::PrinterIconMarker   , "printer"           },
+    {ImGui::PrinterSlaIconMarker, "sla_printer"       },
+    {ImGui::FilamentIconMarker  , "spool"             },
+    {ImGui::MaterialIconMarker  , "resin"             },
+	{ImGui::CloseIconMarker     , "cross"             },
+	{ImGui::CloseIconHoverMarker, "cross_focus_large" },
+	{ImGui::TimerDotMarker      , "timer_dot"         },
+    {ImGui::TimerDotEmptyMarker , "timer_dot_empty"   },
+	{ImGui::WarningMarker       , "flag_green"        },
+    {ImGui::ErrorMarker         , "flag_red"          }
 };
 
 ImGuiWrapper::ImGuiWrapper()
@@ -176,6 +182,9 @@ bool ImGuiWrapper::update_mouse_data(wxMouseEvent& evt)
     io.MouseDown[0] = evt.LeftIsDown();
     io.MouseDown[1] = evt.RightIsDown();
     io.MouseDown[2] = evt.MiddleIsDown();
+    float wheel_delta = static_cast<float>(evt.GetWheelDelta());
+    if (wheel_delta != 0.0f)
+        io.MouseWheel = static_cast<float>(evt.GetWheelRotation()) / wheel_delta;
 
     unsigned buttons = (evt.LeftIsDown() ? 1 : 0) | (evt.RightIsDown() ? 2 : 0) | (evt.MiddleIsDown() ? 4 : 0);
     m_mouse_buttons = buttons;
@@ -262,6 +271,11 @@ void ImGuiWrapper::set_next_window_bg_alpha(float alpha)
     ImGui::SetNextWindowBgAlpha(alpha);
 }
 
+void ImGuiWrapper::set_next_window_size(float x, float y, ImGuiCond cond)
+{
+	ImGui::SetNextWindowSize(ImVec2(x, y), cond);
+}
+
 bool ImGuiWrapper::begin(const std::string &name, int flags)
 {
     return ImGui::Begin(name.c_str(), nullptr, (ImGuiWindowFlags)flags);
@@ -293,10 +307,21 @@ bool ImGuiWrapper::button(const wxString &label)
     return ImGui::Button(label_utf8.c_str());
 }
 
+bool ImGuiWrapper::button(const wxString& label, float width, float height)
+{
+	auto label_utf8 = into_u8(label);
+	return ImGui::Button(label_utf8.c_str(), ImVec2(width, height));
+}
+
 bool ImGuiWrapper::radio_button(const wxString &label, bool active)
 {
     auto label_utf8 = into_u8(label);
     return ImGui::RadioButton(label_utf8.c_str(), active);
+}
+
+bool ImGuiWrapper::image_button()
+{
+	return false;
 }
 
 bool ImGuiWrapper::input_double(const std::string &label, const double &value, const std::string &format)
@@ -349,6 +374,22 @@ void ImGuiWrapper::text(const wxString &label)
 {
     auto label_utf8 = into_u8(label);
     this->text(label_utf8.c_str());
+}
+
+void ImGuiWrapper::text_colored(const ImVec4& color, const char* label)
+{
+    ImGui::TextColored(color, label);
+}
+
+void ImGuiWrapper::text_colored(const ImVec4& color, const std::string& label)
+{
+    this->text_colored(color, label.c_str());
+}
+
+void ImGuiWrapper::text_colored(const ImVec4& color, const wxString& label)
+{
+    auto label_utf8 = into_u8(label);
+    this->text_colored(color, label_utf8.c_str());
 }
 
 bool ImGuiWrapper::slider_float(const char* label, float* v, float v_min, float v_max, const char* format/* = "%.3f"*/, float power/* = 1.0f*/)
@@ -805,14 +846,6 @@ static const ImWchar ranges_keyboard_shortcuts[] =
 
 std::vector<unsigned char> ImGuiWrapper::load_svg(const std::string& bitmap_name, unsigned target_width, unsigned target_height)
 {
-#ifdef __APPLE__
-    // Note: win->GetContentScaleFactor() is not used anymore here because it tends to
-    // return bogus results quite often (such as 1.0 on Retina or even 0.0).
-    // We're using the max scaling factor across all screens because it's very likely to be good enough.
-    double	scale = mac_max_scaling_factor();
-#else
-    double	scale = 1.0;
-#endif
     std::vector<unsigned char> empty_vector;
 
 #ifdef __WXMSW__
@@ -826,8 +859,6 @@ std::vector<unsigned char> ImGuiWrapper::load_svg(const std::string& bitmap_name
     NSVGimage* image = ::nsvgParseFromFile(Slic3r::var(folder + bitmap_name + ".svg").c_str(), "px", 96.0f);
     if (image == nullptr)
         return empty_vector;
-
-    target_height != 0 ? target_height *= scale : target_width *= scale;
 
     float svg_scale = target_height != 0 ?
         (float)target_height / image->height : target_width != 0 ?

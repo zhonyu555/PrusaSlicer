@@ -1,5 +1,7 @@
 #include "OptionsGroup.hpp"
 #include "ConfigExceptions.hpp"
+#include "Plater.hpp"
+#include "GUI_App.hpp"
 
 #include <utility>
 #include <wx/numformatter.h>
@@ -98,6 +100,36 @@ const t_field& OptionsGroup::build_field(const t_config_option_key& id, const Co
     
 	// assign function objects for callbacks, etc.
     return field;
+}
+
+OptionsGroup::OptionsGroup(	wxWindow* _parent, const wxString& title,
+                            bool is_tab_opt /* = false */,
+                            column_t extra_clmn /* = nullptr */) :
+                m_parent(_parent), title(title),
+                m_show_modified_btns(is_tab_opt),
+                staticbox(title!=""), extra_column(extra_clmn)
+{
+    if (staticbox) {
+        stb = new wxStaticBox(_parent, wxID_ANY, _(title));
+        if (!wxOSX) stb->SetBackgroundStyle(wxBG_STYLE_PAINT);
+        stb->SetFont(wxOSX ? wxGetApp().normal_font() : wxGetApp().bold_font());
+    } else
+        stb = nullptr;
+    sizer = (staticbox ? new wxStaticBoxSizer(stb, wxVERTICAL) : new wxBoxSizer(wxVERTICAL));
+    auto num_columns = 1U;
+    if (label_width != 0) num_columns++;
+    if (extra_column != nullptr) num_columns++;
+    m_grid_sizer = new wxFlexGridSizer(0, num_columns, 1,0);
+    static_cast<wxFlexGridSizer*>(m_grid_sizer)->SetFlexibleDirection(wxBOTH/*wxHORIZONTAL*/);
+    static_cast<wxFlexGridSizer*>(m_grid_sizer)->AddGrowableCol(label_width == 0 ? 0 : !extra_column ? 1 : 2 );
+#if 0//#ifdef __WXGTK__
+    m_panel = new wxPanel( _parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+    sizer->Fit(m_panel);
+    sizer->Add(m_panel, 0, wxEXPAND | wxALL, wxOSX||!staticbox ? 0: 5);
+#else
+    sizer->Add(m_grid_sizer, 0, wxEXPAND | wxALL, wxOSX||!staticbox ? 0: 5);
+#endif /* __WXGTK__ */
+
 }
 
 void OptionsGroup::add_undo_buttuns_to_sizer(wxSizer* sizer, const t_field& field)
@@ -568,6 +600,18 @@ void ConfigOptionsGroup::msw_rescale()
     }
 }
 
+void ConfigOptionsGroup::sys_color_changed()
+{
+	// update bitmaps for near label widgets (like "Set uniform scale" button on settings panel)
+	if (rescale_near_label_widget)
+		for (auto near_label_widget : m_near_label_widget_ptrs)
+			rescale_near_label_widget(near_label_widget);
+
+	// update undo buttons : rescale bitmaps
+	for (const auto& field : m_fields)
+		field.second->sys_color_changed();
+}
+
 boost::any ConfigOptionsGroup::config_value(const std::string& opt_key, int opt_index, bool deserialize) {
 
 	if (deserialize) {
@@ -685,31 +729,34 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 			opt_key == "fill_pattern" ) {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<InfillPattern>>(opt_key)->value);
 		}
-		else if (opt_key.compare("ironing_type") == 0 ) {
+		else if (opt_key == "ironing_type") {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<IroningType>>(opt_key)->value);
 		}
-		else if (opt_key.compare("gcode_flavor") == 0 ) {
+		else if (opt_key == "gcode_flavor") {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<GCodeFlavor>>(opt_key)->value);
 		}
-		else if (opt_key.compare("support_material_pattern") == 0) {
+		else if (opt_key == "support_material_pattern") {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<SupportMaterialPattern>>(opt_key)->value);
 		}
-		else if (opt_key.compare("seam_position") == 0) {
+		else if (opt_key == "seam_position") {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<SeamPosition>>(opt_key)->value);
 		}
-		else if (opt_key.compare("host_type") == 0) {
+		else if (opt_key == "host_type") {
 			ret = static_cast<int>(config.option<ConfigOptionEnum<PrintHostType>>(opt_key)->value);
 		}
-        else if (opt_key.compare("display_orientation") == 0) {
+        else if (opt_key == "display_orientation") {
             ret  = static_cast<int>(config.option<ConfigOptionEnum<SLADisplayOrientation>>(opt_key)->value);
         }
-        else if (opt_key.compare("support_pillar_connection_mode") == 0) {
+        else if (opt_key == "support_pillar_connection_mode") {
             ret  = static_cast<int>(config.option<ConfigOptionEnum<SLAPillarConnectionMode>>(opt_key)->value);
+        }
+        else if (opt_key == "authorization_type") {
+            ret  = static_cast<int>(config.option<ConfigOptionEnum<AuthorizationType>>(opt_key)->value);
         }
 	}
 		break;
 	case coPoints:
-		if (opt_key.compare("bed_shape") == 0)
+		if (opt_key == "bed_shape")
 			ret = config.option<ConfigOptionPoints>(opt_key)->values;
 		else
 			ret = config.option<ConfigOptionPoints>(opt_key)->get_at(idx);

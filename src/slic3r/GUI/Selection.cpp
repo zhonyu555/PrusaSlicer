@@ -1,14 +1,17 @@
 #include "libslic3r/libslic3r.h"
 #include "Selection.hpp"
 
+#include "3DScene.hpp"
 #include "GLCanvas3D.hpp"
 #include "GUI_App.hpp"
 #include "GUI.hpp"
 #include "GUI_ObjectManipulation.hpp"
 #include "GUI_ObjectList.hpp"
 #include "Gizmos/GLGizmoBase.hpp"
-#include "3DScene.hpp"
 #include "Camera.hpp"
+#include "Plater.hpp"
+
+#include "libslic3r/Model.hpp"
 
 #include <GL/glew.h>
 
@@ -54,7 +57,7 @@ bool Selection::Clipboard::is_sla_compliant() const
     if (m_mode == Selection::Volume)
         return false;
 
-    for (const ModelObject* o : m_model.objects)
+    for (const ModelObject* o : m_model->objects)
     {
         if (o->is_multiparts())
             return false;
@@ -69,6 +72,35 @@ bool Selection::Clipboard::is_sla_compliant() const
     return true;
 }
 
+Selection::Clipboard::Clipboard()
+{
+    m_model.reset(new Model);
+}
+
+void Selection::Clipboard::reset() {
+    m_model->clear_objects();
+}
+
+bool Selection::Clipboard::is_empty() const
+{
+    return m_model->objects.empty();
+}
+
+ModelObject* Selection::Clipboard::add_object()
+{
+    return m_model->add_object();
+}
+
+ModelObject* Selection::Clipboard::get_object(unsigned int id)
+{
+    return (id < (unsigned int)m_model->objects.size()) ? m_model->objects[id] : nullptr;
+}
+
+const ModelObjectPtrs& Selection::Clipboard::get_objects() const
+{
+    return m_model->objects;
+}
+
 Selection::Selection()
     : m_volumes(nullptr)
     , m_model(nullptr)
@@ -76,9 +108,11 @@ Selection::Selection()
     , m_mode(Instance)
     , m_type(Empty)
     , m_valid(false)
-    , m_curved_arrow(16)
     , m_scale_factor(1.0f)
 {
+    m_arrow.reset(new GLArrow);
+    m_curved_arrow.reset(new GLCurvedArrow(16));
+
     this->set_bounding_boxes_dirty();
 #if ENABLE_RENDER_SELECTION_CENTER
     m_quadric = ::gluNewQuadric();
@@ -104,15 +138,15 @@ void Selection::set_volumes(GLVolumePtrs* volumes)
 // Init shall be called from the OpenGL render function, so that the OpenGL context is initialized!
 bool Selection::init()
 {
-    if (!m_arrow.init())
+    if (!m_arrow->init())
         return false;
 
-    m_arrow.set_scale(5.0 * Vec3d::Ones());
+    m_arrow->set_scale(5.0 * Vec3d::Ones());
 
-    if (!m_curved_arrow.init())
+    if (!m_curved_arrow->init())
         return false;
 
-    m_curved_arrow.set_scale(5.0 * Vec3d::Ones());
+    m_curved_arrow->set_scale(5.0 * Vec3d::Ones());
     return true;
 }
 
@@ -1561,20 +1595,21 @@ void Selection::update_type()
         }
         else
         {
+            unsigned int sla_volumes_count = 0;
+            // Note: sla_volumes_count is a count of the selected sla_volumes per object instead of per instance, like a model_volumes_count is
+            for (unsigned int i : m_list) {
+                if ((*m_volumes)[i]->volume_idx() < 0)
+                    ++sla_volumes_count;
+            }
+
             if (m_cache.content.size() == 1) // single object
             {
                 const ModelObject* model_object = m_model->objects[m_cache.content.begin()->first];
                 unsigned int model_volumes_count = (unsigned int)model_object->volumes.size();
-                unsigned int sla_volumes_count = 0;
-                for (unsigned int i : m_list)
-                {
-                    if ((*m_volumes)[i]->volume_idx() < 0)
-                        ++sla_volumes_count;
-                }
-                unsigned int volumes_count = model_volumes_count + sla_volumes_count;
+
                 unsigned int instances_count = (unsigned int)model_object->instances.size();
                 unsigned int selected_instances_count = (unsigned int)m_cache.content.begin()->second.size();
-                if (volumes_count * instances_count == (unsigned int)m_list.size())
+                if (model_volumes_count * instances_count + sla_volumes_count == (unsigned int)m_list.size())
                 {
                     m_type = SingleFullObject;
                     // ensures the correct mode is selected
@@ -1582,7 +1617,7 @@ void Selection::update_type()
                 }
                 else if (selected_instances_count == 1)
                 {
-                    if (volumes_count == (unsigned int)m_list.size())
+                    if (model_volumes_count + sla_volumes_count == (unsigned int)m_list.size())
                     {
                         m_type = SingleFullInstance;
                         // ensures the correct mode is selected
@@ -1605,7 +1640,7 @@ void Selection::update_type()
                         requires_disable = true;
                     }
                 }
-                else if ((selected_instances_count > 1) && (selected_instances_count * volumes_count == (unsigned int)m_list.size()))
+                else if ((selected_instances_count > 1) && (selected_instances_count * model_volumes_count + sla_volumes_count == (unsigned int)m_list.size()))
                 {
                     m_type = MultipleFullInstance;
                     // ensures the correct mode is selected
@@ -1622,7 +1657,7 @@ void Selection::update_type()
                     unsigned int instances_count = (unsigned int)model_object->instances.size();
                     sels_cntr += volumes_count * instances_count;
                 }
-                if (sels_cntr == (unsigned int)m_list.size())
+                if (sels_cntr + sla_volumes_count == (unsigned int)m_list.size())
                 {
                     m_type = MultipleFullObject;
                     // ensures the correct mode is selected
@@ -2048,29 +2083,29 @@ void Selection::render_sidebar_layers_hints(const std::string& sidebar_field) co
 
 void Selection::render_sidebar_position_hint(Axis axis) const
 {
-    m_arrow.set_color(AXES_COLOR[axis], 3);
-    m_arrow.render();
+    m_arrow->set_color(AXES_COLOR[axis], 3);
+    m_arrow->render();
 }
 
 void Selection::render_sidebar_rotation_hint(Axis axis) const
 {
-    m_curved_arrow.set_color(AXES_COLOR[axis], 3);
-    m_curved_arrow.render();
+    m_curved_arrow->set_color(AXES_COLOR[axis], 3);
+    m_curved_arrow->render();
 
     glsafe(::glRotated(180.0, 0.0, 0.0, 1.0));
-    m_curved_arrow.render();
+    m_curved_arrow->render();
 }
 
 void Selection::render_sidebar_scale_hint(Axis axis) const
 {
-    m_arrow.set_color(((requires_uniform_scale() || wxGetApp().obj_manipul()->get_uniform_scaling()) ? UNIFORM_SCALE_COLOR : AXES_COLOR[axis]), 3);
+    m_arrow->set_color(((requires_uniform_scale() || wxGetApp().obj_manipul()->get_uniform_scaling()) ? UNIFORM_SCALE_COLOR : AXES_COLOR[axis]), 3);
 
     glsafe(::glTranslated(0.0, 5.0, 0.0));
-    m_arrow.render();
+    m_arrow->render();
 
     glsafe(::glTranslated(0.0, -10.0, 0.0));
     glsafe(::glRotated(180.0, 0.0, 0.0, 1.0));
-    m_arrow.render();
+    m_arrow->render();
 }
 
 void Selection::render_sidebar_size_hint(Axis axis, double length) const

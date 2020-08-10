@@ -4,6 +4,7 @@
 #include "ElephantFootCompensation.hpp"
 #include "Geometry.hpp"
 #include "I18N.hpp"
+#include "Layer.hpp"
 #include "SupportMaterial.hpp"
 #include "Surface.hpp"
 #include "Slicing.hpp"
@@ -1430,7 +1431,7 @@ void PrintObject::bridge_over_infill()
             }
             
             #ifdef SLIC3R_DEBUG
-            printf("Bridging " PRINTF_ZU " internal areas at layer " PRINTF_ZU "\n", to_bridge.size(), layer->id());
+            printf("Bridging %zu internal areas at layer %zu\n", to_bridge.size(), layer->id());
             #endif
             
             // compute the remaning internal solid surfaces as difference
@@ -1576,7 +1577,9 @@ bool PrintObject::update_layer_height_profile(const ModelObject &model_object, c
     bool updated = false;
 
     if (layer_height_profile.empty()) {
-        layer_height_profile = model_object.layer_height_profile;
+        // use the constructor because the assignement is crashing on ASAN OsX
+        layer_height_profile = std::vector<coordf_t>(model_object.layer_height_profile);
+//        layer_height_profile = model_object.layer_height_profile;
         updated = true;
     }
 
@@ -2670,14 +2673,14 @@ void PrintObject::project_and_append_custom_supports(
         FacetSupportType type, std::vector<ExPolygons>& expolys) const
 {
     for (const ModelVolume* mv : this->model_object()->volumes) {
-        const std::vector<int> custom_facets = mv->m_supported_facets.get_facets(type);
-        if (custom_facets.empty())
+        const indexed_triangle_set custom_facets = mv->m_supported_facets.get_facets(*mv, type);
+        if (custom_facets.indices.empty())
             continue;
 
-        const TriangleMesh& mesh = mv->mesh();
         const Transform3f& tr1 = mv->get_matrix().cast<float>();
         const Transform3f& tr2 = this->trafo().cast<float>();
         const Transform3f  tr  = tr2 * tr1;
+        const float tr_det_sign = (tr.matrix().determinant() > 0. ? 1.f : -1.f);
 
 
         // The projection will be at most a pentagon. Let's minimize heap
@@ -2702,11 +2705,11 @@ void PrintObject::project_and_append_custom_supports(
         };
 
         // Vector to collect resulting projections from each triangle.
-        std::vector<TriangleProjections> projections_of_triangles(custom_facets.size());
+        std::vector<TriangleProjections> projections_of_triangles(custom_facets.indices.size());
 
         // Iterate over all triangles.
         tbb::parallel_for(
-            tbb::blocked_range<size_t>(0, custom_facets.size()),
+            tbb::blocked_range<size_t>(0, custom_facets.indices.size()),
             [&](const tbb::blocked_range<size_t>& range) {
             for (size_t idx = range.begin(); idx < range.end(); ++ idx) {
 
@@ -2714,10 +2717,11 @@ void PrintObject::project_and_append_custom_supports(
 
             // Transform the triangle into worlds coords.
             for (int i=0; i<3; ++i)
-                facet[i] = tr * mesh.its.vertices[mesh.its.indices[custom_facets[idx]](i)];
+                facet[i] = tr * custom_facets.vertices[custom_facets.indices[idx](i)];
 
-            // Ignore triangles with upward-pointing normal.
-            if ((facet[1]-facet[0]).cross(facet[2]-facet[0]).z() > 0.)
+            // Ignore triangles with upward-pointing normal. Don't forget about mirroring.
+            float z_comp = (facet[1]-facet[0]).cross(facet[2]-facet[0]).z();
+            if (tr_det_sign * z_comp > 0.)
                 continue;
 
             // Sort the three vertices according to z-coordinate.
@@ -2828,5 +2832,29 @@ void PrintObject::project_and_append_custom_supports(
 
     } // loop over ModelVolumes
 }
+
+
+
+const Layer* PrintObject::get_layer_at_printz(coordf_t print_z) const {
+    auto it = Slic3r::lower_bound_by_predicate(m_layers.begin(), m_layers.end(), [print_z](const Layer *layer) { return layer->print_z < print_z; });
+    return (it == m_layers.end() || (*it)->print_z != print_z) ? nullptr : *it;
+}
+
+
+
+Layer* PrintObject::get_layer_at_printz(coordf_t print_z) { return const_cast<Layer*>(std::as_const(*this).get_layer_at_printz(print_z)); }
+
+
+
+// Get a layer approximately at print_z.
+const Layer* PrintObject::get_layer_at_printz(coordf_t print_z, coordf_t epsilon) const {
+    coordf_t limit = print_z - epsilon;
+    auto it = Slic3r::lower_bound_by_predicate(m_layers.begin(), m_layers.end(), [limit](const Layer *layer) { return layer->print_z < limit; });
+    return (it == m_layers.end() || (*it)->print_z > print_z + epsilon) ? nullptr : *it;
+}
+
+
+
+Layer* PrintObject::get_layer_at_printz(coordf_t print_z, coordf_t epsilon) { return const_cast<Layer*>(std::as_const(*this).get_layer_at_printz(print_z, epsilon)); }
 
 } // namespace Slic3r

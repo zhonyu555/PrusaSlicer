@@ -1,7 +1,8 @@
 #include "Preferences.hpp"
-#include "AppConfig.hpp"
 #include "OptionsGroup.hpp"
+#include "GUI_App.hpp"
 #include "I18N.hpp"
+#include "libslic3r/AppConfig.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -160,7 +161,7 @@ void PreferencesDialog::build()
 		}
 	};
 
-	def.label = L("Show the button for the collapse sidebar");
+	def.label = L("Show sidebar collapse/expand button");
 	def.type = coBool;
 	def.tooltip = L("If enabled, the button for the collapse sidebar will be appeared in top right corner of the 3D Scene");
 	def.set_default_value(new ConfigOptionBool{ app_config->get("show_collapse_button") == "1" });
@@ -179,10 +180,28 @@ void PreferencesDialog::build()
 
 	create_settings_mode_widget();
 
+#if ENABLE_ENVIRONMENT_MAP
+	m_optgroup_render = std::make_shared<ConfigOptionsGroup>(this, _(L("Render")));
+	m_optgroup_render->label_width = 40;
+	m_optgroup_render->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
+		m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "0";
+	};
+
+	def.label = L("Use environment map");
+	def.type = coBool;
+	def.tooltip = L("If enabled, renders object using the environment map.");
+	def.set_default_value(new ConfigOptionBool{ app_config->get("use_environment_map") == "1" });
+	option = Option(def, "use_environment_map");
+	m_optgroup_render->append_single_option_line(option);
+#endif // ENABLE_ENVIRONMENT_MAP
+
 	auto sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(m_optgroup_general->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
 	sizer->Add(m_optgroup_camera->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
 	sizer->Add(m_optgroup_gui->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
+#if ENABLE_ENVIRONMENT_MAP
+	sizer->Add(m_optgroup_render->sizer, 0, wxEXPAND | wxBOTTOM | wxLEFT | wxRIGHT, 10);
+#endif // ENABLE_ENVIRONMENT_MAP
 
     SetFont(wxGetApp().normal_font());
 
@@ -213,28 +232,6 @@ void PreferencesDialog::accept()
 			m_settings_layout_changed = true;
 			break;
 	    }
-	}
-
-	if (m_settings_layout_changed) {
-		// the dialog needs to be destroyed before the call to recreate_gui()
-		// or sometimes the application crashes into wxDialogBase() destructor
-		// so we put it into an inner scope
-		wxMessageDialog dialog(nullptr,
-			            _L("Switching the settings layout mode will trigger application restart.\n"
-				                  "You will lose content of the plater.") + "\n\n" +
-			                   _L("Do you want to proceed?"),
-			wxString(SLIC3R_APP_NAME) + " - " + _L("Switching the settings layout mode"),
-			wxICON_QUESTION | wxOK | wxCANCEL);
-
-		if (dialog.ShowModal() == wxID_CANCEL)
-		{
-			int selection = app_config->get("old_settings_layout_mode") == "1" ? 0 :
-				            app_config->get("new_settings_layout_mode") == "1" ? 1 :
-				            app_config->get("dlg_settings_layout_mode") == "1" ? 2 : 0;
-
-			m_layout_mode_box->SetSelection(selection);
-			return;
-		}
 	}
 
 	for (std::map<std::string, std::string>::iterator it = m_values.begin(); it != m_values.end(); ++it)
@@ -332,9 +329,9 @@ void PreferencesDialog::create_icon_size_slider()
 
 void PreferencesDialog::create_settings_mode_widget()
 {
-	wxString choices[] = {	_L("Old regular layout with tab bar"),
-							_L("New layout without the tab bar on the platter"),
-							_L("Settings will be shown in non-modal dialog")		};
+	wxString choices[] = {	_L("Old regular layout with the tab bar"),
+							_L("New layout without the tab bar on the plater"),
+							_L("Settings will be shown in the non-modal dialog")		};
 
 	auto app_config = get_app_config();
 	int selection = app_config->get("old_settings_layout_mode") == "1" ? 0 :

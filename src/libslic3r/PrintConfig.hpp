@@ -33,7 +33,11 @@ enum PrintHostType {
     htOctoPrint, htDuet, htFlashAir, htAstroBox
 };
 
-enum InfillPattern {
+enum AuthorizationType {
+    atKeyPassword, atUserPassword
+};
+
+enum InfillPattern : int {
     ipRectilinear, ipMonotonous, ipGrid, ipTriangles, ipStars, ipCubic, ipLine, ipConcentric, ipHoneycomb, ip3DHoneycomb,
     ipGyroid, ipHilbertCurve, ipArchimedeanChords, ipOctagramSpiral, ipCount,
 };
@@ -105,6 +109,15 @@ template<> inline const t_config_enum_values& ConfigOptionEnum<PrintHostType>::g
         keys_map["duet"]            = htDuet;
         keys_map["flashair"]        = htFlashAir;
         keys_map["astrobox"]        = htAstroBox;
+    }
+    return keys_map;
+}
+
+template<> inline const t_config_enum_values& ConfigOptionEnum<AuthorizationType>::get_enum_values() {
+    static t_config_enum_values keys_map;
+    if (keys_map.empty()) {
+        keys_map["key"]             = atKeyPassword;
+        keys_map["user"]            = atUserPassword;
     }
     return keys_map;
 }
@@ -699,6 +712,9 @@ public:
     ConfigOptionBool                remaining_times;
     ConfigOptionBool                silent_mode;
     ConfigOptionFloat               extra_loading_move;
+    ConfigOptionString              color_change_gcode;
+    ConfigOptionString              pause_print_gcode;
+    ConfigOptionString              template_custom_gcode;
 
     std::string get_extrusion_axis() const
     {
@@ -772,6 +788,9 @@ protected:
         OPT_PTR(remaining_times);
         OPT_PTR(silent_mode);
         OPT_PTR(extra_loading_move);
+        OPT_PTR(color_change_gcode);
+        OPT_PTR(pause_print_gcode);
+        OPT_PTR(template_custom_gcode);
     }
 };
 
@@ -1012,6 +1031,10 @@ public:
 
     // Radius in mm of the support pillars.
     ConfigOptionFloat support_pillar_diameter /*= 0.8*/;
+
+    // The percentage of smaller pillars compared to the normal pillar diameter
+    // which are used in problematic areas where a normal pilla cannot fit.
+    ConfigOptionPercent support_small_pillar_diameter_percent;
     
     // How much bridge (supporting another pinhead) can be placed on a pillar.
     ConfigOptionInt   support_max_bridges_on_pillar;
@@ -1136,6 +1159,7 @@ protected:
         OPT_PTR(support_head_penetration);
         OPT_PTR(support_head_width);
         OPT_PTR(support_pillar_diameter);
+        OPT_PTR(support_small_pillar_diameter_percent);
         OPT_PTR(support_max_bridges_on_pillar);
         OPT_PTR(support_pillar_connection_mode);
         OPT_PTR(support_buildplate_only);

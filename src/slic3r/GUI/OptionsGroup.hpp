@@ -11,7 +11,6 @@
 #include "libslic3r/PrintConfig.hpp"
 
 #include "Field.hpp"
-#include "GUI_App.hpp"
 #include "I18N.hpp"
 
 // Translate the ifdef 
@@ -150,6 +149,13 @@ public:
 							return true;
     }
 
+	void			show_field(const t_config_option_key& opt_key, bool show = true) {
+		                    Field* field = get_field(opt_key);
+		                    field->getWindow()->Show(show);
+		                    field->getLabel()->Show(show);
+    }
+	void			hide_field(const t_config_option_key& opt_key) {  show_field(opt_key, false);  }
+
 	void			set_name(const wxString& new_name) {
 							stb->SetLabel(new_name);
     }
@@ -171,32 +177,7 @@ public:
     }
 
 	OptionsGroup(	wxWindow* _parent, const wxString& title, bool is_tab_opt = false, 
-					column_t extra_clmn = nullptr) :
-					m_parent(_parent), title(title), 
-                    m_show_modified_btns(is_tab_opt),
-					staticbox(title!=""), extra_column(extra_clmn) {
-        if (staticbox) {
-            stb = new wxStaticBox(_parent, wxID_ANY, _(title));
-            if (!wxOSX) stb->SetBackgroundStyle(wxBG_STYLE_PAINT);
-            stb->SetFont(wxOSX ? wxGetApp().normal_font() : wxGetApp().bold_font());
-        } else
-        	stb = nullptr;
-        sizer = (staticbox ? new wxStaticBoxSizer(stb, wxVERTICAL) : new wxBoxSizer(wxVERTICAL));
-        auto num_columns = 1U;
-        if (label_width != 0) num_columns++;
-        if (extra_column != nullptr) num_columns++;
-        m_grid_sizer = new wxFlexGridSizer(0, num_columns, 1,0);
-        static_cast<wxFlexGridSizer*>(m_grid_sizer)->SetFlexibleDirection(wxBOTH/*wxHORIZONTAL*/);
-        static_cast<wxFlexGridSizer*>(m_grid_sizer)->AddGrowableCol(label_width == 0 ? 0 : !extra_column ? 1 : 2 );
-#if 0//#ifdef __WXGTK__
-        m_panel = new wxPanel( _parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
-        sizer->Fit(m_panel);
-        sizer->Add(m_panel, 0, wxEXPAND | wxALL, wxOSX||!staticbox ? 0: 5);
-#else
-        sizer->Add(m_grid_sizer, 0, wxEXPAND | wxALL, wxOSX||!staticbox ? 0: 5);
-#endif /* __WXGTK__ */
-
-    }
+                    column_t extra_clmn = nullptr);
 
     wxGridSizer*        get_grid_sizer() { return m_grid_sizer; }
 
@@ -280,6 +261,7 @@ public:
     void        Show(const bool show);
     bool        update_visibility(ConfigOptionMode mode);
     void        msw_rescale();
+    void        sys_color_changed();
 	boost::any	config_value(const std::string& opt_key, int opt_index, bool deserialize);
 	// return option value from config 
 	boost::any	get_config_value(const DynamicPrintConfig& config, const std::string& opt_key, int opt_index = -1);

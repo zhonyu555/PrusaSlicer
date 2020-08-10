@@ -9,25 +9,29 @@
 #include "libslic3r/GCode/ThumbnailData.hpp"
 #include "libslic3r/Geometry.hpp"
 #include "libslic3r/ExtrusionEntity.hpp"
+#include "libslic3r/Layer.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Technologies.hpp"
 #include "libslic3r/Tesselate.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "slic3r/GUI/3DScene.hpp"
 #include "slic3r/GUI/BackgroundSlicingProcess.hpp"
 #include "slic3r/GUI/GLShader.hpp"
 #include "slic3r/GUI/GUI.hpp"
-#include "slic3r/GUI/PresetBundle.hpp"
 #include "slic3r/GUI/Tab.hpp"
 #include "slic3r/GUI/GUI_Preview.hpp"
 #include "slic3r/GUI/OpenGLManager.hpp"
 #include "slic3r/GUI/3DBed.hpp"
 #include "slic3r/GUI/Camera.hpp"
+#include "slic3r/GUI/Plater.hpp"
+#include "slic3r/GUI/MainFrame.hpp"
 
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
 #include "GUI_ObjectManipulation.hpp"
 #include "Mouse3DController.hpp"
 #include "I18N.hpp"
+#include "NotificationManager.hpp"
 
 #if ENABLE_RETINA_GL
 #include "slic3r/Utils/RetinaHelper.hpp"
@@ -222,56 +226,44 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     static const ImVec4 ORANGE(1.0f, 0.49f, 0.22f, 1.0f);
 
     const Size& cnv_size = canvas.get_canvas_size();
-    float canvas_w = (float)cnv_size.get_width();
-    float canvas_h = (float)cnv_size.get_height();
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
-    imgui.set_next_window_pos(canvas_w - imgui.get_style_scaling() * THICKNESS_BAR_WIDTH, canvas_h, ImGuiCond_Always, 1.0f, 1.0f);
+    imgui.set_next_window_pos(static_cast<float>(cnv_size.get_width()) - imgui.get_style_scaling() * THICKNESS_BAR_WIDTH, 
+        static_cast<float>(cnv_size.get_height()), ImGuiCond_Always, 1.0f, 1.0f);
 
-    imgui.begin(_(L("Variable layer height")), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
+    imgui.begin(_L("Variable layer height"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse);
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ORANGE);
-    imgui.text(_(L("Left mouse button:")));
-    ImGui::PopStyleColor();
+    imgui.text_colored(ORANGE, _L("Left mouse button:"));
     ImGui::SameLine();
-    imgui.text(_(L("Add detail")));
+    imgui.text(_L("Add detail"));
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ORANGE);
-    imgui.text(_(L("Right mouse button:")));
-    ImGui::PopStyleColor();
+    imgui.text_colored(ORANGE, _L("Right mouse button:"));
     ImGui::SameLine();
-    imgui.text(_(L("Remove detail")));
+    imgui.text(_L("Remove detail"));
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ORANGE);
-    imgui.text(_(L("Shift + Left mouse button:")));
-    ImGui::PopStyleColor();
+    imgui.text_colored(ORANGE, _L("Shift + Left mouse button:"));
     ImGui::SameLine();
-    imgui.text(_(L("Reset to base")));
+    imgui.text(_L("Reset to base"));
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ORANGE);
-    imgui.text(_(L("Shift + Right mouse button:")));
-    ImGui::PopStyleColor();
+    imgui.text_colored(ORANGE, _L("Shift + Right mouse button:"));
     ImGui::SameLine();
-    imgui.text(_(L("Smoothing")));
+    imgui.text(_L("Smoothing"));
 
-    ImGui::PushStyleColor(ImGuiCol_Text, ORANGE);
-    imgui.text(_(L("Mouse wheel:")));
-    ImGui::PopStyleColor();
+    imgui.text_colored(ORANGE, _L("Mouse wheel:"));
     ImGui::SameLine();
-    imgui.text(_(L("Increase/decrease edit area")));
+    imgui.text(_L("Increase/decrease edit area"));
     
     ImGui::Separator();
-    if (imgui.button(_(L("Adaptive"))))
+    if (imgui.button(_L("Adaptive")))
         wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), Event<float>(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, m_adaptive_quality));
 
     ImGui::SameLine();
     float text_align = ImGui::GetCursorPosX();
     ImGui::AlignTextToFramePadding();
-    imgui.text(_(L("Quality / Speed")));
-    if (ImGui::IsItemHovered())
-    {
+    imgui.text(_L("Quality / Speed"));
+    if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
-        ImGui::TextUnformatted(_(L("Higher print quality versus higher print speed.")).ToUTF8());
+        ImGui::TextUnformatted(_L("Higher print quality versus higher print speed.").ToUTF8());
         ImGui::EndTooltip();
     }
 
@@ -282,13 +274,13 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     ImGui::SliderFloat("", &m_adaptive_quality, 0.0f, 1.f, "%.2f");
 
     ImGui::Separator();
-    if (imgui.button(_(L("Smooth"))))
+    if (imgui.button(_L("Smooth")))
         wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), HeightProfileSmoothEvent(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, m_smooth_params));
 
     ImGui::SameLine();
     ImGui::SetCursorPosX(text_align);
     ImGui::AlignTextToFramePadding();
-    imgui.text(_(L("Radius")));
+    imgui.text(_L("Radius"));
     ImGui::SameLine();
     ImGui::SetCursorPosX(widget_align);
     ImGui::PushItemWidth(imgui.get_style_scaling() * 120.0f);
@@ -298,7 +290,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
 
     ImGui::SetCursorPosX(text_align);
     ImGui::AlignTextToFramePadding();
-    imgui.text(_(L("Keep min")));
+    imgui.text(_L("Keep min"));
     ImGui::SameLine();
     if (ImGui::GetCursorPosX() < widget_align)  // because of line lenght after localization
         ImGui::SetCursorPosX(widget_align);
@@ -307,7 +299,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas) const
     imgui.checkbox("##2", m_smooth_params.keep_min);
 
     ImGui::Separator();
-    if (imgui.button(_(L("Reset"))))
+    if (imgui.button(_L("Reset")))
         wxPostEvent((wxEvtHandler*)canvas.get_wxglcanvas(), SimpleEvent(EVT_GLCANVAS_RESET_LAYER_HEIGHT_PROFILE));
 
     imgui.end();
@@ -660,19 +652,45 @@ void GLCanvas3D::WarningTexture::activate(WarningTexture::Warning warning, bool 
 
         m_warnings.emplace_back(warning);
         std::sort(m_warnings.begin(), m_warnings.end());
+
+		std::string text;
+		switch (warning) {
+			case ObjectOutside: text = L("An object outside the print area was detected."); break;
+			case ToolpathOutside: text = L("A toolpath outside the print area was detected."); break;
+			case SlaSupportsOutside: text = L("SLA supports outside the print area were detected."); break;
+			case SomethingNotShown: text = L("Some objects are not visible."); break;
+			case ObjectClashed: wxGetApp().plater()->get_notification_manager()->push_plater_error_notification(L("An object outside the print area was detected.\n"
+																												 "Resolve the current problem to continue slicing."), 
+				                                                                                                *(wxGetApp().plater()->get_current_canvas3D()));
+				break;
+		}
+		if (!text.empty())
+			wxGetApp().plater()->get_notification_manager()->push_plater_warning_notification(text, *(wxGetApp().plater()->get_current_canvas3D()));
     }
     else {
         if (it == m_warnings.end()) // deactivating something that is not active is an easy task
             return;
 
         m_warnings.erase(it);
-        if (m_warnings.empty()) { // nothing remains to be shown
+
+		std::string text;
+		switch (warning) {
+		case ObjectOutside: text = L("An object outside the print area was detected."); break;
+		case ToolpathOutside: text = L("A toolpath outside the print area was detected."); break;
+		case SlaSupportsOutside: text = L("SLA supports outside the print area were detected."); break;
+		case SomethingNotShown: text = L("Some objects are not visibl.e"); break;
+		case ObjectClashed: wxGetApp().plater()->get_notification_manager()->close_plater_error_notification(); break;
+		}
+		if (!text.empty())
+			wxGetApp().plater()->get_notification_manager()->close_plater_warning_notification(text);
+
+        /*if (m_warnings.empty()) { // nothing remains to be shown
             reset();
             m_msg_text = "";// save information for rescaling
             return;
-        }
+        }*/
     }
-
+	/*
     // Look at the end of our vector and generate proper texture.
     std::string text;
     bool red_colored = false;
@@ -694,6 +712,7 @@ void GLCanvas3D::WarningTexture::activate(WarningTexture::Warning warning, bool 
     // save information for rescaling
     m_msg_text = text;
     m_is_colored_red = red_colored;
+	*/
 }
 
 
@@ -913,7 +932,7 @@ void GLCanvas3D::LegendTexture::fill_color_print_legend_items(  const GLCanvas3D
         std::vector<double> print_zs = canvas.get_current_print_zs(true);
         for (auto custom_code : custom_gcode_per_print_z)
         {
-            if (custom_code.gcode != ColorChangeCode)
+            if (custom_code.type != CustomGCode::ColorChange)
                 continue;
             auto lower_b = std::lower_bound(print_zs.begin(), print_zs.end(), custom_code.print_z - Slic3r::DoubleSlider::epsilon());
 
@@ -986,7 +1005,7 @@ void GLCanvas3D::LegendTexture::fill_color_print_legend_items(  const GLCanvas3D
         int cnt = custom_gcode_per_print_z.size();
         int color_change_idx = color_cnt - extruders_cnt;
         for (int i = cnt-1; i >= 0; --i)
-            if (custom_gcode_per_print_z[i].gcode == ColorChangeCode) {
+            if (custom_gcode_per_print_z[i].type == CustomGCode::ColorChange) {
                 ::memcpy((void*)(colors.data() + color_pos), (const void*)(colors_in.data() + color_in_pos), 4 * sizeof(float));
                 color_pos += 4;
                 color_in_pos -= 4;
@@ -1427,8 +1446,7 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
 #if ENABLE_SLOPE_RENDERING
 void GLCanvas3D::Slope::render() const
 {
-    if (m_dialog_shown)
-    {
+    if (m_dialog_shown) {
         const std::array<float, 2>& z_range = m_volumes.get_slope_z_range();
         std::array<float, 2> angle_range = { Geometry::rad2deg(::acos(z_range[0])) - 90.0f, Geometry::rad2deg(::acos(z_range[1])) - 90.0f };
         bool modified = false;
@@ -1436,9 +1454,9 @@ void GLCanvas3D::Slope::render() const
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         const Size& cnv_size = m_canvas.get_canvas_size();
         imgui.set_next_window_pos((float)cnv_size.get_width(), (float)cnv_size.get_height(), ImGuiCond_Always, 1.0f, 1.0f);
-        imgui.begin(_(L("Slope visualization")), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        imgui.begin(_L("Slope visualization"), nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
-        imgui.text(_(L("Facets' slope range (degrees)")) + ":");
+        imgui.text(_L("Facets' slope range (degrees)") + ":");
 
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.75f, 0.0f, 0.0f, 0.5f));
         ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(1.0f, 0.0f, 0.0f, 0.5f));
@@ -1450,8 +1468,7 @@ void GLCanvas3D::Slope::render() const
         float slope_bound = 90.f - angle_range[1];
         bool mod = ImGui::SliderFloat("##red", &slope_bound, 0.0f, 90.0f, "%.1f");
         angle_range[1] = 90.f - slope_bound;
-        if (mod)
-        {
+        if (mod) {
             modified = true;
             if (angle_range[0] > angle_range[1])
                 angle_range[0] = angle_range[1];
@@ -1459,15 +1476,14 @@ void GLCanvas3D::Slope::render() const
 
         ImGui::PopStyleColor(4);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.75f, 0.75f, 0.0f, 0.5f));
-                ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(1.0f, 1.0f, 0.0f, 0.5f));
-                ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.85f, 0.85f, 0.0f, 0.5f));
-                ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.25f, 0.25f, 0.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, ImVec4(1.0f, 1.0f, 0.0f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_FrameBgActive, ImVec4(0.85f, 0.85f, 0.0f, 0.5f));
+        ImGui::PushStyleColor(ImGuiCol_SliderGrab, ImVec4(0.25f, 0.25f, 0.0f, 1.0f));
 
         slope_bound = 90.f - angle_range[0];
         mod = ImGui::SliderFloat("##yellow", &slope_bound, 0.0f, 90.0f, "%.1f");
         angle_range[0] = 90.f - slope_bound;
-        if (mod)
-        {
+        if (mod) {
             modified = true;
             if (angle_range[1] < angle_range[0])
                 angle_range[1] = angle_range[0];
@@ -1531,9 +1547,8 @@ GLCanvas3D::GLCanvas3D(wxGLCanvas* canvas)
     , m_retina_helper(nullptr)
 #endif
     , m_in_render(false)
-    , m_main_toolbar(GLToolbar::Normal, "Top")
-    , m_undoredo_toolbar(GLToolbar::Normal, "Top")
-    , m_collapse_toolbar(GLToolbar::Normal, "Top")
+    , m_main_toolbar(GLToolbar::Normal, "Main")
+    , m_undoredo_toolbar(GLToolbar::Normal, "Undo_Redo")
     , m_gizmos(*this)
     , m_use_clipping_planes(false)
     , m_sidebar_field("")
@@ -1694,7 +1709,7 @@ void GLCanvas3D::reset_volumes()
 
 int GLCanvas3D::check_volumes_outside_state() const
 {
-    ModelInstance::EPrintVolumeState state;
+    ModelInstanceEPrintVolumeState state;
     m_volumes.check_outside_state(m_config, &state);
     return (int)state;
 }
@@ -1911,11 +1926,6 @@ void GLCanvas3D::enable_undoredo_toolbar(bool enable)
     m_undoredo_toolbar.set_enabled(enable);
 }
 
-void GLCanvas3D::enable_collapse_toolbar(bool enable)
-{
-    m_collapse_toolbar.set_enabled(enable);
-}
-
 void GLCanvas3D::enable_dynamic_background(bool enable)
 {
     m_dynamic_background_enabled = enable;
@@ -1990,6 +2000,10 @@ void GLCanvas3D::render()
         post_event(SimpleEvent(EVT_GLCANVAS_UPDATE_BED_SHAPE));
         return;
     }
+
+#if ENABLE_ENVIRONMENT_MAP
+    wxGetApp().plater()->init_environment_texture();
+#endif // ENABLE_ENVIRONMENT_MAP
 
     const Size& cnv_size = get_canvas_size();
     // Probably due to different order of events on Linux/GTK2, when one switched from 3D scene
@@ -2088,6 +2102,8 @@ void GLCanvas3D::render()
 
     std::string tooltip;
 
+	
+
 	// Negative coordinate means out of the window, likely because the window was deactivated.
 	// In that case the tooltip should be hidden.
     if (m_mouse.position.x() >= 0. && m_mouse.position.y() >= 0.) 
@@ -2105,7 +2121,7 @@ void GLCanvas3D::render()
 	        tooltip = m_undoredo_toolbar.get_tooltip();
 
 	    if (tooltip.empty())
-	        tooltip = m_collapse_toolbar.get_tooltip();
+            tooltip = wxGetApp().plater()->get_collapse_toolbar().get_tooltip();
 
 	    if (tooltip.empty())
             tooltip = wxGetApp().plater()->get_view_toolbar().get_tooltip();
@@ -2117,6 +2133,8 @@ void GLCanvas3D::render()
         m_tooltip.render(m_mouse.position, *this);
 
     wxGetApp().plater()->get_mouse3d_controller().render_settings_dialog(*this);
+	
+	wxGetApp().plater()->get_notification_manager()->render_notifications(*this);
 
     wxGetApp().imgui()->render();
 
@@ -2484,11 +2502,19 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                                 TriangleMesh mesh = print_object->get_mesh(slaposDrillHoles);
 	                            assert(! mesh.empty());
                                 mesh.transform(sla_print->sla_trafo(*m_model->objects[volume.object_idx()]).inverse());
+#if ENABLE_SMOOTH_NORMALS
+                                volume.indexed_vertex_array.load_mesh(mesh, true);
+#else
                                 volume.indexed_vertex_array.load_mesh(mesh);
-	                        } else {
+#endif // ENABLE_SMOOTH_NORMALS
+                            } else {
 	                        	// Reload the original volume.
+#if ENABLE_SMOOTH_NORMALS
+                                volume.indexed_vertex_array.load_mesh(m_model->objects[volume.object_idx()]->volumes[volume.volume_idx()]->mesh(), true);
+#else
                                 volume.indexed_vertex_array.load_mesh(m_model->objects[volume.object_idx()]->volumes[volume.volume_idx()]->mesh());
-	                        }
+#endif // ENABLE_SMOOTH_NORMALS
+                            }
                             volume.finalize_geometry(true);
 	                    }
                     	//FIXME it is an ugly hack to write the timestamp into the "offsets" field to not have to add another member variable
@@ -2578,15 +2604,15 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
     // checks for geometry outside the print volume to render it accordingly
     if (!m_volumes.empty())
     {
-        ModelInstance::EPrintVolumeState state;
+        ModelInstanceEPrintVolumeState state;
 
         const bool contained_min_one = m_volumes.check_outside_state(m_config, &state);
 
-        _set_warning_texture(WarningTexture::ObjectClashed, state == ModelInstance::PVS_Partly_Outside);
-        _set_warning_texture(WarningTexture::ObjectOutside, state == ModelInstance::PVS_Fully_Outside);
+        _set_warning_texture(WarningTexture::ObjectClashed, state == ModelInstancePVS_Partly_Outside);
+        _set_warning_texture(WarningTexture::ObjectOutside, state == ModelInstancePVS_Fully_Outside);
 
         post_event(Event<bool>(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, 
-                               contained_min_one && !m_model->objects.empty() && state != ModelInstance::PVS_Partly_Outside));
+                               contained_min_one && !m_model->objects.empty() && state != ModelInstancePVS_Partly_Outside));
     }
     else
     {
@@ -2839,8 +2865,8 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
 
     m_dirty |= m_main_toolbar.update_items_state();
     m_dirty |= m_undoredo_toolbar.update_items_state();
-    m_dirty |= m_collapse_toolbar.update_items_state();
     m_dirty |= wxGetApp().plater()->get_view_toolbar().update_items_state();
+    m_dirty |= wxGetApp().plater()->get_collapse_toolbar().update_items_state();
     bool mouse3d_controller_applied = wxGetApp().plater()->get_mouse3d_controller().apply(wxGetApp().plater()->get_camera());
     m_dirty |= mouse3d_controller_applied;
 
@@ -3291,6 +3317,11 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
     if (evt.MiddleIsDown())
         return;
 
+    if (wxGetApp().imgui()->update_mouse_data(evt)) {
+        m_dirty = true;
+        return;
+    }
+
 #if ENABLE_RETINA_GL
     const float scale = m_retina_helper->get_scale_factor();
     evt.SetX(evt.GetX() * scale);
@@ -3419,6 +3450,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
 #ifdef SLIC3R_DEBUG_MOUSE_EVENTS
         printf((format_mouse_event_debug_message(evt) + " - Consumed by ImGUI\n").c_str());
 #endif /* SLIC3R_DEBUG_MOUSE_EVENTS */
+		 m_dirty = true;
         // do not return if dragging or tooltip not empty to allow for tooltip update
         if (!m_mouse.dragging && m_tooltip.is_empty())
             return;
@@ -3458,7 +3490,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         return;
     }
 
-    if (m_collapse_toolbar.on_mouse(evt, *this))
+    if (wxGetApp().plater()->get_collapse_toolbar().on_mouse(evt, *this))
     {
         if (evt.LeftUp() || evt.MiddleUp() || evt.RightUp())
             mouse_up_cleanup();
@@ -3812,7 +3844,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             m_gizmos.reset_all_states();
 
         // Only refresh if picking is enabled, in that case the objects may get highlighted if the mouse cursor hovers over.
-        if (m_picking_enabled)
+        //if (m_picking_enabled)
             m_dirty = true;
     }
     else
@@ -4172,7 +4204,7 @@ void GLCanvas3D::update_ui_from_settings()
 #endif // ENABLE_RETINA_GL
 
     bool enable_collapse = wxGetApp().app_config->get("show_collapse_button") == "1";
-    enable_collapse_toolbar(enable_collapse);
+    wxGetApp().plater()->get_collapse_toolbar().set_enabled(enable_collapse);
 }
 
 
@@ -4864,7 +4896,7 @@ bool GLCanvas3D::_init_main_toolbar()
         return false;
 
     item.name = "settings";
-    item.icon_filename = "cog.svg";
+    item.icon_filename = "cog_.svg";
     item.tooltip = _u8L("Switch to Settings") + "\n" + "[" + GUI::shortkey_ctrl_prefix() + "2] - " + _u8L("Print Settings Tab")    + 
                                                 "\n" + "[" + GUI::shortkey_ctrl_prefix() + "3] - " + (m_process->current_printer_technology() == ptFFF ? _u8L("Filament Settings Tab") : _u8L("Material Settings Tab")) +
                                                 "\n" + "[" + GUI::shortkey_ctrl_prefix() + "4] - " + _u8L("Printer Settings Tab") ;
@@ -5040,51 +5072,7 @@ bool GLCanvas3D::_init_view_toolbar()
 
 bool GLCanvas3D::_init_collapse_toolbar()
 {
-    if (!m_collapse_toolbar.is_enabled() && m_collapse_toolbar.get_items_count() > 0)
-        return true;
-
-    BackgroundTexture::Metadata background_data;
-    background_data.filename = "toolbar_background.png";
-    background_data.left = 16;
-    background_data.top = 16;
-    background_data.right = 16;
-    background_data.bottom = 16;
-
-    if (!m_collapse_toolbar.init(background_data))
-    {
-        // unable to init the toolbar texture, disable it
-        m_collapse_toolbar.set_enabled(false);
-        return true;
-    }
-
-    m_collapse_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
-    m_collapse_toolbar.set_horizontal_orientation(GLToolbar::Layout::HO_Right);
-    m_collapse_toolbar.set_vertical_orientation(GLToolbar::Layout::VO_Top);
-    m_collapse_toolbar.set_border(5.0f);
-    m_collapse_toolbar.set_separator_size(5);
-    m_collapse_toolbar.set_gap_size(2);
-
-    GLToolbarItem::Data item;
-
-    item.name = "collapse_sidebar";
-    item.icon_filename = "collapse.svg";
-    item.tooltip =  wxGetApp().plater()->is_sidebar_collapsed() ? _utf8(L("Expand right panel")) : _utf8(L("Collapse right panel"));
-    item.sprite_id = 0;
-    item.left.action_callback = [this, item]() {
-        std::string new_tooltip = wxGetApp().plater()->is_sidebar_collapsed() ?
-            _utf8(L("Collapse right panel")) : _utf8(L("Expand right panel"));
-
-        int id = m_collapse_toolbar.get_item_id("collapse_sidebar");
-        m_collapse_toolbar.set_tooltip(id, new_tooltip);
-        set_tooltip("");
-
-        wxGetApp().plater()->collapse_sidebar(!wxGetApp().plater()->is_sidebar_collapsed());
-    };
-
-    if (!m_collapse_toolbar.add_item(item))
-        return false;
-
-    return true;
+    return wxGetApp().plater()->init_collapse_toolbar();
 }
 
 bool GLCanvas3D::_set_current()
@@ -5412,19 +5400,21 @@ void GLCanvas3D::_check_and_update_toolbar_icon_scale() const
     float size = GLToolbar::Default_Icons_Size * scale;
 
     // Set current size for all top toolbars. It will be used for next calculations
+    GLToolbar& collapse_toolbar = wxGetApp().plater()->get_collapse_toolbar();
 #if ENABLE_RETINA_GL
     const float sc = m_retina_helper->get_scale_factor() * scale;
     m_main_toolbar.set_scale(sc);
     m_undoredo_toolbar.set_scale(sc);
-    m_collapse_toolbar.set_scale(sc);
+    collapse_toolbar.set_scale(sc);
+    size *= m_retina_helper->get_scale_factor();
 #else
     m_main_toolbar.set_icons_size(size);
     m_undoredo_toolbar.set_icons_size(size);
-    m_collapse_toolbar.set_icons_size(size);
+    collapse_toolbar.set_icons_size(size);
 #endif // ENABLE_RETINA_GL
 
-    float top_tb_width  = m_main_toolbar.get_width() + m_undoredo_toolbar.get_width() + m_collapse_toolbar.get_width();
-    int   items_cnt     = m_main_toolbar.get_visible_items_cnt() + m_undoredo_toolbar.get_visible_items_cnt() + m_collapse_toolbar.get_visible_items_cnt();
+    float top_tb_width = m_main_toolbar.get_width() + m_undoredo_toolbar.get_width() + collapse_toolbar.get_width();
+    int   items_cnt = m_main_toolbar.get_visible_items_cnt() + m_undoredo_toolbar.get_visible_items_cnt() + collapse_toolbar.get_visible_items_cnt();
     float noitems_width = top_tb_width - size * items_cnt; // width of separators and borders in top toolbars 
 
     // calculate scale needed for items in all top toolbars
@@ -5437,10 +5427,12 @@ void GLCanvas3D::_check_and_update_toolbar_icon_scale() const
 
     // set minimum scale as a auto scale for the toolbars
     float new_scale = std::min(new_h_scale, new_v_scale);
+#if ENABLE_RETINA_GL
+    new_scale /= m_retina_helper->get_scale_factor();
+#endif
     if (fabs(new_scale - scale) > 0.01) // scale is changed by 1% and more
         wxGetApp().set_auto_toolbar_icon_scale(new_scale);
 }
-
 
 void GLCanvas3D::_render_overlays() const
 {
@@ -5466,12 +5458,12 @@ void GLCanvas3D::_render_overlays() const
     const float scale = m_retina_helper->get_scale_factor() * wxGetApp().toolbar_icon_scale(/*true*/);
     m_main_toolbar.set_scale(scale);
     m_undoredo_toolbar.set_scale(scale);
-    m_collapse_toolbar.set_scale(scale);
+    wxGetApp().plater()->get_collapse_toolbar().set_scale(scale);
 #else
     const float size = int(GLToolbar::Default_Icons_Size * wxGetApp().toolbar_icon_scale(/*true*/));
     m_main_toolbar.set_icons_size(size);
     m_undoredo_toolbar.set_icons_size(size);
-    m_collapse_toolbar.set_icons_size(size);
+    wxGetApp().plater()->get_collapse_toolbar().set_icons_size(size);
 #endif // ENABLE_RETINA_GL
 
     _render_main_toolbar();
@@ -5575,7 +5567,8 @@ void GLCanvas3D::_render_main_toolbar() const
     float inv_zoom = (float)wxGetApp().plater()->get_camera().get_inv_zoom();
 
     float top = 0.5f * (float)cnv_size.get_height() * inv_zoom;
-    float collapse_toolbar_width = m_collapse_toolbar.is_enabled() ? m_collapse_toolbar.get_width() : 0.0f;
+    const GLToolbar& collapse_toolbar = wxGetApp().plater()->get_collapse_toolbar();
+    float collapse_toolbar_width = collapse_toolbar.is_enabled() ? collapse_toolbar.get_width() : 0.0f;
     float left = -0.5f * (m_main_toolbar.get_width() + m_undoredo_toolbar.get_width() + collapse_toolbar_width) * inv_zoom;
 
     m_main_toolbar.set_position(top, left);
@@ -5591,7 +5584,8 @@ void GLCanvas3D::_render_undoredo_toolbar() const
     float inv_zoom = (float)wxGetApp().plater()->get_camera().get_inv_zoom();
 
     float top = 0.5f * (float)cnv_size.get_height() * inv_zoom;
-    float collapse_toolbar_width = m_collapse_toolbar.is_enabled() ? m_collapse_toolbar.get_width() : 0.0f;
+    const GLToolbar& collapse_toolbar = wxGetApp().plater()->get_collapse_toolbar();
+    float collapse_toolbar_width = collapse_toolbar.is_enabled() ? collapse_toolbar.get_width() : 0.0f;
     float left = (m_main_toolbar.get_width() - 0.5f * (m_main_toolbar.get_width() + m_undoredo_toolbar.get_width() + collapse_toolbar_width)) * inv_zoom;
     m_undoredo_toolbar.set_position(top, left);
     m_undoredo_toolbar.render(*this);
@@ -5599,8 +5593,7 @@ void GLCanvas3D::_render_undoredo_toolbar() const
 
 void GLCanvas3D::_render_collapse_toolbar() const
 {
-    if (!m_collapse_toolbar.is_enabled())
-        return;
+    GLToolbar& collapse_toolbar = wxGetApp().plater()->get_collapse_toolbar();
 
     Size cnv_size = get_canvas_size();
     float inv_zoom = (float)wxGetApp().plater()->get_camera().get_inv_zoom();
@@ -5608,10 +5601,10 @@ void GLCanvas3D::_render_collapse_toolbar() const
     float band = m_layers_editing.is_enabled() ? (wxGetApp().imgui()->get_style_scaling() * LayersEditing::THICKNESS_BAR_WIDTH) : 0.0;
 
     float top  = 0.5f * (float)cnv_size.get_height() * inv_zoom;
-    float left = (0.5f * (float)cnv_size.get_width() - (float)m_collapse_toolbar.get_width() - band) * inv_zoom;
+    float left = (0.5f * (float)cnv_size.get_width() - (float)collapse_toolbar.get_width() - band) * inv_zoom;
 
-    m_collapse_toolbar.set_position(top, left);
-    m_collapse_toolbar.render(*this);
+    collapse_toolbar.set_position(top, left);
+    collapse_toolbar.render(*this);
 }
 
 void GLCanvas3D::_render_view_toolbar() const
@@ -6033,7 +6026,7 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
         // For coloring by a color_print(M600), return a parsed color.
         bool                         color_by_color_print() const { return color_print_values!=nullptr; }
         const size_t                 color_print_color_idx_by_layer_idx(const size_t layer_idx) const {
-            const CustomGCode::Item value{layers[layer_idx]->print_z + EPSILON, "", 0, ""};
+            const CustomGCode::Item value{layers[layer_idx]->print_z + EPSILON, CustomGCode::Custom, 0, ""};
             auto it = std::lower_bound(color_print_values->begin(), color_print_values->end(), value);
             return (it - color_print_values->begin()) % number_tools();
         }
@@ -6047,36 +6040,36 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
                 { return fabs(code.print_z - print_z) < EPSILON; });
             if (it != color_print_values->end())
             {
-                const std::string& code = it->gcode;
+                CustomGCode::Type type = it->type;
                 // pause print or custom Gcode
-                if (code == PausePrintCode || 
-                    (code != ColorChangeCode && code != ToolChangeCode))
+                if (type == CustomGCode::PausePrint ||
+                    (type != CustomGCode::ColorChange && type != CustomGCode::ToolChange))
                     return number_tools()-1; // last color item is a gray color for pause print or custom G-code 
 
                 // change tool (extruder) 
-                if (code == ToolChangeCode)
+                if (type == CustomGCode::ToolChange)
                     return get_color_idx_for_tool_change(it, extruder);
                 // change color for current extruder
-                if (code == ColorChangeCode) {
+                if (type == CustomGCode::ColorChange) {
                     int color_idx = get_color_idx_for_color_change(it, extruder);
                     if (color_idx >= 0)
                         return color_idx;
                 }
             }
 
-            const CustomGCode::Item value{print_z + EPSILON, "", 0, ""};
+            const CustomGCode::Item value{print_z + EPSILON, CustomGCode::Custom, 0, ""};
             it = std::lower_bound(color_print_values->begin(), color_print_values->end(), value);
             while (it != color_print_values->begin())
             {
                 --it;
                 // change color for current extruder
-                if (it->gcode == ColorChangeCode) {
+                if (it->type == CustomGCode::ColorChange) {
                     int color_idx = get_color_idx_for_color_change(it, extruder);
                     if (color_idx >= 0)
                         return color_idx;
                 }
                 // change tool (extruder) 
-                if (it->gcode == ToolChangeCode)
+                if (it->type == CustomGCode::ToolChange)
                     return get_color_idx_for_tool_change(it, extruder);
             }
 
@@ -6089,7 +6082,7 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
             int shift = 0;
             while (it != color_print_values->begin()) {
                 --it;
-                if (it->gcode == ColorChangeCode)
+                if (it->type == CustomGCode::ColorChange)
                     shift++;
             }
             return extruders_cnt + shift;
@@ -6104,7 +6097,7 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
             auto it_n = it;
             while (it_n != color_print_values->begin()) {
                 --it_n;
-                if (it_n->gcode == ColorChangeCode && it_n->extruder == current_extruder)
+                if (it_n->type == CustomGCode::ColorChange && it_n->extruder == current_extruder)
                     return get_m600_color_idx(it_n);
             }
 
@@ -6120,7 +6113,7 @@ void GLCanvas3D::_load_print_object_toolpaths(const PrintObject& print_object, c
             bool is_tool_change = false;
             while (it_n != color_print_values->begin()) {
                 --it_n;
-                if (it_n->gcode == ToolChangeCode) {
+                if (it_n->type == CustomGCode::ToolChange) {
                     is_tool_change = true;
                     if (it_n->extruder == it->extruder || (it_n->extruder == 0 && it->extruder == extruder))
                         return get_m600_color_idx(it);
@@ -6803,7 +6796,11 @@ void GLCanvas3D::_load_sla_shells()
         const TriangleMesh &mesh, const float color[4], bool outside_printer_detection_enabled) {
         m_volumes.volumes.emplace_back(new GLVolume(color));
         GLVolume& v = *m_volumes.volumes.back();
+#if ENABLE_SMOOTH_NORMALS
+        v.indexed_vertex_array.load_mesh(mesh, true);
+#else
         v.indexed_vertex_array.load_mesh(mesh);
+#endif // ENABLE_SMOOTH_NORMALS
         v.indexed_vertex_array.finalize_geometry(this->m_initialized);
         v.shader_outside_printer_detection_enabled = outside_printer_detection_enabled;
         v.composite_id.volume_id = volume_id;
@@ -7141,9 +7138,10 @@ bool GLCanvas3D::_activate_search_toolbar_item()
 
 bool GLCanvas3D::_deactivate_collapse_toolbar_items()
 {
-    if (m_collapse_toolbar.is_item_pressed("print"))
+    GLToolbar& collapse_toolbar = wxGetApp().plater()->get_collapse_toolbar();
+    if (collapse_toolbar.is_item_pressed("print"))
     {
-        m_collapse_toolbar.force_left_action(m_collapse_toolbar.get_item_id("print"), *this);
+        collapse_toolbar.force_left_action(collapse_toolbar.get_item_id("print"), *this);
         return true;
     }
 

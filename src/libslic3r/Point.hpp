@@ -60,10 +60,13 @@ inline int64_t cross2(const Vec2i64 &v1, const Vec2i64 &v2) { return v1(0) * v2(
 inline float   cross2(const Vec2f   &v1, const Vec2f   &v2) { return v1(0) * v2(1) - v1(1) * v2(0); }
 inline double  cross2(const Vec2d   &v1, const Vec2d   &v2) { return v1(0) * v2(1) - v1(1) * v2(0); }
 
-inline Vec2i32 to_2d(const Vec2i32 &pt3) { return Vec2i32(pt3(0), pt3(1)); }
-inline Vec2i64 to_2d(const Vec3i64 &pt3) { return Vec2i64(pt3(0), pt3(1)); }
-inline Vec2f   to_2d(const Vec3f   &pt3) { return Vec2f  (pt3(0), pt3(1)); }
-inline Vec2d   to_2d(const Vec3d   &pt3) { return Vec2d  (pt3(0), pt3(1)); }
+template<class T, int N> Eigen::Matrix<T,  2, 1, Eigen::DontAlign>
+to_2d(const Eigen::Matrix<T,  N, 1, Eigen::DontAlign> &ptN) { return {ptN(0), ptN(1)}; }
+
+//inline Vec2i32 to_2d(const Vec3i32 &pt3) { return Vec2i32(pt3(0), pt3(1)); }
+//inline Vec2i64 to_2d(const Vec3i64 &pt3) { return Vec2i64(pt3(0), pt3(1)); }
+//inline Vec2f   to_2d(const Vec3f   &pt3) { return Vec2f  (pt3(0), pt3(1)); }
+//inline Vec2d   to_2d(const Vec3d   &pt3) { return Vec2d  (pt3(0), pt3(1)); }
 
 inline Vec3d   to_3d(const Vec2d &v, double z) { return Vec3d(v(0), v(1), z); }
 inline Vec3f   to_3d(const Vec2f &v, float z) { return Vec3f(v(0), v(1), z); }
@@ -369,7 +372,7 @@ namespace boost { namespace polygon {
         typedef coord_t coordinate_type;
     
         static inline coordinate_type get(const Slic3r::Point& point, orientation_2d orient) {
-            return (orient == HORIZONTAL) ? (coordinate_type)point(0) : (coordinate_type)point(1);
+            return (coordinate_type)point((orient == HORIZONTAL) ? 0 : 1);
         }
     };
     
@@ -377,16 +380,10 @@ namespace boost { namespace polygon {
     struct point_mutable_traits<Slic3r::Point> {
         typedef coord_t coordinate_type;
         static inline void set(Slic3r::Point& point, orientation_2d orient, coord_t value) {
-            if (orient == HORIZONTAL)
-                point(0) = value;
-            else
-                point(1) = value;
+            point((orient == HORIZONTAL) ? 0 : 1) = value;
         }
         static inline Slic3r::Point construct(coord_t x_value, coord_t y_value) {
-            Slic3r::Point retval;
-            retval(0) = x_value;
-            retval(1) = y_value; 
-            return retval;
+            return Slic3r::Point(x_value, y_value);
         }
     };
 } }

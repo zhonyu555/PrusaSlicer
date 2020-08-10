@@ -3,7 +3,6 @@
 
 #include "libslic3r.h"
 #include "Geometry.hpp"
-#include "Layer.hpp"
 #include "ObjectID.hpp"
 #include "Point.hpp"
 #include "PrintConfig.hpp"
@@ -40,6 +39,7 @@ class ModelVolume;
 class ModelWipeTower;
 class Print;
 class SLAPrint;
+class TriangleSelector;
 
 namespace UndoRedo {
 	class StackImpl;
@@ -281,12 +281,14 @@ public:
 
     // This method could only be called before the meshes of this ModelVolumes are not shared!
     void scale_mesh_after_creation(const Vec3d& versor);
+    void convert_units(ModelObjectPtrs&new_objects, bool from_imperial, std::vector<int> volume_idxs);
 
     size_t materials_count() const;
     size_t facets_count() const;
     bool needed_repair() const;
     ModelObjectPtrs cut(size_t instance, coordf_t z, bool keep_upper = true, bool keep_lower = true, bool rotate_lower = false);    // Note: z is in world coordinates
     void split(ModelObjectPtrs* new_objects);
+    void merge();
     // Support for non-uniform scaling of instances. If an instance is rotated by angles, which are not multiples of ninety degrees,
     // then the scaling in world coordinate system is not representable by the Geometry::Transformation structure.
     // This situation is solved by baking in the instance transformation into the mesh vertices.
@@ -393,6 +395,7 @@ enum class ModelVolumeType : int {
 };
 
 enum class FacetSupportType : int8_t {
+    // Maximum is 3. The value is serialized in TriangleSelector into 2 bits!
     NONE      = 0,
     ENFORCER  = 1,
     BLOCKER   = 2
@@ -402,9 +405,12 @@ class FacetsAnnotation {
 public:
     using ClockType = std::chrono::steady_clock;
 
-    std::vector<int> get_facets(FacetSupportType type) const;
-    void set_facet(int idx, FacetSupportType type);
+    const std::map<int, std::vector<bool>>& get_data() const { return m_data; }
+    bool set(const TriangleSelector& selector);
+    indexed_triangle_set get_facets(const ModelVolume& mv, FacetSupportType type) const;
     void clear();
+    std::string get_triangle_as_string(int i) const;
+    void set_triangle_from_string(int triangle_id, const std::string& str);
 
     ClockType::time_point get_timestamp() const { return timestamp; }
     bool is_same_as(const FacetsAnnotation& other) const {
@@ -417,7 +423,7 @@ public:
     }
 
 private:
-    std::map<int, FacetSupportType> m_data;
+    std::map<int, std::vector<bool>> m_data;
 
     ClockType::time_point timestamp;
     void update_timestamp() {
@@ -640,25 +646,26 @@ private:
 	}
 };
 
+
+enum ModelInstanceEPrintVolumeState : unsigned char
+{
+    ModelInstancePVS_Inside,
+    ModelInstancePVS_Partly_Outside,
+    ModelInstancePVS_Fully_Outside,
+    ModelInstanceNum_BedStates
+};
+
+
 // A single instance of a ModelObject.
 // Knows the affine transformation of an object.
 class ModelInstance final : public ObjectBase
 {
-public:
-    enum EPrintVolumeState : unsigned char
-    {
-        PVS_Inside,
-        PVS_Partly_Outside,
-        PVS_Fully_Outside,
-        Num_BedStates
-    };
-
 private:
     Geometry::Transformation m_transformation;
 
 public:
     // flag showing the position of this instance with respect to the print volume (set by Print::validate() using ModelObject::check_instances_print_volume_state())
-    EPrintVolumeState print_volume_state;
+    ModelInstanceEPrintVolumeState print_volume_state;
     // Whether or not this instance is printable
     bool printable;
 
@@ -705,7 +712,7 @@ public:
 
     const Transform3d& get_matrix(bool dont_translate = false, bool dont_rotate = false, bool dont_scale = false, bool dont_mirror = false) const { return m_transformation.get_matrix(dont_translate, dont_rotate, dont_scale, dont_mirror); }
 
-    bool is_printable() const { return object->printable && printable && (print_volume_state == PVS_Inside); }
+    bool is_printable() const { return object->printable && printable && (print_volume_state == ModelInstancePVS_Inside); }
 
     // Getting the input polygon for arrange
     arrangement::ArrangePolygon get_arrange_polygon() const;
@@ -734,10 +741,10 @@ private:
     ModelObject* object;
 
     // Constructor, which assigns a new unique ID.
-    explicit ModelInstance(ModelObject* object) : print_volume_state(PVS_Inside), printable(true), object(object) { assert(this->id().valid()); }
+    explicit ModelInstance(ModelObject* object) : print_volume_state(ModelInstancePVS_Inside), printable(true), object(object) { assert(this->id().valid()); }
     // Constructor, which assigns a new unique ID.
     explicit ModelInstance(ModelObject *object, const ModelInstance &other) :
-        m_transformation(other.m_transformation), print_volume_state(PVS_Inside), printable(other.printable), object(object) { assert(this->id().valid() && this->id() != other.id()); }
+        m_transformation(other.m_transformation), print_volume_state(ModelInstancePVS_Inside), printable(other.printable), object(object) { assert(this->id().valid() && this->id() != other.id()); }
 
     explicit ModelInstance(ModelInstance &&rhs) = delete;
     ModelInstance& operator=(const ModelInstance &rhs) = delete;
@@ -751,6 +758,7 @@ private:
         ar(m_transformation, print_volume_state, printable);
     }
 };
+
 
 class ModelWipeTower final : public ObjectBase
 {

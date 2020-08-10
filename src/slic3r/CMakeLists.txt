@@ -12,8 +12,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/SysInfoDialog.hpp
     GUI/KBShortcutsDialog.cpp
     GUI/KBShortcutsDialog.hpp
-    GUI/AppConfig.cpp
-    GUI/AppConfig.hpp
     GUI/BackgroundSlicingProcess.cpp
     GUI/BackgroundSlicingProcess.hpp
     GUI/BitmapCache.cpp
@@ -61,10 +59,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/GLToolbar.cpp
     GUI/Preferences.cpp
     GUI/Preferences.hpp
-    GUI/Preset.cpp
-    GUI/Preset.hpp
-    GUI/PresetBundle.cpp
-    GUI/PresetBundle.hpp
     GUI/PresetHints.cpp
     GUI/PresetHints.hpp
     GUI/GUI.cpp
@@ -81,6 +75,10 @@ set(SLIC3R_GUI_SOURCES
     GUI/MainFrame.hpp
     GUI/Plater.cpp
     GUI/Plater.hpp
+    GUI/PresetComboBoxes.hpp
+    GUI/PresetComboBoxes.cpp
+    GUI/PhysicalPrinterDialog.hpp
+    GUI/PhysicalPrinterDialog.cpp
     GUI/GUI_ObjectList.cpp
     GUI/GUI_ObjectList.hpp
     GUI/GUI_ObjectManipulation.cpp
@@ -89,8 +87,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/GUI_ObjectSettings.hpp
     GUI/GUI_ObjectLayers.cpp
     GUI/GUI_ObjectLayers.hpp
-    GUI/LambdaObjectDialog.cpp
-    GUI/LambdaObjectDialog.hpp
     GUI/MeshUtils.cpp
     GUI/MeshUtils.hpp
     GUI/Tab.cpp
@@ -165,6 +161,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/InstanceCheck.hpp
     GUI/Search.cpp
     GUI/Search.hpp
+    GUI/NotificationManager.cpp
+    GUI/NotificationManager.hpp
     Utils/Http.cpp
     Utils/Http.hpp
     Utils/FixModelByWin10.cpp

@@ -14,8 +14,8 @@
 #include <wx/dialog.h>
 
 #include "GUI_Utils.hpp"
-#include "Preset.hpp"
 #include "wxExtensions.hpp"
+#include "libslic3r/Preset.hpp"
 
 
 namespace Slic3r {
@@ -198,6 +198,7 @@ public:
 
 protected:
     void on_dpi_changed(const wxRect& suggested_rect) override;
+    virtual void on_sys_color_changed() override;
 };
 
 
@@ -227,11 +228,11 @@ public:
 
     // implementation of base class virtuals to define model
 
-    virtual unsigned int GetColumnCount() const wxOVERRIDE { return colMax; }
-    virtual wxString GetColumnType(unsigned int col) const wxOVERRIDE;
-    virtual void GetValueByRow(wxVariant& variant, unsigned int row, unsigned int col) const wxOVERRIDE;
-    virtual bool GetAttrByRow(unsigned int row, unsigned int col, wxDataViewItemAttr& attr) const wxOVERRIDE { return true; }
-    virtual bool SetValueByRow(const wxVariant& variant, unsigned int row, unsigned int col) wxOVERRIDE { return false; }
+    virtual unsigned int GetColumnCount() const override { return colMax; }
+    virtual wxString GetColumnType(unsigned int col) const override;
+    virtual void GetValueByRow(wxVariant& variant, unsigned int row, unsigned int col) const override;
+    virtual bool GetAttrByRow(unsigned int row, unsigned int col, wxDataViewItemAttr& attr) const override { return true; }
+    virtual bool SetValueByRow(const wxVariant& variant, unsigned int row, unsigned int col) override { return false; }
 };
 
 

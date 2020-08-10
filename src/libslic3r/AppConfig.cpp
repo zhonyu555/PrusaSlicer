@@ -15,8 +15,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/format/format_fwd.hpp>
 
-#include <wx/string.h>
-#include "I18N.hpp"
+//#include <wx/string.h>
+//#include "I18N.hpp"
 
 namespace Slic3r {
 
@@ -93,6 +93,14 @@ void AppConfig::set_defaults()
     if (get("use_free_camera").empty())
         set("use_free_camera", "0");
 
+#if ENABLE_ENVIRONMENT_MAP
+    if (get("use_environment_map").empty())
+        set("use_environment_map", "0");
+#endif // ENABLE_ENVIRONMENT_MAP
+
+    if (get("use_inches").empty())
+        set("use_inches", "0");
+
     // Remove legacy window positions/sizes
     erase("", "main_frame_maximized");
     erase("", "main_frame_pos");
@@ -102,7 +110,7 @@ void AppConfig::set_defaults()
     erase("", "object_settings_size");
 }
 
-void AppConfig::load()
+std::string AppConfig::load()
 {
     // 1) Read the complete config file into a boost::property_tree.
     namespace pt = boost::property_tree;
@@ -112,10 +120,15 @@ void AppConfig::load()
         pt::read_ini(ifs, tree);
     } catch (pt::ptree_error& ex) {
         // Error while parsing config file. We'll customize the error message and rethrow to be displayed.
+        // ! But to avoid the use of _utf8 (related to use of wxWidgets) 
+        // we will rethrow this exception from the place of load() call, if returned value wouldn't be empty
+        /*
         throw std::runtime_error(
         	_utf8(L("Error parsing PrusaSlicer config file, it is probably corrupted. "
                     "Try to manually delete the file to recover from the error. Your user profiles will not be affected.")) + 
         	"\n\n" + AppConfig::config_path() + "\n\n" + ex.what());
+        */
+        return ex.what();
     }
 
     // 2) Parse the property_tree, extract the sections and key / value pairs.
@@ -161,6 +174,7 @@ void AppConfig::load()
     // Override missing or keys with their defaults.
     this->set_defaults();
     m_dirty = false;
+    return "";
 }
 
 void AppConfig::save()
@@ -300,13 +314,13 @@ void AppConfig::set_mouse_device(const std::string& name, double translation_spe
 
 std::vector<std::string> AppConfig::get_mouse_device_names() const
 {
-	static constexpr char   *prefix     = "mouse_device:";
-    static constexpr size_t  prefix_len = 13; // strlen(prefix); reports error C2131: expression did not evaluate to a constant on VS2019
-	std::vector<std::string> out;
+    static constexpr const char   *prefix     = "mouse_device:";
+    static const size_t  prefix_len = strlen(prefix);
+    std::vector<std::string> out;
     for (const std::pair<std::string, std::map<std::string, std::string>>& key_value_pair : m_storage)
-        if (boost::starts_with(key_value_pair.first, "mouse_device:") && key_value_pair.first.size() > prefix_len)
+        if (boost::starts_with(key_value_pair.first, prefix) && key_value_pair.first.size() > prefix_len)
             out.emplace_back(key_value_pair.first.substr(prefix_len));
-	return out;
+    return out;
 }
 
 void AppConfig::update_config_dir(const std::string &dir)
