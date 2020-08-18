@@ -711,6 +711,7 @@ public:
     ConfigOptionFloat               parking_pos_retraction;
     ConfigOptionBool                remaining_times;
     ConfigOptionBool                silent_mode;
+    ConfigOptionBool                print_remaining_times;
     ConfigOptionFloat               extra_loading_move;
     ConfigOptionString              color_change_gcode;
     ConfigOptionString              pause_print_gcode;
@@ -787,6 +788,7 @@ protected:
         OPT_PTR(parking_pos_retraction);
         OPT_PTR(remaining_times);
         OPT_PTR(silent_mode);
+        OPT_PTR(print_remaining_times);
         OPT_PTR(extra_loading_move);
         OPT_PTR(color_change_gcode);
         OPT_PTR(pause_print_gcode);

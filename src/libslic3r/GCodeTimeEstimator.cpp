@@ -147,8 +147,10 @@ namespace Slic3r {
 
     const std::string GCodeTimeEstimator::Normal_First_M73_Output_Placeholder_Tag = "; _TE_NORMAL_FIRST_M73_OUTPUT_PLACEHOLDER";
     const std::string GCodeTimeEstimator::Silent_First_M73_Output_Placeholder_Tag = "; _TE_SILENT_FIRST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Normal_First_M117_Output_Placeholder_Tag = "; _TE_NORMAL_FIRST_M117_OUTPUT_PLACEHOLDER";
     const std::string GCodeTimeEstimator::Normal_Last_M73_Output_Placeholder_Tag = "; _TE_NORMAL_LAST_M73_OUTPUT_PLACEHOLDER";
     const std::string GCodeTimeEstimator::Silent_Last_M73_Output_Placeholder_Tag = "; _TE_SILENT_LAST_M73_OUTPUT_PLACEHOLDER";
+    const std::string GCodeTimeEstimator::Normal_Last_M117_Output_Placeholder_Tag = "; _TE_NORMAL_LAST_M117_OUTPUT_PLACEHOLDER";
 
     const std::string GCodeTimeEstimator::Color_Change_Tag = "PRINT_COLOR_CHANGE";
     const std::string GCodeTimeEstimator::Pause_Print_Tag  = "PRINT_PAUSE";
@@ -248,7 +250,7 @@ namespace Slic3r {
     }
 #endif
 
-    bool GCodeTimeEstimator::post_process(const std::string& filename, float interval_sec, const PostProcessData* const normal_mode, const PostProcessData* const silent_mode)
+    bool GCodeTimeEstimator::post_process(const std::string& filename, float interval_sec, const PostProcessData* const normal_mode, const PostProcessData* const silent_mode, const PostProcessData* const print_mode)
     {
         boost::nowide::ifstream in(filename);
         if (!in.good())
@@ -262,6 +264,7 @@ namespace Slic3r {
 
         std::string normal_time_mask = "M73 P%s R%s\n";
         std::string silent_time_mask = "M73 Q%s S%s\n";
+        std::string print_time_mask = "M117 %s%% %s min\n";
         char line_M73[64];
 
         std::string gcode_line;
@@ -287,6 +290,8 @@ namespace Slic3r {
         float normal_last_recorded_time = 0.0f;
         int silent_g1_line_id = 0;
         float silent_last_recorded_time = 0.0f;
+        int print_g1_line_id = 0;
+        float print_last_recorded_time = 0.0f;
 
         // helper function to process g1 lines
         auto process_g1_line = [&](const PostProcessData* const data, const GCodeReader::GCodeLine& line, int& g1_line_id, float& last_recorded_time, const std::string& time_mask) {
@@ -343,6 +348,11 @@ namespace Slic3r {
                 sprintf(line_M73, silent_time_mask.c_str(), "0", _get_time_minutes(silent_mode->time).c_str());
                 gcode_line = line_M73;
             }
+            else if ((print_mode != nullptr) && (gcode_line == Normal_First_M117_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, print_time_mask.c_str(), "0", _get_time_minutes(print_mode->time).c_str());
+                gcode_line = line_M73;
+            }
             // replaces placeholders for final line M73 with the real lines
             else if ((normal_mode != nullptr) && (gcode_line == Normal_Last_M73_Output_Placeholder_Tag))
             {
@@ -352,6 +362,11 @@ namespace Slic3r {
             else if ((silent_mode != nullptr) && (gcode_line == Silent_Last_M73_Output_Placeholder_Tag))
             {
                 sprintf(line_M73, silent_time_mask.c_str(), "100", "0");
+                gcode_line = line_M73;
+            }
+            else if ((print_mode != nullptr) && (gcode_line == Normal_Last_M117_Output_Placeholder_Tag))
+            {
+                sprintf(line_M73, print_time_mask.c_str(), "100", "0");
                 gcode_line = line_M73;
             }
             else
@@ -366,6 +381,7 @@ namespace Slic3r {
                         ++g1_lines_count;
                         process_g1_line(silent_mode, line, silent_g1_line_id, silent_last_recorded_time, silent_time_mask);
                         process_g1_line(normal_mode, line, normal_g1_line_id, normal_last_recorded_time, normal_time_mask);
+                        process_g1_line(print_mode, line, print_g1_line_id, print_last_recorded_time, print_time_mask);
                     }
                 });
 

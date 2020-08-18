@@ -20,8 +20,10 @@ namespace Slic3r {
     public:
         static const std::string Normal_First_M73_Output_Placeholder_Tag;
         static const std::string Silent_First_M73_Output_Placeholder_Tag;
+        static const std::string Normal_First_M117_Output_Placeholder_Tag;
         static const std::string Normal_Last_M73_Output_Placeholder_Tag;
         static const std::string Silent_Last_M73_Output_Placeholder_Tag;
+        static const std::string Normal_Last_M117_Output_Placeholder_Tag;
 
         static const std::string Color_Change_Tag;
         static const std::string Pause_Print_Tag;
@@ -271,7 +273,8 @@ namespace Slic3r {
         // and removing working tags (as those used for color changes)
         // if normal_mode == nullptr no M73 line will be added for normal mode
         // if silent_mode == nullptr no M73 line will be added for silent mode
-        static bool post_process(const std::string& filename, float interval_sec, const PostProcessData* const normal_mode, const PostProcessData* const silent_mode);
+        // if print_mode == nullptr no M117 line will be added for Marlin mode
+        static bool post_process(const std::string& filename, float interval_sec, const PostProcessData* const normal_mode, const PostProcessData* const silent_mode, const PostProcessData* const print_mode);
 
         // Set current position on the given axis with the given value
         void set_axis_position(EAxis axis, float position);

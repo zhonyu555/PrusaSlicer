@@ -766,17 +766,24 @@ void GCode::do_export(Print* print, const char* path, GCodePreviewData* preview_
 
     GCodeTimeEstimator::PostProcessData normal_data = m_normal_time_estimator.get_post_process_data();
     GCodeTimeEstimator::PostProcessData silent_data = m_silent_time_estimator.get_post_process_data();
+    GCodeTimeEstimator::PostProcessData print_data = m_normal_time_estimator.get_post_process_data();
 
     bool remaining_times_enabled = print->config().remaining_times.value;
+    bool print_remaining_times_enabled = print->config().print_remaining_times.value;
 
     BOOST_LOG_TRIVIAL(debug) << "Time estimator post processing" << log_memory_info();
-    GCodeTimeEstimator::post_process(path_tmp, 60.0f, remaining_times_enabled ? &normal_data : nullptr, (remaining_times_enabled && m_silent_time_estimator_enabled) ? &silent_data : nullptr);
+    GCodeTimeEstimator::post_process(path_tmp, 60.0f, remaining_times_enabled ? &normal_data : nullptr, (remaining_times_enabled && m_silent_time_estimator_enabled) ? &silent_data : nullptr, print_remaining_times_enabled ? &print_data : nullptr);
 
     if (remaining_times_enabled)
     {
         m_normal_time_estimator.reset();
         if (m_silent_time_estimator_enabled)
             m_silent_time_estimator.reset();
+    }
+
+    if (print_remaining_times_enabled && !remaining_times_enabled)
+    {
+        m_normal_time_estimator.reset();
     }
 
     // starts analyzer calculations
@@ -1232,6 +1239,10 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
         if (m_silent_time_estimator_enabled)
             _writeln(file, GCodeTimeEstimator::Silent_First_M73_Output_Placeholder_Tag);
     }
+    if (print.config().print_remaining_times.value)
+    {
+        _writeln(file, GCodeTimeEstimator::Normal_First_M117_Output_Placeholder_Tag);
+    }
 
     // Prepare the helper object for replacing placeholders in custom G-code and output filename.
     m_placeholder_parser = print.placeholder_parser();
@@ -1521,6 +1532,10 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
         _writeln(file, GCodeTimeEstimator::Normal_Last_M73_Output_Placeholder_Tag);
         if (m_silent_time_estimator_enabled)
             _writeln(file, GCodeTimeEstimator::Silent_Last_M73_Output_Placeholder_Tag);
+    }
+    if (print.config().print_remaining_times.value)
+    {
+        _writeln(file, GCodeTimeEstimator::Normal_Last_M117_Output_Placeholder_Tag);
     }
 
     print.throw_if_canceled();
