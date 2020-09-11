@@ -144,6 +144,7 @@ void KBShortcutsDialog::fill_shortcuts()
             { "D", L("Turn On/Off facets' slope rendering") },
 #endif // ENABLE_SLOPE_RENDERING
             { "Tab", L("Switch between Editor/Preview") },
+            { "Shift+Tab", L("Collapse/Expand the sidebar") },
             // Configuration
             { ctrl + "P", L("Preferences") },
             // Help
