@@ -1468,8 +1468,11 @@ void Control::OnKeyDown(wxKeyEvent &event)
 #endif // ENABLE_GCODE_VIEWER
     else if (is_horizontal())
     {
-        if (key == WXK_LEFT || key == WXK_RIGHT)
+        if (key == WXK_LEFT || key == WXK_RIGHT) {
+            if (m_selection == ssUndef)
+                m_selection = key == WXK_LEFT ? ssLower : ssHigher;
             move_current_thumb(key == WXK_LEFT);
+        }
         else if (key == WXK_UP || key == WXK_DOWN) {
             m_selection = key == WXK_UP ? ssHigher : ssLower;
             Refresh();
@@ -1480,8 +1483,11 @@ void Control::OnKeyDown(wxKeyEvent &event)
             m_selection = key == WXK_LEFT ? ssHigher : ssLower;
             Refresh();
         }
-        else if (key == WXK_UP || key == WXK_DOWN)
-            move_current_thumb(key == WXK_UP);
+        else if (key == WXK_UP || key == WXK_DOWN) {
+           if (m_selection == ssUndef)
+               m_selection = key == WXK_UP ? ssLower : ssHigher;
+           move_current_thumb(key == WXK_UP);
+        }
     }
 
     event.Skip(); // !Needed to have EVT_CHAR generated as well
