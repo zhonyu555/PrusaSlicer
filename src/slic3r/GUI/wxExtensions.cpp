@@ -174,7 +174,6 @@ wxMenuItem* append_menu_check_item(wxMenu* menu, int id, const wxString& string,
 
 const unsigned int wxCheckListBoxComboPopup::DefaultWidth = 200;
 const unsigned int wxCheckListBoxComboPopup::DefaultHeight = 200;
-const unsigned int wxCheckListBoxComboPopup::DefaultItemHeight = 18;
 
 bool wxCheckListBoxComboPopup::Create(wxWindow* parent)
 {
@@ -198,17 +197,22 @@ wxString wxCheckListBoxComboPopup::GetStringValue() const
 
 wxSize wxCheckListBoxComboPopup::GetAdjustedSize(int minWidth, int prefHeight, int maxHeight)
 {
-    // matches owner wxComboCtrl's width
-    // and sets height dinamically in dependence of contained items count
+    // set width dinamically in dependence of items text
+    // and set height dinamically in dependence of items count
 
     wxComboCtrl* cmb = GetComboCtrl();
-    if (cmb != nullptr)
-    {
+    if (cmb != nullptr) {
         wxSize size = GetComboCtrl()->GetSize();
 
         unsigned int count = GetCount();
-        if (count > 0)
-            size.SetHeight(count * DefaultItemHeight);
+        if (count > 0) {
+            int max_width = size.x;
+            for (unsigned int i = 0; i < count; ++i) {
+                max_width = std::max(max_width, 60 + GetTextExtent(GetString(i)).x);
+            }
+            size.SetWidth(max_width);
+            size.SetHeight(count * cmb->GetCharHeight());
+        }
         else
             size.SetHeight(DefaultHeight);
 
@@ -432,7 +436,7 @@ wxBitmap create_scaled_bitmap(  const std::string& bmp_name_in,
 
     if (bmp == nullptr) {
         // Neither SVG nor PNG has been found, raise error
-        throw std::runtime_error("Could not load bitmap: " + bmp_name);
+        throw Slic3r::RuntimeError("Could not load bitmap: " + bmp_name);
     }
 
     return *bmp;
@@ -782,9 +786,11 @@ ScalableButton::ScalableButton( wxWindow *          parent,
                                 const wxString&     label /* = wxEmptyString*/,
                                 const wxSize&       size /* = wxDefaultSize*/,
                                 const wxPoint&      pos /* = wxDefaultPosition*/,
-                                long                style /*= wxBU_EXACTFIT | wxNO_BORDER*/) :
+                                long                style /*= wxBU_EXACTFIT | wxNO_BORDER*/,
+                                bool                use_default_disabled_bitmap/* = false*/) :
+    m_parent(parent),
     m_current_icon_name(icon_name),
-    m_parent(parent)
+    m_use_default_disabled_bitmap (use_default_disabled_bitmap)
 {
     Create(parent, id, label, pos, size, style);
 #ifdef __WXMSW__
@@ -793,6 +799,8 @@ ScalableButton::ScalableButton( wxWindow *          parent,
 #endif // __WXMSW__
 
     SetBitmap(create_scaled_bitmap(icon_name, parent));
+    if (m_use_default_disabled_bitmap)
+        SetBitmapDisabled(create_scaled_bitmap(m_current_icon_name, m_parent, m_px_cnt, true));
 
     if (size != wxDefaultSize)
     {
@@ -842,11 +850,19 @@ int ScalableButton::GetBitmapHeight()
 #endif
 }
 
+void ScalableButton::UseDefaultBitmapDisabled()
+{
+    m_use_default_disabled_bitmap = true;
+    SetBitmapDisabled(create_scaled_bitmap(m_current_icon_name, m_parent, m_px_cnt, true));
+}
+
 void ScalableButton::msw_rescale()
 {
     SetBitmap(create_scaled_bitmap(m_current_icon_name, m_parent, m_px_cnt));
     if (!m_disabled_icon_name.empty())
         SetBitmapDisabled(create_scaled_bitmap(m_disabled_icon_name, m_parent, m_px_cnt));
+    else if (m_use_default_disabled_bitmap)
+        SetBitmapDisabled(create_scaled_bitmap(m_current_icon_name, m_parent, m_px_cnt, true));
 
     if (m_width > 0 || m_height>0)
     {

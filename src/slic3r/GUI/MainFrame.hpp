@@ -7,6 +7,9 @@
 #include <wx/settings.h>
 #include <wx/string.h>
 #include <wx/filehistory.h>
+#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
+#include <wx/taskbar.h>
+#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
 
 #include <string>
 #include <map>
@@ -54,7 +57,7 @@ class SettingsDialog : public DPIDialog
     MainFrame*  m_main_frame { nullptr };
 public:
     SettingsDialog(MainFrame* mainframe);
-    ~SettingsDialog() {}
+    ~SettingsDialog() = default;
     void set_tabpanel(wxNotebook* tabpanel) { m_tabpanel = tabpanel; }
 
 protected:
@@ -68,6 +71,10 @@ class MainFrame : public DPIFrame
     wxString    m_qs_last_input_file = wxEmptyString;
     wxString    m_qs_last_output_file = wxEmptyString;
     wxString    m_last_config = wxEmptyString;
+#if ENABLE_GCODE_VIEWER
+    wxMenuBar*  m_menubar{ nullptr };
+#endif // ENABLE_GCODE_VIEWER
+
 #if 0
     wxMenuItem* m_menu_item_repeat { nullptr }; // doesn't used now
 #endif
@@ -121,6 +128,9 @@ class MainFrame : public DPIFrame
         Old,
         New,
         Dlg,
+#if ENABLE_GCODE_VIEWER
+        GCodeViewer
+#endif // ENABLE_GCODE_VIEWER
     };
     
     ESettingsLayout m_layout{ ESettingsLayout::Unknown };
@@ -131,7 +141,11 @@ protected:
 
 public:
     MainFrame();
+#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
+    ~MainFrame();
+#else
     ~MainFrame() = default;
+#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
 
     void update_layout();
 
@@ -145,7 +159,12 @@ public:
     void        init_tabpanel();
     void        create_preset_tabs();
     void        add_created_tab(Tab* panel);
+#if ENABLE_GCODE_VIEWER
+    void        init_menubar_as_editor();
+    void        init_menubar_as_gcodeviewer();
+#else
     void        init_menubar();
+#endif // ENABLE_GCODE_VIEWER
     void        update_menubar();
 
     void        update_ui_from_settings();
@@ -180,6 +199,10 @@ public:
     wxWindow*           m_plater_page{ nullptr };
     wxProgressDialog*   m_progress_dialog { nullptr };
     std::shared_ptr<ProgressStatusBar>  m_statusbar;
+
+#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
+    wxTaskBarIcon* m_taskbar_icon{ nullptr };
+#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
 
 #ifdef _WIN32
     void*				m_hDeviceNotify { nullptr };

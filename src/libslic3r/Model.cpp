@@ -1,3 +1,4 @@
+#include "Exception.hpp"
 #include "Model.hpp"
 #include "ModelArrange.hpp"
 #include "Geometry.hpp"
@@ -21,7 +22,9 @@
 #include "SVG.hpp"
 #include <Eigen/Dense>
 #include "GCodeWriter.hpp"
+#if !ENABLE_GCODE_VIEWER
 #include "GCode/PreviewData.hpp"
+#endif // !ENABLE_GCODE_VIEWER
 
 namespace Slic3r {
 
@@ -114,13 +117,13 @@ Model Model::read_from_file(const std::string& input_file, DynamicPrintConfig* c
     else if (boost::algorithm::iends_with(input_file, ".prusa"))
         result = load_prus(input_file.c_str(), &model);
     else
-        throw std::runtime_error("Unknown file format. Input file must have .stl, .obj, .amf(.xml) or .prusa extension.");
+        throw Slic3r::RuntimeError("Unknown file format. Input file must have .stl, .obj, .amf(.xml) or .prusa extension.");
 
     if (! result)
-        throw std::runtime_error("Loading of a model file failed.");
+        throw Slic3r::RuntimeError("Loading of a model file failed.");
 
     if (model.objects.empty())
-        throw std::runtime_error("The supplied file couldn't be read because it's empty");
+        throw Slic3r::RuntimeError("The supplied file couldn't be read because it's empty");
     
     for (ModelObject *o : model.objects)
         o->input_file = input_file;
@@ -144,13 +147,13 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
     else if (boost::algorithm::iends_with(input_file, ".zip.amf"))
         result = load_amf(input_file.c_str(), config, &model, check_version);
     else
-        throw std::runtime_error("Unknown file format. Input file must have .3mf or .zip.amf extension.");
+        throw Slic3r::RuntimeError("Unknown file format. Input file must have .3mf or .zip.amf extension.");
 
     if (!result)
-        throw std::runtime_error("Loading of a model file failed.");
+        throw Slic3r::RuntimeError("Loading of a model file failed.");
 
     if (model.objects.empty())
-        throw std::runtime_error("The supplied file couldn't be read because it's empty");
+        throw Slic3r::RuntimeError("The supplied file couldn't be read because it's empty");
 
     for (ModelObject *o : model.objects)
     {
@@ -815,7 +818,7 @@ const BoundingBoxf3& ModelObject::raw_bounding_box() const
         m_raw_bounding_box_valid = true;
         m_raw_bounding_box.reset();
         if (this->instances.empty())
-            throw std::invalid_argument("Can't call raw_bounding_box() with no instances");
+            throw Slic3r::InvalidArgument("Can't call raw_bounding_box() with no instances");
 
         const Transform3d& inst_matrix = this->instances.front()->get_transformation().get_matrix(true);
         for (const ModelVolume *v : this->volumes)
@@ -1007,6 +1010,7 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, bool from_imperial
     for (ModelVolume* volume : volumes)
     {
         volume->m_supported_facets.clear();
+        volume->m_seam_facets.clear();
         if (!volume->mesh().empty()) {
             TriangleMesh mesh(volume->mesh());
             mesh.require_shared_vertices();
@@ -1112,6 +1116,7 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
         const auto volume_matrix = volume->get_matrix();
 
         volume->m_supported_facets.clear();
+        volume->m_seam_facets.clear();
 
         if (! volume->is_model_part()) {
             // Modifiers are not cut, but we still need to add the instance transformation
@@ -1831,7 +1836,7 @@ arrangement::ArrangePolygon ModelInstance::get_arrange_polygon() const
 }
 
 
-indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, FacetSupportType type) const
+indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, EnforcerBlockerType type) const
 {
     TriangleSelector selector(mv.mesh());
     selector.deserialize(m_data);
@@ -1988,6 +1993,16 @@ bool model_custom_supports_data_changed(const ModelObject& mo, const ModelObject
     assert(mo.volumes.size() == mo_new.volumes.size());
     for (size_t i=0; i<mo.volumes.size(); ++i) {
         if (! mo_new.volumes[i]->m_supported_facets.is_same_as(mo.volumes[i]->m_supported_facets))
+            return true;
+    }
+    return false;
+}
+
+bool model_custom_seam_data_changed(const ModelObject& mo, const ModelObject& mo_new) {
+    assert(! model_volume_list_changed(mo, mo_new, ModelVolumeType::MODEL_PART));
+    assert(mo.volumes.size() == mo_new.volumes.size());
+    for (size_t i=0; i<mo.volumes.size(); ++i) {
+        if (! mo_new.volumes[i]->m_seam_facets.is_same_as(mo.volumes[i]->m_seam_facets))
             return true;
     }
     return false;

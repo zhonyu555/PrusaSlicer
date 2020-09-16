@@ -46,6 +46,8 @@ add_library(libslic3r STATIC
     Fill/Fill.hpp
     Fill/Fill3DHoneycomb.cpp
     Fill/Fill3DHoneycomb.hpp
+    Fill/FillAdaptive.cpp
+    Fill/FillAdaptive.hpp
     Fill/FillBase.cpp
     Fill/FillBase.hpp
     Fill/FillConcentric.cpp
@@ -99,6 +101,8 @@ add_library(libslic3r STATIC
     GCode/ToolOrdering.hpp
     GCode/WipeTower.cpp
     GCode/WipeTower.hpp
+    GCode/GCodeProcessor.cpp
+    GCode/GCodeProcessor.hpp
     GCode.cpp
     GCode.hpp
     GCodeReader.cpp
@@ -161,6 +165,8 @@ add_library(libslic3r STATIC
     PrintConfig.hpp
     PrintObject.cpp
     PrintRegion.cpp
+    PNGRead.hpp
+    PNGRead.cpp
     Semver.cpp
     ShortestPath.cpp
     ShortestPath.hpp
@@ -209,7 +215,9 @@ add_library(libslic3r STATIC
     SimplifyMeshImpl.hpp
     SimplifyMesh.cpp
     MarchingSquares.hpp
-    Optimizer.hpp
+    Optimize/Optimizer.hpp
+    Optimize/NLoptOptimizer.hpp
+    Optimize/BruteforceOptimizer.hpp
     ${OpenVDBUtils_SOURCES}
     SLA/Pad.hpp
     SLA/Pad.cpp
@@ -308,6 +316,8 @@ target_link_libraries(libslic3r
     TBB::tbb
     libslic3r_cgal
     ${CMAKE_DL_LIBS}
+    PNG::PNG
+    ZLIB::ZLIB
     )
 
 if (TARGET OpenVDB::openvdb)
