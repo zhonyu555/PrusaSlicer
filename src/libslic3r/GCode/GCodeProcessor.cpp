@@ -305,6 +305,7 @@ void GCodeProcessor::TimeProcessor::reset()
 {
     extruder_unloaded = true;
     export_remaining_time_enabled = false;
+    print_remaining_time_enabled = false;
     machine_envelope_processing_enabled = false;
     machine_limits = MachineEnvelopeConfig();
     filament_load_times = std::vector<float>();
@@ -315,7 +316,7 @@ void GCodeProcessor::TimeProcessor::reset()
     machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Normal)].enabled = true;
 }
 
-void GCodeProcessor::TimeProcessor::post_process(const std::string& filename)
+void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, const bool m73, const bool m117)
 {
     boost::nowide::ifstream in(filename);
     if (!in.good())
@@ -362,9 +363,16 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename)
             for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
                 const TimeMachine& machine = machines[i];
                 if (machine.enabled) {
-                    ret += format_line_M73(machine.line_m73_mask.c_str(),
-                        (line == First_Line_M73_Placeholder_Tag) ? 0 : 100,
-                        (line == First_Line_M73_Placeholder_Tag) ? time_in_minutes(machines[i].time) : 0);
+                    if (m73) {
+                        ret += format_line_M73(machine.line_m73_mask.c_str(),
+                            (line == First_Line_M73_Placeholder_Tag) ? 0 : 100,
+                            (line == First_Line_M73_Placeholder_Tag) ? time_in_minutes(machines[i].time) : 0);
+                    }
+                    if (m117) {
+                        ret += format_line_M73(machine.line_m117_mask.c_str(),
+                            (line == First_Line_M73_Placeholder_Tag) ? 0 : 100,
+                            (line == First_Line_M73_Placeholder_Tag) ? time_in_minutes(machines[i].time) : 0);
+                    }
                 }
             }
         }
@@ -403,8 +411,14 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename)
                 std::pair<int, int> to_export = { int(::roundf(100.0f * elapsed_time / machine.time)), 
                                                   time_in_minutes(machine.time - elapsed_time) };
                 if (last_exported[i] != to_export) {
-                    export_line += format_line_M73(machine.line_m73_mask.c_str(),
-                        to_export.first, to_export.second);
+                    if (m73) {
+                        export_line += format_line_M73(machine.line_m73_mask.c_str(),
+                            to_export.first, to_export.second);
+                    }
+                    if (m117) {
+                        export_line += format_line_M73(machine.line_m117_mask.c_str(),
+                            to_export.first, to_export.second);
+                    }
                     last_exported[i] = to_export;
                 }
             }
@@ -479,6 +493,7 @@ GCodeProcessor::GCodeProcessor()
     reset();
     m_time_processor.machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Normal)].line_m73_mask = "M73 P%s R%s\n";
     m_time_processor.machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Stealth)].line_m73_mask = "M73 Q%s S%s\n";
+    m_time_processor.machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Normal)].line_m117_mask = "M117 %s%% %s min left\n";
 }
 
 void GCodeProcessor::apply_config(const PrintConfig& config)
@@ -525,6 +540,7 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     }
 
     m_time_processor.export_remaining_time_enabled = config.remaining_times.value;
+    m_time_processor.print_remaining_time_enabled = config.print_remaining_times.value;
 }
 
 void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
@@ -785,8 +801,8 @@ void GCodeProcessor::process_file(const std::string& filename, std::function<voi
     update_estimated_times_stats();
 
     // post-process to add M73 lines into the gcode
-    if (m_time_processor.export_remaining_time_enabled)
-        m_time_processor.post_process(filename);
+    if (m_time_processor.export_remaining_time_enabled || m_time_processor.print_remaining_time_enabled)
+        m_time_processor.post_process(filename, m_time_processor.export_remaining_time_enabled, m_time_processor.print_remaining_time_enabled);
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
     std::cout << "\n";
