@@ -2,7 +2,7 @@
 #define SLA_SUPPORTPOINT_HPP
 
 #include <vector>
-#include <libslic3r/ExPolygon.hpp>
+#include <Eigen/Geometry>
 
 namespace Slic3r { namespace sla {
 
