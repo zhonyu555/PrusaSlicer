@@ -526,7 +526,7 @@ void UnsavedChangesModel::Rescale()
 //------------------------------------------
 
 UnsavedChangesDialog::UnsavedChangesDialog(const wxString& header)
-    : DPIDialog(nullptr, wxID_ANY, _L("Close Aplication: Unsaved Changes"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+    : DPIDialog(nullptr, wxID_ANY, _L("Close Application: Unsaved Changes"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
     build(Preset::TYPE_INVALID, nullptr, "", header);
 }
@@ -933,7 +933,7 @@ void UnsavedChangesDialog::update(Preset::Type type, PresetCollection* dependent
     if (type == Preset::TYPE_INVALID) {
         m_action_line   ->SetLabel(header + "\n" + _L("Next presets have the following unsaved changes:"));
         m_save_btn      ->SetLabel(_L("Save selected"));
-        m_continue_btn  ->SetLabel(_L("Close aplication without changes"));
+        m_continue_btn  ->SetLabel(_L("Close application without changes"));
     }
     else {
         wxString action_msg;
