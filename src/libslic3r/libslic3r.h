@@ -2,9 +2,13 @@
 #define _libslic3r_h_
 
 #include "libslic3r_version.h"
+#define GCODEVIEWER_APP_NAME "PrusaSlicer G-code Viewer"
+#define GCODEVIEWER_APP_KEY  "PrusaSlicerGcodeViewer"
+#define GCODEVIEWER_BUILD_ID std::string("PrusaSlicer G-code Viewer-") + std::string(SLIC3R_VERSION) + std::string("-UNKNOWN")
 
 // this needs to be included early for MSVC (listing it in Build.PL is not enough)
 #include <memory>
+#include <array>
 #include <algorithm>
 #include <ostream>
 #include <iostream>
@@ -17,42 +21,44 @@
 #include <vector>
 #include <cassert>
 #include <cmath>
+#include <type_traits>
 
 #include "Technologies.hpp"
 #include "Semver.hpp"
 
 #if 1
 // Saves around 32% RAM after slicing step, 6.7% after G-code export (tested on PrusaSlicer 2.2.0 final).
-typedef int32_t coord_t;
+using coord_t = int32_t;
 #else
+//FIXME At least FillRectilinear2 and std::boost Voronoi require coord_t to be 32bit.
 typedef int64_t coord_t;
 #endif
 
-typedef double  coordf_t;
+using coordf_t = double;
 
 //FIXME This epsilon value is used for many non-related purposes:
 // For a threshold of a squared Euclidean distance,
 // for a trheshold in a difference of radians,
 // for a threshold of a cross product of two non-normalized vectors etc.
-#define EPSILON 1e-4
+static constexpr double EPSILON = 1e-4;
 // Scaling factor for a conversion from coord_t to coordf_t: 10e-6
 // This scaling generates a following fixed point representation with for a 32bit integer:
 // 0..4294mm with 1nm resolution
 // int32_t fits an interval of (-2147.48mm, +2147.48mm)
 // with int64_t we don't have to worry anymore about the size of the int.
-#define SCALING_FACTOR 0.000001
+static constexpr double SCALING_FACTOR = 0.000001;
 // RESOLUTION, SCALED_RESOLUTION: Used as an error threshold for a Douglas-Peucker polyline simplification algorithm.
-#define RESOLUTION 0.0125
-#define SCALED_RESOLUTION (RESOLUTION / SCALING_FACTOR)
-#define PI 3.141592653589793238
+static constexpr double RESOLUTION = 0.0125;
+#define                 SCALED_RESOLUTION (RESOLUTION / SCALING_FACTOR)
+static constexpr double PI = 3.141592653589793238;
 // When extruding a closed loop, the loop is interrupted and shortened a bit to reduce the seam.
-#define LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER 0.15
+static constexpr double LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER = 0.15;
 // Maximum perimeter length for the loop to apply the small perimeter speed. 
-#define SMALL_PERIMETER_LENGTH (6.5 / SCALING_FACTOR) * 2 * PI
-#define INSET_OVERLAP_TOLERANCE 0.4
+#define                 SMALL_PERIMETER_LENGTH  ((6.5 / SCALING_FACTOR) * 2 * PI)
+static constexpr double INSET_OVERLAP_TOLERANCE = 0.4;
 // 3mm ring around the top / bottom / bridging areas.
 //FIXME This is quite a lot.
-#define EXTERNAL_INFILL_MARGIN 3.
+static constexpr double EXTERNAL_INFILL_MARGIN = 3.;
 //FIXME Better to use an inline function with an explicit return type.
 //inline coord_t scale_(coordf_t v) { return coord_t(floor(v / SCALING_FACTOR + 0.5f)); }
 #define scale_(val) ((val) / SCALING_FACTOR)
@@ -60,14 +66,6 @@ typedef double  coordf_t;
 #define SCALED_EPSILON scale_(EPSILON)
 
 #define SLIC3R_DEBUG_OUT_PATH_PREFIX "out/"
-
-#if defined(_MSC_VER) &&  _MSC_VER < 1900
-# define SLIC3R_CONSTEXPR
-# define SLIC3R_NOEXCEPT
-#else
-#define SLIC3R_CONSTEXPR constexpr
-#define SLIC3R_NOEXCEPT  noexcept
-#endif
 
 inline std::string debug_out_path(const char *name, ...)
 {
@@ -79,21 +77,9 @@ inline std::string debug_out_path(const char *name, ...)
 	return std::string(SLIC3R_DEBUG_OUT_PATH_PREFIX) + std::string(buffer);
 }
 
-#ifdef _MSC_VER
-	// Visual Studio older than 2015 does not support the prinf type specifier %zu. Use %Iu instead.
-	#define PRINTF_ZU "%Iu"
-#else
-	#define PRINTF_ZU "%zu"
-#endif
-
 #ifndef UNUSED
 #define UNUSED(x) (void)(x)
 #endif /* UNUSED */
-
-// Detect whether the compiler supports C++11 noexcept exception specifications.
-#if defined(_MSC_VER) && _MSC_VER < 1900
-    #define noexcept throw()
-#endif
 
 // Write slices as SVG images into out directory during the 2D processing of the slices.
 // #define SLIC3R_DEBUG_SLICE_PROCESSING
@@ -245,6 +231,51 @@ template <typename Number>
 static inline bool is_approx(Number value, Number test_value)
 {
     return std::fabs(double(value) - double(test_value)) < double(EPSILON);
+}
+
+// A meta-predicate which is true for integers wider than or equal to coord_t
+template<class I> struct is_scaled_coord
+{
+    static const constexpr bool value =
+        std::is_integral<I>::value &&
+        std::numeric_limits<I>::digits >=
+            std::numeric_limits<coord_t>::digits;
+};
+
+// Meta predicates for floating, 'scaled coord' and generic arithmetic types
+// Can be used to restrict templates to work for only the specified set of types.
+// parameter T is the type we want to restrict
+// parameter O (Optional defaults to T) is the type that the whole expression
+// will be evaluated to.
+// e.g. template<class T> FloatingOnly<T, bool> is_nan(T val);
+// The whole template will be defined only for floating point types and the
+// return type will be bool.
+// For more info how to use, see docs for std::enable_if
+//
+template<class T, class O = T> 
+using FloatingOnly = std::enable_if_t<std::is_floating_point<T>::value, O>;
+
+template<class T, class O = T>
+using ScaledCoordOnly = std::enable_if_t<is_scaled_coord<T>::value, O>;
+
+template<class T, class O = T>
+using IntegerOnly = std::enable_if_t<std::is_integral<T>::value, O>;
+
+template<class T, class O = T>
+using ArithmeticOnly = std::enable_if_t<std::is_arithmetic<T>::value, O>;
+
+template<class T, class O = T>
+using IteratorOnly = std::enable_if_t<
+    !std::is_same_v<typename std::iterator_traits<T>::value_type, void>, O
+>;
+
+template<class T, class I, class... Args> // Arbitrary allocator can be used
+IntegerOnly<I, std::vector<T, Args...>> reserve_vector(I capacity)
+{
+    std::vector<T, Args...> ret;
+    if (capacity > I(0)) ret.reserve(size_t(capacity));
+
+    return ret;
 }
 
 } // namespace Slic3r

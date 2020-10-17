@@ -4,7 +4,6 @@
 #include "libslic3r/Point.hpp"
 
 #include "slic3r/GUI/I18N.hpp"
-#include "slic3r/GUI/Selection.hpp"
 
 #include <cereal/archives/binary.hpp>
 
@@ -31,9 +30,9 @@ static const float CONSTRAINED_COLOR[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
 
 class ImGuiWrapper;
 class GLCanvas3D;
-class ClippingPlane;
 enum class CommonGizmosDataID;
 class CommonGizmosDataPool;
+class Selection;
 
 class GLGizmoBase
 {
@@ -125,7 +124,6 @@ public:
     void set_state(EState state) { m_state = state; on_set_state(); }
 
     int get_shortcut_key() const { return m_shortcut_key; }
-    void set_shortcut_key(int key) { m_shortcut_key = key; }
 
     const std::string& get_icon_filename() const { return m_icon_filename; }
 

@@ -1,3 +1,4 @@
+#include "Exception.hpp"
 #include "GCodeTimeEstimator.hpp"
 #include "Utils.hpp"
 #include <boost/bind.hpp>
@@ -8,6 +9,8 @@
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/cstdio.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+
+#if !ENABLE_GCODE_VIEWER
 
 static const float MMMIN_TO_MMSEC = 1.0f / 60.0f;
 static const float MILLISEC_TO_SEC = 0.001f;
@@ -188,7 +191,7 @@ namespace Slic3r {
         _calculate_time(0);
 
         if (m_needs_custom_gcode_times && (m_custom_gcode_time_cache != 0.0f))
-            m_custom_gcode_times.push_back({ cgtColorChange, m_custom_gcode_time_cache });
+            m_custom_gcode_times.push_back({CustomGCode::ColorChange, m_custom_gcode_time_cache });
 
 #if ENABLE_MOVE_STATS
         _log_moves_stats();
@@ -252,13 +255,13 @@ namespace Slic3r {
     {
         boost::nowide::ifstream in(filename);
         if (!in.good())
-            throw std::runtime_error(std::string("Time estimator post process export failed.\nCannot open file for reading.\n"));
+            throw Slic3r::RuntimeError(std::string("Time estimator post process export failed.\nCannot open file for reading.\n"));
 
         std::string path_tmp = filename + ".postprocess";
 
         FILE* out = boost::nowide::fopen(path_tmp.c_str(), "wb");
         if (out == nullptr)
-            throw std::runtime_error(std::string("Time estimator post process export failed.\nCannot open file for writing.\n"));
+            throw Slic3r::RuntimeError(std::string("Time estimator post process export failed.\nCannot open file for writing.\n"));
 
         std::string normal_time_mask = "M73 P%s R%s\n";
         std::string silent_time_mask = "M73 Q%s S%s\n";
@@ -276,13 +279,13 @@ namespace Slic3r {
                 in.close();
                 fclose(out);
                 boost::nowide::remove(path_tmp.c_str());
-                throw std::runtime_error(std::string("Time estimator post process export failed.\nIs the disk full?\n"));
+                throw Slic3r::RuntimeError(std::string("Time estimator post process export failed.\nIs the disk full?\n"));
             }
             export_line.clear();
         };
 
         GCodeReader parser;
-        unsigned int g1_lines_count = 0;
+        int g1_lines_count = 0;
         int normal_g1_line_id = 0;
         float normal_last_recorded_time = 0.0f;
         int silent_g1_line_id = 0;
@@ -324,7 +327,7 @@ namespace Slic3r {
             if (!in.good())
             {
                 fclose(out);
-                throw std::runtime_error(std::string("Time estimator post process export failed.\nError while reading from file.\n"));
+                throw Slic3r::RuntimeError(std::string("Time estimator post process export failed.\nError while reading from file.\n"));
             }
 
             // check tags
@@ -381,7 +384,7 @@ namespace Slic3r {
         in.close();
 
         if (rename_file(path_tmp, filename))
-            throw std::runtime_error(std::string("Failed to rename the output G-code file from ") + path_tmp + " to " + filename + '\n' +
+            throw Slic3r::RuntimeError(std::string("Failed to rename the output G-code file from ") + path_tmp + " to " + filename + '\n' +
                 "Is " + path_tmp + " locked?" + '\n');
 
         return true;
@@ -678,7 +681,7 @@ namespace Slic3r {
         return _get_time_minutes(get_time());
     }
 
-    std::vector<std::pair<CustomGcodeType, float>> GCodeTimeEstimator::get_custom_gcode_times() const
+    std::vector<std::pair<CustomGCode::Type, float>> GCodeTimeEstimator::get_custom_gcode_times() const
     {
         return m_custom_gcode_times;
     }
@@ -722,9 +725,9 @@ namespace Slic3r {
         return ret;
     }
 
-    std::vector<std::pair<CustomGcodeType, std::string>> GCodeTimeEstimator::get_custom_gcode_times_dhm(bool include_remaining) const
+    std::vector<std::pair<CustomGCode::Type, std::string>> GCodeTimeEstimator::get_custom_gcode_times_dhm(bool include_remaining) const
     {
-        std::vector<std::pair<CustomGcodeType, std::string>> ret;
+        std::vector<std::pair<CustomGCode::Type, std::string>> ret;
 
         float total_time = 0.0f;
         for (auto t : m_custom_gcode_times)
@@ -1470,7 +1473,7 @@ namespace Slic3r {
         size_t pos = comment.find(Color_Change_Tag);
         if (pos != comment.npos)
         {
-            _process_custom_gcode_tag(cgtColorChange);
+            _process_custom_gcode_tag(CustomGCode::ColorChange);
             return true;
         }
 
@@ -1478,14 +1481,14 @@ namespace Slic3r {
         pos = comment.find(Pause_Print_Tag);
         if (pos != comment.npos)
         {
-            _process_custom_gcode_tag(cgtPausePrint);
+            _process_custom_gcode_tag(CustomGCode::PausePrint);
             return true;
         }
 
         return false;
     }
 
-    void GCodeTimeEstimator::_process_custom_gcode_tag(CustomGcodeType code)
+    void GCodeTimeEstimator::_process_custom_gcode_tag(CustomGCode::Type code)
     {
         PROFILE_FUNC();
         m_needs_custom_gcode_times = true;
@@ -1671,3 +1674,5 @@ namespace Slic3r {
     }
 #endif // ENABLE_MOVE_STATS
 }
+
+#endif // !ENABLE_GCODE_VIEWER

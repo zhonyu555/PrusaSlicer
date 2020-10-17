@@ -5,42 +5,51 @@
 #include <memory.h>
 #include <float.h>
 #include <stdint.h>
+#include <stdexcept>
 
 #include <type_traits>
 
 #include "../libslic3r.h"
 #include "../BoundingBox.hpp"
-#include "../PrintConfig.hpp"
+#include "../Exception.hpp"
 #include "../Utils.hpp"
 
 namespace Slic3r {
 
 class ExPolygon;
 class Surface;
+enum InfillPattern : int;
+
+namespace FillAdaptive {
+    struct Octree;
+};
+
+// Infill shall never fail, therefore the error is classified as RuntimeError, not SlicingError.
+class InfillFailedException : public Slic3r::RuntimeError {
+public:
+    InfillFailedException() : Slic3r::RuntimeError("Infill failed") {}
+};
 
 struct FillParams
 {
-    FillParams() { 
-        memset(this, 0, sizeof(FillParams));
-        // Adjustment does not work.
-        dont_adjust = true;
-    }
-
     bool        full_infill() const { return density > 0.9999f; }
 
     // Fill density, fraction in <0, 1>
-    float       density;
+    float       density 		{ 0.f };
 
     // Don't connect the fill lines around the inner perimeter.
-    bool        dont_connect;
+    bool        dont_connect 	{ false };
 
     // Don't adjust spacing to fill the space evenly.
-    bool        dont_adjust;
+    bool        dont_adjust 	{ true };
+
+    // Monotonic infill - strictly left to right for better surface quality of top infills.
+    bool 		monotonic		{ false };
 
     // For Honeycomb.
     // we were requested to complete each loop;
     // in this case we don't try to make more continuous paths
-    bool        complete;
+    bool        complete 		{ false };
 };
 static_assert(IsTriviallyCopyable<FillParams>::value, "FillParams class is not POD (and it should be - see constructor).");
 
@@ -65,6 +74,9 @@ public:
     coord_t     loop_clipping;
     // In scaled coordinates. Bounding box of the 2D projection of the object.
     BoundingBox bounding_box;
+
+    // Octree builds on mesh for usage in the adaptive cubic infill
+    FillAdaptive::Octree* adapt_fill_octree = nullptr;
 
 public:
     virtual ~Fill() {}

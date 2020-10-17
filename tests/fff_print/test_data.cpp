@@ -12,6 +12,7 @@
 
 #include <boost/nowide/cstdio.hpp>
 #include <boost/filesystem.hpp>
+#include <libslic3r/ModelArrange.hpp>
 
 using namespace std;
 
@@ -136,7 +137,7 @@ TriangleMesh mesh(TestMesh m)
             	{ {0,1,2}, {2,1,3}, {4,0,5}, {4,1,0}, {6,4,7}, {7,4,5}, {4,8,1}, {0,2,5}, {5,2,9}, {2,10,9}, {10,3,11}, {2,3,10}, {9,10,12}, {13,9,12}, {3,1,8}, {11,3,8}, {10,11,8}, {4,10,8}, {6,12,10}, {4,6,10}, {7,13,12}, {6,7,12}, {7,5,9}, {13,7,9} });
             break;
         default:
-        	throw std::invalid_argument("Slic3r::Test::mesh(): called with invalid mesh ID");
+        	throw Slic3r::InvalidArgument("Slic3r::Test::mesh(): called with invalid mesh ID");
             break;        
     }
 
@@ -167,8 +168,7 @@ void init_print(std::vector<TriangleMesh> &&meshes, Slic3r::Print &print, Slic3r
 		object->add_volume(std::move(t));
 		object->add_instance();
 	}
-	model.arrange_objects(PrintConfig::min_object_distance(&config));
-	model.center_instances_around_point(Slic3r::Vec2d(100, 100));
+    arrange_objects(model, InfiniteBed{}, ArrangeParams{ scaled(min_object_distance(config))});
 	for (ModelObject *mo : model.objects) {
         mo->ensure_on_bed();
 		print.auto_assign_extruders(mo);
@@ -244,8 +244,12 @@ std::string gcode(Print & print)
 	boost::filesystem::path temp = boost::filesystem::unique_path();
     print.set_status_silent();
     print.process();
+#if ENABLE_GCODE_VIEWER
+    print.export_gcode(temp.string(), nullptr, nullptr);
+#else
     print.export_gcode(temp.string(), nullptr);
-	std::ifstream t(temp.string());
+#endif // ENABLE_GCODE_VIEWER
+    std::ifstream t(temp.string());
 	std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 	boost::nowide::remove(temp.string().c_str());
 	return str;

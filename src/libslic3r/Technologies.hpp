@@ -15,7 +15,7 @@
 #define ENABLE_RENDER_STATISTICS 0
 // Shows an imgui dialog with camera related data
 #define ENABLE_CAMERA_STATISTICS 0
-//  Render the picking pass instead of the main scene (use [T] key to toggle between regular rendering and picking pass only rendering)
+// Render the picking pass instead of the main scene (use [T] key to toggle between regular rendering and picking pass only rendering)
 #define ENABLE_RENDER_PICKING_PASS 0
 // Enable extracting thumbnails from selected gcode and save them as png files
 #define ENABLE_THUMBNAIL_GENERATOR_DEBUG 0
@@ -34,27 +34,26 @@
 #define ENABLE_HACK_CLOSING_ON_OSX_10_9_5 (1 && ENABLE_2_2_0_RC1)
 
 
-//==================
-// 2.2.0.final techs
-//==================
-#define ENABLE_2_2_0_FINAL 1
-
-// Enable tooltips for GLCanvas3D using ImGUI
-#define ENABLE_CANVAS_TOOLTIP_USING_IMGUI (1 && ENABLE_2_2_0_FINAL)
-// Enable fix for dragging mouse event handling for gizmobar
-#define ENABLE_GIZMO_TOOLBAR_DRAGGING_FIX (1 && ENABLE_2_2_0_FINAL)
-
-
 //===================
 // 2.3.0.alpha1 techs
 //===================
 #define ENABLE_2_3_0_ALPHA1 1
 
-// Enable rendering of objects colored by facets' slope
-#define ENABLE_SLOPE_RENDERING (1 && ENABLE_2_3_0_ALPHA1)
+// Enable rendering of objects using environment map
+#define ENABLE_ENVIRONMENT_MAP (0 && ENABLE_2_3_0_ALPHA1)
 
-// Moves GLCanvas3DManager from being a static member of _3DScene to be a normal member of GUI_App
-#define ENABLE_NON_STATIC_CANVAS_MANAGER (1 && ENABLE_2_3_0_ALPHA1)
+// Enable smoothing of objects normals
+#define ENABLE_SMOOTH_NORMALS (0 && ENABLE_2_3_0_ALPHA1)
 
+// Enable error logging for OpenGL calls when SLIC3R_LOGLEVEL >= 5
+#define ENABLE_OPENGL_ERROR_LOGGING (1 && ENABLE_2_3_0_ALPHA1)
+
+// Enable built-in DPI changed event handler of wxWidgets 3.1.3
+#define ENABLE_WX_3_1_3_DPI_CHANGED_EVENT (1 && ENABLE_2_3_0_ALPHA1)
+
+// Enable G-Code viewer
+#define ENABLE_GCODE_VIEWER (1 && ENABLE_2_3_0_ALPHA1)
+#define ENABLE_GCODE_VIEWER_STATISTICS (0 && ENABLE_GCODE_VIEWER)
+#define ENABLE_GCODE_VIEWER_DATA_CHECKING (0 && ENABLE_GCODE_VIEWER)
 
 #endif // _prusaslicer_technologies_h_

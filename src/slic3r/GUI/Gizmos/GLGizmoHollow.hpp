@@ -5,12 +5,17 @@
 #include "slic3r/GUI/GLSelectionRectangle.hpp"
 
 #include <libslic3r/SLA/Hollowing.hpp>
+#include <libslic3r/ObjectID.hpp>
 #include <wx/dialog.h>
 
 #include <cereal/types/vector.hpp>
 
 
 namespace Slic3r {
+
+class ConfigOption;
+class ConfigOptionDef;
+
 namespace GUI {
 
 enum class SLAGizmoEventType : unsigned char;
@@ -42,6 +47,8 @@ private:
     void render_points(const Selection& selection, bool picking = false) const;
     void hollow_mesh(bool postpone_error_messages = false);
     bool unsaved_changes() const;
+
+    ObjectID m_old_mo_id = -1;
 
     // bool  m_show_supports = true;
     float m_new_hole_radius = 2.f;        // Size of a new hole.
