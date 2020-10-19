@@ -37,73 +37,102 @@ void AppConfig::reset()
 // Override missing or keys with their defaults.
 void AppConfig::set_defaults()
 {
-    // Reset the empty fields to defaults.
-    if (get("autocenter").empty())
-        set("autocenter", "0");
-    // Disable background processing by default as it is not stable.
-    if (get("background_processing").empty())
-        set("background_processing", "0");
-    // If set, the "Controller" tab for the control of the printer over serial line and the serial port settings are hidden.
-    // By default, Prusa has the controller hidden.
-    if (get("no_controller").empty())
-        set("no_controller", "1");
-    // If set, the "- default -" selections of print/filament/printer are suppressed, if there is a valid preset available.
-    if (get("no_defaults").empty())
-        set("no_defaults", "1");
-    if (get("show_incompatible_presets").empty())
-        set("show_incompatible_presets", "0");
+#if ENABLE_GCODE_VIEWER
+    if (m_mode == EAppMode::Editor) {
+#endif // ENABLE_GCODE_VIEWER
+        // Reset the empty fields to defaults.
+        if (get("autocenter").empty())
+            set("autocenter", "0");
+        // Disable background processing by default as it is not stable.
+        if (get("background_processing").empty())
+            set("background_processing", "0");
+        // If set, the "Controller" tab for the control of the printer over serial line and the serial port settings are hidden.
+        // By default, Prusa has the controller hidden.
+        if (get("no_controller").empty())
+            set("no_controller", "1");
+        // If set, the "- default -" selections of print/filament/printer are suppressed, if there is a valid preset available.
+        if (get("no_defaults").empty())
+            set("no_defaults", "1");
+        if (get("show_incompatible_presets").empty())
+            set("show_incompatible_presets", "0");
 
-    if (get("version_check").empty())
-        set("version_check", "1");
-    if (get("preset_update").empty())
-        set("preset_update", "1");
+        if (get("version_check").empty())
+            set("version_check", "1");
+        if (get("preset_update").empty())
+            set("preset_update", "1");
 
-    if (get("export_sources_full_pathnames").empty())
-        set("export_sources_full_pathnames", "0");
+        if (get("export_sources_full_pathnames").empty())
+            set("export_sources_full_pathnames", "0");
 
-    // remove old 'use_legacy_opengl' parameter from this config, if present
-    if (!get("use_legacy_opengl").empty())
-        erase("", "use_legacy_opengl");
+        // remove old 'use_legacy_opengl' parameter from this config, if present
+        if (!get("use_legacy_opengl").empty())
+            erase("", "use_legacy_opengl");
 
 #ifdef __APPLE__
-    if (get("use_retina_opengl").empty())
-        set("use_retina_opengl", "1");
+        if (get("use_retina_opengl").empty())
+            set("use_retina_opengl", "1");
 #endif
 
-	if (get("single_instance").empty())
-		set("single_instance", "0");
+        if (get("single_instance").empty())
+            set("single_instance", 
+#ifdef __APPLE__
+                "1"
+#else __APPLE__
+                "0"
+#endif __APPLE__
+                );
 
-    if (get("remember_output_path").empty())
-        set("remember_output_path", "1");
+        if (get("remember_output_path").empty())
+            set("remember_output_path", "1");
 
-    if (get("remember_output_path_removable").empty())
-		set("remember_output_path_removable", "1");
+        if (get("remember_output_path_removable").empty())
+            set("remember_output_path_removable", "1");
 
-    if (get("use_custom_toolbar_size").empty())
-        set("use_custom_toolbar_size", "0");
+        if (get("use_custom_toolbar_size").empty())
+            set("use_custom_toolbar_size", "0");
 
-    if (get("custom_toolbar_size").empty())
-        set("custom_toolbar_size", "100");
+        if (get("custom_toolbar_size").empty())
+            set("custom_toolbar_size", "100");
 
-    if (get("auto_toolbar_size").empty())
-        set("auto_toolbar_size", "100");
+        if (get("auto_toolbar_size").empty())
+            set("auto_toolbar_size", "100");
+
+#if !ENABLE_GCODE_VIEWER
+        if (get("use_perspective_camera").empty())
+            set("use_perspective_camera", "1");
+
+        if (get("use_free_camera").empty())
+            set("use_free_camera", "0");
+#endif // !ENABLE_GCODE_VIEWER
+
+#if ENABLE_ENVIRONMENT_MAP
+        if (get("use_environment_map").empty())
+            set("use_environment_map", "0");
+#endif // ENABLE_ENVIRONMENT_MAP
+
+        if (get("use_inches").empty())
+            set("use_inches", "0");
+#if ENABLE_GCODE_VIEWER
+    }
+
+    if (get("seq_top_layer_only").empty())
+        set("seq_top_layer_only", "1");
 
     if (get("use_perspective_camera").empty())
         set("use_perspective_camera", "1");
 
     if (get("use_free_camera").empty())
         set("use_free_camera", "0");
-
-#if ENABLE_ENVIRONMENT_MAP
-    if (get("use_environment_map").empty())
-        set("use_environment_map", "0");
-#endif // ENABLE_ENVIRONMENT_MAP
-
-    if (get("use_inches").empty())
-        set("use_inches", "0");
+#endif // ENABLE_GCODE_VIEWER
 
     if (get("show_splash_screen").empty())
         set("show_splash_screen", "1");
+
+    if (get("default_action_on_close_application").empty())
+        set("default_action_on_close_application", "none"); // , "discard" or "save" 
+
+    if (get("default_action_on_select_preset").empty())
+        set("default_action_on_select_preset", "none");     // , "transfer", "discard" or "save" 
 
     // Remove legacy window positions/sizes
     erase("", "main_frame_maximized");
@@ -183,11 +212,6 @@ std::string AppConfig::load()
 
 void AppConfig::save()
 {
-#if ENABLE_GCODE_VIEWER
-    if (!m_save_enabled)
-        return;
-#endif // ENABLE_GCODE_VIEWER
-
     // The config is first written to a file with a PID suffix and then moved
     // to avoid race conditions with multiple instances of Slic3r
     const auto path = config_path();
@@ -195,7 +219,14 @@ void AppConfig::save()
 
     boost::nowide::ofstream c;
     c.open(path_pid, std::ios::out | std::ios::trunc);
+#if ENABLE_GCODE_VIEWER
+    if (m_mode == EAppMode::Editor)
+        c << "# " << Slic3r::header_slic3r_generated() << std::endl;
+    else
+        c << "# " << Slic3r::header_gcodeviewer_generated() << std::endl;
+#else
     c << "# " << Slic3r::header_slic3r_generated() << std::endl;
+#endif // ENABLE_GCODE_VIEWER
     // Make sure the "no" category is written first.
     for (const std::pair<std::string, std::string> &kvp : m_storage[""])
         c << kvp.first << " = " << kvp.second << std::endl;
@@ -395,7 +426,15 @@ void AppConfig::reset_selections()
 
 std::string AppConfig::config_path()
 {
-	return (boost::filesystem::path(Slic3r::data_dir()) / (SLIC3R_APP_KEY ".ini")).make_preferred().string();
+#if ENABLE_GCODE_VIEWER
+    std::string path = (m_mode == EAppMode::Editor) ?
+        (boost::filesystem::path(Slic3r::data_dir()) / (SLIC3R_APP_KEY ".ini")).make_preferred().string() :
+        (boost::filesystem::path(Slic3r::data_dir()) / (GCODEVIEWER_APP_KEY ".ini")).make_preferred().string();
+
+    return path;
+#else
+    return (boost::filesystem::path(Slic3r::data_dir()) / (SLIC3R_APP_KEY ".ini")).make_preferred().string();
+#endif // ENABLE_GCODE_VIEWER
 }
 
 std::string AppConfig::version_check_url() const
@@ -406,7 +445,11 @@ std::string AppConfig::version_check_url() const
 
 bool AppConfig::exists()
 {
+#if ENABLE_GCODE_VIEWER
+    return boost::filesystem::exists(config_path());
+#else
     return boost::filesystem::exists(AppConfig::config_path());
+#endif // ENABLE_GCODE_VIEWER
 }
 
 }; // namespace Slic3r

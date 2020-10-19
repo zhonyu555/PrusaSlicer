@@ -158,7 +158,7 @@ Polygons AvoidCrossingPerimeters::collect_contours_all_layers(const PrintObjectP
                          polygons_per_layer[i * 2] = union_(polys);
                      }
                  });
-             for (size_t i = 0; i < cnt / 2; ++ i)
+                for (size_t i = 1; i < cnt / 2; ++i)
                  polygons_per_layer[i] = std::move(polygons_per_layer[i * 2]);
              if (cnt & 1)
                  polygons_per_layer[cnt / 2] = std::move(polygons_per_layer[cnt - 1]);
@@ -175,6 +175,7 @@ Polygons AvoidCrossingPerimeters::collect_contours_all_layers(const PrintObjectP
     }
     return islands;
 }
+
 
 std::string OozePrevention::pre_toolchange(GCode &gcodegen)
 {
@@ -294,13 +295,18 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
     // Toolchangeresult.gcode assumes the wipe tower corner is at the origin (except for priming lines)
     // We want to rotate and shift all extrusions (gcode postprocessing) and starting and ending position
     float alpha = m_wipe_tower_rotation/180.f * float(M_PI);
+
+        auto transform_wt_pt = [&alpha, this](const Vec2f& pt) -> Vec2f {
+            Vec2f out = Eigen::Rotation2Df(alpha) * pt;
+            out += m_wipe_tower_pos;
+            return out;
+        };
+
     Vec2f start_pos = tcr.start_pos;
     Vec2f end_pos = tcr.end_pos;
     if (!tcr.priming) {
-        start_pos = Eigen::Rotation2Df(alpha) * start_pos;
-        start_pos += m_wipe_tower_pos;
-        end_pos = Eigen::Rotation2Df(alpha) * end_pos;
-        end_pos += m_wipe_tower_pos;
+            start_pos = transform_wt_pt(start_pos);
+            end_pos = transform_wt_pt(end_pos);
     }
 
     Vec2f wipe_tower_offset = tcr.priming ? Vec2f::Zero() : m_wipe_tower_pos;
@@ -345,7 +351,6 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
     // Process the custom toolchange_gcode. If it is empty, provide a simple Tn command to change the filament.
     // Otherwise, leave control to the user completely.
     std::string toolchange_gcode_str;
-    if (true /*gcodegen.writer().extruder() != nullptr*/) {
         const std::string& toolchange_gcode = gcodegen.config().toolchange_gcode.value;
         if (!toolchange_gcode.empty()) {
             DynamicConfig config;
@@ -366,7 +371,6 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
         else {
             // We have informed the m_writer about the current extruder_id, we can ignore the generated G-code.
         }
-    }
 
     gcodegen.placeholder_parser().set("current_extruder", new_extruder_id);
 
@@ -403,15 +407,9 @@ std::string WipeTowerIntegration::append_tcr(GCode &gcodegen, const WipeTower::T
 
     else {
         // Prepare a future wipe.
-        gcodegen.m_wipe.path.points.clear();
-        if (new_extruder_id >= 0) {
-            // Start the wipe at the current position.
-            gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, end_pos));
-            // Wipe end point: Wipe direction away from the closer tower edge to the further tower edge.
-            gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen,
-                Vec2f((std::abs(m_left - end_pos.x()) < std::abs(m_right - end_pos.x())) ? m_right : m_left,
-                end_pos.y())));
-        }
+            gcodegen.m_wipe.reset_path();
+            for (const Vec2f& wipe_pt : tcr.wipe_path)
+                gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, transform_wt_pt(wipe_pt)));
     }
 
     // Let the planner know we are traveling between objects.
@@ -499,36 +497,10 @@ std::string WipeTowerIntegration::prime(GCode &gcodegen)
     assert(m_layer_idx == 0);
     std::string gcode;
 
-
-    // Disable linear advance for the wipe tower operations.
-        //gcode += (gcodegen.config().gcode_flavor == gcfRepRap ? std::string("M572 D0 S0\n") : std::string("M900 K0\n"));
-
     for (const WipeTower::ToolChangeResult& tcr : m_priming) {
         if (!tcr.extrusions.empty())
             gcode += append_tcr(gcodegen, tcr, tcr.new_tool);
-
-
-        // Let the tool change be executed by the wipe tower class.
-        // Inform the G-code writer about the changes done behind its back.
-        //gcode += tcr.gcode;
-        // Let the m_writer know the current extruder_id, but ignore the generated G-code.
-  //      unsigned int current_extruder_id = tcr.extrusions.back().tool;
-  //      gcodegen.writer().toolchange(current_extruder_id);
-  //      gcodegen.placeholder_parser().set("current_extruder", current_extruder_id);
-
     }
-
-    // A phony move to the end position at the wipe tower.
-   /* gcodegen.writer().travel_to_xy(Vec2d(m_priming.back().end_pos.x, m_priming.back().end_pos.y));
-    gcodegen.set_last_pos(wipe_tower_point_to_object_point(gcodegen, m_priming.back().end_pos));
-    // Prepare a future wipe.
-    gcodegen.m_wipe.path.points.clear();
-    // Start the wipe at the current position.
-    gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen, m_priming.back().end_pos));
-    // Wipe end point: Wipe direction away from the closer tower edge to the further tower edge.
-    gcodegen.m_wipe.path.points.emplace_back(wipe_tower_point_to_object_point(gcodegen,
-        WipeTower::xy((std::abs(m_left - m_priming.back().end_pos.x) < std::abs(m_right - m_priming.back().end_pos.x)) ? m_right : m_left,
-        m_priming.back().end_pos.y)));*/
 
     return gcode;
 }
@@ -629,7 +601,7 @@ std::vector<GCode::LayerToPrint> GCode::collect_layers_to_print(const PrintObjec
         // Check that there are extrusions on the very first layer.
         if (layers_to_print.size() == 1u) {
             if (! has_extrusions)
-                throw Slic3r::RuntimeError(_(L("There is an object with no extrusions on the first layer.")));
+                throw Slic3r::SlicingError(_(L("There is an object with no extrusions on the first layer.")));
         }
 
         // In case there are extrusions on this layer, check there is a layer to lay it on.
@@ -721,9 +693,9 @@ namespace DoExport {
     static void update_print_estimated_times_stats(const GCodeProcessor& processor, PrintStatistics& print_statistics)
     {
         const GCodeProcessor::Result& result = processor.get_result();
-        print_statistics.estimated_normal_print_time = get_time_dhm(result.time_statistics.modes[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Normal)].time);
+        print_statistics.estimated_normal_print_time = get_time_dhms(result.time_statistics.modes[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Normal)].time);
         print_statistics.estimated_silent_print_time = processor.is_stealth_time_estimator_enabled() ?
-            get_time_dhm(result.time_statistics.modes[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Stealth)].time) : "N/A";
+            get_time_dhms(result.time_statistics.modes[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Stealth)].time) : "N/A";
     }
 } // namespace DoExport
 
@@ -854,6 +826,7 @@ namespace DoExport {
 	    // this->print_machine_envelope(file, print);
 	    // shall be adjusted as well to produce a G-code block compatible with the particular firmware flavor.
 	    if (config.gcode_flavor.value == gcfMarlin) {
+            if (config.machine_limits_usage.value != MachineLimitsUsage::Ignore) {
 	        normal_time_estimator.set_max_acceleration((float)config.machine_max_acceleration_extruding.values[0]);
 	        normal_time_estimator.set_retract_acceleration((float)config.machine_max_acceleration_retracting.values[0]);
 	        normal_time_estimator.set_minimum_feedrate((float)config.machine_min_extruding_rate.values[0]);
@@ -870,12 +843,15 @@ namespace DoExport {
 	        normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)config.machine_max_jerk_y.values[0]);
 	        normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)config.machine_max_jerk_z.values[0]);
 	        normal_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)config.machine_max_jerk_e.values[0]);
+		    }
 
 	        if (silent_time_estimator_enabled)
 	        {
 	            silent_time_estimator.reset();
 	            silent_time_estimator.set_dialect(config.gcode_flavor);
 	            silent_time_estimator.set_extrusion_axis(config.get_extrusion_axis()[0]);
+
+                if (config.machine_limits_usage.value != MachineLimitsUsage::Ignore) {
 	            /* "Stealth mode" values can be just a copy of "normal mode" values
 	            * (when they aren't input for a printer preset).
 	            * Thus, use back value from values, instead of second one, which could be absent
@@ -896,6 +872,8 @@ namespace DoExport {
 	            silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Y, (float)config.machine_max_jerk_y.values.back());
 	            silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::Z, (float)config.machine_max_jerk_z.values.back());
 	            silent_time_estimator.set_axis_max_jerk(GCodeTimeEstimator::E, (float)config.machine_max_jerk_e.values.back());
+		        }
+
 	            if (config.single_extruder_multi_material) {
 	                // As of now the fields are shown at the UI dialog in the same combo box as the ramming values, so they
 	                // are considered to be active for the single extruder multi-material printers only.
@@ -992,6 +970,7 @@ namespace DoExport {
 	    }
 	    return volumetric_speed;
 	}
+
 
 	static void init_ooze_prevention(const Print &print, OozePrevention &ooze_prevention)
 	{
@@ -1450,6 +1429,9 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
     DoExport::init_ooze_prevention(print, m_ooze_prevention);
     print.throw_if_canceled();
     
+    // Collect custom seam data from all objects.
+    m_seam_placer.init(print);
+
     if (! (has_wipe_tower && print.config().single_extruder_multi_material_priming)) {
         // Set initial extruder only after custom start G-code.
         // Ugly hack: Do not set the initial extruder if the extruder is primed using the MMU priming towers at the edge of the print bed.
@@ -1733,7 +1715,7 @@ static bool custom_gcode_sets_temperature(const std::string &gcode, const int mc
 // Do not process this piece of G-code by the time estimator, it already knows the values through another sources.
 void GCode::print_machine_envelope(FILE *file, Print &print)
 {
-    if (print.config().gcode_flavor.value == gcfMarlin) {
+    if (print.config().gcode_flavor.value == gcfMarlin && print.config().machine_limits_usage.value == MachineLimitsUsage::EmitToGCode) {
         fprintf(file, "M201 X%d Y%d Z%d E%d ; sets maximum accelerations, mm/sec^2\n",
             int(print.config().machine_max_acceleration_x.values.front() + 0.5),
             int(print.config().machine_max_acceleration_y.values.front() + 0.5),
@@ -2570,171 +2552,7 @@ std::string GCode::change_layer(coordf_t print_z)
     return gcode;
 }
 
-// Return a value in <0, 1> of a cubic B-spline kernel centered around zero.
-// The B-spline is re-scaled so it has value 1 at zero.
-static inline float bspline_kernel(float x)
-{
-    x = std::abs(x);
-	if (x < 1.f) {
-		return 1.f - (3.f / 2.f) * x * x + (3.f / 4.f) * x * x * x;
-	}
-	else if (x < 2.f) {
-		x -= 1.f;
-		float x2 = x * x;
-		float x3 = x2 * x;
-		return (1.f / 4.f) - (3.f / 4.f) * x + (3.f / 4.f) * x2 - (1.f / 4.f) * x3;
-	}
-	else
-        return 0;
-}
 
-static float extrudate_overlap_penalty(float nozzle_r, float weight_zero, float overlap_distance)
-{
-    // The extrudate is not fully supported by the lower layer. Fit a polynomial penalty curve.
-    // Solved by sympy package:
-/*
-from sympy import *
-(x,a,b,c,d,r,z)=symbols('x a b c d r z')
-p = a + b*x + c*x*x + d*x*x*x
-p2 = p.subs(solve([p.subs(x, -r), p.diff(x).subs(x, -r), p.diff(x,x).subs(x, -r), p.subs(x, 0)-z], [a, b, c, d]))
-from sympy.plotting import plot
-plot(p2.subs(r,0.2).subs(z,1.), (x, -1, 3), adaptive=False, nb_of_points=400)
-*/
-    if (overlap_distance < - nozzle_r) {
-        // The extrudate is fully supported by the lower layer. This is the ideal case, therefore zero penalty.
-        return 0.f;
-    } else {
-        float x  = overlap_distance / nozzle_r;
-        float x2 = x * x;
-        float x3 = x2 * x;
-        return weight_zero * (1.f + 3.f * x + 3.f * x2 + x3);
-    }
-}
-
-static Points::const_iterator project_point_to_polygon_and_insert(Polygon &polygon, const Point &pt, double eps)
-{
-    assert(polygon.points.size() >= 2);
-    if (polygon.points.size() <= 1)
-    if (polygon.points.size() == 1)
-        return polygon.points.begin();
-
-    Point  pt_min;
-    double d_min = std::numeric_limits<double>::max();
-    size_t i_min = size_t(-1);
-
-    for (size_t i = 0; i < polygon.points.size(); ++ i) {
-        size_t j = i + 1;
-        if (j == polygon.points.size())
-            j = 0;
-        const Point &p1 = polygon.points[i];
-        const Point &p2 = polygon.points[j];
-        const Slic3r::Point v_seg = p2 - p1;
-        const Slic3r::Point v_pt  = pt - p1;
-        const int64_t l2_seg = int64_t(v_seg(0)) * int64_t(v_seg(0)) + int64_t(v_seg(1)) * int64_t(v_seg(1));
-        int64_t t_pt = int64_t(v_seg(0)) * int64_t(v_pt(0)) + int64_t(v_seg(1)) * int64_t(v_pt(1));
-        if (t_pt < 0) {
-            // Closest to p1.
-            double dabs = sqrt(int64_t(v_pt(0)) * int64_t(v_pt(0)) + int64_t(v_pt(1)) * int64_t(v_pt(1)));
-            if (dabs < d_min) {
-                d_min  = dabs;
-                i_min  = i;
-                pt_min = p1;
-            }
-        }
-        else if (t_pt > l2_seg) {
-            // Closest to p2. Then p2 is the starting point of another segment, which shall be discovered in the next step.
-            continue;
-        } else {
-            // Closest to the segment.
-            assert(t_pt >= 0 && t_pt <= l2_seg);
-            int64_t d_seg = int64_t(v_seg(1)) * int64_t(v_pt(0)) - int64_t(v_seg(0)) * int64_t(v_pt(1));
-            double d = double(d_seg) / sqrt(double(l2_seg));
-            double dabs = std::abs(d);
-            if (dabs < d_min) {
-                d_min  = dabs;
-                i_min  = i;
-                // Evaluate the foot point.
-                pt_min = p1;
-                double linv = double(d_seg) / double(l2_seg);
-                pt_min(0) = pt(0) - coord_t(floor(double(v_seg(1)) * linv + 0.5));
-				pt_min(1) = pt(1) + coord_t(floor(double(v_seg(0)) * linv + 0.5));
-				assert(Line(p1, p2).distance_to(pt_min) < scale_(1e-5));
-            }
-        }
-    }
-
-	assert(i_min != size_t(-1));
-    if ((pt_min - polygon.points[i_min]).cast<double>().norm() > eps) {
-        // Insert a new point on the segment i_min, i_min+1.
-        return polygon.points.insert(polygon.points.begin() + (i_min + 1), pt_min);
-    }
-    return polygon.points.begin() + i_min;
-}
-
-std::vector<float> polygon_parameter_by_length(const Polygon &polygon)
-{
-    // Parametrize the polygon by its length.
-    std::vector<float> lengths(polygon.points.size()+1, 0.);
-    for (size_t i = 1; i < polygon.points.size(); ++ i)
-        lengths[i] = lengths[i-1] + (polygon.points[i] - polygon.points[i-1]).cast<float>().norm();
-    lengths.back() = lengths[lengths.size()-2] + (polygon.points.front() - polygon.points.back()).cast<float>().norm();
-    return lengths;
-}
-
-std::vector<float> polygon_angles_at_vertices(const Polygon &polygon, const std::vector<float> &lengths, float min_arm_length)
-{
-    assert(polygon.points.size() + 1 == lengths.size());
-    if (min_arm_length > 0.25f * lengths.back())
-        min_arm_length = 0.25f * lengths.back();
-
-    // Find the initial prev / next point span.
-    size_t idx_prev = polygon.points.size();
-    size_t idx_curr = 0;
-    size_t idx_next = 1;
-    while (idx_prev > idx_curr && lengths.back() - lengths[idx_prev] < min_arm_length)
-        -- idx_prev;
-    while (idx_next < idx_prev && lengths[idx_next] < min_arm_length)
-        ++ idx_next;
-
-    std::vector<float> angles(polygon.points.size(), 0.f);
-    for (; idx_curr < polygon.points.size(); ++ idx_curr) {
-        // Move idx_prev up until the distance between idx_prev and idx_curr is lower than min_arm_length.
-        if (idx_prev >= idx_curr) {
-            while (idx_prev < polygon.points.size() && lengths.back() - lengths[idx_prev] + lengths[idx_curr] > min_arm_length)
-                ++ idx_prev;
-            if (idx_prev == polygon.points.size())
-                idx_prev = 0;
-        }
-        while (idx_prev < idx_curr && lengths[idx_curr] - lengths[idx_prev] > min_arm_length)
-            ++ idx_prev;
-        // Move idx_prev one step back.
-        if (idx_prev == 0)
-            idx_prev = polygon.points.size() - 1;
-        else
-            -- idx_prev;
-        // Move idx_next up until the distance between idx_curr and idx_next is greater than min_arm_length.
-        if (idx_curr <= idx_next) {
-            while (idx_next < polygon.points.size() && lengths[idx_next] - lengths[idx_curr] < min_arm_length)
-                ++ idx_next;
-            if (idx_next == polygon.points.size())
-                idx_next = 0;
-        }
-        while (idx_next < idx_curr && lengths.back() - lengths[idx_curr] + lengths[idx_next] < min_arm_length)
-            ++ idx_next;
-        // Calculate angle between idx_prev, idx_curr, idx_next.
-        const Point &p0 = polygon.points[idx_prev];
-        const Point &p1 = polygon.points[idx_curr];
-        const Point &p2 = polygon.points[idx_next];
-        const Point  v1 = p1 - p0;
-        const Point  v2 = p2 - p1;
-		int64_t dot   = int64_t(v1(0))*int64_t(v2(0)) + int64_t(v1(1))*int64_t(v2(1));
-		int64_t cross = int64_t(v1(0))*int64_t(v2(1)) - int64_t(v1(1))*int64_t(v2(0));
-		float angle = float(atan2(double(cross), double(dot)));
-        angles[idx_curr] = angle;
-    }
-
-    return angles;
-}
 
 std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, double speed, std::unique_ptr<EdgeGrid::Grid> *lower_layer_edge_grid)
 {
@@ -2774,156 +2592,18 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, std::string description, dou
     Point last_pos = this->last_pos();
     if (m_config.spiral_vase) {
         loop.split_at(last_pos, false);
-    } else if (seam_position == spNearest || seam_position == spAligned || seam_position == spRear) {
-        Polygon        polygon    = loop.polygon();
-        const coordf_t nozzle_dmr = EXTRUDER_CONFIG(nozzle_diameter);
-        const coord_t  nozzle_r   = coord_t(scale_(0.5 * nozzle_dmr) + 0.5);
-
-        // Retrieve the last start position for this object.
-        float last_pos_weight = 1.f;
-
-        if (seam_position == spAligned) {
-            // Seam is aligned to the seam at the preceding layer.
-            if (m_layer != NULL && m_seam_position.count(m_layer->object()) > 0) {
-                last_pos = m_seam_position[m_layer->object()];
-                last_pos_weight = 1.f;
-            }
-        }
-        else if (seam_position == spRear) {
-            // Object is centered around (0,0) in its current coordinate system.
-            last_pos.x() = 0;
-            last_pos.y() += coord_t(3. * m_layer->object()->bounding_box().radius());
-            last_pos_weight = 5.f;
-        }
-
-        // Insert a projection of last_pos into the polygon.
-        size_t last_pos_proj_idx;
-        {
-            auto it = project_point_to_polygon_and_insert(polygon, last_pos, 0.1 * nozzle_r);
-            last_pos_proj_idx = it - polygon.points.begin();
-        }
-
-        // Parametrize the polygon by its length.
-        std::vector<float> lengths = polygon_parameter_by_length(polygon);
-
-        // For each polygon point, store a penalty.
-        // First calculate the angles, store them as penalties. The angles are caluculated over a minimum arm length of nozzle_r.
-        std::vector<float> penalties = polygon_angles_at_vertices(polygon, lengths, float(nozzle_r));
-        // No penalty for reflex points, slight penalty for convex points, high penalty for flat surfaces.
-        const float penaltyConvexVertex = 1.f;
-        const float penaltyFlatSurface  = 5.f;
-        const float penaltyOverhangHalf = 10.f;
-        // Penalty for visible seams.
-        for (size_t i = 0; i < polygon.points.size(); ++ i) {
-            float ccwAngle = penalties[i];
-            if (was_clockwise)
-                ccwAngle = - ccwAngle;
-            float penalty = 0;
-            if (ccwAngle <- float(0.6 * PI))
-                // Sharp reflex vertex. We love that, it hides the seam perfectly.
-                penalty = 0.f;
-            else if (ccwAngle > float(0.6 * PI))
-                // Seams on sharp convex vertices are more visible than on reflex vertices.
-                penalty = penaltyConvexVertex;
-            else if (ccwAngle < 0.f) {
-                // Interpolate penalty between maximum and zero.
-                penalty = penaltyFlatSurface * bspline_kernel(ccwAngle * float(PI * 2. / 3.));
             } else {
-                assert(ccwAngle >= 0.f);
-                // Interpolate penalty between maximum and the penalty for a convex vertex.
-                penalty = penaltyConvexVertex + (penaltyFlatSurface - penaltyConvexVertex) * bspline_kernel(ccwAngle * float(PI * 2. / 3.));
-            }
-            // Give a negative penalty for points close to the last point or the prefered seam location.
-            float dist_to_last_pos_proj = (i < last_pos_proj_idx) ? 
-                std::min(lengths[last_pos_proj_idx] - lengths[i], lengths.back() - lengths[last_pos_proj_idx] + lengths[i]) : 
-                std::min(lengths[i] - lengths[last_pos_proj_idx], lengths.back() - lengths[i] + lengths[last_pos_proj_idx]);
-            float dist_max = 0.1f * lengths.back(); // 5.f * nozzle_dmr
-            penalty -= last_pos_weight * bspline_kernel(dist_to_last_pos_proj / dist_max);
-            penalties[i] = std::max(0.f, penalty);
-        }
-
-        // Penalty for overhangs.
-        if (lower_layer_edge_grid && (*lower_layer_edge_grid)) {
-            // Use the edge grid distance field structure over the lower layer to calculate overhangs.
-            coord_t nozzle_r = coord_t(floor(scale_(0.5 * nozzle_dmr) + 0.5));
-            coord_t search_r = coord_t(floor(scale_(0.8 * nozzle_dmr) + 0.5));
-            for (size_t i = 0; i < polygon.points.size(); ++ i) {
-                const Point &p = polygon.points[i];
-                coordf_t dist;
-                // Signed distance is positive outside the object, negative inside the object.
-                // The point is considered at an overhang, if it is more than nozzle radius
-                // outside of the lower layer contour.
-                [[maybe_unused]] bool found = (*lower_layer_edge_grid)->signed_distance(p, search_r, dist);
-                // If the approximate Signed Distance Field was initialized over lower_layer_edge_grid,
-                // then the signed distnace shall always be known.
-                assert(found); 
-                penalties[i] += extrudate_overlap_penalty(float(nozzle_r), penaltyOverhangHalf, float(dist));
-            }
-        }
-
-        // Find a point with a minimum penalty.
-        size_t idx_min = std::min_element(penalties.begin(), penalties.end()) - penalties.begin();
-
-        // For all (aligned, nearest, rear) seams:
-        {
-            // Very likely the weight of idx_min is very close to the weight of last_pos_proj_idx.
-            // In that case use last_pos_proj_idx instead.
-            float penalty_aligned  = penalties[last_pos_proj_idx];
-            float penalty_min      = penalties[idx_min];
-            float penalty_diff_abs = std::abs(penalty_min - penalty_aligned);
-            float penalty_max      = std::max(penalty_min, penalty_aligned);
-            float penalty_diff_rel = (penalty_max == 0.f) ? 0.f : penalty_diff_abs / penalty_max;
-            // printf("Align seams, penalty aligned: %f, min: %f, diff abs: %f, diff rel: %f\n", penalty_aligned, penalty_min, penalty_diff_abs, penalty_diff_rel);
-            if (penalty_diff_rel < 0.05) {
-                // Penalty of the aligned point is very close to the minimum penalty.
-                // Align the seams as accurately as possible.
-                idx_min = last_pos_proj_idx;
-            }
-            m_seam_position[m_layer->object()] = polygon.points[idx_min];
-        }
-
-        // Export the contour into a SVG file.
-        #if 0
-        {
-            static int iRun = 0;
-            SVG svg(debug_out_path("GCode_extrude_loop-%d.svg", iRun ++));
-            if (m_layer->lower_layer != NULL)
-                svg.draw(m_layer->lower_layer->slices);
-            for (size_t i = 0; i < loop.paths.size(); ++ i)
-                svg.draw(loop.paths[i].as_polyline(), "red");
-            Polylines polylines;
-            for (size_t i = 0; i < loop.paths.size(); ++ i)
-                polylines.push_back(loop.paths[i].as_polyline());
-            Slic3r::Polygons polygons;
-            coordf_t nozzle_dmr = EXTRUDER_CONFIG(nozzle_diameter);
-            coord_t delta = scale_(0.5*nozzle_dmr);
-            Slic3r::offset(polylines, &polygons, delta);
-//            for (size_t i = 0; i < polygons.size(); ++ i) svg.draw((Polyline)polygons[i], "blue");
-            svg.draw(last_pos, "green", 3);
-            svg.draw(polygon.points[idx_min], "yellow", 3);
-            svg.Close();
-        }
-        #endif
-
+        const EdgeGrid::Grid* edge_grid_ptr = (lower_layer_edge_grid && *lower_layer_edge_grid)
+                                                ? lower_layer_edge_grid->get()
+                                                : nullptr;
+        Point seam = m_seam_placer.get_seam(m_layer->id(), seam_position, loop,
+                         last_pos, EXTRUDER_CONFIG(nozzle_diameter),
+                         (m_layer == NULL ? nullptr : m_layer->object()),
+                         was_clockwise, edge_grid_ptr);
         // Split the loop at the point with a minium penalty.
-        if (!loop.split_at_vertex(polygon.points[idx_min]))
+        if (!loop.split_at_vertex(seam))
             // The point is not in the original loop. Insert it.
-            loop.split_at(polygon.points[idx_min], true);
-
-    } else if (seam_position == spRandom) {
-        if (loop.loop_role() == elrContourInternalPerimeter) {
-            // This loop does not contain any other loop. Set a random position.
-            // The other loops will get a seam close to the random point chosen
-            // on the inner most contour.
-            //FIXME This works correctly for inner contours first only.
-            //FIXME Better parametrize the loop by its length.
-            Polygon polygon = loop.polygon();
-            Point centroid = polygon.centroid();
-            last_pos = Point(polygon.bounding_box().max(0), centroid(1));
-            last_pos.rotate(fmod((float)rand()/16.0, 2.0*PI), centroid);
-        }
-        // Find the closest point, avoid overhangs.
-        loop.split_at(last_pos, true);
+            loop.split_at(seam, true);
     }
     
     // clip the path to avoid the extruder to get exactly on the first point of the loop;

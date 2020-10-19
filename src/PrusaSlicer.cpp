@@ -93,7 +93,7 @@ int CLI::run(int argc, char **argv)
 		return 1;
 
     m_extra_config.apply(m_config, true);
-    m_extra_config.normalize();
+    m_extra_config.normalize_fdm();
     
     PrinterTechnology printer_technology = Slic3r::printer_technology(m_config);
 
@@ -129,7 +129,7 @@ int CLI::run(int argc, char **argv)
             boost::nowide::cerr << "Error while reading config file: " << ex.what() << std::endl;
             return 1;
         }
-        config.normalize();
+        config.normalize_fdm();
         PrinterTechnology other_printer_technology = Slic3r::printer_technology(config);
         if (printer_technology == ptUnknown) {
             printer_technology = other_printer_technology;
@@ -154,6 +154,15 @@ int CLI::run(int argc, char **argv)
 
     // Read input file(s) if any.
 #if ENABLE_GCODE_VIEWER
+    for (const std::string& file : m_input_files) {
+        std::string ext = boost::filesystem::path(file).extension().string();
+        if (boost::filesystem::path(file).extension().string() == ".gcode") {
+            if (boost::filesystem::exists(file)) {
+                start_as_gcodeviewer = true;
+                break;
+            }
+        }
+    }
     if (!start_as_gcodeviewer) {
 #endif // ENABLE_GCODE_VIEWER
         for (const std::string& file : m_input_files) {
@@ -196,7 +205,7 @@ int CLI::run(int argc, char **argv)
     // (command line options override --load files)
     m_print_config.apply(m_extra_config, true);
     // Normalizing after importing the 3MFs / AMFs
-    m_print_config.normalize();
+    m_print_config.normalize_fdm();
 
     // Initialize full print configs for both the FFF and SLA technologies.
     FullPrintConfig    fff_print_config;
@@ -509,9 +518,12 @@ int CLI::run(int argc, char **argv)
                             outfile_final = sla_print.print_statistics().finalize_output_path(outfile);
                             sla_archive.export_print(outfile_final, sla_print);
                         }
-                        if (outfile != outfile_final && Slic3r::rename_file(outfile, outfile_final)) {
-                            boost::nowide::cerr << "Renaming file " << outfile << " to " << outfile_final << " failed" << std::endl;
-                            return 1;
+                        if (outfile != outfile_final) {
+                            if (Slic3r::rename_file(outfile, outfile_final)) {
+                                boost::nowide::cerr << "Renaming file " << outfile << " to " << outfile_final << " failed" << std::endl;
+                                return 1;
+                            }
+                            outfile = outfile_final;
                         }
                         boost::nowide::cout << "Slicing result exported to " << outfile << std::endl;
                     } catch (const std::exception &ex) {
@@ -565,18 +577,26 @@ int CLI::run(int argc, char **argv)
 // #ifdef USE_WX
 #if ENABLE_GCODE_VIEWER
         GUI::GUI_App* gui = new GUI::GUI_App(start_as_gcodeviewer ? GUI::GUI_App::EAppMode::GCodeViewer : GUI::GUI_App::EAppMode::Editor);
+        if (gui->get_app_mode() != GUI::GUI_App::EAppMode::GCodeViewer) {
+            // G-code viewer is currently not performing instance check, a new G-code viewer is started every time.
+            bool gui_single_instance_setting = gui->app_config->get("single_instance") == "1";
+            if (Slic3r::instance_check(argc, argv, gui_single_instance_setting)) {
+                //TODO: do we have delete gui and other stuff?
+                return -1;
+            }
+        }
 #else
         GUI::GUI_App *gui = new GUI::GUI_App();
 #endif // ENABLE_GCODE_VIEWER
 
-		bool gui_single_instance_setting = gui->app_config->get("single_instance") == "1";
-		if (Slic3r::instance_check(argc, argv, gui_single_instance_setting)) {
-			//TODO: do we have delete gui and other stuff?
-			return -1;
-		}
-		
 //		gui->autosave = m_config.opt_string("autosave");
         GUI::GUI_App::SetInstance(gui);
+#if ENABLE_GCODE_VIEWER
+        gui->after_init_loads.set_params(load_configs, m_extra_config, m_input_files, start_as_gcodeviewer);
+#else
+        gui->after_init_loads.set_params(load_configs, m_extra_config, m_input_files);
+#endif // ENABLE_GCODE_VIEWER
+/*
 #if ENABLE_GCODE_VIEWER
         gui->CallAfter([gui, this, &load_configs, start_as_gcodeviewer] {
 #else
@@ -614,6 +634,7 @@ int CLI::run(int argc, char **argv)
             }
 #endif // ENABLE_GCODE_VIEWER
         });
+*/
         int result = wxEntry(argc, argv);
         return result;
 #else /* SLIC3R_GUI */
@@ -646,7 +667,7 @@ bool CLI::setup(int argc, char **argv)
 #ifdef __APPLE__
     // The application is packed in the .dmg archive as 'Slic3r.app/Contents/MacOS/Slic3r'
     // The resources are packed to 'Slic3r.app/Contents/Resources'
-    boost::filesystem::path path_resources = path_to_binary.parent_path() / "../Resources";
+    boost::filesystem::path path_resources = boost::filesystem::canonical(path_to_binary).parent_path() / "../Resources";
 #elif defined _WIN32
     // The application is packed in the .zip archive in the root,
     // The resources are packed to 'resources'
@@ -660,7 +681,7 @@ bool CLI::setup(int argc, char **argv)
     // The application is packed in the .tar.bz archive (or in AppImage) as 'bin/slic3r',
     // The resources are packed to 'resources'
     // Path from Slic3r binary to resources:
-    boost::filesystem::path path_resources = path_to_binary.parent_path() / "../resources";
+    boost::filesystem::path path_resources = boost::filesystem::canonical(path_to_binary).parent_path() / "../resources";
 #endif
 
     set_resources_dir(path_resources.string());

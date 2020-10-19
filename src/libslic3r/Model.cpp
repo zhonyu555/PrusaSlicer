@@ -608,6 +608,7 @@ void ModelObject::assign_new_unique_ids_recursive()
         model_volume->assign_new_unique_ids_recursive();
     for (ModelInstance *model_instance : this->instances)
         model_instance->assign_new_unique_ids_recursive();
+    this->layer_height_profile.set_new_unique_id();
 }
 
 // Clone this ModelObject including its volumes and instances, keep the IDs of the copies equal to the original.
@@ -775,6 +776,38 @@ TriangleMesh ModelObject::raw_mesh() const
             mesh.merge(vol_mesh);
         }
     return mesh;
+}
+
+// Non-transformed (non-rotated, non-scaled, non-translated) sum of non-modifier object volumes.
+// Currently used by ModelObject::mesh(), to calculate the 2D envelope for 2D plater
+// and to display the object statistics at ModelObject::print_info().
+indexed_triangle_set ModelObject::raw_indexed_triangle_set() const
+{
+    size_t num_vertices = 0;
+    size_t num_faces    = 0;
+    for (const ModelVolume *v : this->volumes)
+        if (v->is_model_part()) {
+            num_vertices += v->mesh().its.vertices.size();
+            num_faces    += v->mesh().its.indices.size();
+        }
+    indexed_triangle_set out;
+    out.vertices.reserve(num_vertices);
+    out.indices.reserve(num_faces);
+    for (const ModelVolume *v : this->volumes)
+        if (v->is_model_part()) {
+            size_t i = out.vertices.size();
+            size_t j = out.indices.size();
+            append(out.vertices, v->mesh().its.vertices);
+            append(out.indices,  v->mesh().its.indices);
+            auto m = v->get_matrix();
+            for (; i < out.vertices.size(); ++ i)
+                out.vertices[i] = (m * out.vertices[i].cast<double>()).cast<float>().eval();
+            if (v->is_left_handed()) {
+                for (; j < out.indices.size(); ++ j)
+                    std::swap(out.indices[j][0], out.indices[j][1]);
+            }
+        }
+    return out;
 }
 
 // Non-transformed (non-rotated, non-scaled, non-translated) sum of all object volumes.
@@ -1009,8 +1042,8 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, bool from_imperial
     int vol_idx = 0;
     for (ModelVolume* volume : volumes)
     {
-        volume->m_supported_facets.clear();
-        volume->m_seam_facets.clear();
+        volume->supported_facets.clear();
+        volume->seam_facets.clear();
         if (!volume->mesh().empty()) {
             TriangleMesh mesh(volume->mesh());
             mesh.require_shared_vertices();
@@ -1018,7 +1051,7 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, bool from_imperial
             ModelVolume* vol = new_object->add_volume(mesh);
             vol->name = volume->name;
             // Don't copy the config's ID.
-            static_cast<DynamicPrintConfig&>(vol->config) = static_cast<const DynamicPrintConfig&>(volume->config);
+            vol->config.assign_config(volume->config);
             assert(vol->config.id().valid());
             assert(vol->config.id() != volume->config.id());
             vol->set_material(volume->material_id(), *volume->material());
@@ -1115,8 +1148,8 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
     for (ModelVolume *volume : volumes) {
         const auto volume_matrix = volume->get_matrix();
 
-        volume->m_supported_facets.clear();
-        volume->m_seam_facets.clear();
+        volume->supported_facets.clear();
+        volume->seam_facets.clear();
 
         if (! volume->is_model_part()) {
             // Modifiers are not cut, but we still need to add the instance transformation
@@ -1161,7 +1194,7 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
                 ModelVolume* vol = upper->add_volume(upper_mesh);
                 vol->name	= volume->name;
                 // Don't copy the config's ID.
-				static_cast<DynamicPrintConfig&>(vol->config) = static_cast<const DynamicPrintConfig&>(volume->config);
+                vol->config.assign_config(volume->config);
     			assert(vol->config.id().valid());
 	    		assert(vol->config.id() != volume->config.id());
                 vol->set_material(volume->material_id(), *volume->material());
@@ -1170,8 +1203,8 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, bool keep_upper, b
                 ModelVolume* vol = lower->add_volume(lower_mesh);
                 vol->name	= volume->name;
                 // Don't copy the config's ID.
-				static_cast<DynamicPrintConfig&>(vol->config) = static_cast<const DynamicPrintConfig&>(volume->config);
-    			assert(vol->config.id().valid());
+                vol->config.assign_config(volume->config);
+                assert(vol->config.id().valid());
 	    		assert(vol->config.id() != volume->config.id());
                 vol->set_material(volume->material_id(), *volume->material());
 
@@ -1248,7 +1281,7 @@ void ModelObject::split(ModelObjectPtrs* new_objects)
         ModelObject* new_object = m_model->add_object();    
         new_object->name   = this->name;
         // Don't copy the config's ID.
-		static_cast<DynamicPrintConfig&>(new_object->config) = static_cast<const DynamicPrintConfig&>(this->config);
+		new_object->config.assign_config(this->config);
 		assert(new_object->config.id().valid());
 		assert(new_object->config.id() != this->config.id());
         new_object->instances.reserve(this->instances.size());
@@ -1695,6 +1728,14 @@ void ModelObject::scale_to_fit(const Vec3d &size)
 */
 }
 
+void ModelVolume::assign_new_unique_ids_recursive()
+{
+    ObjectBase::set_new_unique_id();
+    config.set_new_unique_id();
+    supported_facets.set_new_unique_id();
+    seam_facets.set_new_unique_id();
+}
+
 void ModelVolume::rotate(double angle, Axis axis)
 {
     switch (axis)
@@ -1835,7 +1876,6 @@ arrangement::ArrangePolygon ModelInstance::get_arrange_polygon() const
     return ret;
 }
 
-
 indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, EnforcerBlockerType type) const
 {
     TriangleSelector selector(mv.mesh());
@@ -1844,28 +1884,22 @@ indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, Enforce
     return out;
 }
 
-
-
 bool FacetsAnnotation::set(const TriangleSelector& selector)
 {
     std::map<int, std::vector<bool>> sel_map = selector.serialize();
     if (sel_map != m_data) {
         m_data = sel_map;
-        update_timestamp();
+        this->touch();
         return true;
     }
     return false;
 }
 
-
-
 void FacetsAnnotation::clear()
 {
     m_data.clear();
-    update_timestamp();
+    this->reset_timestamp();
 }
-
-
 
 // Following function takes data from a triangle and encodes it as string
 // of hexadecimal numbers (one digit per triangle). Used for 3MF export,
@@ -1894,8 +1928,6 @@ std::string FacetsAnnotation::get_triangle_as_string(int triangle_idx) const
     return out;
 }
 
-
-
 // Recover triangle splitting & state from string of hexadecimal values previously
 // generated by get_triangle_as_string. Used to load from 3MF.
 void FacetsAnnotation::set_triangle_from_string(int triangle_id, const std::string& str)
@@ -1919,11 +1951,7 @@ void FacetsAnnotation::set_triangle_from_string(int triangle_id, const std::stri
             code.insert(code.end(), bool(dec & (1 << i)));
         }
     }
-
-
 }
-
-
 
 // Test whether the two models contain the same number of ModelObjects with the same set of IDs
 // ordered in the same order. In that case it is not necessary to kill the background processing.
@@ -1992,7 +2020,7 @@ bool model_custom_supports_data_changed(const ModelObject& mo, const ModelObject
     assert(! model_volume_list_changed(mo, mo_new, ModelVolumeType::MODEL_PART));
     assert(mo.volumes.size() == mo_new.volumes.size());
     for (size_t i=0; i<mo.volumes.size(); ++i) {
-        if (! mo_new.volumes[i]->m_supported_facets.is_same_as(mo.volumes[i]->m_supported_facets))
+        if (! mo_new.volumes[i]->supported_facets.timestamp_matches(mo.volumes[i]->supported_facets))
             return true;
     }
     return false;
@@ -2002,7 +2030,7 @@ bool model_custom_seam_data_changed(const ModelObject& mo, const ModelObject& mo
     assert(! model_volume_list_changed(mo, mo_new, ModelVolumeType::MODEL_PART));
     assert(mo.volumes.size() == mo_new.volumes.size());
     for (size_t i=0; i<mo.volumes.size(); ++i) {
-        if (! mo_new.volumes[i]->m_seam_facets.is_same_as(mo.volumes[i]->m_seam_facets))
+        if (! mo_new.volumes[i]->seam_facets.timestamp_matches(mo.volumes[i]->seam_facets))
             return true;
     }
     return false;
@@ -2018,7 +2046,7 @@ extern bool model_has_multi_part_objects(const Model &model)
 
 extern bool model_has_advanced_features(const Model &model)
 {
-	auto config_is_advanced = [](const DynamicPrintConfig &config) {
+	auto config_is_advanced = [](const ModelConfig &config) {
         return ! (config.empty() || (config.size() == 1 && config.cbegin()->first == "extruder"));
 	};
     for (const ModelObject *model_object : model.objects) {

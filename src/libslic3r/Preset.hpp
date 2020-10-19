@@ -218,6 +218,8 @@ public:
     static const std::vector<std::string>&  printer_options();
     // Nozzle options of the printer options.
     static const std::vector<std::string>&  nozzle_options();
+    // Printer machine limits, those are contained in printer_options().
+    static const std::vector<std::string>&  machine_limits_options();
 
     static const std::vector<std::string>&  sla_printer_options();
     static const std::vector<std::string>&  sla_material_options();
@@ -369,19 +371,28 @@ public:
         size_t i = m_default_suppressed ? m_num_default_presets : 0;
         size_t n = this->m_presets.size();
         size_t i_compatible = n;
+        int    match_quality = -1;
         for (; i < n; ++ i)
             // Since we use the filament selection from Wizard, it's needed to control the preset visibility too 
             if (m_presets[i].is_compatible && m_presets[i].is_visible) {
-                if (prefered_condition(m_presets[i].name))
-                    return i;
-                if (i_compatible == n)
-                    // Store the first compatible profile into i_compatible.
+                int this_match_quality = prefered_condition(m_presets[i]);
+                if (this_match_quality > match_quality) {
+                    if (match_quality == std::numeric_limits<int>::max())
+                        // Better match will not be found.
+                        return i;
+                    // Store the first compatible profile with highest match quality into i_compatible.
                     i_compatible = i;
+                    match_quality = this_match_quality;
+                } 
             }
-        return (i_compatible == n) ? 0 : i_compatible;
+        return (i_compatible == n) ? 
+            // No compatible preset found, return the default preset.
+            0 :
+            // Compatible preset found.
+            i_compatible;
     }
     // Return index of the first compatible preset. Certainly at least the '- default -' preset shall be compatible.
-    size_t          first_compatible_idx() const { return this->first_compatible_idx([](const std::string&){return true;}); }
+    size_t          first_compatible_idx() const { return this->first_compatible_idx([](const Preset&) -> int { return 0; }); }
 
     // Return index of the first visible preset. Certainly at least the '- default -' preset shall be visible.
     // Return the first visible preset. Certainly at least the '- default -' preset shall be visible.
@@ -405,7 +416,7 @@ public:
             this->select_preset(this->first_compatible_idx(prefered_condition));        
     }
     void            update_compatible(const PresetWithVendorProfile &active_printer, const PresetWithVendorProfile *active_print, PresetSelectCompatibleType select_other_if_incompatible)
-        { this->update_compatible(active_printer, active_print, select_other_if_incompatible, [](const std::string&){return true;}); }
+        { this->update_compatible(active_printer, active_print, select_other_if_incompatible, [](const Preset&) -> int { return 0; }); }
 
     size_t          num_visible() const { return std::count_if(m_presets.begin(), m_presets.end(), [](const Preset &preset){return preset.is_visible;}); }
 
@@ -632,6 +643,8 @@ public:
     // Load ini files of the particular type from the provided directory path.
     void            load_printers(const std::string& dir_path, const std::string& subdir);
     void            load_printers_from_presets(PrinterPresetCollection &printer_presets);
+    // Load printer from the loaded configuration
+    void            load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save=false);
 
     // Save the printer under a new name. If the name is different from the old one,
     // a new printer is stored into the list of printers.
@@ -687,10 +700,11 @@ public:
 
     // Return a preset by its name. If the preset is active, a temporary copy is returned.
     // If a preset is not found by its name, null is returned.
-    PhysicalPrinter* find_printer(const std::string& name, bool first_visible_if_not_found = false);
-    const PhysicalPrinter* find_printer(const std::string& name, bool first_visible_if_not_found = false) const
+    // It is possible case (in)sensitive search
+    PhysicalPrinter* find_printer(const std::string& name, bool case_sensitive_search = true);
+    const PhysicalPrinter* find_printer(const std::string& name, bool case_sensitive_search = true) const
     {
-        return const_cast<PhysicalPrinterCollection*>(this)->find_printer(name, first_visible_if_not_found);
+        return const_cast<PhysicalPrinterCollection*>(this)->find_printer(name, case_sensitive_search);
     }
 
     // Generate a file path from a profile name. Add the ".ini" suffix if it is missing.
@@ -701,15 +715,11 @@ public:
 private:
     PhysicalPrinterCollection& operator=(const PhysicalPrinterCollection& other);
 
-    // Find a preset position in the sorted list of presets.
-    // The "-- default -- " preset is always the first, so it needs
-    // to be handled differently.
-    // If a preset does not exist, an iterator is returned indicating where to insert a preset with the same name.
-    std::deque<PhysicalPrinter>::iterator find_printer_internal(const std::string& name)
-    {
-        return Slic3r::lower_bound_by_predicate(m_printers.begin(), m_printers.end(), [&name](const auto& l) { return l.name < name;  });
-    }
-    std::deque<PhysicalPrinter>::const_iterator find_printer_internal(const std::string& name) const
+    // Find a physical printer position in the sorted list of printers.
+    // The name of a printer should be unique and case insensitive
+    // Use this functions with case_sensitive_search = false, when you need case insensitive search
+    std::deque<PhysicalPrinter>::iterator find_printer_internal(const std::string& name, bool case_sensitive_search = true);
+    std::deque<PhysicalPrinter>::const_iterator find_printer_internal(const std::string& name, bool case_sensitive_search = true) const
     {
         return const_cast<PhysicalPrinterCollection*>(this)->find_printer_internal(name);
     }

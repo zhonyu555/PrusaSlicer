@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.13)
 project(libslic3r_gui)
 
 include(PrecompiledHeader)
@@ -87,6 +87,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Plater.hpp
     GUI/PresetComboBoxes.hpp
     GUI/PresetComboBoxes.cpp
+    GUI/SavePresetDialog.hpp
+    GUI/SavePresetDialog.cpp
     GUI/PhysicalPrinterDialog.hpp
     GUI/PhysicalPrinterDialog.cpp
     GUI/GUI_ObjectList.cpp

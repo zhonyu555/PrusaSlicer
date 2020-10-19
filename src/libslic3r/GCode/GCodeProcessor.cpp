@@ -520,7 +520,9 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
         m_filament_diameters[i] = static_cast<float>(config.filament_diameter.values[i]);
     }
 
-    m_time_processor.machine_limits = reinterpret_cast<const MachineEnvelopeConfig&>(config);
+    if (config.machine_limits_usage.value != MachineLimitsUsage::Ignore)
+        m_time_processor.machine_limits = reinterpret_cast<const MachineEnvelopeConfig&>(config);
+
     // Filament load / unload times are not specific to a firmware flavor. Let anybody use it if they find it useful.
     // As of now the fields are shown at the UI dialog in the same combo box as the ramming values, so they
     // are considered to be active for the single extruder multi-material printers only.
@@ -1393,12 +1395,11 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
     auto move_type = [this](const AxisCoords& delta_pos) {
         EMoveType type = EMoveType::Noop;
 
-        if (delta_pos[E] < 0.0f) {
+        if (delta_pos[E] < 0.0f)
             type = (delta_pos[X] != 0.0f || delta_pos[Y] != 0.0f || delta_pos[Z] != 0.0f) ? EMoveType::Travel : EMoveType::Retract;
-        }
         else if (delta_pos[E] > 0.0f) {
-            if (delta_pos[X] == 0.0f && delta_pos[Y] == 0.0f && delta_pos[Z] == 0.0f)
-                type = EMoveType::Unretract;
+            if (delta_pos[X] == 0.0f && delta_pos[Y] == 0.0f)
+                type = (delta_pos[Z] == 0.0f) ? EMoveType::Unretract : EMoveType::Travel;
             else if (delta_pos[X] != 0.0f || delta_pos[Y] != 0.0f)
                 type = EMoveType::Extrude;
         } 
@@ -1471,7 +1472,8 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
             m_width = delta_pos[E] * static_cast<float>(M_PI * sqr(filament_radius)) / (delta_xyz * m_height) + static_cast<float>(1.0 - 0.25 * M_PI) * m_height;
 
         // clamp width to avoid artifacts which may arise from wrong values of m_height
-        m_width = std::min(m_width, 4.0f * m_height);
+        m_width = std::min(m_width, 1.0f);
+//        m_width = std::min(m_width, 4.0f * m_height);
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
         m_width_compare.update(m_width, m_extrusion_role);
