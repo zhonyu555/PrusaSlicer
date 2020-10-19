@@ -261,7 +261,7 @@ protected:
 	SLAPrintObject(SLAPrint* print, ModelObject* model_object);
     ~SLAPrintObject();
 
-    void                    config_apply(const ConfigBase &other, bool ignore_nonexistent = false) { this->m_config.apply(other, ignore_nonexistent); }
+    void                    config_apply(const ConfigBase &other, bool ignore_nonexistent = false) { m_config.apply(other, ignore_nonexistent); }
     void                    config_apply_only(const ConfigBase &other, const t_config_option_keys &keys, bool ignore_nonexistent = false)
         { this->m_config.apply_only(other, keys, ignore_nonexistent); }
 
@@ -420,6 +420,8 @@ public:
 
     void                clear() override;
     bool                empty() const override { return m_objects.empty(); }
+    // List of existing PrintObject IDs, to remove notifications for non-existent IDs.
+    std::vector<ObjectID> print_object_ids() const;
     ApplyStatus         apply(const Model &model, DynamicPrintConfig config) override;
     void                set_task(const TaskParams &params) override;
     void                process() override;

@@ -1,5 +1,5 @@
 project(libslic3r)
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.13)
 
 include(PrecompiledHeader)
 
@@ -97,6 +97,8 @@ add_library(libslic3r STATIC
     GCode/PrintExtents.hpp
     GCode/SpiralVase.cpp
     GCode/SpiralVase.hpp
+    GCode/SeamPlacer.cpp
+    GCode/SeamPlacer.hpp
     GCode/ToolOrdering.cpp
     GCode/ToolOrdering.hpp
     GCode/WipeTower.cpp

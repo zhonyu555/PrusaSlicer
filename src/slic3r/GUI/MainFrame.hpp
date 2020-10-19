@@ -7,9 +7,9 @@
 #include <wx/settings.h>
 #include <wx/string.h>
 #include <wx/filehistory.h>
-#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
+#ifdef __APPLE__
 #include <wx/taskbar.h>
-#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
+#endif __APPLE__
 
 #include <string>
 #include <map>
@@ -141,11 +141,7 @@ protected:
 
 public:
     MainFrame();
-#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
-    ~MainFrame();
-#else
     ~MainFrame() = default;
-#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
 
     void update_layout();
 
@@ -159,6 +155,10 @@ public:
     void        init_tabpanel();
     void        create_preset_tabs();
     void        add_created_tab(Tab* panel);
+    bool        is_active_and_shown_tab(Tab* tab);
+    // Register Win32 RawInput callbacks (3DConnexion) and removable media insert / remove callbacks.
+    // Called from wxEVT_ACTIVATE, as wxEVT_CREATE was not reliable (bug in wxWidgets?).
+    void        register_win32_callbacks();
 #if ENABLE_GCODE_VIEWER
     void        init_menubar_as_editor();
     void        init_menubar_as_gcodeviewer();
@@ -167,9 +167,10 @@ public:
 #endif // ENABLE_GCODE_VIEWER
     void        update_menubar();
 
-    void        update_ui_from_settings();
+    void        update_ui_from_settings(bool apply_free_camera_correction = true);
     bool        is_loaded() const { return m_loaded; }
     bool        is_last_input_file() const  { return !m_qs_last_input_file.IsEmpty(); }
+    bool        is_dlg_layout() const { return m_layout == ESettingsLayout::Dlg; }
 
     void        quick_slice(const int qs = qsUndef);
     void        reslice_now();
@@ -179,11 +180,12 @@ public:
     void        load_config_file();
     // Open a config file. Return true if loaded.
     bool        load_config_file(const std::string &path);
-    void        export_configbundle();
+    void        export_configbundle(bool export_physical_printers = false);
     void        load_configbundle(wxString file = wxEmptyString);
     void        load_config(const DynamicPrintConfig& config);
     // Select tab in m_tabpanel
     // When tab == -1, will be selected last selected tab
+    void        select_tab(Tab* tab);
     void        select_tab(size_t tab = size_t(-1));
     void        select_view(const std::string& direction);
     // Propagate changed configuration from the Tab to the Plater and save changes to the AppConfig
@@ -200,9 +202,9 @@ public:
     wxProgressDialog*   m_progress_dialog { nullptr };
     std::shared_ptr<ProgressStatusBar>  m_statusbar;
 
-#if ENABLE_GCODE_VIEWER_TASKBAR_ICON
-    wxTaskBarIcon* m_taskbar_icon{ nullptr };
-#endif // ENABLE_GCODE_VIEWER_TASKBAR_ICON
+#ifdef __APPLE__
+    std::unique_ptr<wxTaskBarIcon> m_taskbar_icon;
+#endif // __APPLE__
 
 #ifdef _WIN32
     void*				m_hDeviceNotify { nullptr };

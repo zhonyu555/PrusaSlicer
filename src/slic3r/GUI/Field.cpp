@@ -51,6 +51,20 @@ wxString double_to_string(double const value, const int max_precision /*= 4*/)
     return s;
 }
 
+Field::~Field()
+{
+	if (m_on_kill_focus)
+		m_on_kill_focus = nullptr;
+	if (m_on_set_focus)
+		m_on_set_focus = nullptr;
+	if (m_on_change)
+		m_on_change = nullptr;
+	if (m_back_to_initial_value)
+		m_back_to_initial_value = nullptr;
+	if (m_back_to_sys_value)
+		m_back_to_sys_value = nullptr;
+}
+
 void Field::PostInitialize()
 {
 	auto color = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
@@ -318,7 +332,7 @@ void Field::sys_color_changed()
 template<class T>
 bool is_defined_input_value(wxWindow* win, const ConfigOptionType& type)
 {
-    if (static_cast<T*>(win)->GetValue().empty() && type != coString && type != coStrings)
+    if (!win || (static_cast<T*>(win)->GetValue().empty() && type != coString && type != coStrings))
         return false;
     return true;
 }
@@ -373,7 +387,9 @@ void TextCtrl::BUILD() {
 
     const long style = m_opt.multiline ? wxTE_MULTILINE : wxTE_PROCESS_ENTER/*0*/;
 	auto temp = new wxTextCtrl(m_parent, wxID_ANY, text_value, wxDefaultPosition, size, style);
-	temp->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+    temp->SetFont(m_opt.is_code ?
+                  Slic3r::GUI::wxGetApp().code_font():
+                  Slic3r::GUI::wxGetApp().normal_font());
 
     if (! m_opt.multiline && !wxOSX)
 		// Only disable background refresh for single line input fields, as they are completely painted over by the edit control.
@@ -1070,6 +1086,8 @@ boost::any& Choice::get_value()
 			m_value = static_cast<IroningType>(ret_enum);
 		else if (m_opt_id.compare("gcode_flavor") == 0)
 			m_value = static_cast<GCodeFlavor>(ret_enum);
+		else if (m_opt_id.compare("machine_limits_usage") == 0)
+			m_value = static_cast<MachineLimitsUsage>(ret_enum);
 		else if (m_opt_id.compare("support_material_pattern") == 0)
 			m_value = static_cast<SupportMaterialPattern>(ret_enum);
 		else if (m_opt_id.compare("seam_position") == 0)
@@ -1104,8 +1122,7 @@ void Choice::msw_rescale(bool rescale_sidetext/* = false*/)
     Field::msw_rescale();
 
     wxBitmapComboBox* field = dynamic_cast<wxBitmapComboBox*>(window);
-
-    const wxString selection = field->GetString(field->GetSelection());
+    const wxString selection = field->GetValue();// field->GetString(index);
 
 	/* To correct scaling (set new controll size) of a wxBitmapCombobox 
 	 * we need to refill control with new bitmaps. So, in our case : 

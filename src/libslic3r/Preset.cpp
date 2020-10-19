@@ -454,6 +454,21 @@ const std::vector<std::string>& Preset::filament_options()
     return s_opts;
 }
 
+const std::vector<std::string>& Preset::machine_limits_options()
+{
+    static std::vector<std::string> s_opts;
+    if (s_opts.empty()) {
+        s_opts = {
+			"machine_max_acceleration_extruding", "machine_max_acceleration_retracting",
+		    "machine_max_acceleration_x", "machine_max_acceleration_y", "machine_max_acceleration_z", "machine_max_acceleration_e",
+		    "machine_max_feedrate_x", "machine_max_feedrate_y", "machine_max_feedrate_z", "machine_max_feedrate_e",
+		    "machine_min_extruding_rate", "machine_min_travel_rate",
+		    "machine_max_jerk_x", "machine_max_jerk_y", "machine_max_jerk_z", "machine_max_jerk_e",
+		};
+	}
+	return s_opts;
+}
+
 const std::vector<std::string>& Preset::printer_options()
 {
     static std::vector<std::string> s_opts;
@@ -468,13 +483,10 @@ const std::vector<std::string>& Preset::printer_options()
             "between_objects_gcode", "printer_vendor", "printer_model", "printer_variant", "printer_notes", "cooling_tube_retraction",
             "cooling_tube_length", "high_current_on_filament_swap", "parking_pos_retraction", "extra_loading_move", "max_print_height",
             "default_print_profile", "inherits",
-            "remaining_times", "silent_mode", "machine_max_acceleration_extruding", "machine_max_acceleration_retracting",
-            "machine_max_acceleration_x", "machine_max_acceleration_y", "machine_max_acceleration_z", "machine_max_acceleration_e",
-            "machine_max_feedrate_x", "machine_max_feedrate_y", "machine_max_feedrate_z", "machine_max_feedrate_e",
-            "machine_min_extruding_rate", "machine_min_travel_rate",
-            "machine_max_jerk_x", "machine_max_jerk_y", "machine_max_jerk_z", "machine_max_jerk_e",
-            "thumbnails"
+            "remaining_times", "silent_mode", 
+            "machine_limits_usage", "thumbnails"
         };
+        s_opts.insert(s_opts.end(), Preset::machine_limits_options().begin(), Preset::machine_limits_options().end());
         s_opts.insert(s_opts.end(), Preset::nozzle_options().begin(), Preset::nozzle_options().end());
     }
     return s_opts;
@@ -1361,7 +1373,7 @@ const std::vector<std::string>& PhysicalPrinter::printer_options()
         s_opts = {
             "preset_name",
             "printer_technology",
-            "printer_model",
+//            "printer_model",
             "host_type", 
             "print_host", 
             "printhost_apikey", 
@@ -1445,7 +1457,7 @@ void PhysicalPrinter::update_from_preset(const Preset& preset)
 {
     config.apply_only(preset.config, printer_options(), true);
     // add preset names to the options list
-    auto ret = preset_names.emplace(preset.name);
+    preset_names.emplace(preset.name);
     update_preset_names_in_config();
 }
 
@@ -1576,6 +1588,24 @@ void PhysicalPrinterCollection::load_printers(const std::string& dir_path, const
         throw Slic3r::RuntimeError(errors_cummulative);
 }
 
+void PhysicalPrinterCollection::load_printer(const std::string& path, const std::string& name, DynamicPrintConfig&& config, bool select, bool save/* = false*/)
+{
+    auto it = this->find_printer_internal(name);
+    if (it == m_printers.end() || it->name != name) {
+        // The preset was not found. Create a new preset.
+        it = m_printers.emplace(it, PhysicalPrinter(name, config));
+    }
+
+    it->file = path;
+    it->config = std::move(config);
+    it->loaded = true;
+    if (select)
+        this->select_printer(*it);
+
+    if (save)
+        it->save();
+}
+
 // if there is saved user presets, contains information about "Print Host upload",
 // Create default printers with this presets
 // Note! "Print Host upload" options will be cleared after physical printer creations
@@ -1623,12 +1653,39 @@ void PhysicalPrinterCollection::load_printers_from_presets(PrinterPresetCollecti
     }
 }
 
-PhysicalPrinter* PhysicalPrinterCollection::find_printer( const std::string& name, bool first_visible_if_not_found)
+PhysicalPrinter* PhysicalPrinterCollection::find_printer( const std::string& name, bool case_sensitive_search)
 {
-    auto it = this->find_printer_internal(name);
+    auto it = this->find_printer_internal(name, case_sensitive_search);
+
     // Ensure that a temporary copy is returned if the preset found is currently selected.
-    return (it != m_printers.end() && it->name == name) ? &this->printer(it - m_printers.begin()) :
-        first_visible_if_not_found ? &this->printer(0) : nullptr;
+    auto is_equal_name = [name, case_sensitive_search](const std::string& in_name) {
+        if (case_sensitive_search)
+            return in_name == name;
+        return boost::to_lower_copy<std::string>(in_name) == boost::to_lower_copy<std::string>(name);
+    };
+
+    if (it == m_printers.end() || !is_equal_name(it->name))
+        return nullptr;
+    return &this->printer(it - m_printers.begin());
+}
+
+std::deque<PhysicalPrinter>::iterator PhysicalPrinterCollection::find_printer_internal(const std::string& name, bool case_sensitive_search/* = true*/)
+{
+    if (case_sensitive_search)
+        return Slic3r::lower_bound_by_predicate(m_printers.begin(), m_printers.end(), [&name](const auto& l) { return l.name < name;  });
+
+    std::string low_name = boost::to_lower_copy<std::string>(name);
+
+    size_t i = 0;
+    for (const PhysicalPrinter& printer : m_printers) {
+        if (boost::to_lower_copy<std::string>(printer.name) == low_name)
+            break;
+        i++;
+    }
+    if (i == m_printers.size())
+        return m_printers.end();
+
+    return m_printers.begin() + i;
 }
 
 PhysicalPrinter* PhysicalPrinterCollection::find_printer_with_same_config(const DynamicPrintConfig& config)
@@ -1667,10 +1724,13 @@ void PhysicalPrinterCollection::save_printer(PhysicalPrinter& edited_printer, co
         it->config = std::move(edited_printer.config);
         it->name = edited_printer.name;
         it->preset_names = edited_printer.preset_names;
+        // sort printers and get new it
+        std::sort(m_printers.begin(), m_printers.end());
+        it = this->find_printer_internal(edited_printer.name);
     }
     else {
         // Creating a new printer.
-        it = m_printers.insert(it, edited_printer);
+        it = m_printers.emplace(it, edited_printer);
     }
     assert(it != m_printers.end());
 
@@ -1806,7 +1866,7 @@ void PhysicalPrinterCollection::unselect_printer()
 
 bool PhysicalPrinterCollection::is_selected(PhysicalPrinterCollection::ConstIterator it, const std::string& preset_name) const
 {
-    return  m_idx_selected      == it - m_printers.begin() && 
+    return  m_idx_selected      == size_t(it - m_printers.begin()) && 
             m_selected_preset   == preset_name;
 }
 

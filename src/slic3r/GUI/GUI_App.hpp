@@ -106,9 +106,10 @@ private:
 #endif // ENABLE_GCODE_VIEWER
 
     bool            m_initialized { false };
-    bool            app_conf_exists{ false };
+    bool            m_app_conf_exists{ false };
 #if ENABLE_GCODE_VIEWER
     EAppMode        m_app_mode{ EAppMode::Editor };
+    bool            m_is_recreating_gui{ false };
 #endif // ENABLE_GCODE_VIEWER
 
     wxColour        m_color_label_modified;
@@ -118,8 +119,9 @@ private:
     wxFont		    m_small_font;
     wxFont		    m_bold_font;
 	wxFont			m_normal_font;
+	wxFont			m_code_font;
 
-    int          m_em_unit; // width of a "m"-symbol in pixels for current system font
+    int             m_em_unit; // width of a "m"-symbol in pixels for current system font
                                // Note: for 100% Scale m_em_unit = 10 -> it's a good enough coefficient for a size setting of controls
 
     std::unique_ptr<wxLocale> 	  m_wxLocale;
@@ -140,6 +142,37 @@ private:
     std::string m_instance_hash_string;
 	size_t m_instance_hash_int;
 
+    // parameters needed for the after OnInit() loads
+    struct AfterInitLoads 
+    {
+        std::vector<std::string>    m_load_configs;
+        DynamicPrintConfig          m_extra_config;
+        std::vector<std::string>    m_input_files;
+#if ENABLE_GCODE_VIEWER
+        bool                        m_start_as_gcodeviewer;
+#endif // ENABLE_GCODE_VIEWER
+
+        void set_params(
+            const std::vector<std::string>& load_configs,
+            const DynamicPrintConfig&       extra_config,
+#if ENABLE_GCODE_VIEWER
+            const std::vector<std::string>& input_files,
+            bool                            start_as_gcodeviewer
+#else
+            const std::vector<std::string>& input_files
+#endif // ENABLE_GCODE_VIEWER
+        ) {
+            m_load_configs = load_configs;
+            m_extra_config = extra_config;
+            m_input_files = input_files;
+#if ENABLE_GCODE_VIEWER
+            m_start_as_gcodeviewer = start_as_gcodeviewer;
+#endif // ENABLE_GCODE_VIEWER
+        }
+
+        void on_loads(GUI_App* gui);
+    };
+
 public:
     bool            OnInit() override;
     bool            initialized() const { return m_initialized; }
@@ -155,6 +188,7 @@ public:
     EAppMode get_app_mode() const { return m_app_mode; }
     bool is_editor() const { return m_app_mode == EAppMode::Editor; }
     bool is_gcode_viewer() const { return m_app_mode == EAppMode::GCodeViewer; }
+    bool is_recreating_gui() const { return m_is_recreating_gui; }
 #endif // ENABLE_GCODE_VIEWER
 
     static std::string get_gl_info(bool format_as_html, bool extensions);
@@ -177,6 +211,7 @@ public:
     const wxFont&   small_font()            { return m_small_font; }
     const wxFont&   bold_font()             { return m_bold_font; }
     const wxFont&   normal_font()           { return m_normal_font; }
+    const wxFont&   code_font()             { return m_code_font; }
     int             em_unit() const         { return m_em_unit; }
     wxSize          get_min_size() const;
     float           toolbar_icon_scale(const bool is_limited = false) const;
@@ -195,7 +230,7 @@ public:
     static bool     catch_error(std::function<void()> cb, const std::string& err);
 
     void            persist_window_geometry(wxTopLevelWindow *window, bool default_maximized = false);
-    void            update_ui_from_settings();
+    void            update_ui_from_settings(bool apply_free_camera_correction = true);
 
     bool            switch_language();
     bool            load_language(wxString language, bool initial);
@@ -218,6 +253,7 @@ public:
     virtual bool OnExceptionInMainLoop() override;
 
 #ifdef __APPLE__
+    void            OSXStoreOpenFiles(const wxArrayString &files) override;
     // wxWidgets override to get an event on open files.
     void            MacOpenFiles(const wxArrayString &fileNames) override;
 #endif /* __APPLE */
@@ -236,6 +272,7 @@ public:
     PresetUpdater*  preset_updater{ nullptr };
     MainFrame*      mainframe{ nullptr };
     Plater*         plater_{ nullptr };
+    AfterInitLoads  after_init_loads;
 
 	PresetUpdater* get_preset_updater() { return preset_updater; }
 
@@ -285,6 +322,7 @@ private:
 
 #ifdef __WXMSW__
     void            associate_3mf_files();
+    void            associate_gcode_files();
 #endif // __WXMSW__
 };
 DECLARE_APP(GUI_App)

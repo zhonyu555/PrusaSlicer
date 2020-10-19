@@ -13,6 +13,7 @@
 #include "Camera.hpp"
 #include "I18N.hpp"
 #include "GUI_Utils.hpp"
+#include "GUI.hpp"
 #include "DoubleSlider.hpp"
 #include "GLCanvas3D.hpp"
 #include "GLToolbar.hpp"
@@ -22,6 +23,8 @@
 #include <GL/glew.h>
 #include <boost/log/trivial.hpp>
 #include <boost/nowide/cstdio.hpp>
+#include <wx/progdlg.h>
+#include <wx/numformatter.h>
 
 #include <array>
 #include <algorithm>
@@ -285,54 +288,10 @@ const std::vector<GCodeViewer::Color> GCodeViewer::Range_Colors {{
     { 0.581f, 0.149f, 0.087f }  // reddish
 }};
 
-bool GCodeViewer::init()
-{
-    for (size_t i = 0; i < m_buffers.size(); ++i) {
-        TBuffer& buffer = m_buffers[i];
-        switch (buffer_type(i))
-        {
-        default: { break; }
-        case EMoveType::Tool_change:
-        case EMoveType::Color_change:
-        case EMoveType::Pause_Print:
-        case EMoveType::Custom_GCode:
-        case EMoveType::Retract:
-        case EMoveType::Unretract:
-        {
-            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Point;
-            buffer.vertices.format = VBuffer::EFormat::Position;
-            buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
-            break;
-        }
-        case EMoveType::Extrude:
-        {
-            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Triangle;
-            buffer.vertices.format = VBuffer::EFormat::PositionNormal3;
-            buffer.shader = "gouraud_light";
-            break;
-        }
-        case EMoveType::Travel:
-        {
-            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Line;
-            buffer.vertices.format = VBuffer::EFormat::PositionNormal1;
-            buffer.shader = "toolpaths_lines";
-            break;
-        }
-        }
-    }
-
-    set_toolpath_move_type_visible(EMoveType::Extrude, true);
-    m_sequential_view.marker.init();
-
-    std::array<int, 2> point_sizes;
-    ::glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_sizes.data());
-    m_detected_point_sizes = { static_cast<float>(point_sizes[0]), static_cast<float>(point_sizes[1]) };
-
-    return true;
-}
-
 void GCodeViewer::load(const GCodeProcessor::Result& gcode_result, const Print& print, bool initialized)
 {
+    init();
+
     // avoid processing if called with the same gcode_result
     if (m_last_result_id == gcode_result.id)
         return;
@@ -475,9 +434,25 @@ void GCodeViewer::reset()
 
 void GCodeViewer::render() const
 {
+    auto init_gl_data = [this]() {
+        static bool first_run = true;
+        if (first_run) {
+            m_sequential_view.marker.init();
+
+            std::array<int, 2> point_sizes;
+            ::glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_sizes.data());
+            m_detected_point_sizes = { static_cast<float>(point_sizes[0]), static_cast<float>(point_sizes[1]) };
+            first_run = false;
+        }
+    };
+
 #if ENABLE_GCODE_VIEWER_STATISTICS
     m_statistics.reset_opengl();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
+
+    // OpenGL data must be initialized after the glContext has been created.
+    // This is ensured when this method is called by GLCanvas3D::_render_gcode().
+    init_gl_data();
 
     if (m_roles.empty())
         return;
@@ -491,6 +466,52 @@ void GCodeViewer::render() const
 #if ENABLE_GCODE_VIEWER_STATISTICS
     render_statistics();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
+}
+
+void GCodeViewer::update_sequential_view_current(unsigned int first, unsigned int last)
+{
+    auto is_visible = [this](unsigned int id) {
+        for (const TBuffer& buffer : m_buffers) {
+            if (buffer.visible) {
+                for (const Path& path : buffer.paths) {
+                    if (path.first.s_id <= id && id <= path.last.s_id)
+                        return true;
+                }
+            }
+        }
+        return false;
+    };
+
+    int first_diff = static_cast<int>(first) - static_cast<int>(m_sequential_view.last_current.first);
+    int last_diff = static_cast<int>(last) - static_cast<int>(m_sequential_view.last_current.last);
+
+    unsigned int new_first = first;
+    unsigned int new_last = last;
+
+    if (m_sequential_view.skip_invisible_moves) {
+        while (!is_visible(new_first)) {
+            if (first_diff > 0)
+                ++new_first;
+            else
+                --new_first;
+        }
+
+        while (!is_visible(new_last)) {
+            if (last_diff > 0)
+                ++new_last;
+            else
+                --new_last;
+        }
+    }
+
+    m_sequential_view.current.first = new_first;
+    m_sequential_view.current.last = new_last;
+    m_sequential_view.last_current = m_sequential_view.current;
+
+    refresh_render_paths(true, true);
+
+    if (new_first != first || new_last != last)
+        wxGetApp().plater()->update_preview_moves_slider();
 }
 
 bool GCodeViewer::is_toolpath_move_type_visible(EMoveType type) const
@@ -848,6 +869,51 @@ void GCodeViewer::export_toolpaths_to_obj(const char* filename) const
     fclose(fp);
 }
 
+void GCodeViewer::init()
+{
+    if (m_initialized)
+        return;
+
+    for (size_t i = 0; i < m_buffers.size(); ++i) {
+        TBuffer& buffer = m_buffers[i];
+        switch (buffer_type(i))
+        {
+        default: { break; }
+        case EMoveType::Tool_change:
+        case EMoveType::Color_change:
+        case EMoveType::Pause_Print:
+        case EMoveType::Custom_GCode:
+        case EMoveType::Retract:
+        case EMoveType::Unretract:
+        {
+            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Point;
+            buffer.vertices.format = VBuffer::EFormat::Position;
+            buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
+            break;
+        }
+        case EMoveType::Extrude:
+        {
+            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Triangle;
+            buffer.vertices.format = VBuffer::EFormat::PositionNormal3;
+            buffer.shader = "gouraud_light";
+            break;
+        }
+        case EMoveType::Travel:
+        {
+            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Line;
+            buffer.vertices.format = VBuffer::EFormat::PositionNormal1;
+            buffer.shader = "toolpaths_lines";
+            break;
+        }
+        }
+    }
+
+    set_toolpath_move_type_visible(EMoveType::Extrude, true);
+//    m_sequential_view.skip_invisible_moves = true;
+
+    m_initialized = true;
+}
+
 void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
 {
 #if ENABLE_GCODE_VIEWER_STATISTICS
@@ -861,6 +927,12 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
     if (m_moves_count == 0)
         return;
 
+    unsigned int progress_count = 0;
+    static const unsigned int progress_threshold = 1000;
+    wxProgressDialog* progress_dialog = wxGetApp().is_gcode_viewer() ?
+        new wxProgressDialog(_L("Generating toolpaths"), "...",
+            100, wxGetApp().plater(), wxPD_AUTO_HIDE | wxPD_APP_MODAL) : nullptr;
+
     for (size_t i = 0; i < m_moves_count; ++i) {
         const GCodeProcessor::MoveVertex& move = gcode_result.moves[i];
         if (wxGetApp().is_gcode_viewer())
@@ -871,9 +943,6 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
                 m_paths_bounding_box.merge(move.position.cast<double>());
         }
     }
-
-    // add origin
-    m_paths_bounding_box.merge(Vec3d::Zero());
 
     // max bounding box (account for tool marker)
     m_max_bounding_box = m_paths_bounding_box;
@@ -1230,6 +1299,8 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
             prev_length = length;
     };
 
+    wxBusyCursor busy;
+
     // to reduce the peak in memory usage, we split the generation of the vertex and index buffers in two steps.
     // the data are deleted as soon as they are sent to the gpu.
     std::vector<std::vector<float>> vertices(m_buffers.size());
@@ -1240,6 +1311,14 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
         // skip first vertex
         if (i == 0)
             continue;
+
+        ++progress_count;
+        if (progress_dialog != nullptr && progress_count % progress_threshold == 0) {
+            progress_dialog->Update(int(100.0f * float(i) / (2.0f * float(m_moves_count))),
+                _L("Generating vertex buffer") + ": " + wxNumberFormatter::ToString(100.0 * double(i) / double(m_moves_count), 0, wxNumberFormatter::Style_None) + "%");
+            progress_dialog->Fit();
+            progress_count = 0;
+        }
 
         const GCodeProcessor::MoveVertex& prev = gcode_result.moves[i - 1];
         const GCodeProcessor::MoveVertex& curr = gcode_result.moves[i];
@@ -1306,6 +1385,14 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
         // skip first vertex
         if (i == 0)
             continue;
+
+        ++progress_count;
+        if (progress_dialog != nullptr && progress_count % progress_threshold == 0) {
+            progress_dialog->Update(int(100.0f * float(m_moves_count + i) / (2.0f * float(m_moves_count))),
+                _L("Generating index buffers") + ": " + wxNumberFormatter::ToString(100.0 * double(i) / double(m_moves_count), 0, wxNumberFormatter::Style_None) + "%");
+            progress_dialog->Fit();
+            progress_count = 0;
+        }
 
         const GCodeProcessor::MoveVertex& prev = gcode_result.moves[i - 1];
         const GCodeProcessor::MoveVertex& curr = gcode_result.moves[i];
@@ -1451,6 +1538,9 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
 #if ENABLE_GCODE_VIEWER_STATISTICS
     m_statistics.load_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
+
+    if (progress_dialog != nullptr)
+        progress_dialog->Destroy();
 }
 
 void GCodeViewer::load_shells(const Print& print, bool initialized)
@@ -1540,16 +1630,46 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
                 Travel_Colors[0] /* Move */);
     };
 
+    auto is_in_z_range = [](const Path& path, double min_z, double max_z) {
+        auto in_z_range = [min_z, max_z](double z) {
+            return z > min_z - EPSILON && z < max_z + EPSILON;
+        };
+
+        return in_z_range(path.first.position[2]) || in_z_range(path.last.position[2]);
+    };
+
+    auto is_travel_in_z_range = [this, is_in_z_range](size_t path_id, double min_z, double max_z) {
+        const TBuffer& buffer = m_buffers[buffer_id(EMoveType::Travel)];
+        if (path_id >= buffer.paths.size())
+            return false;
+
+        Path path = buffer.paths[path_id];
+        int first = static_cast<int>(path_id);
+        unsigned int last = static_cast<unsigned int>(path_id);
+
+        // check adjacent paths
+        while (first > 0 && path.first.position.isApprox(buffer.paths[first - 1].last.position)) {
+            --first;
+            path.first = buffer.paths[first].first;
+        }
+        while (last < static_cast<unsigned int>(buffer.paths.size() - 1) && path.last.position.isApprox(buffer.paths[last + 1].first.position)) {
+            ++last;
+            path.last = buffer.paths[last].last;
+        }
+
+        return is_in_z_range(path, min_z, max_z);
+    };
+
 #if ENABLE_GCODE_VIEWER_STATISTICS
     m_statistics.render_paths_size = 0;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
 
-    m_sequential_view.endpoints.first = m_moves_count;
-    m_sequential_view.endpoints.last = 0;
-    if (!keep_sequential_current_first)
-        m_sequential_view.current.first = 0;
-    if (!keep_sequential_current_last)
-        m_sequential_view.current.last = m_moves_count;
+    bool top_layer_only = get_app_config()->get("seq_top_layer_only") == "1";
+
+    SequentialView::Endpoints global_endpoints = { m_moves_count , 0 };
+    SequentialView::Endpoints top_layer_endpoints = global_endpoints;
+    if (top_layer_only || !keep_sequential_current_first) m_sequential_view.current.first = 0;
+    if (!keep_sequential_current_last) m_sequential_view.current.last = m_moves_count;
 
     // first pass: collect visible paths and update sequential view data
     std::vector<std::tuple<TBuffer*, unsigned int, unsigned int>> paths;
@@ -1563,10 +1683,10 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         for (size_t i = 0; i < buffer.paths.size(); ++i) {
             const Path& path = buffer.paths[i];
             if (path.type == EMoveType::Travel) {
-                if (!is_travel_in_z_range(i))
+                if (!is_travel_in_z_range(i, m_layers_z_range[0], m_layers_z_range[1]))
                     continue;
             }
-            else if (!is_in_z_range(path))
+            else if (!is_in_z_range(path, m_layers_z_range[0], m_layers_z_range[1]))
                 continue;
 
             if (path.type == EMoveType::Extrude && !is_visible(path))
@@ -1575,14 +1695,27 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
             // store valid path
             paths.push_back({ &buffer, path.first.b_id, static_cast<unsigned int>(i) });
 
-            m_sequential_view.endpoints.first = std::min(m_sequential_view.endpoints.first, path.first.s_id);
-            m_sequential_view.endpoints.last = std::max(m_sequential_view.endpoints.last, path.last.s_id);
+            global_endpoints.first = std::min(global_endpoints.first, path.first.s_id);
+            global_endpoints.last = std::max(global_endpoints.last, path.last.s_id);
+
+            if (top_layer_only) {
+                if (path.type == EMoveType::Travel) {
+                    if (is_travel_in_z_range(i, m_layers_z_range[1], m_layers_z_range[1])) {
+                        top_layer_endpoints.first = std::min(top_layer_endpoints.first, path.first.s_id);
+                        top_layer_endpoints.last = std::max(top_layer_endpoints.last, path.last.s_id);
+                    }
+                }
+                else if (is_in_z_range(path, m_layers_z_range[1], m_layers_z_range[1])) {
+                    top_layer_endpoints.first = std::min(top_layer_endpoints.first, path.first.s_id);
+                    top_layer_endpoints.last = std::max(top_layer_endpoints.last, path.last.s_id);
+                }
+            }
         }
     }
 
     // update current sequential position
-    m_sequential_view.current.first = keep_sequential_current_first ? std::clamp(m_sequential_view.current.first, m_sequential_view.endpoints.first, m_sequential_view.endpoints.last) : m_sequential_view.endpoints.first;
-    m_sequential_view.current.last = keep_sequential_current_last ? std::clamp(m_sequential_view.current.last, m_sequential_view.endpoints.first, m_sequential_view.endpoints.last) : m_sequential_view.endpoints.last;
+    m_sequential_view.current.first = !top_layer_only && keep_sequential_current_first ? std::clamp(m_sequential_view.current.first, global_endpoints.first, global_endpoints.last) : global_endpoints.first;
+    m_sequential_view.current.last = keep_sequential_current_last ? std::clamp(m_sequential_view.current.last, global_endpoints.first, global_endpoints.last) : global_endpoints.last;
 
     // get the world position from gpu
     bool found = false;
@@ -1628,8 +1761,22 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         Color color;
         switch (path.type)
         {
-        case EMoveType::Extrude: { color = extrusion_color(path); break; }
-        case EMoveType::Travel: { color = (m_view_type == EViewType::Feedrate || m_view_type == EViewType::Tool || m_view_type == EViewType::ColorPrint) ? extrusion_color(path) : travel_color(path); break; }
+        case EMoveType::Extrude: {
+            if (!top_layer_only || m_sequential_view.current.last == global_endpoints.last || is_in_z_range(path, m_layers_z_range[1], m_layers_z_range[1]))
+                color = extrusion_color(path);
+            else
+                color = { 0.25f, 0.25f, 0.25f };
+
+            break;
+        }
+        case EMoveType::Travel: {
+            if (!top_layer_only || m_sequential_view.current.last == global_endpoints.last || is_travel_in_z_range(path_id, m_layers_z_range[1], m_layers_z_range[1]))
+                color = (m_view_type == EViewType::Feedrate || m_view_type == EViewType::Tool || m_view_type == EViewType::ColorPrint) ? extrusion_color(path) : travel_color(path);
+            else
+                color = { 0.25f, 0.25f, 0.25f };
+
+            break;
+        }
         default: { color = { 0.0f, 0.0f, 0.0f }; break; }
         }
 
@@ -1662,6 +1809,12 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
 
         it->offsets.push_back(static_cast<size_t>((path.first.i_id + delta_1st) * sizeof(unsigned int)));
     }
+
+    // set sequential data to their final value
+    m_sequential_view.endpoints = top_layer_only ? top_layer_endpoints : global_endpoints;
+    m_sequential_view.current.first = !top_layer_only && keep_sequential_current_first ? std::clamp(m_sequential_view.current.first, m_sequential_view.endpoints.first, m_sequential_view.endpoints.last) : m_sequential_view.endpoints.first;
+
+    wxGetApp().plater()->enable_preview_moves_slider(!paths.empty());
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
     for (const TBuffer& buffer : m_buffers) {
@@ -2112,10 +2265,10 @@ void GCodeViewer::render_legend() const
         }
         break;
     }
-    case EViewType::Height: { append_range(m_extrusions.ranges.height, 3); break; }
-    case EViewType::Width: { append_range(m_extrusions.ranges.width, 3); break; }
-    case EViewType::Feedrate: { append_range(m_extrusions.ranges.feedrate, 1); break; }
-    case EViewType::FanSpeed: { append_range(m_extrusions.ranges.fan_speed, 0); break; }
+    case EViewType::Height:         { append_range(m_extrusions.ranges.height, 3); break; }
+    case EViewType::Width:          { append_range(m_extrusions.ranges.width, 3); break; }
+    case EViewType::Feedrate:       { append_range(m_extrusions.ranges.feedrate, 1); break; }
+    case EViewType::FanSpeed:       { append_range(m_extrusions.ranges.fan_speed, 0); break; }
     case EViewType::VolumetricRate: { append_range(m_extrusions.ranges.volumetric_rate, 3); break; }
     case EViewType::Tool:
     {
@@ -2373,7 +2526,7 @@ void GCodeViewer::render_legend() const
 
         // items
         add_option(EMoveType::Retract, EOptionsColors::Retractions, _u8L("Retractions"));
-        add_option(EMoveType::Unretract, EOptionsColors::Unretractions, _u8L("Unretractions"));
+        add_option(EMoveType::Unretract, EOptionsColors::Unretractions, _u8L("Deretractions"));
         add_option(EMoveType::Tool_change, EOptionsColors::ToolChanges, _u8L("Tool changes"));
         add_option(EMoveType::Color_change, EOptionsColors::ColorChanges, _u8L("Color changes"));
         add_option(EMoveType::Pause_Print, EOptionsColors::PausePrints, _u8L("Pause prints"));
@@ -2537,29 +2690,6 @@ void GCodeViewer::render_statistics() const
     imgui.end();
 }
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-
-bool GCodeViewer::is_travel_in_z_range(size_t id) const
-{
-    const TBuffer& buffer = m_buffers[buffer_id(EMoveType::Travel)];
-    if (id >= buffer.paths.size())
-        return false;
-
-    Path path = buffer.paths[id];
-    int first = static_cast<int>(id);
-    unsigned int last = static_cast<unsigned int>(id);
-
-    // check adjacent paths
-    while (first > 0 && path.first.position.isApprox(buffer.paths[first - 1].last.position)) {
-        --first;
-        path.first = buffer.paths[first].first;
-    }
-    while (last < static_cast<unsigned int>(buffer.paths.size() - 1) && path.last.position.isApprox(buffer.paths[last + 1].first.position)) {
-        ++last;
-        path.last = buffer.paths[last].last;
-    }
-
-    return is_in_z_range(path);
-}
 
 void GCodeViewer::log_memory_used(const std::string& label, long long additional) const
 {

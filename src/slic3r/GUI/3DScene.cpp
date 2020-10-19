@@ -306,6 +306,7 @@ const float GLVolume::MODEL_COLOR[4][4] = {
 };
 const float GLVolume::SLA_SUPPORT_COLOR[4] = { 0.75f, 0.75f, 0.75f, 1.0f };
 const float GLVolume::SLA_PAD_COLOR[4] = { 0.0f, 0.2f, 0.0f, 1.0f };
+const float GLVolume::NEUTRAL_COLOR[4] = { 0.9f, 0.9f, 0.9f, 1.0f };
 
 GLVolume::GLVolume(float r, float g, float b, float a)
     : m_transformed_bounding_box_dirty(true)
@@ -327,6 +328,7 @@ GLVolume::GLVolume(float r, float g, float b, float a)
     , is_extrusion_path(false)
     , force_transparent(false)
     , force_native_color(false)
+    , force_neutral_color(false)
     , tverts_range(0, size_t(-1))
     , qverts_range(0, size_t(-1))
 {
@@ -352,12 +354,16 @@ void GLVolume::set_render_color(const float* rgba, unsigned int size)
 
 void GLVolume::set_render_color()
 {
-    if (force_native_color)
+    if (force_native_color || force_neutral_color)
     {
         if (is_outside && shader_outside_printer_detection_enabled)
             set_render_color(OUTSIDE_COLOR, 4);
-        else
-            set_render_color(color, 4);
+        else {
+            if (force_native_color)
+                set_render_color(color, 4);
+            else
+                set_render_color(NEUTRAL_COLOR, 4);
+        }
     }
     else {
         if (hover == HS_Select)
@@ -499,24 +505,6 @@ void GLVolume::render() const
     if (this->is_left_handed())
         glFrontFace(GL_CCW);
 }
-
-#if !ENABLE_SLOPE_RENDERING
-void GLVolume::render(int color_id, int detection_id, int worldmatrix_id) const
-{
-    if (color_id >= 0)
-        glsafe(::glUniform4fv(color_id, 1, (const GLfloat*)render_color));
-    else
-        glsafe(::glColor4fv(render_color));
-
-    if (detection_id != -1)
-        glsafe(::glUniform1i(detection_id, shader_outside_printer_detection_enabled ? 1 : 0));
-
-    if (worldmatrix_id != -1)
-        glsafe(::glUniformMatrix4fv(worldmatrix_id, 1, GL_FALSE, (const GLfloat*)world_matrix().cast<float>().data()));
-
-    render();
-}
-#endif // !ENABLE_SLOPE_RENDERING
 
 bool GLVolume::is_sla_support() const { return this->composite_id.volume_id == -int(slaposSupportTree); }
 bool GLVolume::is_sla_pad() const { return this->composite_id.volume_id == -int(slaposPad); }
@@ -769,9 +757,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     shader->set_uniform("print_box.max", m_print_box_max, 3);
     shader->set_uniform("z_range", m_z_range, 2);
     shader->set_uniform("clipping_plane", m_clipping_plane, 4);
-#if ENABLE_SLOPE_RENDERING
-    shader->set_uniform("slope.z_range", m_slope.z_range);
-#endif // ENABLE_SLOPE_RENDERING
+    shader->set_uniform("slope.normal_z", m_slope.normal_z);
 
 #if ENABLE_ENVIRONMENT_MAP
     unsigned int environment_texture_id = GUI::wxGetApp().plater()->get_environment_texture_id();
@@ -785,7 +771,6 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     GLVolumeWithIdAndZList to_render = volumes_to_render(this->volumes, type, view_matrix, filter_func);
     for (GLVolumeWithIdAndZ& volume : to_render) {
         volume.first->set_render_color();
-#if ENABLE_SLOPE_RENDERING
         shader->set_uniform("uniform_color", volume.first->render_color, 4);
         shader->set_uniform("print_box.actived", volume.first->shader_outside_printer_detection_enabled);
         shader->set_uniform("print_box.volume_world_matrix", volume.first->world_matrix());
@@ -793,9 +778,6 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
         shader->set_uniform("slope.volume_world_normal_matrix", static_cast<Matrix3f>(volume.first->world_matrix().matrix().block(0, 0, 3, 3).inverse().transpose().cast<float>()));
 
         volume.first->render();
-#else
-        volume.first->render(color_id, print_box_detection_id, print_box_worldmatrix_id);
-#endif // ENABLE_SLOPE_RENDERING
     }
 
 #if ENABLE_ENVIRONMENT_MAP
@@ -2014,12 +1996,8 @@ void GLModel::render() const
     glsafe(::glEnableClientState(GL_VERTEX_ARRAY));
     glsafe(::glEnableClientState(GL_NORMAL_ARRAY));
 
-#if ENABLE_SLOPE_RENDERING
     shader->set_uniform("uniform_color", m_volume.render_color, 4);
     m_volume.render();
-#else
-    m_volume.render(color_id, -1, -1);
-#endif // ENABLE_SLOPE_RENDERING
 
     glsafe(::glBindBuffer(GL_ARRAY_BUFFER, 0));
     glsafe(::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));

@@ -39,11 +39,8 @@
 //===================
 #define ENABLE_2_3_0_ALPHA1 1
 
-// Enable rendering of objects colored by facets' slope
-#define ENABLE_SLOPE_RENDERING (1 && ENABLE_2_3_0_ALPHA1)
-
 // Enable rendering of objects using environment map
-#define ENABLE_ENVIRONMENT_MAP (1 && ENABLE_2_3_0_ALPHA1)
+#define ENABLE_ENVIRONMENT_MAP (0 && ENABLE_2_3_0_ALPHA1)
 
 // Enable smoothing of objects normals
 #define ENABLE_SMOOTH_NORMALS (0 && ENABLE_2_3_0_ALPHA1)
@@ -58,6 +55,13 @@
 #define ENABLE_GCODE_VIEWER (1 && ENABLE_2_3_0_ALPHA1)
 #define ENABLE_GCODE_VIEWER_STATISTICS (0 && ENABLE_GCODE_VIEWER)
 #define ENABLE_GCODE_VIEWER_DATA_CHECKING (0 && ENABLE_GCODE_VIEWER)
-#define ENABLE_GCODE_VIEWER_TASKBAR_ICON (0 && ENABLE_GCODE_VIEWER)
+
+
+//===================
+// 2.3.0.alpha2 techs
+//===================
+#define ENABLE_2_3_0_ALPHA2 1
+
+#define ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS (1 && ENABLE_2_3_0_ALPHA2)
 
 #endif // _prusaslicer_technologies_h_

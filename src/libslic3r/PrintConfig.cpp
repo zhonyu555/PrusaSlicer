@@ -39,11 +39,6 @@ void PrintConfigDef::init_common_params()
 {
     ConfigOptionDef* def;
 
-	def = this->add("single_instance", coBool);
-	def->label = L("Single Instance");
-	def->mode = comAdvanced;
-	def->set_default_value(new ConfigOptionBool(false));
-
     def = this->add("printer_technology", coEnum);
     def->label = L("Printer technology");
     def->tooltip = L("Printer technology");
@@ -457,20 +452,20 @@ void PrintConfigDef::init_fff_params()
     def->cli = "top-fill-pattern|external-fill-pattern|solid-fill-pattern";
     def->enum_keys_map = &ConfigOptionEnum<InfillPattern>::get_enum_values();
     def->enum_values.push_back("rectilinear");
-    def->enum_values.push_back("monotonous");
+    def->enum_values.push_back("monotonic");
     def->enum_values.push_back("concentric");
     def->enum_values.push_back("hilbertcurve");
     def->enum_values.push_back("archimedeanchords");
     def->enum_values.push_back("octagramspiral");
     def->enum_labels.push_back(L("Rectilinear"));
-    def->enum_labels.push_back(L("Monotonous"));
+    def->enum_labels.push_back(L("Monotonic"));
     def->enum_labels.push_back(L("Concentric"));
     def->enum_labels.push_back(L("Hilbert Curve"));
     def->enum_labels.push_back(L("Archimedean Chords"));
     def->enum_labels.push_back(L("Octagram Spiral"));
     // solid_fill_pattern is an obsolete equivalent to top_fill_pattern/bottom_fill_pattern.
     def->aliases = { "solid_fill_pattern", "external_fill_pattern" };
-    def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonous));
+    def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("bottom_fill_pattern", coEnum);
     def->label = L("Bottom fill pattern");
@@ -1200,6 +1195,21 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("The firmware supports stealth mode");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("machine_limits_usage", coEnum);
+    def->label = L("How to apply");
+    def->full_label = L("Purpose of Machine Limits");
+    def->category = L("Machine limits");
+    def->tooltip = L("How to apply the Machine Limits");
+    def->enum_keys_map = &ConfigOptionEnum<MachineLimitsUsage>::get_enum_values();
+    def->enum_values.push_back("emit_to_gcode");
+    def->enum_values.push_back("time_estimate_only");
+    def->enum_values.push_back("ignore");
+    def->enum_labels.push_back("Emit to G-code");
+    def->enum_labels.push_back("Use for time estimate");
+    def->enum_labels.push_back("Ignore");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<MachineLimitsUsage>(MachineLimitsUsage::EmitToGCode));
 
     {
         struct AxisDefault {
@@ -3168,6 +3178,10 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
 #endif /* HAS_PRESSURE_EQUALIZER */
     };
 
+    // In PrusaSlicer 2.3.0-alpha0 the "monotonous" infill was introduced, which was later renamed to "monotonic".
+    if (value == "monotonous" && (opt_key == "top_fill_pattern" || opt_key == "bottom_fill_pattern" || opt_key == "fill_pattern"))
+        value = "monotonic";
+
     if (ignore.find(opt_key) != ignore.end()) {
         opt_key = "";
         return;
@@ -3233,7 +3247,7 @@ PrinterTechnology printer_technology(const ConfigBase &cfg)
     return ptUnknown;
 }
 
-void DynamicPrintConfig::normalize()
+void DynamicPrintConfig::normalize_fdm()
 {
     if (this->has("extruder")) {
         int extruder = this->option("extruder")->getInt();
@@ -3679,6 +3693,12 @@ CLIMiscConfigDef::CLIMiscConfigDef()
     def->tooltip = L("The file where the output will be written (if not specified, it will be based on the input file).");
     def->cli = "output|o";
 
+    def = this->add("single_instance", coBool);
+    def->label = L("Single Instance");
+    def->tooltip = L("If enabled, the command line arguments are sent to an existing instance of GUI PrusaSlicer, "
+                     "or an existing PrusaSlicer window is activated. "
+                     "Overrides the \"single_instance\" configuration value from application preferences.");
+
 /*
     def = this->add("autosave", coString);
     def->label = L("Autosave");
@@ -3717,6 +3737,8 @@ void DynamicPrintAndCLIConfig::handle_legacy(t_config_option_key &opt_key, std::
         PrintConfigDef::handle_legacy(opt_key, value);
     }
 }
+
+uint64_t ModelConfig::s_last_timestamp = 1;
 
 static Points to_points(const std::vector<Vec2d> &dpts)
 {

@@ -18,6 +18,8 @@
 #include <wx/debug.h>
 #include <wx/settings.h>
 
+#include <chrono>
+
 #include "Event.hpp"
 
 class wxCheckBox;
@@ -53,8 +55,9 @@ void on_window_geometry(wxTopLevelWindow *tlw, std::function<void()> callback);
 
 enum { DPI_DEFAULT = 96 };
 
-int get_dpi_for_window(wxWindow *window);
-wxFont get_default_font_for_dpi(int dpi);
+int get_dpi_for_window(const wxWindow *window);
+wxFont get_default_font_for_dpi(const wxWindow* window, int dpi);
+inline wxFont get_default_font(const wxWindow* window) { return get_default_font_for_dpi(window, get_dpi_for_window(window)); }
 
 #if !wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
 struct DpiChangedEvent : public wxEvent {
@@ -84,7 +87,7 @@ public:
         int dpi = get_dpi_for_window(this);
         m_scale_factor = (float)dpi / (float)DPI_DEFAULT;
         m_prev_scale_factor = m_scale_factor;
-		m_normal_font = get_default_font_for_dpi(dpi);
+		m_normal_font = get_default_font_for_dpi(this, dpi);
 
         /* Because of default window font is a primary display font, 
          * We should set correct font for window before getting em_unit value.
@@ -106,21 +109,16 @@ public:
 
 #if wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
         this->Bind(wxEVT_DPI_CHANGED, [this](wxDPIChangedEvent& evt) {
-            m_scale_factor = (float)evt.GetNewDPI().x / (float)DPI_DEFAULT;
-
-            m_new_font_point_size = get_default_font_for_dpi(evt.GetNewDPI().x).GetPointSize();
-
-            if (!m_can_rescale)
-                return;
-
-            if (m_force_rescale || is_new_scale_factor())
-                rescale(wxRect());
+	            m_scale_factor = (float)evt.GetNewDPI().x / (float)DPI_DEFAULT;
+	            m_new_font_point_size = get_default_font_for_dpi(this, evt.GetNewDPI().x).GetPointSize();
+	            if (m_can_rescale && (m_force_rescale || is_new_scale_factor()))
+	                rescale(wxRect());
             });
 #else
         this->Bind(EVT_DPI_CHANGED_SLICER, [this](const DpiChangedEvent& evt) {
             m_scale_factor = (float)evt.dpi / (float)DPI_DEFAULT;
 
-            m_new_font_point_size = get_default_font_for_dpi(evt.dpi).GetPointSize();
+            m_new_font_point_size = get_default_font_for_dpi(this, evt.dpi).GetPointSize();
 
             if (!m_can_rescale)
                 return;
@@ -395,6 +393,16 @@ inline int hex_digit_to_int(const char c)
         (c >= 'a' && c <= 'f') ? int(c - 'a') + 10 : -1;
 }
 #endif // ENABLE_GCODE_VIEWER
+
+class TaskTimer
+{
+    std::chrono::milliseconds   start_timer;
+    std::string                 task_name;
+public:
+    TaskTimer(std::string task_name);
+
+    ~TaskTimer();
+};
 
 }}
 

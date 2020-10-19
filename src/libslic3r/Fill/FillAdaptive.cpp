@@ -13,6 +13,7 @@
 
 #include <cstdlib>
 #include <cmath>
+#include <algorithm>
 
 // Boost pool: Don't use mutexes to synchronize memory allocation.
 #define BOOST_POOL_NO_MT
@@ -220,7 +221,7 @@ static const std::array<Vec3d, 8> child_centers {
 };
 
 // Traversal order of octree children cells for three infill directions,
-// so that a single line will be discretized in a strictly monotonous order.
+// so that a single line will be discretized in a strictly monotonic order.
 static constexpr std::array<std::array<int, 8>, 3> child_traversal_order {
     std::array<int, 8>{ 2, 3, 0, 1, 6, 7, 4, 5 },
     std::array<int, 8>{ 4, 0, 6, 2, 5, 1, 7, 3 },
@@ -284,7 +285,10 @@ std::pair<double, double> adaptive_fill_line_spacing(const PrintObject &print_ob
     };
     std::vector<RegionFillData> region_fill_data;
     region_fill_data.reserve(print_object.print()->regions().size());
-    bool                        build_octree = false;
+    bool                       build_octree                   = false;
+    const std::vector<double> &nozzle_diameters               = print_object.print()->config().nozzle_diameter.values;
+    double                     max_nozzle_diameter            = *std::max_element(nozzle_diameters.begin(), nozzle_diameters.end());
+    double                     default_infill_extrusion_width = Flow::auto_extrusion_width(FlowRole::frInfill, max_nozzle_diameter);
     for (const PrintRegion *region : print_object.print()->regions()) {
         const PrintRegionConfig &config   = region->config();
         bool                     nonempty = config.fill_density > 0;
@@ -294,7 +298,7 @@ std::pair<double, double> adaptive_fill_line_spacing(const PrintObject &print_ob
             has_adaptive_infill ? Tristate::Maybe : Tristate::No,
             has_support_infill ? Tristate::Maybe : Tristate::No,
             config.fill_density,
-            config.infill_extrusion_width
+            config.infill_extrusion_width != 0. ? config.infill_extrusion_width : default_infill_extrusion_width
         }));
         build_octree |= has_adaptive_infill || has_support_infill;
     }
