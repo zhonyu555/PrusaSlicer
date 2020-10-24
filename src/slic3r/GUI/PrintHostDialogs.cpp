@@ -35,13 +35,13 @@ namespace Slic3r {
 namespace GUI {
 
 static const char *CONFIG_KEY_PATH  = "printhost_path";
-static const char *CONFIG_KEY_PRINT = "printhost_print";
 static const char *CONFIG_KEY_GROUP = "printhost_group";
 
-PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, bool can_start_print, const wxArrayString &groups)
+PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, std::set<PrintHostPostUploadAction> post_actions, const wxArrayString &groups)
     : MsgDialog(static_cast<wxWindow*>(wxGetApp().mainframe), _L("Send G-Code to printer host"), _L("Upload to Printer Host with the following filename:"))
     , txt_filename(new wxTextCtrl(this, wxID_ANY))
     , combo_groups(!groups.IsEmpty() ? new wxComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, groups, wxCB_READONLY) : nullptr)
+    , post_upload_action(PrintHostPostUploadAction::None)
 {
 #ifdef __APPLE__
     txt_filename->OSXDisableAllSmartSubstitutions();
@@ -79,7 +79,7 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, bool can_start_pr
     
     wxString suffix = recent_path.substr(recent_path.find_last_of('.'));
 
-    if (can_start_print) {
+    if (post_actions.find(PrintHostPostUploadAction::StartPrint) != post_actions.end()) {
         auto* btn_print = add_button(wxID_YES, false, _L("Upload and Print"));
         btn_print->Bind(wxEVT_BUTTON, [this, suffix](wxCommandEvent&) {
             wxString path = txt_filename->GetValue();
@@ -90,10 +90,27 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, bool can_start_pr
                 if (msg_wingow.ShowModal() == wxID_NO)
                     return;
             }
-            start_print_selected = true;
+            post_upload_action = PrintHostPostUploadAction::StartPrint;
             EndDialog(wxID_OK);
             });
     }
+
+    if (post_actions.find(PrintHostPostUploadAction::StartSimulation) != post_actions.end()) {
+        auto* btn_print = add_button(wxID_YES, false, _L("Upload and Simulate"));
+        btn_print->Bind(wxEVT_BUTTON, [this, suffix](wxCommandEvent&) {
+            wxString path = txt_filename->GetValue();
+            // .gcode suffix control
+            if (!path.Lower().EndsWith(suffix.Lower()))
+            {
+                MessageDialog msg_wingow(this, wxString::Format(_L("Upload filename doesn't end with \"%s\". Do you wish to continue?"), suffix), wxString(SLIC3R_APP_NAME), wxYES | wxNO);
+                if (msg_wingow.ShowModal() == wxID_NO)
+                    return;
+            }
+            post_upload_action = PrintHostPostUploadAction::StartSimulation;
+            EndDialog(wxID_OK);
+            });
+    }
+
     add_button(wxID_CANCEL);
 
     if (auto* btn_ok = get_button(wxID_OK); btn_ok != NULL) {
@@ -137,9 +154,9 @@ fs::path PrintHostSendDialog::filename() const
     return into_path(txt_filename->GetValue());
 }
 
-bool PrintHostSendDialog::start_print() const
+PrintHostPostUploadAction PrintHostSendDialog::post_action() const
 {
-    return start_print_selected;
+    return post_upload_action;
 }
 
 std::string PrintHostSendDialog::group() const
@@ -165,8 +182,7 @@ void PrintHostSendDialog::EndModal(int ret)
                 
 		AppConfig *app_config = wxGetApp().app_config;
 		app_config->set("recent", CONFIG_KEY_PATH, into_u8(path));
-        app_config->set("recent", CONFIG_KEY_PRINT, start_print() ? "1" : "0");
-        
+
         if (combo_groups != nullptr) {
             wxString group = combo_groups->GetValue();
             app_config->set("recent", CONFIG_KEY_GROUP, into_u8(group));
