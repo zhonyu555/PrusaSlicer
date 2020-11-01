@@ -108,7 +108,14 @@ void PrintConfigDef::init_common_params()
                    "the API Key or the password required for authentication.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
-
+    
+    def = this->add("printhost_port", coString);
+    def->label = L("Printer");
+    def->tooltip = L("Name of the printer");
+    def->gui_type = "select_open";
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString(""));
+    
     def = this->add("printhost_cafile", coString);
     def->label = L("HTTPS CA File");
     def->tooltip = L("Custom CA certificate file can be specified for HTTPS OctoPrint connections, in crt/pem format. "
@@ -983,6 +990,7 @@ void PrintConfigDef::init_fff_params()
                    "The \"No extrusion\" flavor prevents PrusaSlicer from exporting any extrusion value at all.");
     def->enum_keys_map = &ConfigOptionEnum<GCodeFlavor>::get_enum_values();
     def->enum_values.push_back("reprap");
+    def->enum_values.push_back("reprapfirmware");
     def->enum_values.push_back("repetier");
     def->enum_values.push_back("teacup");
     def->enum_values.push_back("makerware");
@@ -993,6 +1001,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("smoothie");
     def->enum_values.push_back("no-extrusion");
     def->enum_labels.push_back("RepRap/Sprinter");
+    def->enum_labels.push_back("RepRapFirmware");
     def->enum_labels.push_back("Repetier");
     def->enum_labels.push_back("Teacup");
     def->enum_labels.push_back("MakerWare (MakerBot)");
@@ -1003,7 +1012,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back("Smoothie");
     def->enum_labels.push_back(L("No extrusion"));
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionEnum<GCodeFlavor>(gcfRepRap));
+    def->set_default_value(new ConfigOptionEnum<GCodeFlavor>(gcfRepRapSprinter));
 
     def = this->add("gcode_label_objects", coBool);
     def->label = L("Label objects");
@@ -1445,10 +1454,12 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("duet");
     def->enum_values.push_back("flashair");
     def->enum_values.push_back("astrobox");
+    def->enum_values.push_back("repetier");
     def->enum_labels.push_back("OctoPrint");
     def->enum_labels.push_back("Duet");
     def->enum_labels.push_back("FlashAir");
     def->enum_labels.push_back("AstroBox");
+    def->enum_labels.push_back("Repetier");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<PrintHostType>(htOctoPrint));
 
@@ -1762,26 +1773,6 @@ void PrintConfigDef::init_fff_params()
     def->max = 360;
     def->set_default_value(new ConfigOptionFloat(30));
 #endif
-
-    def = this->add("serial_port", coString);
-    def->gui_type = "select_open";
-    def->label = "";
-    def->full_label = L("Serial port");
-    def->tooltip = L("USB/serial port for printer connection.");
-    def->width = 20;
-    def->set_default_value(new ConfigOptionString(""));
-
-    def = this->add("serial_speed", coInt);
-    def->gui_type = "i_enum_open";
-    def->label = L("Speed");
-    def->full_label = L("Serial port speed");
-    def->tooltip = L("Speed (baud) of USB/serial port for printer connection.");
-    def->min = 1;
-    def->max = 300000;
-    def->enum_values.push_back("115200");
-    def->enum_values.push_back("250000");
-    def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionInt(250000));
 
     def = this->add("skirt_distance", coFloat);
     def->label = L("Distance from object");
@@ -3174,8 +3165,9 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         "seal_position", "vibration_limit", "bed_size",
         "print_center", "g0", "threads", "pressure_advance", "wipe_tower_per_color_wipe"
 #ifndef HAS_PRESSURE_EQUALIZER
-        , "max_volumetric_extrusion_rate_slope_positive", "max_volumetric_extrusion_rate_slope_negative"
+        , "max_volumetric_extrusion_rate_slope_positive", "max_volumetric_extrusion_rate_slope_negative",
 #endif /* HAS_PRESSURE_EQUALIZER */
+        "serial_port", "serial_speed"
     };
 
     // In PrusaSlicer 2.3.0-alpha0 the "monotonous" infill was introduced, which was later renamed to "monotonic".
@@ -3352,11 +3344,12 @@ std::string FullPrintConfig::validate()
 
     if (this->use_firmware_retraction.value &&
         this->gcode_flavor.value != gcfSmoothie &&
-        this->gcode_flavor.value != gcfRepRap &&
+        this->gcode_flavor.value != gcfRepRapSprinter &&
+        this->gcode_flavor.value != gcfRepRapFirmware &&
         this->gcode_flavor.value != gcfMarlin &&
         this->gcode_flavor.value != gcfMachinekit &&
         this->gcode_flavor.value != gcfRepetier)
-        return "--use-firmware-retraction is only supported by Marlin, Smoothie, Repetier and Machinekit firmware";
+        return "--use-firmware-retraction is only supported by Marlin, Smoothie, RepRapFirmware, Repetier and Machinekit firmware";
 
     if (this->use_firmware_retraction.value)
         for (unsigned char wipe : this->wipe.values)
@@ -3495,7 +3488,6 @@ StaticPrintConfig::StaticCache<class Slic3r::PrintRegionConfig> PrintRegionConfi
 StaticPrintConfig::StaticCache<class Slic3r::MachineEnvelopeConfig> MachineEnvelopeConfig::s_cache_MachineEnvelopeConfig;
 StaticPrintConfig::StaticCache<class Slic3r::GCodeConfig>       GCodeConfig::s_cache_GCodeConfig;
 StaticPrintConfig::StaticCache<class Slic3r::PrintConfig>       PrintConfig::s_cache_PrintConfig;
-StaticPrintConfig::StaticCache<class Slic3r::HostConfig>        HostConfig::s_cache_HostConfig;
 StaticPrintConfig::StaticCache<class Slic3r::FullPrintConfig>   FullPrintConfig::s_cache_FullPrintConfig;
 
 StaticPrintConfig::StaticCache<class Slic3r::SLAMaterialConfig>     SLAMaterialConfig::s_cache_SLAMaterialConfig;

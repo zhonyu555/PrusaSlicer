@@ -2934,7 +2934,7 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
             post_event(SimpleEvent(EVT_GLTOOLBAR_COPY));
         break;
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
         case WXK_CONTROL_M:
         {
             Mouse3DController& controller = wxGetApp().plater()->get_mouse3d_controller();
@@ -3209,7 +3209,7 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
                     // m_canvas->HandleAsNavigationKey(evt);   // XXX: Doesn't work in some cases / on Linux
                     post_event(SimpleEvent(EVT_GLCANVAS_TAB));
                 }
-                else if (keyCode == WXK_TAB && evt.ShiftDown()) {
+                else if (keyCode == WXK_TAB && evt.ShiftDown() && ! wxGetApp().is_gcode_viewer()) {
                     // Collapse side-panel with Shift+Tab
                     post_event(SimpleEvent(EVT_GLCANVAS_COLLAPSE_SIDEBAR));
                 }
@@ -3542,9 +3542,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         return;
     }
 
-#if ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
     bool any_gizmo_active = m_gizmos.get_current() != nullptr;
-#endif // ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
 
     int selected_object_idx = m_selection.get_object_idx();
     int layer_editing_object_idx = is_layers_editing_enabled() ? selected_object_idx : -1;
@@ -3613,19 +3611,11 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             }
         }
         else {
-#if ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
             // Select volume in this 3D canvas.
             // Don't deselect a volume if layer editing is enabled or any gizmo is active. We want the object to stay selected
             // during the scene manipulation.
 
-            if (m_picking_enabled && !any_gizmo_active && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled())) {
-#else
-            // Select volume in this 3D canvas.
-            // Don't deselect a volume if layer editing is enabled. We want the object to stay selected
-            // during the scene manipulation.
-
-            if (m_picking_enabled && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled())) {
-#endif // ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
+            if (m_picking_enabled && (!any_gizmo_active || !evt.CmdDown()) && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled())) {
                 if (evt.LeftDown() && !m_hover_volume_idxs.empty()) {
                     int volume_idx = get_first_hover_volume_idx();
                     bool already_selected = m_selection.contains_volume(volume_idx);
@@ -3664,11 +3654,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                     int volume_idx = get_first_hover_volume_idx();
                     BoundingBoxf3 volume_bbox = m_volumes.volumes[volume_idx]->transformed_bounding_box();
                     volume_bbox.offset(1.0);
-#if ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
-                    if (!any_gizmo_active && volume_bbox.contains(m_mouse.scene_position)) {
-#else
-                    if (volume_bbox.contains(m_mouse.scene_position)) {
-#endif // ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
+                    if ((!any_gizmo_active || !evt.CmdDown()) && volume_bbox.contains(m_mouse.scene_position)) {
                         m_volumes.volumes[volume_idx]->hover = GLVolume::HS_None;
                         // The dragging operation is initiated.
                         m_mouse.drag.move_volume_idx = volume_idx;
@@ -3739,11 +3725,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         // do not process the dragging if the left mouse was set down in another canvas
         else if (evt.LeftIsDown()) {
             // if dragging over blank area with left button, rotate
-#if ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
             if ((any_gizmo_active || m_hover_volume_idxs.empty()) && m_mouse.is_start_position_3D_defined()) {
-#else
-            if (m_hover_volume_idxs.empty() && m_mouse.is_start_position_3D_defined()) {
-#endif // ENABLE_PAN_ROTATE_SCENE_IN_GIZMOS
                 const Vec3d rot = (Vec3d(pos.x(), pos.y(), 0.) - m_mouse.drag.start_position_3D) * (PI * TRACKBALLSIZE / 180.);
                 if (wxGetApp().app_config->get("use_free_camera") == "1")
                     // Virtual track ball (similar to the 3DConnexion mouse).
@@ -3805,7 +3787,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         }
         else if (evt.LeftUp() && !m_mouse.ignore_left_up && !m_mouse.dragging && m_hover_volume_idxs.empty() && !is_layers_editing_enabled()) {
             // deselect and propagate event through callback
-            if (!evt.ShiftDown() && m_picking_enabled)
+            if (!evt.ShiftDown() && (!any_gizmo_active || !evt.CmdDown()) && m_picking_enabled)
                 deselect_all();
         }
         else if (evt.RightUp()) {
@@ -5169,8 +5151,7 @@ void GLCanvas3D::_refresh_if_shown_on_screen()
 
 void GLCanvas3D::_picking_pass() const
 {
-    if (m_picking_enabled && !m_mouse.dragging && (m_mouse.position != Vec2d(DBL_MAX, DBL_MAX)))
-    {
+    if (m_picking_enabled && !m_mouse.dragging && m_mouse.position != Vec2d(DBL_MAX, DBL_MAX)) {
         m_hover_volume_idxs.clear();
 
         // Render the object for picking.
@@ -5204,17 +5185,17 @@ void GLCanvas3D::_picking_pass() const
 
         GLubyte color[4] = { 0, 0, 0, 0 };
         const Size& cnv_size = get_canvas_size();
-        bool inside = (0 <= m_mouse.position(0)) && (m_mouse.position(0) < cnv_size.get_width()) && (0 <= m_mouse.position(1)) && (m_mouse.position(1) < cnv_size.get_height());
-        if (inside)
-        {
+        bool inside = 0 <= m_mouse.position(0) && m_mouse.position(0) < cnv_size.get_width() && 0 <= m_mouse.position(1) && m_mouse.position(1) < cnv_size.get_height();
+        if (inside) {
             glsafe(::glReadPixels(m_mouse.position(0), cnv_size.get_height() - m_mouse.position(1) - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, (void*)color));
             if (picking_checksum_alpha_channel(color[0], color[1], color[2]) == color[3])
             	// Only non-interpolated colors are valid, those have their lowest three bits zeroed.
             	volume_id = color[0] + (color[1] << 8) + (color[2] << 16);
         }
-        if ((0 <= volume_id) && (volume_id < (int)m_volumes.volumes.size()))
-        {
-            m_hover_volume_idxs.emplace_back(volume_id);
+        if (0 <= volume_id && volume_id < (int)m_volumes.volumes.size()) {
+            // do not add the volume id if any gizmo is active and CTRL is pressed
+            if (m_gizmos.get_current_type() == GLGizmosManager::EType::Undefined || !wxGetKeyState(WXK_CONTROL))
+                m_hover_volume_idxs.emplace_back(volume_id);
             m_gizmos.set_hover_id(-1);
         }
         else

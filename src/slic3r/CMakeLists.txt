@@ -73,6 +73,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/PresetHints.hpp
     GUI/GUI.cpp
     GUI/GUI.hpp
+    GUI/GUI_Init.cpp
+    GUI/GUI_Init.hpp
     GUI/GUI_Preview.cpp
     GUI/GUI_Preview.hpp
     GUI/GUI_App.cpp
@@ -191,6 +193,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/FlashAir.hpp
     Utils/AstroBox.cpp
     Utils/AstroBox.hpp
+    Utils/Repetier.cpp
+    Utils/Repetier.hpp
     Utils/PrintHost.cpp
     Utils/PrintHost.hpp
     Utils/Bonjour.cpp
@@ -204,7 +208,6 @@ set(SLIC3R_GUI_SOURCES
     Utils/UndoRedo.hpp
     Utils/HexFile.cpp
     Utils/HexFile.hpp
-    Utils/Thread.hpp
 )
 
 if (APPLE)
