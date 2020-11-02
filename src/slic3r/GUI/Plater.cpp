@@ -1770,7 +1770,8 @@ struct Plater::priv
     // Caching last value of show_action_buttons parameter for show_action_buttons(), so that a callback which does not know this state will not override it.
     mutable bool    			ready_to_slice = { false };
     // Flag indicating that the G-code export targets a removable device, therefore the show_action_buttons() needs to be called at any case when the background processing finishes.
-    bool 						writing_to_removable_device = { false };
+    bool 						writing_to_removable_device { false };
+    bool 						show_ExportToRemovableFinished_notification { false };
     bool                        inside_snapshot_capture() { return m_prevent_snapshots != 0; }
 	bool                        process_completed_with_error { false };
 private:
@@ -1818,8 +1819,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , main_frame(main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
-        "brim_width", "variable_layer_height", "serial_port", "serial_speed", "host_type", "print_host",
-        "printhost_apikey", "printhost_cafile", "nozzle_diameter", "single_extruder_multi_material",
+        "brim_width", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
         "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle",
         "extruder_colour", "filament_colour", "max_print_height", "printer_model", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
@@ -2002,6 +2002,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 #endif // ENABLE_GCODE_VIEWER
 
     // updates camera type from .ini file
+    camera.enable_update_config_on_type_change(true);
     camera.set_type(get_config("use_perspective_camera"));
 
     // Load the 3DConnexion device database.
@@ -2028,7 +2029,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 	    this->q->Bind(EVT_REMOVABLE_DRIVE_EJECTED, [this, q](RemovableDriveEjectEvent &evt) {
 		    if (evt.data.second) {
 			    this->show_action_buttons(this->ready_to_slice);
-			    notification_manager->push_notification(format(_L("Unmounting successful. The device %s(%s) can now be safely removed from the computer."),evt.data.first.name, evt.data.first.path),
+			    notification_manager->push_notification(format(_L("Successfully unmounted. The device %s(%s) can now be safely removed from the computer."),evt.data.first.name, evt.data.first.path),
 				                                        NotificationManager::NotificationLevel::RegularNotification, *q->get_current_canvas3D());
 		    } else {
 			    notification_manager->push_notification(format(_L("Ejecting of device %s(%s) has failed."), evt.data.first.name, evt.data.first.path),
@@ -3506,6 +3507,8 @@ void Plater::priv::on_export_began(wxCommandEvent& evt)
 {
 	if (show_warning_dialog)
 		warnings_dialog();
+    if (this->writing_to_removable_device)
+        this->show_ExportToRemovableFinished_notification = true;
 }
 void Plater::priv::on_slicing_began()
 {
@@ -3616,16 +3619,17 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
         if (wxGetApp().get_mode() == comSimple)
             sidebar->set_btn_label(ActionButtonType::abReslice, "Slice now");
         show_action_buttons(true);
+    } else {
+        if(wxGetApp().get_mode() == comSimple) {
+            show_action_buttons(false);
+        }
+        // If writing to removable drive was scheduled, show notification with eject button
+        if (this->writing_to_removable_device && this->show_ExportToRemovableFinished_notification) {
+            show_action_buttons(false);
+            notification_manager->push_notification(NotificationType::ExportToRemovableFinished, *q->get_current_canvas3D());
+        }
     }
-    else if (wxGetApp().get_mode() == comSimple)
-	{
-		show_action_buttons(false);
-	}
-	else if (this->writing_to_removable_device)
-	{
-		show_action_buttons(false);
-		notification_manager->push_notification(NotificationType::ExportToRemovableFinished, *q->get_current_canvas3D());
-	}
+    this->show_ExportToRemovableFinished_notification = false;
 	this->writing_to_removable_device = false;
 }
 
@@ -4287,11 +4291,8 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice) const
     wxWindowUpdateLocker noUpdater(sidebar);
 
     DynamicPrintConfig* selected_printer_config = wxGetApp().preset_bundle->physical_printers.get_selected_printer_config();
-    if (!selected_printer_config)
-        selected_printer_config = config;
-
-    const auto prin_host_opt = selected_printer_config->option<ConfigOptionString>("print_host");
-    const bool send_gcode_shown = prin_host_opt != nullptr && !prin_host_opt->value.empty();
+    const auto print_host_opt = selected_printer_config ? selected_printer_config->option<ConfigOptionString>("print_host") : nullptr;
+    const bool send_gcode_shown = print_host_opt != nullptr && !print_host_opt->value.empty();
     
     // when a background processing is ON, export_btn and/or send_btn are showing
     if (wxGetApp().app_config->get("background_processing") == "1")
@@ -4702,7 +4703,9 @@ void Plater::load_gcode()
 
 void Plater::load_gcode(const wxString& filename)
 {
-    if (filename.empty() || m_last_loaded_gcode == filename)
+    if (filename.empty() ||
+        (!filename.Lower().EndsWith(".gcode") && !filename.Lower().EndsWith(".g")) ||
+        m_last_loaded_gcode == filename)
         return;
 
     m_last_loaded_gcode = filename;
@@ -4987,12 +4990,13 @@ void Plater::export_gcode(bool prefer_removable)
 
     if (! output_path.empty()) {
 		bool path_on_removable_media = removable_drive_manager.set_and_verify_last_save_path(output_path.string());
+        p->writing_to_removable_device = path_on_removable_media;
         p->export_gcode(output_path, path_on_removable_media, PrintHostJob());
         // Storing a path to AppConfig either as path to removable media or a path to internal media.
         // is_path_on_removable_drive() is called with the "true" parameter to update its internal database as the user may have shuffled the external drives
         // while the dialog was open.
         appconfig.update_last_output_dir(output_path.parent_path().string(), path_on_removable_media);
-		p->writing_to_removable_device = path_on_removable_media;
+		
 	}
 }
 
@@ -5296,12 +5300,14 @@ void Plater::reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &
 
 void Plater::send_gcode()
 {
-    if (p->model.objects.empty()) { return; }
-
     // if physical_printer is selected, send gcode for this printer
     DynamicPrintConfig* physical_printer_config = wxGetApp().preset_bundle->physical_printers.get_selected_printer_config();
-    PrintHostJob upload_job(physical_printer_config ? physical_printer_config : p->config);
-    if (upload_job.empty()) { return; }
+    if (! physical_printer_config || p->model.objects.empty())
+        return;
+
+    PrintHostJob upload_job(physical_printer_config);
+    if (upload_job.empty())
+        return;
 
     // Obtain default output path
     fs::path default_output_file;
@@ -5319,11 +5325,18 @@ void Plater::send_gcode()
     }
     default_output_file = fs::path(Slic3r::fold_utf8_to_ascii(default_output_file.string()));
 
-    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->can_start_print());
+    // Repetier specific: Query the server for the list of file groups.
+    wxArrayString groups;
+    {
+        wxBusyCursor wait;
+        upload_job.printhost->get_groups(groups);
+    }
+    
+    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->can_start_print(), groups);
     if (dlg.ShowModal() == wxID_OK) {
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.start_print = dlg.start_print();
-
+        upload_job.upload_data.group       = dlg.group();
         p->export_gcode(fs::path(), false, std::move(upload_job));
     }
 }
