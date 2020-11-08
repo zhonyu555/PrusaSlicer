@@ -325,16 +325,16 @@ bool Preview::init(wxWindow* parent, Model* model)
         get_option_type_string(OptionType::PausePrints) + "|0|" +
         get_option_type_string(OptionType::CustomGCodes) + "|0|" +
         get_option_type_string(OptionType::Shells) + "|0|" +
-        get_option_type_string(OptionType::ToolMarker) + "|0|" +
+        get_option_type_string(OptionType::ToolMarker) + "|1|" +
         get_option_type_string(OptionType::Legend) + "|1"
 );
     Slic3r::GUI::create_combochecklist(m_combochecklist_options, GUI::into_u8(_L("Options")), options_items);
 #else
-    m_checkbox_travel = new wxCheckBox(this, wxID_ANY, _(L("Travel")));
-    m_checkbox_retractions = new wxCheckBox(this, wxID_ANY, _(L("Retractions")));
-    m_checkbox_unretractions = new wxCheckBox(this, wxID_ANY, _(L("Deretractions")));
-    m_checkbox_shells = new wxCheckBox(this, wxID_ANY, _(L("Shells")));
-    m_checkbox_legend = new wxCheckBox(this, wxID_ANY, _(L("Legend")));
+    m_checkbox_travel = new wxCheckBox(this, wxID_ANY, _L("Travel"));
+    m_checkbox_retractions = new wxCheckBox(this, wxID_ANY, _L("Retractions"));
+    m_checkbox_unretractions = new wxCheckBox(this, wxID_ANY, _L("Deretractions"));
+    m_checkbox_shells = new wxCheckBox(this, wxID_ANY, _L("Shells"));
+    m_checkbox_legend = new wxCheckBox(this, wxID_ANY, _L("Legend"));
     m_checkbox_legend->SetValue(true);
 #endif // ENABLE_GCODE_VIEWER
 
@@ -555,6 +555,16 @@ void Preview::msw_rescale()
 
     // rescale legend
     refresh_print();
+}
+
+void Preview::jump_layers_slider(wxKeyEvent& evt)
+{
+#if ENABLE_GCODE_VIEWER
+    if (m_layers_slider) m_layers_slider->OnChar(evt);
+#else
+    if (m_slider)
+        m_slider->OnKeyDown(evt);
+#endif // ENABLE_GCODE_VIEWER
 }
 
 #if ENABLE_GCODE_VIEWER
@@ -1256,7 +1266,7 @@ void Preview::load_print_as_fff(bool keep_z_range)
         // It is left to Slic3r to decide whether the print shall be colored by the tool or by the feature.
         // Color by feature if it is a single extruder print.
         unsigned int number_extruders = (unsigned int)print->extruders().size();
-        int tool_idx = m_choice_view_type->FindString(_(L("Tool")));
+        int tool_idx = m_choice_view_type->FindString(_L("Tool"));
         int type = (number_extruders > 1) ? tool_idx /* color by a tool number */ : 0; // color by a feature type
         m_choice_view_type->SetSelection(type);
 #if ENABLE_GCODE_VIEWER
@@ -1463,8 +1473,8 @@ wxString Preview::get_option_type_string(OptionType type) const
     case OptionType::Unretractions: { return _L("Deretractions"); }
     case OptionType::ToolChanges:   { return _L("Tool changes"); }
     case OptionType::ColorChanges:  { return _L("Color changes"); }
-    case OptionType::PausePrints:   { return _L("Pause prints"); }
-    case OptionType::CustomGCodes:  { return _L("Custom GCodes"); }
+    case OptionType::PausePrints:   { return _L("Print pauses"); }
+    case OptionType::CustomGCodes:  { return _L("Custom G-codes"); }
     case OptionType::Shells:        { return _L("Shells"); }
     case OptionType::ToolMarker:    { return _L("Tool marker"); }
     case OptionType::Legend:        { return _L("Legend/Estimated printing time"); }

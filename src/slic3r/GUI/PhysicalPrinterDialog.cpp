@@ -151,8 +151,8 @@ void PresetForPrinter::msw_rescale()
 //          PhysicalPrinterDialog
 //------------------------------------------
 
-PhysicalPrinterDialog::PhysicalPrinterDialog(wxString printer_name) : 
-    DPIDialog(NULL, wxID_ANY, _L("Physical Printer"), wxDefaultPosition, wxSize(45 * wxGetApp().em_unit(), -1), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_name) :
+    DPIDialog(parent, wxID_ANY, _L("Physical Printer"), wxDefaultPosition, wxSize(45 * wxGetApp().em_unit(), -1), wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
     m_printer("", wxGetApp().preset_bundle->physical_printers.default_config())
 {
     SetFont(wxGetApp().normal_font());
@@ -169,7 +169,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxString printer_name) :
         new_printer = false;
     }
 
-    wxStaticText* label_top = new wxStaticText(this, wxID_ANY, _L("Descriptive name for the printer device") + ":");
+    wxStaticText* label_top = new wxStaticText(this, wxID_ANY, _L("Descriptive name for the printer") + ":");
 
     m_add_preset_btn = new ScalableButton(this, wxID_ANY, "add_copies", "", wxDefaultSize, wxDefaultPosition, /*wxBU_LEFT | */wxBU_EXACTFIT);
     m_add_preset_btn->SetFont(wxGetApp().normal_font());
@@ -257,7 +257,7 @@ void PhysicalPrinterDialog::update_printers()
             printers.clear();
     } catch (const HostNetworkError &err) {
         printers.clear();
-        show_error(this, _L("Querying printers connected to a print host failed.") + "\n\n" + from_u8(err.what()));
+        show_error(this, _L("Connection to printers connected via the print host failed.") + "\n\n" + from_u8(err.what()));
     }
     Choice *choice = dynamic_cast<Choice*>(rs);
     choice->set_values(printers);
@@ -433,6 +433,7 @@ void PhysicalPrinterDialog::update()
     if (tech == ptFFF) {
         m_optgroup->show_field("host_type");
         m_optgroup->hide_field("printhost_authorization_type");
+        m_optgroup->show_field("printhost_apikey", true);
         for (const std::string& opt_key : std::vector<std::string>{ "printhost_user", "printhost_password" })
             m_optgroup->hide_field(opt_key);
         const auto opt = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
@@ -452,7 +453,13 @@ void PhysicalPrinterDialog::update()
     }
 
     m_optgroup->show_field("printhost_port", supports_multiple_printers);
-    m_printhost_port_browse_btn->Show(supports_multiple_printers);    
+    m_printhost_port_browse_btn->Show(supports_multiple_printers);
+
+    std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+    m_printhost_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
+    m_printhost_browse_btn->Enable(host->has_auto_discovery());
+
+    this->SetSize(this->GetBestSize());
     this->Layout();
 }
 
@@ -545,10 +552,10 @@ void PhysicalPrinterDialog::OnOK(wxEvent& event)
             repeatable_presets += "    " + from_u8(preset_name) + "\n";
         repeatable_presets += "\n";
 
-        wxString msg_text = from_u8((boost::format(_u8L("Next printer preset(s) is(are) duplicated:%1%"
-                                                        "Should I add it(they) just once for the printer \"%2%\" and close the Editing Dialog?")) % repeatable_presets % printer_name).str());
-        wxMessageDialog dialog(nullptr, msg_text, _L("Warning"), wxICON_WARNING | wxYES | wxNO);
-        if (dialog.ShowModal() == wxID_NO)
+        wxString msg_text = from_u8((boost::format(_u8L("Following printer preset(s) is duplicated:%1%"
+                                                        "The above preset for printer \"%2%\" will be used just once.")) % repeatable_presets % printer_name).str());
+        wxMessageDialog dialog(nullptr, msg_text, _L("Warning"), wxICON_WARNING | wxOK | wxCANCEL);
+        if (dialog.ShowModal() == wxID_CANCEL)
             return;
     }
 
@@ -591,7 +598,7 @@ void PhysicalPrinterDialog::AddPreset(wxEvent& event)
 void PhysicalPrinterDialog::DeletePreset(PresetForPrinter* preset_for_printer)
 {
     if (m_presets.size() == 1) {
-        wxString msg_text = _L("It's not possible to delete last related preset for the printer.");
+        wxString msg_text = _L("It's not possible to delete the last related preset for the printer.");
         wxMessageDialog dialog(nullptr, msg_text, _L("Infornation"), wxICON_INFORMATION | wxOK);
         dialog.ShowModal();
         return;

@@ -34,9 +34,9 @@ namespace GUI {
 
 KBShortcutsDialog::KBShortcutsDialog()
 #if ENABLE_GCODE_VIEWER
-    : DPIDialog(NULL, wxID_ANY, wxString(wxGetApp().is_editor() ? SLIC3R_APP_NAME : GCODEVIEWER_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
+    : DPIDialog((wxWindow*)wxGetApp().mainframe, wxID_ANY, wxString(wxGetApp().is_editor() ? SLIC3R_APP_NAME : GCODEVIEWER_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
 #else
-    : DPIDialog(NULL, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
+    : DPIDialog((wxWindow*)wxGetApp().mainframe, wxID_ANY, wxString(SLIC3R_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
 #endif // ENABLE_GCODE_VIEWER
     wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
@@ -178,9 +178,13 @@ void KBShortcutsDialog::fill_shortcuts()
             { "O", L("Zoom out") },
             { "Tab", L("Switch between Editor/Preview") },
             { "Shift+Tab", L("Collapse/Expand the sidebar") },
+#if ENABLE_CTRL_M_ON_WINDOWS
+            { ctrl + "M", L("Show/Hide 3Dconnexion devices settings dialog") },
+#else
 #if defined(__linux__) || defined(__APPLE__)
             { ctrl + "M", L("Show/Hide 3Dconnexion devices settings dialog") },
 #endif // __linux__
+#endif // ENABLE_CTRL_M_ON_WINDOWS
 #if ENABLE_RENDER_PICKING_PASS
             // Don't localize debugging texts.
             { "P", "Toggle picking pass texture rendering on/off" },
@@ -190,7 +194,7 @@ void KBShortcutsDialog::fill_shortcuts()
         m_full_shortcuts.push_back(std::make_pair(_L("Plater"), plater_shortcuts));
 
         Shortcuts gizmos_shortcuts = {
-            { ctrl, L("All gizmos: Press to rotate view with mouse left or to pan view with mouse right") },
+            { ctrl, L("All gizmos: Rotate - left mouse button; Pan - right mouse button") },
             { "Shift+", L("Gizmo move: Press to snap by 1mm") },
             { "Shift+", L("Gizmo scale: Press to snap by 5%") },
             { "F", L("Gizmo scale: Scale selection to fit print volume") },
@@ -209,7 +213,7 @@ void KBShortcutsDialog::fill_shortcuts()
         { L("Arrow Down"), L("Lower Layer") },
         { "U", L("Upper Layer") },
         { "D", L("Lower Layer") },
-        { "L", L("Show/Hide Legend/Estimated printing time") },
+        { "L", L("Show/Hide Legend & Estimated printing time") },
     };
 
     m_full_shortcuts.push_back(std::make_pair(_L("Preview"), preview_shortcuts));
