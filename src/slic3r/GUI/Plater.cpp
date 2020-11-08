@@ -578,7 +578,7 @@ struct Sidebar::priv
     wxButton *btn_export_gcode;
     wxButton *btn_reslice;
     ScalableButton *btn_send_gcode;
-    ScalableButton *btn_eject_device;
+    //ScalableButton *btn_eject_device;
 	ScalableButton* btn_export_gcode_removable; //exports to removable drives (appears only if removable drive is connected)
 
     bool                is_collapsed {false};
@@ -750,13 +750,14 @@ Sidebar::Sidebar(Plater *parent)
         (*btn)->Hide();
     };
 
-    init_scalable_btn(&p->btn_send_gcode   , "export_gcode", _L("Send to printer") + "\tCtrl+Shift+G");
-    init_scalable_btn(&p->btn_eject_device, "eject_sd"       , _L("Remove device") + "\tCtrl+T");
-	init_scalable_btn(&p->btn_export_gcode_removable, "export_to_sd", _L("Export to SD card / Flash drive") + "\tCtrl+U");
+    init_scalable_btn(&p->btn_send_gcode   , "export_gcode", _L("Send to printer ") + GUI::shortkey_ctrl_prefix() + "Shift+G");
+//    init_scalable_btn(&p->btn_eject_device, "eject_sd"       , _L("Remove device ") + GUI::shortkey_ctrl_prefix() + "T");
+	init_scalable_btn(&p->btn_export_gcode_removable, "export_to_sd", _L("Export to SD card / Flash drive ") + GUI::shortkey_ctrl_prefix() + "U");
 
     // regular buttons "Slice now" and "Export G-code" 
 
-    const int scaled_height = p->btn_eject_device->GetBitmapHeight() + 4;
+//    const int scaled_height = p->btn_eject_device->GetBitmapHeight() + 4;
+    const int scaled_height = p->btn_export_gcode_removable->GetBitmapHeight() + 4;
     auto init_btn = [this](wxButton **btn, wxString label, const int button_height) {
         *btn = new wxButton(this, wxID_ANY, label, wxDefaultPosition,
                             wxSize(-1, button_height), wxBU_EXACTFIT);
@@ -774,7 +775,7 @@ Sidebar::Sidebar(Plater *parent)
     complect_btns_sizer->Add(p->btn_export_gcode, 1, wxEXPAND);
     complect_btns_sizer->Add(p->btn_send_gcode);
 	complect_btns_sizer->Add(p->btn_export_gcode_removable);
-    complect_btns_sizer->Add(p->btn_eject_device);
+//    complect_btns_sizer->Add(p->btn_eject_device);
 	
 
     btns_sizer->Add(p->btn_reslice, 0, wxEXPAND | wxTOP, margin_5);
@@ -797,7 +798,7 @@ Sidebar::Sidebar(Plater *parent)
         p->plater->select_view_3D("Preview");
     });
     p->btn_send_gcode->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { p->plater->send_gcode(); });
-    p->btn_eject_device->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { p->plater->eject_drive(); });
+//    p->btn_eject_device->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { p->plater->eject_drive(); });
 	p->btn_export_gcode_removable->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { p->plater->export_gcode(true); });
 }
 
@@ -909,6 +910,12 @@ void Sidebar::update_mode_sizer() const
     p->mode_sizer->SetMode(m_mode);
 }
 
+void Sidebar::change_top_border_for_mode_sizer(bool increase_border)
+{
+    p->mode_sizer->set_items_flag(increase_border ? wxTOP : 0);
+    p->mode_sizer->set_items_border(increase_border ? int(0.5 * wxGetApp().em_unit()) : 0);
+}
+
 void Sidebar::update_reslice_btn_tooltip() const
 {
     wxString tooltip = wxString("Slice") + " [" + GUI::shortkey_ctrl_prefix() + "R]";
@@ -940,9 +947,9 @@ void Sidebar::msw_rescale()
     p->object_info->msw_rescale();
 
     p->btn_send_gcode->msw_rescale();
-    p->btn_eject_device->msw_rescale();
+//    p->btn_eject_device->msw_rescale();
 	p->btn_export_gcode_removable->msw_rescale();
-    const int scaled_height = p->btn_eject_device->GetBitmap().GetHeight() + 4;
+    const int scaled_height = p->btn_export_gcode_removable->GetBitmap().GetHeight() + 4;
     p->btn_export_gcode->SetMinSize(wxSize(-1, scaled_height));
     p->btn_reslice     ->SetMinSize(wxSize(-1, scaled_height));
 
@@ -965,7 +972,7 @@ void Sidebar::sys_color_changed()
 
     // btn...->msw_rescale() updates icon on button, so use it
     p->btn_send_gcode->msw_rescale();
-    p->btn_eject_device->msw_rescale();
+//    p->btn_eject_device->msw_rescale();
     p->btn_export_gcode_removable->msw_rescale();
 
     p->scrolled->Layout();
@@ -1268,7 +1275,7 @@ void Sidebar::enable_buttons(bool enable)
     p->btn_reslice->Enable(enable);
     p->btn_export_gcode->Enable(enable);
     p->btn_send_gcode->Enable(enable);
-    p->btn_eject_device->Enable(enable);
+//    p->btn_eject_device->Enable(enable);
 	p->btn_export_gcode_removable->Enable(enable);
 }
 
@@ -1276,8 +1283,8 @@ bool Sidebar::show_reslice(bool show)          const { return p->btn_reslice->Sh
 bool Sidebar::show_export(bool show)           const { return p->btn_export_gcode->Show(show); }
 bool Sidebar::show_send(bool show)             const { return p->btn_send_gcode->Show(show); }
 bool Sidebar::show_export_removable(bool show) const { return p->btn_export_gcode_removable->Show(show); }
-bool Sidebar::show_eject(bool show)            const { return p->btn_eject_device->Show(show); }
-bool Sidebar::get_eject_shown()                const { return p->btn_eject_device->IsShown(); }
+//bool Sidebar::show_eject(bool show)            const { return p->btn_eject_device->Show(show); }
+//bool Sidebar::get_eject_shown()                const { return p->btn_eject_device->IsShown(); }
 
 bool Sidebar::is_multifilament()
 {
@@ -1407,8 +1414,8 @@ bool PlaterDropTarget::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString &fi
             return false;
         }
         else if (paths.size() == 1) {
-                plater->load_gcode(from_path(paths.front()));
-                return true;
+            plater->load_gcode(from_path(paths.front()));
+            return true;
         } 
         return false;
     }
@@ -1467,6 +1474,13 @@ bool PlaterDropTarget::OnDropFiles(wxCoord x, wxCoord y, const wxArrayString &fi
 
     return true;
 }
+
+// State to manage showing after export notifications and device ejecting
+enum ExportingStatus{
+    NOT_EXPORTING,
+    EXPORTING_TO_REMOVABLE,
+    EXPORTING_TO_LOCAL
+};
 
 // Plater / private
 struct Plater::priv
@@ -1770,8 +1784,9 @@ struct Plater::priv
     // Caching last value of show_action_buttons parameter for show_action_buttons(), so that a callback which does not know this state will not override it.
     mutable bool    			ready_to_slice = { false };
     // Flag indicating that the G-code export targets a removable device, therefore the show_action_buttons() needs to be called at any case when the background processing finishes.
-    bool 						writing_to_removable_device { false };
-    bool 						show_ExportToRemovableFinished_notification { false };
+    ExportingStatus             exporting_status { NOT_EXPORTING };
+    std::string                 last_output_path;
+    std::string                 last_output_dir_path;
     bool                        inside_snapshot_capture() { return m_prevent_snapshots != 0; }
 	bool                        process_completed_with_error { false };
 private:
@@ -1969,6 +1984,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_UPDATE_BED_SHAPE, [q](SimpleEvent&) { q->set_bed_shape(); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_TAB, [this](SimpleEvent&) { select_next_view_3D(); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_COLLAPSE_SIDEBAR, [this](SimpleEvent&) { this->q->collapse_sidebar(!this->q->is_sidebar_collapsed());  });
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_JUMP_TO, [this](wxKeyEvent& evt) { preview->jump_layers_slider(evt); });
 #if ENABLE_GCODE_VIEWER
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_MOVE_LAYERS_SLIDER, [this](wxKeyEvent& evt) { preview->move_layers_slider(evt); });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_EDIT_COLOR_CHANGE, [this](wxKeyEvent& evt) { preview->edit_layers_slider(evt); });
@@ -2016,7 +2032,12 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     // is one of the 3D Mouse vendors (3DConnexion or Logitech).
     this->q->Bind(EVT_HID_DEVICE_ATTACHED, [this](HIDDeviceAttachedEvent &evt) {
     	mouse3d_controller.device_attached(evt.data);
-    });
+        });
+#if ENABLE_CTRL_M_ON_WINDOWS
+    this->q->Bind(EVT_HID_DEVICE_DETACHED, [this](HIDDeviceAttachedEvent& evt) {
+        mouse3d_controller.device_detached(evt.data);
+        });
+#endif // ENABLE_CTRL_M_ON_WINDOWS
 #endif /* _WIN32 */
 
 	notification_manager = new NotificationManager(this->q);
@@ -2038,9 +2059,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 	    });
         this->q->Bind(EVT_REMOVABLE_DRIVES_CHANGED, [this, q](RemovableDrivesChangedEvent &) {
 		    this->show_action_buttons(this->ready_to_slice); 
-		    if (!this->sidebar->get_eject_shown()) {
-			    notification_manager->close_notification_of_type(NotificationType::ExportToRemovableFinished);
-		    }
+		    // Close notification ExportingFinished but only if last export was to removable
+		    notification_manager->device_ejected();
 	    });
         // Start the background thread and register this window as a target for update events.
         wxGetApp().removable_drive_manager()->init(this->q);
@@ -2309,7 +2329,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                 wxMessageDialog msg_dlg(q, format_wxstr(_L(
                     "Some object(s) in file %s looks like saved in inches.\n"
                     "Should I consider them as a saved in inches and convert them?"), from_path(filename)) + "\n",
-                    _L("Saved in inches object detected"), wxICON_WARNING | wxYES | wxNO);
+                    _L("The object appears to be saved in inches"), wxICON_WARNING | wxYES | wxNO);
                 if (msg_dlg.ShowModal() == wxID_YES)
                     convert_from_imperial_units(model);
             }
@@ -2907,6 +2927,7 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
         const wxString invalid_str = _L("Invalid data");
         for (auto btn : {ActionButtonType::abReslice, ActionButtonType::abSendGCode, ActionButtonType::abExport})
             sidebar->set_btn_label(btn, invalid_str);
+        process_completed_with_error = true;
     }
     else
     {
@@ -3506,9 +3527,7 @@ void Plater::priv::on_slicing_completed(wxCommandEvent & evt)
 void Plater::priv::on_export_began(wxCommandEvent& evt)
 {
 	if (show_warning_dialog)
-		warnings_dialog();
-    if (this->writing_to_removable_device)
-        this->show_ExportToRemovableFinished_notification = true;
+		warnings_dialog();  
 }
 void Plater::priv::on_slicing_began()
 {
@@ -3586,10 +3605,14 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
         } else
 		  notification_manager->push_slicing_error_notification(message, *q->get_current_canvas3D());
         this->statusbar()->set_status_text(from_u8(message));
-		const wxString invalid_str = _L("Invalid data");
-		for (auto btn : { ActionButtonType::abReslice, ActionButtonType::abSendGCode, ActionButtonType::abExport })
-			sidebar->set_btn_label(btn, invalid_str);
-		process_completed_with_error = true;
+        if (evt.invalidate_plater())
+        {
+            const wxString invalid_str = _L("Invalid data");
+            for (auto btn : { ActionButtonType::abReslice, ActionButtonType::abSendGCode, ActionButtonType::abExport })
+                sidebar->set_btn_label(btn, invalid_str);
+            process_completed_with_error = true;
+        }
+		
     }
     if (evt.cancelled())
         this->statusbar()->set_status_text(_L("Cancelled"));
@@ -3624,13 +3647,14 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
             show_action_buttons(false);
         }
         // If writing to removable drive was scheduled, show notification with eject button
-        if (this->writing_to_removable_device && this->show_ExportToRemovableFinished_notification) {
+        if (exporting_status == ExportingStatus::EXPORTING_TO_REMOVABLE && !this->process_completed_with_error) {
             show_action_buttons(false);
-            notification_manager->push_notification(NotificationType::ExportToRemovableFinished, *q->get_current_canvas3D());
-        }
+            notification_manager->push_exporting_finished_notification(*q->get_current_canvas3D(), last_output_path, last_output_dir_path, true);
+            wxGetApp().removable_drive_manager()->set_exporting_finished(true);
+        }else if (exporting_status == ExportingStatus::EXPORTING_TO_LOCAL && !this->process_completed_with_error)
+            notification_manager->push_exporting_finished_notification(*q->get_current_canvas3D(), last_output_path, last_output_dir_path, false);
     }
-    this->show_ExportToRemovableFinished_notification = false;
-	this->writing_to_removable_device = false;
+    exporting_status = ExportingStatus::NOT_EXPORTING;
 }
 
 void Plater::priv::on_layer_editing_toggled(bool enable)
@@ -4301,8 +4325,8 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice) const
 		if (sidebar->show_reslice(false) |
 			sidebar->show_export(true) |
 			sidebar->show_send(send_gcode_shown) |
-			sidebar->show_export_removable(removable_media_status.has_removable_drives) |
-			sidebar->show_eject(removable_media_status.has_eject))
+			sidebar->show_export_removable(removable_media_status.has_removable_drives))
+//			sidebar->show_eject(removable_media_status.has_eject))
             sidebar->Layout();
     }
     else
@@ -4313,8 +4337,8 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice) const
         if (sidebar->show_reslice(ready_to_slice) |
             sidebar->show_export(!ready_to_slice) |
             sidebar->show_send(send_gcode_shown && !ready_to_slice) |
-			sidebar->show_export_removable(!ready_to_slice && removable_media_status.has_removable_drives) |
-            sidebar->show_eject(!ready_to_slice && removable_media_status.has_eject))
+			sidebar->show_export_removable(!ready_to_slice && removable_media_status.has_removable_drives))
+//            sidebar->show_eject(!ready_to_slice && removable_media_status.has_eject))
             sidebar->Layout();
     }
 }
@@ -4722,12 +4746,20 @@ void Plater::load_gcode(const wxString& filename)
     GCodeProcessor processor;
     processor.enable_producers(true);
     processor.enable_machine_envelope_processing(true);
-    processor.process_file(filename.ToUTF8().data());
+    processor.process_file(filename.ToUTF8().data(), false);
     p->gcode_result = std::move(processor.extract_result());
 
     // show results
     p->preview->reload_print(false);
     p->preview->get_canvas3d()->zoom_to_gcode();
+
+    if (p->preview->get_canvas3d()->get_gcode_layers_zs().empty()) {
+        wxMessageDialog(this, _L("The selected file") + ":\n" + filename + "\n" + _L("does not contain valid gcode."),
+            wxString(GCODEVIEWER_APP_NAME) + " - " + _L("Error while loading .gcode file"), wxCLOSE | wxICON_WARNING | wxCENTRE).ShowModal();
+        set_project_filename(wxEmptyString);
+    }
+    else
+        set_project_filename(filename);
 }
 
 void Plater::refresh_print()
@@ -4945,7 +4977,7 @@ void Plater::export_gcode(bool prefer_removable)
     if (p->model.objects.empty())
         return;
 
-    if (p->process_completed_with_error)//here
+    if (p->process_completed_with_error)
         return;
 
     // If possible, remove accents from accented latin characters.
@@ -4990,7 +5022,10 @@ void Plater::export_gcode(bool prefer_removable)
 
     if (! output_path.empty()) {
 		bool path_on_removable_media = removable_drive_manager.set_and_verify_last_save_path(output_path.string());
-        p->writing_to_removable_device = path_on_removable_media;
+        p->notification_manager->new_export_began(path_on_removable_media);
+        p->exporting_status = path_on_removable_media ? ExportingStatus::EXPORTING_TO_REMOVABLE : ExportingStatus::EXPORTING_TO_LOCAL;
+        p->last_output_path = output_path.string();
+        p->last_output_dir_path = output_path.parent_path().string();
         p->export_gcode(output_path, path_on_removable_media, PrintHostJob());
         // Storing a path to AppConfig either as path to removable media or a path to internal media.
         // is_path_on_removable_drive() is called with the "true" parameter to update its internal database as the user may have shuffled the external drives
@@ -5210,6 +5245,10 @@ void Plater::export_toolpaths_to_obj() const
 
 void Plater::reslice()
 {
+    // There is "invalid data" button instead "slice now"
+    if (p->process_completed_with_error)
+        return;
+
     // Stop arrange and (or) optimize rotation tasks.
     this->stop_jobs();
 

@@ -112,16 +112,14 @@ bool GCodeViewer::Path::matches(const GCodeProcessor::MoveVertex& move) const
     case EMoveType::Custom_GCode:
     case EMoveType::Retract:
     case EMoveType::Unretract:
-    case EMoveType::Extrude:
-    {
+    case EMoveType::Extrude: {
         // use rounding to reduce the number of generated paths
-        return type == move.type && role == move.extrusion_role && height == round_to_nearest(move.height, 2) &&
+        return type == move.type && move.position[2] <= first.position[2] && role == move.extrusion_role && height == round_to_nearest(move.height, 2) &&
             width == round_to_nearest(move.width, 2) && feedrate == move.feedrate && fan_speed == move.fan_speed &&
             volumetric_rate == round_to_nearest(move.volumetric_rate(), 2) && extruder_id == move.extruder_id &&
             cp_color_id == move.cp_color_id;
     }
-    case EMoveType::Travel:
-    {
+    case EMoveType::Travel: {
         return type == move.type && feedrate == move.feedrate && extruder_id == move.extruder_id && cp_color_id == move.cp_color_id;
     }
     default: { return false; }
@@ -302,6 +300,9 @@ void GCodeViewer::load(const GCodeProcessor::Result& gcode_result, const Print& 
     reset();
 
     load_toolpaths(gcode_result);
+    if (m_layers_zs.empty())
+        return;
+
     if (wxGetApp().is_editor())
         load_shells(print, initialized);
     else {
@@ -437,8 +438,39 @@ void GCodeViewer::render() const
     auto init_gl_data = [this]() {
         static bool first_run = true;
         if (first_run) {
+            // initializes opengl data of TBuffers
+            for (size_t i = 0; i < m_buffers.size(); ++i) {
+                TBuffer& buffer = m_buffers[i];
+                switch (buffer_type(i))
+                {
+                default: { break; }
+                case EMoveType::Tool_change:
+                case EMoveType::Color_change:
+                case EMoveType::Pause_Print:
+                case EMoveType::Custom_GCode:
+                case EMoveType::Retract:
+                case EMoveType::Unretract:
+                {
+                    buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
+                    break;
+                }
+                case EMoveType::Extrude:
+                {
+                    buffer.shader = "gouraud_light";
+                    break;
+                }
+                case EMoveType::Travel:
+                {
+                    buffer.shader = "toolpaths_lines";
+                    break;
+                }
+                }
+            }
+
+            // initializes tool marker
             m_sequential_view.marker.init();
 
+            // initializes point sizes
             std::array<int, 2> point_sizes;
             ::glGetIntegerv(GL_ALIASED_POINT_SIZE_RANGE, point_sizes.data());
             m_detected_point_sizes = { static_cast<float>(point_sizes[0]), static_cast<float>(point_sizes[1]) };
@@ -459,8 +491,10 @@ void GCodeViewer::render() const
 
     glsafe(::glEnable(GL_DEPTH_TEST));
     render_toolpaths();
-    m_sequential_view.marker.set_world_position(m_sequential_view.current_position);
-    m_sequential_view.marker.render();
+    if (m_sequential_view.current.last != m_sequential_view.endpoints.last) {
+        m_sequential_view.marker.set_world_position(m_sequential_view.current_position);
+        m_sequential_view.marker.render();
+    }
     render_shells();
     render_legend();
 #if ENABLE_GCODE_VIEWER_STATISTICS
@@ -874,6 +908,7 @@ void GCodeViewer::init()
     if (m_initialized)
         return;
 
+    // initializes non opengl data of TBuffers
     for (size_t i = 0; i < m_buffers.size(); ++i) {
         TBuffer& buffer = m_buffers[i];
         switch (buffer_type(i))
@@ -888,21 +923,18 @@ void GCodeViewer::init()
         {
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Point;
             buffer.vertices.format = VBuffer::EFormat::Position;
-            buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
             break;
         }
         case EMoveType::Extrude:
         {
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Triangle;
             buffer.vertices.format = VBuffer::EFormat::PositionNormal3;
-            buffer.shader = "gouraud_light";
             break;
         }
         case EMoveType::Travel:
         {
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Line;
             buffer.vertices.format = VBuffer::EFormat::PositionNormal1;
-            buffer.shader = "toolpaths_lines";
             break;
         }
         }
@@ -1448,6 +1480,11 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
         }
     }
 
+    if (progress_dialog != nullptr) {
+        progress_dialog->Update(100, "");
+        progress_dialog->Fit();
+    }
+
     log_memory_usage("Loaded G-code generated indices buffers, ", vertices, indices);
 
     // toolpaths data -> send indices data to gpu
@@ -1492,14 +1529,15 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
     // dismiss indices data, no more needed
     std::vector<MultiIndexBuffer>().swap(indices);
 
-    // layers zs / roles / extruder ids / cp color ids -> extract from result
+    // layers zs -> extract from result
+    for (const Path& path : m_buffers[buffer_id(EMoveType::Extrude)].paths) {
+        m_layers_zs.emplace_back(static_cast<double>(path.first.position[2]));
+//        m_layers_zs.emplace_back(static_cast<double>(path.last.position[2]));
+    }
+    // roles / extruder ids / cp color ids -> extract from result
     for (size_t i = 0; i < m_moves_count; ++i) {
         const GCodeProcessor::MoveVertex& move = gcode_result.moves[i];
-        if (move.type == EMoveType::Extrude)
-            m_layers_zs.emplace_back(static_cast<double>(move.position[2]));
-
         m_extruder_ids.emplace_back(move.extruder_id);
-
         if (i > 0)
             m_roles.emplace_back(move.extrusion_role);
     }
@@ -1521,7 +1559,8 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
     }
 
     // set layers z range
-    m_layers_z_range = { m_layers_zs.front(), m_layers_zs.back() };
+    if (!m_layers_zs.empty())
+        m_layers_z_range = { m_layers_zs.front(), m_layers_zs.back() };
 
     // roles -> remove duplicates
     std::sort(m_roles.begin(), m_roles.end());
@@ -2375,28 +2414,26 @@ void GCodeViewer::render_legend() const
             for (const auto& time_rec : times) {
                 switch (time_rec.first)
                 {
-                case CustomGCode::PausePrint:
-                {
+                case CustomGCode::PausePrint: {
                     auto it = std::find_if(custom_gcode_per_print_z.begin(), custom_gcode_per_print_z.end(), [time_rec](const CustomGCode::Item& item) { return item.type == time_rec.first; });
                     if (it != custom_gcode_per_print_z.end()) {
-                        items.push_back({ PartialTime::EType::Print, it->extruder, Color(), Color(), time_rec.second });
+                        items.push_back({ PartialTime::EType::Print, it->extruder, last_color[it->extruder - 1], Color(), time_rec.second });
                         items.push_back({ PartialTime::EType::Pause, it->extruder, Color(), Color(), time_rec.second });
                         custom_gcode_per_print_z.erase(it);
                     }
                     break;
                 }
-                case CustomGCode::ColorChange:
-                {
+                case CustomGCode::ColorChange: {
                     auto it = std::find_if(custom_gcode_per_print_z.begin(), custom_gcode_per_print_z.end(), [time_rec](const CustomGCode::Item& item) { return item.type == time_rec.first; });
                     if (it != custom_gcode_per_print_z.end()) {
-                        items.push_back({ PartialTime::EType::Print, it->extruder, Color(), Color(), time_rec.second });
+                        items.push_back({ PartialTime::EType::Print, it->extruder, last_color[it->extruder - 1], Color(), time_rec.second });
                         items.push_back({ PartialTime::EType::ColorChange, it->extruder, last_color[it->extruder - 1], decode_color(it->color), time_rec.second });
                         last_color[it->extruder - 1] = decode_color(it->color);
                         last_extruder_id = it->extruder;
                         custom_gcode_per_print_z.erase(it);
                     }
                     else
-                        items.push_back({ PartialTime::EType::Print, last_extruder_id, Color(), Color(), time_rec.second });
+                        items.push_back({ PartialTime::EType::Print, last_extruder_id, last_color[last_extruder_id - 1], Color(), time_rec.second });
 
                     break;
                 }
@@ -2407,7 +2444,7 @@ void GCodeViewer::render_legend() const
             return items;
         };
 
-        auto append_color = [this, &imgui](const Color& color1, const Color& color2, std::array<float, 2>& offsets, const Times& times) {
+        auto append_color_change = [this, &imgui](const Color& color1, const Color& color2, const std::array<float, 2>& offsets, const Times& times) {
             imgui.text(_u8L("Color change"));
             ImGui::SameLine();
 
@@ -2426,6 +2463,24 @@ void GCodeViewer::render_legend() const
             imgui.text(short_time(get_time_dhms(times.second - times.first)));
         };
 
+        auto append_print = [this, &imgui](const Color& color, const std::array<float, 2>& offsets, const Times& times) {
+            imgui.text(_u8L("Print"));
+            ImGui::SameLine();
+
+            float icon_size = ImGui::GetTextLineHeight();
+            ImDrawList* draw_list = ImGui::GetWindowDrawList();
+            ImVec2 pos = ImGui::GetCursorScreenPos();
+            pos.x -= 0.5f * ImGui::GetStyle().ItemSpacing.x;
+
+            draw_list->AddRectFilled({ pos.x + 1.0f, pos.y + 1.0f }, { pos.x + icon_size - 1.0f, pos.y + icon_size - 1.0f },
+                ImGui::GetColorU32({ color[0], color[1], color[2], 1.0f }));
+
+            ImGui::SameLine(offsets[0]);
+            imgui.text(short_time(get_time_dhms(times.second)));
+            ImGui::SameLine(offsets[1]);
+            imgui.text(short_time(get_time_dhms(times.first)));
+        };
+
         PartialTimes partial_times = generate_partial_times(time_mode.custom_gcode_times);
         if (!partial_times.empty()) {
             labels.clear();
@@ -2434,8 +2489,8 @@ void GCodeViewer::render_legend() const
             for (const PartialTime& item : partial_times) {
                 switch (item.type)
                 {
-                case PartialTime::EType::Print: { labels.push_back(_u8L("Print")); break; }
-                case PartialTime::EType::Pause: { labels.push_back(_u8L("Pause")); break; }
+                case PartialTime::EType::Print:       { labels.push_back(_u8L("Print")); break; }
+                case PartialTime::EType::Pause:       { labels.push_back(_u8L("Pause")); break; }
                 case PartialTime::EType::ColorChange: { labels.push_back(_u8L("Color change")); break; }
                 }
                 times.push_back(short_time(get_time_dhms(item.times.second)));
@@ -2447,25 +2502,18 @@ void GCodeViewer::render_legend() const
             for (const PartialTime& item : partial_times) {
                 switch (item.type)
                 {
-                case PartialTime::EType::Print:
-                {
-                    imgui.text(_u8L("Print"));
-                    ImGui::SameLine(offsets[0]);
-                    imgui.text(short_time(get_time_dhms(item.times.second)));
-                    ImGui::SameLine(offsets[1]);
-                    imgui.text(short_time(get_time_dhms(item.times.first)));
+                case PartialTime::EType::Print: {
+                    append_print(item.color1, offsets, item.times);
                     break;
                 }
-                case PartialTime::EType::Pause:
-                {
+                case PartialTime::EType::Pause: {
                     imgui.text(_u8L("Pause"));
                     ImGui::SameLine(offsets[0]);
                     imgui.text(short_time(get_time_dhms(item.times.second - item.times.first)));
                     break;
                 }
-                case PartialTime::EType::ColorChange:
-                {
-                    append_color(item.color1, item.color2, offsets, item.times);
+                case PartialTime::EType::ColorChange: {
+                    append_color_change(item.color1, item.color2, offsets, item.times);
                     break;
                 }
                 }
@@ -2479,12 +2527,10 @@ void GCodeViewer::render_legend() const
         {
         case EViewType::Feedrate:
         case EViewType::Tool:
-        case EViewType::ColorPrint:
-        {
+        case EViewType::ColorPrint: {
             break;
         }
-        default:
-        {
+        default: {
             // title
             ImGui::Spacing();
             imgui.title(_u8L("Travel"));
@@ -2530,8 +2576,8 @@ void GCodeViewer::render_legend() const
         add_option(EMoveType::Unretract, EOptionsColors::Unretractions, _u8L("Deretractions"));
         add_option(EMoveType::Tool_change, EOptionsColors::ToolChanges, _u8L("Tool changes"));
         add_option(EMoveType::Color_change, EOptionsColors::ColorChanges, _u8L("Color changes"));
-        add_option(EMoveType::Pause_Print, EOptionsColors::PausePrints, _u8L("Pause prints"));
-        add_option(EMoveType::Custom_GCode, EOptionsColors::CustomGCodes, _u8L("Custom GCodes"));
+        add_option(EMoveType::Pause_Print, EOptionsColors::PausePrints, _u8L("Print pauses"));
+        add_option(EMoveType::Custom_GCode, EOptionsColors::CustomGCodes, _u8L("Custom G-codes"));
     }
 
     // total estimated printing time section

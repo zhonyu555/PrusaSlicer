@@ -1415,7 +1415,7 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     ImGui::PushStyleVar(ImGuiStyleVar_Alpha, alpha);
     imgui.set_next_window_pos(position(0), position(1), ImGuiCond_Always, 0.0f, 0.0f);
 
-    imgui.begin(_L("canvas_tooltip"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing);
+    imgui.begin(wxString("canvas_tooltip"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMouseInputs | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoFocusOnAppearing);
     ImGui::BringWindowToDisplayFront(ImGui::GetCurrentWindow());
     ImGui::TextUnformatted(m_text.c_str());
 
@@ -1457,6 +1457,7 @@ wxDEFINE_EVENT(EVT_GLCANVAS_MOVE_LAYERS_SLIDER, wxKeyEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_MOVE_DOUBLE_SLIDER, wxKeyEvent);
 #endif // ENABLE_GCODE_VIEWER
 wxDEFINE_EVENT(EVT_GLCANVAS_EDIT_COLOR_CHANGE, wxKeyEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_JUMP_TO, wxKeyEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_UNDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_REDO, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_COLLAPSE_SIDEBAR, SimpleEvent);
@@ -2899,6 +2900,7 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
     // see include/wx/defs.h enum wxKeyCode
     int keyCode = evt.GetKeyCode();
     int ctrlMask = wxMOD_CONTROL;
+    int shiftMask = wxMOD_SHIFT;
 
     auto imgui = wxGetApp().imgui();
     if (imgui->update_key_data(evt)) {
@@ -2934,6 +2936,15 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
             post_event(SimpleEvent(EVT_GLTOOLBAR_COPY));
         break;
 
+#if ENABLE_CTRL_M_ON_WINDOWS
+        case WXK_CONTROL_M:
+        {
+            Mouse3DController& controller = wxGetApp().plater()->get_mouse3d_controller();
+            controller.show_settings_dialog(!controller.is_settings_dialog_shown());
+            m_dirty = true;
+            break;
+        }
+#else
 #if defined(__linux__) || defined(__APPLE__)
         case WXK_CONTROL_M:
         {
@@ -2943,6 +2954,7 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
             break;
         }
 #endif /* __linux__ */
+#endif // ENABLE_CTRL_M_ON_WINDOWS
 
 #ifdef __APPLE__
         case 'v':
@@ -2985,6 +2997,18 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         case WXK_DELETE:
              post_event(SimpleEvent(EVT_GLTOOLBAR_DELETE_ALL)); break;
 		default:            evt.Skip();
+        }
+    }
+    else  if ((evt.GetModifiers() & shiftMask) != 0) {
+        switch (keyCode) {
+        case 'g':
+        case 'G': {
+            if (dynamic_cast<Preview*>(m_canvas->GetParent()) != nullptr)
+                post_event(wxKeyEvent(EVT_GLCANVAS_JUMP_TO, evt));
+            break;
+        }
+        default:
+            evt.Skip();
         }
     } else if (evt.HasModifiers()) {
         evt.Skip();
@@ -3348,16 +3372,16 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
     if (evt.MiddleIsDown())
         return;
 
-    if (wxGetApp().imgui()->update_mouse_data(evt)) {
-        m_dirty = true;
-        return;
-    }
-
 #if ENABLE_RETINA_GL
     const float scale = m_retina_helper->get_scale_factor();
     evt.SetX(evt.GetX() * scale);
     evt.SetY(evt.GetY() * scale);
 #endif
+
+    if (wxGetApp().imgui()->update_mouse_data(evt)) {
+        m_dirty = true;
+        return;
+    }
 
 #ifdef __WXMSW__
 	// For some reason the Idle event is not being generated after the mouse scroll event in case of scrolling with the two fingers on the touch pad,
@@ -3399,7 +3423,8 @@ void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
         return;
 
     // Calculate the zoom delta and apply it to the current zoom factor
-    _update_camera_zoom((double)evt.GetWheelRotation() / (double)evt.GetWheelDelta());
+    double direction_factor = (wxGetApp().app_config->get("reverse_mouse_wheel_zoom") == "1") ? -1.0 : 1.0;
+    _update_camera_zoom(direction_factor * (double)evt.GetWheelRotation() / (double)evt.GetWheelDelta());
 }
 
 void GLCanvas3D::on_timer(wxTimerEvent& evt)
@@ -4374,7 +4399,7 @@ bool GLCanvas3D::_render_search_list(float pos_x) const
 
     std::string& search_line = sidebar.get_search_line();
     char *s = new char[255];
-    strcpy(s, search_line.empty() ? _u8L("Type here to search").c_str() : search_line.c_str());
+    strcpy(s, search_line.empty() ? _u8L("Enter a search term").c_str() : search_line.c_str());
 
     imgui->search_list(ImVec2(45 * em, 30 * em), &search_string_getter, s, 
                        sidebar.get_searcher().view_params,
@@ -4382,7 +4407,7 @@ bool GLCanvas3D::_render_search_list(float pos_x) const
 
     search_line = s;
     delete [] s;
-    if (search_line == _u8L("Type here to search"))
+    if (search_line == _u8L("Enter a search term"))
         search_line.clear();
 
     if (edited)
