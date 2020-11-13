@@ -5,9 +5,6 @@
 #include "polypartition.h"
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/PrintConfig.hpp"
-#if !ENABLE_GCODE_VIEWER
-#include "libslic3r/GCode/PreviewData.hpp"
-#endif // !ENABLE_GCODE_VIEWER
 #include "libslic3r/GCode/ThumbnailData.hpp"
 #include "libslic3r/Geometry.hpp"
 #include "libslic3r/ExtrusionEntity.hpp"
@@ -2179,9 +2176,13 @@ void GLCanvas3D::set_toolpath_view_type(GCodeViewer::EViewType type)
     m_gcode_viewer.set_view_type(type);
 }
 
-void GLCanvas3D::set_toolpaths_z_range(const std::array<double, 2>& range)
+void GLCanvas3D::set_volumes_z_range(const std::array<double, 2>& range)
 {
     m_volumes.set_range(range[0] - 1e-6, range[1] + 1e-6);
+}
+
+void GLCanvas3D::set_toolpaths_z_range(const std::array<unsigned int, 2>& range)
+{
     if (m_gcode_viewer.has_data())
         m_gcode_viewer.set_layers_z_range(range);
 }
