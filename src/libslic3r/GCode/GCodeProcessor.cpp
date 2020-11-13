@@ -15,7 +15,6 @@
     #include <utility>
 #endif
 
-#if ENABLE_GCODE_VIEWER
 #include <chrono>
 
 static const float INCHES_TO_MM = 25.4f;
@@ -525,6 +524,7 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     m_flavor = config.gcode_flavor;
 
     size_t extruders_count = config.nozzle_diameter.values.size();
+    m_result.extruders_count = extruders_count;
 
     m_extruder_offsets.resize(extruders_count);
     for (size_t i = 0; i < extruders_count; ++i) {
@@ -579,9 +579,17 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
     if (bed_shape != nullptr)
         m_result.bed_shape = bed_shape->values;
 
+    const ConfigOptionString* print_settings_id = config.option<ConfigOptionString>("print_settings_id");
+    if (print_settings_id != nullptr)
+        m_result.settings_ids.print = print_settings_id->value;
+
+    const ConfigOptionStrings* filament_settings_id = config.option<ConfigOptionStrings>("filament_settings_id");
+    if (filament_settings_id != nullptr)
+        m_result.settings_ids.filament = filament_settings_id->values;
+
     const ConfigOptionString* printer_settings_id = config.option<ConfigOptionString>("printer_settings_id");
     if (printer_settings_id != nullptr)
-        m_result.printer_settings_id = printer_settings_id->value;
+        m_result.settings_ids.printer = printer_settings_id->value;
 
     const ConfigOptionFloats* filament_diameters = config.option<ConfigOptionFloats>("filament_diameter");
     if (filament_diameters != nullptr) {
@@ -589,6 +597,8 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
             m_filament_diameters.push_back(static_cast<float>(diam));
         }
     }
+
+    m_result.extruders_count = config.option<ConfigOptionFloats>("nozzle_diameter")->values.size();
 
     const ConfigOptionPoints* extruder_offset = config.option<ConfigOptionPoints>("extruder_offset");
     if (extruder_offset != nullptr) {
@@ -2235,4 +2245,3 @@ void GCodeProcessor::update_estimated_times_stats()
 
 } /* namespace Slic3r */
 
-#endif // ENABLE_GCODE_VIEWER
