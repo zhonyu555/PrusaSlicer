@@ -861,13 +861,32 @@ void Choice::BUILD() {
     temp->SetItemBitmap(0, empty_bmp);
 #endif
 
-// 	temp->Bind(wxEVT_TEXT, ([this](wxCommandEvent e) { on_change_field(); }), temp->GetId());
- 	temp->Bind(wxEVT_COMBOBOX, ([this](wxCommandEvent e) { on_change_field(); }), temp->GetId());
+    temp->Bind(wxEVT_COMBOBOX_DROPDOWN, [this](wxCommandEvent&) { m_is_dropped = true;  });
+    temp->Bind(wxEVT_COMBOBOX_CLOSEUP,  [this, temp](wxCommandEvent&) {
+		// EVT_COMBOBOX_CLOSEUP is called after EVT_COMBOBOX on Windows
+		// so, always set m_suppress_change to "true"
+#ifndef __WXMSW__ 
+		if (m_last_selected == temp->GetSelection())
+#endif //__WXMSW__
+            m_is_dropped = false;
+    });
+
+    temp->Bind(wxEVT_COMBOBOX, ([this, temp](wxCommandEvent evt) {
+        if (m_suppress_scroll) {
+            if (!m_is_dropped) {
+                temp->SetSelection(m_last_selected);
+                return;
+            }
+            m_last_selected = evt.GetSelection();
+        }
+        on_change_field();
+        m_is_dropped = false;
+    }), temp->GetId());
 
     if (m_is_editable) {
         temp->Bind(wxEVT_KILL_FOCUS, ([this](wxEvent& e) {
             e.Skip();
-            if (m_opt.type == coStrings) {
+            if (m_opt.type == coStrings || m_opt.type == coFloatOrPercent) {
                 on_change_field();
                 return;
             }
@@ -876,8 +895,7 @@ void Choice::BUILD() {
             if (is_defined_input_value<choice_ctrl>(window, m_opt.type)) {
                 if (fabs(old_val - boost::any_cast<double>(get_value())) <= 0.0001)
                     return;
-                else
-                    on_change_field();
+                on_change_field();
             }
             else
                 on_kill_focus();
@@ -885,6 +903,13 @@ void Choice::BUILD() {
     }
 
 	temp->SetToolTip(get_tooltip_text(temp->GetValue()));
+}
+
+void Choice::suppress_scroll()
+{
+    m_suppress_scroll = true;
+    choice_ctrl* ctrl = dynamic_cast<choice_ctrl*>(window);
+    m_last_selected = ctrl->GetSelection();
 }
 
 void Choice::set_selection()
@@ -898,59 +923,45 @@ void Choice::set_selection()
 
     choice_ctrl* field = dynamic_cast<choice_ctrl*>(window);
 	switch (m_opt.type) {
+	case coEnum:{
+		int id_value = m_opt.get_default_value<ConfigOptionEnum<SeamPosition>>()->value; //!!
+        field->SetSelection(id_value);
+        if (m_suppress_scroll) m_last_selected = id_value;
+		break;
+	}
 	case coFloat:
 	case coPercent:	{
 		double val = m_opt.default_value->getFloat();
 		text_value = val - int(val) == 0 ? wxString::Format(_T("%i"), int(val)) : wxNumberFormatter::ToString(val, 1);
-		size_t idx = 0;
-		for (auto el : m_opt.enum_values)
-		{
-			if (el == text_value)
-				break;
-			++idx;
-		}
-//		if (m_opt.type == coPercent) text_value += "%";
-		idx == m_opt.enum_values.size() ?
-			field->SetValue(text_value) :
-			field->SetSelection(idx);
-		break;
-	}
-	case coEnum:{
-		int id_value = m_opt.get_default_value<ConfigOptionEnum<SeamPosition>>()->value; //!!
-        field->SetSelection(id_value);
 		break;
 	}
 	case coInt:{
-		int val = m_opt.default_value->getInt(); //!!
-		text_value = wxString::Format(_T("%i"), int(val));
-		size_t idx = 0;
-		for (auto el : m_opt.enum_values)
-		{
-			if (el == text_value)
-				break;
-			++idx;
-		}
-		idx == m_opt.enum_values.size() ?
-			field->SetValue(text_value) :
-			field->SetSelection(idx);
+		text_value = wxString::Format(_T("%i"), int(m_opt.default_value->getInt()));
 		break;
 	}
 	case coStrings:{
 		text_value = m_opt.get_default_value<ConfigOptionStrings>()->get_at(m_opt_idx);
+		break;
+	}
+	case coFloatOrPercent: {
+		text_value = double_to_string(m_opt.default_value->getFloat());
+		if (m_opt.get_default_value<ConfigOptionFloatOrPercent>()->percent)
+			text_value += "%";
+		break;
+	}
+    default: break;
+	}
 
-		size_t idx = 0;
-		for (auto el : m_opt.enum_values)
-		{
+	if (!text_value.IsEmpty()) {
+		int idx = 0;
+		for (auto el : m_opt.enum_values) {
 			if (el == text_value)
 				break;
 			++idx;
 		}
-		idx == m_opt.enum_values.size() ?
-			field->SetValue(text_value) :
-			field->SetSelection(idx);
-		break;
-	}
-    default: break;
+		idx == m_opt.enum_values.size() ? field->SetValue(text_value) : field->SetSelection(idx);
+
+        if (m_suppress_scroll && idx < m_opt.enum_values.size()) m_last_selected = idx;
 	}
 }
 
@@ -970,6 +981,7 @@ void Choice::set_value(const std::string& value, bool change_event)  //! Redunda
 	idx == m_opt.enum_values.size() ? 
 		field->SetValue(value) :
 		field->SetSelection(idx);
+	if (m_suppress_scroll && idx < m_opt.enum_values.size()) m_last_selected = idx;
 	
 	m_disable_change_event = false;
 }
@@ -984,6 +996,7 @@ void Choice::set_value(const boost::any& value, bool change_event)
 	case coInt:
 	case coFloat:
 	case coPercent:
+	case coFloatOrPercent:
 	case coString:
 	case coStrings: {
 		wxString text_value;
@@ -992,13 +1005,14 @@ void Choice::set_value(const boost::any& value, bool change_event)
 		else
 			text_value = boost::any_cast<wxString>(value);
         size_t idx = 0;
-		for (auto el : m_opt.enum_values)
+        const std::vector<std::string>& enums = m_opt.enum_values.empty() ? m_opt.enum_labels : m_opt.enum_values;
+		for (auto el : enums)
 		{
 			if (el == text_value)
 				break;
 			++idx;
 		}
-        if (idx == m_opt.enum_values.size()) {
+        if (idx == enums.size()) {
             // For editable Combobox under OSX is needed to set selection to -1 explicitly,
             // otherwise selection doesn't be changed
             field->SetSelection(-1);
@@ -1006,6 +1020,7 @@ void Choice::set_value(const boost::any& value, bool change_event)
         }
         else
 			field->SetSelection(idx);
+		if (m_suppress_scroll && idx < enums.size()) m_last_selected = idx;
 		break;
 	}
 	case coEnum: {
@@ -1036,6 +1051,7 @@ void Choice::set_value(const boost::any& value, bool change_event)
 				val = 0;
 		}
 		field->SetSelection(val);
+		if (m_suppress_scroll) m_last_selected = val;
 		break;
 	}
 	default:
@@ -1137,7 +1153,9 @@ boost::any& Choice::get_value()
             (ret_str != m_opt.enum_values[ret_enum] && ret_str != _(m_opt.enum_labels[ret_enum])))
 			// modifies ret_string!
             get_value_by_opt_type(ret_str);
-        else 
+        else if (m_opt.type == coFloatOrPercent)
+            m_value = m_opt.enum_values[ret_enum];
+        else
             m_value = atof(m_opt.enum_values[ret_enum].c_str());
     }
 	else	
@@ -1193,6 +1211,7 @@ void Choice::msw_rescale()
     idx == m_opt.enum_values.size() ?
         field->SetValue(selection) :
         field->SetSelection(idx);
+    if (m_suppress_scroll && idx < m_opt.enum_values.size()) m_last_selected = idx;
 #else
     auto size = wxSize(def_width_wider() * m_em_unit, wxDefaultCoord);
     if (m_opt.height >= 0) size.SetHeight(m_opt.height * m_em_unit);

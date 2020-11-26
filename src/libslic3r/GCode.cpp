@@ -256,6 +256,10 @@ namespace Slic3r {
 
             // subdivide the retraction in segments
             if (!wipe_path.empty()) {
+#if ENABLE_SHOW_WIPE_MOVES
+                // add tag for processor
+                gcode += ";" + GCodeProcessor::Wipe_Start_Tag + "\n";
+#endif // ENABLE_SHOW_WIPE_MOVES
                 for (const Line& line : wipe_path.lines()) {
                     double segment_length = line.length();
                     /*  Reduce retraction length a bit to avoid effective retraction speed to be greater than the configured one
@@ -270,6 +274,10 @@ namespace Slic3r {
                         "wipe and retract"
                     );
                 }
+#if ENABLE_SHOW_WIPE_MOVES
+                // add tag for processor
+                gcode += ";" + GCodeProcessor::Wipe_End_Tag + "\n";
+#endif // ENABLE_SHOW_WIPE_MOVES
                 gcodegen.set_last_pos(wipe_path.points.back());
             }
 
@@ -1858,7 +1866,7 @@ void GCode::process_layer(
     std::string gcode;
 
     // add tag for processor
-    gcode += "; " + GCodeProcessor::Layer_Change_Tag + "\n";
+    gcode += ";" + GCodeProcessor::Layer_Change_Tag + "\n";
     // export layer z
     char buf[64];
     sprintf(buf, ";Z:%g\n", print_z);

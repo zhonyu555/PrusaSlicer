@@ -55,6 +55,11 @@ void AppConfig::set_defaults()
         if (get("show_incompatible_presets").empty())
             set("show_incompatible_presets", "0");
 
+        if (get("show_drop_project_dialog").empty())
+            set("show_drop_project_dialog", "1");
+        if (get("drop_project_action").empty())
+            set("drop_project_action", "1");
+
         if (get("version_check").empty())
             set("version_check", "1");
         if (get("preset_update").empty())
@@ -62,6 +67,15 @@ void AppConfig::set_defaults()
 
         if (get("export_sources_full_pathnames").empty())
             set("export_sources_full_pathnames", "0");
+
+#if ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+#ifdef _WIN32
+        if (get("associate_3mf").empty())
+            set("associate_3mf", "0");
+        if (get("associate_stl").empty())
+            set("associate_stl", "0");
+#endif // _WIN32
+#endif // ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 
         // remove old 'use_legacy_opengl' parameter from this config, if present
         if (!get("use_legacy_opengl").empty())
@@ -103,7 +117,21 @@ void AppConfig::set_defaults()
 
         if (get("use_inches").empty())
             set("use_inches", "0");
+
+        if (get("default_action_on_close_application").empty())
+            set("default_action_on_close_application", "none"); // , "discard" or "save" 
+
+        if (get("default_action_on_select_preset").empty())
+            set("default_action_on_select_preset", "none");     // , "transfer", "discard" or "save" 
     }
+#if ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+    else {
+#ifdef _WIN32
+        if (get("associate_gcode").empty())
+            set("associate_gcode", "0");
+#endif // _WIN32
+    }
+#endif // ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 
     if (get("seq_top_layer_only").empty())
         set("seq_top_layer_only", "1");
@@ -120,11 +148,12 @@ void AppConfig::set_defaults()
     if (get("show_splash_screen").empty())
         set("show_splash_screen", "1");
 
-    if (get("default_action_on_close_application").empty())
-        set("default_action_on_close_application", "none"); // , "discard" or "save" 
-
-    if (get("default_action_on_select_preset").empty())
-        set("default_action_on_select_preset", "none");     // , "transfer", "discard" or "save" 
+#if ENABLE_CTRL_M_ON_WINDOWS
+#ifdef _WIN32
+    if (get("use_legacy_3DConnexion").empty())
+        set("use_legacy_3DConnexion", "0");
+#endif // _WIN32
+#endif // ENABLE_CTRL_M_ON_WINDOWS
 
     // Remove legacy window positions/sizes
     erase("", "main_frame_maximized");
