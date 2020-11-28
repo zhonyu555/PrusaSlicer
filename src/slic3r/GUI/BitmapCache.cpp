@@ -68,7 +68,13 @@ wxBitmap* BitmapCache::insert(const std::string &bitmap_key, size_t width, size_
     wxBitmap *bitmap = nullptr;
     auto      it     = m_map.find(bitmap_key);
     if (it == m_map.end()) {
+#ifdef __WXGTK3__
+        // if we're on GTK3, force the bitmap to be 32bpp
         bitmap = new wxBitmap(width, height, 32);
+#else
+        //everyone else gets the default screen depth
+        bitmap = new wxBitmap(width, height);
+#endif
 #ifdef __APPLE__
         // Contrary to intuition, the `scale` argument isn't "please scale this to such and such"
         // but rather "the wxImage is sized for backing scale such and such".
