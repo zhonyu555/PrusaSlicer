@@ -116,7 +116,7 @@ if (APPLE)
 #    add_compile_options(-stdlib=libc++)
 #    add_definitions(-DBOOST_THREAD_DONT_USE_CHRONO -DBOOST_NO_CXX11_RVALUE_REFERENCES -DBOOST_THREAD_USES_MOVE)
     # -liconv: boost links to libiconv by default
-    target_link_libraries(PrusaSlicer "-liconv -framework IOKit" "-framework CoreFoundation" -lc++)
+    target_link_libraries(PrusaSlicer "-licuuc -licui18n -liconv -framework IOKit" "-framework CoreFoundation" -lc++)
 elseif (MSVC)
     # Manifest is provided through PrusaSlicer.rc, don't generate your own.
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /MANIFEST:NO")
