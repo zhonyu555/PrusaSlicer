@@ -7,7 +7,7 @@
 
 #include <boost/filesystem.hpp>
 
-#if ! defined(WIN32) && ! defined(__APPLE__)
+#if ! defined(WIN32) && ! defined(__APPLE__) && ! defined(__WXGTK3__)
 #define BROKEN_ALPHA
 #endif
 
@@ -68,7 +68,7 @@ wxBitmap* BitmapCache::insert(const std::string &bitmap_key, size_t width, size_
     wxBitmap *bitmap = nullptr;
     auto      it     = m_map.find(bitmap_key);
     if (it == m_map.end()) {
-        bitmap = new wxBitmap(width, height);
+        bitmap = new wxBitmap(width, height, 32);
 #ifdef __APPLE__
         // Contrary to intuition, the `scale` argument isn't "please scale this to such and such"
         // but rather "the wxImage is sized for backing scale such and such".
@@ -83,7 +83,7 @@ wxBitmap* BitmapCache::insert(const std::string &bitmap_key, size_t width, size_
         if (size_t(bitmap->GetWidth()) != width || size_t(bitmap->GetHeight()) != height)
             bitmap->Create(width, height);
     }
-#ifndef BROKEN_ALPHA
+#if defined(WIN32) || defined(__APPLE__)
     bitmap->UseAlpha();
 #endif
     return bitmap;
