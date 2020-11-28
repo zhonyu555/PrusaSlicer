@@ -216,9 +216,9 @@ public:
     virtual bool OnExceptionInMainLoop() override;
 
 #ifdef __APPLE__
-    void            OSXStoreOpenFiles(const wxArrayString &files) override;
+    void            OSXStoreOpenFiles(const wxArrayString &files);
     // wxWidgets override to get an event on open files.
-    void            MacOpenFiles(const wxArrayString &fileNames) override;
+    void            MacOpenFiles(const wxArrayString &fileNames);
 #endif /* __APPLE */
 
     Sidebar&            sidebar();
