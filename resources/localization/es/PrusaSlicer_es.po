@@ -40,7 +40,7 @@ msgstr "%1% Preset"
 
 #: src/slic3r/GUI/Plater.cpp:4423
 msgid "%1% printer was active at the time the target Undo / Redo snapshot was taken. Switching to %1% printer requires reloading of %1% presets."
-msgstr "La impresora %1% esta activa mientras la captura del objetivo de Deshacer / Rehacer fue tomada. Cambiar a la impresora %1% requiere recargar los preajustes %1%."
+msgstr "La impresora %1% está activa mientras la captura del objetivo de Deshacer / Rehacer fue tomada. Cambiar a la impresora %1% requiere recargar los preajustes %1%."
 
 #: src/slic3r/GUI/MainFrame.cpp:1585
 msgid "%1% was successfully sliced."
@@ -63,7 +63,7 @@ msgstr "%d (%d pieles)"
 #: src/slic3r/GUI/Plater.cpp:1069
 #, c-format
 msgid "%d degenerate facets, %d edges fixed, %d facets removed, %d facets added, %d facets reversed, %d backwards edges"
-msgstr "%d facetas problemáticas, %d aristas corregidas, %d facetas eliminadas, %d facetas añadidas, %d facetas invertidas, %d aristas  del revés"
+msgstr "%d facetas problemáticas, %d aristas corregidas, %d facetas eliminadas, %d facetas añadidas, %d facetas invertidas, %d aristas del revés"
 
 #: src/slic3r/GUI/PresetHints.cpp:269
 #, c-format
@@ -162,7 +162,7 @@ msgid ""
 msgstr ""
 "Ahora %s usa una estructura actualizada para la configuración. \n"
 "\n"
-"Se han introducido los llamados 'Ajustes del sistema' , que tienen valores por defecto para varias impresoras. Estos ajustes del sistema no pueden modificarse, por el contrario, los usuarios pueden crear nuevos ajustes que se basan en alguno de  ellos.\n"
+"Se han introducido los llamados 'Ajustes del sistema', que tienen valores por defecto para varias impresoras. Estos ajustes del sistema no pueden modificarse, por el contrario, los usuarios pueden crear nuevos ajustes que se basan en alguno de ellos.\n"
 "Un ajuste nuevo puede heredar un valor de un ajuste existente o bien tener un nuevo valor personalizado.\n"
 "\n"
 "Por favof, continúa con el %s que sigue para establecer los nuevos ajustes y seleccionar si quieres que estos se actualicen automáticamente."
@@ -392,7 +392,7 @@ msgstr "Una buena aproximación es de 160 a 230 °C para PLA y de 215 a 250 °C 
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1414
 msgid "A rule of thumb is 60 °C for PLA and 110 °C for ABS. Leave zero if you have no heated bed."
-msgstr "Una buena aproximación son unos 60 °C para PLA y 110 °C para  ABS. Deja el valor a cero si no tienes base calefactable."
+msgstr "Una buena aproximación son unos 60 °C para PLA y 110 °C para  ABS. Deja el valor a cero si no tienes base caliente."
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:634
 msgid "A toolpath outside the print area was detected."
@@ -467,11 +467,11 @@ msgstr "Añadir una funda (una sola línea de perímetro) alrededor de la base d
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1114
 msgid "Add another code - Ctrl + Left click"
-msgstr "Añadir otro código - Ctrl + Click izquierdo"
+msgstr "Añadir otro código - Ctrl + Clic izquierdo"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1115
 msgid "Add another code - Right click"
-msgstr "Añadir otro código - Click derecho"
+msgstr "Añadir otro código - Clic derecho"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1665
 msgid "Add color change"
@@ -483,11 +483,11 @@ msgstr "Añadir cambio de color (%1%) para:"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1111
 msgid "Add color change - Left click"
-msgstr "Añadir cambio de color - Click izquierdo"
+msgstr "Añadir cambio de color - Clic izquierdo"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1109
 msgid "Add color change - Left click for predefined color or Shift + Left click for custom color selection"
-msgstr "Añadir cambio de color - Click izquierdo para color preddefinido o Mayus + Click izquierdo para selección de color personalizada"
+msgstr "Añadir cambio de color - Clic izquierdo para color predefinido o Mayus + Clic izquierdo para selección de color personalizada"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:219
 msgid "Add color change marker for current layer"
@@ -511,7 +511,7 @@ msgstr "Añadir orificio de drenaje"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1107
 msgid "Add extruder change - Left click"
-msgstr "Añadir cambio de extrusor - Click izquierdo"
+msgstr "Añadir cambio de extrusor - Clic izquierdo"
 
 #: src/slic3r/GUI/ExtruderSequenceDialog.cpp:192
 msgid "Add extruder to sequence"
@@ -617,7 +617,7 @@ msgstr "Añadir forma"
 
 #: src/libslic3r/PrintConfig.cpp:443
 msgid "Add solid infill near sloping surfaces to guarantee the vertical shell thickness (top+bottom solid layers)."
-msgstr "Añade un relleno completo cerca de las superficies inclinadas para garantizar el ancho vertical solicitado(capas sólidas arriba+abajo)."
+msgstr "Añade un relleno completo cerca de las superficies inclinadas para garantizar el ancho vertical solicitado (capas sólidas arriba+abajo)."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:54
 msgid "Add support blocker"
@@ -667,7 +667,7 @@ msgstr "Información adicional:"
 
 #: src/slic3r/GUI/GUI_ObjectSettings.cpp:62
 msgid "Additional Settings"
-msgstr "Ajustes adiccionales"
+msgstr "Ajustes adicionales"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1150
 msgid "Additionally a backup snapshot of the whole configuration is created before an update is applied."
@@ -706,7 +706,7 @@ msgstr "Después de un cambio de herramienta, la posición exacta del filamento 
 
 #: src/slic3r/GUI/Tab.cpp:2182 src/libslic3r/PrintConfig.cpp:1173
 msgid "After layer change G-code"
-msgstr "Código G tras  un cambio de capa"
+msgstr "Código G tras un cambio de capa"
 
 #: src/libslic3r/PrintConfig.cpp:3597
 msgid "Align the model to the given point."
@@ -842,7 +842,7 @@ msgid ""
 "Are you sure you want to cancel firmware flashing?\n"
 "This could leave your printer in an unusable state!"
 msgstr ""
-"¿Estas seguro de cancelar el flaseo del firmware?\n"
+"¿Estás seguro de cancelar el flasheo del firmware?\n"
 "¡Esto podría dejar tu impresora en un estado inusable!"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2122 src/slic3r/GUI/DoubleSlider.cpp:2142
@@ -880,7 +880,7 @@ msgstr "Ordenar selección"
 
 #: src/libslic3r/PrintConfig.cpp:3642
 msgid "Arrange the supplied models in a plate and merge them in a single model in order to perform actions once."
-msgstr "Organizar los modelos suministrados en una base y combínarlos en un solo modelo para realizar acciones una vez."
+msgstr "Organizar los modelos suministrados en una base y combinarlos en un solo modelo para realizar acciones una vez."
 
 #: src/slic3r/GUI/Jobs/ArrangeJob.cpp:149
 msgid "Arranging"
@@ -1015,7 +1015,7 @@ msgstr "FLECHA HACIA ATRÁS"
 #: src/slic3r/GUI/Tab.cpp:3727
 msgid ""
 "BACK ARROW icon indicates that the settings were changed and are not equal to the last saved preset for the current option group.\n"
-"Click to reset all settings for the current option group to the last saved preset."
+"Clic to reset all settings for the current option group to the last saved preset."
 msgstr ""
 "El símbolo de FLECHA ATRÁS indica que los ajustes cambiaron y que no son iguales a los que se guardaron para el grupo de opciones actual.\n"
 "Haz clic para devolver esos valores a los últimos guardados."
@@ -1148,7 +1148,7 @@ msgstr "La parte inferior está abierta."
 
 #: src/slic3r/GUI/PresetHints.cpp:334
 msgid "Bottom shell is %1% mm thick for layer height %2% mm."
-msgstr "La carcasa  inferior es %1% mm más grueso para la altura de capa de %2% mm."
+msgstr "La carcasa inferior es %1% mm más grueso para la altura de capa de %2% mm."
 
 #: src/libslic3r/PrintConfig.cpp:211
 msgid "Bottom solid layers"
@@ -1191,7 +1191,7 @@ msgstr "Ángulo de puente"
 
 #: src/libslic3r/PrintConfig.cpp:238
 msgid "Bridging angle override. If left to zero, the bridging angle will be calculated automatically. Otherwise the provided angle will be used for all bridges. Use 180° for zero angle."
-msgstr "Anulación de ángulo de puente. Si se deja en cero, el ángulo de puente se calculará automáticamente. De lo contrario, el ángulo proporcionado se usará para todos los puentes. Use 180 ° para ángulo con cero grados."
+msgstr "Anulación de ángulo de puente. Si se deja en cero, el ángulo de puente se calculará automáticamente. De lo contrario, el ángulo proporcionado se usará para todos los puentes. Use 180° para ángulo con cero grados."
 
 #: src/slic3r/GUI/PresetHints.cpp:218
 msgid "Bridging volumetric"
@@ -1230,7 +1230,7 @@ msgid ""
 "But since this version of PrusaSlicer we don't show this information in Printer Settings anymore.\n"
 "Settings will be available in physical printers settings."
 msgstr ""
-"Pero dado que a partir de esta versión de PrusaSlicer ya no mostramos esta información el los ajustes de impresora.\n"
+"Pero dado que a partir de esta versión de PrusaSlicer ya no mostramos esta información en los ajustes de impresora.\n"
 "Los ajustes se mostrarán en la configuración de impresora física."
 
 #: src/slic3r/GUI/ButtonsDescription.cpp:16
@@ -1423,7 +1423,7 @@ msgstr "Escoge un archivo para importar la textura de la base de impresión (PNG
 
 #: src/slic3r/GUI/MainFrame.cpp:1474
 msgid "Choose a file to slice (STL/OBJ/AMF/3MF/PRUSA):"
-msgstr "Elija un archivo para laminar (STL / OBJ / AMF / 3MF / PRUSA):"
+msgstr "Elija un archivo para laminar (STL/OBJ/AMF/3MF/PRUSA):"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:631
 msgid "Choose an STL file to import bed model from:"
@@ -1443,7 +1443,7 @@ msgstr "Elige un archivo (GCODE/.GCO/.G/.ngc/NGC):"
 
 #: src/slic3r/GUI/GUI_App.cpp:1220
 msgid "Choose one or more files (STL/OBJ/AMF/3MF/PRUSA):"
-msgstr "Escoja uno o mas archivos (STL/OBJ/AMF/3MF/PRUSA):"
+msgstr "Escoja uno o más archivos (STL/OBJ/AMF/3MF/PRUSA):"
 
 #: src/slic3r/GUI/Jobs/SLAImportJob.cpp:35
 msgid "Choose SLA archive:"
@@ -1468,7 +1468,7 @@ msgstr "Clic con botón derecho del ratón para abrir/cerrar Historia"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:451
 msgid "Click the icon to change the object printable property"
-msgstr "Click en el icono para cambiar las propiedades del objeto imprimible"
+msgstr "Clic en el icono para cambiar las propiedades del objeto imprimible"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:445
 msgid "Click the icon to change the object settings"
@@ -1488,7 +1488,7 @@ msgstr "Clic para mostrar"
 
 #: src/libslic3r/PrintConfig.cpp:286
 msgid "Clip multi-part objects"
-msgstr "Enlazaar objetos de varias partes"
+msgstr "Enlazar objetos de varias partes"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:42
 #: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:49
@@ -1604,7 +1604,7 @@ msgstr "compresión fallida"
 
 #: src/libslic3r/PrintConfig.cpp:462 src/libslic3r/PrintConfig.cpp:887
 msgid "Concentric"
-msgstr "Concentrico"
+msgstr "Concéntrico"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2625
 msgid "Configuration &Assistant"
@@ -1692,7 +1692,7 @@ msgstr "Contribuciones de  Vojtech Bubnik, Enrico Turri, Oleksandra Iushchenko, 
 
 #: src/libslic3r/PrintConfig.cpp:2823
 msgid "Controls the bridge type between two neighboring pillars. Can be zig-zag, cross (double zig-zag) or dynamic which will automatically switch between the first two depending on the distance of the two pillars."
-msgstr "Controla el tipo de puente entre dos pilares adyacentes. Puede ser zig-zag, cruzado(doble zig-zag) o dinámico que cambiará automáticamente entre los dos primeros dependiendo de la distancia de los dos pilares."
+msgstr "Controla el tipo de puente entre dos pilares adyacentes. Puede ser zig-zag, cruzado (doble zig-zag) o dinámico que cambiará automáticamente entre los dos primeros dependiendo de la distancia de los dos pilares."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1858 src/slic3r/GUI/Plater.cpp:4886
 msgid "Convert from imperial units"
@@ -1748,7 +1748,7 @@ msgstr "La copia del código G temporal ha finalizado, pero el código exportado
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:153
 msgid "Copying of the temporary G-code has finished but the original code at %1% couldn't be opened during copy check. The output G-code is at %2%.tmp."
-msgstr "La copia del código G temporal ha finalizado, pero el código original en %1% no se pudo abrir durante la verificación de copia. El código G de salida está en%2%.tmp."
+msgstr "La copia del código G temporal ha finalizado, pero el código original en %1% no se pudo abrir durante la verificación de copia. El código G de salida está en %2%.tmp."
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:522
 msgid "Copying of the temporary G-code to the output G-code failed"
@@ -1884,7 +1884,7 @@ msgstr "Personalizado"
 
 #: src/libslic3r/PrintConfig.cpp:114
 msgid "Custom CA certificate file can be specified for HTTPS OctoPrint connections, in crt/pem format. If left blank, the default OS CA certificate repository is used."
-msgstr "Un archivo de certificado CA personalizado puede ser especificado para conexiones HTTPS OctoPrint, en formato crt/pem. Si se deja en blanco,  el repositorio de certificados OS CA será usado."
+msgstr "Un archivo de certificado CA personalizado puede ser especificado para conexiones HTTPS OctoPrint, en formato crt/pem. Si se deja en blanco, el repositorio de certificados OS CA será usado."
 
 #: src/slic3r/GUI/Tab.cpp:1872 src/slic3r/GUI/Tab.cpp:2160
 #: src/libslic3r/PrintConfig.cpp:1978
@@ -1901,7 +1901,7 @@ msgstr "Códigos G personalizados"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1091
 msgid "Custom Printer"
-msgstr "Impresora customizada"
+msgstr "Impresora personalizada"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1091
 msgid "Custom Printer Setup"
@@ -1909,7 +1909,7 @@ msgstr "Configuración personalizada de impresora"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1095
 msgid "Custom profile name:"
-msgstr "Nombre impresora customizada:"
+msgstr "Nombre impresora personalizada:"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1135
 msgid "Custom template (\"%1%\")"
@@ -2035,7 +2035,7 @@ msgstr "Definir un perfil de impresora personalizado"
 
 #: src/libslic3r/PrintConfig.cpp:2962
 msgid "Defines the pad cavity depth. Set to zero to disable the cavity. Be careful when enabling this feature, as some resins may produce an extreme suction effect inside the cavity, which makes peeling the print off the vat foil difficult."
-msgstr "Define la profundidad de la cavidad del pad. Establecerer a cero para deshabilitar la cavidad. Ten cuidado al habilitar esta función, ya que algunas resinas pueden producir un efecto de succión extremo dentro de la cavidad, lo que dificulta el despegado de la impresión de la lámina de la cuba."
+msgstr "Define la profundidad de la cavidad del pad. Establecer a cero para deshabilitar la cavidad. Ten cuidado al habilitar esta función, ya que algunas resinas pueden producir un efecto de succión extremo dentro de la cavidad, lo que dificulta el despegado de la impresión de la lámina de la cuba."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:393
 msgid "degenerate facets"
@@ -2502,7 +2502,7 @@ msgstr "Editar ajuste preestablecido"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1162
 msgid "Edit tick mark - Ctrl + Left click"
-msgstr "Editar la marca - Ctrl+ Click izquierdo"
+msgstr "Editar la marca - Ctrl+ Clic izquierdo"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1163
 msgid "Edit tick mark - Right click"
