@@ -2,9 +2,13 @@
 #define _libslic3r_h_
 
 #include "libslic3r_version.h"
+#define GCODEVIEWER_APP_NAME "PrusaSlicer G-code Viewer"
+#define GCODEVIEWER_APP_KEY  "PrusaSlicerGcodeViewer"
+#define GCODEVIEWER_BUILD_ID std::string("PrusaSlicer G-code Viewer-") + std::string(SLIC3R_VERSION) + std::string("-UNKNOWN")
 
 // this needs to be included early for MSVC (listing it in Build.PL is not enough)
 #include <memory>
+#include <array>
 #include <algorithm>
 #include <ostream>
 #include <iostream>
@@ -26,7 +30,7 @@
 // Saves around 32% RAM after slicing step, 6.7% after G-code export (tested on PrusaSlicer 2.2.0 final).
 using coord_t = int32_t;
 #else
-//FIXME At least FillRectilinear2 requires coord_t to be 32bit.
+//FIXME At least FillRectilinear2 and std::boost Voronoi require coord_t to be 32bit.
 typedef int64_t coord_t;
 #endif
 
@@ -73,13 +77,6 @@ inline std::string debug_out_path(const char *name, ...)
 	return std::string(SLIC3R_DEBUG_OUT_PATH_PREFIX) + std::string(buffer);
 }
 
-#ifdef _MSC_VER
-	// Visual Studio older than 2015 does not support the prinf type specifier %zu. Use %Iu instead.
-	#define PRINTF_ZU "%Iu"
-#else
-	#define PRINTF_ZU "%zu"
-#endif
-
 #ifndef UNUSED
 #define UNUSED(x) (void)(x)
 #endif /* UNUSED */
@@ -106,12 +103,6 @@ enum Axis {
 	NUM_AXES_WITH_UNKNOWN,
 };
 
-template <class T>
-inline void append_to(std::vector<T> &dst, const std::vector<T> &src)
-{
-    dst.insert(dst.end(), src.begin(), src.end());
-}
-
 template <typename T>
 inline void append(std::vector<T>& dest, const std::vector<T>& src)
 {
@@ -126,8 +117,34 @@ inline void append(std::vector<T>& dest, std::vector<T>&& src)
 {
     if (dest.empty())
         dest = std::move(src);
-    else
+    else {
+        dest.reserve(dest.size() + src.size());
         std::move(std::begin(src), std::end(src), std::back_inserter(dest));
+    }
+    src.clear();
+    src.shrink_to_fit();
+}
+
+// Append the source in reverse.
+template <typename T>
+inline void append_reversed(std::vector<T>& dest, const std::vector<T>& src)
+{
+    if (dest.empty())
+        dest = src;
+    else
+        dest.insert(dest.end(), src.rbegin(), src.rend());
+}
+
+// Append the source in reverse.
+template <typename T>
+inline void append_reversed(std::vector<T>& dest, std::vector<T>&& src)
+{
+    if (dest.empty())
+        dest = std::move(src);
+    else {
+        dest.reserve(dest.size() + src.size());
+        std::move(std::rbegin(src), std::rend(src), std::back_inserter(dest));
+    }
     src.clear();
     src.shrink_to_fit();
 }
@@ -266,6 +283,20 @@ using IntegerOnly = std::enable_if_t<std::is_integral<T>::value, O>;
 
 template<class T, class O = T>
 using ArithmeticOnly = std::enable_if_t<std::is_arithmetic<T>::value, O>;
+
+template<class T, class O = T>
+using IteratorOnly = std::enable_if_t<
+    !std::is_same_v<typename std::iterator_traits<T>::value_type, void>, O
+>;
+
+template<class T, class I, class... Args> // Arbitrary allocator can be used
+IntegerOnly<I, std::vector<T, Args...>> reserve_vector(I capacity)
+{
+    std::vector<T, Args...> ret;
+    if (capacity > I(0)) ret.reserve(size_t(capacity));
+
+    return ret;
+}
 
 } // namespace Slic3r
 

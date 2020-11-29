@@ -9,10 +9,10 @@
 #include "wx/dataview.h"
 
 #include "libslic3r/PrintConfig.hpp"
+#include "libslic3r/PresetBundle.hpp"
 #include "GUI_App.hpp"
 #include "Plater.hpp"
 #include "Tab.hpp"
-#include "PresetBundle.hpp"
 
 #define FTS_FUZZY_MATCH_IMPLEMENTATION
 #include "fts_fuzzy_match.h"
@@ -27,12 +27,6 @@ using GUI::from_u8;
 using GUI::into_u8;
 
 namespace Search {
-
-// Does our wxWidgets version support markup?
-// https://github.com/prusa3d/PrusaSlicer/issues/4282#issuecomment-634676371
-#if wxUSE_MARKUP && wxCHECK_VERSION(3, 1, 1)
-    #define SEARCH_SUPPORTS_MARKUP
-#endif
 
 static char marker_by_type(Preset::Type type, PrinterTechnology pt)
 {
@@ -264,7 +258,7 @@ bool OptionsSearcher::search(const std::string& search, bool force/* = false*/)
 	        std::string label_u8 = into_u8(label);
 	        std::string label_plain = label_u8;
 
-#ifdef SEARCH_SUPPORTS_MARKUP
+#ifdef SUPPORTS_MARKUP
             boost::replace_all(label_plain, std::string(1, char(ImGui::ColorMarkerStart)), "<b>");
             boost::replace_all(label_plain, std::string(1, char(ImGui::ColorMarkerEnd)),   "</b>");
 #else
@@ -327,84 +321,17 @@ const Option& OptionsSearcher::get_option(size_t pos_in_filter) const
     return options[found[pos_in_filter].option_idx];
 }
 
+const Option& OptionsSearcher::get_option(const std::string& opt_key) const
+{
+    auto it = std::lower_bound(options.begin(), options.end(), Option({ boost::nowide::widen(opt_key) }));
+    assert(it != options.end());
+
+    return options[it - options.begin()];
+}
+
 void OptionsSearcher::add_key(const std::string& opt_key, const wxString& group, const wxString& category)
 {
     groups_and_categories[opt_key] = GroupAndCategory{group, category};
-}
-
-
-//------------------------------------------
-//          SearchComboPopup
-//------------------------------------------
-
-
-void SearchComboPopup::Init()
-{
-    this->Bind(wxEVT_MOTION,    &SearchComboPopup::OnMouseMove,     this);
-    this->Bind(wxEVT_LEFT_UP,   &SearchComboPopup::OnMouseClick,    this);
-    this->Bind(wxEVT_KEY_DOWN,  &SearchComboPopup::OnKeyDown,       this);
-}
-
-bool SearchComboPopup::Create(wxWindow* parent)
-{
-    return wxListBox::Create(parent, 1, wxPoint(0, 0), wxDefaultSize);
-}
-
-void SearchComboPopup::SetStringValue(const wxString& s)
-{
-    int n = wxListBox::FindString(s);
-    if (n >= 0 && n < int(wxListBox::GetCount()))
-        wxListBox::Select(n);
-
-    // save a combo control's string
-    m_input_string = s;
-}
-
-void SearchComboPopup::ProcessSelection(int selection) 
-{
-    wxCommandEvent event(wxEVT_LISTBOX, GetId());
-    event.SetInt(selection);
-    event.SetEventObject(this);
-    ProcessEvent(event);
-
-    Dismiss();
-}
-
-void SearchComboPopup::OnMouseMove(wxMouseEvent& event)
-{
-    wxPoint pt = wxGetMousePosition() - this->GetScreenPosition();
-    int selection = this->HitTest(pt);
-    wxListBox::Select(selection);
-}
-
-void SearchComboPopup::OnMouseClick(wxMouseEvent&)
-{
-    int selection = wxListBox::GetSelection();
-    SetSelection(wxNOT_FOUND);
-    ProcessSelection(selection);
-}
-
-void SearchComboPopup::OnKeyDown(wxKeyEvent& event)
-{
-    int key = event.GetKeyCode();
-
-    // change selected item in the list
-    if (key == WXK_UP || key == WXK_DOWN)
-    {
-        int selection = wxListBox::GetSelection();
-
-        if (key == WXK_UP && selection > 0)
-            selection--;
-        if (key == WXK_DOWN && selection < int(wxListBox::GetCount() - 1))
-            selection++;
-
-        wxListBox::Select(selection);
-    }
-    // send wxEVT_LISTBOX event if "Enter" was pushed
-    else if (key == WXK_NUMPAD_ENTER || key == WXK_RETURN)
-        ProcessSelection(wxListBox::GetSelection());
-    else
-        event.Skip(); // !Needed to have EVT_CHAR generated as well
 }
 
 
@@ -428,7 +355,7 @@ SearchDialog::SearchDialog(OptionsSearcher* searcher)
     wxColour bgr_clr = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
     SetBackgroundColour(bgr_clr);
 
-    default_string = _L("Type here to search");
+    default_string = _L("Enter a search term");
     int border = 10;
     int em = em_unit();
 
@@ -442,7 +369,7 @@ SearchDialog::SearchDialog(OptionsSearcher* searcher)
 
     wxDataViewTextRenderer* const markupRenderer = new wxDataViewTextRenderer();
 
-#ifdef SEARCH_SUPPORTS_MARKUP
+#ifdef SUPPORTS_MARKUP
     markupRenderer->EnableMarkup();
 #endif
 
@@ -617,8 +544,9 @@ void SearchDialog::update_list()
     for (const FoundOption& item : filters)
         search_list_model->Prepend(item.label);
 
-    // select first item 
-    search_list->Select(search_list_model->GetItem(0));
+    // select first item, if search_list
+    if (search_list_model->GetCount() > 0)
+        search_list->Select(search_list_model->GetItem(0));
     prevent_list_events = false;
 }
 

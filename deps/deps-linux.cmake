@@ -3,10 +3,11 @@ set(DEP_CMAKE_OPTS "-DCMAKE_POSITION_INDEPENDENT_CODE=ON")
 
 include("deps-unix-common.cmake")
 
-find_package(PNG QUIET)
-if (NOT PNG_FOUND)
-    message(WARNING "No PNG dev package found in system, building static library. You should install the system package.")
-endif ()
+# Some Linuxes may have very old libpng, so it's best to bundle it instead of relying on the system version.
+# find_package(PNG QUIET)
+# if (NOT PNG_FOUND)
+#     message(WARNING "No PNG dev package found in system, building static library. You should install the system package.")
+# endif ()
 
 #TODO UDEV
 
@@ -79,7 +80,6 @@ ExternalProject_Add(dep_libcurl
         --disable-smb
         --disable-smtp
         --disable-gopher
-        --disable-crypto-auth
         --without-gssapi
         --without-libpsl
         --without-libidn2

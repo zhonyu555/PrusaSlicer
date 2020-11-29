@@ -1,3 +1,4 @@
+#include "Exception.hpp"
 #include "TriangleMesh.hpp"
 #include "ClipperUtils.hpp"
 #include "Geometry.hpp"
@@ -70,7 +71,7 @@ TriangleMesh::TriangleMesh(const Pointf3s &points, const std::vector<Vec3i> &fac
     stl_get_size(&stl);
 }
 
-TriangleMesh::TriangleMesh(const indexed_triangle_set &M)
+TriangleMesh::TriangleMesh(const indexed_triangle_set &M) : repaired(false)
 {
     stl.stats.type = inmemory;
     
@@ -420,7 +421,7 @@ std::deque<uint32_t> TriangleMesh::find_unvisited_neighbors(std::vector<unsigned
 {
     // Make sure we're not operating on a broken mesh.
     if (!this->repaired)
-        throw std::runtime_error("find_unvisited_neighbors() requires repair()");
+        throw Slic3r::RuntimeError("find_unvisited_neighbors() requires repair()");
 
     // If the visited list is empty, populate it with false for every facet.
     if (facet_visited.empty())
@@ -683,7 +684,7 @@ void TriangleMeshSlicer::init(const TriangleMesh *_mesh, throw_on_cancel_callbac
 {
     mesh = _mesh;
     if (! mesh->has_shared_vertices())
-        throw std::invalid_argument("TriangleMeshSlicer was passed a mesh without shared vertices.");
+        throw Slic3r::InvalidArgument("TriangleMeshSlicer was passed a mesh without shared vertices.");
 
     throw_on_cancel();
     facets_edges.assign(_mesh->stl.stats.number_of_facets * 3, -1);
@@ -952,7 +953,7 @@ void TriangleMeshSlicer::slice(const std::vector<float> &z, SlicingMode mode, co
 		[&layers_p, mode, closing_radius, layers, throw_on_cancel, this](const tbb::blocked_range<size_t>& range) {
     		for (size_t layer_id = range.begin(); layer_id < range.end(); ++ layer_id) {
 #ifdef SLIC3R_TRIANGLEMESH_DEBUG
-                printf("Layer " PRINTF_ZU " (slice_z = %.2f):\n", layer_id, z[layer_id]);
+                printf("Layer %zu (slice_z = %.2f):\n", layer_id, z[layer_id]);
 #endif
                 throw_on_cancel();
                 ExPolygons &expolygons = (*layers)[layer_id];
@@ -1779,7 +1780,7 @@ void TriangleMeshSlicer::make_expolygons(const Polygons &loops, const float clos
     size_t holes_count = 0;
     for (ExPolygons::const_iterator e = ex_slices.begin(); e != ex_slices.end(); ++ e)
         holes_count += e->holes.size();
-    printf(PRINTF_ZU " surface(s) having " PRINTF_ZU " holes detected from " PRINTF_ZU " polylines\n",
+    printf("%zu surface(s) having %zu holes detected from %zu polylines\n",
         ex_slices.size(), holes_count, loops.size());
     #endif
     

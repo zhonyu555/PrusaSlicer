@@ -3,10 +3,10 @@
 
 #include <memory>
 #include <string>
-#include "Preset.hpp"
 #include "ImGuiWrapper.hpp"
 #include "ConfigWizard.hpp"
 #include "OpenGLManager.hpp"
+#include "libslic3r/Preset.hpp"
 
 #include <wx/app.h>
 #include <wx/colour.h>
@@ -24,6 +24,7 @@ class wxNotebook;
 struct wxLanguageInfo;
 
 namespace Slic3r {
+
 class AppConfig;
 class PresetBundle;
 class PresetUpdater;
@@ -32,6 +33,7 @@ class PrintHostJobQueue;
 class Model;
 
 namespace GUI{
+
 class RemovableDriveManager;
 class OtherInstanceMessageHandler;
 class MainFrame;
@@ -41,6 +43,7 @@ class ObjectSettings;
 class ObjectList;
 class ObjectLayers;
 class Plater;
+struct GUI_InitParams;
 
 
 
@@ -86,10 +89,26 @@ class ConfigWizard;
 
 static wxString dots("…", wxConvUTF8);
 
+// Does our wxWidgets version support markup?
+// https://github.com/prusa3d/PrusaSlicer/issues/4282#issuecomment-634676371
+#if wxUSE_MARKUP && wxCHECK_VERSION(3, 1, 1)
+    #define SUPPORTS_MARKUP
+#endif
+
 class GUI_App : public wxApp
 {
+public:
+    enum class EAppMode : unsigned char
+    {
+        Editor,
+        GCodeViewer
+    };
+
+private:
     bool            m_initialized { false };
-    bool            app_conf_exists{ false };
+    bool            m_app_conf_exists{ false };
+    EAppMode        m_app_mode{ EAppMode::Editor };
+    bool            m_is_recreating_gui{ false };
 
     wxColour        m_color_label_modified;
     wxColour        m_color_label_sys;
@@ -98,8 +117,9 @@ class GUI_App : public wxApp
     wxFont		    m_small_font;
     wxFont		    m_bold_font;
 	wxFont			m_normal_font;
+	wxFont			m_code_font;
 
-    int          m_em_unit; // width of a "m"-symbol in pixels for current system font
+    int             m_em_unit; // width of a "m"-symbol in pixels for current system font
                                // Note: for 100% Scale m_em_unit = 10 -> it's a good enough coefficient for a size setting of controls
 
     std::unique_ptr<wxLocale> 	  m_wxLocale;
@@ -119,16 +139,26 @@ class GUI_App : public wxApp
     std::unique_ptr <wxSingleInstanceChecker> m_single_instance_checker;
     std::string m_instance_hash_string;
 	size_t m_instance_hash_int;
+
 public:
     bool            OnInit() override;
     bool            initialized() const { return m_initialized; }
 
-    GUI_App();
+    explicit GUI_App(EAppMode mode = EAppMode::Editor);
     ~GUI_App() override;
 
+    EAppMode get_app_mode() const { return m_app_mode; }
+    bool is_editor() const { return m_app_mode == EAppMode::Editor; }
+    bool is_gcode_viewer() const { return m_app_mode == EAppMode::GCodeViewer; }
+    bool is_recreating_gui() const { return m_is_recreating_gui; }
+
+    // To be called after the GUI is fully built up.
+    // Process command line parameters cached in this->init_params,
+    // load configs, STLs etc.
+    void            post_init();
     static std::string get_gl_info(bool format_as_html, bool extensions);
-    wxGLContext* init_glcontext(wxGLCanvas& canvas);
-    bool init_opengl();
+    wxGLContext*    init_glcontext(wxGLCanvas& canvas);
+    bool            init_opengl();
 
     static unsigned get_colour_approx_luma(const wxColour &colour);
     static bool     dark_mode();
@@ -146,20 +176,24 @@ public:
     const wxFont&   small_font()            { return m_small_font; }
     const wxFont&   bold_font()             { return m_bold_font; }
     const wxFont&   normal_font()           { return m_normal_font; }
+    const wxFont&   code_font()             { return m_code_font; }
     int             em_unit() const         { return m_em_unit; }
     wxSize          get_min_size() const;
     float           toolbar_icon_scale(const bool is_limited = false) const;
     void            set_auto_toolbar_icon_scale(float scale) const;
+    void            check_printer_presets();
 
     void            recreate_GUI(const wxString& message);
     void            system_info();
     void            keyboard_shortcuts();
     void            load_project(wxWindow *parent, wxString& input_file) const;
     void            import_model(wxWindow *parent, wxArrayString& input_files) const;
+    void            load_gcode(wxWindow* parent, wxString& input_file) const;
+
     static bool     catch_error(std::function<void()> cb, const std::string& err);
 
     void            persist_window_geometry(wxTopLevelWindow *window, bool default_maximized = false);
-    void            update_ui_from_settings();
+    void            update_ui_from_settings(bool apply_free_camera_correction = true);
 
     bool            switch_language();
     bool            load_language(wxString language, bool initial);
@@ -182,6 +216,7 @@ public:
     virtual bool OnExceptionInMainLoop() override;
 
 #ifdef __APPLE__
+    void            OSXStoreOpenFiles(const wxArrayString &files) override;
     // wxWidgets override to get an event on open files.
     void            MacOpenFiles(const wxArrayString &fileNames) override;
 #endif /* __APPLE */
@@ -194,11 +229,17 @@ public:
     Plater*             plater();
     Model&      		model();
 
+
+    // Parameters extracted from the command line to be passed to GUI after initialization.
+    const GUI_InitParams* init_params { nullptr };
+
     AppConfig*      app_config{ nullptr };
     PresetBundle*   preset_bundle{ nullptr };
     PresetUpdater*  preset_updater{ nullptr };
     MainFrame*      mainframe{ nullptr };
     Plater*         plater_{ nullptr };
+
+	PresetUpdater* get_preset_updater() { return preset_updater; }
 
     wxNotebook*     tab_panel() const ;
     int             extruders_cnt() const;
@@ -227,6 +268,20 @@ public:
     void            gcode_thumbnails_debug();
 #endif // ENABLE_THUMBNAIL_GENERATOR_DEBUG
 
+    GLShaderProgram* get_shader(const std::string& shader_name) { return m_opengl_mgr.get_shader(shader_name); }
+    GLShaderProgram* get_current_shader() { return m_opengl_mgr.get_current_shader(); }
+
+    bool is_gl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const { return m_opengl_mgr.get_gl_info().is_version_greater_or_equal_to(major, minor); }
+    bool is_glsl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const { return m_opengl_mgr.get_gl_info().is_glsl_version_greater_or_equal_to(major, minor); }
+
+#if ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+#ifdef __WXMSW__
+    void            associate_3mf_files();
+    void            associate_stl_files();
+    void            associate_gcode_files();
+#endif // __WXMSW__
+#endif // ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+
 private:
     bool            on_init_inner();
 	void            init_app_config();
@@ -238,13 +293,17 @@ private:
     bool            config_wizard_startup();
 	void            check_updates(const bool verbose);
 
+#if !ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 #ifdef __WXMSW__
     void            associate_3mf_files();
+    void            associate_gcode_files();
 #endif // __WXMSW__
+#endif // !ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 };
+
 DECLARE_APP(GUI_App)
 
 } // GUI
-} //Slic3r
+} // Slic3r
 
 #endif // slic3r_GUI_App_hpp_

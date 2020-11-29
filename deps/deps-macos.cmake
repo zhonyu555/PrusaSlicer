@@ -9,6 +9,8 @@ set(DEP_CMAKE_OPTS
     "-DCMAKE_OSX_DEPLOYMENT_TARGET=${DEP_OSX_TARGET}"
     "-DCMAKE_CXX_FLAGS=${DEP_WERRORS_SDK}"
     "-DCMAKE_C_FLAGS=${DEP_WERRORS_SDK}"
+    "-DCMAKE_FIND_FRAMEWORK=LAST"
+    "-DCMAKE_FIND_APPBUNDLE=LAST"
 )
 
 include("deps-unix-common.cmake")
@@ -65,7 +67,6 @@ ExternalProject_Add(dep_libcurl
         --disable-smb
         --disable-smtp
         --disable-gopher
-        --disable-crypto-auth
         --without-gssapi
         --without-libpsl
         --without-libidn2

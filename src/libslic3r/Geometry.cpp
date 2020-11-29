@@ -1,4 +1,5 @@
 #include "libslic3r.h"
+#include "Exception.hpp"
 #include "Geometry.hpp"
 #include "ClipperUtils.hpp"
 #include "ExPolygon.hpp"
@@ -337,19 +338,19 @@ double rad2deg_dir(double angle)
     return rad2deg(angle);
 }
 
-Point circle_taubin_newton(const Points::const_iterator& input_begin, const Points::const_iterator& input_end, size_t cycles)
+Point circle_center_taubin_newton(const Points::const_iterator& input_begin, const Points::const_iterator& input_end, size_t cycles)
 {
     Vec2ds tmp;
     tmp.reserve(std::distance(input_begin, input_end));
     std::transform(input_begin, input_end, std::back_inserter(tmp), [] (const Point& in) { return unscale(in); } );
-    Vec2d center = circle_taubin_newton(tmp.cbegin(), tmp.end(), cycles);
+    Vec2d center = circle_center_taubin_newton(tmp.cbegin(), tmp.end(), cycles);
 	return Point::new_scale(center.x(), center.y());
 }
 
 /// Adapted from work in "Circular and Linear Regression: Fitting circles and lines by least squares", pg 126
 /// Returns a point corresponding to the center of a circle for which all of the points from input_begin to input_end
 /// lie on.
-Vec2d circle_taubin_newton(const Vec2ds::const_iterator& input_begin, const Vec2ds::const_iterator& input_end, size_t cycles)
+Vec2d circle_center_taubin_newton(const Vec2ds::const_iterator& input_begin, const Vec2ds::const_iterator& input_end, size_t cycles)
 {
     // calculate the centroid of the data set
     const Vec2d sum = std::accumulate(input_begin, input_end, Vec2d(0,0));
@@ -471,7 +472,7 @@ Pointfs arrange(size_t num_parts, const Vec2d &part_size, coordf_t gap, const Bo
     size_t cellw = size_t(floor((bed_bbox.size()(0) + gap) / cell_size(0)));
     size_t cellh = size_t(floor((bed_bbox.size()(1) + gap) / cell_size(1)));
     if (num_parts > cellw * cellh)
-        throw std::invalid_argument(PRINTF_ZU " parts won't fit in your print area!\n", num_parts);
+        throw Slic3r::InvalidArgument("%zu parts won't fit in your print area!\n", num_parts);
     
     // Get a bounding box of cellw x cellh cells, centered at the center of the bed.
     Vec2d       cells_size(cellw * cell_size(0) - gap, cellh * cell_size(1) - gap);

@@ -2,7 +2,8 @@
 #include "ConfigManipulation.hpp"
 #include "I18N.hpp"
 #include "GUI_App.hpp"
-#include "PresetBundle.hpp"
+#include "libslic3r/Model.hpp"
+#include "libslic3r/PresetBundle.hpp"
 
 #include <wx/msgdlg.h>
 
@@ -27,9 +28,7 @@ void ConfigManipulation::toggle_field(const std::string& opt_key, const bool tog
         if (local_config->option(opt_key) == nullptr)
             return;
     }
-    Field* field = get_field(opt_key, opt_index);
-    if (field==nullptr) return;
-    field->toggle(toggle);
+    cb_toggle_field(opt_key, toggle, opt_index);
 }
 
 void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, const bool is_global_config)
@@ -238,8 +237,11 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool have_infill = config->option<ConfigOptionPercent>("fill_density")->value > 0;
     // infill_extruder uses the same logic as in Print::extruders()
     for (auto el : { "fill_pattern", "infill_every_layers", "infill_only_where_needed",
-                    "solid_infill_every_layers", "solid_infill_below_area", "infill_extruder" })
+                    "solid_infill_every_layers", "solid_infill_below_area", "infill_extruder", "infill_anchor_max" })
         toggle_field(el, have_infill);
+    // Only allow configuration of open anchors if the anchoring is enabled.
+    bool has_infill_anchors = have_infill && config->option<ConfigOptionFloatOrPercent>("infill_anchor_max")->value > 0;
+    toggle_field("infill_anchor", has_infill_anchors);
 
     bool has_spiral_vase         = config->opt_bool("spiral_vase");
     bool has_top_solid_infill 	 = config->opt_int("top_solid_layers") > 0;
@@ -353,6 +355,7 @@ void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
     toggle_field("support_head_penetration", supports_en);
     toggle_field("support_head_width", supports_en);
     toggle_field("support_pillar_diameter", supports_en);
+    toggle_field("support_small_pillar_diameter_percent", supports_en);
     toggle_field("support_max_bridges_on_pillar", supports_en);
     toggle_field("support_pillar_connection_mode", supports_en);
     toggle_field("support_buildplate_only", supports_en);

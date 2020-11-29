@@ -11,6 +11,7 @@
 #include "GCode/ToolOrdering.hpp"
 #include "GCode/WipeTower.hpp"
 #include "GCode/ThumbnailData.hpp"
+#include "GCode/GCodeProcessor.hpp"
 
 #include "libslic3r.h"
 
@@ -20,22 +21,29 @@ class Print;
 class PrintObject;
 class ModelObject;
 class GCode;
-class GCodePreviewData;
 enum class SlicingMode : uint32_t;
 class Layer;
 class SupportLayer;
 
+namespace FillAdaptive {
+    struct Octree;
+    struct OctreeDeleter;
+    using OctreePtr = std::unique_ptr<Octree, OctreeDeleter>;
+};
+
 // Print step IDs for keeping track of the print state.
+// The Print steps are applied in this order.
 enum PrintStep {
-    psSkirt, 
-    psBrim,
-    // Synonym for the last step before the Wipe Tower / Tool Ordering, for the G-code preview slider to understand that 
-    // all the extrusions are there for the layer slider to add color changes etc.
-    psExtrusionPaths = psBrim,
     psWipeTower,
+    // Ordering of the tools on PrintObjects for a multi-material print.
     // psToolOrdering is a synonym to psWipeTower, as the Wipe Tower calculates and modifies the ToolOrdering,
     // while if printing without the Wipe Tower, the ToolOrdering is calculated as well.
     psToolOrdering = psWipeTower,
+    psSkirt, 
+    psBrim,
+    // Last step before G-code export, after this step is finished, the initial extrusion path preview
+    // should be refreshed.
+    psSlicingFinished = psBrim,
     psGCodeExport,
     psCount,
 };
@@ -186,10 +194,8 @@ public:
     std::vector<ExPolygons>     slice_support_blockers() const { return this->slice_support_volumes(ModelVolumeType::SUPPORT_BLOCKER); }
     std::vector<ExPolygons>     slice_support_enforcers() const { return this->slice_support_volumes(ModelVolumeType::SUPPORT_ENFORCER); }
 
-    // Helpers to project custom supports on slices
-    void project_and_append_custom_supports(FacetSupportType type, std::vector<ExPolygons>& expolys) const;
-    void project_and_append_custom_enforcers(std::vector<ExPolygons>& enforcers) const { project_and_append_custom_supports(FacetSupportType::ENFORCER, enforcers); }
-    void project_and_append_custom_blockers(std::vector<ExPolygons>& blockers) const { project_and_append_custom_supports(FacetSupportType::BLOCKER, blockers); }
+    // Helpers to project custom facets on slices
+    void project_and_append_custom_facets(bool seam, EnforcerBlockerType type, std::vector<ExPolygons>& expolys) const;
 
 private:
     // to be called from Print only.
@@ -232,6 +238,7 @@ private:
     void discover_horizontal_shells();
     void combine_infill();
     void _generate_support_material();
+    std::pair<FillAdaptive::OctreePtr, FillAdaptive::OctreePtr> prepare_adaptive_infill_data();
 
     // XYZ in scaled coordinates
     Vec3crd									m_size;
@@ -300,8 +307,6 @@ struct PrintStatistics
     PrintStatistics() { clear(); }
     std::string                     estimated_normal_print_time;
     std::string                     estimated_silent_print_time;
-    std::vector<std::pair<CustomGCode::Type, std::string>>    estimated_normal_custom_gcode_print_times;
-    std::vector<std::pair<CustomGCode::Type, std::string>>    estimated_silent_custom_gcode_print_times;
     double                          total_used_filament;
     double                          total_extruded_volume;
     double                          total_cost;
@@ -319,10 +324,6 @@ struct PrintStatistics
     std::string             finalize_output_path(const std::string &path_in) const;
 
     void clear() {
-        estimated_normal_print_time.clear();
-        estimated_silent_print_time.clear();
-        estimated_normal_custom_gcode_print_times.clear();
-        estimated_silent_custom_gcode_print_times.clear();
         total_used_filament    = 0.;
         total_extruded_volume  = 0.;
         total_cost             = 0.;
@@ -356,13 +357,15 @@ public:
     // a cancellation callback is executed to stop the background processing before the operation.
     void                clear() override;
     bool                empty() const override { return m_objects.empty(); }
+    // List of existing PrintObject IDs, to remove notifications for non-existent IDs.
+    std::vector<ObjectID> print_object_ids() const override;
 
     ApplyStatus         apply(const Model &model, DynamicPrintConfig config) override;
 
     void                process() override;
     // Exports G-code into a file name based on the path_template, returns the file path of the generated G-code file.
     // If preview_data is not null, the preview_data is filled in for the G-code visualization (not used by the command line Slic3r).
-    std::string         export_gcode(const std::string& path_template, GCodePreviewData* preview_data, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
+    std::string         export_gcode(const std::string& path_template, GCodeProcessor::Result* result, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
 
     // methods for handling state
     bool                is_step_done(PrintStep step) const { return Inherited::is_step_done(step); }
@@ -395,6 +398,13 @@ public:
     const PrintObjectPtrs&      objects() const { return m_objects; }
     PrintObject*                get_object(size_t idx) { return m_objects[idx]; }
     const PrintObject*          get_object(size_t idx) const { return m_objects[idx]; }
+    // PrintObject by its ObjectID, to be used to uniquely bind slicing warnings to their source PrintObjects
+    // in the notification center.
+    const PrintObject*          get_object(ObjectID object_id) const { 
+        auto it = std::find_if(m_objects.begin(), m_objects.end(), 
+            [object_id](const PrintObject *obj) { return obj->id() == object_id; });
+        return (it == m_objects.end()) ? nullptr : *it;
+    }
     const PrintRegionPtrs&      regions() const { return m_regions; }
     // How many of PrintObject::copies() over all print objects are there?
     // If zero, then the print is empty and the print shall not be executed.
@@ -410,6 +420,7 @@ public:
     const Polygon&                   first_layer_convex_hull() const { return m_first_layer_convex_hull; }
 
     const PrintStatistics&      print_statistics() const { return m_print_statistics; }
+    PrintStatistics&            print_statistics() { return m_print_statistics; }
 
     // Wipe tower support.
     bool                        has_wipe_tower() const;
