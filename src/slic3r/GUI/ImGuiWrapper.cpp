@@ -925,22 +925,25 @@ void ImGuiWrapper::init_font(bool compress)
 #endif
 	builder.BuildRanges(&ranges); // Build the final result (ordered ranges with all the unique characters submitted)
 
+    // Brighten font texture to improve visual clarity
+    ImFontConfig font_config;
+    font_config.RasterizerMultiply = 2.0f;
+
     //FIXME replace with io.Fonts->AddFontFromMemoryTTF(buf_decompressed_data, (int)buf_decompressed_size, m_font_size, nullptr, ranges.Data);
     //https://github.com/ocornut/imgui/issues/220
-	ImFont* font = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/" + (m_font_cjk ? "NotoSansCJK-Regular.ttc" : "NotoSans-Regular.ttf")).c_str(), m_font_size, nullptr, ranges.Data);
+	ImFont* font = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/" + (m_font_cjk ? "NotoSansCJK-Regular.ttc" : "NotoSans-Regular.ttf")).c_str(), m_font_size, &font_config, ranges.Data);
     if (font == nullptr) {
         font = io.Fonts->AddFontDefault();
         if (font == nullptr) {
-            throw Slic3r::RuntimeError("ImGui: Could not load deafult font");
+            throw Slic3r::RuntimeError("ImGui: Could not load default font");
         }
     }
 
 #ifdef __APPLE__
-    ImFontConfig config;
-    config.MergeMode = true;
+    font_config.MergeMode = true;
     if (! m_font_cjk) {
 		// Apple keyboard shortcuts are only contained in the CJK fonts.
-		ImFont *font_cjk = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/NotoSansCJK-Regular.ttc").c_str(), m_font_size, &config, ranges_keyboard_shortcuts);
+		ImFont *font_cjk = io.Fonts->AddFontFromFileTTF((Slic3r::resources_dir() + "/fonts/NotoSansCJK-Regular.ttc").c_str(), m_font_size, &font_config, ranges_keyboard_shortcuts);
         assert(font_cjk != nullptr);
     }
 #endif
@@ -950,9 +953,9 @@ void ImGuiWrapper::init_font(bool compress)
 
     int rect_id = io.Fonts->CustomRects.Size;  // id of the rectangle added next
     // add rectangles for the icons to the font atlas
-    for (auto& icon : font_icons)
+    for (const auto& icon : font_icons)
         io.Fonts->AddCustomRectFontGlyph(font, icon.first, icon_sz, icon_sz, 3.0 * font_scale + icon_sz);
-    for (auto& icon : font_icons_large)
+    for (const auto& icon : font_icons_large)
         io.Fonts->AddCustomRectFontGlyph(font, icon.first, icon_sz * 2, icon_sz * 2, 3.0 * font_scale + icon_sz * 2);
 
     // Build texture atlas
@@ -961,7 +964,7 @@ void ImGuiWrapper::init_font(bool compress)
     io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bits (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
 
     // Fill rectangles from the SVG-icons
-    for (auto icon : font_icons) {
+    for (const auto& icon : font_icons) {
         if (const ImFontAtlas::CustomRect* rect = io.Fonts->GetCustomRectByIndex(rect_id)) {
             std::vector<unsigned char> raw_data = load_svg(icon.second, icon_sz, icon_sz);
             const ImU32* pIn = (ImU32*)raw_data.data();
@@ -975,7 +978,7 @@ void ImGuiWrapper::init_font(bool compress)
     }
     icon_sz = lround(32 * font_scale); // default size of large icon is 32 px
     
-    for (auto icon : font_icons_large) {
+    for (const auto& icon : font_icons_large) {
         if (const ImFontAtlas::CustomRect* rect = io.Fonts->GetCustomRectByIndex(rect_id)) {
             std::vector<unsigned char> raw_data = load_svg(icon.second, icon_sz, icon_sz);
             const ImU32* pIn = (ImU32*)raw_data.data();
