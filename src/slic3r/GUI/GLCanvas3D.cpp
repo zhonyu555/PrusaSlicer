@@ -636,9 +636,9 @@ void GLCanvas3D::WarningTexture::activate(WarningTexture::Warning warning, bool 
     auto &notification_manager = *wxGetApp().plater()->get_notification_manager();
     if (state) {
         if(error)
-            notification_manager.push_plater_error_notification(text,*(wxGetApp().plater()->get_current_canvas3D()));
+            notification_manager.push_plater_error_notification(text);
         else
-            notification_manager.push_plater_warning_notification(text, *(wxGetApp().plater()->get_current_canvas3D()));
+            notification_manager.push_plater_warning_notification(text);
     } else {
         if (error)
             notification_manager.close_plater_error_notification(text);
@@ -1675,21 +1675,29 @@ void GLCanvas3D::render()
     _render_overlays();
 
 #if ENABLE_RENDER_STATISTICS
-    ImGuiWrapper& imgui = *wxGetApp().imgui();
-    imgui.begin(std::string("Render statistics"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-    imgui.text("Last frame: ");
-    ImGui::SameLine();
-    imgui.text(std::to_string(m_render_stats.last_frame));
-    ImGui::SameLine();
-    imgui.text("  ms");
-    ImGui::Separator();
-    imgui.text("Compressed textures: ");
-    ImGui::SameLine();
-    imgui.text(OpenGLManager::are_compressed_textures_supported() ? "supported" : "not supported");
-    imgui.text("Max texture size: ");
-    ImGui::SameLine();
-    imgui.text(std::to_string(OpenGLManager::get_gl_info().get_max_tex_size()));
-    imgui.end();
+    if (wxGetApp().plater()->is_render_statistic_dialog_visible()) {
+        ImGuiWrapper& imgui = *wxGetApp().imgui();
+        imgui.begin(std::string("Render statistics"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+        imgui.text("Last frame: ");
+        ImGui::SameLine();
+        imgui.text(std::to_string(m_render_stats.last_frame));
+        ImGui::SameLine();
+        imgui.text("  ms");
+        imgui.text("FPS: ");
+        ImGui::SameLine();
+        imgui.text(std::to_string(static_cast<int>(1000.0f / static_cast<float>(m_render_stats.last_frame))));
+//    imgui.text("Imgui FPS: ");
+//    ImGui::SameLine();
+//    imgui.text(std::to_string(static_cast<int>(ImGui::GetIO().Framerate)));
+        ImGui::Separator();
+        imgui.text("Compressed textures: ");
+        ImGui::SameLine();
+        imgui.text(OpenGLManager::are_compressed_textures_supported() ? "supported" : "not supported");
+        imgui.text("Max texture size: ");
+        ImGui::SameLine();
+        imgui.text(std::to_string(OpenGLManager::get_gl_info().get_max_tex_size()));
+        imgui.end();
+    }
 #endif // ENABLE_RENDER_STATISTICS
 
 #if ENABLE_CAMERA_STATISTICS
@@ -1728,8 +1736,7 @@ void GLCanvas3D::render()
         m_tooltip.render(m_mouse.position, *this);
 
     wxGetApp().plater()->get_mouse3d_controller().render_settings_dialog(*this);
-	
-	wxGetApp().plater()->get_notification_manager()->render_notifications(*this, get_overlay_window_width());
+    wxGetApp().plater()->get_notification_manager()->render_notifications(get_overlay_window_width());
 
     wxGetApp().imgui()->render();
 
@@ -2384,6 +2391,14 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
     if (!m_initialized)
         return;
 
+#if ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
+    NotificationManager* notification_mgr = wxGetApp().plater()->get_notification_manager();
+    if (notification_mgr->requires_update())
+        notification_mgr->update_notifications();
+
+    m_dirty |= notification_mgr->requires_render();
+#endif // ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
+
     m_dirty |= m_main_toolbar.update_items_state();
     m_dirty |= m_undoredo_toolbar.update_items_state();
     m_dirty |= wxGetApp().plater()->get_view_toolbar().update_items_state();
@@ -2391,12 +2406,24 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
     bool mouse3d_controller_applied = wxGetApp().plater()->get_mouse3d_controller().apply(wxGetApp().plater()->get_camera());
     m_dirty |= mouse3d_controller_applied;
 
+#if ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
+    if (!m_dirty) {
+        if (notification_mgr->requires_update())
+            evt.RequestMore();
+        return;
+    }
+#else
     if (!m_dirty)
         return;
+#endif // ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
 
     _refresh_if_shown_on_screen();
 
+#if ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
+    if (m_extra_frame_requested || mouse3d_controller_applied || notification_mgr->requires_update()) {
+#else
     if (m_extra_frame_requested || mouse3d_controller_applied) {
+#endif // ENABLE_NEW_NOTIFICATIONS_FADE_OUT 
         m_dirty = true;
         m_extra_frame_requested = false;
         evt.RequestMore();
@@ -2442,9 +2469,6 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         post_event(SimpleEvent(EVT_GLCANVAS_QUESTION_MARK));
     };
 
-//#ifdef __APPLE__
-//    ctrlMask |= wxMOD_RAW_CONTROL;
-//#endif /* __APPLE__ */
     if ((evt.GetModifiers() & ctrlMask) != 0) {
         // CTRL is pressed
         switch (keyCode) {
@@ -2531,7 +2555,7 @@ void GLCanvas3D::on_char(wxKeyEvent& evt)
         case WXK_BACK:
         case WXK_DELETE:
              post_event(SimpleEvent(EVT_GLTOOLBAR_DELETE_ALL)); break;
-		default:            evt.Skip();
+        default:            evt.Skip();
         }
     }
     else if ((evt.GetModifiers() & shiftMask) != 0) {
@@ -2760,7 +2784,15 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
     {
         if (!m_gizmos.on_key(evt)) {
             if (evt.GetEventType() == wxEVT_KEY_UP) {
+#if ENABLE_RENDER_STATISTICS
+                if (evt.ShiftDown() && evt.ControlDown() && keyCode == WXK_SPACE) {
+                    wxGetApp().plater()->toggle_render_statistic_dialog();
+                    m_dirty = true;
+                }
                 if (m_tab_down && keyCode == WXK_TAB && !evt.HasAnyModifiers()) {
+#else
+                if (m_tab_down && keyCode == WXK_TAB && !evt.HasAnyModifiers()) {
+#endif // ENABLE_RENDER_STATISTICS
                     // Enable switching between 3D and Preview with Tab
                     // m_canvas->HandleAsNavigationKey(evt);   // XXX: Doesn't work in some cases / on Linux
                     post_event(SimpleEvent(EVT_GLCANVAS_TAB));
@@ -3964,7 +3996,7 @@ bool GLCanvas3D::_render_arrange_menu(float pos_x)
 
     imgui->text(_L("Use CTRL+left mouse key to enter text edit mode:"));
 
-    if (imgui->slider_float(_L("Clearance size"), &settings.distance, dist_min, 100.0f, "%5.2f") || dist_min > settings.distance) {
+    if (imgui->slider_float(_L("Spacing"), &settings.distance, dist_min, 100.0f, "%5.2f") || dist_min > settings.distance) {
         settings.distance = std::max(dist_min, settings.distance);
         settings_out.distance = settings.distance;
         appcfg->set("arrange", dist_key.c_str(), std::to_string(settings_out.distance));
