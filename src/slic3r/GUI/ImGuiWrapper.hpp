@@ -63,7 +63,7 @@ public:
 	void set_next_window_size(float x, float y, ImGuiCond cond);
 
     void set_enable_dropshadows(bool enable);
-    void set_dropshadow_params(int size, float max_alpha) {}
+    void set_dropshadow_params(int size, float max_alpha);
 
     bool begin(const std::string &name, int flags = 0);
     bool begin(const wxString &name, int flags = 0);
