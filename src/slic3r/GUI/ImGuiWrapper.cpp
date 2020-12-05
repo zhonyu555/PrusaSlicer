@@ -63,6 +63,17 @@ const ImVec4 ImGuiWrapper::COL_BUTTON_BACKGROUND = COL_ORANGE_DARK;
 const ImVec4 ImGuiWrapper::COL_BUTTON_HOVERED    = COL_ORANGE_LIGHT;
 const ImVec4 ImGuiWrapper::COL_BUTTON_ACTIVE     = ImGuiWrapper::COL_BUTTON_HOVERED;
 
+// Utility functions
+
+// this method returns a normalized value from a sigmoid-type function 
+// based on the position of time t across a time scale of 0 to total_t.
+// Generally good for "gliding" animations and drawing drop-shadows.
+inline float get_sigmoid_normalized(const float t, const float total_t) {
+	const float val = ((float)1 / (1 + 1 * expf(((-1 * t) + (0.5f * total_t)) / (total_t * (float)0.11f))));
+    constexpr float _epsilon = 0.020f; // function isn't perfect, floor and ceiling result for better result.
+	return (val < _epsilon) ? 0.0f : (val > (1.0f - _epsilon)) ? 1.0f : val;
+}
+
 ImGuiWrapper::ImGuiWrapper()
     : m_glyph_ranges(nullptr)
     , m_font_cjk(false)
@@ -72,6 +83,9 @@ ImGuiWrapper::ImGuiWrapper()
     , m_mouse_buttons(0)
     , m_disabled(false)
     , m_new_frame_open(false)
+    , m_dropshadows_enabled(false)
+    , m_dropshadow_size(10)
+    , m_dropshadow_max_alpha(0.20f)
 {
     ImGui::CreateContext();
 
@@ -289,6 +303,11 @@ void ImGuiWrapper::set_next_window_size(float x, float y, ImGuiCond cond)
 	ImGui::SetNextWindowSize(ImVec2(x, y), cond);
 }
 
+void ImGuiWrapper::set_enable_dropshadows(bool enable)
+{
+	m_dropshadows_enabled = enable;
+}
+
 bool ImGuiWrapper::begin(const std::string &name, int flags)
 {
     return ImGui::Begin(name.c_str(), nullptr, (ImGuiWindowFlags)flags);
@@ -311,6 +330,16 @@ bool ImGuiWrapper::begin(const wxString& name, bool* close, int flags)
 
 void ImGuiWrapper::end()
 {
+    if (m_dropshadows_enabled) {
+        ImGuiWindow* wind = ImGui::GetCurrentWindow();
+        if (wind && !wind->Hidden) {
+            const auto& tl = wind->Pos;
+            const auto& br = (tl + wind->Size);
+
+            draw_dropshadow(tl, br);
+        }
+    }
+
     ImGui::End();
 }
 
@@ -509,7 +538,7 @@ bool ImGuiWrapper::undo_redo_list(const ImVec2& size, const bool is_undo, bool (
 }
 
 // It's a copy of IMGui::Selactable function.
-// But a little beat modified to change a label text.
+// But a little bit modified to change a label text.
 // If item is hovered we should use another color for highlighted letters.
 // To do that we push a ColorMarkerHovered symbol at the very beginning of the label
 // This symbol will be used to a color selection for the highlighted letters.
@@ -850,7 +879,7 @@ bool ImGuiWrapper::want_text_input() const
 
 bool ImGuiWrapper::want_any_input() const
 {
-    const auto io = ImGui::GetIO();
+    const auto& io = ImGui::GetIO();
     return io.WantCaptureMouse || io.WantCaptureKeyboard || io.WantTextInput;
 }
 
@@ -1208,6 +1237,19 @@ void ImGuiWrapper::destroy_font()
         glsafe(::glDeleteTextures(1, &m_font_texture));
         m_font_texture = 0;
     }
+}
+
+void ImGuiWrapper::draw_dropshadow(const ImVec2& tl, const ImVec2& br)
+{
+    ImDrawList& dl = *ImGui::GetBackgroundDrawList();
+    const ImGuiStyle& style = ImGui::GetCurrentContext()->Style;
+	for (int i = -1; i < m_dropshadow_size; i++) {
+		const ImVec2 offset((float)i, (float)i);
+		const float alpha = (1.0f - get_sigmoid_normalized(i, m_dropshadow_size + 1)) * 
+            m_dropshadow_max_alpha * (1.0f - ((float)(i >= 0 ? i : 0) / (float)m_dropshadow_size));
+
+		dl.AddRect(tl - offset, br + offset, ImGui::ColorConvertFloat4ToU32(ImVec4(0, 0, 0, alpha * style.Alpha)), style.WindowRounding + (float)i);
+	}
 }
 
 const char* ImGuiWrapper::clipboard_get(void* user_data)
