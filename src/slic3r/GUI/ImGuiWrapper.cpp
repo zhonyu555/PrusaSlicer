@@ -308,6 +308,12 @@ void ImGuiWrapper::set_enable_dropshadows(bool enable)
 	m_dropshadows_enabled = enable;
 }
 
+void ImGuiWrapper::set_dropshadow_params(int size, float max_alpha)
+{
+    m_dropshadow_size = size;
+    m_dropshadow_max_alpha = max_alpha;
+}
+
 bool ImGuiWrapper::begin(const std::string &name, int flags)
 {
     return ImGui::Begin(name.c_str(), nullptr, (ImGuiWindowFlags)flags);
