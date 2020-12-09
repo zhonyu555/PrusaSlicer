@@ -8,18 +8,18 @@
 #include "MotionPlanner.hpp"
 #include "Point.hpp"
 #include "PlaceholderParser.hpp"
-#include "Print.hpp"
 #include "PrintConfig.hpp"
 #include "GCode/CoolingBuffer.hpp"
 #include "GCode/SpiralVase.hpp"
 #include "GCode/ToolOrdering.hpp"
 #include "GCode/WipeTower.hpp"
-#include "GCodeTimeEstimator.hpp"
+#include "GCode/SeamPlacer.hpp"
+#include "GCode/GCodeProcessor.hpp"
 #include "EdgeGrid.hpp"
-#include "GCode/Analyzer.hpp"
 #include "GCode/ThumbnailData.hpp"
 
 #include <memory>
+#include <map>
 #include <string>
 
 #ifdef HAS_PRESSURE_EQUALIZER
@@ -30,7 +30,10 @@ namespace Slic3r {
 
 // Forward declarations.
 class GCode;
-class GCodePreviewData;
+
+namespace { struct Item; }
+struct PrintInstance;
+using PrintObjectPtrs = std::vector<PrintObject*>;
 
 class AvoidCrossingPerimeters {
 public:
@@ -59,6 +62,7 @@ private:
     std::unique_ptr<MotionPlanner> m_external_mp;
     std::unique_ptr<MotionPlanner> m_layer_mp;
 };
+
 
 class OozePrevention {
 public:
@@ -135,28 +139,33 @@ private:
     double                                                       m_last_wipe_tower_print_z = 0.f;
 };
 
+class ColorPrintColors
+{
+    static const std::vector<std::string> Colors;
+public:
+    static const std::vector<std::string>& get() { return Colors; }
+};
+
 class GCode {
 public:        
     GCode() : 
     	m_origin(Vec2d::Zero()),
         m_enable_loop_clipping(true), 
         m_enable_cooling_markers(false), 
-        m_enable_extrusion_role_markers(false), 
-        m_enable_analyzer(false),
-        m_last_analyzer_extrusion_role(erNone),
+        m_enable_extrusion_role_markers(false),
+        m_last_processor_extrusion_role(erNone),
         m_layer_count(0),
         m_layer_index(-1), 
         m_layer(nullptr), 
         m_volumetric_speed(0),
         m_last_pos_defined(false),
         m_last_extrusion_role(erNone),
-        m_last_mm3_per_mm(GCodeAnalyzer::Default_mm3_per_mm),
-        m_last_width(GCodeAnalyzer::Default_Width),
-        m_last_height(GCodeAnalyzer::Default_Height),
+#if ENABLE_GCODE_VIEWER_DATA_CHECKING
+        m_last_mm3_per_mm(0.0),
+        m_last_width(0.0f),
+#endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
         m_brim_done(false),
         m_second_layer_things_done(false),
-        m_normal_time_estimator(GCodeTimeEstimator::Normal),
-        m_silent_time_estimator(GCodeTimeEstimator::Silent),
         m_silent_time_estimator_enabled(false),
         m_last_obj_copy(nullptr, Point(std::numeric_limits<coord_t>::max(), std::numeric_limits<coord_t>::max()))
         {}
@@ -164,7 +173,7 @@ public:
 
     // throws std::runtime_exception on error,
     // throws CanceledException through print->throw_if_canceled().
-    void            do_export(Print* print, const char* path, GCodePreviewData* preview_data = nullptr, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
+    void            do_export(Print* print, const char* path, GCodeProcessor::Result* result = nullptr, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
 
     // Exported for the helper classes (OozePrevention, Wipe) and for the Perl binding for unit tests.
     const Vec2d&    origin() const { return m_origin; }
@@ -295,7 +304,7 @@ private:
 		const size_t                     				 single_object_instance_idx);
 
     std::string     extrude_perimeters(const Print &print, const std::vector<ObjectByExtruder::Island::Region> &by_region, std::unique_ptr<EdgeGrid::Grid> &lower_layer_edge_grid);
-    std::string     extrude_infill(const Print &print, const std::vector<ObjectByExtruder::Island::Region> &by_region);
+    std::string     extrude_infill(const Print &print, const std::vector<ObjectByExtruder::Island::Region> &by_region, bool ironing);
     std::string     extrude_support(const ExtrusionEntityCollection &support_fills);
 
     std::string     travel_to(const Point &point, ExtrusionRole role, std::string comment);
@@ -303,6 +312,9 @@ private:
     std::string     retract(bool toolchange = false);
     std::string     unretract() { return m_writer.unlift() + m_writer.unretract(); }
     std::string     set_extruder(unsigned int extruder_id, double print_z);
+
+    // Cache for custom seam enforcers/blockers for each layer.
+    SeamPlacer                          m_seam_placer;
 
     /* Origin of print coordinates expressed in unscaled G-code coordinates.
        This affects the input arguments supplied to the extrude*() and travel_to()
@@ -312,7 +324,7 @@ private:
     GCodeWriter                         m_writer;
     PlaceholderParser                   m_placeholder_parser;
     // Collection of templates, on which the placeholder substitution failed.
-    std::set<std::string>               m_placeholder_parser_failed_templates;
+    std::map<std::string, std::string>  m_placeholder_parser_failed_templates;
     OozePrevention                      m_ooze_prevention;
     Wipe                                m_wipe;
     AvoidCrossingPerimeters             m_avoid_crossing_perimeters;
@@ -324,11 +336,8 @@ private:
     // Markers for the Pressure Equalizer to recognize the extrusion type.
     // The Pressure Equalizer removes the markers from the final G-code.
     bool                                m_enable_extrusion_role_markers;
-    // Enableds the G-code Analyzer.
-    // Extended markers will be added during G-code generation.
-    // The G-code Analyzer will remove these comments from the final G-code.
-    bool                                m_enable_analyzer;
-    ExtrusionRole                       m_last_analyzer_extrusion_role;
+    // Keeps track of the last extrusion role passed to the processor
+    ExtrusionRole                       m_last_processor_extrusion_role;
     // How many times will change_layer() be called?
     // change_layer() will update the progress bar.
     unsigned int                        m_layer_count;
@@ -337,14 +346,17 @@ private:
     // Current layer processed. Insequential printing mode, only a single copy will be printed.
     // In non-sequential mode, all its copies will be printed.
     const Layer*                        m_layer;
-    std::map<const PrintObject*,Point>  m_seam_position;
     double                              m_volumetric_speed;
     // Support for the extrusion role markers. Which marker is active?
     ExtrusionRole                       m_last_extrusion_role;
-    // Support for G-Code Analyzer
+    // Support for G-Code Processor
+    float                               m_last_height{ 0.0f };
+    float                               m_last_layer_z{ 0.0f };
+    float                               m_max_layer_z{ 0.0f };
+#if ENABLE_GCODE_VIEWER_DATA_CHECKING
     double                              m_last_mm3_per_mm;
-    float                               m_last_width;
-    float                               m_last_height;
+    float                               m_last_width{ 0.0f };
+#endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
     Point                               m_last_pos;
     bool                                m_last_pos_defined;
@@ -365,13 +377,10 @@ private:
     // Index of a last object copy extruded.
     std::pair<const PrintObject*, Point> m_last_obj_copy;
 
-    // Time estimators
-    GCodeTimeEstimator m_normal_time_estimator;
-    GCodeTimeEstimator m_silent_time_estimator;
     bool m_silent_time_estimator_enabled;
 
-    // Analyzer
-    GCodeAnalyzer m_analyzer;
+    // Processor
+    GCodeProcessor m_processor;
 
     // Write a string into a file.
     void _write(FILE* file, const std::string& what) { this->_write(file, what.c_str()); }

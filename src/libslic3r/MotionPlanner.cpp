@@ -6,6 +6,7 @@
 #include <limits> // for numeric_limits
 #include <assert.h>
 
+#define BOOST_VORONOI_USE_GMP 1
 #include "boost/polygon/voronoi.hpp"
 using boost::polygon::voronoi_builder;
 using boost::polygon::voronoi_diagram;
@@ -263,7 +264,7 @@ Point MotionPlannerEnv::nearest_env_point(const Point &from, const Point &to) co
     for (const ExPolygon &ex : m_env.expolygons) {
         for (const Polygon &hole : ex.holes)
             if (hole.contains(from))
-                pp = hole;
+                pp = hole.points;
         if (! pp.empty())
             break;
     }
