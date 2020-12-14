@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <memory>
 #include <chrono>
+#include <cstdint>
 
 #include "GLToolbar.hpp"
 #include "Event.hpp"
@@ -103,7 +104,11 @@ wxDECLARE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_UPDATE_BED_SHAPE, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_TAB, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_RESETGIZMOS, SimpleEvent);
+#if ENABLE_ARROW_KEYS_WITH_SLIDERS
+wxDECLARE_EVENT(EVT_GLCANVAS_MOVE_SLIDERS, wxKeyEvent);
+#else
 wxDECLARE_EVENT(EVT_GLCANVAS_MOVE_LAYERS_SLIDER, wxKeyEvent);
+#endif // ENABLE_ARROW_KEYS_WITH_SLIDERS
 wxDECLARE_EVENT(EVT_GLCANVAS_EDIT_COLOR_CHANGE, wxKeyEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_JUMP_TO, wxKeyEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_UNDO, SimpleEvent);
@@ -316,11 +321,22 @@ class GLCanvas3D
     };
 
 #if ENABLE_RENDER_STATISTICS
-    struct RenderStats
+    class RenderStats
     {
-        long long last_frame;
+        std::queue<std::pair<int64_t, int64_t>> m_frames;
+        int64_t m_curr_total{ 0 };
 
-        RenderStats() : last_frame(0) {}
+    public:
+        void add_frame(int64_t frame) {
+            int64_t now = wxGetLocalTimeMillis().GetValue();
+            if (!m_frames.empty() && now - m_frames.front().first > 1000) {
+                m_curr_total -= m_frames.front().second;
+                m_frames.pop();
+            }
+            m_curr_total += frame;
+            m_frames.push({ now, frame });
+        }
+        int64_t get_average() const { return m_frames.empty() ? 0 : m_curr_total / m_frames.size(); }
     };
 #endif // ENABLE_RENDER_STATISTICS
 
@@ -383,9 +399,11 @@ public:
 
     struct ArrangeSettings
     {
-        float distance         = 6.;
-        float accuracy         = 0.65f;
-        bool  enable_rotation  = false;
+        float distance           = 6.;
+//        float distance_seq_print = 6.;    // Used when sequential print is ON
+//        float distance_sla       = 6.;
+        float accuracy           = 0.65f; // Unused currently
+        bool  enable_rotation    = false;
     };
 
 private:
@@ -459,7 +477,35 @@ private:
     mutable bool m_tooltip_enabled{ true };
     Slope m_slope;
 
-    ArrangeSettings m_arrange_settings;
+    ArrangeSettings m_arrange_settings_fff, m_arrange_settings_sla,
+        m_arrange_settings_fff_seq_print;
+
+    PrinterTechnology current_printer_technology() const;
+
+    template<class Self>
+    static auto & get_arrange_settings(Self *self)
+    {
+        PrinterTechnology ptech = self->current_printer_technology();
+
+        auto *ptr = &self->m_arrange_settings_fff;
+
+        if (ptech == ptSLA) {
+            ptr = &self->m_arrange_settings_sla;
+        } else if (ptech == ptFFF) {
+            auto co_opt = self->m_config->template option<ConfigOptionBool>("complete_objects");
+            if (co_opt && co_opt->value) {
+                ptr = &self->m_arrange_settings_fff_seq_print;
+            } else {
+                ptr = &self->m_arrange_settings_fff;
+            }
+        }
+
+        return *ptr;
+    }
+
+    ArrangeSettings &get_arrange_settings() { return get_arrange_settings(this); }
+
+    void load_arrange_settings();
 
 public:
     explicit GLCanvas3D(wxGLCanvas* canvas);
@@ -587,6 +633,9 @@ public:
 
     void load_gcode_preview(const GCodeProcessor::Result& gcode_result);
     void refresh_gcode_preview(const GCodeProcessor::Result& gcode_result, const std::vector<std::string>& str_tool_colors);
+#if ENABLE_RENDER_PATH_REFRESH_AFTER_OPTIONS_CHANGE
+    void refresh_gcode_preview_render_paths();
+#endif // ENABLE_RENDER_PATH_REFRESH_AFTER_OPTIONS_CHANGE
     void set_gcode_view_preview_type(GCodeViewer::EViewType type) { return m_gcode_viewer.set_view_type(type); }
     GCodeViewer::EViewType get_gcode_view_preview_type() const { return m_gcode_viewer.get_view_type(); }
     void load_sla_preview();
@@ -631,8 +680,8 @@ public:
     class WipeTowerInfo {
     protected:
         Vec2d m_pos = {std::nan(""), std::nan("")};
-        Vec2d m_bb_size = {0., 0.};
         double m_rotation = 0.;
+        BoundingBoxf m_bb;
         friend class GLCanvas3D;
     public:
         
@@ -643,7 +692,7 @@ public:
         
         inline const Vec2d& pos() const { return m_pos; }
         inline double rotation() const { return m_rotation; }
-        inline const Vec2d bb_size() const { return m_bb_size; }
+        inline const Vec2d bb_size() const { return m_bb.size(); }
         
         void apply_wipe_tower() const;
     };
@@ -680,7 +729,17 @@ public:
     void use_slope(bool use) { m_slope.use(use); }
     void set_slope_normal_angle(float angle_in_deg) { m_slope.set_normal_angle(angle_in_deg); }
 
-    const ArrangeSettings& get_arrange_settings() const { return m_arrange_settings; }
+    ArrangeSettings get_arrange_settings() const
+    {
+        const ArrangeSettings &settings = get_arrange_settings(this);
+        ArrangeSettings ret = settings;
+        if (&settings == &m_arrange_settings_fff_seq_print) {
+            ret.distance = std::max(ret.distance,
+                                    float(min_object_distance(*m_config)));
+        }
+
+        return ret;
+    }
 
 private:
     bool _is_shown_on_screen() const;

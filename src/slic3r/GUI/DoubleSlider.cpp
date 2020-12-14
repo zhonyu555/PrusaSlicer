@@ -24,6 +24,7 @@
 #include <boost/algorithm/string/replace.hpp>
 #include "Field.hpp"
 #include "format.hpp"
+#include "NotificationManager.hpp"
 
 namespace Slic3r {
 
@@ -753,6 +754,11 @@ void Control::draw_ticks(wxDC& dc)
     get_size(&width, &height);
     const wxCoord mid = is_horizontal() ? 0.5*height : 0.5*width;
     for (auto tick : m_ticks.ticks) {
+        if (tick.tick >= m_values.size()) {
+            // The case when OnPaint is called before m_ticks.ticks data are updated (specific for the vase mode)
+            break;
+        }
+
         const wxCoord pos = get_position_from_value(tick.tick);
         draw_ticks_pair(dc, pos, mid, 7);
 
@@ -965,11 +971,15 @@ void Control::draw_ruler(wxDC& dc)
         double value = 0.0;
         int sequence = 0;
 
+        int prev_y_pos = -1;
+        wxCoord label_height = dc.GetMultiLineTextExtent("0").y - 2;
+        int values_size = (int)m_values.size();
+
         while (tick <= m_max_value) {
             value += m_ruler.long_step;
             if (value > m_values.back() && sequence < m_ruler.count) {
                 value = m_ruler.long_step;
-                for (tick; tick < m_values.size(); tick++)
+                for (; tick < values_size; tick++)
                     if (m_values[tick] < value)
                         break;
                 // short ticks from the last tick to the end of current sequence
@@ -978,7 +988,7 @@ void Control::draw_ruler(wxDC& dc)
             }
             short_tick = tick;
 
-            for (tick; tick < m_values.size(); tick++) {
+            for (; tick < values_size; tick++) {
                 if (m_values[tick] == value)
                     break;
                 if (m_values[tick] > value) {
@@ -992,7 +1002,10 @@ void Control::draw_ruler(wxDC& dc)
 
             wxCoord pos = get_position_from_value(tick);
             draw_ticks_pair(dc, pos, mid, 5);
-            draw_tick_text(dc, wxPoint(mid, pos), tick);
+            if (prev_y_pos < 0 || prev_y_pos - pos >= label_height) {
+                draw_tick_text(dc, wxPoint(mid, pos), tick);
+                prev_y_pos = pos;
+            }
 
             draw_short_ticks(dc, short_tick, tick);
 
@@ -1217,9 +1230,11 @@ wxString Control::get_tooltip(int tick/*=-1*/)
             return _L("Jump to move") + " (Shift + G)";
         else
             return m_mode == MultiAsSingle ?
-            GUI::from_u8((boost::format(_u8L("Jump to height %s Set ruler mode\n or "
-                "Set extruder sequence for the entire print")) % " (Shift + G)\n").str()) :
-            GUI::from_u8((boost::format(_u8L("Jump to height %s or Set ruler mode")) % " (Shift + G)\n").str());
+            GUI::from_u8((boost::format(_u8L("Jump to height %s\n"
+                                               "Set ruler mode\n"
+                                               "or Set extruder sequence for the entire print")) % "(Shift + G)").str()) :
+            GUI::from_u8((boost::format(_u8L("Jump to height %s\n"
+                                                "or Set ruler mode")) % "(Shift + G)").str());
     }
     if (m_focus == fiColorBand)
         return m_mode != SingleExtruder ? "" :
@@ -1351,10 +1366,6 @@ void Control::OnMotion(wxMouseEvent& event)
             m_focus = fiLowerThumb;
         else if (is_point_in_rect(pos, m_rect_higher_thumb))
             m_focus = fiHigherThumb;
-        else if (is_point_in_rect(pos, m_rect_lower_thumb_text))
-            m_focus = fiLowerThumbText;
-        else if (is_point_in_rect(pos, m_rect_higher_thumb_text))
-            m_focus = fiHigherThumbText;
         else {
             m_focus = fiTick;
             tick = get_tick_near_point(pos);
@@ -1519,6 +1530,10 @@ void Control::move_current_thumb(const bool condition)
     if (accelerator > 0)
         delta *= accelerator;
 
+#if ENABLE_ARROW_KEYS_WITH_SLIDERS
+    if (m_selection == ssUndef) m_selection = ssHigher;
+#endif // ENABLE_ARROW_KEYS_WITH_SLIDERS
+
     if (m_selection == ssLower) {
         m_lower_value -= delta;
         correct_lower_value();
@@ -1579,13 +1594,26 @@ void Control::OnKeyDown(wxKeyEvent &event)
             if (key == WXK_LEFT || key == WXK_RIGHT)
                 move_current_thumb(key == WXK_LEFT);
             else if (key == WXK_UP || key == WXK_DOWN) {
+#if ENABLE_ARROW_KEYS_WITH_SLIDERS
+                if (key == WXK_DOWN)
+                    m_selection = ssHigher;
+                else if (key == WXK_UP && is_lower_thumb_editable())
+                    m_selection = ssLower;
+#else
                 if (key == WXK_UP)
                     m_selection = ssHigher;
                 else if (key == WXK_DOWN && is_lower_thumb_editable())
                     m_selection = ssLower;
+#endif // ENABLE_ARROW_KEYS_WITH_SLIDERS
                 Refresh();
             }
         }
+#if ENABLE_ARROW_KEYS_WITH_SLIDERS
+        else {
+            if (key == WXK_LEFT || key == WXK_RIGHT)
+                move_current_thumb(key == WXK_LEFT);
+        }
+#endif // ENABLE_ARROW_KEYS_WITH_SLIDERS
     }
     else {
         if (m_is_focused) {
@@ -1599,6 +1627,12 @@ void Control::OnKeyDown(wxKeyEvent &event)
             else if (key == WXK_UP || key == WXK_DOWN)
                 move_current_thumb(key == WXK_UP);
         }
+#if ENABLE_ARROW_KEYS_WITH_SLIDERS
+        else {
+            if (key == WXK_UP || key == WXK_DOWN)
+                move_current_thumb(key == WXK_UP);
+        }
+#endif // ENABLE_ARROW_KEYS_WITH_SLIDERS
     }
 
     event.Skip(); // !Needed to have EVT_CHAR generated as well
@@ -1770,8 +1804,9 @@ void Control::show_add_context_menu()
         append_add_color_change_menu_item(&menu);
     }
 
-    append_menu_item(&menu, wxID_ANY, _L("Add pause print") + " (" + gcode(PausePrint) + ")", "",
-        [this](wxCommandEvent&) { add_code_as_tick(PausePrint); }, "pause_print", &menu);
+    if (!gcode(PausePrint).empty())
+        append_menu_item(&menu, wxID_ANY, _L("Add pause print") + " (" + gcode(PausePrint) + ")", "",
+            [this](wxCommandEvent&) { add_code_as_tick(PausePrint); }, "pause_print", &menu);
 
     if (!gcode(Template).empty())
         append_menu_item(&menu, wxID_ANY, _L("Add custom template") + " (" + gcode(Template) + ")", "",
@@ -1821,7 +1856,7 @@ void Control::show_cog_icon_context_menu()
 
     wxMenu* ruler_mode_menu = new wxMenu();
     if (ruler_mode_menu) {
-        append_menu_check_item(ruler_mode_menu, wxID_ANY, _L("None"), _L("Supprese show the ruler"), 
+        append_menu_check_item(ruler_mode_menu, wxID_ANY, _L("None"), _L("Hide ruler"), 
             [this](wxCommandEvent&) { if (m_extra_style != 0) m_extra_style = 0; }, ruler_mode_menu, 
             []() { return true; }, [this]() { return m_extra_style == 0; }, GUI::wxGetApp().plater());
 
@@ -1979,6 +2014,9 @@ void Control::add_code_as_tick(Type type, int selected_extruder/* = -1*/)
 
     if ( !check_ticks_changed_event(type) )
         return;
+
+    if (type == ColorChange && gcode(ColorChange).empty())
+        GUI::wxGetApp().plater()->get_notification_manager()->push_notification(GUI::NotificationType::EmptyColorChangeCode);
 
     const int extruder = selected_extruder > 0 ? selected_extruder : std::max<int>(1, m_only_extruder);
     const auto it = m_ticks.ticks.find(TickCode{ tick });

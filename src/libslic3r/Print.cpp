@@ -71,6 +71,7 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
     // or they are only notes not influencing the generated G-code.
     static std::unordered_set<std::string> steps_gcode = {
         "avoid_crossing_perimeters",
+        "avoid_crossing_perimeters_max_detour",
         "bed_shape",
         "bed_temperature",
         "before_layer_gcode",
@@ -93,6 +94,7 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
         "extrusion_multiplier",
         "fan_always_on",
         "fan_below_layer_time",
+        "full_fan_speed_layer",
         "filament_colour",
         "filament_diameter",
         "filament_density",
@@ -596,9 +598,10 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
 #endif /* _DEBUG */
 
     // Normalize the config.
-	new_full_config.option("print_settings_id",    true);
-	new_full_config.option("filament_settings_id", true);
-	new_full_config.option("printer_settings_id",  true);
+	new_full_config.option("print_settings_id",            true);
+	new_full_config.option("filament_settings_id",         true);
+	new_full_config.option("printer_settings_id",          true);
+    new_full_config.option("physical_printer_settings_id", true);
     new_full_config.normalize_fdm();
 
     // Find modified keys of the various configs. Resolve overrides extruder retract values by filament profiles.
@@ -627,9 +630,10 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
     if (! full_config_diff.empty()) {
         update_apply_status(this->invalidate_step(psGCodeExport));
         // Set the profile aliases for the PrintBase::output_filename()
-		m_placeholder_parser.set("print_preset",    new_full_config.option("print_settings_id")->clone());
-		m_placeholder_parser.set("filament_preset", new_full_config.option("filament_settings_id")->clone());
-		m_placeholder_parser.set("printer_preset",  new_full_config.option("printer_settings_id")->clone());
+		m_placeholder_parser.set("print_preset",              new_full_config.option("print_settings_id")->clone());
+		m_placeholder_parser.set("filament_preset",           new_full_config.option("filament_settings_id")->clone());
+		m_placeholder_parser.set("printer_preset",            new_full_config.option("printer_settings_id")->clone());
+        m_placeholder_parser.set("physical_printer_preset",   new_full_config.option("physical_printer_settings_id")->clone());
 		// We want the filament overrides to be applied over their respective extruder parameters by the PlaceholderParser.
 		// see "Placeholders do not respect filament overrides." GH issue #3649
 		m_placeholder_parser.apply_config(filament_overrides);
@@ -1262,7 +1266,8 @@ std::string Print::validate() const
             total_copies_count += object->instances().size();
         // #4043
         if (total_copies_count > 1 && ! m_config.complete_objects.value)
-            return L("The Spiral Vase option can only be used when printing a single object.");
+            return L("Only a single object may be printed at a time in Spiral Vase mode. "
+                     "Either remove all but the last object, or enable sequential mode by \"complete_objects\".");
         assert(m_objects.size() == 1);
         size_t num_regions = 0;
         for (const std::vector<std::pair<t_layer_height_range, int>> &volumes_per_region : m_objects.front()->region_volumes)

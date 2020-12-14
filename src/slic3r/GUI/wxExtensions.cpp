@@ -16,7 +16,11 @@
 #include "Plater.hpp"
 #include "../Utils/MacDarkMode.hpp"
 
-#ifndef __WXGTK__// msw_menuitem_bitmaps is used for MSW and OSX
+#ifdef __linux__
+#define wxLinux true
+#else
+#define wxLinux false
+// msw_menuitem_bitmaps is used for MSW and OSX
 static std::map<int, std::string> msw_menuitem_bitmaps;
 #ifdef __WXMSW__
 void msw_rescale_menu(wxMenu* menu)
@@ -59,7 +63,7 @@ void enable_menu_item(wxUpdateUIEvent& evt, std::function<bool()> const cb_condi
 
 wxMenuItem* append_menu_item(wxMenu* menu, int id, const wxString& string, const wxString& description,
     std::function<void(wxCommandEvent& event)> cb, const wxBitmap& icon, wxEvtHandler* event_handler,
-    std::function<bool()> const cb_condition, wxWindow* parent)
+    std::function<bool()> const cb_condition, wxWindow* parent, int insert_pos/* = wxNOT_FOUND*/)
 {
     if (id == wxID_ANY)
         id = wxNewId();
@@ -68,7 +72,10 @@ wxMenuItem* append_menu_item(wxMenu* menu, int id, const wxString& string, const
     if (icon.IsOk()) {
         item->SetBitmap(icon);
     }
-    menu->Append(item);
+    if (insert_pos == wxNOT_FOUND)
+        menu->Append(item);
+    else
+        menu->Insert(insert_pos, item);
 
 #ifdef __WXMSW__
     if (event_handler != nullptr && event_handler != menu)
@@ -87,7 +94,7 @@ wxMenuItem* append_menu_item(wxMenu* menu, int id, const wxString& string, const
 
 wxMenuItem* append_menu_item(wxMenu* menu, int id, const wxString& string, const wxString& description,
     std::function<void(wxCommandEvent& event)> cb, const std::string& icon, wxEvtHandler* event_handler,
-    std::function<bool()> const cb_condition, wxWindow* parent)
+    std::function<bool()> const cb_condition, wxWindow* parent, int insert_pos/* = wxNOT_FOUND*/)
 {
     if (id == wxID_ANY)
         id = wxNewId();
@@ -99,7 +106,7 @@ wxMenuItem* append_menu_item(wxMenu* menu, int id, const wxString& string, const
         msw_menuitem_bitmaps[id] = icon;
 #endif /* __WXMSW__ */
 
-    return append_menu_item(menu, id, string, description, cb, bmp, event_handler, cb_condition, parent);
+    return append_menu_item(menu, id, string, description, cb, bmp, event_handler, cb_condition, parent, insert_pos);
 }
 
 wxMenuItem* append_submenu(wxMenu* menu, wxMenu* sub_menu, int id, const wxString& string, const wxString& description, const std::string& icon,
@@ -653,7 +660,7 @@ void ModeButton::focus_button(const bool focus)
                              Slic3r::GUI::wxGetApp().normal_font();
 
     SetFont(new_font);
-    SetForegroundColour(wxSystemSettings::GetColour(focus ? wxSYS_COLOUR_BTNTEXT : wxSYS_COLOUR_BTNSHADOW));
+    SetForegroundColour(wxSystemSettings::GetColour(focus ? wxSYS_COLOUR_BTNTEXT : wxLinux ? wxSYS_COLOUR_GRAYTEXT : wxSYS_COLOUR_BTNSHADOW));
 
     Refresh();
     Update();

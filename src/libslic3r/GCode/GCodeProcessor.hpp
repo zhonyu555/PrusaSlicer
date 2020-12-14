@@ -7,6 +7,7 @@
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/CustomGCode.hpp"
 
+#include <cstdint>
 #include <array>
 #include <vector>
 #include <string>
@@ -24,9 +25,7 @@ namespace Slic3r {
         Pause_Print,
         Custom_GCode,
         Travel,
-#if ENABLE_SHOW_WIPE_MOVES
         Wipe,
-#endif // ENABLE_SHOW_WIPE_MOVES
         Extrude,
         Count
     };
@@ -72,10 +71,8 @@ namespace Slic3r {
     {
     public:
         static const std::string Extrusion_Role_Tag;
-#if ENABLE_SHOW_WIPE_MOVES
         static const std::string Wipe_Start_Tag;
         static const std::string Wipe_End_Tag;
-#endif // ENABLE_SHOW_WIPE_MOVES
         static const std::string Height_Tag;
         static const std::string Layer_Change_Tag;
         static const std::string Color_Change_Tag;
@@ -85,13 +82,16 @@ namespace Slic3r {
         static const std::string Last_Line_M73_Placeholder_Tag;
         static const std::string Estimated_Printing_Time_Placeholder_Tag;
 
-#if ENABLE_SHOW_WIPE_MOVES
         static const float Wipe_Width;
         static const float Wipe_Height;
-#endif // ENABLE_SHOW_WIPE_MOVES
 
-#if ENABLE_GCODE_VIEWER_DATA_CHECKING
+#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         static const std::string Width_Tag;
+#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+#if ENABLE_GCODE_VIEWER_DATA_CHECKING
+#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+        static const std::string Width_Tag;
+#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         static const std::string Mm3_Per_Mm_Tag;
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
@@ -299,7 +299,7 @@ namespace Slic3r {
             PrintEstimatedTimeStatistics time_statistics;
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
-            long long time{ 0 };
+            int64_t time{ 0 };
             void reset()
             {
                 time = 0;
@@ -402,13 +402,15 @@ namespace Slic3r {
         AxisCoords m_end_position; // mm
         AxisCoords m_origin; // mm
         CachedPosition m_cached_position;
-#if ENABLE_SHOW_WIPE_MOVES
         bool m_wiping;
-#endif // ENABLE_SHOW_WIPE_MOVES
 
         float m_feedrate; // mm/s
         float m_width; // mm
         float m_height; // mm
+#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+        float m_forced_width; // mm
+        float m_forced_height; // mm
+#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         float m_mm3_per_mm;
         float m_fan_speed; // percentage
         ExtrusionRole m_extrusion_role;

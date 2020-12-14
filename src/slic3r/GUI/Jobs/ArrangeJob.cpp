@@ -30,11 +30,10 @@ public:
     ArrangePolygon get_arrange_polygon() const
     {
         Polygon ap({
-            {coord_t(0), coord_t(0)},
-            {scaled(m_bb_size(X)), coord_t(0)},
-            {scaled(m_bb_size)},
-            {coord_t(0), scaled(m_bb_size(Y))},
-            {coord_t(0), coord_t(0)},
+            {scaled(m_bb.min)},
+            {scaled(m_bb.max.x()), scaled(m_bb.min.y())},
+            {scaled(m_bb.max)},
+            {scaled(m_bb.min.x()), scaled(m_bb.max.y())}
             });
         
         ArrangePolygon ret;
@@ -145,12 +144,13 @@ void ArrangeJob::process()
 {
     static const auto arrangestr = _(L("Arranging"));
 
-    GLCanvas3D::ArrangeSettings settings =
-        m_plater->canvas3D()->get_arrange_settings();
-    
+    const GLCanvas3D::ArrangeSettings &settings =
+        static_cast<const GLCanvas3D*>(m_plater->canvas3D())->get_arrange_settings();
+
     arrangement::ArrangeParams params;
-    params.min_obj_distance = scaled(settings.distance);
     params.allow_rotations  = settings.enable_rotation;
+    params.min_obj_distance = scaled(settings.distance);
+
     
     auto count = unsigned(m_selected.size() + m_unprintable.size());
     Points bedpts = get_bed_shape(*m_plater->config());
