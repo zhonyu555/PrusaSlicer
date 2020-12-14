@@ -537,9 +537,14 @@ void MainFrame::init_tabpanel()
             // before the MainFrame is fully set up.
             tab->OnActivate();
             m_last_selected_tab = m_tabpanel->GetSelection();
+
+            if (m_plater != nullptr) {
+                m_plater->rerender_view3D();
+            }
         }
-        else
+        else {
             select_tab(size_t(0)); // select Plater
+        }
     });
 
     m_plater = new Plater(this, this);

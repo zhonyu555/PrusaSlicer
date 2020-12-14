@@ -1206,7 +1206,7 @@ bool GLCanvas3D::init()
     if (m_canvas == nullptr || m_context == nullptr)
         return false;
 
-    glsafe(::glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
+    glsafe(::glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
     glsafe(::glClearDepth(1.0f));
 
     glsafe(::glDepthFunc(GL_LESS));
@@ -1581,8 +1581,13 @@ void GLCanvas3D::render()
         return;
 
     // ensures this canvas is current and initialized
-    if (!_is_shown_on_screen() || !_set_current() || !wxGetApp().init_opengl())
+    if (!_is_shown_on_screen()) {
+        if (!_set_current() || !wxGetApp().init_opengl())
+            return;
+        glsafe(::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
+        m_canvas->SwapBuffers();
         return;
+    }
 
     if (!is_initialized() && !init())
         return;
@@ -4134,7 +4139,7 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, bool 
 
     // restore background color
     if (transparent_background)
-        glsafe(::glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
+        glsafe(::glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
 void GLCanvas3D::_render_thumbnail_framebuffer(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, bool printable_only, bool parts_only, bool show_bed, bool transparent_background) const
