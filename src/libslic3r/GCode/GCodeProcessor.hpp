@@ -7,6 +7,7 @@
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/CustomGCode.hpp"
 
+#include <cstdint>
 #include <array>
 #include <vector>
 #include <string>
@@ -24,6 +25,7 @@ namespace Slic3r {
         Pause_Print,
         Custom_GCode,
         Travel,
+        Wipe,
         Extrude,
         Count
     };
@@ -69,6 +71,8 @@ namespace Slic3r {
     {
     public:
         static const std::string Extrusion_Role_Tag;
+        static const std::string Wipe_Start_Tag;
+        static const std::string Wipe_End_Tag;
         static const std::string Height_Tag;
         static const std::string Layer_Change_Tag;
         static const std::string Color_Change_Tag;
@@ -78,8 +82,16 @@ namespace Slic3r {
         static const std::string Last_Line_M73_Placeholder_Tag;
         static const std::string Estimated_Printing_Time_Placeholder_Tag;
 
-#if ENABLE_GCODE_VIEWER_DATA_CHECKING
+        static const float Wipe_Width;
+        static const float Wipe_Height;
+
+#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         static const std::string Width_Tag;
+#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+#if ENABLE_GCODE_VIEWER_DATA_CHECKING
+#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+        static const std::string Width_Tag;
+#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         static const std::string Mm3_Per_Mm_Tag;
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
@@ -290,7 +302,7 @@ namespace Slic3r {
             PrintEstimatedTimeStatistics time_statistics;
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
-            long long time{ 0 };
+            int64_t time{ 0 };
             void reset()
             {
                 time = 0;
@@ -393,10 +405,15 @@ namespace Slic3r {
         AxisCoords m_end_position; // mm
         AxisCoords m_origin; // mm
         CachedPosition m_cached_position;
+        bool m_wiping;
 
         float m_feedrate; // mm/s
         float m_width; // mm
         float m_height; // mm
+#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
+        float m_forced_width; // mm
+        float m_forced_height; // mm
+#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         float m_mm3_per_mm;
         float m_fan_speed; // percentage
         ExtrusionRole m_extrusion_role;
@@ -417,7 +434,8 @@ namespace Slic3r {
             Cura,
             Simplify3D,
             CraftWare,
-            ideaMaker
+            ideaMaker,
+            KissSlicer
         };
 
         static const std::vector<std::pair<GCodeProcessor::EProducer, std::string>> Producers;
@@ -474,6 +492,7 @@ namespace Slic3r {
         bool process_simplify3d_tags(const std::string_view comment);
         bool process_craftware_tags(const std::string_view comment);
         bool process_ideamaker_tags(const std::string_view comment);
+        bool process_kissslicer_tags(const std::string_view comment);
 
         bool detect_producer(const std::string_view comment);
 

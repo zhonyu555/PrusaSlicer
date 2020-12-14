@@ -99,7 +99,7 @@ void Mouse3DController::State::append_button(unsigned int id, size_t /* input_qu
 #endif // ENABLE_3DCONNEXION_DEVICES_DEBUG_OUTPUT
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 #if ENABLE_CTRL_M_ON_WINDOWS
 static std::string format_device_string(int vid, int pid)
 {
@@ -319,7 +319,7 @@ bool Mouse3DController::State::process_mouse_wheel()
     m_mouse_wheel_counter = 0;
     return true;
 }
-#endif // WIN32
+#endif // _WIN32
 
 bool Mouse3DController::State::apply(const Mouse3DController::Params &params, Camera& camera)
 {
@@ -602,7 +602,7 @@ void Mouse3DController::disconnected()
         m_params_by_device[m_device_str] = m_params_ui;
 	    m_device_str.clear();
 	    m_connected = false;
-		wxGetApp().plater()->get_notification_manager()->push_notification(NotificationType::Mouse3dDisconnected, *(wxGetApp().plater()->get_current_canvas3D()));
+		wxGetApp().plater()->get_notification_manager()->push_notification(NotificationType::Mouse3dDisconnected);
 
         wxGetApp().plater()->CallAfter([]() {
         	Plater *plater = wxGetApp().plater();
@@ -700,10 +700,10 @@ void Mouse3DController::shutdown()
 	}
 
 #if ENABLE_CTRL_M_ON_WINDOWS
-#ifdef WIN32
+#ifdef _WIN32
     if (!m_device_str.empty())
         m_params_by_device[m_device_str] = m_params_ui;
-#endif // WIN32
+#endif // _WIN32
 #endif // ENABLE_CTRL_M_ON_WINDOWS
 }
 
