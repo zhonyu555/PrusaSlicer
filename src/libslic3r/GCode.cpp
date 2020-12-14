@@ -2127,17 +2127,8 @@ void GCode::process_layer(
 #endif /* HAS_PRESSURE_EQUALIZER */
 
     _write(file, gcode);
-#if ENABLE_GCODE_VIEWER
     BOOST_LOG_TRIVIAL(trace) << "Exported layer " << layer.id() << " print_z " << print_z <<
         log_memory_info();
-#else
-    BOOST_LOG_TRIVIAL(trace) << "Exported layer " << layer.id() << " print_z " << print_z <<
-        ", time estimator memory: " <<
-        format_memsize_MB(m_normal_time_estimator.memory_used() + (m_silent_time_estimator_enabled ? m_silent_time_estimator.memory_used() : 0)) <<
-        ", analyzer memory: " <<
-        format_memsize_MB(m_analyzer.memory_used()) <<
-        log_memory_info();
-#endif // ENABLE_GCODE_VIEWER
 }
 
 void GCode::apply_print_config(const PrintConfig &print_config)
