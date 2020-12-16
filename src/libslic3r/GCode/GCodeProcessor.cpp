@@ -540,7 +540,7 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
         m_filament_diameters[i] = static_cast<float>(config.filament_diameter.values[i]);
     }
 
-    if (config.machine_limits_usage.value != MachineLimitsUsage::Ignore)
+    if (m_flavor == gcfMarlin && config.machine_limits_usage.value != MachineLimitsUsage::Ignore)
         m_time_processor.machine_limits = reinterpret_cast<const MachineEnvelopeConfig&>(config);
 
     // Filament load / unload times are not specific to a firmware flavor. Let anybody use it if they find it useful.
@@ -562,6 +562,10 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     }
 
     m_time_processor.export_remaining_time_enabled = config.remaining_times.value;
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    m_use_volumetric_e = config.use_volumetric_e;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 }
 
 void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
@@ -620,7 +624,6 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         }
     }
 
-
     // replace missing values with default
     std::string default_color = "#FF8000";
     for (size_t i = 0; i < m_result.extruder_colors.size(); ++i) {
@@ -649,75 +652,83 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         }
     }
 
-    const ConfigOptionFloats* machine_max_acceleration_x = config.option<ConfigOptionFloats>("machine_max_acceleration_x");
-    if (machine_max_acceleration_x != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_x.values = machine_max_acceleration_x->values;
+    if (m_flavor == gcfMarlin) {
+        const ConfigOptionFloats* machine_max_acceleration_x = config.option<ConfigOptionFloats>("machine_max_acceleration_x");
+        if (machine_max_acceleration_x != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_x.values = machine_max_acceleration_x->values;
 
-    const ConfigOptionFloats* machine_max_acceleration_y = config.option<ConfigOptionFloats>("machine_max_acceleration_y");
-    if (machine_max_acceleration_y != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_y.values = machine_max_acceleration_y->values;
+        const ConfigOptionFloats* machine_max_acceleration_y = config.option<ConfigOptionFloats>("machine_max_acceleration_y");
+        if (machine_max_acceleration_y != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_y.values = machine_max_acceleration_y->values;
 
-    const ConfigOptionFloats* machine_max_acceleration_z = config.option<ConfigOptionFloats>("machine_max_acceleration_z");
-    if (machine_max_acceleration_z != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_z.values = machine_max_acceleration_z->values;
+        const ConfigOptionFloats* machine_max_acceleration_z = config.option<ConfigOptionFloats>("machine_max_acceleration_z");
+        if (machine_max_acceleration_z != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_z.values = machine_max_acceleration_z->values;
 
-    const ConfigOptionFloats* machine_max_acceleration_e = config.option<ConfigOptionFloats>("machine_max_acceleration_e");
-    if (machine_max_acceleration_e != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_e.values = machine_max_acceleration_e->values;
+        const ConfigOptionFloats* machine_max_acceleration_e = config.option<ConfigOptionFloats>("machine_max_acceleration_e");
+        if (machine_max_acceleration_e != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_e.values = machine_max_acceleration_e->values;
 
-    const ConfigOptionFloats* machine_max_feedrate_x = config.option<ConfigOptionFloats>("machine_max_feedrate_x");
-    if (machine_max_feedrate_x != nullptr)
-        m_time_processor.machine_limits.machine_max_feedrate_x.values = machine_max_feedrate_x->values;
+        const ConfigOptionFloats* machine_max_feedrate_x = config.option<ConfigOptionFloats>("machine_max_feedrate_x");
+        if (machine_max_feedrate_x != nullptr)
+            m_time_processor.machine_limits.machine_max_feedrate_x.values = machine_max_feedrate_x->values;
 
-    const ConfigOptionFloats* machine_max_feedrate_y = config.option<ConfigOptionFloats>("machine_max_feedrate_y");
-    if (machine_max_feedrate_y != nullptr)
-        m_time_processor.machine_limits.machine_max_feedrate_y.values = machine_max_feedrate_y->values;
+        const ConfigOptionFloats* machine_max_feedrate_y = config.option<ConfigOptionFloats>("machine_max_feedrate_y");
+        if (machine_max_feedrate_y != nullptr)
+            m_time_processor.machine_limits.machine_max_feedrate_y.values = machine_max_feedrate_y->values;
 
-    const ConfigOptionFloats* machine_max_feedrate_z = config.option<ConfigOptionFloats>("machine_max_feedrate_z");
-    if (machine_max_feedrate_z != nullptr)
-        m_time_processor.machine_limits.machine_max_feedrate_z.values = machine_max_feedrate_z->values;
+        const ConfigOptionFloats* machine_max_feedrate_z = config.option<ConfigOptionFloats>("machine_max_feedrate_z");
+        if (machine_max_feedrate_z != nullptr)
+            m_time_processor.machine_limits.machine_max_feedrate_z.values = machine_max_feedrate_z->values;
 
-    const ConfigOptionFloats* machine_max_feedrate_e = config.option<ConfigOptionFloats>("machine_max_feedrate_e");
-    if (machine_max_feedrate_e != nullptr)
-        m_time_processor.machine_limits.machine_max_feedrate_e.values = machine_max_feedrate_e->values;
+        const ConfigOptionFloats* machine_max_feedrate_e = config.option<ConfigOptionFloats>("machine_max_feedrate_e");
+        if (machine_max_feedrate_e != nullptr)
+            m_time_processor.machine_limits.machine_max_feedrate_e.values = machine_max_feedrate_e->values;
 
-    const ConfigOptionFloats* machine_max_jerk_x = config.option<ConfigOptionFloats>("machine_max_jerk_x");
-    if (machine_max_jerk_x != nullptr)
-        m_time_processor.machine_limits.machine_max_jerk_x.values = machine_max_jerk_x->values;
+        const ConfigOptionFloats* machine_max_jerk_x = config.option<ConfigOptionFloats>("machine_max_jerk_x");
+        if (machine_max_jerk_x != nullptr)
+            m_time_processor.machine_limits.machine_max_jerk_x.values = machine_max_jerk_x->values;
 
-    const ConfigOptionFloats* machine_max_jerk_y = config.option<ConfigOptionFloats>("machine_max_jerk_y");
-    if (machine_max_jerk_y != nullptr)
-        m_time_processor.machine_limits.machine_max_jerk_y.values = machine_max_jerk_y->values;
+        const ConfigOptionFloats* machine_max_jerk_y = config.option<ConfigOptionFloats>("machine_max_jerk_y");
+        if (machine_max_jerk_y != nullptr)
+            m_time_processor.machine_limits.machine_max_jerk_y.values = machine_max_jerk_y->values;
 
-    const ConfigOptionFloats* machine_max_jerk_z = config.option<ConfigOptionFloats>("machine_max_jerkz");
-    if (machine_max_jerk_z != nullptr)
-        m_time_processor.machine_limits.machine_max_jerk_z.values = machine_max_jerk_z->values;
+        const ConfigOptionFloats* machine_max_jerk_z = config.option<ConfigOptionFloats>("machine_max_jerkz");
+        if (machine_max_jerk_z != nullptr)
+            m_time_processor.machine_limits.machine_max_jerk_z.values = machine_max_jerk_z->values;
 
-    const ConfigOptionFloats* machine_max_jerk_e = config.option<ConfigOptionFloats>("machine_max_jerk_e");
-    if (machine_max_jerk_e != nullptr)
-        m_time_processor.machine_limits.machine_max_jerk_e.values = machine_max_jerk_e->values;
+        const ConfigOptionFloats* machine_max_jerk_e = config.option<ConfigOptionFloats>("machine_max_jerk_e");
+        if (machine_max_jerk_e != nullptr)
+            m_time_processor.machine_limits.machine_max_jerk_e.values = machine_max_jerk_e->values;
 
-    const ConfigOptionFloats* machine_max_acceleration_extruding = config.option<ConfigOptionFloats>("machine_max_acceleration_extruding");
-    if (machine_max_acceleration_extruding != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_extruding.values = machine_max_acceleration_extruding->values;
+        const ConfigOptionFloats* machine_max_acceleration_extruding = config.option<ConfigOptionFloats>("machine_max_acceleration_extruding");
+        if (machine_max_acceleration_extruding != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_extruding.values = machine_max_acceleration_extruding->values;
 
-    const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>("machine_max_acceleration_retracting");
-    if (machine_max_acceleration_retracting != nullptr)
-        m_time_processor.machine_limits.machine_max_acceleration_retracting.values = machine_max_acceleration_retracting->values;
+        const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>("machine_max_acceleration_retracting");
+        if (machine_max_acceleration_retracting != nullptr)
+            m_time_processor.machine_limits.machine_max_acceleration_retracting.values = machine_max_acceleration_retracting->values;
 
-    const ConfigOptionFloats* machine_min_extruding_rate = config.option<ConfigOptionFloats>("machine_min_extruding_rate");
-    if (machine_min_extruding_rate != nullptr)
-        m_time_processor.machine_limits.machine_min_extruding_rate.values = machine_min_extruding_rate->values;
+        const ConfigOptionFloats* machine_min_extruding_rate = config.option<ConfigOptionFloats>("machine_min_extruding_rate");
+        if (machine_min_extruding_rate != nullptr)
+            m_time_processor.machine_limits.machine_min_extruding_rate.values = machine_min_extruding_rate->values;
 
-    const ConfigOptionFloats* machine_min_travel_rate = config.option<ConfigOptionFloats>("machine_min_travel_rate");
-    if (machine_min_travel_rate != nullptr)
-        m_time_processor.machine_limits.machine_min_travel_rate.values = machine_min_travel_rate->values;
+        const ConfigOptionFloats* machine_min_travel_rate = config.option<ConfigOptionFloats>("machine_min_travel_rate");
+        if (machine_min_travel_rate != nullptr)
+            m_time_processor.machine_limits.machine_min_travel_rate.values = machine_min_travel_rate->values;
+    }
 
     for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
         float max_acceleration = get_option_value(m_time_processor.machine_limits.machine_max_acceleration_extruding, i);
         m_time_processor.machines[i].max_acceleration = max_acceleration;
         m_time_processor.machines[i].acceleration = (max_acceleration > 0.0f) ? max_acceleration : DEFAULT_ACCELERATION;
     }
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    const ConfigOptionBool* use_volumetric_e = config.option<ConfigOptionBool>("use_volumetric_e");
+    if (use_volumetric_e != nullptr)
+        m_use_volumetric_e = use_volumetric_e->value;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 }
 
 void GCodeProcessor::enable_stealth_time_estimator(bool enabled)
@@ -771,6 +782,10 @@ void GCodeProcessor::reset()
 
     m_result.reset();
     m_result.id = ++s_result_id;
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    m_use_volumetric_e = false;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
     m_mm3_per_mm_compare.reset();
@@ -1652,8 +1667,14 @@ void GCodeProcessor::process_G0(const GCodeReader::GCodeLine& line)
 
 void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 {
-    auto absolute_position = [this](Axis axis, const GCodeReader::GCodeLine& lineG1)
-    {
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_filament_diameters.size()) ? m_filament_diameters[m_extruder_id] : m_filament_diameters.back();
+    float filament_radius = 0.5f * filament_diameter;
+    float area_filament_cross_section = static_cast<float>(M_PI) * sqr(filament_radius);
+    auto absolute_position = [this, area_filament_cross_section](Axis axis, const GCodeReader::GCodeLine& lineG1) {
+#else
+    auto absolute_position = [this](Axis axis, const GCodeReader::GCodeLine& lineG1) {
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         bool is_relative = (m_global_positioning_type == EPositioningType::Relative);
         if (axis == E)
             is_relative |= (m_e_local_positioning_type == EPositioningType::Relative);
@@ -1661,6 +1682,10 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         if (lineG1.has(Slic3r::Axis(axis))) {
             float lengthsScaleFactor = (m_units == EUnits::Inches) ? INCHES_TO_MM : 1.0f;
             float ret = lineG1.value(Slic3r::Axis(axis)) * lengthsScaleFactor;
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+            if (axis == E && m_use_volumetric_e)
+                ret /= area_filament_cross_section;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
             return is_relative ? m_start_position[axis] + ret : m_origin[axis] + ret;
         }
         else
@@ -1718,9 +1743,11 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 
     if (type == EMoveType::Extrude) {
         float delta_xyz = std::sqrt(sqr(delta_pos[X]) + sqr(delta_pos[Y]) + sqr(delta_pos[Z]));
+#if !ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_filament_diameters.size()) ? m_filament_diameters[m_extruder_id] : m_filament_diameters.back();
         float filament_radius = 0.5f * filament_diameter;
         float area_filament_cross_section = static_cast<float>(M_PI) * sqr(filament_radius);
+#endif // !ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         float volume_extruded_filament = area_filament_cross_section * delta_pos[E];
         float area_toolpath_cross_section = volume_extruded_filament / delta_xyz;
 
@@ -1772,7 +1799,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
             m_width = delta_pos[E] * static_cast<float>(M_PI * sqr(filament_radius)) / (delta_xyz * m_height) + static_cast<float>(1.0 - 0.25 * M_PI) * m_height;
 
         // clamp width to avoid artifacts which may arise from wrong values of m_height
-        m_width = std::min(m_width, 1.0f);
+        m_width = std::min(m_width, std::max(1.0f, 4.0f * m_height));
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
         m_width_compare.update(m_width, m_extrusion_role);
