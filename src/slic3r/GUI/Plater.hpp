@@ -166,7 +166,7 @@ public:
     bool is_preview_loaded() const;
     bool is_view3D_shown() const;
 
-    void rerender_view3D();
+    void clear_canvas();
 
     bool are_view3D_labels_shown() const;
     void show_view3D_labels(bool show);

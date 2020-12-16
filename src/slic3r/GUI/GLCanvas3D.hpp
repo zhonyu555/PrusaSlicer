@@ -601,6 +601,7 @@ public:
 
     bool is_dragging() const { return m_gizmos.is_dragging() || m_moving; }
 
+    void clear();
     void render();
     // printable_only == false -> render also non printable volumes as grayed
     // parts_only == false -> render also sla support and pad
