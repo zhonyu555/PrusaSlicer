@@ -1701,7 +1701,10 @@ struct Plater::priv
     bool is_preview_loaded() const { return preview->is_loaded(); }
     bool is_view3D_shown() const { return current_panel == view3D; }
 
-    void rerender_view3D() { view3D->get_canvas3d()->render(); }
+    void rerender_view3D() {
+        view3D->get_canvas3d()->render();
+        preview->get_canvas3d()->render();
+    }
 
     bool are_view3D_labels_shown() const { return (current_panel == view3D) && view3D->get_canvas3d()->are_labels_shown(); }
     void show_view3D_labels(bool show) { if (current_panel == view3D) view3D->get_canvas3d()->show_labels(show); }
@@ -2216,10 +2219,14 @@ void Plater::priv::select_view(const std::string& direction)
 
 void Plater::priv::select_view_3D(const std::string& name)
 {
-    if (name == "3D")
+    if (name == "3D") {
         set_current_panel(view3D);
-    else if (name == "Preview")
+        preview->get_canvas3d()->render();
+    }
+    else if (name == "Preview") {
         set_current_panel(preview);
+        view3D->get_canvas3d()->render();
+    }
 
     wxGetApp().update_ui_from_settings(false);
 }
