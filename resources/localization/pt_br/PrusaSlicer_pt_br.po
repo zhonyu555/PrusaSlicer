@@ -5076,19 +5076,7 @@ msgstr "%s erro"
 msgid "%s has encountered an error"
 msgstr "%s encontrou um erro"
 
-<<<<<<< HEAD
 #: src/slic3r/GUI/NotificationManager.hpp:398
-=======
-#: src/slic3r/GUI/NotificationManager.hpp:317
-msgid "Exporting finished."
-msgstr "Exportação concluída."
-
-#: src/slic3r/GUI/NotificationManager.hpp:317
-msgid "Eject drive."
-msgstr "Ejetar unidade."
-
-#: src/slic3r/GUI/NotificationManager.hpp:318
->>>>>>> upstream/master
 msgid "3D Mouse disconnected."
 msgstr "Mouse 3D desconectado."
 
@@ -7554,12 +7542,7 @@ msgid ""
 "\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
 "To enable \"%1%\", please switch off \"%2%\""
 msgstr ""
-<<<<<<< HEAD
 "\"%1%\" está desabilitado porque \"%2%\" está ativado na categoria \"%3%\".\n"
-=======
-"\"%1%\" está desabilitado porque \"%2%\" está ativado na categoria \"%3%"
-"\".\n"
->>>>>>> upstream/master
 "Para habilitar \"%1%\", desligue \"%2%\""
 
 #: src/slic3r/GUI/Tab.cpp:4152 src/libslic3r/PrintConfig.cpp:2972
