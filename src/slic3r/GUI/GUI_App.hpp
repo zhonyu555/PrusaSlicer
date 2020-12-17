@@ -205,8 +205,9 @@ public:
 
     void            add_config_menu(wxMenuBar *menu);
     bool            check_unsaved_changes(const wxString &header = wxString());
+    bool            check_print_host_queue();
     bool            checked_tab(Tab* tab);
-    void            load_current_presets();
+    void            load_current_presets(bool check_printer_presets = true);
 
     wxString        current_language_code() const { return m_wxLocale->GetCanonicalName(); }
 	// Translate the language code to a code, for which Prusa Research maintains translations. Defaults to "en_US".
@@ -274,6 +275,14 @@ public:
     bool is_gl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const { return m_opengl_mgr.get_gl_info().is_version_greater_or_equal_to(major, minor); }
     bool is_glsl_version_greater_or_equal_to(unsigned int major, unsigned int minor) const { return m_opengl_mgr.get_gl_info().is_glsl_version_greater_or_equal_to(major, minor); }
 
+#if ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+#ifdef __WXMSW__
+    void            associate_3mf_files();
+    void            associate_stl_files();
+    void            associate_gcode_files();
+#endif // __WXMSW__
+#endif // ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
+
 private:
     bool            on_init_inner();
 	void            init_app_config();
@@ -285,11 +294,14 @@ private:
     bool            config_wizard_startup();
 	void            check_updates(const bool verbose);
 
+#if !ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 #ifdef __WXMSW__
     void            associate_3mf_files();
     void            associate_gcode_files();
 #endif // __WXMSW__
+#endif // !ENABLE_CUSTOMIZABLE_FILES_ASSOCIATION_ON_WIN
 };
+
 DECLARE_APP(GUI_App)
 
 } // GUI
