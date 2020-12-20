@@ -585,6 +585,37 @@ int CLI::run(int argc, char **argv)
     return 0;
 }
 
+static boost::filesystem::path CanonicalPathToBinary(const char *prog) {
+    boost::filesystem::path result;
+    // If the executable is invoked with an absolute or relative path,
+    // we can extract it from there using system_complete().
+    //
+    // However this will fail if the binary is resolved by the shell
+    // from the PATH environment variable, then arv[0] will just be
+    // the "prusa-slicer" name to which system_complete will just prepend
+    // with $PWD and get a nonsense path (Bug #5542).
+    //
+    // On Linux, we use some operating system trick to find the true
+    // path of the binary: there the current running binary is symbolically
+    // linked from /proc/self/exe which we can resolve.
+    // It won't resolve anything on other platforms, but doesnt harm either.
+    //
+    // TODO: there might be other tricks needed on other operating systems.
+    for (const char *testpath : { prog, "/proc/self/exe" }) {
+        try {
+            result = boost::filesystem::system_complete(testpath);
+            result = boost::filesystem::canonical(result);
+            if (result.is_absolute())
+                return result;
+        }
+        catch (const boost::filesystem::filesystem_error& e) {
+            // Couldn't resolve. Let's continue our quest.
+        }
+    }
+    // Give up, fall back to simple system_complete.
+    return boost::filesystem::system_complete(prog);
+}
+
 bool CLI::setup(int argc, char **argv)
 {
     {
@@ -598,13 +629,13 @@ bool CLI::setup(int argc, char **argv)
         }
     }
 
-    boost::filesystem::path path_to_binary = boost::filesystem::system_complete(argv[0]);
+    const boost::filesystem::path path_to_binary = CanonicalPathToBinary(argv[0]);
 
     // Path from the Slic3r binary to its resources.
 #ifdef __APPLE__
     // The application is packed in the .dmg archive as 'Slic3r.app/Contents/MacOS/Slic3r'
     // The resources are packed to 'Slic3r.app/Contents/Resources'
-    boost::filesystem::path path_resources = boost::filesystem::canonical(path_to_binary).parent_path() / "../Resources";
+    boost::filesystem::path path_resources = path_to_binary.parent_path() / "../Resources";
 #elif defined _WIN32
     // The application is packed in the .zip archive in the root,
     // The resources are packed to 'resources'
@@ -618,7 +649,7 @@ bool CLI::setup(int argc, char **argv)
     // The application is packed in the .tar.bz archive (or in AppImage) as 'bin/slic3r',
     // The resources are packed to 'resources'
     // Path from Slic3r binary to resources:
-    boost::filesystem::path path_resources = boost::filesystem::canonical(path_to_binary).parent_path() / "../resources";
+    boost::filesystem::path path_resources = path_to_binary.parent_path() / "../resources";
 #endif
 
     set_resources_dir(path_resources.string());
