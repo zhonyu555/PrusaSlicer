@@ -1361,7 +1361,7 @@ void MainFrame::quick_slice(const int qs)
 //     auto sprint = new Slic3r::Print::Simple(
 //         print_center = > print_center,
 //         status_cb = > [](int percent, const wxString& msg) {
-//         m_progress_dialog->Update(percent, msg+"…");
+//         m_progress_dialog->Update(percent, msg+"...");
 //     });
 
     // keep model around
