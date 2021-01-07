@@ -1,4 +1,5 @@
 min_slic3r_version = 2.3.0-beta2
+0.0.12 Included the Ender 3V2 in the config and the corresponding PLA and PETG from "Das Filament"
 0.0.11 Updated machine limits for Ender 5 and Ender 5 Plus.
 0.0.10 Parameter consistency improvements. Enabled conservative elephant foot compensation.
 0.0.9 Fixed end g-code for Ender 5.
