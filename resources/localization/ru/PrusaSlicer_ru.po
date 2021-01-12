@@ -3227,7 +3227,7 @@ msgstr "Для печати"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1797
 msgid "Rename"
-msgstr "Переим."
+msgstr "Переименовать"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1808
 msgid "Fix through the Netfabb"
