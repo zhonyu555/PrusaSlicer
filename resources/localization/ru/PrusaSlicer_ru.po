@@ -10336,7 +10336,7 @@ msgstr "Минимальная скорость перемещения при п
 
 #: src/libslic3r/PrintConfig.cpp:1396
 msgid "Minimum travel feedrate"
-msgstr "Минимальных скорость перемещения без печати"
+msgstr "Минимальная скорость перемещения без печати"
 
 #: src/libslic3r/PrintConfig.cpp:1398
 msgid "Minimum travel feedrate (M205 T)"
