@@ -7932,7 +7932,7 @@ msgstr ""
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:286
 msgid "Volume to purge (mm³) when the filament is being"
-msgstr "Объём прочистки (мм³), при выдавливании пластиковой нити"
+msgstr "Объём прочистки (мм³) при выдавливании пластиковой нити"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:300
 msgid "From"
