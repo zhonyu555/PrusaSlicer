@@ -2684,7 +2684,7 @@ msgstr "Запомнить мой выбор"
 
 #: src/slic3r/GUI/GUI_App.cpp:808
 msgid "Loading configuration"
-msgstr "Загрузка конфигурации..."
+msgstr "Загрузка конфигурации"
 
 #: src/slic3r/GUI/GUI_App.cpp:876
 msgid "Preparing settings tabs"
