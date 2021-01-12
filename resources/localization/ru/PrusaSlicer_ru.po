@@ -3459,7 +3459,7 @@ msgstr "Неподдерживаемый выбор"
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4012
 #, c-format
 msgid "You started your selection with %s Item."
-msgstr "Выбрано: %s модели."
+msgstr "Вы начали свой выбор с сущности %s"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4013
 #, c-format
