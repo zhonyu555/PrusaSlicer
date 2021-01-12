@@ -2688,7 +2688,7 @@ msgstr "Загрузка конфигурации"
 
 #: src/slic3r/GUI/GUI_App.cpp:876
 msgid "Preparing settings tabs"
-msgstr "Подготовка вкладок настроек..."
+msgstr "Подготовка вкладок настроек"
 
 #: src/slic3r/GUI/GUI_App.cpp:1115
 msgid "You have the following presets with saved options for \"Print Host upload\""
