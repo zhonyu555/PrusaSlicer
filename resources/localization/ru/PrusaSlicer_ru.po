@@ -7329,7 +7329,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Tab.cpp:3481
 msgid "Are you sure you want to %1% the selected preset?"
-msgstr "Вы уверены, что хотите выбранный %1% профиль?"
+msgstr "Вы уверены, что хотите %1% выбранный профиль?"
 
 #. TRN  Remove/Delete
 #: src/slic3r/GUI/Tab.cpp:3486
