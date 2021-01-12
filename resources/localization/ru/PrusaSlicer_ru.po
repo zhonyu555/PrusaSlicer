@@ -11018,7 +11018,7 @@ msgstr "мм²"
 #: src/libslic3r/PrintConfig.cpp:1936
 msgid "Solid infill extruder"
 msgstr ""
-"Экструдер печатающий \n"
+"Экструдер, печатающий сплошные слои заполнения"
 "сплошные слои заполнения"
 
 #: src/libslic3r/PrintConfig.cpp:1938
