@@ -4821,7 +4821,7 @@ msgstr "&Вставить"
 
 #: src/slic3r/GUI/MainFrame.cpp:1136
 msgid "Paste clipboard"
-msgstr "Вставить их буфера обмена"
+msgstr "Вставить из буфера обмена"
 
 #: src/slic3r/GUI/MainFrame.cpp:1141 src/slic3r/GUI/MainFrame.cpp:1145
 #: src/slic3r/GUI/MainFrame.cpp:1248 src/slic3r/GUI/MainFrame.cpp:1252
