@@ -816,7 +816,7 @@ msgstr "Простой"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1212
 msgid "Advanced mode"
-msgstr "Расширенный1"
+msgstr "Расширенный"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1213
 msgid "Expert mode"
