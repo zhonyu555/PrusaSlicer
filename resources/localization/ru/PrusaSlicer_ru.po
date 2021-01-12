@@ -9441,7 +9441,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:634
 msgid "Enable fan if layer print time is below"
-msgstr "Включить обдув, если время печати слоя менее n секунд"
+msgstr "Включить обдув, если время печати слоя менее"
 
 #: src/libslic3r/PrintConfig.cpp:635
 msgid ""
