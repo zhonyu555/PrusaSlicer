@@ -9953,7 +9953,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1085
 msgid "Combine infill every"
-msgstr "Объединять заполнение каждые n слой"
+msgstr "Объединять заполнение каждые"
 
 #: src/libslic3r/PrintConfig.cpp:1087
 msgid ""
