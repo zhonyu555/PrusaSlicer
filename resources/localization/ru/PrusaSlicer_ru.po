@@ -9136,7 +9136,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:415
 msgid "Disable fan for the first"
-msgstr "Не включать вентилятор на первых n слоях"
+msgstr "Не включать вентилятор на первых"
 
 #: src/libslic3r/PrintConfig.cpp:416
 msgid ""
