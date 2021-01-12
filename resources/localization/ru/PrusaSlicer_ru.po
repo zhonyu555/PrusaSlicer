@@ -10031,7 +10031,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1135
 msgid "0 (not anchored)"
-msgstr "0 (без привязок) ???"
+msgstr "0 (без привязок)"
 
 #: src/libslic3r/PrintConfig.cpp:1145
 msgid "Infill extruder"
