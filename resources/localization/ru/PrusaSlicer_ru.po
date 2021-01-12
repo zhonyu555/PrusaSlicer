@@ -7147,7 +7147,7 @@ msgstr "Диаметр сопла"
 
 #: src/slic3r/GUI/Tab.cpp:2220 src/libslic3r/PrintConfig.cpp:209
 msgid "Before layer change G-code"
-msgstr "G-код выполняемый перед сменой слоя"
+msgstr "G-код, выполняемый перед сменой слоя"
 
 #: src/slic3r/GUI/Tab.cpp:2227 src/libslic3r/PrintConfig.cpp:1273
 msgid "After layer change G-code"
