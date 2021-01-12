@@ -5602,7 +5602,7 @@ msgstr "Загрузка"
 
 #: src/slic3r/GUI/Plater.cpp:2329
 msgid "Loading file"
-msgstr "Загрузка файла..."
+msgstr "Загрузка файла"
 
 #: src/slic3r/GUI/Plater.cpp:2415
 #, c-format
