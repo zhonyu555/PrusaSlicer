@@ -10000,7 +10000,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1113
 msgid "0 (no open anchors)"
-msgstr "0 (нет открытых привязок) ???"
+msgstr "0 (нет открытых привязок)"
 
 #: src/libslic3r/PrintConfig.cpp:1118 src/libslic3r/PrintConfig.cpp:1140
 msgid "1000 (unlimited)"
