@@ -2104,7 +2104,7 @@ msgstr "Выбор\Добавление из прямоугольника"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6364
 msgid "Selection-Remove from rectangle"
-msgstr "Выбор\Удаление из прямоугольника"
+msgstr "Выбор\\Удаление из прямоугольника"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:54 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:151
 #: src/libslic3r/PrintConfig.cpp:3690
