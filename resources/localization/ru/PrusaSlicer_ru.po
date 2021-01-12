@@ -6721,7 +6721,7 @@ msgstr "Нормальный режим"
 
 #: src/slic3r/GUI/Selection.cpp:172
 msgid "Selection-Add"
-msgstr "Выбор"
+msgstr "Выбор\Добавление"
 
 #: src/slic3r/GUI/Selection.cpp:213
 msgid "Selection-Remove"
