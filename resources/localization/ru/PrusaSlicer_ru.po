@@ -7265,7 +7265,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Tab.cpp:2605
 msgid "Reset to Filament Color"
-msgstr "Сброс цвета прутка"
+msgstr "Сброс в цвет прутка"
 
 #: src/slic3r/GUI/Tab.cpp:2783
 msgid ""
