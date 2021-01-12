@@ -6684,7 +6684,7 @@ msgstr "Сохранение профиля"
 #: src/slic3r/GUI/SavePresetDialog.cpp:215
 msgctxt "PresetName"
 msgid "Copy"
-msgstr "Копировать"
+msgstr "Копия"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:273
 msgid ""
