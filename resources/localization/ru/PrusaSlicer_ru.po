@@ -5465,7 +5465,7 @@ msgstr "Да"
 
 #: src/slic3r/GUI/Plater.cpp:1110
 msgid "Used Material (ml)"
-msgstr "Использовано материал (мл)"
+msgstr "Использовано материала (мл)"
 
 #: src/slic3r/GUI/Plater.cpp:1113
 msgid "object(s)"
