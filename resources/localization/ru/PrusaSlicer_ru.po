@@ -10589,7 +10589,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1617
 msgid "Perimeter extruder"
-msgstr "Экструдер печатающий внешние периметры"
+msgstr "Экструдер, печатающий внешние периметры"
 
 #: src/libslic3r/PrintConfig.cpp:1619
 msgid "The extruder to use when printing perimeters and brim. First extruder is 1."
