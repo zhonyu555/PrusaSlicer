@@ -11297,7 +11297,7 @@ msgstr "Принудительная поддержка для первых n с
 
 #: src/libslic3r/PrintConfig.cpp:2164
 msgid "Support material/raft/skirt extruder"
-msgstr "Экструдер печатающий поддержки/подложки/юбки"
+msgstr "Экструдер, печатающий поддержки/подложки/юбки"
 
 #: src/libslic3r/PrintConfig.cpp:2166
 msgid ""
