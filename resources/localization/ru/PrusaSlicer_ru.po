@@ -5493,7 +5493,7 @@ msgstr "Использовано прутка (дюймы³)"
 
 #: src/slic3r/GUI/Plater.cpp:1189
 msgid "Filament at extruder %1%"
-msgstr "Прутка в экструдере %1% ???"
+msgstr "Прутка в экструдере %1%"
 
 #: src/slic3r/GUI/Plater.cpp:1195
 msgid "(including spool)"
