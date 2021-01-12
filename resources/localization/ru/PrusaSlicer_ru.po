@@ -2720,7 +2720,7 @@ msgstr "Информация"
 
 #: src/slic3r/GUI/GUI_App.cpp:1137 src/slic3r/GUI/GUI_App.cpp:1148
 msgid "Recreating"
-msgstr "Воссоздание..."
+msgstr "Воссоздание"
 
 #: src/slic3r/GUI/GUI_App.cpp:1153
 msgid "Loading of current presets"
