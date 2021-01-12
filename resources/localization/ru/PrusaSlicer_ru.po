@@ -8037,7 +8037,7 @@ msgstr "Починка модели"
 
 #: src/slic3r/Utils/FixModelByWin10.cpp:341
 msgid "Exporting model"
-msgstr "Экспорт модели…"
+msgstr "Экспорт модели"
 
 #: src/slic3r/Utils/FixModelByWin10.cpp:368
 msgid "Export of a temporary 3mf file failed"
