@@ -11277,7 +11277,7 @@ msgstr "0.2 (нерастворимые)"
 
 #: src/libslic3r/PrintConfig.cpp:2151
 msgid "Enforce support for the first"
-msgstr "Принудительная поддержка первых n слоёв"
+msgstr "Принудительная поддержка для первых"
 
 #: src/libslic3r/PrintConfig.cpp:2153
 msgid ""
