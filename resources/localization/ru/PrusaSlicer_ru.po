@@ -2100,11 +2100,11 @@ msgstr "Следующее действие повтора: %1%"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6345
 msgid "Selection-Add from rectangle"
-msgstr "Добавление из прямоугольника"
+msgstr "Выбор\Добавление из прямоугольника"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6364
 msgid "Selection-Remove from rectangle"
-msgstr "Удаление из прямоугольника"
+msgstr "Выбор\Удаление из прямоугольника"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:54 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:151
 #: src/libslic3r/PrintConfig.cpp:3690
@@ -3434,11 +3434,11 @@ msgstr "Редактирование переменной высоты слоё�
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3865
 msgid "Selection-Remove from list"
-msgstr "Удаление из списка"
+msgstr "Выбор\Удаление из списка"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3873
 msgid "Selection-Add from list"
-msgstr "Выбор из списка"
+msgstr "Выбор\Выбор из списка"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4008
 msgid "Object or Instance"
@@ -6725,31 +6725,31 @@ msgstr "Выбор\Добавление"
 
 #: src/slic3r/GUI/Selection.cpp:213
 msgid "Selection-Remove"
-msgstr "Удаление"
+msgstr "Выбор\Удаление"
 
 #: src/slic3r/GUI/Selection.cpp:245
 msgid "Selection-Add Object"
-msgstr "Добавление модели"
+msgstr "Выбор\Добавление модели"
 
 #: src/slic3r/GUI/Selection.cpp:264
 msgid "Selection-Remove Object"
-msgstr "Удаление модели"
+msgstr "Выбор\Удаление модели"
 
 #: src/slic3r/GUI/Selection.cpp:282
 msgid "Selection-Add Instance"
-msgstr "Добавление копии"
+msgstr "Выбор\Добавление копии"
 
 #: src/slic3r/GUI/Selection.cpp:301
 msgid "Selection-Remove Instance"
-msgstr "Удаление копии"
+msgstr "Выбор\Удаление копии"
 
 #: src/slic3r/GUI/Selection.cpp:402
 msgid "Selection-Add All"
-msgstr "Выбор всего"
+msgstr "Выбор\Выбор всего"
 
 #: src/slic3r/GUI/Selection.cpp:428
 msgid "Selection-Remove All"
-msgstr "Снятие выбора со всего"
+msgstr "Выбор\Снятие выбора со всего"
 
 #: src/slic3r/GUI/Selection.cpp:960
 msgid "Scale To Fit"
