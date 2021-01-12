@@ -11626,7 +11626,7 @@ msgid ""
 "This vector saves required volumes to change from/to each tool used on the wipe "
 "tower. These values are used to simplify creation of the full purging volumes below."
 msgstr ""
-"Эта параметр задаёт объём материала, который будет выдавлен на черновую башню для "
+"Этот параметр задаёт объём материала, который будет выдавлен на черновую башню для "
 "прочистки сопла при смене экструдеров/инструментов. Эти значения используются для "
 "упрощения создания полноты объёмов очистки указанной ниже."
 
