@@ -10974,7 +10974,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1905
 msgid "Slow down if layer print time is below"
-msgstr "Замедление при печати слоя менее n секунд"
+msgstr "Замедление при печати слоя менее"
 
 #: src/libslic3r/PrintConfig.cpp:1906
 msgid ""
