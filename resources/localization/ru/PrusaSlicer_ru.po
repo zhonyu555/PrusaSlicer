@@ -997,7 +997,7 @@ msgstr "Отмена"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2564
 msgid "Prusa FFF Technology Printers"
-msgstr "Принтер Prusa печатающий по технологии методом наплавления нитей (FFF)"
+msgstr "Принтеры Prusa, печатающие по технологии методом наплавления нитей (FFF)"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2567
 msgid "Prusa MSLA Technology Printers"
