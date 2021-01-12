@@ -9162,7 +9162,7 @@ msgstr "Расстояние между копиями"
 
 #: src/libslic3r/PrintConfig.cpp:434
 msgid "Distance used for the auto-arrange feature of the plater."
-msgstr "Расстояние, между моделям при авторасстановки их на столе."
+msgstr "Расстояние, между моделям при авторасстановке их на столе."
 
 #: src/libslic3r/PrintConfig.cpp:442
 msgid ""
