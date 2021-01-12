@@ -9970,7 +9970,6 @@ msgstr ""
 msgid "Combine infill every n layers"
 msgstr ""
 "Объединять заполнение каждые"
-"n слой"
 
 #: src/libslic3r/PrintConfig.cpp:1096
 msgid "Length of the infill anchor"
