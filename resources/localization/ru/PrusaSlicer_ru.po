@@ -3464,7 +3464,7 @@ msgstr "Выбрано: %s модели."
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4013
 #, c-format
 msgid "In this mode you can select only other %s Items%s"
-msgstr "В этом режиме можно выбирать только - %s."
+msgstr "В этом режиме можно выбирать только сущности %s%s"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4016
 msgid "of a current Object"
