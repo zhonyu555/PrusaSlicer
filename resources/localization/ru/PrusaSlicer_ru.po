@@ -5448,7 +5448,7 @@ msgstr "%d (оболочек: %d)"
 #: src/slic3r/GUI/Plater.cpp:1076
 #, c-format
 msgid "Auto-repaired (%d errors)"
-msgstr "Исправлено ошибок: (%d errors)"
+msgstr "Исправлено ошибок: %d"
 
 #: src/slic3r/GUI/Plater.cpp:1079
 #, c-format
