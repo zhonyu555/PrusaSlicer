@@ -3618,7 +3618,7 @@ msgstr "Задание позиции"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:828
 msgid "Set Orientation"
-msgstr "Задание масштаба"
+msgstr "Задание поворота"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:893
 msgid "Set Scale"
