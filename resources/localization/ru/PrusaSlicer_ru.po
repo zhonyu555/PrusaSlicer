@@ -6477,7 +6477,7 @@ msgstr "при печати"
 
 #: src/slic3r/GUI/PresetHints.cpp:228
 msgid "with a volumetric rate"
-msgstr " с объёмной скоростью "
+msgstr "с объёмной скоростью"
 
 #: src/slic3r/GUI/PresetHints.cpp:232
 #, c-format
