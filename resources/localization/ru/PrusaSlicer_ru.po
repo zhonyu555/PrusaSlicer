@@ -2100,7 +2100,7 @@ msgstr "Следующее действие повтора: %1%"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6345
 msgid "Selection-Add from rectangle"
-msgstr "Выбор\Добавление из прямоугольника"
+msgstr "Выбор\\Добавление из прямоугольника"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6364
 msgid "Selection-Remove from rectangle"
