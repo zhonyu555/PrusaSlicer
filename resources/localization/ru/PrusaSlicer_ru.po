@@ -7532,7 +7532,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Tab.cpp:4161 src/libslic3r/PrintConfig.cpp:3002
 msgid "Object elevation"
-msgstr "Высота подъёмы модели"
+msgstr "Высота подъёма модели"
 
 #: src/slic3r/GUI/Tab.cpp:4161 src/libslic3r/PrintConfig.cpp:3104
 msgid "Pad around object"
