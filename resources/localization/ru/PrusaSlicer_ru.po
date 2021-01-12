@@ -6638,7 +6638,7 @@ msgstr "Сохранить %s как:"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:110
 msgid "the following suffix is not allowed:"
-msgstr "следующие знаки не разрешаются:"
+msgstr "следующий суффикс не разрешается:"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:116
 msgid "The supplied name is not available."
