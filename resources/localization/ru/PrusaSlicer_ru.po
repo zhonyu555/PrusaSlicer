@@ -5848,7 +5848,7 @@ msgstr "Отразить выбранную модель вдоль оси Z"
 
 #: src/slic3r/GUI/Plater.cpp:4072
 msgid "Mirror"
-msgstr "Отразить..."
+msgstr "Отразить"
 
 #: src/slic3r/GUI/Plater.cpp:4072
 msgid "Mirror the selected object"
