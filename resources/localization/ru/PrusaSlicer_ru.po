@@ -1001,7 +1001,7 @@ msgstr "Принтеры Prusa, печатающие по технологии �
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2567
 msgid "Prusa MSLA Technology Printers"
-msgstr "Принтер Prusa печатающий по технологии масочной ЖК-стереолитографии (MSLA)"
+msgstr "Принтеры Prusa, печатающие по технологии масочной ЖК-стереолитографии (MSLA)"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2582
 msgid "Filament Profiles Selection"
