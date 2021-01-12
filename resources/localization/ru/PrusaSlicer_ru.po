@@ -11330,7 +11330,7 @@ msgstr "Печатать верхний связующий слой петлям
 #: src/libslic3r/PrintConfig.cpp:2191
 msgid "Support material/raft interface extruder"
 msgstr ""
-"Экструдер печатающий связующий \n"
+"Экструдер, печатающий связующий слой поддержки/подложки"
 "слой поддержки/подложки"
 
 #: src/libslic3r/PrintConfig.cpp:2193
