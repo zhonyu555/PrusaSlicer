@@ -5162,7 +5162,7 @@ msgstr "Копия %d"
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:69 src/slic3r/GUI/Tab.cpp:3962
 #: src/slic3r/GUI/Tab.cpp:4044
 msgid "Layers"
-msgstr "Слоёв"
+msgstr "Слои"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:96
 msgid "Range"
