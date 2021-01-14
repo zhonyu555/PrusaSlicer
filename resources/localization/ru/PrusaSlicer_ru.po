@@ -9487,7 +9487,7 @@ msgstr "Скорость загрузки"
 
 #: src/libslic3r/PrintConfig.cpp:670
 msgid "Speed used for loading the filament on the wipe tower."
-msgstr "Скорость загрузки прутка при печати башни очистки."
+msgstr "Скорость загрузки прутка при печати черновой башни."
 
 #: src/libslic3r/PrintConfig.cpp:677
 msgid "Loading speed at the start"
