@@ -9539,7 +9539,7 @@ msgid ""
 "Filament is cooled by being moved back and forth in the cooling tubes. Specify "
 "desired number of these moves."
 msgstr ""
-"Плруток охлаждается в охлаждающих трубках путём перемещения назад и вперёд. "
+"Пруток охлаждается в охлаждающих трубках путём перемещения назад и вперёд. "
 "Укажите желаемое количество таких движений."
 
 #: src/libslic3r/PrintConfig.cpp:721
