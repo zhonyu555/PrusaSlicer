@@ -2030,7 +2030,7 @@ msgstr "Расставить"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4455
 msgid "Add..."
-msgstr "Добавить"
+msgstr "Добавить..."
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4463 src/slic3r/GUI/GUI_ObjectList.cpp:1878
 #: src/slic3r/GUI/Plater.cpp:3998 src/slic3r/GUI/Plater.cpp:4022
