@@ -3838,7 +3838,7 @@ msgstr "Скорость"
 
 #: src/slic3r/GUI/Jobs/SLAImportJob.cpp:135
 msgid "Importing SLA archive"
-msgstr "Импорт SLA архива..."
+msgstr "Импорт SLA архива"
 
 #: src/slic3r/GUI/Jobs/SLAImportJob.cpp:159
 msgid "Importing canceled."
