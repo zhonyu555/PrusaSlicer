@@ -686,7 +686,7 @@ msgstr "Все установленные принтеры совместимы 
 msgid ""
 "Only the following installed printers are compatible with the selected filament:"
 msgstr ""
-"Только следующие установленные принтеры совместимы с выбранной прутком:"
+"Только следующие установленные принтеры совместимы с выбранным прутком:"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1107
 msgid "Custom Printer Setup"
