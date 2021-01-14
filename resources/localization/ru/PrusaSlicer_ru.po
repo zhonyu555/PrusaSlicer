@@ -5873,7 +5873,7 @@ msgstr "Разделить выбранную модель на отдельны
 #: src/slic3r/GUI/Plater.cpp:4089 src/slic3r/GUI/Plater.cpp:4104
 #: src/slic3r/GUI/Plater.cpp:4122 src/libslic3r/PrintConfig.cpp:3759
 msgid "Split"
-msgstr "Разделить..."
+msgstr "Разделить"
 
 #: src/slic3r/GUI/Plater.cpp:4089
 msgid "Split the selected object"
