@@ -589,6 +589,63 @@ bool WipingExtrusions::is_overriddable(const ExtrusionEntityCollection& eec, con
     return true;
 }
 
+// Following function iterates through all extrusions on the layer and counts those that cannot be used for wipe.
+// This supports the min_filament_use setting.
+float WipingExtrusions::nonwiping_extrusions_volume(const Print& print, unsigned int extruder)
+{
+    const LayerTools& lt = *m_layer_tools;
+    float total_nonwipe_volume = 0.f; // ignore infill with smaller volume than this
+
+    // No need to sort anything or care about perimeter order here: we are just looking for a total.
+
+    for (const PrintObject* object : print.objects()) {
+
+        // Skip this object if we can wipe into the whole thing.
+        if (object->config().wipe_into_objects)
+          continue;
+
+        // Finds this layer:
+        const Layer* this_layer = object->get_layer_at_printz(lt.print_z, EPSILON);
+        if (this_layer == nullptr)
+          continue;
+        size_t num_of_copies = object->instances().size();
+
+        // iterate through copies (aka PrintObject instances)
+        for (unsigned int copy = 0; copy < num_of_copies; ++copy) {
+
+            for (size_t region_id = 0; region_id < object->region_volumes.size(); ++ region_id) {
+                const auto& region = *object->print()->regions()[region_id];
+
+                for (const ExtrusionEntity* ee : this_layer->regions()[region_id]->fills.entities) {                      // iterate through all infill Collections
+                    auto* fill = dynamic_cast<const ExtrusionEntityCollection*>(ee);
+
+                    if (lt.extruder(*fill, region) != extruder)
+                        continue;
+
+                    if (is_overriddable(*fill, print.config(), *object, region))
+                        continue;
+
+                    total_nonwipe_volume += fill->total_volume();
+                }
+
+                for (const ExtrusionEntity* ee : this_layer->regions()[region_id]->perimeters.entities) {
+                    auto* fill = dynamic_cast<const ExtrusionEntityCollection*>(ee);
+
+                    if (lt.perimeter_extruder(region) != extruder)
+                        continue;
+
+                    if (is_overriddable(*fill, print.config(), *object, region))
+                        continue;
+
+                    total_nonwipe_volume += fill->total_volume();
+                }
+            }
+        }
+    }
+
+    return total_nonwipe_volume;
+}
+
 // Following function iterates through all extrusions on the layer, remembers those that could be used for wiping after toolchange
 // and returns volume that is left to be wiped on the wipe tower.
 float WipingExtrusions::mark_wiping_extrusions(const Print& print, unsigned int old_extruder, unsigned int new_extruder, float volume_to_wipe)

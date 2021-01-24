@@ -2526,6 +2526,7 @@ void TabPrinter::build_unregular_pages()
         optgroup->append_single_option_line("cooling_tube_length");
         optgroup->append_single_option_line("parking_pos_retraction");
         optgroup->append_single_option_line("extra_loading_move");
+        optgroup->append_single_option_line("min_filament_use");
         optgroup->append_single_option_line("high_current_on_filament_swap");
         m_pages.insert(m_pages.end() - n_after_single_extruder_MM, page);
         m_has_single_extruder_MM_page = true;

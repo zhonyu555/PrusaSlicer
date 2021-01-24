@@ -737,6 +737,7 @@ public:
     ConfigOptionBool                remaining_times;
     ConfigOptionBool                silent_mode;
     ConfigOptionFloat               extra_loading_move;
+    ConfigOptionFloat               min_filament_use;
     ConfigOptionString              color_change_gcode;
     ConfigOptionString              pause_print_gcode;
     ConfigOptionString              template_custom_gcode;
@@ -814,6 +815,7 @@ protected:
         OPT_PTR(remaining_times);
         OPT_PTR(silent_mode);
         OPT_PTR(extra_loading_move);
+        OPT_PTR(min_filament_use);
         OPT_PTR(color_change_gcode);
         OPT_PTR(pause_print_gcode);
         OPT_PTR(template_custom_gcode);
