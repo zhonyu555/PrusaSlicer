@@ -2037,7 +2037,8 @@ namespace Slic3r {
         bool _add_sla_support_points_file_to_archive(mz_zip_archive& archive, Model& model);
         bool _add_sla_drain_holes_file_to_archive(mz_zip_archive& archive, Model& model);
         bool _add_print_config_file_to_archive(mz_zip_archive& archive, const DynamicPrintConfig &config);
-        bool _add_model_config_file_to_archive(mz_zip_archive& archive, const Model& model, const IdToObjectDataMap &objects_data);
+        bool _add_model_config_file_to_archive(const std::string &archive_filename, mz_zip_archive& archive,
+                                               const Model& model, const IdToObjectDataMap &objects_data);
         bool _add_custom_gcode_per_print_z_file_to_archive(mz_zip_archive& archive, Model& model, const DynamicPrintConfig* config);
     };
 
@@ -2161,7 +2162,7 @@ namespace Slic3r {
         // This file contains all the attributes of all ModelObjects and their ModelVolumes (names, parameter overrides).
         // As there is just a single Indexed Triangle Set data stored per ModelObject, offsets of volumes into their respective Indexed Triangle Set data
         // is stored here as well.
-        if (!_add_model_config_file_to_archive(archive, model, objects_data))
+        if (!_add_model_config_file_to_archive(filename, archive, model, objects_data))
         {
             close_zip_writer(&archive);
             boost::filesystem::remove(filename);
@@ -2686,7 +2687,7 @@ namespace Slic3r {
         return true;
     }
 
-    bool _3MF_Exporter::_add_model_config_file_to_archive(mz_zip_archive& archive, const Model& model, const IdToObjectDataMap &objects_data)
+    bool _3MF_Exporter::_add_model_config_file_to_archive(const std::string &archive_filename, mz_zip_archive& archive, const Model& model, const IdToObjectDataMap &objects_data)
     {
         std::stringstream stream;
         // Store mesh transformation in full precision, as the volumes are stored transformed and they need to be transformed back
@@ -2695,6 +2696,7 @@ namespace Slic3r {
         stream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
         stream << "<" << CONFIG_TAG << ">\n";
 
+        const boost::filesystem::path archive_filename_dir = boost::filesystem::path(archive_filename).parent_path();
         for (const IdToObjectDataMap::value_type& obj_metadata : objects_data)
         {
             const ModelObject* obj = obj_metadata.second.object;
@@ -2753,7 +2755,15 @@ namespace Slic3r {
 
                             // stores volume's source data
                             {
-                                std::string input_file = xml_escape(m_fullpath_sources ? volume->source.input_file : boost::filesystem::path(volume->source.input_file).filename().string());
+                                boost::filesystem::path input_file_path = boost::filesystem::path(volume->source.input_file);
+                                if (m_fullpath_sources) {
+                                    // Now storing relative paths instead of dangerous full paths. If for any reason full
+                                    // paths should also be an option, we should replace the bool with an enum.
+                                    input_file_path = boost::filesystem::relative(input_file_path, archive_filename_dir);
+                                } else {
+                                    input_file_path = input_file_path.filename();
+                                }
+                                std::string input_file = xml_escape(input_file_path.string());
                                 std::string prefix = std::string("   <") + METADATA_TAG + " " + TYPE_ATTR + "=\"" + VOLUME_TYPE + "\" " + KEY_ATTR + "=\"";
                                 if (! volume->source.input_file.empty()) {
                                     stream << prefix << SOURCE_FILE_KEY      << "\" " << VALUE_ATTR << "=\"" << input_file << "\"/>\n";
