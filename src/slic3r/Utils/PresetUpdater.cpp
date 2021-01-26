@@ -679,11 +679,11 @@ void PresetUpdater::sync(PresetBundle *preset_bundle)
 	// into the closure (but perhaps the compiler can elide this).
 	VendorMap vendors = preset_bundle->vendors;
 
-	p->thread = std::move(std::thread([this, vendors]() {
+	p->thread = std::thread([this, vendors]() {
 		this->p->prune_tmps();
 		this->p->sync_version();
 		this->p->sync_config(std::move(vendors));
-	}));
+	});
 }
 
 void PresetUpdater::slic3r_update_notify()

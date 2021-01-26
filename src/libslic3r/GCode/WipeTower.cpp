@@ -513,7 +513,7 @@ WipeTower::ToolChangeResult WipeTower::construct_tcr(WipeTowerWriter& writer,
     result.end_pos      = priming ? writer.pos() : writer.pos_rotated();
     result.gcode        = std::move(writer.gcode());
     result.extrusions   = std::move(writer.extrusions());
-    result.wipe_path    = std::move(writer.wipe_path());
+    result.wipe_path    = writer.wipe_path();
     return result;
 }
 

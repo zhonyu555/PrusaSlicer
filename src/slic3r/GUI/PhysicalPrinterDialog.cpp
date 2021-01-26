@@ -290,7 +290,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         m_printhost_browse_btn->Bind(wxEVT_BUTTON, [=](wxCommandEvent& e) {
             BonjourDialog dialog(this, Preset::printer_technology(m_printer.config));
             if (dialog.show_and_lookup()) {
-                m_optgroup->set_value("print_host", std::move(dialog.get_selected()), true);
+                m_optgroup->set_value("print_host", dialog.get_selected(), true);
                 m_optgroup->get_field("print_host")->field_changed();
             }
         });
@@ -366,7 +366,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 static const auto filemasks = _L("Certificate files (*.crt, *.pem)|*.crt;*.pem|All files|*.*");
                 wxFileDialog openFileDialog(this, _L("Open CA certificate file"), "", "", filemasks, wxFD_OPEN | wxFD_FILE_MUST_EXIST);
                 if (openFileDialog.ShowModal() != wxID_CANCEL) {
-                    m_optgroup->set_value("printhost_cafile", std::move(openFileDialog.GetPath()), true);
+                    m_optgroup->set_value("printhost_cafile", openFileDialog.GetPath(), true);
                     m_optgroup->get_field("printhost_cafile")->field_changed();
                 }
                 });
