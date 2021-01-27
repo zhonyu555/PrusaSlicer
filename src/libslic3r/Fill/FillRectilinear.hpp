@@ -37,7 +37,7 @@ public:
 
 protected:
     // Always generate infill at the same angle.
-    virtual float _layer_angle(size_t idx) const { return 0.f; }
+    virtual float _layer_angle(size_t idx) const override { return 0.f; }
 };
 
 class FillMonotonic : public FillRectilinear

@@ -274,7 +274,7 @@ public:
     wxButton*       get_wiping_dialog_button() { return m_wiping_dialog_button; }
     wxSizer*        get_sizer() override;
     ConfigOptionsGroup* get_og(const bool is_fff);
-    void            Show(const bool is_fff);
+    void            Show(const bool is_fff) override;
 
     void            msw_rescale();
 };
