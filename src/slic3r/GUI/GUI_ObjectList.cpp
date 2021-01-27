@@ -753,7 +753,7 @@ void ObjectList::copy_layers_to_clipboard()
         return;
     }
 
-    for (const auto layer_item : sel_layers)
+    for (const auto &layer_item : sel_layers)
         if (m_objects_model->GetItemType(layer_item) & itLayer) {
             auto range = m_objects_model->GetLayerRangeByItem(layer_item);
             auto it = ranges.find(range);
@@ -779,7 +779,7 @@ void ObjectList::paste_layers_into_list()
     t_layer_config_ranges& ranges = object(obj_idx)->layer_config_ranges;
 
     // and create Layer item(s) according to the layer_config_ranges
-    for (const auto range : cache_ranges)
+    for (const auto &range : cache_ranges)
         ranges.emplace(range);
 
     layers_item = add_layer_root_item(object_item);

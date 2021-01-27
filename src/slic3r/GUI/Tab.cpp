@@ -485,7 +485,7 @@ void Tab::update_label_colours()
     m_modified_label_clr = wxGetApp().get_label_clr_modified();
 
     //update options "decoration"
-    for (const auto opt : m_options_list)
+    for (const auto &opt : m_options_list)
     {
         const wxColour *color = &m_sys_label_clr;
 
@@ -535,7 +535,7 @@ void Tab::update_label_colours()
 
 void Tab::decorate()
 {
-    for (const auto opt : m_options_list)
+    for (const auto &opt : m_options_list)
     {
         Field*      field = nullptr;
         wxColour*   colored_label_clr = nullptr;
@@ -633,7 +633,7 @@ void Tab::init_options_list()
     if (!m_options_list.empty())
         m_options_list.clear();
 
-    for (const auto opt_key : m_config->keys())
+    for (const auto &opt_key : m_config->keys())
         m_options_list.emplace(opt_key, m_opt_status_value);
 }
 
@@ -650,7 +650,7 @@ void TabPrinter::init_options_list()
     if (!m_options_list.empty())
         m_options_list.clear();
 
-    for (const auto opt_key : m_config->keys())
+    for (const auto &opt_key : m_config->keys())
     {
         if (opt_key == "bed_shape" || opt_key == "thumbnails") {
             m_options_list.emplace(opt_key, m_opt_status_value);
@@ -702,7 +702,7 @@ void TabSLAMaterial::init_options_list()
     if (!m_options_list.empty())
         m_options_list.clear();
 
-    for (const auto opt_key : m_config->keys())
+    for (const auto &opt_key : m_config->keys())
     {
         if (opt_key == "compatible_prints" || opt_key == "compatible_printers") {
             m_options_list.emplace(opt_key, m_opt_status_value);

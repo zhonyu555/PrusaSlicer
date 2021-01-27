@@ -406,7 +406,7 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 	BOOST_LOG_TRIVIAL(info) << "Checking for cached configuration updates...";
 
 	// Over all indices from the cache directory:
-	for (const auto idx : index_db) {
+	for (const auto &idx : index_db) {
 		auto bundle_path = vendor_path / (idx.vendor() + ".ini");
 		auto bundle_path_idx = vendor_path / idx.path().filename();
 

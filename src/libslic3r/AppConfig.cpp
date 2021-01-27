@@ -269,7 +269,7 @@ void AppConfig::save()
     for (const std::pair<const std::string, std::string> &kvp : m_storage[""])
         c << kvp.first << " = " << kvp.second << std::endl;
     // Write the other categories.
-    for (const auto category : m_storage) {
+    for (const auto &category : m_storage) {
     	if (category.first.empty())
     		continue;
     	c << std::endl << "[" << category.first << "]" << std::endl;

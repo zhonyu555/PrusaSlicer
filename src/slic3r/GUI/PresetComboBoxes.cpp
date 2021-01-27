@@ -854,7 +854,7 @@ void PlaterPresetComboBox::update()
             const PhysicalPrinterCollection& ph_printers = m_preset_bundle->physical_printers;
 
             for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
-                for (const std::string preset_name : it->get_preset_names()) {
+                for (const std::string &preset_name : it->get_preset_names()) {
                     Preset* preset = m_collection->find_preset(preset_name);
                     if (!preset)
                         continue;
@@ -1026,7 +1026,7 @@ void TabPresetComboBox::update()
             const PhysicalPrinterCollection& ph_printers = m_preset_bundle->physical_printers;
 
             for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
-                for (const std::string preset_name : it->get_preset_names()) {
+                for (const std::string &preset_name : it->get_preset_names()) {
                     Preset* preset = m_collection->find_preset(preset_name);
                     if (!preset)
                         continue;
