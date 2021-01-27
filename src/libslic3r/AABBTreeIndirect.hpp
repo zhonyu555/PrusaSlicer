@@ -652,10 +652,10 @@ inline bool intersect_ray_all_hits(
 	// All intersections of the ray with the indexed triangle set, sorted by parameter t.
 	std::vector<igl::Hit> 				&hits)
 {
-    auto ray_intersector = detail::RayIntersectorHits<VertexType, IndexedFaceType, TreeType, VectorType> {
+    auto ray_intersector = detail::RayIntersectorHits<VertexType, IndexedFaceType, TreeType, VectorType> {{
 		vertices, faces, tree,
         origin, dir, VectorType(dir.cwiseInverse())
-	};
+	}};
 	if (! tree.empty()) {
         ray_intersector.hits.reserve(8);
 		detail::intersect_ray_recursive_all_hits(ray_intersector, 0);

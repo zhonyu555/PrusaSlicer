@@ -3330,13 +3330,14 @@ bool Tab::tree_sel_change_delayed()
     // clear pages from the controls
     m_active_page = page;
     
-    auto throw_if_canceled = std::function<void()>([this](){
+    std::function<void()> throw_if_canceled;
 #ifdef WIN32
+    throw_if_canceled = std::function<void()>([this](){
             wxCheckForInterrupt(m_treectrl);
             if (m_page_switch_planned)
                 throw UIBuildCanceled();
-#endif // WIN32
         });
+#endif // WIN32
 
     try {
         clear_pages();

@@ -2186,10 +2186,8 @@ static std::vector<MonotonicRegionLink> chain_monotonic_regions(
 	};
 	std::vector<NextCandidate> next_candidates;
 
-    [[maybe_unused]]auto validate_unprocessed =
-#ifdef NDEBUG
-        []() { return true; };
-#else
+#ifndef NDEBUG
+    auto validate_unprocessed = 
         [&regions, &left_neighbors_unprocessed, &path, &queue]() {
             std::vector<unsigned char> regions_processed(regions.size(), false);
             std::vector<unsigned char> regions_in_queue(regions.size(), false);
