@@ -245,8 +245,7 @@ private:
 	// Is merging of regions allowed? Could the interface & base support regions be printed with the same extruder?
 	bool 				 m_can_merge_support_regions;
 
-    coordf_t 			 m_support_layer_height_min;
-	coordf_t		 	 m_support_layer_height_max;
+	coordf_t 			 m_support_layer_height_min;
 
 	coordf_t			 m_gap_xy;
 };

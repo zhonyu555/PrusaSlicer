@@ -80,8 +80,6 @@ static const float ERROR_BG_LIGHT_COLOR[3] = { 0.753f, 0.192f, 0.039f };
 static const size_t MAX_VERTEX_BUFFER_SIZE     = 131072 * 6; // 3.15MB
 // Reserve size in number of floats.
 static const size_t VERTEX_BUFFER_RESERVE_SIZE = 131072 * 2; // 1.05MB
-// Reserve size in number of floats, maximum sum of all preallocated buffers.
-static const size_t VERTEX_BUFFER_RESERVE_SIZE_SUM_MAX = 1024 * 1024 * 128 / 4; // 128MB
 
 namespace Slic3r {
 namespace GUI {

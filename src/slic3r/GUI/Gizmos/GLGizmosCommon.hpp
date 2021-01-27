@@ -161,7 +161,6 @@ protected:
 
 private:
     ModelObject* m_model_object = nullptr;
-    int m_active_inst = -1;
     float m_z_shift = 0.f;
 };
 

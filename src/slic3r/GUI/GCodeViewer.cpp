@@ -2216,7 +2216,6 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
                     displacement = half_width * ::tan(::acos(std::clamp(dir.dot(med_dir), -1.0f, 1.0f)));
                 }
 
-                Vec3f displacement_vec = displacement * prev_dir;
                 bool can_displace = displacement > 0.0f && displacement < prev_length && displacement < length;
 
                 bool is_right_turn = prev_up.dot(prev_dir.cross(dir)) <= 0.0f;
