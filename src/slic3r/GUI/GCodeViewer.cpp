@@ -2949,14 +2949,6 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
     };
 
     auto is_travel_in_layers_range = [this](size_t path_id, size_t min_id, size_t max_id) {
-        auto is_in_z_range = [](const Path& path, double min_z, double max_z) {
-            auto in_z_range = [min_z, max_z](double z) {
-                return min_z - EPSILON < z&& z < max_z + EPSILON;
-            };
-
-            return in_z_range(path.first.position[2]) || in_z_range(path.last.position[2]);
-        };
-
         const TBuffer& buffer = m_buffers[buffer_id(EMoveType::Travel)];
         if (path_id >= buffer.paths.size())
             return false;
