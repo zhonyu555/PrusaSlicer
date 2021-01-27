@@ -11,6 +11,7 @@
 using namespace Slic3r::Test;
 using namespace Slic3r;
 
+/*
 /// Helper method to find the tool used for the brim (always the first extrusion)
 static int get_brim_tool(const std::string &gcode)
 {
@@ -28,6 +29,7 @@ static int get_brim_tool(const std::string &gcode)
     });
     return brim_tool;
 }
+*/
 
 TEST_CASE("Skirt height is honored", "[Skirt]") {
     DynamicPrintConfig config = Slic3r::DynamicPrintConfig::full_print_config();

@@ -979,6 +979,7 @@ void rygCompressYCoCg( unsigned char *dst, unsigned char *src, int w, int h )
 
 }
 
+/*
 static void stbgl__compress(unsigned char *p, unsigned char *rgba, int w, int h, int isDxt5)
 {
    int i,j,y,y2;
@@ -1021,6 +1022,7 @@ static void stbgl__compress(unsigned char *p, unsigned char *rgba, int w, int h,
    }
   // assert(p <= end);
 }
+*/
 
 static inline unsigned char linearize(unsigned char inByte)
 {

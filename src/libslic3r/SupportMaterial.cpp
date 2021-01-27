@@ -2316,6 +2316,7 @@ PrintObjectSupportMaterial::MyLayersPtr PrintObjectSupportMaterial::generate_int
     return interface_layers;
 }
 
+/*
 static inline void fill_expolygons_generate_paths(
     ExtrusionEntitiesPtr    &dst, 
     const ExPolygons        &expolygons,
@@ -2341,6 +2342,7 @@ static inline void fill_expolygons_generate_paths(
             flow.mm3_per_mm(), flow.width, flow.height);
     }
 }
+*/
 
 static inline void fill_expolygons_generate_paths(
     ExtrusionEntitiesPtr    &dst,

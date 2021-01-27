@@ -441,6 +441,7 @@ Points resample_polygon(const Points &contour, double dist, std::vector<Resample
     return out;
 }
 
+/*
 static inline void smooth_compensation(std::vector<float> &compensation, float strength, size_t num_iterations)
 {
 	std::vector<float> out(compensation);
@@ -455,6 +456,7 @@ static inline void smooth_compensation(std::vector<float> &compensation, float s
 		out.swap(compensation);
 	}
 }
+*/
 
 static inline void smooth_compensation_banded(const Points &contour, float band, std::vector<float> &compensation, float strength, size_t num_iterations)
 {
