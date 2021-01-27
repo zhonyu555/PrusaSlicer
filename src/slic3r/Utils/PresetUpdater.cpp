@@ -206,7 +206,7 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
 		tmp_path.string());
 
 	Http::get(url)
-		.on_progress([this](Http::Progress, bool &cancel) {
+		.on_progress([](Http::Progress, bool &cancel) {
 			if (cancel) { cancel = true; }
 		})
 		.on_error([&](std::string body, std::string error, unsigned http_status) {

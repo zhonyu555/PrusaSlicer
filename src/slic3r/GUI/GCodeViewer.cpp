@@ -2653,7 +2653,7 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         return color;
     };
 
-    auto travel_color = [this](const Path& path) {
+    auto travel_color = [](const Path& path) {
         return (path.delta_extruder < 0.0f) ? Travel_Colors[2] /* Retract */ :
             ((path.delta_extruder > 0.0f) ? Travel_Colors[1] /* Extrude */ :
                 Travel_Colors[0] /* Move */);
@@ -3168,7 +3168,11 @@ void GCodeViewer::render_toolpaths() const
         shader.set_uniform("uniform_color", color4);
     };
 
-    auto render_as_points = [this, zoom, point_size, near_plane_height, set_uniform_color]
+    auto render_as_points = [
+#if ENABLE_GCODE_VIEWER_STATISTICS
+                             this,
+#endif // ENABLE_GCODE_VIEWER_STATISTICS
+                             zoom, point_size, near_plane_height, set_uniform_color]
         (const TBuffer& buffer, unsigned int ibuffer_id, GLShaderProgram& shader) {
 #if ENABLE_FIXED_SCREEN_SIZE_POINT_MARKERS
         shader.set_uniform("use_fixed_screen_size", 1);
@@ -3198,7 +3202,11 @@ void GCodeViewer::render_toolpaths() const
         glsafe(::glDisable(GL_VERTEX_PROGRAM_POINT_SIZE));
     };
 
-    auto render_as_lines = [this, light_intensity, set_uniform_color](const TBuffer& buffer, unsigned int ibuffer_id, GLShaderProgram& shader) {
+    auto render_as_lines = [
+#if ENABLE_GCODE_VIEWER_STATISTICS
+                            this,
+#endif // ENABLE_GCODE_VIEWER_STATISTICS
+                            light_intensity, set_uniform_color](const TBuffer& buffer, unsigned int ibuffer_id, GLShaderProgram& shader) {
         shader.set_uniform("light_intensity", light_intensity);
         for (const RenderPath& path : buffer.render_paths) {
             if (path.index_buffer_id == ibuffer_id) {
@@ -3211,7 +3219,11 @@ void GCodeViewer::render_toolpaths() const
         }
     };
 
-    auto render_as_triangles = [this, set_uniform_color](const TBuffer& buffer, unsigned int ibuffer_id, GLShaderProgram& shader) {
+    auto render_as_triangles = [
+#if ENABLE_GCODE_VIEWER_STATISTICS
+                                this,
+#endif // ENABLE_GCODE_VIEWER_STATISTICS
+                                set_uniform_color](const TBuffer& buffer, unsigned int ibuffer_id, GLShaderProgram& shader) {
         for (const RenderPath& path : buffer.render_paths) {
             if (path.index_buffer_id == ibuffer_id) {
                 set_uniform_color(path.color, shader);
@@ -3304,7 +3316,7 @@ void GCodeViewer::render_toolpaths() const
         shader.set_uniform("uniform_color", color4);
     };
 
-    auto render_as_points = [this, zoom, point_size, near_plane_height, set_uniform_color]
+    auto render_as_points = [zoom, point_size, near_plane_height, set_uniform_color]
     (const TBuffer& buffer, unsigned int index_buffer_id, EOptionsColors color_id, GLShaderProgram& shader) {
         set_uniform_color(Options_Colors[static_cast<unsigned int>(color_id)], shader);
 #if ENABLE_FIXED_SCREEN_SIZE_POINT_MARKERS
@@ -3334,7 +3346,7 @@ void GCodeViewer::render_toolpaths() const
         glsafe(::glDisable(GL_VERTEX_PROGRAM_POINT_SIZE));
     };
 
-    auto render_as_lines = [this, light_intensity, set_uniform_color](const TBuffer& buffer, unsigned int index_buffer_id, GLShaderProgram& shader) {
+    auto render_as_lines = [light_intensity, set_uniform_color](const TBuffer& buffer, unsigned int index_buffer_id, GLShaderProgram& shader) {
         shader.set_uniform("light_intensity", light_intensity);
         for (const RenderPath& path : buffer.render_paths) {
             if (path.index_buffer_id == index_buffer_id) {
@@ -3347,7 +3359,7 @@ void GCodeViewer::render_toolpaths() const
         }
     };
 
-    auto render_as_triangles = [this, set_uniform_color](const TBuffer& buffer, unsigned int index_buffer_id, GLShaderProgram& shader) {
+    auto render_as_triangles = [set_uniform_color](const TBuffer& buffer, unsigned int index_buffer_id, GLShaderProgram& shader) {
         for (const RenderPath& path : buffer.render_paths) {
             if (path.index_buffer_id == index_buffer_id) {
                 set_uniform_color(path.color, shader);
@@ -3565,8 +3577,8 @@ void GCodeViewer::render_legend() const
                 ImGui::PopStyleVar();
     };
 
-    auto append_range = [this, draw_list, &imgui, append_item](const Extrusions::Range& range, unsigned int decimals) {
-        auto append_range_item = [this, draw_list, &imgui, append_item](int i, float value, unsigned int decimals) {
+    auto append_range = [append_item](const Extrusions::Range& range, unsigned int decimals) {
+        auto append_range_item = [append_item](int i, float value, unsigned int decimals) {
             char buf[1024];
             ::sprintf(buf, "%.*f", decimals, value);
             append_item(EItemType::Rect, Range_Colors[i], buf);
@@ -3660,7 +3672,7 @@ void GCodeViewer::render_legend() const
         return _u8L("from") + " " + std::string(buf1) + " " + _u8L("to") + " " + std::string(buf2) + " " + _u8L("mm");
     };
 
-    auto role_time_and_percent = [this, time_mode](ExtrusionRole role) {
+    auto role_time_and_percent = [time_mode](ExtrusionRole role) {
         auto it = std::find_if(time_mode.roles_times.begin(), time_mode.roles_times.end(), [role](const std::pair<ExtrusionRole, float>& item) { return role == item.first; });
         return (it != time_mode.roles_times.end()) ? std::make_pair(it->second, it->second / time_mode.time) : std::make_pair(0.0f, 0.0f);
     };
@@ -3867,7 +3879,7 @@ void GCodeViewer::render_legend() const
             return items;
         };
 
-        auto append_color_change = [this, &imgui](const Color& color1, const Color& color2, const std::array<float, 2>& offsets, const Times& times) {
+        auto append_color_change = [&imgui](const Color& color1, const Color& color2, const std::array<float, 2>& offsets, const Times& times) {
             imgui.text(_u8L("Color change"));
             ImGui::SameLine();
 
@@ -3886,7 +3898,7 @@ void GCodeViewer::render_legend() const
             imgui.text(short_time(get_time_dhms(times.second - times.first)));
         };
 
-        auto append_print = [this, &imgui](const Color& color, const std::array<float, 2>& offsets, const Times& times) {
+        auto append_print = [&imgui](const Color& color, const std::array<float, 2>& offsets, const Times& times) {
             imgui.text(_u8L("Print"));
             ImGui::SameLine();
 
@@ -4146,7 +4158,7 @@ void GCodeViewer::render_statistics() const
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
-    auto add_time = [this, &imgui](const std::string& label, int64_t time) {
+    auto add_time = [&imgui](const std::string& label, int64_t time) {
         char buf[1024];
         sprintf(buf, "%lld ms (%s)", time, get_time_dhms(static_cast<float>(time) * 0.001f).c_str());
         imgui.text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, label);
@@ -4154,7 +4166,7 @@ void GCodeViewer::render_statistics() const
         imgui.text(buf);
     };
 
-    auto add_memory = [this, &imgui](const std::string& label, int64_t memory) {
+    auto add_memory = [&imgui](const std::string& label, int64_t memory) {
         auto format_string = [memory](const std::string& units, float value) {
             char buf[1024];
             sprintf(buf, "%lld bytes (%.3f %s)", memory, static_cast<float>(memory) * value, units.c_str());
@@ -4177,7 +4189,7 @@ void GCodeViewer::render_statistics() const
             imgui.text(format_string("GB", inv_gb));
     };
 
-    auto add_counter = [this, &imgui](const std::string& label, int64_t counter) {
+    auto add_counter = [&imgui](const std::string& label, int64_t counter) {
         char buf[1024];
         sprintf(buf, "%lld", counter);
         imgui.text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, label);

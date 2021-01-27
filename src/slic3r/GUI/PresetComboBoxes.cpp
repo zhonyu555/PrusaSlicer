@@ -705,7 +705,7 @@ void PlaterPresetComboBox::show_add_menu()
     wxMenu* menu = new wxMenu();
 
     append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
-        [this](wxCommandEvent&) { 
+        [](wxCommandEvent&) { 
             wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
         }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
@@ -735,7 +735,7 @@ void PlaterPresetComboBox::show_edit_menu()
     }
     else
         append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
-            [this](wxCommandEvent&) {
+            [](wxCommandEvent&) {
                 wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
             }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 

@@ -1843,7 +1843,7 @@ void ObjectList::append_menu_item_export_stl(wxMenu* menu) const
 void ObjectList::append_menu_item_reload_from_disk(wxMenu* menu) const
 {
     append_menu_item(menu, wxID_ANY, _(L("Reload from disk")), _(L("Reload the selected volumes from disk")),
-        [this](wxCommandEvent&) { wxGetApp().plater()->reload_from_disk(); }, "", menu,
+        [](wxCommandEvent&) { wxGetApp().plater()->reload_from_disk(); }, "", menu,
         []() { return wxGetApp().plater()->can_reload_from_disk(); }, wxGetApp().plater());
 }
 
@@ -2066,7 +2066,7 @@ wxMenu* ObjectList::create_settings_popupmenu(wxMenu *parent_menu)
         append_menu_item(menu, wxID_ANY, _(cat.first), "",
                         [menu, this](wxCommandEvent& event) { get_settings_choice(menu->GetLabel(event.GetId())); }, 
                         CATEGORY_ICON.find(cat.first) == CATEGORY_ICON.end() ? wxNullBitmap : CATEGORY_ICON.at(cat.first), parent_menu,
-                        [this]() { return true; }, wxGetApp().plater());
+                        []() { return true; }, wxGetApp().plater());
     }
 
     return menu;
@@ -2087,7 +2087,7 @@ void ObjectList::create_freq_settings_popupmenu(wxMenu *menu, const bool is_obje
         append_menu_item(menu, wxID_ANY, _(it.first), "",
                         [menu, this](wxCommandEvent& event) { get_freq_settings_choice(menu->GetLabel(event.GetId())); }, 
                         CATEGORY_ICON.find(it.first) == CATEGORY_ICON.end() ? wxNullBitmap : CATEGORY_ICON.at(it.first), menu,
-                        [this]() { return true; }, wxGetApp().plater());
+                        []() { return true; }, wxGetApp().plater());
     }
 #if 0
     // Add "Quick" settings bundles
@@ -4601,7 +4601,7 @@ void ObjectList::show_multi_selection_menu()
         append_menu_item_change_extruder(menu);
 
     append_menu_item(menu, wxID_ANY, _(L("Reload from disk")), _(L("Reload the selected volumes from disk")),
-        [this](wxCommandEvent&) { wxGetApp().plater()->reload_from_disk(); }, "", menu, []() {
+        [](wxCommandEvent&) { wxGetApp().plater()->reload_from_disk(); }, "", menu, []() {
         return wxGetApp().plater()->can_reload_from_disk();
     }, wxGetApp().plater());
 
