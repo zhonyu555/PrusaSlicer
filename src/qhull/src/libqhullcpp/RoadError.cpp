@@ -15,10 +15,6 @@
 #include <sstream>
 #include <iostream>
 
-using std::cerr;
-using std::cout;
-using std::string;
-
 #ifdef _MSC_VER  // Microsoft Visual C++ -- warning level 4
 #endif
 
@@ -150,7 +146,7 @@ what() const throw()
 void RoadError::
 logErrorLastResort() const
 {
-    global_log << what() << endl;
+    global_log << what() << std::endl;
 }//logError
 
 

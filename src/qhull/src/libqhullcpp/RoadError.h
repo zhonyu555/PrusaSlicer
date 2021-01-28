@@ -17,8 +17,6 @@
 #include <stdexcept>
 #include <string>
 
-using std::endl;
-
 namespace orgQhull {
 
 #//!\name Defined here
