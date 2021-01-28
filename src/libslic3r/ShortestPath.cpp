@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <cassert>
+#include <limits>
 
 namespace Slic3r {
 
