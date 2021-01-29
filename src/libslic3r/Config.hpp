@@ -1696,6 +1696,7 @@ public:
     virtual const ConfigDef*        def() const = 0;
     // Find ando/or create a ConfigOption instance for a given name.
     virtual ConfigOption*           optptr(const t_config_option_key &opt_key, bool create = false) = 0;
+    using ConfigOptionResolver::optptr;
     // Collect names of all configuration values maintained by this configuration store.
     virtual t_config_option_keys    keys() const = 0;
 
