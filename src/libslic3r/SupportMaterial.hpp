@@ -201,12 +201,25 @@ private:
 	    const MyLayersPtr   &base_layers,
 	    MyLayerStorage      &layer_storage) const;
 
+	// Original method
     // Turn some of the base layers into interface layers.
 	MyLayersPtr generate_interface_layers(
 	    const MyLayersPtr   &bottom_contacts,
 	    const MyLayersPtr   &top_contacts,
 	    MyLayersPtr         &intermediate_layers,
 	    MyLayerStorage      &layer_storage) const;
+
+	// New method for base interface support
+	// Turn some of the base layers into interface layers for number_base_interface_layers == 0.
+	// Create base type interface layers under soluble interfaces to extend adhesion. 	
+	// Turn some of the base layers into base interface layers for number_base_interface_layers > 0.
+	MyLayersPtr generate_interface_layers(
+	    const MyLayersPtr   &bottom_contacts,
+	    const MyLayersPtr   &top_contacts,
+	    MyLayersPtr         &intermediate_layers,
+		size_t              number_base_interface_layers,
+	    MyLayerStorage      &layer_storage) const;
+	
 
 	// Trim support layers by an object to leave a defined gap between
 	// the support volume and the object.
@@ -221,7 +234,17 @@ private:
 	void generate_pillars_shape();
 	void clip_with_shape();
 */
+	// Original method
+	// Produce the actual G-code
+	void generate_toolpaths(
+        const PrintObject	&object,
+        const MyLayersPtr 	&raft_layers,
+        const MyLayersPtr   &bottom_contacts,
+        const MyLayersPtr   &top_contacts,
+        const MyLayersPtr   &intermediate_layers,
+		const MyLayersPtr   &interface_layers) const;
 
+	// New method for base interface support
 	// Produce the actual G-code.
 	void generate_toolpaths(
         const PrintObject	&object,
@@ -229,7 +252,8 @@ private:
         const MyLayersPtr   &bottom_contacts,
         const MyLayersPtr   &top_contacts,
         const MyLayersPtr   &intermediate_layers,
-        const MyLayersPtr   &interface_layers) const;
+		const MyLayersPtr   &interface_layers,
+        const MyLayersPtr   &base_interface_layers) const;
 
 	// Following objects are not owned by SupportMaterial class.
 	const PrintObject 		*m_object;

@@ -2591,10 +2591,10 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
             throw Slic3r::InvalidArgument("Invalid speed");
         }
     }
-    if (m_volumetric_speed != 0. && speed == 0)
-        speed = m_volumetric_speed / path.mm3_per_mm;
     if (this->on_first_layer())
         speed = m_config.get_abs_value("first_layer_speed", speed);
+    if (m_volumetric_speed != 0. && speed == 0)
+        speed = m_volumetric_speed / path.mm3_per_mm;
     if (m_config.max_volumetric_speed.value > 0) {
         // cap speed with max_volumetric_speed anyway (even if user is not using autospeed)
         speed = std::min(
@@ -2835,6 +2835,7 @@ std::string GCode::set_extruder(unsigned int extruder_id, double print_z)
     // Always reset the extrusion path, even if the tool change retract is set to zero.
     m_wipe.reset_path();
 
+      
     if (m_writer.extruder() != nullptr) {
         // Process the custom end_filament_gcode. set_extruder() is only called if there is no wipe tower
         // so it should not be injected twice.
@@ -2856,24 +2857,35 @@ std::string GCode::set_extruder(unsigned int extruder_id, double print_z)
     std::string toolchange_gcode_parsed;
 
     // Process the custom toolchange_gcode. If it is empty, insert just a Tn command.
+    int prev_extruder_id = -1;
+    if (m_writer.extruder() != nullptr) prev_extruder_id = (int)m_writer.extruder()->id();
+
+    // We inform the writer about what is happening, but we may not use the resulting gcode.
+    std::string toolchange_command = m_writer.toolchange(extruder_id);
+
     if (!toolchange_gcode.empty()) {
         DynamicConfig config;
-        config.set_key_value("previous_extruder", new ConfigOptionInt((int)(m_writer.extruder() != nullptr ? m_writer.extruder()->id() : -1 )));
+        config.set_key_value("previous_extruder", new ConfigOptionInt(prev_extruder_id));
         config.set_key_value("next_extruder",     new ConfigOptionInt((int)extruder_id));
         config.set_key_value("layer_num",         new ConfigOptionInt(m_layer_index));
         config.set_key_value("layer_z",           new ConfigOptionFloat(print_z));
         config.set_key_value("max_layer_z",       new ConfigOptionFloat(m_max_layer_z));
+        //provide a key allowing to disable a toolchange rectractions in a custom_gcode, in case extruder is used first time 
+        config.set_key_value("next_extruder_extruded_volume",   new ConfigOptionFloat((m_writer.extruder() != nullptr) ? m_writer.extruder()->extruded_volume() : -1.)); 
         toolchange_gcode_parsed = placeholder_parser_process("toolchange_gcode", toolchange_gcode, extruder_id, &config);
         gcode += toolchange_gcode_parsed;
         check_add_eol(gcode);
     }
 
-    // We inform the writer about what is happening, but we may not use the resulting gcode.
-    std::string toolchange_command = m_writer.toolchange(extruder_id);
+    
     if (! custom_gcode_changes_tool(toolchange_gcode_parsed, m_writer.toolchange_prefix(), extruder_id))
         gcode += toolchange_command;
     else {
         // user provided his own toolchange gcode, no need to do anything
+        // HINT If extruder is used the first time, one can add a toolchange retract here.
+        //if(m_writer.extruder()->extruded_volume() <= 0.) gcode += this->retract(true);
+        // But this can interfer with purge tower extrusions having travel retracts disabled.
+        // Without this usually a travel rectract is written, which in general should be sufficient!?  
     }
 
     // Set the temperature if the wipe tower didn't (not needed for non-single extruder MM)
