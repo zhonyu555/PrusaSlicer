@@ -595,17 +595,10 @@ struct Sidebar::priv
 
 Sidebar::priv::~priv()
 {
-    if (object_manipulation != nullptr)
-        delete object_manipulation;
-
-    if (object_settings != nullptr)
-        delete object_settings;
-
-    if (frequently_changed_parameters != nullptr)
-        delete frequently_changed_parameters;
-
-    if (object_layers != nullptr)
-        delete object_layers;
+    delete object_manipulation;
+    delete object_settings;
+    delete frequently_changed_parameters;
+    delete object_layers;
 }
 
 void Sidebar::priv::show_preset_comboboxes()
@@ -630,10 +623,14 @@ void Sidebar::priv::show_preset_comboboxes()
 // Sidebar / public
 
 Sidebar::Sidebar(Plater *parent)
-    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(40 * wxGetApp().em_unit(), -1)), p(new priv(parent))
+    : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(42 * wxGetApp().em_unit(), -1)), p(new priv(parent))
 {
     p->scrolled = new wxScrolledWindow(this);
-    p->scrolled->SetScrollbars(0, 100, 1, 2);
+//    p->scrolled->SetScrollbars(0, 100, 1, 2); // ys_DELETE_after_testing. pixelsPerUnitY = 100 from https://github.com/prusa3d/PrusaSlicer/commit/8f019e5fa992eac2c9a1e84311c990a943f80b01, 
+    // but this cause the bad layout of the sidebar, when all infoboxes appear.
+    // As a result we can see the empty block at the bottom of the sidebar
+    // But if we set this value to 5, layout will be better
+    p->scrolled->SetScrollRate(0, 5);
 
     SetFont(wxGetApp().normal_font());
 #ifndef __APPLE__
@@ -1927,7 +1924,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , main_frame(main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
-        "brim_width", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
+        "brim_width", "brim_offset", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
         "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle",
         "extruder_colour", "filament_colour", "max_print_height", "printer_model", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
@@ -2124,11 +2121,15 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 		    if (evt.data.second) {
 			    this->show_action_buttons(this->ready_to_slice);
                 notification_manager->close_notification_of_type(NotificationType::ExportFinished);
-                notification_manager->push_notification(format(_L("Successfully unmounted. The device %s(%s) can now be safely removed from the computer."), evt.data.first.name, evt.data.first.path),
-                    NotificationManager::NotificationLevel::RegularNotification);
+                notification_manager->push_notification(NotificationType::CustomNotification,
+                                                        NotificationManager::NotificationLevel::RegularNotification,
+                                                        format(_L("Successfully unmounted. The device %s(%s) can now be safely removed from the computer."), evt.data.first.name, evt.data.first.path)
+                    );
             } else {
-                notification_manager->push_notification(format(_L("Ejecting of device %s(%s) has failed."), evt.data.first.name, evt.data.first.path),
-                    NotificationManager::NotificationLevel::ErrorNotification);
+                notification_manager->push_notification(NotificationType::CustomNotification,
+                                                        NotificationManager::NotificationLevel::ErrorNotification,
+                                                        format(_L("Ejecting of device %s(%s) has failed."), evt.data.first.name, evt.data.first.path)
+                    );
             }
 	    });
         this->q->Bind(EVT_REMOVABLE_DRIVES_CHANGED, [this, q](RemovableDrivesChangedEvent &) {
@@ -2376,6 +2377,10 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                             CustomGCode::update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, &wxGetApp().preset_bundle->project_config);
                         // For exporting from the amf/3mf we shouldn't check printer_presets for the containing information about "Print Host upload"
                         wxGetApp().load_current_presets(false);
+                        // Update filament colors for the MM-printer profile in the full config 
+                        // to avoid black (default) colors for Extruders in the ObjectList, 
+                        // when for extruder colors are used filament colors
+                        q->update_filament_colors_in_full_config();
                         is_project_file = true;
                     }
                     wxGetApp().app_config->update_config_dir(path.parent_path().string());
@@ -2398,7 +2403,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
 
             auto convert_from_imperial_units = [](Model& model, bool only_small_volumes) {
                 model.convert_from_imperial_units(only_small_volumes);
-                wxGetApp().app_config->set("use_inches", "1");
+//                wxGetApp().app_config->set("use_inches", "1");
                 wxGetApp().sidebar().update_ui_from_settings();
             };
 
@@ -2519,7 +2524,7 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs &mode
     const Vec3d bed_size = Slic3r::to_3d(bed_shape.size().cast<double>(), 1.0) - 2.0 * Vec3d::Ones();
 
 #ifndef AUTOPLACEMENT_ON_LOAD
-    bool need_arrange = false;
+    // bool need_arrange = false;
 #endif /* AUTOPLACEMENT_ON_LOAD */
     bool scaled_down = false;
     std::vector<size_t> obj_idxs;
@@ -2539,7 +2544,7 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs &mode
             new_instances.emplace_back(object->add_instance());
 #else /* AUTOPLACEMENT_ON_LOAD */
             // if object has no defined position(s) we need to rearrange everything after loading
-            need_arrange = true;
+            // need_arrange = true;
              // add a default instance and center object around origin
             object->center_around_origin();  // also aligns object to Z = 0
             ModelInstance* instance = object->add_instance();
@@ -3300,7 +3305,7 @@ void Plater::priv::reload_from_disk()
                     new_volume->config.apply(old_volume->config);
                     new_volume->set_type(old_volume->type());
                     new_volume->set_material_id(old_volume->material_id());
-                    new_volume->set_transformation(old_volume->get_transformation() * old_volume->source.transform);
+                    new_volume->set_transformation(old_volume->get_transformation());
                     new_volume->translate(new_volume->get_transformation().get_matrix(true) * (new_volume->source.mesh_offset - old_volume->source.mesh_offset));
                     if (old_volume->source.is_converted_from_inches)
                         new_volume->convert_from_imperial_units();
@@ -3361,10 +3366,54 @@ void Plater::priv::fix_through_netfabb(const int obj_idx, const int vol_idx/* = 
     if (obj_idx < 0)
         return;
 
-    Plater::TakeSnapshot snapshot(q, _L("Fix Throught NetFabb"));
+    // Do not fix anything when a gizmo is open. There might be issues with updates
+    // and what is worse, the snapshot time would refer to the internal stack.
+    if (q->canvas3D()->get_gizmos_manager().get_current_type() != GLGizmosManager::Undefined) {
+        notification_manager->push_notification(
+                    NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
+                    NotificationManager::NotificationLevel::RegularNotification,
+                    _u8L("ERROR: Please close all manipulators available from "
+                         "the left toolbar before fixing the mesh."));
+        return;
+    }
 
-    fix_model_by_win10_sdk_gui(*model.objects[obj_idx], vol_idx);
-    sla::reproject_points_and_holes(model.objects[obj_idx]);
+    // size_t snapshot_time = undo_redo_stack().active_snapshot_time();
+    Plater::TakeSnapshot snapshot(q, _L("Fix through NetFabb"));
+
+    ModelObject* mo = model.objects[obj_idx];
+
+    // If there are custom supports/seams, remove them. Fixed mesh
+    // may be different and they would make no sense.
+    bool paint_removed = false;
+    for (ModelVolume* mv : mo->volumes) {
+        paint_removed |= ! mv->supported_facets.empty() || ! mv->seam_facets.empty();
+        mv->supported_facets.clear();
+        mv->seam_facets.clear();
+    }
+    if (paint_removed) {
+        // snapshot_time is captured by copy so the lambda knows where to undo/redo to.
+        notification_manager->push_notification(
+                    NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
+                    NotificationManager::NotificationLevel::RegularNotification,
+                    _u8L("Custom supports and seams were removed after repairing the mesh."));
+//                    _u8L("Undo the repair"),
+//                    [this, snapshot_time](wxEvtHandler*){
+//                        // Make sure the snapshot is still available and that
+//                        // we are in the main stack and not in a gizmo-stack.
+//                        if (undo_redo_stack().has_undo_snapshot(snapshot_time)
+//                         && q->canvas3D()->get_gizmos_manager().get_current() == nullptr)
+//                            undo_redo_to(snapshot_time);
+//                        else
+//                            notification_manager->push_notification(
+//                                NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
+//                                NotificationManager::NotificationLevel::RegularNotification,
+//                                _u8L("Cannot undo to before the mesh repair!"));
+//                        return true;
+//                    });
+    }
+
+    fix_model_by_win10_sdk_gui(*mo, vol_idx);
+    sla::reproject_points_and_holes(mo);
     this->update();
     this->object_list_changed();
     this->schedule_background_process();
@@ -3510,6 +3559,14 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
      */
         wxGetApp().obj_list()->update_object_list_by_printer_technology();
     }
+
+#ifdef __WXMSW__
+    // From the Win 2004 preset combobox lose a focus after change the preset selection
+    // and that is why the up/down arrow doesn't work properly
+    // (see https://github.com/prusa3d/PrusaSlicer/issues/5531 ).
+    // So, set the focus to the combobox explicitly
+    combo->SetFocus();
+#endif
 }
 
 void Plater::priv::on_slicing_update(SlicingStatusEvent &evt)
@@ -3630,9 +3687,8 @@ bool Plater::priv::warnings_dialog()
 	if (current_warnings.empty())
 		return true;
 	std::string text = _u8L("There are active warnings concerning sliced models:") + "\n";
-	bool empt = true;
 	for (auto const& it : current_warnings) {
-		int next_n = it.first.message.find_first_of('\n', 0);
+        size_t next_n = it.first.message.find_first_of('\n', 0);
 		text += "\n";
 		if (next_n != std::string::npos)
 			text += it.first.message.substr(0, next_n);
@@ -4791,9 +4847,7 @@ void Plater::load_gcode()
 
 void Plater::load_gcode(const wxString& filename)
 {
-    if (filename.empty() ||
-        (!filename.Lower().EndsWith(".gcode") && !filename.Lower().EndsWith(".g")) ||
-        m_last_loaded_gcode == filename)
+    if (! is_gcode_file(into_u8(filename)) || m_last_loaded_gcode == filename)
         return;
 
     m_last_loaded_gcode = filename;
@@ -4809,7 +4863,6 @@ void Plater::load_gcode(const wxString& filename)
     // process gcode
     GCodeProcessor processor;
     processor.enable_producers(true);
-    processor.enable_machine_envelope_processing(true);
     processor.process_file(filename.ToUTF8().data(), false);
     p->gcode_result = std::move(processor.extract_result());
 
@@ -4996,6 +5049,10 @@ bool Plater::load_files(const wxArrayString& filenames)
                 std::vector<fs::path> in_paths;
                 in_paths.emplace_back(*it);
                 load_files(in_paths, false, true);
+                break;
+            }
+            case LoadType::Unknown : {
+                assert(false);
                 break;
             }
             }
@@ -5735,6 +5792,26 @@ void Plater::on_extruders_change(size_t num_extruders)
     sidebar().scrolled_panel()->Refresh();
 }
 
+bool Plater::update_filament_colors_in_full_config()
+{
+    // There is a case, when we use filament_color instead of extruder_color (when extruder_color == "").
+    // Thus plater config option "filament_colour" should be filled with filament_presets values.
+    // Otherwise, on 3dScene will be used last edited filament color for all volumes with extruder_color == "".
+    const std::vector<std::string> filament_presets = wxGetApp().preset_bundle->filament_presets;
+    if (filament_presets.size() == 1 || !p->config->has("filament_colour"))
+        return false;
+
+    const PresetCollection& filaments = wxGetApp().preset_bundle->filaments;
+    std::vector<std::string> filament_colors;
+    filament_colors.reserve(filament_presets.size());
+
+    for (const std::string& filament_preset : filament_presets)
+        filament_colors.push_back(filaments.find_preset(filament_preset, true)->config.opt_string("filament_colour", (unsigned)0));
+
+    p->config->option<ConfigOptionStrings>("filament_colour")->values = filament_colors;
+    return true;
+}
+
 void Plater::on_config_change(const DynamicPrintConfig &config)
 {
     bool update_scheduled = false;
@@ -5744,22 +5821,7 @@ void Plater::on_config_change(const DynamicPrintConfig &config)
         {
             update_scheduled = true; // update should be scheduled (for update 3DScene) #2738
 
-            /* There is a case, when we use filament_color instead of extruder_color (when extruder_color == "").
-             * Thus plater config option "filament_colour" should be filled with filament_presets values.
-             * Otherwise, on 3dScene will be used last edited filament color for all volumes with extruder_color == "".
-             */
-            const std::vector<std::string> filament_presets = wxGetApp().preset_bundle->filament_presets;
-            if (filament_presets.size() > 1 &&
-                p->config->option<ConfigOptionStrings>(opt_key)->values.size() != config.option<ConfigOptionStrings>(opt_key)->values.size())
-            {
-                const PresetCollection& filaments = wxGetApp().preset_bundle->filaments;
-                std::vector<std::string> filament_colors;
-                filament_colors.reserve(filament_presets.size());
-
-                for (const std::string& filament_preset : filament_presets)
-                    filament_colors.push_back(filaments.find_preset(filament_preset, true)->config.opt_string("filament_colour", (unsigned)0));
-
-                p->config->option<ConfigOptionStrings>(opt_key)->values = filament_colors;
+            if (update_filament_colors_in_full_config()) {
                 p->sidebar->obj_list()->update_extruder_colors();
                 continue;
             }
@@ -5865,15 +5927,13 @@ void Plater::force_print_bed_update()
 
 void Plater::on_activate()
 {
-#ifdef __linux__
-    wxWindow *focus_window = wxWindow::FindFocus();
+#if defined(__linux__) || defined(_WIN32)
     // Activating the main frame, and no window has keyboard focus.
     // Set the keyboard focus to the visible Canvas3D.
-    if (this->p->view3D->IsShown() && (!focus_window || focus_window == this->p->view3D->get_wxglcanvas()))
-        this->p->view3D->get_wxglcanvas()->SetFocus();
-
-    else if (this->p->preview->IsShown() && (!focus_window || focus_window == this->p->view3D->get_wxglcanvas()))
-        this->p->preview->get_wxglcanvas()->SetFocus();
+    if (this->p->view3D->IsShown() && wxWindow::FindFocus() != this->p->view3D->get_wxglcanvas())
+        CallAfter([this]() { this->p->view3D->get_wxglcanvas()->SetFocus(); });
+    else if (this->p->preview->IsShown() && wxWindow::FindFocus() != this->p->view3D->get_wxglcanvas())
+        CallAfter([this]() { this->p->preview->get_wxglcanvas()->SetFocus(); });
 #endif
 
 	this->p->show_delayed_error_message();
@@ -6053,8 +6113,10 @@ void Plater::changed_objects(const std::vector<size_t>& object_idxs)
         // pulls the correct data, update the 3D scene.
         this->p->update_restart_background_process(true, false);
     }
-    else
+    else {
         p->view3D->reload_scene(false);
+        p->view3D->get_canvas3d()->update_instance_printable_state_for_objects(object_idxs);
+    }
 
     // update print
     this->p->schedule_background_process();
@@ -6149,6 +6211,7 @@ void Plater::msw_rescale()
 
 void Plater::sys_color_changed()
 {
+    p->preview->sys_color_changed();
     p->sidebar->sys_color_changed();
 
     // msw_rescale_menu updates just icons, so use it
