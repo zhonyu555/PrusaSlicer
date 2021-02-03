@@ -35,6 +35,11 @@
 #include "slic3r/Config/Snapshot.hpp"
 #include "slic3r/Utils/PresetUpdater.hpp"
 
+#if defined(__linux__) && defined(__WXGTK3__)
+#define wxLinux_gtk3 true
+#else
+#define wxLinux_gtk3 false
+#endif //defined(__linux__) && defined(__WXGTK3__)
 
 namespace Slic3r {
 namespace GUI {
@@ -209,7 +214,7 @@ PrinterPicker::PrinterPicker(wxWindow *parent, const VendorProfile &vendor, wxSt
                 load_bitmap(Slic3r::var(PRINTER_PLACEHOLDER), bitmap, bitmap_width);
             }
         }
-        auto *title = new wxStaticText(this, wxID_ANY, model.name, wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
+        auto *title = new wxStaticText(this, wxID_ANY, from_u8(model.name), wxDefaultPosition, wxDefaultSize, wxALIGN_LEFT);
         title->SetFont(font_name);
         const int wrap_width = std::max((int)MODEL_MIN_WRAP, bitmap_width);
         title->Wrap(wrap_width);
@@ -409,7 +414,11 @@ ConfigWizardPage::ConfigWizardPage(ConfigWizard *parent, wxString title, wxStrin
 
     SetSizer(sizer);
 
-    this->Hide();
+    // There is strange layout on Linux with GTK3, 
+    // see https://github.com/prusa3d/PrusaSlicer/issues/5103 and https://github.com/prusa3d/PrusaSlicer/issues/4861
+    // So, non-active pages will be hidden later, on wxEVT_SHOW, after completed Layout() for all pages 
+    if (!wxLinux_gtk3)
+        this->Hide();
 
     Bind(wxEVT_SIZE, [this](wxSizeEvent &event) {
         this->Layout();
@@ -725,7 +734,7 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
             , text_clr_str
             , first_line
             , second_line);
-        for (int i = 0; i < printer_names.size(); ++i)
+        for (size_t i = 0; i < printer_names.size(); ++i)
         {
             text += wxString::Format("<td>%s</td>", boost::nowide::widen(printer_names[i]));
             if (i % 3 == 2) {
@@ -821,7 +830,7 @@ void PageMaterials::update_lists(int sel_printer, int sel_type, int sel_vendor)
                 }
             }
 			if (sel_printers[0] != 0) {
-				for (size_t i = 0; i < sel_printers_count; i++) {
+                for (int i = 0; i < sel_printers_count; i++) {
 					const std::string& printer_name = list_printer->get_data(sel_printers[i]);
 					const Preset* printer = nullptr;
 					for (const Preset* it : materials->printers) {
@@ -872,7 +881,7 @@ void PageMaterials::update_lists(int sel_printer, int sel_type, int sel_vendor)
 		if (sel_printers_count != 0 && sel_type != wxNOT_FOUND) {
 			const std::string& type = list_type->get_data(sel_type);
 			// find printer preset
-			for (size_t i = 0; i < sel_printers_count; i++) {
+            for (int i = 0; i < sel_printers_count; i++) {
 				const std::string& printer_name = list_printer->get_data(sel_printers[i]);
 				const Preset* printer = nullptr;
 				for (const Preset* it : materials->printers) {
@@ -908,7 +917,7 @@ void PageMaterials::update_lists(int sel_printer, int sel_type, int sel_vendor)
 			const std::string& vendor = list_vendor->get_data(sel_vendor);
 			// finst printer preset
             std::vector<ProfilePrintData> to_list;
-			for (size_t i = 0; i < sel_printers_count; i++) {
+            for (int i = 0; i < sel_printers_count; i++) {
 				const std::string& printer_name = list_printer->get_data(sel_printers[i]);
 				const Preset* printer = nullptr;
 				for (const Preset* it : materials->printers) {
@@ -977,7 +986,7 @@ void PageMaterials::sort_list_data(StringList* list, bool add_All_item, bool mat
         
         const ConfigOptionDef* def = print_config_def.get("filament_type");
         std::vector<std::string>enum_values = def->enum_values;
-        int end_of_sorted = 0;
+        size_t end_of_sorted = 0;
         for (size_t vals = 0; vals < enum_values.size(); vals++) {
             for (size_t profs = end_of_sorted; profs < other_profiles.size(); profs++)
             {
@@ -1035,13 +1044,11 @@ void PageMaterials::sort_list_data(PresetList* list, const std::vector<ProfilePr
         return a.name.get() < b.name.get();
         });
     list->Clear();
-    //for (const auto& item : prusa_profiles)
-    for (int i = 0; i < prusa_profiles.size(); ++i) {
+    for (size_t i = 0; i < prusa_profiles.size(); ++i) {
         list->append(std::string(prusa_profiles[i].name) + (prusa_profiles[i].omnipresent ? "" : " *"), &const_cast<std::string&>(prusa_profiles[i].name.get()));
         list->Check(i, prusa_profiles[i].checked);
     }
-    //for (const auto& item : other_profiles)
-    for (int i = 0; i < other_profiles.size(); ++i) {
+    for (size_t i = 0; i < other_profiles.size(); ++i) {
         list->append(std::string(other_profiles[i].name) + (other_profiles[i].omnipresent ? "" : " *"), &const_cast<std::string&>(other_profiles[i].name.get()));
         list->Check(i + prusa_profiles.size(), other_profiles[i].checked);
     }
@@ -2271,7 +2278,6 @@ bool ConfigWizard::priv::check_and_install_missing_materials(Technology technolo
     	wxString out;
     	for (const VendorProfile::PrinterModel *printer_model : printer_models) {
             wxString name = from_u8(printer_model->name);
-            name.Replace("&", "&&", true);
     		out += "\t\t";
     		out += name;
     		out += "\n";
@@ -2643,6 +2649,20 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
 
         Layout();
     });
+
+    if (wxLinux_gtk3)
+        this->Bind(wxEVT_SHOW, [this, vsizer](const wxShowEvent& e) {
+            ConfigWizardPage* active_page = p->index->active_page();
+            if (!active_page)
+                return;
+            for (auto page : p->all_pages)
+                if (page != active_page)
+                    page->Hide();
+            // update best size for the dialog after hiding of the non-active pages
+            vsizer->SetSizeHints(this);
+            // set initial dialog size
+            p->init_dialog_size();
+        });
 }
 
 ConfigWizard::~ConfigWizard() {}

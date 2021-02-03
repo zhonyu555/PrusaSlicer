@@ -50,11 +50,6 @@ const std::string GCodeProcessor::Width_Tag      = "WIDTH:";
 const std::string GCodeProcessor::Mm3_Per_Mm_Tag = "MM3_PER_MM:";
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
-static bool is_valid_extrusion_role(int value)
-{
-    return (static_cast<int>(erNone) <= value) && (value <= static_cast<int>(erMixed));
-}
-
 static void set_option_value(ConfigOptionFloats& option, size_t id, float value)
 {
     if (id < option.values.size())
@@ -562,6 +557,10 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     }
 
     m_time_processor.export_remaining_time_enabled = config.remaining_times.value;
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    m_use_volumetric_e = config.use_volumetric_e;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 }
 
 void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
@@ -719,6 +718,15 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         m_time_processor.machines[i].max_acceleration = max_acceleration;
         m_time_processor.machines[i].acceleration = (max_acceleration > 0.0f) ? max_acceleration : DEFAULT_ACCELERATION;
     }
+
+    if (m_time_processor.machine_limits.machine_max_acceleration_x.values.size() > 1)
+        enable_stealth_time_estimator(true);
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    const ConfigOptionBool* use_volumetric_e = config.option<ConfigOptionBool>("use_volumetric_e");
+    if (use_volumetric_e != nullptr)
+        m_use_volumetric_e = use_volumetric_e->value;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 }
 
 void GCodeProcessor::enable_stealth_time_estimator(bool enabled)
@@ -772,6 +780,10 @@ void GCodeProcessor::reset()
 
     m_result.reset();
     m_result.id = ++s_result_id;
+
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    m_use_volumetric_e = false;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
     m_mm3_per_mm_compare.reset();
@@ -1653,8 +1665,14 @@ void GCodeProcessor::process_G0(const GCodeReader::GCodeLine& line)
 
 void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 {
-    auto absolute_position = [this](Axis axis, const GCodeReader::GCodeLine& lineG1)
-    {
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+    float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_filament_diameters.size()) ? m_filament_diameters[m_extruder_id] : m_filament_diameters.back();
+    float filament_radius = 0.5f * filament_diameter;
+    float area_filament_cross_section = static_cast<float>(M_PI) * sqr(filament_radius);
+    auto absolute_position = [this, area_filament_cross_section](Axis axis, const GCodeReader::GCodeLine& lineG1) {
+#else
+    auto absolute_position = [this](Axis axis, const GCodeReader::GCodeLine& lineG1) {
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         bool is_relative = (m_global_positioning_type == EPositioningType::Relative);
         if (axis == E)
             is_relative |= (m_e_local_positioning_type == EPositioningType::Relative);
@@ -1662,6 +1680,10 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         if (lineG1.has(Slic3r::Axis(axis))) {
             float lengthsScaleFactor = (m_units == EUnits::Inches) ? INCHES_TO_MM : 1.0f;
             float ret = lineG1.value(Slic3r::Axis(axis)) * lengthsScaleFactor;
+#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
+            if (axis == E && m_use_volumetric_e)
+                ret /= area_filament_cross_section;
+#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
             return is_relative ? m_start_position[axis] + ret : m_origin[axis] + ret;
         }
         else
@@ -1719,9 +1741,11 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 
     if (type == EMoveType::Extrude) {
         float delta_xyz = std::sqrt(sqr(delta_pos[X]) + sqr(delta_pos[Y]) + sqr(delta_pos[Z]));
+#if !ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_filament_diameters.size()) ? m_filament_diameters[m_extruder_id] : m_filament_diameters.back();
         float filament_radius = 0.5f * filament_diameter;
         float area_filament_cross_section = static_cast<float>(M_PI) * sqr(filament_radius);
+#endif // !ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         float volume_extruded_filament = area_filament_cross_section * delta_pos[E];
         float area_toolpath_cross_section = volume_extruded_filament / delta_xyz;
 
@@ -2114,32 +2138,29 @@ void GCodeProcessor::process_M135(const GCodeReader::GCodeLine& line)
 
 void GCodeProcessor::process_M201(const GCodeReader::GCodeLine& line)
 {
-    if (!m_time_processor.machine_envelope_processing_enabled)
-        return;
-
     // see http://reprap.org/wiki/G-code#M201:_Set_max_printing_acceleration
     float factor = ((m_flavor != gcfRepRapSprinter && m_flavor != gcfRepRapFirmware) && m_units == EUnits::Inches) ? INCHES_TO_MM : 1.0f;
 
     for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
-        if (line.has_x())
-            set_option_value(m_time_processor.machine_limits.machine_max_acceleration_x, i, line.x() * factor);
+        if (static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i) == PrintEstimatedTimeStatistics::ETimeMode::Normal ||
+            m_time_processor.machine_envelope_processing_enabled) {
+            if (line.has_x())
+                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_x, i, line.x() * factor);
 
-        if (line.has_y())
-            set_option_value(m_time_processor.machine_limits.machine_max_acceleration_y, i, line.y() * factor);
+            if (line.has_y())
+                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_y, i, line.y() * factor);
 
-        if (line.has_z())
-            set_option_value(m_time_processor.machine_limits.machine_max_acceleration_z, i, line.z() * factor);
+            if (line.has_z())
+                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_z, i, line.z() * factor);
 
-        if (line.has_e())
-            set_option_value(m_time_processor.machine_limits.machine_max_acceleration_e, i, line.e() * factor);
+            if (line.has_e())
+                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_e, i, line.e() * factor);
+        }
     }
 }
 
 void GCodeProcessor::process_M203(const GCodeReader::GCodeLine& line)
 {
-    if (!m_time_processor.machine_envelope_processing_enabled)
-        return;
-
     // see http://reprap.org/wiki/G-code#M203:_Set_maximum_feedrate
     if (m_flavor == gcfRepetier)
         return;
@@ -2149,45 +2170,48 @@ void GCodeProcessor::process_M203(const GCodeReader::GCodeLine& line)
     float factor = (m_flavor == gcfMarlin || m_flavor == gcfSmoothie) ? 1.0f : MMMIN_TO_MMSEC;
 
     for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
-        if (line.has_x())
-            set_option_value(m_time_processor.machine_limits.machine_max_feedrate_x, i, line.x() * factor);
+        if (static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i) == PrintEstimatedTimeStatistics::ETimeMode::Normal ||
+            m_time_processor.machine_envelope_processing_enabled) {
+            if (line.has_x())
+                set_option_value(m_time_processor.machine_limits.machine_max_feedrate_x, i, line.x() * factor);
 
-        if (line.has_y())
-            set_option_value(m_time_processor.machine_limits.machine_max_feedrate_y, i, line.y() * factor);
+            if (line.has_y())
+                set_option_value(m_time_processor.machine_limits.machine_max_feedrate_y, i, line.y() * factor);
 
-        if (line.has_z())
-            set_option_value(m_time_processor.machine_limits.machine_max_feedrate_z, i, line.z() * factor);
+            if (line.has_z())
+                set_option_value(m_time_processor.machine_limits.machine_max_feedrate_z, i, line.z() * factor);
 
-        if (line.has_e())
-            set_option_value(m_time_processor.machine_limits.machine_max_feedrate_e, i, line.e() * factor);
+            if (line.has_e())
+                set_option_value(m_time_processor.machine_limits.machine_max_feedrate_e, i, line.e() * factor);
+        }
     }
 }
 
 void GCodeProcessor::process_M204(const GCodeReader::GCodeLine& line)
 {
-    if (!m_time_processor.machine_envelope_processing_enabled)
-        return;
-
     float value;
     for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
-        if (line.has_value('S', value)) {
-            // Legacy acceleration format. This format is used by the legacy Marlin, MK2 or MK3 firmware,
-            // and it is also generated by Slic3r to control acceleration per extrusion type
-            // (there is a separate acceleration settings in Slicer for perimeter, first layer etc).
-            set_acceleration(static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i), value);
-            if (line.has_value('T', value))
-                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_retracting, i, value);
-        }
-        else {
-            // New acceleration format, compatible with the upstream Marlin.
-            if (line.has_value('P', value))
+        if (static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i) == PrintEstimatedTimeStatistics::ETimeMode::Normal ||
+            m_time_processor.machine_envelope_processing_enabled) {
+            if (line.has_value('S', value)) {
+                // Legacy acceleration format. This format is used by the legacy Marlin, MK2 or MK3 firmware,
+                // and it is also generated by Slic3r to control acceleration per extrusion type
+                // (there is a separate acceleration settings in Slicer for perimeter, first layer etc).
                 set_acceleration(static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i), value);
-            if (line.has_value('R', value))
-                set_option_value(m_time_processor.machine_limits.machine_max_acceleration_retracting, i, value);
-            if (line.has_value('T', value)) {
-                // Interpret the T value as the travel acceleration in the new Marlin format.
-                //FIXME Prusa3D firmware currently does not support travel acceleration value independent from the extruding acceleration value.
-                // set_travel_acceleration(value);
+                if (line.has_value('T', value))
+                    set_option_value(m_time_processor.machine_limits.machine_max_acceleration_retracting, i, value);
+            }
+            else {
+                // New acceleration format, compatible with the upstream Marlin.
+                if (line.has_value('P', value))
+                    set_acceleration(static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i), value);
+                if (line.has_value('R', value))
+                    set_option_value(m_time_processor.machine_limits.machine_max_acceleration_retracting, i, value);
+                if (line.has_value('T', value)) {
+                    // Interpret the T value as the travel acceleration in the new Marlin format.
+                    //FIXME Prusa3D firmware currently does not support travel acceleration value independent from the extruding acceleration value.
+                    // set_travel_acceleration(value);
+                }
             }
         }
     }
@@ -2195,31 +2219,31 @@ void GCodeProcessor::process_M204(const GCodeReader::GCodeLine& line)
 
 void GCodeProcessor::process_M205(const GCodeReader::GCodeLine& line)
 {
-    if (!m_time_processor.machine_envelope_processing_enabled)
-        return;
-
     for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
-        if (line.has_x()) {
-            float max_jerk = line.x();
-            set_option_value(m_time_processor.machine_limits.machine_max_jerk_x, i, max_jerk);
-            set_option_value(m_time_processor.machine_limits.machine_max_jerk_y, i, max_jerk);
+        if (static_cast<PrintEstimatedTimeStatistics::ETimeMode>(i) == PrintEstimatedTimeStatistics::ETimeMode::Normal ||
+            m_time_processor.machine_envelope_processing_enabled) {
+            if (line.has_x()) {
+                float max_jerk = line.x();
+                set_option_value(m_time_processor.machine_limits.machine_max_jerk_x, i, max_jerk);
+                set_option_value(m_time_processor.machine_limits.machine_max_jerk_y, i, max_jerk);
+            }
+
+            if (line.has_y())
+                set_option_value(m_time_processor.machine_limits.machine_max_jerk_y, i, line.y());
+
+            if (line.has_z())
+                set_option_value(m_time_processor.machine_limits.machine_max_jerk_z, i, line.z());
+
+            if (line.has_e())
+                set_option_value(m_time_processor.machine_limits.machine_max_jerk_e, i, line.e());
+
+            float value;
+            if (line.has_value('S', value))
+                set_option_value(m_time_processor.machine_limits.machine_min_extruding_rate, i, value);
+
+            if (line.has_value('T', value))
+                set_option_value(m_time_processor.machine_limits.machine_min_travel_rate, i, value);
         }
-
-        if (line.has_y())
-            set_option_value(m_time_processor.machine_limits.machine_max_jerk_y, i, line.y());
-
-        if (line.has_z())
-            set_option_value(m_time_processor.machine_limits.machine_max_jerk_z, i, line.z());
-
-        if (line.has_e())
-            set_option_value(m_time_processor.machine_limits.machine_max_jerk_e, i, line.e());
-
-        float value;
-        if (line.has_value('S', value))
-            set_option_value(m_time_processor.machine_limits.machine_min_extruding_rate, i, value);
-
-        if (line.has_value('T', value))
-            set_option_value(m_time_processor.machine_limits.machine_min_travel_rate, i, value);
     }
 }
 
@@ -2314,9 +2338,11 @@ void GCodeProcessor::process_T(const GCodeReader::GCodeLine& line)
 void GCodeProcessor::process_T(const std::string_view command)
 {
     if (command.length() > 1) {
-        int eid;
+        int eid = 0;
         if (! parse_number(command.substr(1), eid) || eid < 0 || eid > 255) {
-            BOOST_LOG_TRIVIAL(error) << "GCodeProcessor encountered an invalid toolchange (" << command << ").";
+            // T-1 is a valid gcode line for RepRap Firmwares (used to deselects all tools) see https://github.com/prusa3d/PrusaSlicer/issues/5677
+            if ((m_flavor != gcfRepRapFirmware && m_flavor != gcfRepRapSprinter) || eid != -1)
+                BOOST_LOG_TRIVIAL(error) << "GCodeProcessor encountered an invalid toolchange (" << command << ").";
         } else {
             unsigned char id = static_cast<unsigned char>(eid);
             if (m_extruder_id != id) {

@@ -1020,6 +1020,12 @@ bool load_amf_archive(const char* path, DynamicPrintConfig* config, Model* model
 #endif // forward compatibility
 
     close_zip_reader(&archive);
+
+    for (ModelObject *o : model->objects)
+        for (ModelVolume *v : o->volumes)
+            if (v->source.input_file.empty() && (v->type() == ModelVolumeType::MODEL_PART))
+                v->source.input_file = path;
+
     return true;
 }
 
@@ -1207,9 +1213,9 @@ bool store_amf(const char* path, Model* model, const DynamicPrintConfig* config,
                 stream << "        <metadata type=\"slic3r.source_offset_x\">" << volume->source.mesh_offset(0) << "</metadata>\n";
                 stream << "        <metadata type=\"slic3r.source_offset_y\">" << volume->source.mesh_offset(1) << "</metadata>\n";
                 stream << "        <metadata type=\"slic3r.source_offset_z\">" << volume->source.mesh_offset(2) << "</metadata>\n";
-                if (volume->source.is_converted_from_inches)
-                    stream << "        <metadata type=\"slic3r.source_in_inches\">1</metadata>\n";
             }
+            if (volume->source.is_converted_from_inches)
+                stream << "        <metadata type=\"slic3r.source_in_inches\">1</metadata>\n";
 			stream << std::setprecision(std::numeric_limits<float>::max_digits10);
             const indexed_triangle_set &its = volume->mesh().its;
             for (size_t i = 0; i < its.indices.size(); ++i) {
