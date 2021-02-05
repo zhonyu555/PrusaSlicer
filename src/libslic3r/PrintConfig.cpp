@@ -567,6 +567,13 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
 
+    def = this->add("gap_fill_enabled", coBool);
+    def->label = L("Fill gaps");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Enables small gap fill.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(true));
+
     def = this->add("extruder", coInt);
     def->gui_type = "i_enum_open";
     def->label = L("Extruder");
