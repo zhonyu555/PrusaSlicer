@@ -402,7 +402,12 @@ int CLI::run(int argc, char **argv)
             for (Model &model : m_models) {
                 size_t num_objects = model.objects.size();
                 for (size_t i = 0; i < num_objects; ++ i) {
-                    model.objects.front()->split(nullptr);
+                    ModelObjectPtrs new_objects;
+                    ModelObject* front = model.objects.front();
+                    front->split(&new_objects);
+                    unsigned int counter = 1;
+                    for (ModelObject* m : new_objects)
+                        m->name = front->name + "_" + std::to_string(counter++);
                     model.delete_object(size_t(0));
                 }
             }
