@@ -384,11 +384,11 @@ void PerimeterGenerator::process()
                         // won't be able to fill but we'd still remove from infill area
                         ExPolygons gap_polys = diff_ex(
                             offset(last,   - float(0.5 * distance)),                            
-                            offset(offsets,  float(0.5 * distance + 10)));
+                            offset(offsets,  float(0.5 * distance + 10)));  // safety offset
 
                         double gap_area = area(gap_polys);                        
                         if (gap_area >= scale_(scale_(std::max(this->config->gap_fill_min_area.getFloat(), EPSILON)))) {
-                            append(gaps, std::move(gap_polys));  // safety offset
+                            append(gaps, std::move(gap_polys));
                         }
                     }
                 }
