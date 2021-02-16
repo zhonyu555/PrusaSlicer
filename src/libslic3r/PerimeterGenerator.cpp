@@ -386,9 +386,8 @@ void PerimeterGenerator::process()
                             offset(last,   - float(0.5 * distance)),                            
                             offset(offsets,  float(0.5 * distance + 10)));
 
-                        double gap_area = area(gap_polys);
-
-                        if (gap_area >= scale_(scale_(this->config->gap_fill_min_area))) {
+                        double gap_area = area(gap_polys);                        
+                        if (gap_area >= scale_(scale_(std::max(this->config->gap_fill_min_area.getFloat(), EPSILON)))) {
                             append(gaps, std::move(gap_polys));  // safety offset
                         }
                     }
