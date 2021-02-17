@@ -201,11 +201,10 @@ private:
 	    const MyLayersPtr   &base_layers,
 	    MyLayerStorage      &layer_storage) const;
 
-	// New method allows base interface support, also
-	// Turn some of the base layers into interface layers for number_base_interface_layers == 0.
-	// Create base type interface layers under soluble interfaces to extend adhesion. 	
-	// Turn some of the base layers into base interface layers for number_base_interface_layers > 0.
-	MyLayersPtr generate_interface_layers(
+	// Turn some of the base layers into base interface layers.
+	// For soluble interfaces with non-soluble bases, print maximum two first interface layers with the base
+	// extruder to improve adhesion of the soluble filament to the base.
+	std::pair<MyLayersPtr, MyLayersPtr> generate_interface_layers(
 	    const MyLayersPtr   &bottom_contacts,
 	    const MyLayersPtr   &top_contacts,
 	    MyLayersPtr         &intermediate_layers,
@@ -230,7 +229,7 @@ private:
 	// New method needed for additional base interface support
 	// Produce the actual G-code.
 	void generate_toolpaths(
-        const PrintObject	&object,
+		SupportLayerPtrs    &support_layers,
         const MyLayersPtr 	&raft_layers,
         const MyLayersPtr   &bottom_contacts,
         const MyLayersPtr   &top_contacts,
@@ -253,7 +252,7 @@ private:
 	bool 				 m_can_merge_support_regions;
 
     coordf_t 			 m_support_layer_height_min;
-	coordf_t		 	 m_support_layer_height_max;
+//	coordf_t		 	 m_support_layer_height_max;
 
 	coordf_t			 m_gap_xy;
 };

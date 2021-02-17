@@ -939,14 +939,9 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
     m_last_height  = 0.f;
     m_last_layer_z = 0.f;
     m_max_layer_z  = 0.f;
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
     m_last_width = 0.f;
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
     m_last_mm3_per_mm = 0.;
-#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-    m_last_width   = 0.f;
-#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
     // How many times will be change_layer() called?
@@ -1224,7 +1219,8 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
             for (const LayerToPrint &ltp : layers_to_print) {
                 std::vector<LayerToPrint> lrs;
                 lrs.emplace_back(std::move(ltp));
-                this->process_layer(file, print, lrs, tool_ordering.tools_for_layer(ltp.print_z()), nullptr, *print_object_instance_sequential_active - object.instances().data());
+                this->process_layer(file, print, lrs, tool_ordering.tools_for_layer(ltp.print_z()), &ltp == &layers_to_print.back(), 
+                    nullptr, *print_object_instance_sequential_active - object.instances().data());
                 print.throw_if_canceled();
             }
 #ifdef HAS_PRESSURE_EQUALIZER
@@ -1288,7 +1284,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
             const LayerTools &layer_tools = tool_ordering.tools_for_layer(layer.first);
             if (m_wipe_tower && layer_tools.has_wipe_tower)
                 m_wipe_tower->next_layer();
-            this->process_layer(file, print, layer.second, layer_tools, &print_object_instances_ordering, size_t(-1));
+            this->process_layer(file, print, layer.second, layer_tools, &layer == &layers_to_print.back(), &print_object_instances_ordering, size_t(-1));
             print.throw_if_canceled();
         }
 #ifdef HAS_PRESSURE_EQUALIZER
@@ -1757,6 +1753,7 @@ void GCode::process_layer(
     // Set of object & print layers of the same PrintObject and with the same print_z.
     const std::vector<LayerToPrint> 		&layers,
     const LayerTools        		        &layer_tools,
+    const bool                               last_layer,
     // Pairs of PrintObject index and its instance index.
     const std::vector<const PrintInstance*> *ordering,
     // If set to size_t(-1), then print all copies of all objects.
@@ -2140,11 +2137,13 @@ void GCode::process_layer(
     // we apply spiral vase at this stage because it requires a full layer.
     // Just a reminder: A spiral vase mode is allowed for a single object per layer, single material print only.
     if (m_spiral_vase)
-        gcode = m_spiral_vase->process_layer(gcode);
+        gcode = m_spiral_vase->process_layer(std::move(gcode));
 
     // Apply cooling logic; this may alter speeds.
     if (m_cooling_buffer)
-        gcode = m_cooling_buffer->process_layer(gcode, layer.id());
+        gcode = m_cooling_buffer->process_layer(std::move(gcode), layer.id(),
+            // Flush the cooling buffer at each object layer or possibly at the last layer, even if it contains just supports (This should not happen).
+            object_layer || last_layer);
 
 #ifdef HAS_PRESSURE_EQUALIZER
     // Apply pressure equalization if enabled;
@@ -2156,7 +2155,7 @@ void GCode::process_layer(
 
     _write(file, gcode);
     BOOST_LOG_TRIVIAL(trace) << "Exported layer " << layer.id() << " print_z " << print_z <<
-        log_memory_info();
+    log_memory_info();
 }
 
 void GCode::apply_print_config(const PrintConfig &print_config)
@@ -2640,13 +2639,11 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
         gcode += buf;
     }
 
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
     if (last_was_wipe_tower || m_last_width != path.width) {
         m_last_width = path.width;
         sprintf(buf, ";%s%g\n", GCodeProcessor::Width_Tag.c_str(), m_last_width);
         gcode += buf;
     }
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
     if (last_was_wipe_tower || (m_last_mm3_per_mm != path.mm3_per_mm)) {
@@ -2654,14 +2651,6 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
         sprintf(buf, ";%s%f\n", GCodeProcessor::Mm3_Per_Mm_Tag.c_str(), m_last_mm3_per_mm);
         gcode += buf;
     }
-
-#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-    if (last_was_wipe_tower || m_last_width != path.width) {
-        m_last_width = path.width;
-        sprintf(buf, ";%s%g\n", GCodeProcessor::Width_Tag.c_str(), m_last_width);
-        gcode += buf;
-    }
-#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
     if (last_was_wipe_tower || std::abs(m_last_height - path.height) > EPSILON) {
