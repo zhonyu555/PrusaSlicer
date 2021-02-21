@@ -204,6 +204,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "gcode_flavor"
             || opt_key == "high_current_on_filament_swap"
             || opt_key == "infill_first"
+            || opt_key == "min_filament_use"
             || opt_key == "single_extruder_multi_material"
             || opt_key == "temperature"
             || opt_key == "wipe_tower"
@@ -1993,6 +1994,9 @@ void Print::_make_wipe_tower()
     // Lets go through the wipe tower layers and determine pairs of extruder changes for each
     // to pass to wipe_tower (so that it can use it for planning the layout of the tower)
     {
+        // WipeTower assumes all filaments have the same diameter so we do too.
+        const float filament_area = float((M_PI/4.f) * pow(m_config.filament_diameter.get_at(m_wipe_tower_data.tool_ordering.first_extruder()), 2));
+        const float min_volume_used = m_config.min_filament_use * filament_area;
         unsigned int current_extruder_id = m_wipe_tower_data.tool_ordering.all_extruders().back();
         for (auto &layer_tools : m_wipe_tower_data.tool_ordering.layer_tools()) { // for all layers
             if (!layer_tools.has_wipe_tower) continue;
@@ -2001,6 +2005,14 @@ void Print::_make_wipe_tower()
             for (const auto extruder_id : layer_tools.extruders) {
                 if ((first_layer && extruder_id == m_wipe_tower_data.tool_ordering.all_extruders().back()) || extruder_id != current_extruder_id) {
                     float volume_to_wipe = wipe_volumes[current_extruder_id][extruder_id];             // total volume to wipe after this toolchange
+
+                    // If we care about the total amount of a given filament:
+                    if (min_volume_used > 0) {
+                      // Make sure we wipe at least enough to extrude the amount of volume we must hit.
+                      const float filament_used = layer_tools.wiping_extrusions().nonwiping_extrusions_volume(*this, extruder_id);
+                      volume_to_wipe = std::max(volume_to_wipe, min_volume_used - filament_used);
+                    }
+
                     // Not all of that can be used for infill purging:
                     volume_to_wipe -= (float)m_config.filament_minimal_purge_on_wipe_tower.get_at(extruder_id);
 

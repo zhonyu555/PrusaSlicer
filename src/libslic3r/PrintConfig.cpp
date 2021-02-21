@@ -1670,6 +1670,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(-2.f));
 
+    def = this->add("min_filament_use", coFloat);
+    def->label = L("Minimum filament use");
+    def->tooltip = L("Minimum length of filament used from each filament before it is switched. "
+                      "This is used for multi-material systems such as the Mosaic Palette, which splice in segments "
+                      "of filament but cannot create extremely short segments.");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("perimeter_acceleration", coFloat);
     def->label = L("Perimeters");
     def->tooltip = L("This is the acceleration your printer will use for perimeters. "
