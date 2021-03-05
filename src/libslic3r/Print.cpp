@@ -59,7 +59,7 @@ PrintRegion* Print::add_region(const PrintRegionConfig &config)
 
 // Called by Print::apply().
 // This method only accepts PrintConfig option keys.
-bool Print::invalidate_state_by_config_options(const std::vector<t_config_option_key> &opt_keys)
+bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* new_config */, const std::vector<t_config_option_key> &opt_keys)
 {
     if (opt_keys.empty())
         return false;
@@ -172,12 +172,6 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
             || opt_key == "wipe_tower_rotation_angle") {
             steps.emplace_back(psSkirt);
         } else if (
-               opt_key == "brim_width"
-            || opt_key == "brim_offset"
-            || opt_key == "brim_type") {
-            steps.emplace_back(psBrim);
-            steps.emplace_back(psSkirt);
-        } else if (
                opt_key == "nozzle_diameter"
             || opt_key == "resolution"
             // Spiral Vase forces different kind of slicing than the normal model:
@@ -208,6 +202,7 @@ bool Print::invalidate_state_by_config_options(const std::vector<t_config_option
             || opt_key == "temperature"
             || opt_key == "wipe_tower"
             || opt_key == "wipe_tower_width"
+            || opt_key == "wipe_tower_brim_width"
             || opt_key == "wipe_tower_bridging"
             || opt_key == "wipe_tower_no_sparse_layers"
             || opt_key == "wiping_volumes_matrix"
@@ -621,7 +616,7 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
 
     // The following call may stop the background processing.
     if (! print_diff.empty())
-        update_apply_status(this->invalidate_state_by_config_options(print_diff));
+        update_apply_status(this->invalidate_state_by_config_options(new_full_config, print_diff));
 
     // Apply variables to placeholder parser. The placeholder parser is used by G-code export,
     // which should be stopped if print_diff is not empty.
@@ -902,7 +897,7 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
                 for (auto it = range.first; it != range.second; ++ it) {
                     t_config_option_keys diff = it->print_object->config().diff(new_config);
                     if (! diff.empty()) {
-                        update_apply_status(it->print_object->invalidate_state_by_config_options(diff));
+                        update_apply_status(it->print_object->invalidate_state_by_config_options(it->print_object->config(), new_config, diff));
                         it->print_object->config_apply_only(new_config, diff, true);
                     }
                 }
@@ -1091,10 +1086,11 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
         if (this_region_config_set) {
             t_config_option_keys diff = region.config().diff(this_region_config);
             if (! diff.empty()) {
-                region.config_apply_only(this_region_config, diff, false);
+                // Stop the background process before assigning new configuration to the regions.
                 for (PrintObject *print_object : m_objects)
                     if (region_id < print_object->region_volumes.size() && ! print_object->region_volumes[region_id].empty())
-                        update_apply_status(print_object->invalidate_state_by_config_options(diff));
+                        update_apply_status(print_object->invalidate_state_by_config_options(region.config(), this_region_config, diff));
+                region.config_apply_only(this_region_config, diff, false);
             }
         }
     }
@@ -1190,8 +1186,7 @@ bool Print::has_skirt() const
 
 bool Print::has_brim() const
 {
-    return std::any_of(m_objects.begin(), m_objects.end(),
-                       [](PrintObject *object) { return object->config().brim_type != btNoBrim && object->config().brim_width.value > 0.; });
+    return std::any_of(m_objects.begin(), m_objects.end(), [](PrintObject *object) { return object->has_brim(); });
 }
 
 static inline bool sequential_print_horizontal_clearance_valid(const Print &print)
@@ -1251,7 +1246,7 @@ static inline bool sequential_print_vertical_clearance_valid(const Print &print)
 }
 
 // Precondition: Print::validate() requires the Print::apply() to be called its invocation.
-std::string Print::validate() const
+std::string Print::validate(std::string* warning) const
 {
     if (m_objects.empty())
         return L("All objects are outside of the print volume.");
@@ -1405,7 +1400,7 @@ std::string Print::validate() const
                 return L("One or more object were assigned an extruder that the printer does not have.");
 #endif
 
-		auto validate_extrusion_width = [min_nozzle_diameter, max_nozzle_diameter](const ConfigBase &config, const char *opt_key, double layer_height, std::string &err_msg) -> bool {
+        auto validate_extrusion_width = [/*min_nozzle_diameter,*/ max_nozzle_diameter](const ConfigBase &config, const char *opt_key, double layer_height, std::string &err_msg) -> bool {
             // This may change in the future, if we switch to "extrusion width wrt. nozzle diameter"
             // instead of currently used logic "extrusion width wrt. layer height", see GH issues #1923 #2829.
 //        	double extrusion_width_min = config.get_abs_value(opt_key, min_nozzle_diameter);
@@ -1424,7 +1419,7 @@ std::string Print::validate() const
 			return true;
 		};
         for (PrintObject *object : m_objects) {
-            if (object->config().raft_layers > 0 || object->config().support_material.value) {
+            if (object->has_support_material()) {
 				if ((object->config().support_material_extruder == 0 || object->config().support_material_interface_extruder == 0) && max_nozzle_diameter - min_nozzle_diameter > EPSILON) {
                     // The object has some form of support and either support_material_extruder or support_material_interface_extruder
                     // will be printed with the current tool without a forced tool change. Play safe, assert that all object nozzles
@@ -1446,11 +1441,26 @@ std::string Print::validate() const
     				}
                 }
             }
-            
+
+            // Do we have custom support data that would not be used?
+            // Notify the user in that case.
+            if (! object->has_support() && warning) {
+                for (const ModelVolume* mv : object->model_object()->volumes) {
+                    bool has_enforcers = mv->is_support_enforcer()
+                        || (mv->is_model_part()
+                            && ! mv->supported_facets.empty()
+                            && ! mv->supported_facets.get_facets(*mv, EnforcerBlockerType::ENFORCER).indices.empty());
+                    if (has_enforcers) {
+                        *warning = "_SUPPORTS_OFF";
+                        break;
+                    }
+                }
+            }
+
             // validate first_layer_height
             double first_layer_height = object->config().get_abs_value("first_layer_height");
             double first_layer_min_nozzle_diameter;
-            if (object->config().raft_layers > 0) {
+            if (object->has_raft()) {
                 // if we have raft layers, only support material extruder is used on first layer
                 size_t first_layer_extruder = object->config().raft_layers == 1
                     ? object->config().support_material_interface_extruder-1
@@ -1474,7 +1484,7 @@ std::string Print::validate() const
             std::string err_msg;
             if (! validate_extrusion_width(object->config(), "extrusion_width", layer_height, err_msg))
             	return err_msg;
-            if ((object->config().support_material || object->config().raft_layers > 0) && ! validate_extrusion_width(object->config(), "support_material_extrusion_width", layer_height, err_msg))
+            if ((object->has_support() || object->has_raft()) && ! validate_extrusion_width(object->config(), "support_material_extrusion_width", layer_height, err_msg))
             	return err_msg;
             for (const char *opt_key : { "perimeter_extrusion_width", "external_perimeter_extrusion_width", "infill_extrusion_width", "solid_infill_extrusion_width", "top_infill_extrusion_width" })
 				for (size_t i = 0; i < object->region_volumes.size(); ++ i)
@@ -1737,8 +1747,7 @@ void Print::_make_skirt()
         for (const SupportLayer *layer : object->support_layers()) {
             if (layer->print_z > skirt_height_z)
                 break;
-            for (const ExtrusionEntity *extrusion_entity : layer->support_fills.entities)
-                append(object_points, extrusion_entity->as_polyline().points);
+            layer->support_fills.collect_points(object_points);
         }
         // Repeat points for each object copy.
         for (const PrintInstance &instance : object->instances()) {
@@ -1901,16 +1910,15 @@ bool Print::has_wipe_tower() const
         m_config.nozzle_diameter.values.size() > 1;
 }
 
-const WipeTowerData& Print::wipe_tower_data(size_t extruders_cnt, double first_layer_height, double nozzle_diameter) const
+const WipeTowerData& Print::wipe_tower_data(size_t extruders_cnt) const
 {
     // If the wipe tower wasn't created yet, make sure the depth and brim_width members are set to default.
     if (! is_step_done(psWipeTower) && extruders_cnt !=0) {
 
         float width = float(m_config.wipe_tower_width);
-        float brim_spacing = float(nozzle_diameter * 1.25f - first_layer_height * (1. - M_PI_4));
 
         const_cast<Print*>(this)->m_wipe_tower_data.depth = (900.f/width) * float(extruders_cnt - 1);
-        const_cast<Print*>(this)->m_wipe_tower_data.brim_width = 4.5f * brim_spacing;
+        const_cast<Print*>(this)->m_wipe_tower_data.brim_width = m_config.wipe_tower_brim_width;
     }
 
     return m_wipe_tower_data;

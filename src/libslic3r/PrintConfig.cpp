@@ -151,11 +151,11 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
     
-    def = this->add("preset_name", coString);
-    def->label = L("Printer preset name");
-    def->tooltip = L("Related printer preset name");
+    def = this->add("preset_names", coStrings);
+    def->label = L("Printer preset names");
+    def->tooltip = L("Names of presets related to the physical printer");
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionString(""));
+    def->set_default_value(new ConfigOptionStrings());
 
     def = this->add("printhost_authorization_type", coEnum);
     def->label = L("Authorization Type");
@@ -1032,56 +1032,25 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionInts { 0 });
 
-    def = this->add("fuzzy_skin_perimeter_mode", coEnum);
-    def->label = L("Fuzzy skin perimeter mode");
+    def = this->add("fuzzy_skin", coEnum);
+    def->label = L("Fuzzy Skin");
     def->category = L("Fuzzy Skin");
-    def->tooltip = L("Fuzzy skin perimeter mode.");
+    def->tooltip = L("Fuzzy skin type.");
 
-    def->enum_keys_map = &ConfigOptionEnum<FuzzySkinPerimeterMode>::get_enum_values();
+    def->enum_keys_map = &ConfigOptionEnum<FuzzySkinType>::get_enum_values();
     def->enum_values.push_back("none");
-    def->enum_values.push_back("external_only");
-    def->enum_values.push_back("external_only_skip_first_layer");
+    def->enum_values.push_back("external");
     def->enum_values.push_back("all");
     def->enum_labels.push_back(L("None"));
-    def->enum_labels.push_back(L("External"));
-    def->enum_labels.push_back(L("External (skip first layer)"));
+    def->enum_labels.push_back(L("External perimeters"));
     def->enum_labels.push_back(L("All perimeters"));
     def->mode = comSimple;
-    def->set_default_value(new ConfigOptionEnum<FuzzySkinPerimeterMode>(FuzzySkinPerimeterMode::None));
-
-/*
-    def = this->add("fuzzy_skin_shape", coEnum);
-    def->label = L("Fuzzy skin shape");
-    def->category = L("Fuzzy Skin");
-    def->tooltip = L("Fuzzy skin shape.");
-
-    def->enum_keys_map = &ConfigOptionEnum<FuzzySkinShape>::get_enum_values();
-    def->enum_values.push_back("triangle1");
-    def->enum_values.push_back("triangle2");
-    def->enum_values.push_back("triangle3");
-    def->enum_values.push_back("sawtooth1");
-    def->enum_values.push_back("sawtooth2");
-    def->enum_values.push_back("sawtooth3");
-    def->enum_values.push_back("random1");
-    def->enum_values.push_back("random2");
-    def->enum_values.push_back("random3");
-    def->enum_labels.push_back(L("Triangle (1)"));
-    def->enum_labels.push_back(L("Triangle (2)"));
-    def->enum_labels.push_back(L("Triangle (3)"));
-    def->enum_labels.push_back(L("Sawtooth (1)"));
-    def->enum_labels.push_back(L("Sawtooth (2)"));
-    def->enum_labels.push_back(L("Sawtooth (3)"));
-    def->enum_labels.push_back(L("Random (1)"));
-    def->enum_labels.push_back(L("Random (2)"));
-    def->enum_labels.push_back(L("Random (3)"));
-    def->mode = comSimple;
-    def->set_default_value(new ConfigOptionEnum<FuzzySkinShape>(FuzzySkinShape::Triangle1));
-*/
+    def->set_default_value(new ConfigOptionEnum<FuzzySkinType>(FuzzySkinType::None));
 
     def = this->add("fuzzy_skin_thickness", coFloat);
     def->label = L("Fuzzy skin thickness");
     def->category = L("Fuzzy Skin");
-    def->tooltip = L("");
+    def->tooltip = "";
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
@@ -1090,11 +1059,18 @@ void PrintConfigDef::init_fff_params()
     def = this->add("fuzzy_skin_point_dist", coFloat);
     def->label = L("Fuzzy skin point distance");
     def->category = L("Fuzzy Skin");
-    def->tooltip = L("");
+    def->tooltip = "";
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.8));
+
+    def = this->add("gap_fill_enabled", coBool);
+    def->label = L("Fill gaps");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Enables filling of gaps between perimeters and between the inner most perimeters and infill.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(true));
 
     def = this->add("gap_fill_speed", coFloat);
     def->label = L("Gap fill");
@@ -1807,6 +1783,43 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionString(""));
     def->cli = ConfigOptionDef::nocli;
 
+    def = this->add("raft_contact_distance", coFloat);
+    def->label = L("Raft contact Z distance");
+    def->category = L("Support material");
+    def->tooltip = L("The vertical distance between object and raft. Ignored for soluble interface.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.1));
+
+    def = this->add("raft_expansion", coFloat);
+    def->label = L("Raft expansion");
+    def->category = L("Support material");
+    def->tooltip = L("Expansion of the raft in XY plane for better stability.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.5));
+
+    def = this->add("raft_first_layer_density", coPercent);
+    def->label = L("First layer density");
+    def->category = L("Support material");
+    def->tooltip = L("Density of the first raft or support layer.");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->max = 150;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionPercent(90));
+
+    def = this->add("raft_first_layer_expansion", coFloat);
+    def->label = L("First layer expansion");
+    def->category = L("Support material");
+    def->tooltip = L("Expansion of the first raft or support layer to improve adhesion to print bed.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(3.));
+
     def = this->add("raft_layers", coInt);
     def->label = L("Raft layers");
     def->category = L("Support material");
@@ -2336,6 +2349,22 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpRectilinear));
 
+    def = this->add("support_material_interface_pattern", coEnum);
+    def->label = L("Interface pattern");
+    def->category = L("Support material");
+    def->tooltip = L("Pattern used to generate support material interface. "
+                     "Default pattern for non-soluble support interface is Rectilinear, "
+                     "while default pattern for soluble support interface is Concentric.");
+    def->enum_keys_map = &ConfigOptionEnum<SupportMaterialInterfacePattern>::get_enum_values();
+    def->enum_values.push_back("auto");
+    def->enum_values.push_back("rectilinear");
+    def->enum_values.push_back("concentric");
+    def->enum_labels.push_back(L("Default"));
+    def->enum_labels.push_back(L("Rectilinear"));
+    def->enum_labels.push_back(L("Concentric"));
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpRectilinear));
+
     def = this->add("support_material_spacing", coFloat);
     def->label = L("Pattern spacing");
     def->category = L("Support material");
@@ -2417,7 +2446,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("toolchange_gcode", coString);
     def->label = L("Tool change G-code");
     def->tooltip = L("This custom code is inserted before every toolchange. Placeholder variables for all PrusaSlicer settings "
-                     "as well as {previous_extruder} and {next_extruder} can be used. When a tool-changing command "
+                     "as well as {toolchange_z}, {previous_extruder} and {next_extruder} can be used. When a tool-changing command "
                      "which changes to the correct extruder is included (such as T{next_extruder}), PrusaSlicer will emit no other such command. "
                      "It is therefore possible to script custom behaviour both before and after the toolchange.");
     def->multiline = true;
@@ -2573,10 +2602,18 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
 
+    def = this->add("wipe_tower_brim_width", coFloat);
+    def->label = L("Wipe tower brim width");
+    def->tooltip = L("Wipe tower brim width");
+    def->sidetext = L("mm");
+    def->mode = comAdvanced;
+    def->min = 0.f;
+    def->set_default_value(new ConfigOptionFloat(2.));
+
     def = this->add("wipe_into_infill", coBool);
     def->category = L("Wipe options");
     def->label = L("Wipe into this object's infill");
-    def->tooltip = L("Purging after toolchange will done inside this object's infills. "
+    def->tooltip = L("Purging after toolchange will be done inside this object's infills. "
                      "This lowers the amount of waste but may result in longer print time "
                      " due to additional travel moves.");
     def->set_default_value(new ConfigOptionBool(false));
@@ -3345,6 +3382,8 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         opt_key = "printhost_cafile";
     } else if (opt_key == "octoprint_apikey") {
         opt_key = "printhost_apikey";
+    } else if (opt_key == "preset_name") {
+        opt_key = "preset_names";
     }
 
     // Ignore the following obsolete configuration keys:
@@ -3358,7 +3397,9 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
 #ifndef HAS_PRESSURE_EQUALIZER
         , "max_volumetric_extrusion_rate_slope_positive", "max_volumetric_extrusion_rate_slope_negative",
 #endif /* HAS_PRESSURE_EQUALIZER */
-        "serial_port", "serial_speed"
+        "serial_port", "serial_speed",
+        // Introduced in some PrusaSlicer 2.3.1 alpha, later renamed or removed.
+        "fuzzy_skin_perimeter_mode", "fuzzy_skin_shape",
     };
 
     // In PrusaSlicer 2.3.0-alpha0 the "monotonous" infill was introduced, which was later renamed to "monotonic".

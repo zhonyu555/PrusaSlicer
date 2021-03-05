@@ -55,8 +55,6 @@ public:
     }
 };
 
-static const constexpr double MESH_EPS = 1e-6;
-
 IndexedMesh::IndexedMesh(const TriangleMesh& tmesh)
     : m_aabb(new AABBImpl()), m_tm(&tmesh)
 {
@@ -124,7 +122,7 @@ IndexedMesh::hit_result
 IndexedMesh::query_ray_hit(const Vec3d &s, const Vec3d &dir) const
 {
     assert(is_approx(dir.norm(), 1.));
-    igl::Hit hit;
+    igl::Hit hit{-1, -1, 0.f, 0.f, 0.f};
     hit.t = std::numeric_limits<float>::infinity();
 
 #ifdef SLIC3R_HOLE_RAYCASTER

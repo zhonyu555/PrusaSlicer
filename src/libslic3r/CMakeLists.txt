@@ -145,6 +145,8 @@ add_library(libslic3r STATIC
     Point.hpp
     Polygon.cpp
     Polygon.hpp
+    MutablePolygon.cpp
+    MutablePolygon.hpp
     PolygonTrimmer.cpp
     PolygonTrimmer.hpp
     Polyline.cpp
@@ -309,8 +311,6 @@ target_link_libraries(libslic3r
     nowide
     ${EXPAT_LIBRARIES}
     glu-libtess
-    polypartition
-    poly2tri
     qhull
     semver
     TBB::tbb

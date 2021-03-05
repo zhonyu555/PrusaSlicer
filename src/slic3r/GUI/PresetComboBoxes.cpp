@@ -62,12 +62,12 @@ namespace GUI {
  * control size calculation methods (virtual) are overridden.
  **/
 
-PresetComboBox::PresetComboBox(wxWindow* parent, Preset::Type preset_type, const wxSize& size) :
+PresetComboBox::PresetComboBox(wxWindow* parent, Preset::Type preset_type, const wxSize& size, PresetBundle* preset_bundle/* = nullptr*/) :
     wxBitmapComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, size, 0, nullptr, wxCB_READONLY),
     m_type(preset_type),
     m_last_selected(wxNOT_FOUND),
     m_em_unit(em_unit(this)),
-    m_preset_bundle(wxGetApp().preset_bundle)
+    m_preset_bundle(preset_bundle ? preset_bundle : wxGetApp().preset_bundle)
 {
     SetFont(wxGetApp().normal_font());
 #ifdef _WIN32
@@ -121,23 +121,26 @@ PresetComboBox::PresetComboBox(wxWindow* parent, Preset::Type preset_type, const
     Bind(wxEVT_COMBOBOX_DROPDOWN, [this](wxCommandEvent&) { m_suppress_change = false; });
     Bind(wxEVT_COMBOBOX_CLOSEUP,  [this](wxCommandEvent&) { m_suppress_change = true;  });
 
-    Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
-        // see https://github.com/prusa3d/PrusaSlicer/issues/3889
-        // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
-        // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
-        // So, use GetSelection() from event parameter 
-        auto selected_item = evt.GetSelection();
+    Bind(wxEVT_COMBOBOX, &PresetComboBox::OnSelect, this);
+}
 
-        auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
-        if (marker >= LABEL_ITEM_DISABLED && marker < LABEL_ITEM_MAX)
-            this->SetSelection(this->m_last_selected);
-        else if (on_selection_changed && (m_last_selected != selected_item || m_collection->current_is_dirty())) {
-            m_last_selected = selected_item;
-            on_selection_changed(selected_item);
-            evt.StopPropagation();
-        }
-        evt.Skip();
-    });
+void PresetComboBox::OnSelect(wxCommandEvent& evt)
+{
+    // see https://github.com/prusa3d/PrusaSlicer/issues/3889
+    // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
+    // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
+    // So, use GetSelection() from event parameter 
+    auto selected_item = evt.GetSelection();
+
+    auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
+    if (marker >= LABEL_ITEM_DISABLED && marker < LABEL_ITEM_MAX)
+        this->SetSelection(this->m_last_selected);
+    else if (on_selection_changed && (m_last_selected != selected_item || m_collection->current_is_dirty())) {
+        m_last_selected = selected_item;
+        on_selection_changed(selected_item);
+        evt.StopPropagation();
+    }
+    evt.Skip();
 }
 
 PresetComboBox::~PresetComboBox()
@@ -186,6 +189,12 @@ void PresetComboBox::update_selection()
     validate_selection();
 
     SetSelection(m_last_selected);
+#ifdef __WXMSW__
+    // From the Windows 2004 the tooltip for preset combobox doesn't work after next call of SetTooltip()
+    // (There was an issue, when tooltip doesn't appears after changing of the preset selection)
+    // But this workaround seems to work: We should to kill tooltip and than set new tooltip value
+    SetToolTip(NULL);
+#endif
     SetToolTip(GetString(m_last_selected));
 
 // A workaround for a set of issues related to text fitting into gtk widgets:
@@ -208,6 +217,21 @@ void PresetComboBox::update_selection()
 #endif
 }
 
+static std::string suffix(const Preset& preset)
+{
+    return (preset.is_dirty ? Preset::suffix_modified() : "");
+}
+
+static std::string suffix(Preset* preset)
+{
+    return (preset->is_dirty ? Preset::suffix_modified() : "");
+}
+
+wxString PresetComboBox::get_preset_name(const Preset & preset)
+{
+    return from_u8(preset.name/* + suffix(preset)*/);
+}
+
 void PresetComboBox::update(std::string select_preset_name)
 {
     Freeze();
@@ -226,7 +250,7 @@ void PresetComboBox::update(std::string select_preset_name)
     for (size_t i = presets.front().is_visible ? 0 : m_collection->num_default_presets(); i < presets.size(); ++i)
     {
         const Preset& preset = presets[i];
-        if (!preset.is_visible || !preset.is_compatible)
+        if (!m_show_all && (!preset.is_visible || !preset.is_compatible))
             continue;
 
         // marker used for disable incompatible printer models for the selected physical printer
@@ -246,17 +270,17 @@ void PresetComboBox::update(std::string select_preset_name)
         assert(bmp);
 
         if (!is_enabled)
-            incomp_presets.emplace(wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), bmp);
+            incomp_presets.emplace(get_preset_name(preset), bmp);
         else if (preset.is_default || preset.is_system)
         {
-            Append(wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), *bmp);
+            Append(get_preset_name(preset), *bmp);
             validate_selection(preset.name == select_preset_name);
         }
         else
         {
-            nonsys_presets.emplace(wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), std::pair<wxBitmap*, bool>(bmp, is_enabled));
+            nonsys_presets.emplace(get_preset_name(preset), std::pair<wxBitmap*, bool>(bmp, is_enabled));
             if (preset.name == select_preset_name || (select_preset_name.empty() && is_enabled))
-                selected = wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str());
+                selected = get_preset_name(preset);
         }
         if (i + 1 == m_collection->num_default_presets())
             set_label_marker(Append(separator(L("System presets")), wxNullBitmap));
@@ -329,9 +353,20 @@ bool PresetComboBox::del_physical_printer(const wxString& note_string/* = wxEmpt
     return true;
 }
 
+void PresetComboBox::show_all(bool show_all)
+{
+    m_show_all = show_all;
+    update();
+}
+
 void PresetComboBox::update()
 {
     this->update(into_u8(this->GetString(this->GetSelection())));
+}
+
+void PresetComboBox::update_from_bundle()
+{
+    this->update(m_collection->get_selected_preset().name);
 }
 
 void PresetComboBox::msw_rescale()
@@ -364,9 +399,9 @@ void PresetComboBox::fill_width_height()
     thin_icon_width = lroundf(8 * scale_f);          // analogue to 8px;
     wide_icon_width = norm_icon_width + thin_icon_width;
 
-    space_icon_width = lroundf(2 * scale_f);
-    thin_space_icon_width = 2 * space_icon_width;
-    wide_space_icon_width = 3 * space_icon_width;
+    space_icon_width      = lroundf(2 * scale_f);
+    thin_space_icon_width = lroundf(4 * scale_f);
+    wide_space_icon_width = lroundf(6 * scale_f);
 }
 
 wxString PresetComboBox::separator(const std::string& label)
@@ -385,7 +420,8 @@ wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, con
 
     bitmap_key += is_system ? ",syst" : ",nsyst";
     bitmap_key += ",h" + std::to_string(icon_height);
-    if (wxGetApp().dark_mode())
+    bool dark_mode = wxGetApp().dark_mode();
+    if (dark_mode)
         bitmap_key += ",dark";
 
     wxBitmap* bmp = bitmap_cache().find(bitmap_key);
@@ -401,10 +437,10 @@ wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, con
             unsigned char rgb[3];
             // Paint the color bars.
             bitmap_cache().parse_color(filament_rgb, rgb);
-            bmps.emplace_back(bitmap_cache().mksolid(is_single_bar ? wide_icon_width : norm_icon_width, icon_height, rgb));
+            bmps.emplace_back(bitmap_cache().mksolid(is_single_bar ? wide_icon_width : norm_icon_width, icon_height, rgb, false, 1, dark_mode));
             if (!is_single_bar) {
                 bitmap_cache().parse_color(extruder_rgb, rgb);
-                bmps.emplace_back(bitmap_cache().mksolid(thin_icon_width, icon_height, rgb));
+                bmps.emplace_back(bitmap_cache().mksolid(thin_icon_width, icon_height, rgb, false, 1, dark_mode));
             }
             // Paint a lock at the system presets.
             bmps.emplace_back(bitmap_cache().mkclear(space_icon_width, icon_height));
@@ -569,34 +605,6 @@ void PresetComboBox::OnDrawItem(wxDC& dc,
 PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset_type) :
     PresetComboBox(parent, preset_type, wxSize(15 * wxGetApp().em_unit(), -1))
 {
-    Bind(wxEVT_COMBOBOX, [this](wxCommandEvent &evt) {
-        auto selected_item = evt.GetSelection();
-
-        auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
-        if (marker >= LABEL_ITEM_MARKER && marker < LABEL_ITEM_MAX) {
-            this->SetSelection(this->m_last_selected);
-            evt.StopPropagation();
-            if (marker == LABEL_ITEM_WIZARD_PRINTERS)
-                show_add_menu();
-            else
-            {
-                ConfigWizard::StartPage sp = ConfigWizard::SP_WELCOME;
-                switch (marker) {
-                case LABEL_ITEM_WIZARD_FILAMENTS: sp = ConfigWizard::SP_FILAMENTS; break;
-                case LABEL_ITEM_WIZARD_MATERIALS: sp = ConfigWizard::SP_MATERIALS; break;
-                default: break;
-                }
-                wxTheApp->CallAfter([sp]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, sp); });
-            }
-        } else if (marker == LABEL_ITEM_PHYSICAL_PRINTER || this->m_last_selected != selected_item || m_collection->current_is_dirty() ) {
-            this->m_last_selected = selected_item;
-            evt.SetInt(this->m_type);
-            evt.Skip();
-        } else {
-            evt.StopPropagation();
-        }
-    });
-
     if (m_type == Preset::TYPE_FILAMENT)
     {
         Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent &event) {
@@ -684,6 +692,35 @@ PlaterPresetComboBox::~PlaterPresetComboBox()
         edit_btn->Destroy();
 }
 
+void PlaterPresetComboBox::OnSelect(wxCommandEvent &evt)
+{
+    auto selected_item = evt.GetSelection();
+
+    auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
+    if (marker >= LABEL_ITEM_MARKER && marker < LABEL_ITEM_MAX) {
+        this->SetSelection(this->m_last_selected);
+        evt.StopPropagation();
+        if (marker == LABEL_ITEM_MARKER)
+            return;
+        if (marker == LABEL_ITEM_WIZARD_PRINTERS)
+            show_add_menu();
+        else {
+            ConfigWizard::StartPage sp = ConfigWizard::SP_WELCOME;
+            switch (marker) {
+            case LABEL_ITEM_WIZARD_FILAMENTS: sp = ConfigWizard::SP_FILAMENTS; break;
+            case LABEL_ITEM_WIZARD_MATERIALS: sp = ConfigWizard::SP_MATERIALS; break;
+            default: break;
+            }
+            wxTheApp->CallAfter([sp]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, sp); });
+        }
+        return;
+    }
+    else if (marker == LABEL_ITEM_PHYSICAL_PRINTER || this->m_last_selected != selected_item || m_collection->current_is_dirty())
+        this->m_last_selected = selected_item;
+        
+    evt.Skip();
+}
+
 bool PlaterPresetComboBox::switch_to_tab()
 {
     Tab* tab = wxGetApp().get_tab(m_type);
@@ -705,7 +742,7 @@ void PlaterPresetComboBox::show_add_menu()
     wxMenu* menu = new wxMenu();
 
     append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
-        [this](wxCommandEvent&) { 
+        [](wxCommandEvent&) {
             wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
         }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
@@ -735,7 +772,7 @@ void PlaterPresetComboBox::show_edit_menu()
     }
     else
         append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
-            [this](wxCommandEvent&) {
+            [](wxCommandEvent&) {
                 wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
             }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
@@ -743,6 +780,12 @@ void PlaterPresetComboBox::show_edit_menu()
         [this](wxCommandEvent&) { this->add_physical_printer(); }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
     wxGetApp().plater()->PopupMenu(menu);
+}
+
+wxString PlaterPresetComboBox::get_preset_name(const Preset& preset)
+{
+    std::string name = preset.alias.empty() ? preset.name : preset.alias;
+    return from_u8(name + suffix(preset));
 }
 
 // Only the compatible presets are shown.
@@ -821,17 +864,17 @@ void PlaterPresetComboBox::update()
 
         const std::string name = preset.alias.empty() ? preset.name : preset.alias;
         if (preset.is_default || preset.is_system) {
-            Append(wxString::FromUTF8((name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), *bmp);
+            Append(get_preset_name(preset), *bmp);
             validate_selection(is_selected);
             if (is_selected)
-                tooltip = wxString::FromUTF8(preset.name.c_str());
+                tooltip = from_u8(preset.name);
         }
         else
         {
-            nonsys_presets.emplace(wxString::FromUTF8((name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), bmp);
+            nonsys_presets.emplace(get_preset_name(preset), bmp);
             if (is_selected) {
-                selected_user_preset = wxString::FromUTF8((name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str());
-                tooltip = wxString::FromUTF8(preset.name.c_str());
+                selected_user_preset = get_preset_name(preset);
+                tooltip = from_u8(preset.name);
             }
         }
         if (i + 1 == m_collection->num_default_presets())
@@ -854,15 +897,15 @@ void PlaterPresetComboBox::update()
             const PhysicalPrinterCollection& ph_printers = m_preset_bundle->physical_printers;
 
             for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
-                for (const std::string preset_name : it->get_preset_names()) {
+                for (const std::string& preset_name : it->get_preset_names()) {
                     Preset* preset = m_collection->find_preset(preset_name);
-                    if (!preset)
+                    if (!preset || !preset->is_visible)
                         continue;
                     std::string main_icon_name, bitmap_key = main_icon_name = preset->printer_technology() == ptSLA ? "sla_printer" : m_main_bitmap_name;
                     wxBitmap* bmp = get_bmp(main_icon_name, wide_icons, main_icon_name);
                     assert(bmp);
 
-                    set_label_marker(Append(wxString::FromUTF8((it->get_full_name(preset_name) + (preset->is_dirty ? Preset::suffix_modified() : "")).c_str()), *bmp), LABEL_ITEM_PHYSICAL_PRINTER);
+                    set_label_marker(Append(from_u8(it->get_full_name(preset_name) + suffix(preset)), *bmp), LABEL_ITEM_PHYSICAL_PRINTER);
                     validate_selection(ph_printers.is_selected(it, preset_name));
                 }
             }
@@ -884,8 +927,16 @@ void PlaterPresetComboBox::update()
     update_selection();
     Thaw();
 
-    if (!tooltip.IsEmpty())
+    if (!tooltip.IsEmpty()) {
+#ifdef __WXMSW__
+        // From the Windows 2004 the tooltip for preset combobox doesn't work after next call of SetTooltip()
+        // (There was an issue, when tooltip doesn't appears after changing of the preset selection)
+        // But this workaround seems to work: We should to kill tooltip and than set new tooltip value
+        // See, https://groups.google.com/g/wx-users/c/mOEe3fgHrzk
+        SetToolTip(NULL);
+#endif
         SetToolTip(tooltip);
+    }
 
 #ifdef __WXMSW__
     // Use this part of code just on Windows to avoid of some layout issues on Linux
@@ -910,40 +961,47 @@ void PlaterPresetComboBox::msw_rescale()
 TabPresetComboBox::TabPresetComboBox(wxWindow* parent, Preset::Type preset_type) :
     PresetComboBox(parent, preset_type, wxSize(35 * wxGetApp().em_unit(), -1))
 {
-    Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
-        // see https://github.com/prusa3d/PrusaSlicer/issues/3889
-        // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
-        // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
-        // So, use GetSelection() from event parameter 
-        auto selected_item = evt.GetSelection();
+}
 
-        auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
-        if (marker >= LABEL_ITEM_DISABLED && marker < LABEL_ITEM_MAX) {
-            this->SetSelection(this->m_last_selected);
-            if (marker == LABEL_ITEM_WIZARD_PRINTERS)
-                wxTheApp->CallAfter([this]() {
-                wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS);
+void TabPresetComboBox::OnSelect(wxCommandEvent &evt)
+{
+    // see https://github.com/prusa3d/PrusaSlicer/issues/3889
+    // Under OSX: in case of use of a same names written in different case (like "ENDER" and "Ender")
+    // m_presets_choice->GetSelection() will return first item, because search in PopupListCtrl is case-insensitive.
+    // So, use GetSelection() from event parameter 
+    auto selected_item = evt.GetSelection();
 
-                // update combobox if its parent is a PhysicalPrinterDialog
-                PhysicalPrinterDialog* parent = dynamic_cast<PhysicalPrinterDialog*>(this->GetParent());
-                if (parent != nullptr)
-                    update();
-            });
-        }
-        else if (on_selection_changed && (m_last_selected != selected_item || m_collection->current_is_dirty()) ) {
-            m_last_selected = selected_item;
-            on_selection_changed(selected_item);
-        }
+    auto marker = reinterpret_cast<Marker>(this->GetClientData(selected_item));
+    if (marker >= LABEL_ITEM_DISABLED && marker < LABEL_ITEM_MAX) {
+        this->SetSelection(this->m_last_selected);
+        if (marker == LABEL_ITEM_WIZARD_PRINTERS)
+            wxTheApp->CallAfter([this]() {
+            wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS);
 
-        evt.StopPropagation();
+            // update combobox if its parent is a PhysicalPrinterDialog
+            PhysicalPrinterDialog* parent = dynamic_cast<PhysicalPrinterDialog*>(this->GetParent());
+            if (parent != nullptr)
+                update();
+        });
+    }
+    else if (on_selection_changed && (m_last_selected != selected_item || m_collection->current_is_dirty())) {
+        m_last_selected = selected_item;
+        on_selection_changed(selected_item);
+    }
+
+    evt.StopPropagation();
 #ifdef __WXMSW__
-        // From the Win 2004 preset combobox lose a focus after change the preset selection
-        // and that is why the up/down arrow doesn't work properly
-        // (see https://github.com/prusa3d/PrusaSlicer/issues/5531 ).
-        // So, set the focus to the combobox explicitly
-        this->SetFocus();
-#endif    
-    });
+    // From the Win 2004 preset combobox lose a focus after change the preset selection
+    // and that is why the up/down arrow doesn't work properly
+    // (see https://github.com/prusa3d/PrusaSlicer/issues/5531 ).
+    // So, set the focus to the combobox explicitly
+    this->SetFocus();
+#endif
+}
+
+wxString TabPresetComboBox::get_preset_name(const Preset& preset)
+{
+    return from_u8(preset.name + suffix(preset));
 }
 
 // Update the choice UI from the list of presets.
@@ -991,7 +1049,7 @@ void TabPresetComboBox::update()
         assert(bmp);
 
         if (preset.is_default || preset.is_system) {
-            int item_id = Append(wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), *bmp);
+            int item_id = Append(get_preset_name(preset), *bmp);
             if (!is_enabled)
                 set_label_marker(item_id, LABEL_ITEM_DISABLED);
             validate_selection(i == idx_selected);
@@ -999,9 +1057,9 @@ void TabPresetComboBox::update()
         else
         {
             std::pair<wxBitmap*, bool> pair(bmp, is_enabled);
-            nonsys_presets.emplace(wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str()), std::pair<wxBitmap*, bool>(bmp, is_enabled));
+            nonsys_presets.emplace(get_preset_name(preset), std::pair<wxBitmap*, bool>(bmp, is_enabled));
             if (i == idx_selected)
-                selected = wxString::FromUTF8((preset.name + (preset.is_dirty ? Preset::suffix_modified() : "")).c_str());
+                selected = get_preset_name(preset);
         }
         if (i + 1 == m_collection->num_default_presets())
             set_label_marker(Append(separator(L("System presets")), wxNullBitmap));
@@ -1026,16 +1084,16 @@ void TabPresetComboBox::update()
             const PhysicalPrinterCollection& ph_printers = m_preset_bundle->physical_printers;
 
             for (PhysicalPrinterCollection::ConstIterator it = ph_printers.begin(); it != ph_printers.end(); ++it) {
-                for (const std::string preset_name : it->get_preset_names()) {
+                for (const std::string& preset_name : it->get_preset_names()) {
                     Preset* preset = m_collection->find_preset(preset_name);
-                    if (!preset)
+                    if (!preset || !preset->is_visible)
                         continue;
                     std::string main_icon_name = preset->printer_technology() == ptSLA ? "sla_printer" : m_main_bitmap_name;
 
                     wxBitmap* bmp = get_bmp(main_icon_name, main_icon_name, "", true, true, false);
                     assert(bmp);
 
-                    set_label_marker(Append(wxString::FromUTF8((it->get_full_name(preset_name) + (preset->is_dirty ? Preset::suffix_modified() : "")).c_str()), *bmp), LABEL_ITEM_PHYSICAL_PRINTER);
+                    set_label_marker(Append(from_u8(it->get_full_name(preset_name) + suffix(preset)), *bmp), LABEL_ITEM_PHYSICAL_PRINTER);
                     validate_selection(ph_printers.is_selected(it, preset_name));
                 }
             }
@@ -1082,15 +1140,15 @@ void TabPresetComboBox::update_dirty()
             preset_name = PhysicalPrinter::get_preset_name(preset_name);
         }
             
-        const Preset* preset = m_collection->find_preset(preset_name, false);
+        Preset* preset = m_collection->find_preset(preset_name, false);
         if (preset) {
-            std::string new_label = preset->is_dirty ? preset->name + Preset::suffix_modified() : preset->name;
+            std::string new_label = preset->name + suffix(preset);
 
             if (marker == LABEL_ITEM_PHYSICAL_PRINTER)
                 new_label = ph_printer_name + PhysicalPrinter::separator() + new_label;
 
             if (old_label != new_label)
-                SetString(ui_id, wxString::FromUTF8(new_label.c_str()));
+                SetString(ui_id, from_u8(new_label));
         }
     }
 #ifdef __APPLE__
