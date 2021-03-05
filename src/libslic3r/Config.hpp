@@ -1313,6 +1313,7 @@ public:
     ConfigOptionEnum<T>&    operator=(const ConfigOption *opt) { this->set(opt); return *this; }
     bool                    operator==(const ConfigOptionEnum<T> &rhs) const { return this->value == rhs.value; }
     int                     getInt() const override { return (int)this->value; }
+    void                    setInt(int val) override { this->value = T(val); }
 
     bool operator==(const ConfigOption &rhs) const override
     {
@@ -1344,7 +1345,7 @@ public:
 
     static bool has(T value) 
     {
-        for (const std::pair<std::string, int> &kvp : ConfigOptionEnum<T>::get_enum_values())
+        for (const auto &kvp : ConfigOptionEnum<T>::get_enum_values())
             if (kvp.second == value)
                 return true;
         return false;
@@ -1358,11 +1359,11 @@ public:
             // Initialize the map.
             const t_config_enum_values &enum_keys_map = ConfigOptionEnum<T>::get_enum_values();
             int cnt = 0;
-            for (const std::pair<std::string, int> &kvp : enum_keys_map)
+            for (const auto& kvp : enum_keys_map)
                 cnt = std::max(cnt, kvp.second);
             cnt += 1;
             names.assign(cnt, "");
-            for (const std::pair<std::string, int> &kvp : enum_keys_map)
+            for (const auto& kvp : enum_keys_map)
                 names[kvp.second] = kvp.first;
         }
         return names;
@@ -1695,6 +1696,7 @@ public:
     // Static configuration definition. Any value stored into this ConfigBase shall have its definition here.
     virtual const ConfigDef*        def() const = 0;
     // Find ando/or create a ConfigOption instance for a given name.
+    using ConfigOptionResolver::optptr;
     virtual ConfigOption*           optptr(const t_config_option_key &opt_key, bool create = false) = 0;
     // Collect names of all configuration values maintained by this configuration store.
     virtual t_config_option_keys    keys() const = 0;
@@ -1790,7 +1792,7 @@ public:
     void setenv_() const;
     void load(const std::string &file);
     void load_from_ini(const std::string &file);
-    void load_from_gcode_file(const std::string &file);
+    void load_from_gcode_file(const std::string& file, bool check_header = true);
     // Returns number of key/value pairs extracted.
     size_t load_from_gcode_string(const char* str);
     void load(const boost::property_tree::ptree &tree);

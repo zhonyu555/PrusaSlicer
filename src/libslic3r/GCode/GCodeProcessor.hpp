@@ -69,7 +69,34 @@ namespace Slic3r {
 
     class GCodeProcessor
     {
+#if ENABLE_VALIDATE_CUSTOM_GCODE
+        static const std::vector<std::string> Reserved_Tags;
+#endif // ENABLE_VALIDATE_CUSTOM_GCODE
     public:
+#if ENABLE_VALIDATE_CUSTOM_GCODE
+        enum class ETags : unsigned char
+        {
+            Role,
+            Wipe_Start,
+            Wipe_End,
+            Height,
+            Width,
+            Layer_Change,
+            Color_Change,
+            Pause_Print,
+            Custom_Code,
+            First_Line_M73_Placeholder,
+            Last_Line_M73_Placeholder,
+            Estimated_Printing_Time_Placeholder
+        };
+
+        static const std::string& reserved_tag(ETags tag) { return Reserved_Tags[static_cast<unsigned char>(tag)]; }
+        // checks the given gcode for reserved tags and returns true when finding the 1st (which is returned into found_tag) 
+        static bool contains_reserved_tag(const std::string& gcode, std::string& found_tag);
+        // checks the given gcode for reserved tags and returns true when finding any
+        // (the first max_count found tags are returned into found_tag)
+        static bool contains_reserved_tags(const std::string& gcode, unsigned int max_count, std::vector<std::string>& found_tag);
+#else
         static const std::string Extrusion_Role_Tag;
         static const std::string Wipe_Start_Tag;
         static const std::string Wipe_End_Tag;
@@ -81,23 +108,20 @@ namespace Slic3r {
         static const std::string First_Line_M73_Placeholder_Tag;
         static const std::string Last_Line_M73_Placeholder_Tag;
         static const std::string Estimated_Printing_Time_Placeholder_Tag;
+        static const std::string Width_Tag;
+#endif // ENABLE_VALIDATE_CUSTOM_GCODE
 
         static const float Wipe_Width;
         static const float Wipe_Height;
 
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-        static const std::string Width_Tag;
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
-#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-        static const std::string Width_Tag;
-#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         static const std::string Mm3_Per_Mm_Tag;
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
     private:
         using AxisCoords = std::array<float, 4>;
         using ExtruderColors = std::vector<unsigned char>;
+        using ExtruderTemps = std::vector<float>;
 
         enum class EUnits : unsigned char
         {
@@ -172,6 +196,28 @@ namespace Slic3r {
 
             float time() const;
         };
+
+#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+        struct MoveVertex
+        {
+            unsigned int gcode_id{ 0 };
+            EMoveType type{ EMoveType::Noop };
+            ExtrusionRole extrusion_role{ erNone };
+            unsigned char extruder_id{ 0 };
+            unsigned char cp_color_id{ 0 };
+            Vec3f position{ Vec3f::Zero() }; // mm
+            float delta_extruder{ 0.0f }; // mm
+            float feedrate{ 0.0f }; // mm/s
+            float width{ 0.0f }; // mm
+            float height{ 0.0f }; // mm
+            float mm3_per_mm{ 0.0f };
+            float fan_speed{ 0.0f }; // percentage
+            float temperature{ 0.0f }; // Celsius degrees
+            float time{ 0.0f }; // s
+
+            float volumetric_rate() const { return feedrate * mm3_per_mm; }
+        };
+#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
     private:
         struct TimeMachine
@@ -253,10 +299,16 @@ namespace Slic3r {
             void reset();
 
             // post process the file with the given filename to add remaining time lines M73
+#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+            // and updates moves' gcode ids accordingly
+            void post_process(const std::string& filename, std::vector<MoveVertex>& moves);
+#else
             void post_process(const std::string& filename);
+#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         };
 
     public:
+#if !ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         struct MoveVertex
         {
             EMoveType type{ EMoveType::Noop };
@@ -270,10 +322,12 @@ namespace Slic3r {
             float height{ 0.0f }; // mm
             float mm3_per_mm{ 0.0f };
             float fan_speed{ 0.0f }; // percentage
+            float temperature{ 0.0f }; // Celsius degrees
             float time{ 0.0f }; // s
 
             float volumetric_rate() const { return feedrate * mm3_per_mm; }
         };
+#endif // !ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
         struct Result
         {
@@ -404,26 +458,26 @@ namespace Slic3r {
         CachedPosition m_cached_position;
         bool m_wiping;
 
+#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+        unsigned int m_line_id;
+#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         float m_feedrate; // mm/s
         float m_width; // mm
         float m_height; // mm
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         float m_forced_width; // mm
         float m_forced_height; // mm
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
         float m_mm3_per_mm;
         float m_fan_speed; // percentage
         ExtrusionRole m_extrusion_role;
         unsigned char m_extruder_id;
         ExtruderColors m_extruder_colors;
+        ExtruderTemps m_extruder_temps;
         std::vector<float> m_filament_diameters;
         float m_extruded_last_z;
         unsigned int m_g1_line_id;
         unsigned int m_layer_id;
         CpColor m_cp_color;
-#if ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
         bool m_use_volumetric_e;
-#endif // ENABLE_VOLUMETRIC_EXTRUSION_PROCESSING
 
         enum class EProducer
         {
@@ -518,6 +572,9 @@ namespace Slic3r {
         // Firmware controlled Unretract
         void process_G23(const GCodeReader::GCodeLine& line);
 
+        // Move to origin
+        void process_G28(const GCodeReader::GCodeLine& line);
+
         // Set to Absolute Positioning
         void process_G90(const GCodeReader::GCodeLine& line);
 
@@ -536,6 +593,9 @@ namespace Slic3r {
         // Set extruder to relative mode
         void process_M83(const GCodeReader::GCodeLine& line);
 
+        // Set extruder temperature
+        void process_M104(const GCodeReader::GCodeLine& line);
+
         // Set fan speed
         void process_M106(const GCodeReader::GCodeLine& line);
 
@@ -544,6 +604,9 @@ namespace Slic3r {
 
         // Set tool (Sailfish)
         void process_M108(const GCodeReader::GCodeLine& line);
+
+        // Set extruder temperature and wait
+        void process_M109(const GCodeReader::GCodeLine& line);
 
         // Recall stored home offsets
         void process_M132(const GCodeReader::GCodeLine& line);

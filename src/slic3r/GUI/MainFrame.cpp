@@ -37,6 +37,7 @@
 #include <string_view>
 
 #include "GUI_App.hpp"
+#include "UnsavedChangesDialog.hpp"
 
 #ifdef _WIN32
 #include <dbt.h>
@@ -63,10 +64,10 @@ public:
             // Only allow opening a new PrusaSlicer instance on OSX if "single_instance" is disabled, 
             // as starting new instances would interfere with the locking mechanism of "single_instance" support.
             append_menu_item(menu, wxID_ANY, _L("Open new instance"), _L("Open a new PrusaSlicer instance"),
-            [this](wxCommandEvent&) { start_new_slicer(); }, "", nullptr);
+            [](wxCommandEvent&) { start_new_slicer(); }, "", nullptr);
         }
         append_menu_item(menu, wxID_ANY, _L("G-code preview") + dots, _L("Open G-code viewer"),
-            [this](wxCommandEvent&) { start_new_gcodeviewer_open_file(); }, "", nullptr);
+            [](wxCommandEvent&) { start_new_gcodeviewer_open_file(); }, "", nullptr);
         return menu;
     }
 };
@@ -77,9 +78,9 @@ public:
     wxMenu *CreatePopupMenu() override {
         wxMenu *menu = new wxMenu;
         append_menu_item(menu, wxID_ANY, _L("Open PrusaSlicer"), _L("Open a new PrusaSlicer instance"),
-            [this](wxCommandEvent&) { start_new_slicer(nullptr, true); }, "", nullptr);
+            [](wxCommandEvent&) { start_new_slicer(nullptr, true); }, "", nullptr);
         append_menu_item(menu, wxID_ANY, _L("G-code preview") + dots, _L("Open new G-code viewer"),
-            [this](wxCommandEvent&) { start_new_gcodeviewer_open_file(); }, "", nullptr);
+            [](wxCommandEvent&) { start_new_gcodeviewer_open_file(); }, "", nullptr);
         return menu;
     }
 };
@@ -115,6 +116,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     m_printhost_queue_dlg(new PrintHostQueueDialog(this))
     , m_recent_projects(9)
     , m_settings_dialog(this)
+    , diff_dialog(this)
 {
     // Fonts were created by the DPIFrame constructor for the monitor, on which the window opened.
     wxGetApp().update_fonts(this);
@@ -230,7 +232,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
 // So, redraw explicitly canvas, when application is moved
 //FIXME maybe this is useful for __WXGTK3__ as well?
 #if __APPLE__
-    Bind(wxEVT_MOVE, [this](wxMoveEvent& event) {
+    Bind(wxEVT_MOVE, [](wxMoveEvent& event) {
         wxGetApp().plater()->get_current_canvas3D()->set_as_dirty();
         wxGetApp().plater()->get_current_canvas3D()->request_extra_frame();
         event.Skip();
@@ -542,6 +544,19 @@ void MainFrame::init_tabpanel()
             select_tab(size_t(0)); // select Plater
     });
 
+#if ENABLE_VALIDATE_CUSTOM_GCODE
+    m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGING, [this](wxBookCtrlEvent& evt) {
+        wxWindow* panel = m_tabpanel->GetCurrentPage();
+        if (panel != nullptr) {
+            Tab* tab = dynamic_cast<Tab*>(panel);
+            if (tab != nullptr)
+                tab->validate_custom_gcodes();
+//            if (tab != nullptr && !tab->validate_custom_gcodes())
+//                evt.Veto();
+        }
+        });
+#endif // ENABLE_VALIDATE_CUSTOM_GCODE
+
     m_plater = new Plater(this, this);
     m_plater->Hide();
 
@@ -789,11 +804,7 @@ bool MainFrame::can_reslice() const
 
 void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
 {
-#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
     wxGetApp().update_fonts(this);
-#else
-    wxGetApp().update_fonts();
-#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
     this->SetFont(this->normal_font());
 
     // update Plater
@@ -1189,7 +1200,11 @@ void MainFrame::init_menubar_as_editor()
         
         windowMenu->AppendSeparator();
         append_menu_item(windowMenu, wxID_ANY, _L("Open new instance") + "\tCtrl+Shift+I", _L("Open a new PrusaSlicer instance"),
-			[this](wxCommandEvent&) { start_new_slicer(); }, "", nullptr, [this]() {return m_plater != nullptr && wxGetApp().app_config->get("single_instance") != "1"; }, this);
+            [](wxCommandEvent&) { start_new_slicer(); }, "", nullptr, [this]() {return m_plater != nullptr && wxGetApp().app_config->get("single_instance") != "1"; }, this);
+
+        windowMenu->AppendSeparator();
+        append_menu_item(windowMenu, wxID_ANY, _L("Compare presets")/* + "\tCtrl+F"*/, _L("Compare presets"), 
+            [this](wxCommandEvent&) { diff_dialog.show();}, "compare", nullptr, []() {return true; }, this);
     }
 
     // View menu
@@ -1258,8 +1273,8 @@ void MainFrame::init_menubar_as_gcodeviewer()
             [this](wxCommandEvent&) { if (m_plater != nullptr) m_plater->export_toolpaths_to_obj(); }, "export_plater", nullptr,
             [this]() {return can_export_toolpaths(); }, this);
         append_menu_item(fileMenu, wxID_ANY, _L("Open &PrusaSlicer") + dots, _L("Open PrusaSlicer"),
-            [this](wxCommandEvent&) { start_new_slicer(); }, "", nullptr,
-            [this]() {return true; }, this);
+            [](wxCommandEvent&) { start_new_slicer(); }, "", nullptr,
+            []() {return true; }, this);
         fileMenu->AppendSeparator();
         append_menu_item(fileMenu, wxID_EXIT, _L("&Quit"), wxString::Format(_L("Quit %s"), SLIC3R_APP_NAME),
             [this](wxCommandEvent&) { Close(false); });
@@ -1830,14 +1845,14 @@ SettingsDialog::SettingsDialog(MainFrame* mainframe)
     if (wxGetApp().is_gcode_viewer())
         return;
 
-#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT && defined(__WXMSW__)
+#if defined(__WXMSW__)
     // ys_FIXME! temporary workaround for correct font scaling
     // Because of from wxWidgets 3.1.3 auto rescaling is implemented for the Fonts,
     // From the very beginning set dialog font to the wxSYS_DEFAULT_GUI_FONT
     this->SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
 #else
     this->SetFont(wxGetApp().normal_font());
-#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
+#endif // __WXMSW__
     this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
 
     // Load the icon either from the exe, or from the ico file.

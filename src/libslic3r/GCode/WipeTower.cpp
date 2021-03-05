@@ -42,36 +42,32 @@ public:
         {
             // adds tag for analyzer:
             char buf[64];
+#if ENABLE_VALIDATE_CUSTOM_GCODE
+            sprintf(buf, ";%s%f\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Height).c_str(), m_layer_height); // don't rely on GCodeAnalyzer knowing the layer height - it knows nothing at priming
+            m_gcode += buf;
+            sprintf(buf, ";%s%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Role).c_str(), ExtrusionEntity::role_to_string(erWipeTower).c_str());
+#else
             sprintf(buf, ";%s%f\n", GCodeProcessor::Height_Tag.c_str(), m_layer_height); // don't rely on GCodeAnalyzer knowing the layer height - it knows nothing at priming
             m_gcode += buf;
             sprintf(buf, ";%s%s\n", GCodeProcessor::Extrusion_Role_Tag.c_str(), ExtrusionEntity::role_to_string(erWipeTower).c_str());
+#endif // ENABLE_VALIDATE_CUSTOM_GCODE
             m_gcode += buf;
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
             change_analyzer_line_width(line_width);
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
-        }
+    }
 
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
     WipeTowerWriter& change_analyzer_line_width(float line_width) {
         // adds tag for analyzer:
         char buf[64];
+#if ENABLE_VALIDATE_CUSTOM_GCODE
+        sprintf(buf, ";%s%f\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Width).c_str(), line_width);
+#else
         sprintf(buf, ";%s%f\n", GCodeProcessor::Width_Tag.c_str(), line_width);
+#endif // ENABLE_VALIDATE_CUSTOM_GCODE
         m_gcode += buf;
         return *this;
     }
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
-#if !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-    WipeTowerWriter& change_analyzer_line_width(float line_width) {
-        // adds tag for analyzer:
-        char buf[64];
-        sprintf(buf, ";%s%f\n", GCodeProcessor::Width_Tag.c_str(), line_width);
-        m_gcode += buf;
-        return *this;
-    }
-#endif // !ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE
-
     WipeTowerWriter& change_analyzer_mm3_per_mm(float len, float e) {
         static const float area = float(M_PI) * 1.75f * 1.75f / 4.f;
         float mm3_per_mm = (len == 0.f ? 0.f : area * e / len);
@@ -405,7 +401,7 @@ public:
 
 	WipeTowerWriter& append(const std::string& text) { m_gcode += text; return *this; }
 
-    std::vector<Vec2f> wipe_path() const
+    const std::vector<Vec2f>& wipe_path() const
     {
         return m_wipe_path;
     }
@@ -524,6 +520,7 @@ WipeTower::WipeTower(const PrintConfig& config, const std::vector<std::vector<fl
     m_wipe_tower_pos(config.wipe_tower_x, config.wipe_tower_y),
     m_wipe_tower_width(float(config.wipe_tower_width)),
     m_wipe_tower_rotation_angle(float(config.wipe_tower_rotation_angle)),
+    m_wipe_tower_brim_width(float(config.wipe_tower_brim_width)),
     m_y_shift(0.f),
     m_z_pos(0.f),
     m_is_first_layer(false),
@@ -820,23 +817,31 @@ WipeTower::ToolChangeResult WipeTower::toolchange_Brim(bool sideOnly, float y_of
 		  .append(";-------------------------------------\n"
 				  "; CP WIPE TOWER FIRST LAYER BRIM START\n");
 
-	Vec2f initial_position = wipeTower_box.lu - Vec2f(m_perimeter_width * 6.f, 0);
+    Vec2f initial_position = wipeTower_box.lu - Vec2f(m_wipe_tower_brim_width + 2*m_perimeter_width, 0);
 	writer.set_initial_position(initial_position, m_wipe_tower_width, m_wipe_tower_depth, m_internal_rotation);
 
-    writer.extrude_explicit(wipeTower_box.ld - Vec2f(m_perimeter_width * 6.f, 0), // Prime the extruder left of the wipe tower.
+    // Prime the extruder left of the wipe tower.
+    writer.extrude_explicit(wipeTower_box.ld - Vec2f(m_wipe_tower_brim_width + 2*m_perimeter_width, 0),
         1.5f * m_extrusion_flow * (wipeTower_box.lu.y() - wipeTower_box.ld.y()), 2400);
 
     // The tool is supposed to be active and primed at the time when the wipe tower brim is extruded.
-    // Extrude 4 rounds of a brim around the future wipe tower.
-    box_coordinates box(wipeTower_box);
-    // the brim shall have 'normal' spacing with no extra void space
+    // Extrude brim around the future wipe tower ('normal' spacing with no extra void space).
+    box_coordinates box(wipeTower_box);    
     float spacing = m_perimeter_width - m_layer_height*float(1.-M_PI_4);
-    for (size_t i = 0; i < 4; ++ i) {
+
+    // How many perimeters shall the brim have?
+    size_t loops_num = (m_wipe_tower_brim_width + spacing/2.f) / spacing;
+
+    for (size_t i = 0; i < loops_num; ++ i) {
         box.expand(spacing);
         writer.travel (box.ld, 7000)
               .extrude(box.lu, 2100).extrude(box.ru)
               .extrude(box.rd      ).extrude(box.ld);
     }
+
+    // Save actual brim width to be later passed to the Print object, which will use it
+    // for skirt calculation and pass it to GLCanvas for precise preview box
+    m_wipe_tower_brim_width_real = wipeTower_box.ld.x() - box.ld.x() + spacing/2.f;
 
     box.expand(-spacing);
     writer.add_wipe_point(writer.x(), writer.y())
@@ -845,10 +850,6 @@ WipeTower::ToolChangeResult WipeTower::toolchange_Brim(bool sideOnly, float y_of
 
     writer.append("; CP WIPE TOWER FIRST LAYER BRIM END\n"
                   ";-----------------------------------\n");
-
-    // Save actual brim width to be later passed to the Print object, which will use it
-    // for skirt calculation and pass it to GLCanvas for precise preview box
-    m_wipe_tower_brim_width = wipeTower_box.ld.x() - box.ld.x() + spacing/2.f;
 
     m_print_brim = false;  // Mark the brim as extruded
 
@@ -874,12 +875,8 @@ void WipeTower::toolchange_Unload(
 	const float line_width = m_perimeter_width * m_filpar[m_current_tool].ramming_line_width_multiplicator;       // desired ramming line thickness
 	const float y_step = line_width * m_filpar[m_current_tool].ramming_step_multiplicator * m_extra_spacing; // spacing between lines in mm
 
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
     writer.append("; CP TOOLCHANGE UNLOAD\n")
         .change_analyzer_line_width(line_width);
-#else
-    writer.append("; CP TOOLCHANGE UNLOAD\n");
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
 
 	unsigned i = 0;										// iterates through ramming_speed
 	m_left_to_right = true;								// current direction of ramming
@@ -942,9 +939,7 @@ void WipeTower::toolchange_Unload(
 		}
 	}
 	Vec2f end_of_ramming(writer.x(),writer.y());
-#if ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
     writer.change_analyzer_line_width(m_perimeter_width);   // so the next lines are not affected by ramming_line_width_multiplier
-#endif // ENABLE_TOOLPATHS_WIDTH_HEIGHT_FROM_GCODE || ENABLE_GCODE_VIEWER_DATA_CHECKING
 
     // Retraction:
     float old_x = writer.x();

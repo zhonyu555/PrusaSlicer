@@ -123,6 +123,7 @@ public:
     void erase_all_ticks_with_code(Type type);
 
     bool            has_tick_with_code(Type type);
+    bool            has_tick(int tick);
     ConflictType    is_conflict_tick(const TickCode& tick, Mode out_mode, int only_extruder, double print_z);
 
     // Get used extruders for tick.
@@ -215,6 +216,9 @@ public:
     void    SetKoefForLabels(const double koef)                { m_label_koef = koef; }
     void    SetSliderValues(const std::vector<double>& values);
     void    ChangeOneLayerLock();
+#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+    void    SetSliderAlternateValues(const std::vector<double>& values) { m_alternate_values = values; }
+#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
     Info    GetTicksValues() const;
     void    SetTicksValues(const Info &custom_gcode_per_print_z);
@@ -267,6 +271,7 @@ public:
     void show_add_context_menu();
     void show_edit_context_menu();
     void show_cog_icon_context_menu();
+    void auto_color_change();
 
     ExtrudersSequence m_extruders_sequence;
 
@@ -313,6 +318,7 @@ private:
     wxSize      get_size() const;
     void        get_size(int* w, int* h) const;
     double      get_double_value(const SelectedSlider& selection);
+    int         get_tick_from_value(double value);
     wxString    get_tooltip(int tick = -1);
     int         get_edited_tick_for_position(wxPoint pos, Type type = ColorChange);
 
@@ -383,13 +389,16 @@ private:
     int         m_cog_icon_dim;
     long        m_style;
     long        m_extra_style;
-    float       m_label_koef = 1.0;
+    float       m_label_koef{ 1.0 };
 
     std::vector<double> m_values;
     TickCodeInfo        m_ticks;
     std::vector<double> m_layers_times;
-
     std::vector<std::string>    m_extruder_colors;
+
+#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+    std::vector<double> m_alternate_values;
+#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
 // control's view variables
     wxCoord SLIDER_MARGIN; // margin around slider

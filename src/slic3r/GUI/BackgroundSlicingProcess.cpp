@@ -149,9 +149,13 @@ void BackgroundSlicingProcess::process_fff()
 	if (this->set_step_started(bspsGCodeFinalize)) {
 	    if (! m_export_path.empty()) {
 			wxQueueEvent(GUI::wxGetApp().mainframe->m_plater, new wxCommandEvent(m_event_export_began_id));
-	    	//FIXME localize the messages
-	    	// Perform the final post-processing of the export path by applying the print statistics over the file name.
-	    	std::string export_path = m_fff_print->print_statistics().finalize_output_path(m_export_path);
+			
+			m_print->set_status(95, _utf8(L("Running post-processing scripts")));
+			run_post_process_scripts(m_temp_output_path, m_fff_print->full_print_config());
+			
+			//FIXME localize the messages
+			// Perform the final post-processing of the export path by applying the print statistics over the file name.
+			std::string export_path = m_fff_print->print_statistics().finalize_output_path(m_export_path);
 			std::string error_message;
 			int copy_ret_val = CopyFileResult::SUCCESS;
 			try
@@ -184,8 +188,7 @@ void BackgroundSlicingProcess::process_fff()
 				BOOST_LOG_TRIVIAL(error) << "Unexpected fail code(" << (int)copy_ret_val << ") durring copy_file() to " << export_path << ".";
 				break;
 			}
-	    	m_print->set_status(95, _utf8(L("Running post-processing scripts")));
-	    	run_post_process_scripts(export_path, m_fff_print->full_print_config());
+
 	    	m_print->set_status(100, (boost::format(_utf8(L("G-code file exported to %1%"))) % export_path).str());
 	    } else if (! m_upload_job.empty()) {
 			wxQueueEvent(GUI::wxGetApp().mainframe->m_plater, new wxCommandEvent(m_event_export_began_id));
@@ -427,10 +430,10 @@ bool BackgroundSlicingProcess::empty() const
 	return m_print->empty();
 }
 
-std::string BackgroundSlicingProcess::validate()
+std::string BackgroundSlicingProcess::validate(std::string* warning)
 {
 	assert(m_print != nullptr);
-	return m_print->validate();
+    return m_print->validate(warning);
 }
 
 // Apply config over the print. Returns false, if the new config values caused any of the already
