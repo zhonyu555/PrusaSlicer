@@ -50,6 +50,7 @@
 #include "GUI_ObjectManipulation.hpp"
 #include "GUI_ObjectLayers.hpp"
 #include "GUI_Utils.hpp"
+#include "GUI_Factories.hpp"
 #include "wxExtensions.hpp"
 #include "MainFrame.hpp"
 #include "format.hpp"
@@ -3724,11 +3725,11 @@ void Plater::priv::on_right_click(RBtnEvent& evt)
                 menu_item_convert_unit_position = 2;
         }
 
-        sidebar->obj_list()->append_menu_items_convert_unit(menu, menu_item_convert_unit_position);
-        sidebar->obj_list()->append_menu_item_settings(menu);
+        MenuFactory::append_menu_items_convert_unit(menu, menu_item_convert_unit_position);
+        MenuFactory::append_menu_item_settings(menu);
 
         if (printer_technology != ptSLA)
-            sidebar->obj_list()->append_menu_item_change_extruder(menu);
+            MenuFactory::append_menu_item_change_extruder(menu);
 
         if (menu != &part_menu)
         {
@@ -3884,7 +3885,7 @@ bool Plater::priv::init_common_menu(wxMenu* menu, const bool is_part/* = false*/
         append_menu_item(menu, wxID_ANY, _L("Reload from disk"), _L("Reload the selected volumes from disk"),
             [this](wxCommandEvent&) { q->reload_from_disk(); }, "", menu, [this]() { return can_reload_from_disk(); }, q);
 
-        sidebar->obj_list()->append_menu_item_export_stl(menu);
+        MenuFactory::append_menu_item_export_stl(menu);
     }
     else {
         wxMenuItem* item_increase = append_menu_item(menu, wxID_ANY, _L("Add instance") + "\t+", _L("Add one more instance of the selected object"),
@@ -3906,10 +3907,10 @@ bool Plater::priv::init_common_menu(wxMenu* menu, const bool is_part/* = false*/
             [this](wxCommandEvent&) { q->remove_selected(); }, "delete",            nullptr, [this]() { return can_delete(); }, q);
 
         menu->AppendSeparator();
-        sidebar->obj_list()->append_menu_item_instance_to_object(menu, q);
+        MenuFactory::append_menu_item_instance_to_object(menu, q);
         menu->AppendSeparator();
 
-        wxMenuItem* menu_item_printable = sidebar->obj_list()->append_menu_item_printable(menu, q);
+        wxMenuItem* menu_item_printable = MenuFactory::append_menu_item_printable(menu, q);
         menu->AppendSeparator();
 
         append_menu_item(menu, wxID_ANY, _L("Reload from disk"), _L("Reload the selected object from disk"),
@@ -3925,7 +3926,7 @@ bool Plater::priv::init_common_menu(wxMenu* menu, const bool is_part/* = false*/
         menu->AppendSeparator();
 
         // "Scale to print volume" makes a sense just for whole object
-        sidebar->obj_list()->append_menu_item_scale_selection_to_fit_print_volume(menu);
+        MenuFactory::append_menu_item_scale_selection_to_fit_print_volume(menu);
 
         q->Bind(wxEVT_UPDATE_UI, [this](wxUpdateUIEvent& evt) {
             const Selection& selection = get_selection();
@@ -3939,7 +3940,7 @@ bool Plater::priv::init_common_menu(wxMenu* menu, const bool is_part/* = false*/
             }, menu_item_printable->GetId());
     }
 
-    sidebar->obj_list()->append_menu_item_fix_through_netfabb(menu);
+    MenuFactory::append_menu_item_fix_through_netfabb(menu);
 
     wxMenu* mirror_menu = new wxMenu();
     if (mirror_menu == nullptr)
@@ -3974,7 +3975,7 @@ bool Plater::priv::complit_init_object_menu()
     object_menu.AppendSeparator();
 
     // Layers Editing for object
-    sidebar->obj_list()->append_menu_item_layers_editing(&object_menu, q);
+    MenuFactory::append_menu_item_layers_editing(&object_menu, q);
     object_menu.AppendSeparator();
 
     // "Add (volumes)" popupmenu will be added later in append_menu_items_add_volume()
@@ -4006,9 +4007,7 @@ bool Plater::priv::complit_init_part_menu()
         [this](wxCommandEvent&) { split_volume(); }, "split_parts_SMALL", nullptr, [this]() { return can_split(); }, q);
 
     part_menu.AppendSeparator();
-
-    auto obj_list = sidebar->obj_list();
-    obj_list->append_menu_item_change_type(&part_menu, q);
+    MenuFactory::append_menu_item_change_type(&part_menu, q);
 
     return true;
 }
@@ -4300,7 +4299,7 @@ bool Plater::priv::can_layers_editing() const
 
 void Plater::priv::update_object_menu()
 {
-    sidebar->obj_list()->append_menu_items_add_volume(&object_menu);
+    MenuFactory::append_menu_items_add_volume(&object_menu);
 }
 
 void Plater::priv::show_action_buttons(const bool ready_to_slice) const
