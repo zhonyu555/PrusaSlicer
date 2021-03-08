@@ -206,6 +206,7 @@ private:
 	    const MyLayersPtr   &bottom_contacts,
 	    const MyLayersPtr   &top_contacts,
 	    MyLayersPtr         &intermediate_layers,
+		size_t              number_base_interface_layers,
 	    MyLayerStorage      &layer_storage) const;
 	
 
@@ -223,6 +224,7 @@ private:
 	void clip_with_shape();
 */
 
+	// New method needed for additional base interface support
 	// Produce the actual G-code.
 	void generate_toolpaths(
 		SupportLayerPtrs    &support_layers,
