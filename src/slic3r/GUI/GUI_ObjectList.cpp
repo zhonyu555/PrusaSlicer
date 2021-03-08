@@ -1284,7 +1284,7 @@ bool ObjectList::is_instance_or_object_selected()
 void ObjectList::create_object_popupmenu(wxMenu *menu)
 {
 #ifdef __WXOSX__  
-    append_menu_items_osx(menu);
+    MenuFactory::append_menu_items_osx(menu);
 #endif // __WXOSX__
 
     MenuFactory::append_menu_item_reload_from_disk(menu);
@@ -1312,7 +1312,7 @@ void ObjectList::create_object_popupmenu(wxMenu *menu)
 void ObjectList::create_sla_object_popupmenu(wxMenu *menu)
 {
 #ifdef __WXOSX__  
-    append_menu_items_osx(menu);
+    MenuFactory::append_menu_items_osx(menu);
 #endif // __WXOSX__
 
     MenuFactory::append_menu_item_reload_from_disk(menu);
@@ -1325,7 +1325,7 @@ void ObjectList::create_sla_object_popupmenu(wxMenu *menu)
 void ObjectList::create_part_popupmenu(wxMenu *menu)
 {
 #ifdef __WXOSX__  
-    append_menu_items_osx(menu);
+    MenuFactory::append_menu_items_osx(menu);
 #endif // __WXOSX__
 
     MenuFactory::append_menu_item_reload_from_disk(menu);
