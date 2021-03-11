@@ -141,13 +141,6 @@ private:
 
     wxBoxSizer          *m_sizer {nullptr};
 
-    MenuWithSeparators  m_menu_object;
-    MenuWithSeparators  m_menu_part;
-    MenuWithSeparators  m_menu_sla_object;
-    MenuWithSeparators  m_menu_instance;
-    MenuWithSeparators  m_menu_layer;
-    MenuWithSeparators  m_menu_default;
-
     ObjectDataViewModel         *m_objects_model{ nullptr };
     ModelConfig                 *m_config {nullptr};
     std::vector<ModelObject*>   *m_objects{ nullptr };
@@ -201,7 +194,6 @@ public:
     ModelObject*                object(const int obj_idx) const ;
 
     void                create_objects_ctrl();
-    void                create_popup_menus();
     void                update_objects_list_extruder_column(size_t extruders_count);
     void                update_extruder_colors();
     // show/hide "Extruder" column for Objects List
@@ -246,12 +238,6 @@ public:
     void                show_settings(const wxDataViewItem settings_item);
     bool                is_instance_or_object_selected();
 
-    void                create_object_popupmenu(wxMenu *menu);
-    void                create_sla_object_popupmenu(wxMenu*menu);
-    void                create_part_popupmenu(wxMenu*menu);
-    void                create_instance_popupmenu(wxMenu*menu);
-    void                create_default_popupmenu(wxMenu *menu);
-
     void                load_subobject(ModelVolumeType type);
     void                load_part(ModelObject* model_object, std::vector<std::pair<wxString, bool>> &volumes_info, ModelVolumeType type);
 	void                load_generic_subobject(const std::string& type_name, const ModelVolumeType type);
@@ -273,7 +259,7 @@ public:
 
     DynamicPrintConfig  get_default_layer_config(const int obj_idx);
     bool                get_volume_by_item(const wxDataViewItem& item, ModelVolume*& volume);
-    bool                is_splittable();
+    bool                is_splittable(bool to_objects);
     bool                selected_instances_of_same_object();
     bool                can_split_instances();
     bool                can_merge_to_multipart_object() const;
@@ -361,7 +347,6 @@ public:
     void update_and_show_object_settings_item();
     void update_settings_item_and_selection(wxDataViewItem item, wxDataViewItemArray& selections);
     void update_object_list_by_printer_technology();
-    void update_object_menu();
 
     void instances_to_separated_object(const int obj_idx, const std::set<int>& inst_idx);
     void instances_to_separated_objects(const int obj_idx);
@@ -386,7 +371,6 @@ public:
     void update_printable_state(int obj_idx, int instance_idx);
     void toggle_printable_state(wxDataViewItem item);
 
-    void show_multi_selection_menu();
     void set_extruder_for_selected_items(const int extruder) const ;
 
 private:

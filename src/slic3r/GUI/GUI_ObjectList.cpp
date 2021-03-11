@@ -291,16 +291,6 @@ void ObjectList::create_objects_ctrl()
     }
 }
 
-void ObjectList::create_popup_menus()
-{
-    // create popup menus for object and part
-    create_object_popupmenu(&m_menu_object);
-    create_part_popupmenu(&m_menu_part);
-    create_sla_object_popupmenu(&m_menu_sla_object);
-    create_instance_popupmenu(&m_menu_instance);
-    create_default_popupmenu(&m_menu_default);
-}
-
 void ObjectList::get_selected_item_indexes(int& obj_idx, int& vol_idx, const wxDataViewItem& input_item/* = wxDataViewItem(nullptr)*/)
 {
     const wxDataViewItem item = input_item == wxDataViewItem(nullptr) ? GetSelection() : input_item;
@@ -875,39 +865,35 @@ void ObjectList::list_manipulation(const wxPoint& mouse_pos, bool evt_context_me
 
 void ObjectList::show_context_menu(const bool evt_context_menu)
 {
+    wxMenu* menu {nullptr};
+    Plater* plater = wxGetApp().plater();
+
     if (multiple_selection())
     {
         if (selected_instances_of_same_object())
-            wxGetApp().plater()->PopupMenu(&m_menu_instance);
+            menu = plater->instance_menu();
         else
-            show_multi_selection_menu();
-
-        return;
+            menu = plater->multi_selection_menu();
     }
+    else {
+        const auto item = GetSelection();
+        if (item)
+        {
+            const ItemType type = m_objects_model->GetItemType(item);
+            if (!(type & (itObject | itVolume | itLayer | itInstance)))
+                return;
 
-    const auto item = GetSelection();
-    wxMenu* menu {nullptr};
-    if (item)
-    {
-        const ItemType type = m_objects_model->GetItemType(item);
-        if (!(type & (itObject | itVolume | itLayer | itInstance)))
-            return;
-
-        menu = type & itInstance ? &m_menu_instance :
-                       type & itLayer ? &m_menu_layer :
-                       m_objects_model->GetParent(item) != wxDataViewItem(nullptr) ? &m_menu_part :
-                       printer_technology() == ptFFF ? &m_menu_object : &m_menu_sla_object;
-
-        if (type & (itObject | itVolume))
-            MenuFactory::append_menu_items_convert_unit(menu);
-        if (!(type & itInstance))
-            MenuFactory::append_menu_item_settings(menu);
+            menu =  type & itInstance                                           ? plater->instance_menu() :
+                    type & itLayer                                              ? plater->layer_menu() :
+                    m_objects_model->GetParent(item) != wxDataViewItem(nullptr) ? plater->part_menu() :
+                    printer_technology() == ptFFF                               ? plater->object_menu() : plater->sla_object_menu();
+        }
+        else if (evt_context_menu)
+            menu = plater->default_menu();
     }
-    else if (evt_context_menu)
-        menu = &m_menu_default;
 
     if (menu)
-        wxGetApp().plater()->PopupMenu(menu);
+        plater->PopupMenu(menu);
 }
 
 void ObjectList::extruder_editing()
@@ -1279,79 +1265,6 @@ bool ObjectList::is_instance_or_object_selected()
 {
     const Selection& selection = scene_selection();
     return selection.is_single_full_instance() || selection.is_single_full_object();
-}
-
-void ObjectList::create_object_popupmenu(wxMenu *menu)
-{
-#ifdef __WXOSX__  
-    MenuFactory::append_menu_items_osx(menu);
-#endif // __WXOSX__
-
-    MenuFactory::append_menu_item_reload_from_disk(menu);
-    MenuFactory::append_menu_item_export_stl(menu);
-    MenuFactory::append_menu_item_fix_through_netfabb(menu);
-    MenuFactory::append_menu_item_scale_selection_to_fit_print_volume(menu);
-
-    // Split object to parts
-    MenuFactory::append_menu_item_split(menu);
-//    menu->AppendSeparator();
-
-    // Merge multipart object to the single object
-//    append_menu_item_merge_to_single_object(menu);
-    menu->AppendSeparator();
-
-    // Layers Editing for object
-    MenuFactory::append_menu_item_layers_editing(menu, wxGetApp().plater());
-    menu->AppendSeparator();
-
-    // rest of a object_menu will be added later in:
-    // - append_menu_items_add_volume() -> for "Add (volumes)"
-    // - append_menu_item_settings() -> for "Add (settings)"
-}
-
-void ObjectList::create_sla_object_popupmenu(wxMenu *menu)
-{
-#ifdef __WXOSX__  
-    MenuFactory::append_menu_items_osx(menu);
-#endif // __WXOSX__
-
-    MenuFactory::append_menu_item_reload_from_disk(menu);
-    MenuFactory::append_menu_item_export_stl(menu);
-    MenuFactory::append_menu_item_fix_through_netfabb(menu);
-    // rest of a object_sla_menu will be added later in:
-    // - append_menu_item_settings() -> for "Add (settings)"
-}
-
-void ObjectList::create_part_popupmenu(wxMenu *menu)
-{
-#ifdef __WXOSX__  
-    MenuFactory::append_menu_items_osx(menu);
-#endif // __WXOSX__
-
-    MenuFactory::append_menu_item_reload_from_disk(menu);
-    MenuFactory::append_menu_item_export_stl(menu);
-    MenuFactory::append_menu_item_fix_through_netfabb(menu);
-
-    MenuFactory::append_menu_item_split(menu);
-
-    // Append change part type
-    menu->AppendSeparator();
-    MenuFactory::append_menu_item_change_type(menu);
-
-    // rest of a object_sla_menu will be added later in:
-    // - append_menu_item_settings() -> for "Add (settings)"
-}
-
-void ObjectList::create_instance_popupmenu(wxMenu*menu)
-{
-    MenuFactory::append_menu_item_instance_to_object(menu, wxGetApp().plater());
-}
-
-void ObjectList::create_default_popupmenu(wxMenu*menu)
-{
-    wxMenu* sub_menu = MenuFactory::append_submenu_add_generic(menu, ModelVolumeType::INVALID);
-    append_submenu(menu, sub_menu, wxID_ANY, _(L("Add Shape")), "", "add_part", 
-        [](){return true;}, this);
 }
 
 void ObjectList::load_subobject(ModelVolumeType type)
@@ -1726,6 +1639,8 @@ bool ObjectList::del_subobject_from_object(const int obj_idx, const int idx, con
                     wxString extruder = object->config.has("extruder") ? wxString::Format("%d", object->config.extruder()) : _L("default");
                     m_objects_model->SetExtruder(extruder, obj_item);
                 }
+                // add settings to the object, if it has them
+                add_settings_item(obj_item, &object->config.get());
             }
         }
     }
@@ -2086,10 +2001,26 @@ bool ObjectList::get_volume_by_item(const wxDataViewItem& item, ModelVolume*& vo
     return true;
 }
 
-bool ObjectList::is_splittable()
+bool ObjectList::is_splittable(bool to_objects)
 {
     const wxDataViewItem item = GetSelection();
     if (!item) return false;
+
+    if (to_objects)
+    {
+        ItemType type = m_objects_model->GetItemType(item);
+        if (type == itVolume)
+            return false;
+        if (type == itObject || m_objects_model->GetItemType(m_objects_model->GetParent(item)) == itObject) {
+            auto obj_idx = get_selected_obj_idx();
+            if (obj_idx < 0)
+                return false;
+            if ((*m_objects)[obj_idx]->volumes.size() > 1)
+                return true;
+            return (*m_objects)[obj_idx]->volumes[0]->is_splittable();
+        }
+        return false;
+    }
 
     ModelVolume* volume;
     if (!get_volume_by_item(item, volume) || !volume)
@@ -3556,11 +3487,6 @@ void ObjectList::update_object_list_by_printer_technology()
     m_prevent_canvas_selection_update = false;
 }
 
-void ObjectList::update_object_menu()
-{
-    MenuFactory::append_menu_items_add_volume(&m_menu_object);
-}
-
 void ObjectList::instances_to_separated_object(const int obj_idx, const std::set<int>& inst_idxs)
 {
     if ((*m_objects)[obj_idx]->instances.size() == inst_idxs.size())
@@ -3736,15 +3662,6 @@ void ObjectList::msw_rescale()
     // rescale/update existing items with bitmaps
     m_objects_model->Rescale();
 
-    // rescale menus
-    for (MenuWithSeparators* menu : { &m_menu_object, 
-                                      &m_menu_part, 
-                                      &m_menu_sla_object, 
-                                      &m_menu_instance, 
-                                      &m_menu_layer,
-                                      &m_menu_default})
-        msw_rescale_menu(menu);
-
     Layout();
 }
 
@@ -3752,15 +3669,6 @@ void ObjectList::sys_color_changed()
 {
     // update existing items with bitmaps
     m_objects_model->Rescale();
-
-    // msw_rescale_menu updates just icons, so use it
-    for (MenuWithSeparators* menu : { &m_menu_object, 
-                                      &m_menu_part, 
-                                      &m_menu_sla_object, 
-                                      &m_menu_instance, 
-                                      &m_menu_layer,
-                                      &m_menu_default})
-        msw_rescale_menu(menu);
 
     Layout();
 }
@@ -3804,33 +3712,6 @@ void ObjectList::OnEditingDone(wxDataViewEvent &event)
     Plater* plater = wxGetApp().plater();
     if (plater)
         plater->set_current_canvas_as_dirty();
-}
-
-void ObjectList::show_multi_selection_menu()
-{
-    wxDataViewItemArray sels;
-    GetSelections(sels);
-
-    for (const wxDataViewItem& item : sels)
-        if (!(m_objects_model->GetItemType(item) & (itVolume | itObject | itInstance)))
-            // show this menu only for Objects(Instances mixed with Objects)/Volumes selection
-            return;
-
-    wxMenu* menu = new wxMenu();
-
-    if (extruders_count() > 1)
-        MenuFactory::append_menu_item_change_extruder(menu);
-
-    append_menu_item(menu, wxID_ANY, _(L("Reload from disk")), _(L("Reload the selected volumes from disk")),
-        [](wxCommandEvent&) { wxGetApp().plater()->reload_from_disk(); }, "", menu, []() {
-        return wxGetApp().plater()->can_reload_from_disk();
-    }, wxGetApp().plater());
-
-    MenuFactory::append_menu_items_convert_unit(menu);
-    if (can_merge_to_multipart_object())
-        MenuFactory::append_menu_item_merge_to_multipart_object(menu);
-
-    wxGetApp().plater()->PopupMenu(menu);
 }
 
 void ObjectList::extruder_selection()
