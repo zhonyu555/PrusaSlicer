@@ -3924,6 +3924,11 @@ CLITransformConfigDef::CLITransformConfigDef()
     def->tooltip = L("Center the print around the given center.");
     def->set_default_value(new ConfigOptionPoint(Vec2d(100,100)));
 
+    def = this->add("one_model", coBool);
+    def->label = L("CLI-only: Combine the CLI input STLs and INI into one model ");
+    def->tooltip = L("CLI-only: Combine CLI input STLs and INIs into one (multimaterial) model. An INI file is applied to the last STL given before the INI.");
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("dont_arrange", coBool);
     def->label = L("Don't arrange");
     def->tooltip = L("Do not rearrange the given models before merging and keep their original XY coordinates.");
