@@ -143,7 +143,7 @@ ObjectList::ObjectList(wxWindow* parent) :
 //    Bind(wxEVT_KEY_DOWN, &ObjectList::OnChar, this);
     {
         // Accelerators
-        wxAcceleratorEntry entries[10];
+        wxAcceleratorEntry entries[21];
         entries[0].Set(wxACCEL_CTRL, (int) 'C',    wxID_COPY);
         entries[1].Set(wxACCEL_CTRL, (int) 'X',    wxID_CUT);
         entries[2].Set(wxACCEL_CTRL, (int) 'V',    wxID_PASTE);
@@ -154,7 +154,14 @@ ObjectList::ObjectList(wxWindow* parent) :
         entries[7].Set(wxACCEL_NORMAL, WXK_BACK,   wxID_DELETE);
         entries[8].Set(wxACCEL_NORMAL, int('+'),   wxID_ADD);
         entries[9].Set(wxACCEL_NORMAL, int('-'),   wxID_REMOVE);
-        wxAcceleratorTable accel(10, entries);
+        entries[10].Set(wxACCEL_NORMAL, int('p'),   wxID_PRINT);
+        int numbers_cnt = 1;
+        for (auto char_number : { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }) {
+            entries[10 + numbers_cnt].Set(wxACCEL_NORMAL, int(char_number),   wxID_LAST + numbers_cnt);
+            numbers_cnt ++;
+        }
+        
+        wxAcceleratorTable accel(10+numbers_cnt, entries);
         SetAcceleratorTable(accel);
 
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->copy();                      }, wxID_COPY);
@@ -165,6 +172,13 @@ ObjectList::ObjectList(wxWindow* parent) :
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->redo();                    	}, wxID_REDO);
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->increase_instances();        }, wxID_ADD);
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->decrease_instances();        }, wxID_REMOVE);
+        this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->toggle_printable_state();    }, wxID_PRINT);
+        
+        for (int i = 0; i < 10; i++)
+            this->Bind(wxEVT_MENU, [this, i](wxCommandEvent &evt) {
+                if (extruders_count() > 1 && i <= extruders_count())
+                    this->set_extruder_for_selected_items(i);
+            }, wxID_LAST+i+1);
     }
 #else //__WXOSX__
     Bind(wxEVT_CHAR, [this](wxKeyEvent& event) { key_event(event); }); // doesn't work on OSX
