@@ -184,6 +184,13 @@ ObjectList::ObjectList(wxWindow* parent) :
     Bind(wxEVT_CHAR, [this](wxKeyEvent& event) { key_event(event); }); // doesn't work on OSX
 #endif
 
+#ifdef __WXGTK__
+    // Workaround to use +/- and numbers shortcuts on Linux
+    // But this event can be handled only in combination with Shift, Alt or Ctrl, 
+    // see https://forums.wxwidgets.org/viewtopic.php?t=44777
+    Bind(wxEVT_KEY_DOWN, [this](wxKeyEvent& event) { key_event(event); });
+#endif
+
 #ifdef __WXMSW__
     GetMainWindow()->Bind(wxEVT_MOTION, [this](wxMouseEvent& event) {
         set_tooltip_for_item(this->get_mouse_position_in_control());
