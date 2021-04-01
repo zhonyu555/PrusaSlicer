@@ -143,25 +143,28 @@ ObjectList::ObjectList(wxWindow* parent) :
 //    Bind(wxEVT_KEY_DOWN, &ObjectList::OnChar, this);
     {
         // Accelerators
-        wxAcceleratorEntry entries[21];
-        entries[0].Set(wxACCEL_CTRL, (int) 'C',    wxID_COPY);
-        entries[1].Set(wxACCEL_CTRL, (int) 'X',    wxID_CUT);
-        entries[2].Set(wxACCEL_CTRL, (int) 'V',    wxID_PASTE);
-        entries[3].Set(wxACCEL_CTRL, (int) 'A',    wxID_SELECTALL);
-        entries[4].Set(wxACCEL_CTRL, (int) 'Z',    wxID_UNDO);
-        entries[5].Set(wxACCEL_CTRL, (int) 'Y',    wxID_REDO);
+        wxAcceleratorEntry entries[33];
+        entries[0].Set(wxACCEL_CTRL, (int)'C', wxID_COPY);
+        entries[1].Set(wxACCEL_CTRL, (int)'X', wxID_CUT);
+        entries[2].Set(wxACCEL_CTRL, (int)'V', wxID_PASTE);
+        entries[3].Set(wxACCEL_CTRL, (int)'A', wxID_SELECTALL);
+        entries[4].Set(wxACCEL_CTRL, (int)'Z', wxID_UNDO);
+        entries[5].Set(wxACCEL_CTRL, (int)'Y', wxID_REDO);
         entries[6].Set(wxACCEL_NORMAL, WXK_DELETE, wxID_DELETE);
-        entries[7].Set(wxACCEL_NORMAL, WXK_BACK,   wxID_DELETE);
-        entries[8].Set(wxACCEL_NORMAL, int('+'),   wxID_ADD);
-        entries[9].Set(wxACCEL_NORMAL, int('-'),   wxID_REMOVE);
-        entries[10].Set(wxACCEL_NORMAL, int('p'),   wxID_PRINT);
+        entries[7].Set(wxACCEL_NORMAL, WXK_BACK, wxID_DELETE);
+        entries[8].Set(wxACCEL_NORMAL, int('+'), wxID_ADD);
+        entries[9].Set(wxACCEL_NORMAL, WXK_NUMPAD_ADD, wxID_ADD);
+        entries[10].Set(wxACCEL_NORMAL, int('-'), wxID_REMOVE);
+        entries[11].Set(wxACCEL_NORMAL, WXK_NUMPAD_SUBTRACT, wxID_REMOVE);
+        entries[12].Set(wxACCEL_NORMAL, int('p'), wxID_PRINT);
+
         int numbers_cnt = 1;
         for (auto char_number : { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' }) {
-            entries[10 + numbers_cnt].Set(wxACCEL_NORMAL, int(char_number),   wxID_LAST + numbers_cnt);
-            numbers_cnt ++;
+            entries[12 + numbers_cnt].Set(wxACCEL_NORMAL, int(char_number), wxID_LAST + numbers_cnt);
+            entries[22 + numbers_cnt].Set(wxACCEL_NORMAL, WXK_NUMPAD0 + numbers_cnt - 1, wxID_LAST + numbers_cnt);
+            numbers_cnt++;
         }
-        
-        wxAcceleratorTable accel(10+numbers_cnt, entries);
+        wxAcceleratorTable accel(33, entries);
         SetAcceleratorTable(accel);
 
         this->Bind(wxEVT_MENU, [this](wxCommandEvent &evt) { this->copy();                      }, wxID_COPY);
