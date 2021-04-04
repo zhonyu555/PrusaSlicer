@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2020-12-18 13:59+0100\n"
-"PO-Revision-Date: 2021-02-05 22:37+0900\n"
+"PO-Revision-Date: 2021-04-04 22:15+0900\n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -176,7 +176,7 @@ msgstr "원본"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:95 src/libslic3r/PrintConfig.cpp:771
 msgid "Diameter"
-msgstr "노즐 직경"
+msgstr "필라멘트 직경"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:110
 msgid "Size in X and Y of the rectangular plate."
@@ -878,7 +878,7 @@ msgstr "프린터의 핫 엔드 노즐의 지름을 입력합니다."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1367
 msgid "Nozzle Diameter:"
-msgstr "노즐 직경"
+msgstr "노즐 직경:"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1377
 msgid "Enter the diameter of your filament."
@@ -1774,7 +1774,7 @@ msgstr "리트랙션"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:2710 src/slic3r/GUI/GUI_Preview.cpp:1026
 msgid "Deretractions"
-msgstr "탈퇴"
+msgstr "환원점"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:2711 src/slic3r/GUI/GUI_Preview.cpp:1027
 msgid "Tool changes"
@@ -3579,12 +3579,12 @@ msgstr "인쇄할 수 없는 설정"
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:68
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:111
 msgid "World coordinates"
-msgstr "전체크기와 좌표"
+msgstr "절대 좌표"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:69
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:112
 msgid "Local coordinates"
-msgstr "로컬 좌표"
+msgstr "상대 좌표"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:88
 msgid "Select coordinate space, in which the transformation will be performed."
@@ -3639,7 +3639,7 @@ msgstr "인치"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:507
 msgid "Scale factors"
-msgstr "스케일 팩터"
+msgstr "확대와 축소"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:561
 msgid "Translate"
@@ -7286,7 +7286,7 @@ msgstr "이 열의 값은 스텔스 모드용입니다."
 
 #: src/slic3r/GUI/Tab.cpp:2429
 msgid "Maximum feedrates"
-msgstr "최대 급식"
+msgstr "최대 피드값"
 
 #: src/slic3r/GUI/Tab.cpp:2434
 msgid "Maximum accelerations"
@@ -10251,15 +10251,15 @@ msgstr "최대 공급율 X"
 
 #: src/libslic3r/PrintConfig.cpp:1334
 msgid "Maximum feedrate Y"
-msgstr "최대 급식 Y"
+msgstr "최대 피드값 Y"
 
 #: src/libslic3r/PrintConfig.cpp:1335
 msgid "Maximum feedrate Z"
-msgstr "최대 급식 Z"
+msgstr "최대 피드값 Z"
 
 #: src/libslic3r/PrintConfig.cpp:1336
 msgid "Maximum feedrate E"
-msgstr "최대 급식 E"
+msgstr "최대 피드값 E"
 
 #: src/libslic3r/PrintConfig.cpp:1339
 msgid "Maximum feedrate of the X axis"
