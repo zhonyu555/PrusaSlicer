@@ -1,0 +1,69 @@
+name: CI ubuntu
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [
+          # ubuntu-18.04,
+          ubuntu-20.04,
+        ]
+
+    name: Build PrusaSlicer (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    env:
+      DESTDIR: ${{ github.workspace }}/_install
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Setup CCache
+      uses: hendrikmuhs/ccache-action@v1
+
+    - name: Install dependencies
+      run: ./.github/workflows/install_dependencies_ubuntu.sh ${{ matrix.os }}
+
+
+    # - name: Build internal dependencies
+    #   run: ./.github/workflows/build_internal_deps.sh ${{ matrix.os }}
+
+
+    - name: Build and install PrusaSlicer
+      run: ./.github/workflows/build_prusaslicer.sh ${{ matrix.os }}
+
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: prusa-slicer-${{matrix.os}}
+        path: ${{ env.DESTDIR }}
+
+
+  # build_appimage:
+  #   needs: build
+
+  #   runs-on: ubuntu-20.04
+
+  #   env:
+  #     DESTDIR: ${{ env.GITHUB_WORKSPACE }}/_install
+  #     APPIMAGE_NAME: PrusaSlicer.ubuntu_20.04.AppImage
+
+  #   steps:
+
+  #   - name: Download release binaries
+  #     uses: actions/download-artifact@v2
+  #     with:
+  #       name: binaries
+  #       path: ${{ env.DESTDIR }}
+
+  #   - name: Build Appimage
+  #     run: ./.github/workflows/build_appimage.sh
+
+  #   - name: Upload Appimage
+  #     uses: actions/upload-artifact@v1.0.0
+  #     with:
+  #       name: prusa-slicer-AppImage.tar
+  #       path: ${{ env.APPIMAGE_NAME }}
