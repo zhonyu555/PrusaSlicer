@@ -251,9 +251,23 @@ namespace Slic3r {
             float acceleration; // mm/s^2
             // hard limit for the acceleration, to which the firmware will clamp.
             float max_acceleration; // mm/s^2
+            float travel_acceleration; // mm/s^2
+            // hard limit for the travel acceleration, to which the firmware will clamp.
+            float max_travel_acceleration; // mm/s^2
             float extrude_factor_override_percentage;
             float time; // s
+#if ENABLE_EXTENDED_M73_LINES
+            struct StopTime
+            {
+                unsigned int g1_line_id;
+                float elapsed_time;
+            };
+            std::vector<StopTime> stop_times;
+            std::string line_m73_main_mask;
+            std::string line_m73_stop_mask;
+#else
             std::string line_m73_mask;
+#endif // ENABLE_EXTENDED_M73_LINES
             State curr;
             State prev;
             CustomGCodeTime gcode_time;
@@ -337,13 +351,15 @@ namespace Slic3r {
                 std::vector<std::string> filament;
                 std::string printer;
 
-                void reset()
-                {
+                void reset() {
                     print = "";
                     filament = std::vector<std::string>();
                     printer = "";
                 }
             };
+#if ENABLE_GCODE_WINDOW
+            std::string filename;
+#endif // ENABLE_GCODE_WINDOW
             unsigned int id;
             std::vector<MoveVertex> moves;
             Pointfs bed_shape;
@@ -511,7 +527,6 @@ namespace Slic3r {
         GCodeProcessor();
 
         void apply_config(const PrintConfig& config);
-        void apply_config(const DynamicPrintConfig& config);
         void enable_stealth_time_estimator(bool enabled);
         bool is_stealth_time_estimator_enabled() const {
             return m_time_processor.machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Stealth)].enabled;
@@ -536,6 +551,8 @@ namespace Slic3r {
         std::vector<float> get_layers_time(PrintEstimatedTimeStatistics::ETimeMode mode) const;
 
     private:
+        void apply_config(const DynamicPrintConfig& config);
+        void apply_config_simplify3d(const std::string& filename);
         void process_gcode_line(const GCodeReader::GCodeLine& line);
 
         // Process tags embedded into comments
@@ -654,7 +671,9 @@ namespace Slic3r {
         float get_axis_max_jerk(PrintEstimatedTimeStatistics::ETimeMode mode, Axis axis) const;
         float get_retract_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
         float get_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        void set_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, float value);
+        void  set_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, float value);
+        float get_travel_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
+        void  set_travel_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, float value);
         float get_filament_load_time(size_t extruder_id);
         float get_filament_unload_time(size_t extruder_id);
 

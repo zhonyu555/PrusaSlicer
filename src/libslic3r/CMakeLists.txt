@@ -141,6 +141,8 @@ add_library(libslic3r STATIC
     PerimeterGenerator.hpp
     PlaceholderParser.cpp
     PlaceholderParser.hpp
+    Platform.cpp
+    Platform.hpp
     Point.cpp
     Point.hpp
     Polygon.cpp
@@ -217,6 +219,9 @@ add_library(libslic3r STATIC
     SimplifyMeshImpl.hpp
     SimplifyMesh.cpp
     MarchingSquares.hpp
+    Execution/Execution.hpp
+    Execution/ExecutionSeq.hpp
+    Execution/ExecutionTBB.hpp
     Optimize/Optimizer.hpp
     Optimize/NLoptOptimizer.hpp
     Optimize/BruteforceOptimizer.hpp

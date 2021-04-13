@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <chrono>
 #include <math.h>
 #include <string_view>
 
@@ -434,11 +435,10 @@ namespace Slic3r {
     {
         std::string gcode;
         assert(m_layer_idx >= 0);
-        if (!m_brim_done || gcodegen.writer().need_toolchange(extruder_id) || finish_layer) {
+        if (gcodegen.writer().need_toolchange(extruder_id) || finish_layer) {
             if (m_layer_idx < (int)m_tool_changes.size()) {
                 if (!(size_t(m_tool_change_idx) < m_tool_changes[m_layer_idx].size()))
                     throw Slic3r::RuntimeError("Wipe tower generation failed, possibly due to empty first layer.");
-
 
                 // Calculate where the wipe tower layer will be printed. -1 means that print z will not change,
                 // resulting in a wipe tower with sparse layers.
@@ -446,7 +446,7 @@ namespace Slic3r {
                 bool ignore_sparse = false;
                 if (gcodegen.config().wipe_tower_no_sparse_layers.value) {
                     wipe_tower_z = m_last_wipe_tower_print_z;
-                    ignore_sparse = (m_brim_done && m_tool_changes[m_layer_idx].size() == 1 && m_tool_changes[m_layer_idx].front().initial_tool == m_tool_changes[m_layer_idx].front().new_tool);
+                    ignore_sparse = (m_tool_changes[m_layer_idx].size() == 1 && m_tool_changes[m_layer_idx].front().initial_tool == m_tool_changes[m_layer_idx].front().new_tool);
                     if (m_tool_change_idx == 0 && !ignore_sparse)
                         wipe_tower_z = m_last_wipe_tower_print_z + m_tool_changes[m_layer_idx].front().layer_height;
                 }
@@ -456,7 +456,6 @@ namespace Slic3r {
                     m_last_wipe_tower_print_z = wipe_tower_z;
                 }
             }
-            m_brim_done = true;
         }
         return gcode;
     }
@@ -756,8 +755,16 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessor::Result* re
     BOOST_LOG_TRIVIAL(debug) << "Start processing gcode, " << log_memory_info();
     m_processor.process_file(path_tmp, true, [print]() { print->throw_if_canceled(); });
     DoExport::update_print_estimated_times_stats(m_processor, print->m_print_statistics);
+#if ENABLE_GCODE_WINDOW
+    if (result != nullptr) {
+        *result = std::move(m_processor.extract_result());
+        // set the filename to the correct value
+        result->filename = path;
+    }
+#else
     if (result != nullptr)
         *result = std::move(m_processor.extract_result());
+#endif // ENABLE_GCODE_WINDOW
     BOOST_LOG_TRIVIAL(debug) << "Finished processing gcode, " << log_memory_info();
 
     if (rename_file(path_tmp, path))
@@ -777,7 +784,8 @@ void GCode::do_export(Print* print, const char* path, GCodeProcessor::Result* re
 namespace DoExport {
     static void init_gcode_processor(const PrintConfig& config, GCodeProcessor& processor, bool& silent_time_estimator_enabled)
     {
-        silent_time_estimator_enabled = (config.gcode_flavor == gcfMarlin) && config.silent_mode;
+        silent_time_estimator_enabled = (config.gcode_flavor == gcfMarlinLegacy || config.gcode_flavor == gcfMarlinFirmware)
+                                        && config.silent_mode;
         processor.reset();
         processor.apply_config(config);
         processor.enable_stealth_time_estimator(silent_time_estimator_enabled);
@@ -1105,15 +1113,15 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
     const double       layer_height         = first_object->config().layer_height.value;
     const double       first_layer_height   = first_object->config().first_layer_height.get_abs_value(layer_height);
     for (const PrintRegion* region : print.regions()) {
-        _write_format(file, "; external perimeters extrusion width = %.2fmm\n", region->flow(frExternalPerimeter, layer_height, false, false, -1., *first_object).width);
-        _write_format(file, "; perimeters extrusion width = %.2fmm\n",          region->flow(frPerimeter,         layer_height, false, false, -1., *first_object).width);
-        _write_format(file, "; infill extrusion width = %.2fmm\n",              region->flow(frInfill,            layer_height, false, false, -1., *first_object).width);
-        _write_format(file, "; solid infill extrusion width = %.2fmm\n",        region->flow(frSolidInfill,       layer_height, false, false, -1., *first_object).width);
-        _write_format(file, "; top infill extrusion width = %.2fmm\n",          region->flow(frTopSolidInfill,    layer_height, false, false, -1., *first_object).width);
+        _write_format(file, "; external perimeters extrusion width = %.2fmm\n", region->flow(*first_object, frExternalPerimeter, layer_height).width());
+        _write_format(file, "; perimeters extrusion width = %.2fmm\n",          region->flow(*first_object, frPerimeter,         layer_height).width());
+        _write_format(file, "; infill extrusion width = %.2fmm\n",              region->flow(*first_object, frInfill,            layer_height).width());
+        _write_format(file, "; solid infill extrusion width = %.2fmm\n",        region->flow(*first_object, frSolidInfill,       layer_height).width());
+        _write_format(file, "; top infill extrusion width = %.2fmm\n",          region->flow(*first_object, frTopSolidInfill,    layer_height).width());
         if (print.has_support_material())
-            _write_format(file, "; support material extrusion width = %.2fmm\n", support_material_flow(first_object).width);
+            _write_format(file, "; support material extrusion width = %.2fmm\n", support_material_flow(first_object).width());
         if (print.config().first_layer_extrusion_width.value > 0)
-            _write_format(file, "; first layer extrusion width = %.2fmm\n",   region->flow(frPerimeter, first_layer_height, false, true, -1., *first_object).width);
+            _write_format(file, "; first layer extrusion width = %.2fmm\n",   region->flow(*first_object, frPerimeter, first_layer_height, true).width());
         _write_format(file, "\n");
     }
     print.throw_if_canceled();
@@ -1129,6 +1137,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
     // Prepare the helper object for replacing placeholders in custom G-code and output filename.
     m_placeholder_parser = print.placeholder_parser();
     m_placeholder_parser.update_timestamp();
+    m_placeholder_parser_context.rng = std::mt19937(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     print.update_object_placeholders(m_placeholder_parser.config_writable(), ".gcode");
 
     // Get optimal tool ordering to minimize tool switches of a multi-exruder print.
@@ -1347,7 +1356,7 @@ void GCode::_do_export(Print& print, FILE* file, ThumbnailsGeneratorCallback thu
                 bbox_prime.offset(0.5f);
                 bool overlap = bbox_prime.overlap(bbox_print);
 
-                if (print.config().gcode_flavor == gcfMarlin) {
+                if (print.config().gcode_flavor == gcfMarlinLegacy || print.config().gcode_flavor == gcfMarlinFirmware) {
                     _write(file, this->retract());
                     _write(file, "M300 S800 P500\n"); // Beep for 500ms, tone 800Hz.
                     if (overlap) {
@@ -1550,7 +1559,8 @@ static bool custom_gcode_sets_temperature(const std::string &gcode, const int mc
 // Do not process this piece of G-code by the time estimator, it already knows the values through another sources.
 void GCode::print_machine_envelope(FILE *file, Print &print)
 {
-    if (print.config().gcode_flavor.value == gcfMarlin && print.config().machine_limits_usage.value == MachineLimitsUsage::EmitToGCode) {
+    if ((print.config().gcode_flavor.value == gcfMarlinLegacy || print.config().gcode_flavor.value == gcfMarlinFirmware)
+     && print.config().machine_limits_usage.value == MachineLimitsUsage::EmitToGCode) {
         fprintf(file, "M201 X%d Y%d Z%d E%d ; sets maximum accelerations, mm/sec^2\n",
             int(print.config().machine_max_acceleration_x.values.front() + 0.5),
             int(print.config().machine_max_acceleration_y.values.front() + 0.5),
@@ -1561,10 +1571,20 @@ void GCode::print_machine_envelope(FILE *file, Print &print)
             int(print.config().machine_max_feedrate_y.values.front() + 0.5),
             int(print.config().machine_max_feedrate_z.values.front() + 0.5),
             int(print.config().machine_max_feedrate_e.values.front() + 0.5));
+
+        // Now M204 - acceleration. This one is quite hairy thanks to how Marlin guys care about
+        // backwards compatibility: https://github.com/prusa3d/PrusaSlicer/issues/1089
+        // Legacy Marlin should export travel acceleration the same as printing acceleration.
+        // MarlinFirmware has the two separated.
+        int travel_acc = print.config().gcode_flavor == gcfMarlinLegacy
+                       ? int(print.config().machine_max_acceleration_extruding.values.front() + 0.5)
+                       : int(print.config().machine_max_acceleration_travel.values.front() + 0.5);
         fprintf(file, "M204 P%d R%d T%d ; sets acceleration (P, T) and retract acceleration (R), mm/sec^2\n",
             int(print.config().machine_max_acceleration_extruding.values.front() + 0.5),
             int(print.config().machine_max_acceleration_retracting.values.front() + 0.5),
-            int(print.config().machine_max_acceleration_extruding.values.front() + 0.5));
+            travel_acc);
+
+
         fprintf(file, "M205 X%.2lf Y%.2lf Z%.2lf E%.2lf ; sets the jerk limits, mm/sec\n",
             print.config().machine_max_jerk_x.values.front(),
             print.config().machine_max_jerk_y.values.front(),
@@ -1815,7 +1835,8 @@ namespace Skirt {
         // Extrude skirt at the print_z of the raft layers and normal object layers
         // not at the print_z of the interlaced support material layers.
         std::map<unsigned int, std::pair<size_t, size_t>> skirt_loops_per_extruder_out;
-        assert(skirt_done.empty());
+        //For sequential print, the following test may fail when extruding the 2nd and other objects.
+        // assert(skirt_done.empty());
         if (skirt_done.empty() && print.has_skirt() && ! print.skirt().entities.empty() && layer_tools.has_skirt) {
             skirt_loops_per_extruder_all_printing(print, layer_tools, skirt_loops_per_extruder_out);
             skirt_done.emplace_back(layer_tools.print_z);
@@ -2170,14 +2191,13 @@ void GCode::process_layer(
             const std::pair<size_t, size_t> loops = loops_it->second;
             this->set_origin(0., 0.);
             m_avoid_crossing_perimeters.use_external_mp();
-            Flow layer_skirt_flow(print.skirt_flow());
-            layer_skirt_flow.height = float(m_skirt_done.back() - (m_skirt_done.size() == 1 ? 0. : m_skirt_done[m_skirt_done.size() - 2]));
+            Flow layer_skirt_flow = print.skirt_flow().with_height(float(m_skirt_done.back() - (m_skirt_done.size() == 1 ? 0. : m_skirt_done[m_skirt_done.size() - 2])));
             double mm3_per_mm = layer_skirt_flow.mm3_per_mm();
             for (size_t i = loops.first; i < loops.second; ++i) {
                 // Adjust flow according to this layer's layer height.
                 ExtrusionLoop loop = *dynamic_cast<const ExtrusionLoop*>(print.skirt().entities[i]);
                 for (ExtrusionPath &path : loop.paths) {
-                    path.height = layer_skirt_flow.height;
+                    path.height = layer_skirt_flow.height();
                     path.mm3_per_mm = mm3_per_mm;
                 }
                 //FIXME using the support_material_speed of the 1st object printed.

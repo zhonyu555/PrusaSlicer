@@ -5,6 +5,10 @@
 #include "libslic3r/GCode/GCodeProcessor.hpp"
 #include "GLModel.hpp"
 
+#if ENABLE_GCODE_WINDOW
+#include <boost/iostreams/device/mapped_file.hpp>
+#endif // ENABLE_GCODE_WINDOW
+
 #include <cstdint>
 #include <float.h>
 #include <set>
@@ -85,35 +89,20 @@ class GCodeViewer
         size_t vertex_size_bytes() const { return vertex_size_floats() * sizeof(float); }
 
         size_t position_offset_floats() const { return 0; }
-        size_t position_offset_size() const { return position_offset_floats() * sizeof(float); }
-        size_t position_size_floats() const {
-            switch (format)
-            {
-            case EFormat::Position:
-            case EFormat::PositionNormal3: { return 3; }
-            case EFormat::PositionNormal1: { return 4; }
-            default:                       { return 0; }
-            }
-        }
+        size_t position_offset_bytes() const { return position_offset_floats() * sizeof(float); }
+
+        size_t position_size_floats() const { return 3; }
         size_t position_size_bytes() const { return position_size_floats() * sizeof(float); }
 
-        size_t normal_offset_floats() const {
-            switch (format)
-            {
-            case EFormat::Position:
-            case EFormat::PositionNormal1: { return 0; }
-            case EFormat::PositionNormal3: { return 3; }
-            default:                       { return 0; }
-            }
-        }
-        size_t normal_offset_size() const { return normal_offset_floats() * sizeof(float); }
+        size_t normal_offset_floats() const { return position_size_floats(); }
+        size_t normal_offset_bytes() const { return normal_offset_floats() * sizeof(float); }
+
         size_t normal_size_floats() const {
             switch (format)
             {
-            default:
-            case EFormat::Position:
-            case EFormat::PositionNormal1: { return 0; }
+            case EFormat::PositionNormal1: { return 1; }
             case EFormat::PositionNormal3: { return 3; }
+            default:                       { return 0; }
             }
         }
         size_t normal_size_bytes() const { return normal_size_floats() * sizeof(float); }
@@ -606,6 +595,46 @@ public:
             void render() const;
         };
 
+#if ENABLE_GCODE_WINDOW
+        class GCodeWindow
+        {
+            struct Line
+            {
+                std::string command;
+                std::string parameters;
+                std::string comment;
+            };
+            bool m_visible{ true };
+            uint64_t m_selected_line_id{ 0 };
+            size_t m_last_lines_size{ 0 };
+            std::string m_filename;
+            boost::iostreams::mapped_file_source m_file;
+            // map for accessing data in file by line number
+            std::vector<std::pair<uint64_t, uint64_t>> m_lines_map;
+            // current visible lines
+            std::vector<Line> m_lines;
+
+        public:
+            GCodeWindow() = default;
+            ~GCodeWindow() { stop_mapping_file(); }
+            void set_filename(const std::string& filename) { m_filename = filename; }
+            void load_gcode();
+            void reset() {
+                stop_mapping_file();
+                m_lines_map.clear();
+                m_lines.clear();
+                m_filename.clear();
+            }
+
+            void toggle_visibility() { m_visible = !m_visible; }
+
+            void render(float top, float bottom, uint64_t curr_line_id) const;
+
+        private:
+            void stop_mapping_file();
+        };
+#endif // ENABLE_GCODE_WINDOW
+
         struct Endpoints
         {
             size_t first{ 0 };
@@ -618,9 +647,16 @@ public:
         Endpoints last_current;
         Vec3f current_position{ Vec3f::Zero() };
         Marker marker;
+#if ENABLE_GCODE_WINDOW
+        GCodeWindow gcode_window;
+#endif // ENABLE_GCODE_WINDOW
 #if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         std::vector<unsigned int> gcode_ids;
 #endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+
+#if ENABLE_GCODE_WINDOW
+        void render(float legend_height) const;
+#endif // ENABLE_GCODE_WINDOW
     };
 
     enum class EViewType : unsigned char
@@ -715,13 +751,21 @@ public:
 
     void export_toolpaths_to_obj(const char* filename) const;
 
+#if ENABLE_GCODE_WINDOW
+    void toggle_gcode_window_visibility() { m_sequential_view.gcode_window.toggle_visibility(); }
+#endif // ENABLE_GCODE_WINDOW
+
 private:
     void load_toolpaths(const GCodeProcessor::Result& gcode_result);
     void load_shells(const Print& print, bool initialized);
     void refresh_render_paths(bool keep_sequential_current_first, bool keep_sequential_current_last) const;
     void render_toolpaths() const;
     void render_shells() const;
+#if ENABLE_GCODE_WINDOW
+    void render_legend(float& legend_height) const;
+#else
     void render_legend() const;
+#endif // ENABLE_GCODE_WINDOW
 #if ENABLE_GCODE_VIEWER_STATISTICS
     void render_statistics() const;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
