@@ -623,6 +623,7 @@ public:
     ConfigOptionFloat               fuzzy_skin_thickness;
     ConfigOptionFloat               fuzzy_skin_point_dist;
     ConfigOptionBool                gap_fill_enabled;
+    ConfigOptionFloat               gap_fill_min_area;
     ConfigOptionFloat               gap_fill_speed;
     ConfigOptionFloatOrPercent      infill_anchor;
     ConfigOptionFloatOrPercent      infill_anchor_max;
@@ -680,6 +681,7 @@ protected:
         OPT_PTR(fuzzy_skin_thickness);
         OPT_PTR(fuzzy_skin_point_dist);
         OPT_PTR(gap_fill_enabled);
+        OPT_PTR(gap_fill_min_area);
         OPT_PTR(gap_fill_speed);
         OPT_PTR(infill_anchor);
         OPT_PTR(infill_anchor_max);

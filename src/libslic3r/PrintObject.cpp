@@ -545,6 +545,7 @@ bool PrintObject::invalidate_state_by_config_options(
                opt_key == "perimeters"
             || opt_key == "extra_perimeters"
             || opt_key == "gap_fill_enabled"
+            || opt_key == "gap_fill_min_area"
             || opt_key == "gap_fill_speed"
             || opt_key == "first_layer_extrusion_width"
             || opt_key == "perimeter_extrusion_width"

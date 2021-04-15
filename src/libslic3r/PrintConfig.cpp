@@ -1072,6 +1072,15 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Enables filling of gaps between perimeters and between the inner most perimeters and infill.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
+    
+    def = this->add("gap_fill_min_area", coFloat);
+    def->label = L("Gap fill min area");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Gap should be at larger or equal than specified value to be filled.");
+    def->sidetext = L("mm²");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.0));
 
     def = this->add("gap_fill_speed", coFloat);
     def->label = L("Gap fill");
