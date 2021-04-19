@@ -2,7 +2,7 @@
 project('prusaslicer',
     'c', 'cpp',
     version: '2.4.0-alpha0',
-    meson_version: '>=0.49.0',
+    meson_version: '>=0.50.0',
     default_options: [
         'cpp_std=gnu++17',
     ],
@@ -16,6 +16,7 @@ config = configuration_data()
 data_config = configuration_data()
 
 cmake = import('cmake')
+i18n  = import('i18n')
 cc  = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 
@@ -94,6 +95,11 @@ cgal    = dependency('CGAL', method: 'cmake')
 openvdb = cc.find_library('openvdb')
 openexr = dependency('OpenEXR')
 
+if get_option('sandboxes')
+    opencsg = cc.find_library('opencsg', has_headers: 'opencsg.h')
+endif
+
+
 # WxWidgets
 if get_option('gui')
     if os_linux and get_option('wx-stable')
@@ -137,3 +143,20 @@ endif
 include_directories = include_directories('src', 'src/platform', 'src/clipper')
 
 subdir('src')
+subdir('resources')
+
+
+# Perl bindings, currently only used for the unit / integration tests of libslic3r.
+# Also runs the unit / integration tests.
+#FIXME Port the tests into C++ to finally get rid of the Perl!
+if get_option('perl-xs')
+    subdir('xs')
+endif
+
+if get_option('sandboxes')
+    subdir('sandboxes')
+endif
+
+if get_option('tests')
+    subdir('tests')
+endif

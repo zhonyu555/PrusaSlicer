@@ -48,7 +48,6 @@ executable('PrusaSlicer',
     ],
     link_with: [
         admesh,
-        libslic3r_cgal,
         libslic3r_gui,
         semver,
     ],

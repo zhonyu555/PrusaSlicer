@@ -129,24 +129,30 @@ endif
 # TODO:
 # libslic3r_sources += '${OpenVDBUtils_SOURCES}',
 
-lib_libslic3r = static_library('slic3r',
+if true
+    libslic3r_sources += 'MeshBoolean.cpp',
+endif
+
+libslic3r_dependencies = [
+    eigen,
+    clipper,
+    libqhull,
+    libigl,
+    miniz,
+    libnest2d,
+    glu_libtess,
+    boost,
+]
+
+lib_libslic3r = shared_library('slic3r',
     libslic3r_sources,
     include_directories: include_src,
-
     cpp_args: [
         '-DUSE_TBB',
         '-DTBB_USE_CAPTURED_EXCEPTION=0',
         slic3r_gui_args,
     ],
-    dependencies: [
-        eigen,
-        clipper,
-        libqhull,
-        libigl,
-        miniz,
-        libnest2d,
-        glu_libtess,
-    ],
+    dependencies: libslic3r_dependencies,
 )
 
 libslic3r = declare_dependency(
@@ -155,13 +161,5 @@ libslic3r = declare_dependency(
         include_src,
         include_directories('.'),
     ],
-)
-
-libslic3r_cgal = static_library('slic3r_cgal',
-    'MeshBoolean.cpp',
-    include_directories: include_src,
-    dependencies: [
-        eigen,
-        libigl,
-    ],
+    dependencies: libslic3r_dependencies,
 )
