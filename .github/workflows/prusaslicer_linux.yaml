@@ -68,7 +68,7 @@ jobs:
         path: ${{ env.DESTDIR }}
 
     - name: Build Appimage
-      run: ./.github/workflows/build_appimage.sh
+      run: ./.github/workflows/build_appimage.sh ${{ matrix.os }}
 
     - name: Upload Appimage
       uses: actions/upload-artifact@v1.0.0
