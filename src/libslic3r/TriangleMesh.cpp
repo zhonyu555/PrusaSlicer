@@ -355,9 +355,11 @@ void TriangleMesh::transform(const Transform3d& t, bool fix_left_handed)
 {
     stl_transform(&stl, t);
     its_transform(its, t);
-	if (fix_left_handed && t.matrix().block(0, 0, 3, 3).determinant() < 0.) {
-		// Left handed transformation is being applied. It is a good idea to flip the faces and their normals.
+	bool inverted = t.matrix().block(0, 0, 3, 3).determinant() < 0.;
+	if (inverted)
 		this->repair(false);
+	if (fix_left_handed && inverted) {
+		// Left handed transformation is being applied. It is a good idea to flip the faces and their normals.
 		stl_reverse_all_facets(&stl);
 		this->its.clear();
 		this->require_shared_vertices();
