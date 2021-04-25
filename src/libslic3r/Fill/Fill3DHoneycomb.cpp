@@ -6,9 +6,10 @@
 
 namespace Slic3r {
 
-  template <typename T> int sgn(T val) {
-    return (T(0) < val) - (val < T(0));
-  }
+// sign function
+template <typename T> int sgn(T val) {
+  return (T(0) < val) - (val < T(0));
+}
   
 /*
 Creates a contiguous sequence of points at a specified height that make
@@ -61,7 +62,7 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
  *            \     /
  *             o---o
  */
-  static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
+static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
 {
   std::vector<coordf_t> res = {0.};
   // note: sqrt(2) is used to convert to a regular truncated octahedron
@@ -86,7 +87,7 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 // basic printing line (i.e. Y points for columns, X points for rows)
 // Note: a negative offset only causes a change in the perpendicular
 // direction
- static std::vector<coordf_t> colinearPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
+static std::vector<coordf_t> colinearPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
 					     const size_t baseLocation, size_t gridLength)
 {
   std::vector<coordf_t> points;
@@ -230,6 +231,9 @@ void Fill3DHoneycomb::_fill_surface_single(
     // = 4 * integrate(func=4*x(sqrt(2) - 1) + 1, from=0, to=0.25)
     // = (sqrt(2) + 1) / 2 [... I think]
     coordf_t gridSize = (scale_(this->spacing) * ((sqrt(2) + 1.) / 2.) / params.density);
+    // Note: This density calculation is wildly wrong for many values > 25%.
+    // That's probably because quantisation of the layers means there are
+    // inconsistent patterns for the Z locations.
 
     // align bounding box to a multiple of our honeycomb grid module
     // (a module is 2*$gridSize since one $gridSize half-module is 
