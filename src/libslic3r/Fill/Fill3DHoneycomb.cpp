@@ -20,24 +20,30 @@ and Y axes.
 Credits: David Eccles (gringer).
 */
 
-// triangular wave
+// triangular wave function
+// this has period (gridSize * 2), and amplitude (gridSize / 2),
+// with triWave(pos = 0) = 0
 static coordf_t triWave(coordf_t pos, coordf_t gridSize)
 {
-  float t = pos / gridSize; // convert relative to grid size
+  float t = (pos / (gridSize * 2)) + 0.25; // convert relative to grid size
   t = t - (int)t; // extract fractional part
-  return((1. - abs((t - int(t)) * 4. - 2.)) * (gridSize / 4.));
+  return((1. - abs(t * 8. - 4.)) * (gridSize / 4.) + (gridSize / 4));
 }
 
-// truncated octagonal waveform, expects 0 <= t <= 1; -1 <= Zcycle <= 1
+// truncated octagonal waveform, with period and offset
+// as per the triangular wave function. The Z position adjusts
+// the maximum offset [between -(gridSize / 4) and (gridSize / 4)], with a
+// period of (gridSize * 2) and troctWave(Zpos = 0) = 0
 // note that this will create a stretched truncated octahedron with equally-
 // scaled X/Y/Z; Z should be pre-adjusted first by scaling by sqrt(2)
 static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
   coordf_t Zcycle = triWave(Zpos, gridSize);
+  coordf_t perpOffset = gridSize / 4;
   coordf_t y = triWave(pos, gridSize);
-  return((abs(y) > abs(Zcycle)) ?
-	 (sgn(y) * Zcycle) :
-	 (y * sgn(Zcycle)));
+  return((abs(y) > abs(perpOffset)) ?
+	 (sgn(y) * perpOffset) :
+	 (y * sgn(perpOffset)));
 }
 
 // Identify the important points of curve change within a truncated
@@ -45,13 +51,11 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 // 1. Start of wave (always 0.0)
 // 2. Transition to upper "horizontal" part
 // 3. Transition from upper "horizontal" part
-// 4. Middle of wave form (always 0.5)
-// 5. Transition to lower "horizontal" part
-// 6. Transition from lower "horizontal" part
-// [points 2, 3, 5, 6 vary depending on the Zcycle]
+// 4. Transition to lower "horizontal" part
+// 5. Transition from lower "horizontal" part
 /*    o---o
- *   /						\
- * o/       \o
+ *   /     \
+ * o/       \
  *           \       /
  *            \     /
  *             o---o
@@ -59,12 +63,17 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
   static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
 {
   std::vector<coordf_t> res = {0.};
-  coordf_t zFrac = fmod(Zpos, gridSize) / gridSize;
-  res.push_back(gridSize * (1. - zFrac) / 4.);
-  res.push_back(gridSize * (1. + zFrac) / 4.);
-  res.push_back(gridSize * 0.5);
-  res.push_back(gridSize * (3. - zFrac) / 4.);
-  res.push_back(gridSize * (3. + zFrac) / 4.);
+  coordf_t zCycle = (1 - abs(triWave(Zpos * sqrt(2), gridSize)));
+  zCycle = 1;
+  // for debugging: just generate evenly-distributed points
+  for(coordf_t i = 0; i < 2; i += 0.05){
+    res.push_back(gridSize * i);
+  }
+  // res.push_back(gridSize * (1. - zCycle) / 4.);
+  // res.push_back(gridSize * (1. - zCycle) / 4.);
+  // res.push_back(gridSize * (1. + zCycle) / 4.);
+  // res.push_back(gridSize * (3. - zCycle) / 4.);
+  // res.push_back(gridSize * (3. + zCycle) / 4.);
   return(res);
 }
 
@@ -77,10 +86,14 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
-  for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
-    for(size_t pi = 0; pi < 6; pi++){
-      points.push_back(baseLocation + cLoc + critPoints[pi]);
+  bool print = true;
+  for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= (gridSize)) {
+    if(print){
+      for(size_t pi = 0; pi < critPoints.size(); pi++){
+	points.push_back(baseLocation + cLoc + critPoints[pi]);
+      }
     }
+    print = !print;
   }
   points.push_back(baseLocation + gridLength);
   return points;
@@ -88,17 +101,26 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 
 // Generate an array of points for the dimension that is perpendicular to
 // the basic printing line (i.e. X points for columns, Y points for rows)
-  static std::vector<coordf_t> perpendPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
+  static std::vector<coordf_t> perpendPoints(const coordf_t Zpos2, coordf_t gridSize, std::vector<coordf_t> critPoints,
 					     const size_t baseLocation, size_t gridLength, coordf_t perpDir)
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
+  bool print = true;
+  coordf_t Zpos = 0.5 * gridSize;
   for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
-    for(size_t pi = 0; pi < 6; pi++){
-      //points.push_back(baseLocation);
-      coordf_t offset = triWave(critPoints[pi], gridSize);
-      points.push_back(baseLocation+(offset * perpDir));
+    float dir = 1.;
+    if(print){
+      for(size_t pi = 0; pi < critPoints.size(); pi++){
+	//points.push_back(baseLocation);
+	coordf_t offset = troctWave(critPoints[pi], gridSize, Zpos);
+	//coordf_t offset = triWave(critPoints[pi], gridSize);
+	points.push_back(baseLocation+(offset * perpDir * dir));
+	//dir *= -1;
+	//points.push_back(baseLocation+(offset));
+      }
     }
+    print = !print;
   }
   points.push_back(baseLocation);
   return points;
@@ -130,11 +152,11 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
 {
     std::vector<Pointfs> points;
     std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
-    coordf_t zCycle = fmod(Zpos, gridSize) / gridSize;
+    coordf_t zCycle = fmod(Zpos + gridSize/2, gridSize * 2.) / (gridSize * 2.);
     bool printVert = zCycle < 0.5;
     if (printVert) {
-      coordf_t perpDir = 1.;
-      for (size_t x = gridSize; x <= boundsX; x+= gridSize, perpDir *= -1.) {
+      int perpDir = -1;
+      for (size_t x = gridSize / 2.; x <= boundsX; x+= gridSize, perpDir *= -1) {
 	  points.push_back(Pointfs());
 	  Pointfs &newPoints = points.back();
 	  newPoints = zip(
@@ -147,7 +169,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
         }
     } else {
       int perpDir = 1;
-      for (size_t y = 0; y <= boundsY; y+= gridSize, perpDir *= -1) {
+      for (size_t y = gridSize/8; y <= boundsY; y+= gridSize, perpDir *= -1) {
 	points.push_back(Pointfs());
 	Pointfs &newPoints = points.back();
 	newPoints = zip(
