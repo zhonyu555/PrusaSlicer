@@ -156,7 +156,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
   bool printVert = zCycle < 0.5;
   if (printVert) {
     int perpDir = -1;
-    for (size_t x = 0; x <= boundsX; x+= gridSize, perpDir *= -1) {
+    for (coordf_t x = -gridSize; x <= (boundsX + gridSize); x+= gridSize, perpDir *= -1) {
       points.push_back(Pointfs());
       Pointfs &newPoints = points.back();
       newPoints = zip(
@@ -169,7 +169,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
     }
   } else {
     int perpDir = 1;
-    for (size_t y = gridSize; y <= boundsY; y+= gridSize, perpDir *= -1) {
+    for (coordf_t y = -gridSize; y <= (boundsY + gridSize); y+= gridSize, perpDir *= -1) {
       points.push_back(Pointfs());
       Pointfs &newPoints = points.back();
       newPoints = zip(
@@ -190,8 +190,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
 // gridWidth and gridHeight define the width and height of the bounding box respectively
 static Polylines makeGrid(coordf_t z, coordf_t gridSize, coordf_t boundWidth, coordf_t boundHeight, bool fillEvenly)
 {
-  std::vector<Pointfs> polylines =
-    makeActualGrid(z, gridSize, boundWidth, boundHeight);
+  std::vector<Pointfs> polylines = makeActualGrid(z, gridSize, boundWidth, boundHeight);
   Polylines result;
   result.reserve(polylines.size());
   for (std::vector<Pointfs>::const_iterator it_polylines = polylines.begin();
