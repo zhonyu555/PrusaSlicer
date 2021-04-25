@@ -20,18 +20,21 @@ and Y axes.
 Credits: David Eccles (gringer).
 */
 
-// triangular wave; based on fractional part of t only (i.e. 0 <= t < 1)
-static coordf_t triWave(coordf_t t)
+// triangular wave
+static coordf_t triWave(coordf_t pos, coordf_t gridSize)
 {
-  return(1. - abs((t - int(t)) * 4. - 2.));
+  float t = pos / gridSize; // convert relative to grid size
+  t = t - (int)t; // extract fractional part
+  return((1. - abs((t - int(t)) * 4. - 2.)) * (gridSize / 4.));
 }
 
 // truncated octagonal waveform, expects 0 <= t <= 1; -1 <= Zcycle <= 1
 // note that this will create a stretched truncated octahedron with equally-
 // scaled X/Y/Z; Z should be pre-adjusted first by scaling by sqrt(2)
-static coordf_t troctWave(coordf_t t, coordf_t Zcycle)
+static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
-  coordf_t y = triWave(t);
+  coordf_t Zcycle = triWave(Zpos, gridSize);
+  coordf_t y = triWave(pos, gridSize);
   return((abs(y) > abs(Zcycle)) ?
 	 (sgn(y) * Zcycle) :
 	 (y * sgn(Zcycle)));
@@ -53,15 +56,15 @@ static coordf_t troctWave(coordf_t t, coordf_t Zcycle)
  *            \     /
  *             o---o
  */
-static std::vector<coordf_t> getCriticalPoints(coordf_t Zcycle)
+  static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
 {
   std::vector<coordf_t> res = {0.};
-  coordf_t zAbs = abs(Zcycle);
-  res.push_back((1. - zAbs) / 4.);
-  res.push_back((1. + zAbs) / 4.);
-  res.push_back(0.5);
-  res.push_back((3. - zAbs) / 4.);
-  res.push_back((3. + zAbs) / 4.);
+  coordf_t zFrac = fmod(Zpos, gridSize) / gridSize;
+  res.push_back(gridSize * (1. - zFrac) / 4.);
+  res.push_back(gridSize * (1. + zFrac) / 4.);
+  res.push_back(gridSize * 0.5);
+  res.push_back(gridSize * (3. - zFrac) / 4.);
+  res.push_back(gridSize * (3. + zFrac) / 4.);
   return(res);
 }
 
@@ -69,14 +72,14 @@ static std::vector<coordf_t> getCriticalPoints(coordf_t Zcycle)
 // basic printing line (i.e. Y points for columns, X points for rows)
 // Note: a negative offset only causes a change in the perpendicular
 // direction
- static std::vector<coordf_t> colinearPoints(const coordf_t Zcycle, coordf_t gridSize, std::vector<coordf_t> critPoints,
+ static std::vector<coordf_t> colinearPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
 					     const size_t baseLocation, size_t gridLength)
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
   for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
     for(size_t pi = 0; pi < 6; pi++){
-      points.push_back(baseLocation + cLoc + (float)critPoints[pi] * gridSize);
+      points.push_back(baseLocation + cLoc + critPoints[pi]);
     }
   }
   points.push_back(baseLocation + gridLength);
@@ -85,14 +88,16 @@ static std::vector<coordf_t> getCriticalPoints(coordf_t Zcycle)
 
 // Generate an array of points for the dimension that is perpendicular to
 // the basic printing line (i.e. X points for columns, Y points for rows)
-  static std::vector<coordf_t> perpendPoints(const coordf_t Zcycle, coordf_t gridSize, std::vector<coordf_t> critPoints,
-					    const size_t baseLocation, size_t gridLength)
+  static std::vector<coordf_t> perpendPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
+					     const size_t baseLocation, size_t gridLength, coordf_t perpDir)
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
   for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
     for(size_t pi = 0; pi < 6; pi++){
-      points.push_back(baseLocation+troctWave((float)critPoints[pi], Zcycle / 2.) * gridSize);
+      //points.push_back(baseLocation);
+      coordf_t offset = triWave(critPoints[pi], gridSize);
+      points.push_back(baseLocation+(offset * perpDir));
     }
   }
   points.push_back(baseLocation);
@@ -121,32 +126,33 @@ static inline Pointfs zip(const std::vector<coordf_t> &x, const std::vector<coor
 
 // Generate a set of curves (array of array of 2d points) that describe a
 // horizontal slice of a truncated regular octahedron.
-// printHoriz specifies whether to print vertically-aligned lines.
-static std::vector<Pointfs> makeActualGrid(coordf_t Zcycle, coordf_t gridSize, size_t boundsX, size_t boundsY, bool printVert)
+static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, size_t boundsX, size_t boundsY)
 {
     std::vector<Pointfs> points;
-    std::vector<coordf_t> critPoints = getCriticalPoints(Zcycle);
+    std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
+    coordf_t zCycle = fmod(Zpos, gridSize) / gridSize;
+    bool printVert = zCycle < 0.5;
     if (printVert) {
-      float perpDir = -1.;
+      coordf_t perpDir = 1.;
       for (size_t x = gridSize; x <= boundsX; x+= gridSize, perpDir *= -1.) {
 	  points.push_back(Pointfs());
 	  Pointfs &newPoints = points.back();
 	  newPoints = zip(
-			  perpendPoints(Zcycle * perpDir, gridSize, critPoints, x, boundsY), 
-			  colinearPoints(Zcycle, gridSize, critPoints, 0, boundsY));
+			  perpendPoints(Zpos, gridSize, critPoints, x, boundsY, perpDir), 
+			  colinearPoints(Zpos, gridSize, critPoints, 0, boundsY));
 	  // trim points to grid edges
 	  //trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(colsToPrint), coordf_t(rowsToPrint));
 	  if (x & 1)
 	    std::reverse(newPoints.begin(), newPoints.end());
         }
     } else {
-      float perpDir = 1.;
-      for (size_t y = 0; y <= boundsY; y+= gridSize, perpDir *= -1.) {
+      int perpDir = 1;
+      for (size_t y = 0; y <= boundsY; y+= gridSize, perpDir *= -1) {
 	points.push_back(Pointfs());
 	Pointfs &newPoints = points.back();
 	newPoints = zip(
-			colinearPoints(Zcycle, gridSize, critPoints, 0, boundsX),
-			perpendPoints(Zcycle * perpDir, gridSize, critPoints, y, boundsX));
+			colinearPoints(Zpos, gridSize, critPoints, 0, boundsX),
+			perpendPoints(Zpos, gridSize, critPoints, y, boundsX, perpDir));
 	// trim points to grid edges
 	//trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(colsToPrint), coordf_t(rowsToPrint));
 	if (y & 1)
@@ -162,23 +168,19 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zcycle, coordf_t gridSize, s
 // gridWidth and gridHeight define the width and height of the bounding box respectively
 static Polylines makeGrid(coordf_t z, coordf_t gridSize, coordf_t boundWidth, coordf_t boundHeight, bool fillEvenly)
 {
-    // sqrt(2) is used to convert to a regular truncated octahedron
-  coordf_t normalisedZ = ((z / 4.) * sqrt(2.)) / gridSize;
-    coordf_t fracZ = normalisedZ - int(normalisedZ);
-    coordf_t Zcycle = triWave(fracZ) / 2.;
-    std::vector<Pointfs> polylines =
-      makeActualGrid(Zcycle, gridSize, boundWidth, boundHeight,
-		     ((fracZ >= 0) && (fracZ <= 0.5)));
-    Polylines result;
-    result.reserve(polylines.size());
-    for (std::vector<Pointfs>::const_iterator it_polylines = polylines.begin();
-	 it_polylines != polylines.end(); ++ it_polylines) {
-        result.push_back(Polyline());
-        Polyline &polyline = result.back();
-        for (Pointfs::const_iterator it = it_polylines->begin(); it != it_polylines->end(); ++ it)
-            polyline.points.push_back(Point(coord_t((*it)(0)), coord_t((*it)(1))));
-    }
-    return result;
+  // sqrt(2) is used to convert to a regular truncated octahedron
+  std::vector<Pointfs> polylines =
+    makeActualGrid(z, gridSize, boundWidth, boundHeight);
+  Polylines result;
+  result.reserve(polylines.size());
+  for (std::vector<Pointfs>::const_iterator it_polylines = polylines.begin();
+       it_polylines != polylines.end(); ++ it_polylines) {
+    result.push_back(Polyline());
+    Polyline &polyline = result.back();
+    for (Pointfs::const_iterator it = it_polylines->begin(); it != it_polylines->end(); ++ it)
+      polyline.points.push_back(Point(coord_t((*it)(0)), coord_t((*it)(1))));
+  }
+  return result;
 }
 
 // FillParams has the following useful information:
@@ -211,7 +213,7 @@ void Fill3DHoneycomb::_fill_surface_single(
     // align bounding box to a multiple of our honeycomb grid module
     // (a module is 2*$distance since one $distance half-module is 
     // growing while the other $distance half-module is shrinking)
-    bb.merge(align_to_grid(bb.min, Point(gridSize, gridSize)));
+    bb.merge(align_to_grid(bb.min, Point(gridSize*2, gridSize*2)));
     
     // generate pattern
     Polylines   polylines = makeGrid(
