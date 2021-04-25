@@ -25,9 +25,9 @@ Credits: David Eccles (gringer).
 // with triWave(pos = 0) = 0
 static coordf_t triWave(coordf_t pos, coordf_t gridSize)
 {
-  float t = (pos / (gridSize * 2)) + 0.25; // convert relative to grid size
+  float t = (pos / (gridSize * 2.)) + 0.25; // convert relative to grid size
   t = t - (int)t; // extract fractional part
-  return((1. - abs(t * 8. - 4.)) * (gridSize / 4.) + (gridSize / 4));
+  return((1. - abs(t * 8. - 4.)) * (gridSize / 4.) + (gridSize / 4.));
 }
 
 // truncated octagonal waveform, with period and offset
@@ -65,28 +65,19 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
   std::vector<coordf_t> res = {0.};
   // note: sqrt(2) is used to convert to a regular truncated octahedron
-  coordf_t normalisedOffset = abs(triWave(Zpos * sqrt(2), gridSize) / (gridSize * 2.));
+  coordf_t perpOffset = abs(triWave(Zpos * sqrt(2), gridSize) / 2.);
+
+  coordf_t normalisedOffset = perpOffset / gridSize;
   // // for debugging: just generate evenly-distributed points
   // for(coordf_t i = 0; i < 2; i += 0.05){
   //   res.push_back(gridSize * i);
   // }
-  if(normalisedOffset == 0){
-    // don't duplicate points
-    res.push_back(gridSize * 1. / 4.);
-    res.push_back(gridSize * 3. / 4.);
-    res.push_back(gridSize * 1);
-    res.push_back(gridSize * (1 + 1. / 4.));
-    res.push_back(gridSize * (1 + 3. / 4.));
-  } else {
-    res.push_back(gridSize * (1. - normalisedOffset * 2.) / 4.);
-    res.push_back(gridSize * (1. + normalisedOffset * 2.) / 4.);
-    res.push_back(gridSize * (3. - normalisedOffset * 2.) / 4.);
-    res.push_back(gridSize * (3. + normalisedOffset * 2.) / 4.);
-    res.push_back(gridSize);
-    res.push_back(gridSize * (1 + (1. - normalisedOffset * 2.) / 4.));
-    res.push_back(gridSize * (1 + (1. + normalisedOffset * 2.) / 4.));
-    res.push_back(gridSize * (1 + (3. - normalisedOffset * 2.) / 4.));
-    res.push_back(gridSize * (1 + (3. + normalisedOffset * 2.) / 4.));
+  // note: 0 == straight line
+  if(normalisedOffset > 0){
+    res.push_back(gridSize * (0. + normalisedOffset));
+    res.push_back(gridSize * (1. - normalisedOffset));
+    res.push_back(gridSize * (1. + normalisedOffset));
+    res.push_back(gridSize * (2. - normalisedOffset));
   }
   return(res);
 }
@@ -121,17 +112,11 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
   bool print = true;
-  //coordf_t Zpos = 0.5 * gridSize;
   for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
-    float dir = 1.;
     if(print){
       for(size_t pi = 0; pi < critPoints.size(); pi++){
-	//points.push_back(baseLocation);
 	coordf_t offset = troctWave(critPoints[pi], gridSize, Zpos);
-	//coordf_t offset = triWave(critPoints[pi], gridSize);
-	points.push_back(baseLocation+(offset * perpDir * dir));
-	//dir *= -1;
-	//points.push_back(baseLocation+(offset));
+	points.push_back(baseLocation + (offset * perpDir));
       }
     }
     print = !print;
@@ -164,39 +149,39 @@ static inline Pointfs zip(const std::vector<coordf_t> &x, const std::vector<coor
 // horizontal slice of a truncated regular octahedron.
 static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, size_t boundsX, size_t boundsY)
 {
-    std::vector<Pointfs> points;
-    std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
+  std::vector<Pointfs> points;
+  std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
   // note: sqrt(2) is used to convert to a regular truncated octahedron
-    coordf_t zCycle = fmod((Zpos * sqrt(2)) + gridSize/2, gridSize * 2.) / (gridSize * 2.);
-    bool printVert = zCycle < 0.5;
-    if (printVert) {
-      int perpDir = -1;
-      for (size_t x = 0; x <= boundsX; x+= gridSize, perpDir *= -1) {
-	  points.push_back(Pointfs());
-	  Pointfs &newPoints = points.back();
-	  newPoints = zip(
-			  perpendPoints(Zpos, gridSize, critPoints, x, boundsY, perpDir), 
-			  colinearPoints(Zpos, gridSize, critPoints, 0, boundsY));
-	  // trim points to grid edges
-	  //trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(colsToPrint), coordf_t(rowsToPrint));
-	  if (x & 1)
-	    std::reverse(newPoints.begin(), newPoints.end());
-        }
-    } else {
-      int perpDir = 1;
-      for (size_t y = gridSize; y <= boundsY; y+= gridSize, perpDir *= -1) {
-	points.push_back(Pointfs());
-	Pointfs &newPoints = points.back();
-	newPoints = zip(
-			colinearPoints(Zpos, gridSize, critPoints, 0, boundsX),
-			perpendPoints(Zpos, gridSize, critPoints, y, boundsX, perpDir));
-	// trim points to grid edges
-	//trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(colsToPrint), coordf_t(rowsToPrint));
-	if (y & 1)
-	  std::reverse(newPoints.begin(), newPoints.end());
-      }
+  coordf_t zCycle = fmod((Zpos * sqrt(2)) + gridSize/2, gridSize * 2.) / (gridSize * 2.);
+  bool printVert = zCycle < 0.5;
+  if (printVert) {
+    int perpDir = -1;
+    for (size_t x = 0; x <= boundsX; x+= gridSize, perpDir *= -1) {
+      points.push_back(Pointfs());
+      Pointfs &newPoints = points.back();
+      newPoints = zip(
+		      perpendPoints(Zpos, gridSize, critPoints, x, boundsY, perpDir), 
+		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsY));
+      // trim points to grid edges
+      trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(boundsX), coordf_t(boundsY));
+      if (x & 1)
+	std::reverse(newPoints.begin(), newPoints.end());
     }
-    return points;
+  } else {
+    int perpDir = 1;
+    for (size_t y = gridSize; y <= boundsY; y+= gridSize, perpDir *= -1) {
+      points.push_back(Pointfs());
+      Pointfs &newPoints = points.back();
+      newPoints = zip(
+		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsX),
+		      perpendPoints(Zpos, gridSize, critPoints, y, boundsX, perpDir));
+      // trim points to grid edges
+      trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(boundsX), coordf_t(boundsY));
+      if (y & 1)
+	std::reverse(newPoints.begin(), newPoints.end());
+    }
+  }
+  return points;
 }
 
 // Generate a set of curves (array of array of 2d points) that describe a
@@ -253,16 +238,18 @@ void Fill3DHoneycomb::_fill_surface_single(
     bb.merge(align_to_grid(bb.min, Point(gridSize*2, gridSize*2)));
     
     // generate pattern
-    Polylines   polylines = makeGrid(
-        scale_(this->z),
-        gridSize,
-        bb.size()(0),
-        bb.size()(1),
-	!params.dont_adjust);
+    Polylines polylines =
+      makeGrid(
+	       scale_(this->z),
+	       gridSize,
+	       bb.size()(0),
+	       bb.size()(1),
+	       !params.dont_adjust);
     
     // move pattern in place
-	for (Polyline &pl : polylines)
-		pl.translate(bb.min);
+    for (Polyline &pl : polylines){
+      pl.translate(bb.min);
+    }
 
     // clip pattern to boundaries, chain the clipped polylines
     polylines = intersection_pl(polylines, to_polygons(expolygon));
