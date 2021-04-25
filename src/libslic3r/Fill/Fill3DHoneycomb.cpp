@@ -156,7 +156,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
     bool printVert = zCycle < 0.5;
     if (printVert) {
       int perpDir = -1;
-      for (size_t x = gridSize / 2.; x <= boundsX; x+= gridSize, perpDir *= -1) {
+      for (size_t x = 0; x <= boundsX; x+= gridSize, perpDir *= -1) {
 	  points.push_back(Pointfs());
 	  Pointfs &newPoints = points.back();
 	  newPoints = zip(
@@ -169,7 +169,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
         }
     } else {
       int perpDir = 1;
-      for (size_t y = gridSize/8; y <= boundsY; y+= gridSize, perpDir *= -1) {
+      for (size_t y = gridSize; y <= boundsY; y+= gridSize, perpDir *= -1) {
 	points.push_back(Pointfs());
 	Pointfs &newPoints = points.back();
 	newPoints = zip(
@@ -225,16 +225,17 @@ void Fill3DHoneycomb::_fill_surface_single(
     BoundingBox bb = expolygon.contour.bounding_box();
 
     // adjustment to account for the additional distance of octagram curves
-    // note: this only strictly applies for a rectangular area where the Z distance
-    //       is a multiple of the spacing... but it should be at least better than
-    //       the prevous estimate which assumed straight lines
+    // note: this only strictly applies for a rectangular area where the total
+    //       Z travel distance is a multiple of the spacing... but it should
+    //       be at least better than the prevous estimate which assumed straight
+    //       lines
     // = 4 * integrate(func=4*x(sqrt(2) - 1) + 1, from=0, to=0.25)
     // = (sqrt(2) + 1) / 2 [... I think]
     coordf_t gridSize = (scale_(this->spacing) * ((sqrt(2) + 1.) / 2.) / params.density);
 
     // align bounding box to a multiple of our honeycomb grid module
-    // (a module is 2*$distance since one $distance half-module is 
-    // growing while the other $distance half-module is shrinking)
+    // (a module is 2*$gridSize since one $gridSize half-module is 
+    // growing while the other $gridSize half-module is shrinking)
     bb.merge(align_to_grid(bb.min, Point(gridSize*2, gridSize*2)));
     
     // generate pattern
