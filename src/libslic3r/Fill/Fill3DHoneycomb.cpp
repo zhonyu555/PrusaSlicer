@@ -34,12 +34,13 @@ static coordf_t triWave(coordf_t pos, coordf_t gridSize)
 // as per the triangular wave function. The Z position adjusts
 // the maximum offset [between -(gridSize / 4) and (gridSize / 4)], with a
 // period of (gridSize * 2) and troctWave(Zpos = 0) = 0
-// note that this will create a stretched truncated octahedron with equally-
-// scaled X/Y/Z; Z should be pre-adjusted first by scaling by sqrt(2)
+// this create a stretched truncated octahedron with equally-
+// scaled X/Y/Z; so Z is pre-adjusted first by scaling by sqrt(2)
 static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
-  coordf_t Zcycle = triWave(Zpos, gridSize);
-  coordf_t perpOffset = gridSize / 4;
+  // note: sqrt(2) is used to convert to a regular truncated octahedron
+  coordf_t Zcycle = triWave(Zpos * sqrt(2), gridSize);
+  coordf_t perpOffset = Zcycle / 2;
   coordf_t y = triWave(pos, gridSize);
   return((abs(y) > abs(perpOffset)) ?
 	 (sgn(y) * perpOffset) :
@@ -63,17 +64,30 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
   static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
 {
   std::vector<coordf_t> res = {0.};
-  coordf_t zCycle = (1 - abs(triWave(Zpos * sqrt(2), gridSize)));
-  zCycle = 1;
-  // for debugging: just generate evenly-distributed points
-  for(coordf_t i = 0; i < 2; i += 0.05){
-    res.push_back(gridSize * i);
+  // note: sqrt(2) is used to convert to a regular truncated octahedron
+  coordf_t normalisedOffset = abs(triWave(Zpos * sqrt(2), gridSize) / (gridSize * 2.));
+  // // for debugging: just generate evenly-distributed points
+  // for(coordf_t i = 0; i < 2; i += 0.05){
+  //   res.push_back(gridSize * i);
+  // }
+  if(normalisedOffset == 0){
+    // don't duplicate points
+    res.push_back(gridSize * 1. / 4.);
+    res.push_back(gridSize * 3. / 4.);
+    res.push_back(gridSize * 1);
+    res.push_back(gridSize * (1 + 1. / 4.));
+    res.push_back(gridSize * (1 + 3. / 4.));
+  } else {
+    res.push_back(gridSize * (1. - normalisedOffset * 2.) / 4.);
+    res.push_back(gridSize * (1. + normalisedOffset * 2.) / 4.);
+    res.push_back(gridSize * (3. - normalisedOffset * 2.) / 4.);
+    res.push_back(gridSize * (3. + normalisedOffset * 2.) / 4.);
+    res.push_back(gridSize);
+    res.push_back(gridSize * (1 + (1. - normalisedOffset * 2.) / 4.));
+    res.push_back(gridSize * (1 + (1. + normalisedOffset * 2.) / 4.));
+    res.push_back(gridSize * (1 + (3. - normalisedOffset * 2.) / 4.));
+    res.push_back(gridSize * (1 + (3. + normalisedOffset * 2.) / 4.));
   }
-  // res.push_back(gridSize * (1. - zCycle) / 4.);
-  // res.push_back(gridSize * (1. - zCycle) / 4.);
-  // res.push_back(gridSize * (1. + zCycle) / 4.);
-  // res.push_back(gridSize * (3. - zCycle) / 4.);
-  // res.push_back(gridSize * (3. + zCycle) / 4.);
   return(res);
 }
 
@@ -101,13 +115,13 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 
 // Generate an array of points for the dimension that is perpendicular to
 // the basic printing line (i.e. X points for columns, Y points for rows)
-  static std::vector<coordf_t> perpendPoints(const coordf_t Zpos2, coordf_t gridSize, std::vector<coordf_t> critPoints,
+  static std::vector<coordf_t> perpendPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
 					     const size_t baseLocation, size_t gridLength, coordf_t perpDir)
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
   bool print = true;
-  coordf_t Zpos = 0.5 * gridSize;
+  //coordf_t Zpos = 0.5 * gridSize;
   for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
     float dir = 1.;
     if(print){
@@ -152,7 +166,8 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
 {
     std::vector<Pointfs> points;
     std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
-    coordf_t zCycle = fmod(Zpos + gridSize/2, gridSize * 2.) / (gridSize * 2.);
+  // note: sqrt(2) is used to convert to a regular truncated octahedron
+    coordf_t zCycle = fmod((Zpos * sqrt(2)) + gridSize/2, gridSize * 2.) / (gridSize * 2.);
     bool printVert = zCycle < 0.5;
     if (printVert) {
       int perpDir = -1;
@@ -190,7 +205,6 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
 // gridWidth and gridHeight define the width and height of the bounding box respectively
 static Polylines makeGrid(coordf_t z, coordf_t gridSize, coordf_t boundWidth, coordf_t boundHeight, bool fillEvenly)
 {
-  // sqrt(2) is used to convert to a regular truncated octahedron
   std::vector<Pointfs> polylines =
     makeActualGrid(z, gridSize, boundWidth, boundHeight);
   Polylines result;
