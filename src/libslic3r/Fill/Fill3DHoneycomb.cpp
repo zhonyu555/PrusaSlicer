@@ -35,12 +35,9 @@ static coordf_t triWave(coordf_t pos, coordf_t gridSize)
 // as per the triangular wave function. The Z position adjusts
 // the maximum offset [between -(gridSize / 4) and (gridSize / 4)], with a
 // period of (gridSize * 2) and troctWave(Zpos = 0) = 0
-// this create a stretched truncated octahedron with equally-
-// scaled X/Y/Z; so Z is pre-adjusted first by scaling by sqrt(2)
 static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 {
-  // note: sqrt(2) is used to convert to a regular truncated octahedron
-  coordf_t Zcycle = triWave(Zpos * sqrt(2), gridSize);
+  coordf_t Zcycle = triWave(Zpos, gridSize);
   coordf_t perpOffset = Zcycle / 2;
   coordf_t y = triWave(pos, gridSize);
   return((abs(y) > abs(perpOffset)) ?
@@ -65,8 +62,7 @@ static coordf_t troctWave(coordf_t pos, coordf_t gridSize, coordf_t Zpos)
 static std::vector<coordf_t> getCriticalPoints(coordf_t Zpos, coordf_t gridSize)
 {
   std::vector<coordf_t> res = {0.};
-  // note: sqrt(2) is used to convert to a regular truncated octahedron
-  coordf_t perpOffset = abs(triWave(Zpos * sqrt(2), gridSize) / 2.);
+  coordf_t perpOffset = abs(triWave(Zpos, gridSize) / 2.);
 
   coordf_t normalisedOffset = perpOffset / gridSize;
   // // for debugging: just generate evenly-distributed points
@@ -126,16 +122,6 @@ static std::vector<coordf_t> colinearPoints(const coordf_t Zpos, coordf_t gridSi
   return points;
 }
 
-// Trims an array of points to specified rectangular limits. Point
-// components that are outside these limits are set to the limits.
-static inline void trim(Pointfs &pts, coordf_t minX, coordf_t minY, coordf_t maxX, coordf_t maxY)
-{
-    for (Vec2d &pt : pts) {
-        pt(0) = clamp(minX, maxX, pt(0));
-        pt(1) = clamp(minY, maxY, pt(1));
-    }
-}
-
 static inline Pointfs zip(const std::vector<coordf_t> &x, const std::vector<coordf_t> &y)
 {
     assert(x.size() == y.size());
@@ -152,33 +138,28 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
 {
   std::vector<Pointfs> points;
   std::vector<coordf_t> critPoints = getCriticalPoints(Zpos, gridSize);
-  // note: sqrt(2) is used to convert to a regular truncated octahedron
-  coordf_t zCycle = fmod((Zpos * sqrt(2)) + gridSize/2, gridSize * 2.) / (gridSize * 2.);
+  coordf_t zCycle = fmod(Zpos + gridSize/2, gridSize * 2.) / (gridSize * 2.);
   bool printVert = zCycle < 0.5;
   if (printVert) {
     int perpDir = -1;
-    for (coordf_t x = -gridSize; x <= (boundsX + gridSize); x+= gridSize, perpDir *= -1) {
+    for (coordf_t x = 0; x <= (boundsX); x+= gridSize, perpDir *= -1) {
       points.push_back(Pointfs());
       Pointfs &newPoints = points.back();
       newPoints = zip(
 		      perpendPoints(Zpos, gridSize, critPoints, x, boundsY, perpDir), 
 		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsY));
-      // trim points to grid edges
-      trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(boundsX), coordf_t(boundsY));
-      if (x & 1)
+      if (perpDir == 1)
 	std::reverse(newPoints.begin(), newPoints.end());
     }
   } else {
     int perpDir = 1;
-    for (coordf_t y = -gridSize; y <= (boundsY + gridSize); y+= gridSize, perpDir *= -1) {
+    for (coordf_t y = gridSize; y <= (boundsY); y+= gridSize, perpDir *= -1) {
       points.push_back(Pointfs());
       Pointfs &newPoints = points.back();
       newPoints = zip(
 		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsX),
 		      perpendPoints(Zpos, gridSize, critPoints, y, boundsX, perpDir));
-      // trim points to grid edges
-      trim(newPoints, coordf_t(0.), coordf_t(0.), coordf_t(boundsX), coordf_t(boundsY));
-      if (y & 1)
+      if (perpDir == -1)
 	std::reverse(newPoints.begin(), newPoints.end());
     }
   }
@@ -223,6 +204,10 @@ void Fill3DHoneycomb::_fill_surface_single(
     // no rotation is supported for this infill pattern
     BoundingBox bb = expolygon.contour.bounding_box();
 
+    // Note: with equally-scaled X/Y/Z, the pattern will create a vertically-stretched
+    // truncated octahedron; so Z is pre-adjusted first by scaling by sqrt(2)
+    coordf_t zScale = sqrt(2);
+
     // adjustment to account for the additional distance of octagram curves
     // note: this only strictly applies for a rectangular area where the total
     //       Z travel distance is a multiple of the spacing... but it should
@@ -230,20 +215,51 @@ void Fill3DHoneycomb::_fill_surface_single(
     //       lines
     // = 4 * integrate(func=4*x(sqrt(2) - 1) + 1, from=0, to=0.25)
     // = (sqrt(2) + 1) / 2 [... I think]
-    coordf_t gridSize = (scale_(this->spacing) * ((sqrt(2) + 1.) / 2.) / params.density);
-    // Note: This density calculation is wildly wrong for many values > 25%.
-    // That's probably because quantisation of the layers means there are
-    // inconsistent patterns for the Z locations.
+    // make a first guess at the preferred grid Size
+    coordf_t gridSize = (scale_(this->spacing) * ((zScale + 1.) / 2.) / params.density);
+
+    // This density calculation is incorrect for many values > 25%, possibly
+    // due to quantisation error, so this value is used as a first guess, then the
+    // Z scale is adjusted to make the layer patterns consistent / symmetric
+    // This means that the resultant infill won't be an ideal truncated octahedron,
+    // but it should look better than the equivalent quantised version
+    
+    coordf_t layerHeight = scale_(thickness_layers);
+    // ceiling to an integer value of layers per Z
+    // (with a little nudge in case it's close to perfect)
+    coordf_t layersPerModule = floor((gridSize * 2) / (zScale * layerHeight) + 0.05);
+    if(params.density > 0.42){ // exact layer pattern for >42% density
+      layersPerModule = 2;
+      // re-adjust the grid size for a partial octahedral path
+      // (scale of 1.1 guessed based on modeling)
+      gridSize = (scale_(this->spacing) * 1.1 / params.density);
+      // re-adjust zScale to make layering consistent
+      zScale = (gridSize * 2) / (layersPerModule * layerHeight);
+    } else {
+      if(layersPerModule < 2){
+	layersPerModule = 2;
+      }
+      // re-adjust zScale to make layering consistent
+      zScale = (gridSize * 2) / (layersPerModule * layerHeight);
+      // re-adjust the grid size to account for the new zScale
+      gridSize = (scale_(this->spacing) * ((zScale + 1.) / 2.) / params.density);
+      // re-calculate layersPerModule and zScale
+      layersPerModule = floor((gridSize * 2) / (zScale * layerHeight) + 0.05);
+      if(layersPerModule < 2){
+	layersPerModule = 2;
+      }
+      zScale = (gridSize * 2) / (layersPerModule * layerHeight);
+    }
 
     // align bounding box to a multiple of our honeycomb grid module
     // (a module is 2*$gridSize since one $gridSize half-module is 
     // growing while the other $gridSize half-module is shrinking)
-    bb.merge(align_to_grid(bb.min, Point(gridSize*2, gridSize*2)));
+    bb.merge(align_to_grid(bb.min, Point(gridSize*4, gridSize*4)));
     
     // generate pattern
     Polylines polylines =
       makeGrid(
-	       scale_(this->z),
+	       scale_(this->z) * zScale,
 	       gridSize,
 	       bb.size()(0),
 	       bb.size()(1),
