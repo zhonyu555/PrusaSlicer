@@ -104,7 +104,7 @@ int CLI::run(int argc, char **argv)
     m_extra_config.normalize_fdm();
     
     PrinterTechnology printer_technology = get_printer_technology(m_config);
-
+    bool one_model = m_config.option<ConfigOptionBool>("one_model")->value;
     bool							start_gui			= m_actions.empty() &&
         // cutting transformations are setting an "export" action.
         std::find(m_transforms.begin(), m_transforms.end(), "cut") == m_transforms.end() &&
@@ -165,38 +165,10 @@ int CLI::run(int argc, char **argv)
             break;
         }
     if (!start_as_gcodeviewer) {
-        for (const std::string& file : m_input_files) {
-            if (!boost::filesystem::exists(file)) {
-                boost::nowide::cerr << "No such file: " << file << std::endl;
-                exit(1);
-            }
-            Model model;
-            try {
-                // When loading an AMF or 3MF, config is imported as well, including the printer technology.
-                DynamicPrintConfig config;
-                model = Model::read_from_file(file, &config, true);
-                PrinterTechnology other_printer_technology = get_printer_technology(config);
-                if (printer_technology == ptUnknown) {
-                    printer_technology = other_printer_technology;
-                }
-                else if (printer_technology != other_printer_technology && other_printer_technology != ptUnknown) {
-                    boost::nowide::cerr << "Mixing configurations for FFF and SLA technologies" << std::endl;
-                    return 1;
-                }
-                // config is applied to m_print_config before the current m_config values.
-                config += std::move(m_print_config);
-                m_print_config = std::move(config);
-            }
-            catch (std::exception& e) {
-                boost::nowide::cerr << file << ": " << e.what() << std::endl;
-                return 1;
-            }
-            if (model.objects.empty()) {
-                boost::nowide::cerr << "Error: file is empty: " << file << std::endl;
-                continue;
-            }
-            m_models.push_back(model);
-        }
+        if (one_model)
+            combine_input_into_one_model();
+        else 
+            setup_models(printer_technology);
     }
 
     // Apply command line options to a more specific DynamicPrintConfig which provides normalize()
@@ -314,9 +286,14 @@ int CLI::run(int argc, char **argv)
                 // this affects volumes:
                 model.translate(-(bb.min.x() - p.x()), -(bb.min.y() - p.y()), -bb.min.z());
             }
-        } else if (opt_key == "dont_arrange") {
+        }
+        else if (opt_key == "dont_arrange") {
             // do nothing - this option alters other transform options
-        } else if (opt_key == "rotate") {
+        }
+        else if (opt_key == "one_model") {
+            // do nothing - this option alters other transform options
+        }
+        else if (opt_key == "rotate") {
             for (auto &model : m_models)
                 for (auto &o : model.objects)
                     // this affects volumes:
@@ -589,6 +566,96 @@ int CLI::run(int argc, char **argv)
     }
 
     return 0;
+}
+
+void CLI::combine_input_into_one_model()
+{
+    boost::nowide::cerr << "\nCombining STL into one model" << std::endl;
+    Model model;
+    Slic3r::ModelObject* pObject = model.add_object();
+    Slic3r::ModelInstance* pInstance = pObject->add_instance();
+    Slic3r::ModelVolume* pVolume = nullptr;
+
+    int n = 0;
+    for (const std::string& file : m_input_files) {
+        try {
+
+            if (!boost::filesystem::exists(file)) {
+                boost::nowide::cerr << "No such file: " << file << std::endl;
+                continue;
+            }
+            if (boost::algorithm::iends_with(file, ".stl")) {
+                TriangleMesh mesh;
+                if (!mesh.ReadSTLFile(file.c_str())) {
+                    boost::nowide::cerr << "Cannot read STL from the file: " << file << std::endl;
+                    continue;
+                }
+                mesh.repair();
+                if (mesh.facets_count() == 0) {
+                    boost::nowide::cerr << "Empty STL - no facets found in the file: " << file << std::endl;
+                    continue;
+                }
+                std::string vol_name = boost::filesystem::basename(file);
+                pVolume = pObject->add_volume(std::move(mesh));
+                pVolume->name = vol_name;
+                n++;
+                continue;
+            }
+            if (boost::algorithm::iends_with(file, ".ini")) {
+                if (pVolume == nullptr) {
+                    boost::nowide::cerr << "No STL file path to apply the config from the file: " << file << std::endl;
+                    continue;
+                }
+                DynamicPrintConfig config;
+                config.load_from_ini(file);
+                pVolume->config.assign_config(config);
+            }
+        } catch (std::exception& e) {
+            boost::nowide::cerr << file << ": " << e.what() << std::endl;
+            continue;
+        }
+    }
+    if (n > 0) {
+        m_models.push_back(model);
+    } else {
+        boost::nowide::cerr << "Error: no valid input STL files provided to combine into one model." << std::endl;
+    }
+}
+
+void CLI::setup_models(Slic3r::PrinterTechnology& printer_technology)
+{
+    for (const std::string& file : m_input_files) {
+        if (!boost::filesystem::exists(file)) {
+            boost::nowide::cerr << "No such file: " << file << std::endl;
+            exit(1);
+        }
+        Model model;
+        try {
+            // When loading an AMF or 3MF, config is imported as well, including the printer technology.
+            DynamicPrintConfig config;
+            model = Model::read_from_file(file, &config, true);
+            PrinterTechnology other_printer_technology = get_printer_technology(config);
+            if (printer_technology == ptUnknown) {
+                printer_technology = other_printer_technology;
+            }
+            else if (printer_technology != other_printer_technology && other_printer_technology != ptUnknown) {
+                boost::nowide::cerr << "Mixing configurations for FFF and SLA technologies" << std::endl;
+                exit(1);
+            }
+            // config is applied to m_print_config before the current m_config values.
+            config += std::move(m_print_config);
+            m_print_config = std::move(config);
+        }
+        catch (std::exception& e) {
+            boost::nowide::cerr << file << ": " << e.what() << std::endl;
+            exit(1);
+        }
+        if (model.objects.empty()) {
+            boost::nowide::cerr << "Error: file is empty: " << file << std::endl;
+            continue;
+        }
+        m_models.push_back(model);
+    }
 }
 
 bool CLI::setup(int argc, char **argv)

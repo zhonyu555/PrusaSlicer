@@ -21,6 +21,7 @@ class CLI {
 public:
     int run(int argc, char **argv);
 
+
 private:
     DynamicPrintAndCLIConfig    m_config;
     DynamicPrintConfig			m_print_config;
@@ -41,6 +42,10 @@ private:
     bool has_print_action() const { return m_config.opt_bool("export_gcode") || m_config.opt_bool("export_sla"); }
     
     std::string output_filepath(const Model &model, IO::ExportFormat format) const;
+
+    void setup_models(Slic3r::PrinterTechnology& printer_technology);
+    void combine_input_into_one_model();
+
 };
 
 }
