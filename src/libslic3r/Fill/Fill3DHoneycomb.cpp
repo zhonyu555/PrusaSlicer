@@ -88,37 +88,30 @@ static std::vector<coordf_t> colinearPoints(const coordf_t Zpos, coordf_t gridSi
 {
   std::vector<coordf_t> points;
   points.push_back(baseLocation);
-  bool print = true;
-  for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= (gridSize)) {
-    if(print){
-      for(size_t pi = 0; pi < critPoints.size(); pi++){
-	points.push_back(baseLocation + cLoc + critPoints[pi]);
-      }
+  for (coordf_t cLoc = baseLocation; cLoc < gridLength; cLoc+= (gridSize*2)) {
+    for(size_t pi = 0; pi < critPoints.size(); pi++){
+      points.push_back(baseLocation + cLoc + critPoints[pi]);
     }
-    print = !print;
   }
-  points.push_back(baseLocation + gridLength);
+  points.push_back(gridLength);
   return points;
 }
 
 // Generate an array of points for the dimension that is perpendicular to
 // the basic printing line (i.e. X points for columns, Y points for rows)
   static std::vector<coordf_t> perpendPoints(const coordf_t Zpos, coordf_t gridSize, std::vector<coordf_t> critPoints,
-					     const size_t baseLocation, size_t gridLength, coordf_t perpDir)
+					     size_t baseLocation, size_t gridLength,
+                                             size_t offsetBase, coordf_t perpDir)
 {
   std::vector<coordf_t> points;
-  points.push_back(baseLocation);
-  bool print = true;
-  for (coordf_t cLoc = 0; cLoc < gridLength; cLoc+= gridSize) {
-    if(print){
-      for(size_t pi = 0; pi < critPoints.size(); pi++){
-	coordf_t offset = troctWave(critPoints[pi], gridSize, Zpos);
-	points.push_back(baseLocation + (offset * perpDir));
-      }
+  points.push_back(offsetBase);
+  for (coordf_t cLoc = baseLocation; cLoc < gridLength; cLoc+= gridSize*2) {
+    for(size_t pi = 0; pi < critPoints.size(); pi++){
+      coordf_t offset = troctWave(critPoints[pi], gridSize, Zpos);
+      points.push_back(offsetBase + (offset * perpDir));
     }
-    print = !print;
   }
-  points.push_back(baseLocation);
+  points.push_back(offsetBase);
   return points;
 }
 
@@ -146,7 +139,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
       points.push_back(Pointfs());
       Pointfs &newPoints = points.back();
       newPoints = zip(
-		      perpendPoints(Zpos, gridSize, critPoints, x, boundsY, perpDir), 
+		      perpendPoints(Zpos, gridSize, critPoints, 0, boundsY, x, perpDir),
 		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsY));
       if (perpDir == 1)
 	std::reverse(newPoints.begin(), newPoints.end());
@@ -158,7 +151,7 @@ static std::vector<Pointfs> makeActualGrid(coordf_t Zpos, coordf_t gridSize, siz
       Pointfs &newPoints = points.back();
       newPoints = zip(
 		      colinearPoints(Zpos, gridSize, critPoints, 0, boundsX),
-		      perpendPoints(Zpos, gridSize, critPoints, y, boundsX, perpDir));
+		      perpendPoints(Zpos, gridSize, critPoints, 0, boundsX, y, perpDir));
       if (perpDir == -1)
 	std::reverse(newPoints.begin(), newPoints.end());
     }
