@@ -226,6 +226,8 @@ public:
     void    SetLayersTimes(const std::vector<float>& layers_times, float total_time);
     void    SetLayersTimes(const std::vector<double>& layers_times);
 
+    double GetCurrentLayerTime();
+
     void    SetDrawMode(bool is_sla_print, bool is_sequential_print);
     void    SetDrawMode(DrawMode mode) { m_draw_mode = mode; }
 

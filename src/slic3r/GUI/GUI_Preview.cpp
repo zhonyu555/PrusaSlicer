@@ -705,6 +705,10 @@ void Preview::update_layers_slider(const std::vector<double>& layers_z, bool kee
     }
 
     m_layers_slider_sizer->Show((size_t)0);
+
+    m_canvas->set_current_layer(m_layers_slider->GetHigherValue());
+    m_canvas->set_current_layer_time(m_layers_slider->GetCurrentLayerTime());
+
     Layout();
 }
 
@@ -984,6 +988,8 @@ void Preview::on_layers_slider_scroll_changed(wxCommandEvent& event)
         if (tech == ptFFF) {
             m_canvas->set_volumes_z_range({ m_layers_slider->GetLowerValueD(), m_layers_slider->GetHigherValueD() });
             m_canvas->set_toolpaths_z_range({ static_cast<unsigned int>(m_layers_slider->GetLowerValue()), static_cast<unsigned int>(m_layers_slider->GetHigherValue()) });
+            m_canvas->set_current_layer(m_layers_slider->GetHigherValue());
+            m_canvas->set_current_layer_time(m_layers_slider->GetCurrentLayerTime());
             m_canvas->set_as_dirty();
         }
         else if (tech == ptSLA) {
