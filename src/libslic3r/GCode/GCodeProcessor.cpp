@@ -501,7 +501,7 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, co
                             ret += format_line_M73(machine.line_m117_mask.c_str(),
                                 (line == reserved_tag(ETags::First_Line_M73_Placeholder)) ? 0 : 100,
                                 (line == reserved_tag(ETags::First_Line_M73_Placeholder)) ? time_in_minutes(machine.time) : 0);
-                    }
+                        }
 #if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
                         if (m73)
                             ++extra_lines_count;
@@ -514,7 +514,7 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, co
             }
             else if (line == reserved_tag(ETags::Estimated_Printing_Time_Placeholder)) {
 #else
-        if ((export_remaining_time_enabled || print_remaining_time_enabled) 
+        if ((export_remaining_time_enabled || print_remaining_time_enabled)
             && (line == First_Line_M73_Placeholder_Tag || line == Last_Line_M73_Placeholder_Tag)) {
             for (size_t i = 0; i < static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count); ++i) {
                 const TimeMachine& machine = machines[i];
@@ -934,7 +934,6 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
 
     m_time_processor.export_remaining_time_enabled = config.remaining_times.value;
     m_time_processor.print_remaining_time_enabled = config.print_remaining_times.value;
-
     m_use_volumetric_e = config.use_volumetric_e;
 }
 
