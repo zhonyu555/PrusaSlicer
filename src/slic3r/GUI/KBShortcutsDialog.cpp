@@ -155,7 +155,7 @@ void KBShortcutsDialog::fill_shortcuts()
             { ctrl + "M", L("Show/Hide 3Dconnexion devices settings dialog, if enabled") },
 #else
 #ifdef __APPLE__
-            { ctrl + shift + "M", L("Show/Hide 3Dconnexion devices settings dialog") },
+            { ctrl + "Shift+M", L("Show/Hide 3Dconnexion devices settings dialog") },
             { ctrl + "M", L("Minimize application") },
 #else
             { ctrl + "M", L("Show/Hide 3Dconnexion devices settings dialog") },
