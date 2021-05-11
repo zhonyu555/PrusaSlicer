@@ -14,12 +14,12 @@ namespace Slic3r {
     
 void ExtrusionPath::intersect_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const
 {
-    this->_inflate_collection(intersection_pl((Polylines)polyline, to_polygons(collection.expolygons)), retval);
+    this->_inflate_collection(intersection_pl(Polylines{ polyline }, collection.expolygons), retval);
 }
 
 void ExtrusionPath::subtract_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const
 {
-    this->_inflate_collection(diff_pl((Polylines)this->polyline, to_polygons(collection.expolygons)), retval);
+    this->_inflate_collection(diff_pl(Polylines{ this->polyline }, collection.expolygons), retval);
 }
 
 void ExtrusionPath::clip_end(double distance)
@@ -349,7 +349,7 @@ ExtrusionRole ExtrusionEntity::string_to_role(const std::string_view role)
         return erBridgeInfill;
     else if (role == L("Gap fill"))
         return erGapFill;
-    else if (role == L("Skirt/Brim"))
+    else if (role == L("Skirt") || role == L("Skirt/Brim")) // "Skirt" is for backward compatibility with 2.3.1 and earlier
         return erSkirt;
     else if (role == L("Support material"))
         return erSupportMaterial;

@@ -12,6 +12,9 @@
 #include <vector>
 #include <string>
 #include <string_view>
+#if ENABLE_SEAMS_VISUALIZATION
+#include <optional>
+#endif // ENABLE_SEAMS_VISUALIZATION
 
 namespace Slic3r {
 
@@ -20,6 +23,9 @@ namespace Slic3r {
         Noop,
         Retract,
         Unretract,
+#if ENABLE_SEAMS_VISUALIZATION
+        Seam,
+#endif // ENABLE_SEAMS_VISUALIZATION
         Tool_change,
         Color_change,
         Pause_Print,
@@ -30,7 +36,7 @@ namespace Slic3r {
         Count
     };
 
-    struct PrintEstimatedTimeStatistics
+    struct PrintEstimatedStatistics
     {
         enum class ETimeMode : unsigned char
         {
@@ -56,14 +62,21 @@ namespace Slic3r {
             }
         };
 
+        std::vector<double>                                 volumes_per_color_change;
+        std::map<size_t, double>                            volumes_per_extruder;
+        std::map<ExtrusionRole, std::pair<double, double>>  used_filaments_per_role;
+
         std::array<Mode, static_cast<size_t>(ETimeMode::Count)> modes;
 
-        PrintEstimatedTimeStatistics() { reset(); }
+        PrintEstimatedStatistics() { reset(); }
 
         void reset() {
             for (auto m : modes) {
                 m.reset();
             }
+            volumes_per_color_change.clear();
+            volumes_per_extruder.clear();
+            used_filaments_per_role.clear();
         }
     };
 
@@ -313,7 +326,7 @@ namespace Slic3r {
             // Additional load / unload times for a filament exchange sequence.
             std::vector<float> filament_load_times;
             std::vector<float> filament_unload_times;
-            std::array<TimeMachine, static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Count)> machines;
+            std::array<TimeMachine, static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Count)> machines;
 
             void reset();
 
@@ -324,6 +337,30 @@ namespace Slic3r {
 #else
             void post_process(const std::string& filename, const bool m73, const bool m117);
 #endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+        };
+
+        struct UsedFilaments  // filaments per ColorChange
+        {
+            double color_change_cache;
+            std::vector<double> volumes_per_color_change;
+
+            double tool_change_cache;
+            std::map<size_t, double> volumes_per_extruder;
+
+            double role_cache;
+            //       ExtrusionRole : <used_filament_m, used_filament_g>
+            std::map<ExtrusionRole, std::pair<double, double>> filaments_per_role;
+
+            void reset();
+
+            void increase_caches(double extruded_volume);
+
+            void process_color_change_cache();
+            void process_extruder_cache(GCodeProcessor* processor);
+            void process_role_cache(GCodeProcessor* processor);
+            void process_caches(GCodeProcessor* processor);
+
+            friend class GCodeProcessor;
         };
 
     public:
@@ -371,12 +408,11 @@ namespace Slic3r {
             SettingsIds settings_ids;
             size_t extruders_count;
             std::vector<std::string> extruder_colors;
-            PrintEstimatedTimeStatistics time_statistics;
+            PrintEstimatedStatistics print_statistics;
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
             int64_t time{ 0 };
-            void reset()
-            {
+            void reset() {
                 time = 0;
                 moves = std::vector<MoveVertex>();
                 bed_shape = Pointfs();
@@ -385,8 +421,7 @@ namespace Slic3r {
                 settings_ids.reset();
             }
 #else
-            void reset()
-            {
+            void reset() {
                 moves = std::vector<MoveVertex>();
                 bed_shape = Pointfs();
                 extruder_colors = std::vector<std::string>();
@@ -395,6 +430,29 @@ namespace Slic3r {
             }
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
         };
+
+#if ENABLE_SEAMS_VISUALIZATION
+        class SeamsDetector
+        {
+            bool m_active{ false };
+            std::optional<Vec3f> m_first_vertex;
+
+        public:
+            void activate(bool active) {
+                if (m_active != active) {
+                    m_active = active;
+                    if (m_active)
+                        m_first_vertex.reset();
+                }
+            }
+
+            std::optional<Vec3f> get_first_vertex() const { return m_first_vertex; }
+            void set_first_vertex(const Vec3f& vertex) { m_first_vertex = vertex; }
+
+            bool is_active() const { return m_active; }
+            bool has_first_vertex() const { return m_first_vertex.has_value(); }
+        };
+#endif // ENABLE_SEAMS_VISUALIZATION
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
         struct DataChecker
@@ -481,6 +539,9 @@ namespace Slic3r {
 
 #if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         unsigned int m_line_id;
+#if ENABLE_SEAMS_VISUALIZATION
+        unsigned int m_last_line_id;
+#endif // ENABLE_SEAMS_VISUALIZATION
 #endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
         float m_feedrate; // mm/s
         float m_width; // mm
@@ -494,11 +555,19 @@ namespace Slic3r {
         ExtruderColors m_extruder_colors;
         ExtruderTemps m_extruder_temps;
         std::vector<float> m_filament_diameters;
+        std::vector<float> m_filament_densities;
         float m_extruded_last_z;
+#if ENABLE_START_GCODE_VISUALIZATION
+        float m_first_layer_height; // mm
+        bool m_processing_start_custom_gcode;
+#endif // ENABLE_START_GCODE_VISUALIZATION
         unsigned int m_g1_line_id;
         unsigned int m_layer_id;
         CpColor m_cp_color;
         bool m_use_volumetric_e;
+#if ENABLE_SEAMS_VISUALIZATION
+        SeamsDetector m_seams_detector;
+#endif // ENABLE_SEAMS_VISUALIZATION
 
         enum class EProducer
         {
@@ -518,6 +587,7 @@ namespace Slic3r {
         bool m_producers_enabled;
 
         TimeProcessor m_time_processor;
+        UsedFilaments m_used_filaments;
 
         Result m_result;
         static unsigned int s_result_id;
@@ -534,7 +604,7 @@ namespace Slic3r {
         void apply_config(const PrintConfig& config);
         void enable_stealth_time_estimator(bool enabled);
         bool is_stealth_time_estimator_enabled() const {
-            return m_time_processor.machines[static_cast<size_t>(PrintEstimatedTimeStatistics::ETimeMode::Stealth)].enabled;
+            return m_time_processor.machines[static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Stealth)].enabled;
         }
         void enable_machine_envelope_processing(bool enabled) { m_time_processor.machine_envelope_processing_enabled = enabled; }
         void enable_producers(bool enabled) { m_producers_enabled = enabled; }
@@ -547,13 +617,13 @@ namespace Slic3r {
         // throws CanceledException through print->throw_if_canceled() (sent by the caller as callback).
         void process_file(const std::string& filename, bool apply_postprocess, std::function<void()> cancel_callback = nullptr);
 
-        float get_time(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        std::string get_time_dhm(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        std::vector<std::pair<CustomGCode::Type, std::pair<float, float>>> get_custom_gcode_times(PrintEstimatedTimeStatistics::ETimeMode mode, bool include_remaining) const;
+        float get_time(PrintEstimatedStatistics::ETimeMode mode) const;
+        std::string get_time_dhm(PrintEstimatedStatistics::ETimeMode mode) const;
+        std::vector<std::pair<CustomGCode::Type, std::pair<float, float>>> get_custom_gcode_times(PrintEstimatedStatistics::ETimeMode mode, bool include_remaining) const;
 
-        std::vector<std::pair<EMoveType, float>> get_moves_time(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        std::vector<std::pair<ExtrusionRole, float>> get_roles_time(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        std::vector<float> get_layers_time(PrintEstimatedTimeStatistics::ETimeMode mode) const;
+        std::vector<std::pair<EMoveType, float>> get_moves_time(PrintEstimatedStatistics::ETimeMode mode) const;
+        std::vector<std::pair<ExtrusionRole, float>> get_roles_time(PrintEstimatedStatistics::ETimeMode mode) const;
+        std::vector<float> get_layers_time(PrintEstimatedStatistics::ETimeMode mode) const;
 
     private:
         void apply_config(const DynamicPrintConfig& config);
@@ -669,20 +739,21 @@ namespace Slic3r {
 
         void store_move_vertex(EMoveType type);
 
-        float minimum_feedrate(PrintEstimatedTimeStatistics::ETimeMode mode, float feedrate) const;
-        float minimum_travel_feedrate(PrintEstimatedTimeStatistics::ETimeMode mode, float feedrate) const;
-        float get_axis_max_feedrate(PrintEstimatedTimeStatistics::ETimeMode mode, Axis axis) const;
-        float get_axis_max_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, Axis axis) const;
-        float get_axis_max_jerk(PrintEstimatedTimeStatistics::ETimeMode mode, Axis axis) const;
-        float get_retract_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        float get_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        void  set_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, float value);
-        float get_travel_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode) const;
-        void  set_travel_acceleration(PrintEstimatedTimeStatistics::ETimeMode mode, float value);
+        float minimum_feedrate(PrintEstimatedStatistics::ETimeMode mode, float feedrate) const;
+        float minimum_travel_feedrate(PrintEstimatedStatistics::ETimeMode mode, float feedrate) const;
+        float get_axis_max_feedrate(PrintEstimatedStatistics::ETimeMode mode, Axis axis) const;
+        float get_axis_max_acceleration(PrintEstimatedStatistics::ETimeMode mode, Axis axis) const;
+        float get_axis_max_jerk(PrintEstimatedStatistics::ETimeMode mode, Axis axis) const;
+        float get_retract_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;
+        float get_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;
+        void  set_acceleration(PrintEstimatedStatistics::ETimeMode mode, float value);
+        float get_travel_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;
+        void  set_travel_acceleration(PrintEstimatedStatistics::ETimeMode mode, float value);
         float get_filament_load_time(size_t extruder_id);
         float get_filament_unload_time(size_t extruder_id);
 
         void process_custom_gcode_time(CustomGCode::Type code);
+        void process_filaments(CustomGCode::Type code);
 
         // Simulates firmware st_synchronize() call
         void simulate_st_synchronize(float additional_time = 0.0f);
