@@ -21,6 +21,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <wx/progdlg.h>
+#include <wx/numformatter.h>
 
 #include "slic3r/Utils/FixModelByWin10.hpp"
 
@@ -2326,6 +2327,7 @@ void ObjectList::update_info_items(size_t obj_idx)
             should_show = printer_technology() == ptFFF
                        && ! model_object->layer_height_profile.empty();
             break;
+        default: break;
         }
 
         if (! shows && should_show) {
@@ -2508,8 +2510,8 @@ void ObjectList::select_object_item(bool is_msr_gizmo)
 {
     if (wxDataViewItem item = GetSelection()) {
         ItemType type = m_objects_model->GetItemType(item);
-        bool is_volume_item = type == itVolume || type == itSettings && m_objects_model->GetItemType(m_objects_model->GetParent(item)) == itVolume;
-        if (is_msr_gizmo && is_volume_item || type == itObject)
+        bool is_volume_item = type == itVolume || (type == itSettings && m_objects_model->GetItemType(m_objects_model->GetParent(item)) == itVolume);
+        if ((is_msr_gizmo && is_volume_item) || type == itObject)
             return;
 
         if (wxDataViewItem obj_item = m_objects_model->GetTopParent(item)) {

@@ -787,8 +787,6 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     ImGui::PopStyleVar(2);
 }
 
-float GLCanvas3D::Slope::s_window_width;
-
 wxDEFINE_EVENT(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_OBJECT_SELECT, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RIGHT_CLICK, RBtnEvent);
@@ -1358,7 +1356,7 @@ void GLCanvas3D::render()
         if (m_rectangle_selection.is_dragging())
             // picking pass using rectangle selection
             _rectangular_selection_picking_pass();
-        else
+        else if (!m_volumes.empty())
             // regular picking pass
             _picking_pass();
     }
