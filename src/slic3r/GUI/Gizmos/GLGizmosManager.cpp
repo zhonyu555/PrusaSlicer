@@ -635,6 +635,11 @@ bool GLGizmosManager::on_mouse(wxMouseEvent& evt)
                 selection.start_dragging();
                 start_dragging();
 
+#if ENABLE_SEQUENTIAL_LIMITS
+                // Let the plater know that the dragging started
+                m_parent.post_event(SimpleEvent(EVT_GLCANVAS_MOUSE_DRAGGING_STARTED));
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
                 if (m_current == Flatten) {
                     // Rotate the object so the normal points downward:
                     m_parent.do_flatten(get_flattening_normal(), L("Gizmo-Place on Face"));
@@ -774,11 +779,9 @@ bool GLGizmosManager::on_char(wxKeyEvent& evt)
             break;
         }
 
-#ifdef __APPLE__
-        case WXK_BACK: // the low cost Apple solutions are not equipped with a Delete key, use Backspace instead.
-#else /* __APPLE__ */
+
+        case WXK_BACK:
         case WXK_DELETE:
-#endif /* __APPLE__ */
         {
             if ((m_current == SlaSupports || m_current == Hollow) && gizmo_event(SLAGizmoEventType::Delete))
                 processed = true;

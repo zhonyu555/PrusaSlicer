@@ -11,6 +11,8 @@
 
 #include <Eigen/Geometry> 
 
+#include "LocalesUtils.hpp"
+
 namespace Slic3r {
 
 class BoundingBox;
@@ -25,6 +27,7 @@ using Vec2crd = Eigen::Matrix<coord_t,  2, 1, Eigen::DontAlign>;
 using Vec3crd = Eigen::Matrix<coord_t,  3, 1, Eigen::DontAlign>;
 using Vec2i   = Eigen::Matrix<int,      2, 1, Eigen::DontAlign>;
 using Vec3i   = Eigen::Matrix<int,      3, 1, Eigen::DontAlign>;
+using Vec4i   = Eigen::Matrix<int,      4, 1, Eigen::DontAlign>;
 using Vec2i32 = Eigen::Matrix<int32_t,  2, 1, Eigen::DontAlign>;
 using Vec2i64 = Eigen::Matrix<int64_t,  2, 1, Eigen::DontAlign>;
 using Vec3i32 = Eigen::Matrix<int32_t,  3, 1, Eigen::DontAlign>;
@@ -48,11 +51,14 @@ using Matrix2f       = Eigen::Matrix<float,  2, 2, Eigen::DontAlign>;
 using Matrix2d       = Eigen::Matrix<double, 2, 2, Eigen::DontAlign>;
 using Matrix3f       = Eigen::Matrix<float,  3, 3, Eigen::DontAlign>;
 using Matrix3d       = Eigen::Matrix<double, 3, 3, Eigen::DontAlign>;
+using Matrix4f       = Eigen::Matrix<float,  4, 4, Eigen::DontAlign>;
+using Matrix4d       = Eigen::Matrix<double, 4, 4, Eigen::DontAlign>;
 
 using Transform2f    = Eigen::Transform<float,  2, Eigen::Affine, Eigen::DontAlign>;
 using Transform2d    = Eigen::Transform<double, 2, Eigen::Affine, Eigen::DontAlign>;
 using Transform3f    = Eigen::Transform<float,  3, Eigen::Affine, Eigen::DontAlign>;
 using Transform3d    = Eigen::Transform<double, 3, Eigen::Affine, Eigen::DontAlign>;
+
 
 inline bool operator<(const Vec2d &lhs, const Vec2d &rhs) { return lhs(0) < rhs(0) || (lhs(0) == rhs(0) && lhs(1) < rhs(1)); }
 
@@ -88,10 +94,10 @@ inline Vec3d   unscale(coord_t x, coord_t y, coord_t z) { return Vec3d(unscale<d
 inline Vec3d   unscale(const Vec3crd &pt) { return Vec3d(unscale<double>(pt(0)), unscale<double>(pt(1)), unscale<double>(pt(2))); }
 inline Vec3d   unscale(const Vec3d   &pt) { return Vec3d(unscale<double>(pt(0)), unscale<double>(pt(1)), unscale<double>(pt(2))); }
 
-inline std::string to_string(const Vec2crd &pt) { return std::string("[") + std::to_string(pt(0)) + ", " + std::to_string(pt(1)) + "]"; }
-inline std::string to_string(const Vec2d   &pt) { return std::string("[") + std::to_string(pt(0)) + ", " + std::to_string(pt(1)) + "]"; }
-inline std::string to_string(const Vec3crd &pt) { return std::string("[") + std::to_string(pt(0)) + ", " + std::to_string(pt(1)) + ", " + std::to_string(pt(2)) + "]"; }
-inline std::string to_string(const Vec3d   &pt) { return std::string("[") + std::to_string(pt(0)) + ", " + std::to_string(pt(1)) + ", " + std::to_string(pt(2)) + "]"; }
+inline std::string to_string(const Vec2crd &pt) { return std::string("[") + float_to_string_decimal_point(pt(0)) + ", " + float_to_string_decimal_point(pt(1)) + "]"; }
+inline std::string to_string(const Vec2d   &pt) { return std::string("[") + float_to_string_decimal_point(pt(0)) + ", " + float_to_string_decimal_point(pt(1)) + "]"; }
+inline std::string to_string(const Vec3crd &pt) { return std::string("[") + float_to_string_decimal_point(pt(0)) + ", " + float_to_string_decimal_point(pt(1)) + ", " + float_to_string_decimal_point(pt(2)) + "]"; }
+inline std::string to_string(const Vec3d   &pt) { return std::string("[") + float_to_string_decimal_point(pt(0)) + ", " + float_to_string_decimal_point(pt(1)) + ", " + float_to_string_decimal_point(pt(2)) + "]"; }
 
 std::vector<Vec3f> transform(const std::vector<Vec3f>& points, const Transform3f& t);
 Pointf3s transform(const Pointf3s& points, const Transform3d& t);

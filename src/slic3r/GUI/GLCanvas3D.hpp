@@ -120,6 +120,9 @@ wxDECLARE_EVENT(EVT_GLCANVAS_INSTANCE_SCALED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_WIPETOWER_ROTATED, Vec3dEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, Event<bool>);
 wxDECLARE_EVENT(EVT_GLCANVAS_UPDATE_GEOMETRY, Vec3dsEvent<2>);
+#if ENABLE_SEQUENTIAL_LIMITS
+wxDECLARE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_STARTED, SimpleEvent);
+#endif // ENABLE_SEQUENTIAL_LIMITS
 wxDECLARE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_UPDATE_BED_SHAPE, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_TAB, SimpleEvent);
@@ -496,6 +499,29 @@ private:
 
     void load_arrange_settings();
 
+#if ENABLE_SEQUENTIAL_LIMITS
+    class SequentialPrintClearance
+    {
+        GLModel m_fill;
+        GLModel m_perimeter;
+        bool m_render_fill{ true };
+        bool m_visible{ false };
+
+        std::vector<Pointf3s> m_hull_2d_cache;
+
+    public:
+        void set_polygons(const Polygons& polygons);
+        void set_render_fill(bool render_fill) { m_render_fill = render_fill; }
+        void set_visible(bool visible) { m_visible = visible; }
+        void render() const;
+
+        friend class GLCanvas3D;
+    };
+
+    SequentialPrintClearance m_sequential_print_clearance;
+    bool m_sequential_print_clearance_first_displacement{ true };
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
 public:
     explicit GLCanvas3D(wxGLCanvas* canvas);
     ~GLCanvas3D();
@@ -737,6 +763,31 @@ public:
 #endif
     }
 
+#if ENABLE_SEQUENTIAL_LIMITS
+    void reset_sequential_print_clearance() {
+        m_sequential_print_clearance.set_visible(false);
+        m_sequential_print_clearance.set_render_fill(false);
+        m_sequential_print_clearance.set_polygons(Polygons());
+    }
+
+    void set_sequential_print_clearance_visible(bool visible) {
+        m_sequential_print_clearance.set_visible(visible);
+    }
+
+    void set_sequential_print_clearance_render_fill(bool render_fill) {
+        m_sequential_print_clearance.set_render_fill(render_fill);
+    }
+
+    void set_sequential_print_clearance_polygons(const Polygons& polygons) {
+        m_sequential_print_clearance.set_polygons(polygons);
+    }
+
+    void update_sequential_clearance();
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
+    const Print* fff_print() const;
+    const SLAPrint* sla_print() const;
+
 #if ENABLE_SCROLLABLE_LEGEND
     void reset_old_size() { m_old_size = { 0, 0 }; }
 #endif // ENABLE_SCROLLABLE_LEGEND
@@ -767,6 +818,9 @@ private:
     void _render_objects() const;
     void _render_gcode() const;
     void _render_selection() const;
+#if ENABLE_SEQUENTIAL_LIMITS
+    void _render_sequential_clearance() const;
+#endif // ENABLE_SEQUENTIAL_LIMITS
 #if ENABLE_RENDER_SELECTION_CENTER
     void _render_selection_center() const;
 #endif // ENABLE_RENDER_SELECTION_CENTER
@@ -843,10 +897,6 @@ private:
     float get_overlay_window_width() { return LayersEditing::get_overlay_window_width(); }
 
     static std::vector<float> _parse_colors(const std::vector<std::string>& colors);
-
-public:
-    const Print* fff_print() const;
-    const SLAPrint* sla_print() const;
 };
 
 } // namespace GUI

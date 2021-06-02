@@ -1,6 +1,8 @@
 #include "libslic3r/libslic3r.h"
 #include "GLCanvas3D.hpp"
 
+#include <igl/unproject.h>
+
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/GCode/ThumbnailData.hpp"
@@ -787,6 +789,95 @@ void GLCanvas3D::Tooltip::render(const Vec2d& mouse_position, GLCanvas3D& canvas
     ImGui::PopStyleVar(2);
 }
 
+#if ENABLE_SEQUENTIAL_LIMITS
+void GLCanvas3D::SequentialPrintClearance::set_polygons(const Polygons& polygons)
+{
+    m_perimeter.reset();
+    m_fill.reset();
+    if (polygons.empty())
+        return;
+
+    size_t triangles_count = 0;
+    for (const Polygon& poly : polygons) {
+        triangles_count += poly.points.size() - 2;
+    }
+    size_t vertices_count = 3 * triangles_count;
+
+    if (m_render_fill) {
+        GLModel::InitializationData fill_data;
+        GLModel::InitializationData::Entity entity;
+        entity.type = GLModel::PrimitiveType::Triangles;
+        entity.color = { 0.3333f, 0.0f, 0.0f, 0.5f };
+        entity.positions.reserve(vertices_count);
+        entity.normals.reserve(vertices_count);
+        entity.indices.reserve(vertices_count);
+
+        ExPolygons polygons_union = union_ex(polygons);
+        for (const ExPolygon& poly : polygons_union) {
+            std::vector<Vec3d> triangulation = triangulate_expolygon_3d(poly, false);
+            for (const Vec3d& v : triangulation) {
+                entity.positions.emplace_back(v.cast<float>() + Vec3f(0.0f, 0.0f, 0.0125f)); // add a small positive z to avoid z-fighting
+                entity.normals.emplace_back(Vec3f::UnitZ());
+                size_t positions_count = entity.positions.size();
+                if (positions_count % 3 == 0) {
+                    entity.indices.emplace_back(positions_count - 3);
+                    entity.indices.emplace_back(positions_count - 2);
+                    entity.indices.emplace_back(positions_count - 1);
+                }
+            }
+        }
+
+        fill_data.entities.emplace_back(entity);
+        m_fill.init_from(fill_data);
+    }
+
+    GLModel::InitializationData perimeter_data;
+    for (const Polygon& poly : polygons) {
+        GLModel::InitializationData::Entity ent;
+        ent.type = GLModel::PrimitiveType::LineLoop;
+        ent.positions.reserve(poly.points.size());
+        ent.indices.reserve(poly.points.size());
+        unsigned int id_count = 0;
+        for (const Point& p : poly.points) {
+            ent.positions.emplace_back(unscale<float>(p.x()), unscale<float>(p.y()), 0.025f); // add a small positive z to avoid z-fighting
+            ent.normals.emplace_back(Vec3f::UnitZ());
+            ent.indices.emplace_back(id_count++);
+        }
+
+        perimeter_data.entities.emplace_back(ent);
+    }
+
+    m_perimeter.init_from(perimeter_data);
+}
+
+void GLCanvas3D::SequentialPrintClearance::render() const
+{
+    std::array<float, 4> FILL_COLOR = { 1.0f, 0.0f, 0.0f, 0.5f };
+    std::array<float, 4> NO_FILL_COLOR = { 1.0f, 1.0f, 1.0f, 0.75f };
+
+    GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
+    if (shader == nullptr)
+        return;
+
+    shader->start_using();
+
+    glsafe(::glEnable(GL_DEPTH_TEST));
+    glsafe(::glDisable(GL_CULL_FACE));
+    glsafe(::glEnable(GL_BLEND));
+    glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+
+    const_cast<GLModel*>(&m_perimeter)->set_color(-1, m_render_fill ? FILL_COLOR : NO_FILL_COLOR);
+    m_perimeter.render();
+    m_fill.render();
+
+    glsafe(::glDisable(GL_BLEND));
+    glsafe(::glEnable(GL_CULL_FACE));
+    glsafe(::glDisable(GL_DEPTH_TEST));
+
+    shader->stop_using();
+}
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
 wxDEFINE_EVENT(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_OBJECT_SELECT, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RIGHT_CLICK, RBtnEvent);
@@ -803,6 +894,9 @@ wxDEFINE_EVENT(EVT_GLCANVAS_WIPETOWER_MOVED, Vec3dEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_WIPETOWER_ROTATED, Vec3dEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, Event<bool>);
 wxDEFINE_EVENT(EVT_GLCANVAS_UPDATE_GEOMETRY, Vec3dsEvent<2>);
+#if ENABLE_SEQUENTIAL_LIMITS
+wxDEFINE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_STARTED, SimpleEvent);
+#endif // ENABLE_SEQUENTIAL_LIMITS
 wxDEFINE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_UPDATE_BED_SHAPE, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_TAB, SimpleEvent);
@@ -1374,7 +1468,9 @@ void GLCanvas3D::render()
     _render_sla_slices();
     _render_selection();
     _render_bed(!camera.is_looking_downward(), true);
-
+#if ENABLE_SEQUENTIAL_LIMITS
+    _render_sequential_clearance();
+#endif // ENABLE_SEQUENTIAL_LIMITS
 #if ENABLE_RENDER_SELECTION_CENTER
     _render_selection_center();
 #endif // ENABLE_RENDER_SELECTION_CENTER
@@ -1614,6 +1710,8 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
         return;
     
     _set_current();
+
+    m_hover_volume_idxs.clear();
 
     struct ModelVolumeState {
         ModelVolumeState(const GLVolume* volume) :
@@ -1913,7 +2011,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
         bool wt = dynamic_cast<const ConfigOptionBool*>(m_config->option("wipe_tower"))->value;
         bool co = dynamic_cast<const ConfigOptionBool*>(m_config->option("complete_objects"))->value;
 
-        if ((extruders_count > 1) && wt && !co) {
+        if (extruders_count > 1 && wt && !co) {
             // Height of a print (Show at least a slab)
             double height = std::max(m_model->bounding_box().max(2), 10.0);
 
@@ -2860,6 +2958,23 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
 
         m_mouse.set_start_position_3D_as_invalid();
         m_mouse.position = pos.cast<double>();
+
+#if ENABLE_SEQUENTIAL_LIMITS
+        if (evt.Dragging() && current_printer_technology() == ptFFF && fff_print()->config().complete_objects) {
+            switch (m_gizmos.get_current_type())
+            {
+            case GLGizmosManager::EType::Move:
+            case GLGizmosManager::EType::Scale:
+            case GLGizmosManager::EType::Rotate:
+            {
+                update_sequential_clearance();
+                break;
+            }
+            default: { break; }
+            }
+        }
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
         return;
     }
 
@@ -2981,6 +3096,9 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                         m_mouse.drag.move_volume_idx = volume_idx;
                         m_selection.start_dragging();
                         m_mouse.drag.start_position_3D = m_mouse.scene_position;
+#if ENABLE_SEQUENTIAL_LIMITS
+                        m_sequential_print_clearance_first_displacement = true;
+#endif // ENABLE_SEQUENTIAL_LIMITS
                         m_moving = true;
                     }
                 }
@@ -3026,6 +3144,10 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             }
 
             m_selection.translate(cur_pos - m_mouse.drag.start_position_3D);
+#if ENABLE_SEQUENTIAL_LIMITS
+            if (current_printer_technology() == ptFFF && fff_print()->config().complete_objects)
+                update_sequential_clearance();
+#endif // ENABLE_SEQUENTIAL_LIMITS
             wxGetApp().obj_manipul()->set_dirty();
             m_dirty = true;
         }
@@ -3058,7 +3180,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                     // See GH issue #3816.
                     Camera& camera = wxGetApp().plater()->get_camera();
                     camera.recover_from_free_camera();
-                    camera.rotate_on_sphere(rot.x(), rot.y(), wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() != ptSLA);
+                    camera.rotate_on_sphere(rot.x(), rot.y(), current_printer_technology() != ptSLA);
                 }
 
                 m_dirty = true;
@@ -3275,15 +3397,15 @@ void GLCanvas3D::do_move(const std::string& snapshot_type)
     for (const std::pair<int, int>& i : done) {
         ModelObject* m = m_model->objects[i.first];
 #if ENABLE_ALLOW_NEGATIVE_Z
-        double shift_z = m->get_instance_min_z(i.second);
+        const double shift_z = m->get_instance_min_z(i.second);
 #if DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
         if (current_printer_technology() == ptSLA || shift_z > 0.0) {
 #else
         if (shift_z > 0.0) {
 #endif // DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
-            Vec3d shift(0.0, 0.0, -shift_z);
+            const Vec3d shift(0.0, 0.0, -shift_z);
 #else
-        Vec3d shift(0.0, 0.0, -m->get_instance_min_z(i.second));
+        const Vec3d shift(0.0, 0.0, -m->get_instance_min_z(i.second));
 #endif // ENABLE_ALLOW_NEGATIVE_Z
         m_selection.translate(i.first, i.second, shift);
         m->translate_instance(i.second, shift);
@@ -3304,6 +3426,10 @@ void GLCanvas3D::do_move(const std::string& snapshot_type)
 
     if (wipe_tower_origin != Vec3d::Zero())
         post_event(Vec3dEvent(EVT_GLCANVAS_WIPETOWER_MOVED, std::move(wipe_tower_origin)));
+
+#if ENABLE_SEQUENTIAL_LIMITS
+    reset_sequential_print_clearance();
+#endif // ENABLE_SEQUENTIAL_LIMITS
 
     m_dirty = true;
 }
@@ -3651,6 +3777,98 @@ void GLCanvas3D::mouse_up_cleanup()
         m_canvas->ReleaseMouse();
 }
 
+#if ENABLE_SEQUENTIAL_LIMITS
+void GLCanvas3D::update_sequential_clearance()
+{
+    if (current_printer_technology() != ptFFF || !fff_print()->config().complete_objects)
+        return;
+
+    if (m_layers_editing.is_enabled() || m_gizmos.is_dragging())
+        return;
+
+    // collects instance transformations from volumes
+    // first define temporary cache
+    unsigned int instances_count = 0;
+    std::vector<std::vector<std::optional<Geometry::Transformation>>> instance_transforms;
+    for (size_t obj = 0; obj < m_model->objects.size(); ++obj) {
+        instance_transforms.emplace_back(std::vector<std::optional<Geometry::Transformation>>());
+        const ModelObject* model_object = m_model->objects[obj];
+        for (size_t i = 0; i < model_object->instances.size(); ++i) {
+            instance_transforms[obj].emplace_back(std::optional<Geometry::Transformation>());
+            ++instances_count;
+        }
+    }
+
+    if (instances_count == 1)
+        return;
+
+    // second fill temporary cache with data from volumes
+    for (const GLVolume* v : m_volumes.volumes) {
+        if (v->is_modifier || v->is_wipe_tower)
+            continue;
+
+        auto& transform = instance_transforms[v->object_idx()][v->instance_idx()];
+        if (!transform.has_value())
+            transform = v->get_instance_transformation();
+    }
+
+    // calculates objects 2d hulls (see also: Print::sequential_print_horizontal_clearance_valid())
+    // this is done only the first time this method is called while moving the mouse,
+    // the results are then cached for following displacements
+    if (m_sequential_print_clearance_first_displacement) {
+        m_sequential_print_clearance.m_hull_2d_cache.clear();
+        float shrink_factor = static_cast<float>(scale_(0.5 * fff_print()->config().extruder_clearance_radius.value - EPSILON));
+        double mitter_limit = scale_(0.1);
+        m_sequential_print_clearance.m_hull_2d_cache.reserve(m_model->objects.size());
+        for (size_t i = 0; i < m_model->objects.size(); ++i) {
+            ModelObject* model_object = m_model->objects[i];
+            ModelInstance* model_instance0 = model_object->instances.front();
+            Polygon hull_2d = offset(model_object->convex_hull_2d(Geometry::assemble_transform({ 0.0, 0.0, model_instance0->get_offset().z() }, model_instance0->get_rotation(),
+                model_instance0->get_scaling_factor(), model_instance0->get_mirror())),
+                // Shrink the extruder_clearance_radius a tiny bit, so that if the object arrangement algorithm placed the objects
+                // exactly by satisfying the extruder_clearance_radius, this test will not trigger collision.
+                shrink_factor,
+                jtRound, mitter_limit).front();
+
+            Pointf3s& cache_hull_2d = m_sequential_print_clearance.m_hull_2d_cache.emplace_back(Pointf3s());
+            cache_hull_2d.reserve(hull_2d.points.size());
+            for (const Point& p : hull_2d.points) {
+                cache_hull_2d.emplace_back(unscale<double>(p.x()), unscale<double>(p.y()), 0.0);
+            }
+        }
+        m_sequential_print_clearance_first_displacement = false;
+    }
+
+    // calculates instances 2d hulls (see also: Print::sequential_print_horizontal_clearance_valid())
+    Polygons polygons;
+    polygons.reserve(instances_count);
+    for (size_t i = 0; i < instance_transforms.size(); ++i) {
+        const auto& instances = instance_transforms[i];
+        double rotation_z0 = instances.front()->get_rotation().z();
+        for (const auto& instance : instances) {
+            Geometry::Transformation transformation;
+            const Vec3d& offset = instance->get_offset();
+            transformation.set_offset({ offset.x(), offset.y(), 0.0 });
+            transformation.set_rotation(Z, instance->get_rotation().z() - rotation_z0);
+            const Transform3d& trafo = transformation.get_matrix();
+            const Pointf3s& hull_2d = m_sequential_print_clearance.m_hull_2d_cache[i];
+            Points inst_pts;
+            inst_pts.reserve(hull_2d.size());
+            for (size_t j = 0; j < hull_2d.size(); ++j) {
+                const Vec3d p = trafo * hull_2d[j];
+                inst_pts.emplace_back(scaled<double>(p.x()), scaled<double>(p.y()));
+            }
+            polygons.emplace_back(Geometry::convex_hull(std::move(inst_pts)));
+        }
+    }
+
+    // sends instances 2d hulls to be rendered
+    set_sequential_print_clearance_visible(true);
+    set_sequential_print_clearance_render_fill(false);
+    set_sequential_print_clearance_polygons(polygons);
+}
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
 bool GLCanvas3D::_is_shown_on_screen() const
 {
     return (m_canvas != nullptr) ? m_canvas->IsShownOnScreen() : false;
@@ -3800,7 +4018,7 @@ bool GLCanvas3D::_render_arrange_menu(float pos_x)
     if (imgui->slider_float(_L("Spacing"), &settings.distance, dist_min, 100.0f, "%5.2f") || dist_min > settings.distance) {
         settings.distance = std::max(dist_min, settings.distance);
         settings_out.distance = settings.distance;
-        appcfg->set("arrange", dist_key.c_str(), std::to_string(settings_out.distance));
+        appcfg->set("arrange", dist_key.c_str(), float_to_string_decimal_point(settings_out.distance));
         settings_changed = true;
     }
 
@@ -3815,7 +4033,7 @@ bool GLCanvas3D::_render_arrange_menu(float pos_x)
     if (imgui->button(_L("Reset"))) {
         settings_out = ArrangeSettings{};
         settings_out.distance = std::max(dist_min, settings_out.distance);
-        appcfg->set("arrange", dist_key.c_str(), std::to_string(settings_out.distance));
+        appcfg->set("arrange", dist_key.c_str(), float_to_string_decimal_point(settings_out.distance));
         appcfg->set("arrange", rot_key.c_str(), settings_out.enable_rotation? "1" : "0");
         settings_changed = true;
     }
@@ -3914,7 +4132,7 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, bool 
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     shader->start_using();
-    shader->set_uniform("print_box.volume_detection", 0);
+    shader->set_uniform("emission_factor", 0.0);
 
     for (GLVolume* vol : visible_volumes) {
         shader->set_uniform("uniform_color", (vol->printable && !vol->is_outside) ? orange : gray);
@@ -4752,7 +4970,7 @@ void GLCanvas3D::_render_background() const
     bool use_error_color = false;
     if (wxGetApp().is_editor()) {
         use_error_color = m_dynamic_background_enabled &&
-            (wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() != ptSLA || !m_volumes.empty());
+        (current_printer_technology() != ptSLA || !m_volumes.empty());
 
         if (!m_volumes.empty())
             use_error_color &= _is_any_volume_outside();
@@ -4897,6 +5115,27 @@ void GLCanvas3D::_render_selection() const
     if (!m_gizmos.is_running())
         m_selection.render(scale_factor);
 }
+
+#if ENABLE_SEQUENTIAL_LIMITS
+void GLCanvas3D::_render_sequential_clearance() const
+{
+    if (m_layers_editing.is_enabled() || m_gizmos.is_dragging())
+        return;
+
+    switch (m_gizmos.get_current_type())
+    {
+    case GLGizmosManager::EType::Flatten:
+    case GLGizmosManager::EType::Cut:
+    case GLGizmosManager::EType::Hollow:
+    case GLGizmosManager::EType::SlaSupports:
+    case GLGizmosManager::EType::FdmSupports:
+    case GLGizmosManager::EType::Seam: { return; }
+    default: { break; }
+    }
+ 
+    m_sequential_print_clearance.render();
+}
+#endif // ENABLE_SEQUENTIAL_LIMITS
 
 #if ENABLE_RENDER_SELECTION_CENTER
 void GLCanvas3D::_render_selection_center() const
@@ -5163,7 +5402,7 @@ void GLCanvas3D::_render_camera_target() const
 
 void GLCanvas3D::_render_sla_slices() const
 {
-    if (!m_use_clipping_planes || wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() != ptSLA)
+    if (!m_use_clipping_planes || current_printer_technology() != ptSLA)
         return;
 
     const SLAPrint* print = this->sla_print();
@@ -5389,9 +5628,9 @@ Vec3d GLCanvas3D::_mouse_to_3d(const Point& mouse_pos, float* z)
         return Vec3d(DBL_MAX, DBL_MAX, DBL_MAX);
 
     const Camera& camera = wxGetApp().plater()->get_camera();
-    const std::array<int, 4>& viewport = camera.get_viewport();
-    const Transform3d& modelview_matrix = camera.get_view_matrix();
-    const Transform3d& projection_matrix = camera.get_projection_matrix();
+    Matrix4d modelview = camera.get_view_matrix().matrix();
+    Matrix4d projection= camera.get_projection_matrix().matrix();
+    Vec4i viewport(camera.get_viewport().data());
 
     GLint y = viewport[3] - (GLint)mouse_pos(1);
     GLfloat mouse_z;
@@ -5400,9 +5639,9 @@ Vec3d GLCanvas3D::_mouse_to_3d(const Point& mouse_pos, float* z)
     else
         mouse_z = *z;
 
-    GLdouble out_x, out_y, out_z;
-    ::gluUnProject((GLdouble)mouse_pos(0), (GLdouble)y, (GLdouble)mouse_z, (GLdouble*)modelview_matrix.data(), (GLdouble*)projection_matrix.data(), (GLint*)viewport.data(), &out_x, &out_y, &out_z);
-    return Vec3d((double)out_x, (double)out_y, (double)out_z);
+    Vec3d out;
+    igl::unproject(Vec3d(mouse_pos(0), y, mouse_z), modelview, projection, viewport, out);
+    return out;
 }
 
 Vec3d GLCanvas3D::_mouse_to_bed_3d(const Point& mouse_pos)

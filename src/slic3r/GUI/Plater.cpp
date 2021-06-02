@@ -1702,6 +1702,9 @@ struct Plater::priv
     void on_wipetower_moved(Vec3dEvent&);
     void on_wipetower_rotated(Vec3dEvent&);
     void on_update_geometry(Vec3dsEvent<2>&);
+#if ENABLE_SEQUENTIAL_LIMITS
+    void on_3dcanvas_mouse_dragging_started(SimpleEvent&);
+#endif // ENABLE_SEQUENTIAL_LIMITS
     void on_3dcanvas_mouse_dragging_finished(SimpleEvent&);
 
     void show_action_buttons(const bool is_ready_to_slice) const;
@@ -1878,6 +1881,9 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         view3D_canvas->Bind(EVT_GLCANVAS_INSTANCE_SCALED, [this](SimpleEvent&) { update(); });
         view3D_canvas->Bind(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, [this](Event<bool>& evt) { this->sidebar->enable_buttons(evt.data); });
         view3D_canvas->Bind(EVT_GLCANVAS_UPDATE_GEOMETRY, &priv::on_update_geometry, this);
+#if ENABLE_SEQUENTIAL_LIMITS
+        view3D_canvas->Bind(EVT_GLCANVAS_MOUSE_DRAGGING_STARTED, &priv::on_3dcanvas_mouse_dragging_started, this);
+#endif // ENABLE_SEQUENTIAL_LIMITS
         view3D_canvas->Bind(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED, &priv::on_3dcanvas_mouse_dragging_finished, this);
         view3D_canvas->Bind(EVT_GLCANVAS_TAB, [this](SimpleEvent&) { select_next_view_3D(); });
         view3D_canvas->Bind(EVT_GLCANVAS_RESETGIZMOS, [this](SimpleEvent&) { reset_all_gizmos(); });
@@ -2730,6 +2736,10 @@ void Plater::priv::reset()
     reset_gcode_toolpaths();
     gcode_result.reset();
 
+#if ENABLE_SEQUENTIAL_LIMITS
+    view3D->get_canvas3d()->reset_sequential_print_clearance();
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
     // Stop and reset the Print content.
     this->background_process.reset();
     model.clear_objects();
@@ -2894,12 +2904,12 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
 
     // If the update_background_process() was not called by the timer, kill the timer,
     // so the update_restart_background_process() will not be called again in vain.
-    this->background_process_timer.Stop();
+    background_process_timer.Stop();
     // Update the "out of print bed" state of ModelInstances.
-    this->update_print_volume_state();
+    update_print_volume_state();
     // Apply new config to the possibly running background task.
-    bool               was_running = this->background_process.running();
-    Print::ApplyStatus invalidated = this->background_process.apply(this->q->model(), wxGetApp().preset_bundle->full_config());
+    bool               was_running = background_process.running();
+    Print::ApplyStatus invalidated = background_process.apply(q->model(), wxGetApp().preset_bundle->full_config());
 
     // Just redraw the 3D canvas without reloading the scene to consume the update of the layer height profile.
     if (view3D->is_layers_editing_enabled())
@@ -2908,40 +2918,58 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
     if (invalidated == Print::APPLY_STATUS_INVALIDATED) {
         // Some previously calculated data on the Print was invalidated.
         // Hide the slicing results, as the current slicing status is no more valid.
-        this->sidebar->show_sliced_info_sizer(false);
+        sidebar->show_sliced_info_sizer(false);
         // Reset preview canvases. If the print has been invalidated, the preview canvases will be cleared.
         // Otherwise they will be just refreshed.
-        if (this->preview != nullptr) {
+        if (preview != nullptr) {
             // If the preview is not visible, the following line just invalidates the preview,
             // but the G-code paths or SLA preview are calculated first once the preview is made visible.
             reset_gcode_toolpaths();
-            this->preview->reload_print();
+            preview->reload_print();
         }
         // In FDM mode, we need to reload the 3D scene because of the wipe tower preview box.
         // In SLA mode, we need to reload the 3D scene every time to show the support structures.
-        if (this->printer_technology == ptSLA || (this->printer_technology == ptFFF && this->config->opt_bool("wipe_tower")))
+        if (printer_technology == ptSLA || (printer_technology == ptFFF && config->opt_bool("wipe_tower")))
             return_state |= UPDATE_BACKGROUND_PROCESS_REFRESH_SCENE;
     }
 
-    if ((invalidated != Print::APPLY_STATUS_UNCHANGED || force_validation) && ! this->background_process.empty()) {
+    if ((invalidated != Print::APPLY_STATUS_UNCHANGED || force_validation) && ! background_process.empty()) {
 		// The delayed error message is no more valid.
-		this->delayed_error_message.clear();
+		delayed_error_message.clear();
 		// The state of the Print changed, and it is non-zero. Let's validate it and give the user feedback on errors.
         std::string warning;
-        std::string err = this->background_process.validate(&warning);
+        std::string err = background_process.validate(&warning);
         if (err.empty()) {
 			notification_manager->set_all_slicing_errors_gray(true);
-            if (invalidated != Print::APPLY_STATUS_UNCHANGED && this->background_processing_enabled())
+            if (invalidated != Print::APPLY_STATUS_UNCHANGED && background_processing_enabled())
                 return_state |= UPDATE_BACKGROUND_PROCESS_RESTART;
 
             // Pass a warning from validation and either show a notification,
             // or hide the old one.
             process_validation_warning(warning);
+#if ENABLE_SEQUENTIAL_LIMITS
+            if (printer_technology == ptFFF) {
+                view3D->get_canvas3d()->reset_sequential_print_clearance();
+                view3D->get_canvas3d()->set_as_dirty();
+                view3D->get_canvas3d()->request_extra_frame();
+            }
+#endif // ENABLE_SEQUENTIAL_LIMITS
         } else {
 			// The print is not valid.
 			// Show error as notification.
             notification_manager->push_slicing_error_notification(err);
             return_state |= UPDATE_BACKGROUND_PROCESS_INVALID;
+#if ENABLE_SEQUENTIAL_LIMITS
+            if (printer_technology == ptFFF) {
+                const Print* print = background_process.fff_print();
+                Polygons polygons;
+                if (print->config().complete_objects)
+                    Print::sequential_print_horizontal_clearance_valid(*print, &polygons);
+                view3D->get_canvas3d()->set_sequential_print_clearance_visible(true);
+                view3D->get_canvas3d()->set_sequential_print_clearance_render_fill(true);
+                view3D->get_canvas3d()->set_sequential_print_clearance_polygons(polygons);
+            }
+#endif // ENABLE_SEQUENTIAL_LIMITS
         }
 
     } else if (! this->delayed_error_message.empty()) {
@@ -3077,8 +3105,7 @@ void Plater::priv::update_fff_scene()
     if (this->preview != nullptr)
         this->preview->reload_print();
     // In case this was MM print, wipe tower bounding box on 3D tab might need redrawing with exact depth:
-    view3D->reload_scene(true);
-	
+    view3D->reload_scene(true);	
 }
 
 void Plater::priv::update_sla_scene()
@@ -3845,13 +3872,20 @@ void Plater::priv::on_update_geometry(Vec3dsEvent<2>&)
     // TODO
 }
 
+#if ENABLE_SEQUENTIAL_LIMITS
+void Plater::priv::on_3dcanvas_mouse_dragging_started(SimpleEvent&)
+{
+    view3D->get_canvas3d()->reset_sequential_print_clearance();
+}
+#endif // ENABLE_SEQUENTIAL_LIMITS
+
 // Update the scene from the background processing,
 // if the update message was received during mouse manipulation.
 void Plater::priv::on_3dcanvas_mouse_dragging_finished(SimpleEvent&)
 {
-    if (this->delayed_scene_refresh) {
-        this->delayed_scene_refresh = false;
-        this->update_sla_scene();
+    if (delayed_scene_refresh) {
+        delayed_scene_refresh = false;
+        update_sla_scene();
     }
 }
 
@@ -5352,8 +5386,7 @@ bool Plater::export_3mf(const boost::filesystem::path& output_path)
 void Plater::export_3mf(const boost::filesystem::path& output_path)
 #endif // ENABLE_PROJECT_DIRTY_STATE
 {
-    if (p->model.objects.empty()
-     || canvas3D()->get_gizmos_manager().is_in_editing_mode(true))
+    if (p->model.objects.empty())
 #if ENABLE_PROJECT_DIRTY_STATE
         return false;
 #else
