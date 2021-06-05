@@ -1561,7 +1561,7 @@ msgstr "Kompatible Druckerbedingung"
 
 #: src/libslic3r/PrintConfig.cpp:338
 msgid "Complete individual objects"
-msgstr "Kompatible Einzelobjekte"
+msgstr "Objekte nacheinander drucken"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:234
 msgid "Completed"
