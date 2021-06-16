@@ -43,14 +43,19 @@ public:
                                     int          facet_start,       // facet of the original mesh (unsplit) that the hit point belongs to
                                     float        seed_fill_angle);  // the maximal angle between two facets to be painted by the same color
 
-    // Get facets currently in the given state.
+    bool                 has_facets(EnforcerBlockerType state) const;
+    static bool          has_facets(const std::pair<std::vector<std::pair<int, int>>, std::vector<bool>> &data, const EnforcerBlockerType test_state);
+    int                  num_facets(EnforcerBlockerType state) const;
+    // Get facets at a given state. Don't triangulate T-joints.
     indexed_triangle_set get_facets(EnforcerBlockerType state) const;
+    // Get facets at a given state. Triangulate T-joints.
+    indexed_triangle_set get_facets_strict(EnforcerBlockerType state) const;
 
     // Set facet of the mesh to a given state. Only works for original triangles.
     void set_facet(int facet_idx, EnforcerBlockerType state);
 
     // Clear everything and make the tree empty.
-    void reset(const EnforcerBlockerType reset_state = EnforcerBlockerType{0});
+    void reset();
 
     // Remove all unnecessary data.
     void garbage_collect();
@@ -60,7 +65,7 @@ public:
     std::pair<std::vector<std::pair<int, int>>, std::vector<bool>> serialize() const;
 
     // Load serialized data. Assumes that correct mesh is loaded.
-    void deserialize(const std::pair<std::vector<std::pair<int, int>>, std::vector<bool>> &data, const EnforcerBlockerType init_state = EnforcerBlockerType{0});
+    void deserialize(const std::pair<std::vector<std::pair<int, int>>, std::vector<bool>> &data);
 
     // For all triangles, remove the flag indicating that the triangle was selected by seed fill.
     void seed_fill_unselect_all_triangles();
@@ -203,6 +208,13 @@ private:
     bool verify_triangle_neighbors(const Triangle& tr, const Vec3i& neighbors) const;
     bool verify_triangle_midpoints(const Triangle& tr) const;
 #endif // _NDEBUG
+
+    void get_facets_strict_recursive(
+        const Triangle                              &tr,
+        const Vec3i                                 &neighbors,
+        EnforcerBlockerType                          state,
+        std::vector<stl_triangle_vertex_indices>    &out_triangles) const;
+    void get_facets_split_by_tjoints(const Vec3i vertices, const Vec3i neighbors, std::vector<stl_triangle_vertex_indices> &out_triangles) const;
 
     int m_free_triangles_head { -1 };
     int m_free_vertices_head { -1 };
