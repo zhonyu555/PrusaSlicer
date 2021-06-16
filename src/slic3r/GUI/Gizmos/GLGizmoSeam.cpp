@@ -12,9 +12,7 @@
 #include <GL/glew.h>
 
 
-namespace Slic3r {
-
-namespace GUI {
+namespace Slic3r::GUI {
 
 
 
@@ -88,10 +86,10 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
     const float button_width = m_imgui->calc_text_size(m_desc.at("remove_all")).x + m_imgui->scaled(1.f);
     const float minimal_slider_width = m_imgui->scaled(4.f);
 
-    float caption_max = 0.f;
-    float total_text_max = 0.;
-    for (const std::string& t : {"enforce", "block", "remove"}) {
-        caption_max = std::max(caption_max, m_imgui->calc_text_size(m_desc.at(t+"_caption")).x);
+    float caption_max    = 0.f;
+    float total_text_max = 0.f;
+    for (const auto &t : std::array<std::string, 3>{"enforce", "block", "remove"}) {
+        caption_max    = std::max(caption_max, m_imgui->calc_text_size(m_desc.at(t + "_caption")).x);
         total_text_max = std::max(total_text_max, caption_max + m_imgui->calc_text_size(m_desc.at(t)).x);
     }
     caption_max += m_imgui->scaled(1.f);
@@ -109,13 +107,13 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
         m_imgui->text(text);
     };
 
-    for (const std::string& t : {"enforce", "block", "remove"})
+    for (const auto &t : std::array<std::string, 3>{"enforce", "block", "remove"})
         draw_text_with_caption(m_desc.at(t + "_caption"), m_desc.at(t));
 
     m_imgui->text("");
 
     if (m_imgui->button(m_desc.at("remove_all"))) {
-        Plater::TakeSnapshot(wxGetApp().plater(), wxString(_L("Reset selection")));
+        Plater::TakeSnapshot snapshot(wxGetApp().plater(), wxString(_L("Reset selection")));
         ModelObject* mo = m_c->selection_info()->model_object();
         int idx = -1;
         for (ModelVolume* mv : mo->volumes) {
@@ -194,9 +192,10 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
 
     ImGui::SameLine(clipping_slider_left);
     ImGui::PushItemWidth(window_width - clipping_slider_left);
-    float clp_dist = m_c->object_clipper()->get_position();
+    auto clp_dist = float(m_c->object_clipper()->get_position());
     if (ImGui::SliderFloat("  ", &clp_dist, 0.f, 1.f, "%.2f"))
-    m_c->object_clipper()->set_position(clp_dist, true);
+        m_c->object_clipper()->set_position(clp_dist, true);
+
     if (ImGui::IsItemHovered()) {
         ImGui::BeginTooltip();
         ImGui::PushTextWrapPos(max_tooltip_width);
@@ -260,7 +259,18 @@ PainterGizmoType GLGizmoSeam::get_painter_type() const
     return PainterGizmoType::SEAM;
 }
 
+wxString GLGizmoSeam::handle_snapshot_action_name(bool shift_down, GLGizmoPainterBase::Button button_down) const
+{
+    wxString action_name;
+    if (shift_down)
+        action_name = _L("Remove selection");
+    else {
+        if (button_down == Button::Left)
+            action_name = _L("Enforce seam");
+        else
+            action_name = _L("Block seam");
+    }
+    return action_name;
+}
 
-
-} // namespace GUI
-} // namespace Slic3r
+} // namespace Slic3r::GUI

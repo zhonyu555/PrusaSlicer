@@ -24,6 +24,7 @@
 
 #include <cmath>
 #include <boost/algorithm/string/replace.hpp>
+#include <random>
 #include "Field.hpp"
 #include "format.hpp"
 #include "NotificationManager.hpp"
@@ -254,7 +255,7 @@ void Control::SetMaxValue(const int max_value)
 void Control::SetSliderValues(const std::vector<double>& values)
 {
     m_values = values;
-    m_ruler.count = std::count(m_values.begin(), m_values.end(), m_values.front());
+    m_ruler.init(m_values);
 }
 
 void Control::draw_scroll_line(wxDC& dc, const int lower_pos, const int higher_pos)
@@ -326,10 +327,10 @@ double Control::get_double_value(const SelectedSlider& selection)
     return m_values[selection == ssLower ? m_lower_value : m_higher_value];
 }
 
-int Control::get_tick_from_value(double value)
+int Control::get_tick_from_value(double value, bool force_lower_bound/* = false*/)
 {
     std::vector<double>::iterator it;
-    if (m_is_wipe_tower)
+    if (m_is_wipe_tower && !force_lower_bound)
         it = std::find_if(m_values.begin(), m_values.end(),
                           [value](const double & val) { return fabs(value - val) <= epsilon(); });
     else
@@ -1023,8 +1024,23 @@ void Control::draw_colored_band(wxDC& dc)
     }
 }
 
+void Control::Ruler::init(const std::vector<double>& values)
+{
+    max_values.clear();
+    max_values.reserve(std::count(values.begin(), values.end(), values.front()));
+
+    auto it = std::find(values.begin() + 1, values.end(), values.front());
+    while (it != values.end()) {
+        max_values.push_back(*(it - 1));
+        it = std::find(it + 1, values.end(), values.front());
+    }
+    max_values.push_back(*(it - 1));
+}
+
 void Control::Ruler::update(wxWindow* win, const std::vector<double>& values, double scroll_step)
 {
+    if (values.empty())
+        return;
     int DPI = GUI::get_dpi_for_window(win);
     int pixels_per_sm = lround((double)(DPI) * 5.0/25.4);
 
@@ -1035,7 +1051,7 @@ void Control::Ruler::update(wxWindow* win, const std::vector<double>& values, do
 
     int pow = -2;
     int step = 0;
-    auto end_it = count == 1 ? values.end() : values.begin() + lround(values.size() / count);
+    auto end_it = std::find(values.begin() + 1, values.end(), values.front());
 
     while (pow < 3) {
         for (int istep : {1, 2, 5}) {
@@ -1069,6 +1085,8 @@ void Control::Ruler::update(wxWindow* win, const std::vector<double>& values, do
 
 void Control::draw_ruler(wxDC& dc)
 {
+    if (m_values.empty())
+        return;
     m_ruler.update(this->GetParent(), m_values, get_scroll_step());
 
     int height, width;
@@ -1099,7 +1117,7 @@ void Control::draw_ruler(wxDC& dc)
         double short_tick = std::nan("");
         int tick = 0;
         double value = 0.0;
-        int sequence = 0;
+        size_t sequence = 0;
 
         int prev_y_pos = -1;
         wxCoord label_height = dc.GetMultiLineTextExtent("0").y - 2;
@@ -1107,7 +1125,7 @@ void Control::draw_ruler(wxDC& dc)
 
         while (tick <= m_max_value) {
             value += m_ruler.long_step;
-            if (value > m_values.back() && sequence < m_ruler.count) {
+            if (value > m_ruler.max_values[sequence] && sequence < m_ruler.count()) {
                 value = m_ruler.long_step;
                 for (; tick < values_size; tick++)
                     if (m_values[tick] < value)
@@ -1140,7 +1158,7 @@ void Control::draw_ruler(wxDC& dc)
 
             draw_short_ticks(dc, short_tick, tick);
 
-            if (value == m_values.back() && sequence < m_ruler.count) {
+            if (value == m_ruler.max_values[sequence] && sequence < m_ruler.count()) {
                 value = 0.0;
                 sequence++;
                 tick++;
@@ -2145,7 +2163,7 @@ static void upgrade_text_entry_dialog(wxTextEntryDialog* dlg, double min = -1.0,
         bool disable = textctrl->IsEmpty();
         if (!disable && min >= 0.0 && max >= 0.0) {
             double value = -1.0;
-            if (!textctrl->GetValue().ToCDouble(&value))    // input value couldn't be converted to double
+            if (!textctrl->GetValue().ToDouble(&value))    // input value couldn't be converted to double
                 disable = true;
             else
                 disable = value < min - epsilon() || value > max + epsilon();       // is input value is out of valid range ?
@@ -2214,7 +2232,7 @@ static double get_value_to_jump(double active_value, double min_z, double max_z,
         return -1.0;
 
     double value = -1.0;
-    return dlg.GetValue().ToCDouble(&value) ? value : -1.0;
+    return dlg.GetValue().ToDouble(&value) ? value : -1.0;
 }
 
 void Control::add_code_as_tick(Type type, int selected_extruder/* = -1*/)
@@ -2377,25 +2395,45 @@ void Control::edit_extruder_sequence()
 
     m_ticks.erase_all_ticks_with_code(ToolChange);
 
+    const int extr_cnt = m_extruders_sequence.extruders.size();
+    if (extr_cnt == 1)
+        return;
+
     int tick = 0;
     double value = 0.0;
-    int extruder = 0;
-    const int extr_cnt = m_extruders_sequence.extruders.size();
+    int extruder = -1;
+
+    std::random_device rd;  //Will be used to obtain a seed for the random number engine
+    std::mt19937 gen(rd()); //Standard mersenne_twister_engine seeded with rd()
+    std::uniform_int_distribution<> distrib(0, extr_cnt-1);
 
     while (tick <= m_max_value)
     {
+        bool color_repetition = false;
+        if (m_extruders_sequence.random_sequence) {
+            int rand_extr = distrib(gen);
+            if (m_extruders_sequence.color_repetition)
+                color_repetition = rand_extr == extruder;
+            else
+                while (rand_extr == extruder)
+                    rand_extr = distrib(gen);
+            extruder = rand_extr;
+        }
+        else {
+            extruder++;
+            if (extruder == extr_cnt)
+                extruder = 0;
+        }
+
         const int cur_extruder = m_extruders_sequence.extruders[extruder];
 
         bool meaningless_tick = tick == 0.0 && cur_extruder == extruder;
-        if (!meaningless_tick)
+        if (!meaningless_tick && !color_repetition)
             m_ticks.ticks.emplace(TickCode{tick, ToolChange,cur_extruder + 1, m_extruder_colors[cur_extruder]});
 
-        extruder++;
-        if (extruder == extr_cnt)
-            extruder = 0;
         if (m_extruders_sequence.is_mm_intervals) {
             value += m_extruders_sequence.interval_by_mm;
-            tick = get_tick_from_value(value);
+            tick = get_tick_from_value(value, true);
             if (tick < 0)
                 break;
         }

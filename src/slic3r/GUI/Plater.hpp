@@ -186,7 +186,7 @@ public:
 
     // Called after the Preferences dialog is closed and the program settings are saved.
     // Update the UI based on the current preferences.
-    void update_ui_from_settings(bool apply_free_camera_correction = true);
+    void update_ui_from_settings();
 
     void select_all();
     void deselect_all();
@@ -276,6 +276,11 @@ public:
     GLCanvas3D* get_current_canvas3D();
     BoundingBoxf bed_shape_bb() const;
     
+#if ENABLE_GCODE_WINDOW
+    void start_mapping_gcode_window();
+    void stop_mapping_gcode_window();
+#endif // ENABLE_GCODE_WINDOW
+
     void arrange();
     void find_new_position(const ModelInstancePtrs  &instances);
 

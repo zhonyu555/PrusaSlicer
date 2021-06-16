@@ -207,8 +207,16 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     // declare events
     Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent& event) {
 #if ENABLE_PROJECT_DIRTY_STATE
-        if (m_plater != nullptr)
-            m_plater->save_project_if_dirty();
+        if (event.CanVeto() && m_plater->canvas3D()->get_gizmos_manager().is_in_editing_mode(true)) {
+            // prevents to open the save dirty project dialog
+            event.Veto();
+            return;
+        }
+
+        if (m_plater != nullptr && !m_plater->save_project_if_dirty()) {
+            event.Veto();
+            return;
+        }
 
         if (event.CanVeto() && !wxGetApp().check_and_save_current_preset_changes()) {
 #else
@@ -545,7 +553,7 @@ void MainFrame::init_tabpanel()
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
 #if ENABLE_VALIDATE_CUSTOM_GCODE
         if (int old_selection = e.GetOldSelection();
-            old_selection != wxNOT_FOUND && old_selection < m_tabpanel->GetPageCount()) {
+            old_selection != wxNOT_FOUND && old_selection < static_cast<int>(m_tabpanel->GetPageCount())) {
             Tab* old_tab = dynamic_cast<Tab*>(m_tabpanel->GetPage(old_selection));
             if (old_tab)
                 old_tab->validate_custom_gcodes();
@@ -691,12 +699,15 @@ bool MainFrame::can_start_new_project() const
 #if ENABLE_PROJECT_DIRTY_STATE
 bool MainFrame::can_save() const
 {
-    return (m_plater != nullptr) && !m_plater->model().objects.empty() && !m_plater->get_project_filename().empty() && m_plater->is_project_dirty();
+    return (m_plater != nullptr) && !m_plater->model().objects.empty() &&
+        !m_plater->canvas3D()->get_gizmos_manager().is_in_editing_mode(false) &&
+        !m_plater->get_project_filename().empty() && m_plater->is_project_dirty();
 }
 
 bool MainFrame::can_save_as() const
 {
-    return (m_plater != nullptr) && !m_plater->model().objects.empty();
+    return (m_plater != nullptr) && !m_plater->model().objects.empty() &&
+        !m_plater->canvas3D()->get_gizmos_manager().is_in_editing_mode(false);
 }
 
 void MainFrame::save_project()
@@ -1876,7 +1887,7 @@ void MainFrame::add_to_recent_projects(const wxString& filename)
 //
 // Called after the Preferences dialog is closed and the program settings are saved.
 // Update the UI based on the current preferences.
-void MainFrame::update_ui_from_settings(bool apply_free_camera_correction)
+void MainFrame::update_ui_from_settings()
 {
 //    const bool bp_on = wxGetApp().app_config->get("background_processing") == "1";
 //     m_menu_item_reslice_now->Enable(!bp_on);
@@ -1885,7 +1896,7 @@ void MainFrame::update_ui_from_settings(bool apply_free_camera_correction)
 //    m_plater->sidebar().Layout();
 
     if (m_plater)
-        m_plater->update_ui_from_settings(apply_free_camera_correction);
+        m_plater->update_ui_from_settings();
     for (auto tab: wxGetApp().tabs_list)
         tab->update_ui_from_settings();
 }

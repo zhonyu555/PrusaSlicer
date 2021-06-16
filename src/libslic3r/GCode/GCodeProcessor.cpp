@@ -1,12 +1,14 @@
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Print.hpp"
+#include "libslic3r/LocalesUtils.hpp"
 #include "GCodeProcessor.hpp"
 
 #include <boost/log/trivial.hpp>
 #if ENABLE_VALIDATE_CUSTOM_GCODE
 #include <boost/algorithm/string/predicate.hpp>
 #endif // ENABLE_VALIDATE_CUSTOM_GCODE
+#include <boost/algorithm/string/split.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/cstdio.hpp>
 #if ENABLE_GCODE_WINDOW
@@ -27,6 +29,11 @@ static const float INCHES_TO_MM = 25.4f;
 static const float MMMIN_TO_MMSEC = 1.0f / 60.0f;
 static const float DEFAULT_ACCELERATION = 1500.0f; // Prusa Firmware 1_75mm_MK2
 static const float DEFAULT_TRAVEL_ACCELERATION = 1250.0f;
+
+static const size_t MIN_EXTRUDERS_COUNT = 5;
+static const float DEFAULT_FILAMENT_DIAMETER = 1.75f;
+static const float DEFAULT_FILAMENT_DENSITY = 1.245f;
+static const Slic3r::Vec3f DEFAULT_EXTRUDER_OFFSET = Slic3r::Vec3f::Zero();
 
 namespace Slic3r {
 
@@ -184,72 +191,6 @@ void GCodeProcessor::TimeMachine::CustomGCodeTime::reset()
     needed = false;
     cache = 0.0f;
     times = std::vector<std::pair<CustomGCode::Type, float>>();
-}
-
-void GCodeProcessor::UsedFilaments::reset()
-{
-    color_change_cache = 0.0f;
-    volumes_per_color_change = std::vector<double>();
-
-    tool_change_cache = 0.0f;
-    volumes_per_extruder.clear();
-
-    role_cache = 0.0f;
-    filaments_per_role.clear();
-}
-
-void GCodeProcessor::UsedFilaments::increase_caches(double extruded_volume)
-{
-    color_change_cache  += extruded_volume;
-    tool_change_cache   += extruded_volume;
-    role_cache          += extruded_volume;
-}
-
-void GCodeProcessor::UsedFilaments::process_color_change_cache()
-{
-    if (color_change_cache != 0.0f) {
-        volumes_per_color_change.push_back(color_change_cache);
-        color_change_cache = 0.0f;
-    }
-}
-
-void GCodeProcessor::UsedFilaments::process_extruder_cache(GCodeProcessor* processor)
-{
-    size_t active_extruder_id = processor->m_extruder_id;
-    if (tool_change_cache != 0.0f) {
-        if (volumes_per_extruder.find(active_extruder_id) != volumes_per_extruder.end())
-            volumes_per_extruder[active_extruder_id] += tool_change_cache;
-        else
-            volumes_per_extruder[active_extruder_id] = tool_change_cache;
-        tool_change_cache = 0.0f;
-    }
-}
-
-void GCodeProcessor::UsedFilaments::process_role_cache(GCodeProcessor* processor)
-{
-    if (role_cache != 0.0f) {
-        std::pair<double, double> filament = { 0.0f, 0.0f };
-
-        double s = PI * sqr(0.5 * processor->m_filament_diameters[processor->m_extruder_id]);
-        filament.first = role_cache/s * 0.001;
-        filament.second = role_cache * processor->m_filament_densities[processor->m_extruder_id] * 0.001;
-
-        ExtrusionRole active_role = processor->m_extrusion_role;
-        if (filaments_per_role.find(active_role) != filaments_per_role.end()) {
-            filaments_per_role[active_role].first  += filament.first;
-            filaments_per_role[active_role].second += filament.second;
-        }
-        else
-            filaments_per_role[active_role] = filament;
-        role_cache = 0.0f;
-    }
-}
-
-void GCodeProcessor::UsedFilaments::process_caches(GCodeProcessor* processor)
-{
-    process_color_change_cache();
-    process_extruder_cache(processor);
-    process_role_cache(processor);
 }
 
 void GCodeProcessor::TimeMachine::reset()
@@ -466,9 +407,7 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, co
     };
 
     auto format_time_float = [](float time) {
-        char time_str[64];
-        sprintf(time_str, "%.2f", time);
-        return std::string(time_str);
+        return Slic3r::float_to_string_decimal_point(time, 2);
     };
 
     auto format_line_M73_stop_float = [format_time_float](const std::string& mask, float time) {
@@ -734,7 +673,7 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, co
 
                                         std::string time_float_str = format_time_float(time_in_last_minute(it_stop->elapsed_time - it->elapsed_time));
                                         std::string next_time_float_str = format_time_float(time_in_last_minute(it_stop->elapsed_time - next_it->elapsed_time));
-                                        is_last |= (std::stof(time_float_str) > 0.0f && std::stof(next_time_float_str) == 0.0f);
+                                        is_last |= (string_to_double_decimal_point(time_float_str) > 0. && string_to_double_decimal_point(next_time_float_str) == 0.);
                                     }
 
                                     if (is_last) {
@@ -860,6 +799,95 @@ void GCodeProcessor::TimeProcessor::post_process(const std::string& filename, co
             "Is " + out_path + " locked?" + '\n');
 }
 
+void GCodeProcessor::UsedFilaments::reset()
+{
+    color_change_cache = 0.0f;
+    volumes_per_color_change = std::vector<double>();
+
+    tool_change_cache = 0.0f;
+    volumes_per_extruder.clear();
+
+    role_cache = 0.0f;
+    filaments_per_role.clear();
+}
+
+void GCodeProcessor::UsedFilaments::increase_caches(double extruded_volume)
+{
+    color_change_cache += extruded_volume;
+    tool_change_cache += extruded_volume;
+    role_cache += extruded_volume;
+}
+
+void GCodeProcessor::UsedFilaments::process_color_change_cache()
+{
+    if (color_change_cache != 0.0f) {
+        volumes_per_color_change.push_back(color_change_cache);
+        color_change_cache = 0.0f;
+    }
+}
+
+void GCodeProcessor::UsedFilaments::process_extruder_cache(GCodeProcessor* processor)
+{
+    size_t active_extruder_id = processor->m_extruder_id;
+    if (tool_change_cache != 0.0f) {
+        if (volumes_per_extruder.find(active_extruder_id) != volumes_per_extruder.end())
+            volumes_per_extruder[active_extruder_id] += tool_change_cache;
+        else
+            volumes_per_extruder[active_extruder_id] = tool_change_cache;
+        tool_change_cache = 0.0f;
+    }
+}
+
+void GCodeProcessor::UsedFilaments::process_role_cache(GCodeProcessor* processor)
+{
+    if (role_cache != 0.0f) {
+        std::pair<double, double> filament = { 0.0f, 0.0f };
+
+        double s = PI * sqr(0.5 * processor->m_result.filament_diameters[processor->m_extruder_id]);
+        filament.first = role_cache / s * 0.001;
+        filament.second = role_cache * processor->m_result.filament_densities[processor->m_extruder_id] * 0.001;
+
+        ExtrusionRole active_role = processor->m_extrusion_role;
+        if (filaments_per_role.find(active_role) != filaments_per_role.end()) {
+            filaments_per_role[active_role].first += filament.first;
+            filaments_per_role[active_role].second += filament.second;
+        }
+        else
+            filaments_per_role[active_role] = filament;
+        role_cache = 0.0f;
+    }
+}
+
+void GCodeProcessor::UsedFilaments::process_caches(GCodeProcessor* processor)
+{
+    process_color_change_cache();
+    process_extruder_cache(processor);
+    process_role_cache(processor);
+}
+
+#if ENABLE_GCODE_VIEWER_STATISTICS
+void GCodeProcessor::Result::reset() {
+    moves = std::vector<GCodeProcessor::MoveVertex>();
+    bed_shape = Pointfs();
+    settings_ids.reset();
+    extruders_count = 0;
+    extruder_colors = std::vector<std::string>();
+    filament_diameters = std::vector<float>(MIN_EXTRUDERS_COUNT, DEFAULT_FILAMENT_DIAMETER);
+    filament_densities = std::vector<float>(MIN_EXTRUDERS_COUNT, DEFAULT_FILAMENT_DENSITY);
+    time = 0;
+}
+#else
+void GCodeProcessor::Result::reset() {
+    moves = std::vector<GCodeProcessor::MoveVertex>();
+    bed_shape = Pointfs();
+    settings_ids.reset();
+    extruders_count = 0;
+    extruder_colors = std::vector<std::string>();
+    filament_diameters = std::vector<float>(MIN_EXTRUDERS_COUNT, DEFAULT_FILAMENT_DIAMETER);
+    filament_densities = std::vector<float>(MIN_EXTRUDERS_COUNT, DEFAULT_FILAMENT_DENSITY);
+}
+#endif // ENABLE_GCODE_VIEWER_STATISTICS
+
 const std::vector<std::pair<GCodeProcessor::EProducer, std::string>> GCodeProcessor::Producers = {
     { EProducer::PrusaSlicer, "PrusaSlicer" },
     { EProducer::Slic3rPE,    "Slic3r Prusa Edition" },
@@ -964,14 +992,14 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
 
     m_extruder_temps.resize(extruders_count);
 
-    m_filament_diameters.resize(config.filament_diameter.values.size());
+    m_result.filament_diameters.resize(config.filament_diameter.values.size());
     for (size_t i = 0; i < config.filament_diameter.values.size(); ++i) {
-        m_filament_diameters[i] = static_cast<float>(config.filament_diameter.values[i]);
+        m_result.filament_diameters[i] = static_cast<float>(config.filament_diameter.values[i]);
     }
 
-    m_filament_densities.resize(config.filament_density.values.size());
+    m_result.filament_densities.resize(config.filament_density.values.size());
     for (size_t i = 0; i < config.filament_density.values.size(); ++i) {
-        m_filament_densities[i] = static_cast<float>(config.filament_density.values[i]);
+        m_result.filament_densities[i] = static_cast<float>(config.filament_density.values[i]);
     }
 
     if ((m_flavor == gcfMarlinLegacy || m_flavor == gcfMarlinFirmware) && config.machine_limits_usage.value != MachineLimitsUsage::Ignore) {
@@ -1038,21 +1066,37 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
     if (printer_settings_id != nullptr)
         m_result.settings_ids.printer = printer_settings_id->value;
 
+    m_result.extruders_count = config.option<ConfigOptionFloats>("nozzle_diameter")->values.size();
+
     const ConfigOptionFloats* filament_diameters = config.option<ConfigOptionFloats>("filament_diameter");
     if (filament_diameters != nullptr) {
-        for (double diam : filament_diameters->values) {
-            m_filament_diameters.push_back(static_cast<float>(diam));
+        m_result.filament_diameters.clear();
+        m_result.filament_diameters.resize(filament_diameters->values.size());
+        for (size_t i = 0; i < filament_diameters->values.size(); ++i) {
+            m_result.filament_diameters[i] = static_cast<float>(filament_diameters->values[i]);
+        }
+    }
+
+    if (m_result.filament_diameters.size() < m_result.extruders_count) {
+        for (size_t i = m_result.filament_diameters.size(); i < m_result.extruders_count; ++i) {
+            m_result.filament_diameters.emplace_back(DEFAULT_FILAMENT_DIAMETER);
         }
     }
 
     const ConfigOptionFloats* filament_densities = config.option<ConfigOptionFloats>("filament_density");
     if (filament_densities != nullptr) {
-        for (double dens : filament_densities->values) {
-            m_filament_densities.push_back(static_cast<float>(dens));
+        m_result.filament_densities.clear();
+        m_result.filament_densities.resize(filament_densities->values.size());
+        for (size_t i = 0; i < filament_densities->values.size(); ++i) {
+            m_result.filament_densities[i] = static_cast<float>(filament_densities->values[i]);
         }
     }
 
-    m_result.extruders_count = config.option<ConfigOptionFloats>("nozzle_diameter")->values.size();
+    if (m_result.filament_densities.size() < m_result.extruders_count) {
+        for (size_t i = m_result.filament_densities.size(); i < m_result.extruders_count; ++i) {
+            m_result.filament_densities.emplace_back(DEFAULT_FILAMENT_DENSITY);
+        }
+    }
 
     const ConfigOptionPoints* extruder_offset = config.option<ConfigOptionPoints>("extruder_offset");
     if (extruder_offset != nullptr) {
@@ -1060,6 +1104,12 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         for (size_t i = 0; i < extruder_offset->values.size(); ++i) {
             Vec2f offset = extruder_offset->values[i].cast<float>();
             m_extruder_offsets[i] = { offset(0), offset(1), 0.0f };
+        }
+    }
+    
+    if (m_extruder_offsets.size() < m_result.extruders_count) {
+        for (size_t i = m_extruder_offsets.size(); i < m_result.extruders_count; ++i) {
+            m_extruder_offsets.emplace_back(DEFAULT_EXTRUDER_OFFSET);
         }
     }
 
@@ -1074,6 +1124,12 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
                 if (m_result.extruder_colors[i].empty())
                     m_result.extruder_colors[i] = filament_colour->values[i];
             }
+        }
+    }
+
+    if (m_result.extruder_colors.size() < m_result.extruders_count) {
+        for (size_t i = m_result.extruder_colors.size(); i < m_result.extruders_count; ++i) {
+            m_result.extruder_colors.emplace_back(std::string());
         }
     }
 
@@ -1212,12 +1268,10 @@ void GCodeProcessor::enable_stealth_time_estimator(bool enabled)
 
 void GCodeProcessor::reset()
 {
-    static const size_t Min_Extruder_Count = 5;
-
     m_units = EUnits::Millimeters;
     m_global_positioning_type = EPositioningType::Absolute;
     m_e_local_positioning_type = EPositioningType::Absolute;
-    m_extruder_offsets = std::vector<Vec3f>(Min_Extruder_Count, Vec3f::Zero());
+    m_extruder_offsets = std::vector<Vec3f>(MIN_EXTRUDERS_COUNT, Vec3f::Zero());
     m_flavor = gcfRepRapSprinter;
 
     m_start_position = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -1242,17 +1296,15 @@ void GCodeProcessor::reset()
 
     m_extrusion_role = erNone;
     m_extruder_id = 0;
-    m_extruder_colors.resize(Min_Extruder_Count);
-    for (size_t i = 0; i < Min_Extruder_Count; ++i) {
+    m_extruder_colors.resize(MIN_EXTRUDERS_COUNT);
+    for (size_t i = 0; i < MIN_EXTRUDERS_COUNT; ++i) {
         m_extruder_colors[i] = static_cast<unsigned char>(i);
     }
-    m_extruder_temps.resize(Min_Extruder_Count);
-    for (size_t i = 0; i < Min_Extruder_Count; ++i) {
+    m_extruder_temps.resize(MIN_EXTRUDERS_COUNT);
+    for (size_t i = 0; i < MIN_EXTRUDERS_COUNT; ++i) {
         m_extruder_temps[i] = 0.0f;
     }
 
-    m_filament_diameters = std::vector<float>(Min_Extruder_Count, 1.75f);
-    m_filament_densities = std::vector<float>(Min_Extruder_Count, 1.245f);
     m_extruded_last_z = 0.0f;
 #if ENABLE_START_GCODE_VISUALIZATION
     m_first_layer_height = 0.0f;
@@ -1283,6 +1335,8 @@ void GCodeProcessor::reset()
 void GCodeProcessor::process_file(const std::string& filename, bool apply_postprocess, std::function<void()> cancel_callback)
 {
     auto last_cancel_callback_time = std::chrono::high_resolution_clock::now();
+
+    CNumericLocalesSetter locales_setter;
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
     auto start_time = std::chrono::high_resolution_clock::now();
@@ -1447,12 +1501,29 @@ void GCodeProcessor::apply_config_simplify3d(const std::string& filename)
     BedSize bed_size;
 
     m_parser.parse_file(filename, [this, &bed_size](GCodeReader& reader, const GCodeReader::GCodeLine& line) {
-        auto extract_float = [](const std::string& cmt, const std::string& key, double& out) {
+        auto extract_double = [](const std::string& cmt, const std::string& key, double& out) {
             size_t pos = cmt.find(key);
             if (pos != cmt.npos) {
                 pos = cmt.find(',', pos);
                 if (pos != cmt.npos) {
-                    out = std::stod(cmt.substr(pos + 1));
+                    out = string_to_double_decimal_point(cmt.substr(pos+1));
+                    return true;
+                }
+            }
+            return false;
+        };
+
+        auto extract_floats = [](const std::string& cmt, const std::string& key, std::vector<float>& out) {
+            size_t pos = cmt.find(key);
+            if (pos != cmt.npos) {
+                pos = cmt.find(',', pos);
+                if (pos != cmt.npos) {
+                    std::string data_str = cmt.substr(pos + 1);
+                    std::vector<std::string> values_str;
+                    boost::split(values_str, data_str, boost::is_any_of("|"), boost::token_compress_on);
+                    for (const std::string& s : values_str) {
+                        out.emplace_back(static_cast<float>(string_to_double_decimal_point(s)));
+                    }
                     return true;
                 }
             }
@@ -1461,21 +1532,22 @@ void GCodeProcessor::apply_config_simplify3d(const std::string& filename)
 
         const std::string& comment = line.raw();
         if (comment.length() > 2 && comment.front() == ';') {
-            if (bed_size.x == 0.0)
-                extract_float(comment, "strokeXoverride", bed_size.x);
-            if (bed_size.y == 0.0)
-                extract_float(comment, "strokeYoverride", bed_size.y);
-
-            // check for early exit
-            if (bed_size.is_defined()) {
-#if ENABLE_VALIDATE_CUSTOM_GCODE
-                m_parser.quit_parsing();
-#else
-                m_parser.quit_parsing_file();
-#endif // ENABLE_VALIDATE_CUSTOM_GCODE
+            if (bed_size.x == 0.0 && comment.find("strokeXoverride") != comment.npos)
+                extract_double(comment, "strokeXoverride", bed_size.x);
+            else if (bed_size.y == 0.0 && comment.find("strokeYoverride") != comment.npos)
+                extract_double(comment, "strokeYoverride", bed_size.y);
+            else if (comment.find("filamentDiameters") != comment.npos) {
+                m_result.filament_diameters.clear();
+                extract_floats(comment, "filamentDiameters", m_result.filament_diameters);
+            }
+            else if (comment.find("filamentDensities") != comment.npos) {
+                m_result.filament_densities.clear();
+                extract_floats(comment, "filamentDensities", m_result.filament_densities);
             }
         }
         });
+
+    m_result.extruders_count = std::max<size_t>(1, std::min(m_result.filament_diameters.size(), m_result.filament_densities.size()));
 
     if (bed_size.is_defined()) {
         m_result.bed_shape = {
@@ -1602,9 +1674,9 @@ template<typename T>
             else if constexpr (std::is_same_v<T, long>)
                 out = std::stol(str, &read);
             else if constexpr (std::is_same_v<T, float>)
-                out = std::stof(str, &read);
+                out = string_to_double_decimal_point(str, &read);
             else if constexpr (std::is_same_v<T, double>)
-                out = std::stod(str, &read);
+                out = string_to_double_decimal_point(str, &read);
             return str.size() == read;
         } catch (...) {
             return false;
@@ -1621,8 +1693,7 @@ void GCodeProcessor::process_tags(const std::string_view comment)
 #if ENABLE_VALIDATE_CUSTOM_GCODE
     // extrusion role tag
     if (boost::starts_with(comment, reserved_tag(ETags::Role))) {
-        m_used_filaments.process_role_cache(this);
-        m_extrusion_role = ExtrusionEntity::string_to_role(comment.substr(reserved_tag(ETags::Role).length()));
+        set_extrusion_role(ExtrusionEntity::string_to_role(comment.substr(reserved_tag(ETags::Role).length())));
 #if ENABLE_SEAMS_VISUALIZATION
         if (m_extrusion_role == erExternalPerimeter)
             m_seams_detector.activate(true);
@@ -1647,7 +1718,7 @@ void GCodeProcessor::process_tags(const std::string_view comment)
 #else
     // extrusion role tag
     if (boost::starts_with(comment, Extrusion_Role_Tag)) {
-        m_extrusion_role = ExtrusionEntity::string_to_role(comment.substr(Extrusion_Role_Tag.length()));
+        set_extrusion_role(ExtrusionEntity::string_to_role(comment.substr(Extrusion_Role_Tag.length())));
         return;
     }
 
@@ -1829,23 +1900,23 @@ bool GCodeProcessor::process_cura_tags(const std::string_view comment)
     if (pos != comment.npos) {
         const std::string_view type = comment.substr(pos + tag.length());
         if (type == "SKIRT")
-            m_extrusion_role = erSkirt;
+            set_extrusion_role(erSkirt);
         else if (type == "WALL-OUTER")
-            m_extrusion_role = erExternalPerimeter;
+            set_extrusion_role(erExternalPerimeter);
         else if (type == "WALL-INNER")
-            m_extrusion_role = erPerimeter;
+            set_extrusion_role(erPerimeter);
         else if (type == "SKIN")
-            m_extrusion_role = erSolidInfill;
+            set_extrusion_role(erSolidInfill);
         else if (type == "FILL")
-            m_extrusion_role = erInternalInfill;
+            set_extrusion_role(erInternalInfill);
         else if (type == "SUPPORT")
-            m_extrusion_role = erSupportMaterial;
+            set_extrusion_role(erSupportMaterial);
         else if (type == "SUPPORT-INTERFACE")
-            m_extrusion_role = erSupportMaterialInterface;
+            set_extrusion_role(erSupportMaterialInterface);
         else if (type == "PRIME-TOWER")
-            m_extrusion_role = erWipeTower;
+            set_extrusion_role(erWipeTower);
         else {
-            m_extrusion_role = erNone;
+            set_extrusion_role(erNone);
             BOOST_LOG_TRIVIAL(warning) << "GCodeProcessor found unknown extrusion role: " << type;
         }
 
@@ -1909,14 +1980,14 @@ bool GCodeProcessor::process_simplify3d_tags(const std::string_view comment)
     // ; skirt
     pos = cmt.find(" skirt");
     if (pos == 0) {
-        m_extrusion_role = erSkirt;
+        set_extrusion_role(erSkirt);
         return true;
     }
     
     // ; outer perimeter
     pos = cmt.find(" outer perimeter");
     if (pos == 0) {
-        m_extrusion_role = erExternalPerimeter;
+        set_extrusion_role(erExternalPerimeter);
 #if ENABLE_SEAMS_VISUALIZATION
         m_seams_detector.activate(true);
 #endif // ENABLE_SEAMS_VISUALIZATION
@@ -1926,77 +1997,77 @@ bool GCodeProcessor::process_simplify3d_tags(const std::string_view comment)
     // ; inner perimeter
     pos = cmt.find(" inner perimeter");
     if (pos == 0) {
-        m_extrusion_role = erPerimeter;
+        set_extrusion_role(erPerimeter);
         return true;
     }
 
     // ; gap fill
     pos = cmt.find(" gap fill");
     if (pos == 0) {
-        m_extrusion_role = erGapFill;
+        set_extrusion_role(erGapFill);
         return true;
     }
 
     // ; infill
     pos = cmt.find(" infill");
     if (pos == 0) {
-        m_extrusion_role = erInternalInfill;
+        set_extrusion_role(erInternalInfill);
         return true;
     }
 
     // ; solid layer
     pos = cmt.find(" solid layer");
     if (pos == 0) {
-        m_extrusion_role = erSolidInfill;
+        set_extrusion_role(erSolidInfill);
         return true;
     }
 
     // ; bridge
     pos = cmt.find(" bridge");
     if (pos == 0) {
-        m_extrusion_role = erBridgeInfill;
+        set_extrusion_role(erBridgeInfill);
         return true;
     }
 
     // ; support
     pos = cmt.find(" support");
     if (pos == 0) {
-        m_extrusion_role = erSupportMaterial;
+        set_extrusion_role(erSupportMaterial);
         return true;
     }
 
     // ; dense support
     pos = cmt.find(" dense support");
     if (pos == 0) {
-        m_extrusion_role = erSupportMaterialInterface;
+        set_extrusion_role(erSupportMaterialInterface);
         return true;
     }
 
     // ; prime pillar
     pos = cmt.find(" prime pillar");
     if (pos == 0) {
-        m_extrusion_role = erWipeTower;
+        set_extrusion_role(erWipeTower);
         return true;
     }
 
     // ; ooze shield
     pos = cmt.find(" ooze shield");
     if (pos == 0) {
-        m_extrusion_role = erNone; // Missing mapping
+        set_extrusion_role(erNone); // Missing mapping
         return true;
     }
 
     // ; raft
     pos = cmt.find(" raft");
     if (pos == 0) {
-        m_extrusion_role = erSupportMaterial;
+        set_extrusion_role(erSupportMaterial);
         return true;
     }
 
     // ; internal single extrusion
     pos = cmt.find(" internal single extrusion");
     if (pos == 0) {
-        m_extrusion_role = erNone; // Missing mapping
+        set_extrusion_role(erNone); // Missing mapping
         return true;
     }
 
@@ -2048,29 +2119,29 @@ bool GCodeProcessor::process_craftware_tags(const std::string_view comment)
     if (pos != comment.npos) {
         const std::string_view type = comment.substr(pos + tag.length());
         if (type == "Skirt")
-            m_extrusion_role = erSkirt;
+            set_extrusion_role(erSkirt);
         else if (type == "Perimeter")
-            m_extrusion_role = erExternalPerimeter;
+            set_extrusion_role(erExternalPerimeter);
         else if (type == "HShell")
-            m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         else if (type == "InnerHair")
-            m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         else if (type == "Loop")
-            m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         else if (type == "Infill")
-            m_extrusion_role = erInternalInfill;
+            set_extrusion_role(erInternalInfill);
         else if (type == "Raft")
-            m_extrusion_role = erSkirt;
+            set_extrusion_role(erSkirt);
         else if (type == "Support")
-            m_extrusion_role = erSupportMaterial;
+            set_extrusion_role(erSupportMaterial);
         else if (type == "SupportTouch")
-            m_extrusion_role = erSupportMaterial;
+            set_extrusion_role(erSupportMaterial);
         else if (type == "SoftSupport")
-            m_extrusion_role = erSupportMaterialInterface;
+            set_extrusion_role(erSupportMaterialInterface);
         else if (type == "Pillar")
-            m_extrusion_role = erWipeTower;
+            set_extrusion_role(erWipeTower);
         else {
-            m_extrusion_role = erNone;
+            set_extrusion_role(erNone);
             BOOST_LOG_TRIVIAL(warning) << "GCodeProcessor found unknown extrusion role: " << type;
         }
 
@@ -2100,21 +2171,21 @@ bool GCodeProcessor::process_ideamaker_tags(const std::string_view comment)
     if (pos != comment.npos) {
         const std::string_view type = comment.substr(pos + tag.length());
         if (type == "RAFT")
-            m_extrusion_role = erSkirt;
+            set_extrusion_role(erSkirt);
         else if (type == "WALL-OUTER")
-            m_extrusion_role = erExternalPerimeter;
+            set_extrusion_role(erExternalPerimeter);
         else if (type == "WALL-INNER")
-            m_extrusion_role = erPerimeter;
+            set_extrusion_role(erPerimeter);
         else if (type == "SOLID-FILL")
-            m_extrusion_role = erSolidInfill;
+            set_extrusion_role(erSolidInfill);
         else if (type == "FILL")
-            m_extrusion_role = erInternalInfill;
+            set_extrusion_role(erInternalInfill);
         else if (type == "BRIDGE")
-            m_extrusion_role = erBridgeInfill;
+            set_extrusion_role(erBridgeInfill);
         else if (type == "SUPPORT")
-            m_extrusion_role = erSupportMaterial;
+            set_extrusion_role(erSupportMaterial);
         else {
-            m_extrusion_role = erNone;
+            set_extrusion_role(erNone);
             BOOST_LOG_TRIVIAL(warning) << "GCodeProcessor found unknown extrusion role: " << type;
         }
 
@@ -2161,35 +2232,35 @@ bool GCodeProcessor::process_kissslicer_tags(const std::string_view comment)
     // ; 'Raft Path'
     size_t pos = comment.find(" 'Raft Path'");
     if (pos == 0) {
-        m_extrusion_role = erSkirt;
+        set_extrusion_role(erSkirt);
         return true;
     }
 
     // ; 'Support Interface Path'
     pos = comment.find(" 'Support Interface Path'");
     if (pos == 0) {
-        m_extrusion_role = erSupportMaterialInterface;
+        set_extrusion_role(erSupportMaterialInterface);
         return true;
     }
 
     // ; 'Travel/Ironing Path'
     pos = comment.find(" 'Travel/Ironing Path'");
     if (pos == 0) {
-        m_extrusion_role = erIroning;
+        set_extrusion_role(erIroning);
         return true;
     }
 
     // ; 'Support (may Stack) Path'
     pos = comment.find(" 'Support (may Stack) Path'");
     if (pos == 0) {
-        m_extrusion_role = erSupportMaterial;
+        set_extrusion_role(erSupportMaterial);
         return true;
     }
 
     // ; 'Perimeter Path'
     pos = comment.find(" 'Perimeter Path'");
     if (pos == 0) {
-        m_extrusion_role = erExternalPerimeter;
+        set_extrusion_role(erExternalPerimeter);
 #if ENABLE_SEAMS_VISUALIZATION
         m_seams_detector.activate(true);
 #endif // ENABLE_SEAMS_VISUALIZATION
@@ -2199,56 +2270,56 @@ bool GCodeProcessor::process_kissslicer_tags(const std::string_view comment)
     // ; 'Pillar Path'
     pos = comment.find(" 'Pillar Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return true;
     }
 
     // ; 'Destring/Wipe/Jump Path'
     pos = comment.find(" 'Destring/Wipe/Jump Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return true;
     }
 
     // ; 'Prime Pillar Path'
     pos = comment.find(" 'Prime Pillar Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return true;
     }
 
     // ; 'Loop Path'
     pos = comment.find(" 'Loop Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return true;
     }
 
     // ; 'Crown Path'
     pos = comment.find(" 'Crown Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone; // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        set_extrusion_role(erNone); // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         return true;
     }
 
     // ; 'Solid Path'
     pos = comment.find(" 'Solid Path'");
     if (pos == 0) {
-        m_extrusion_role = erNone;
+        set_extrusion_role(erNone);
         return true;
     }
 
     // ; 'Stacked Sparse Infill Path'
     pos = comment.find(" 'Stacked Sparse Infill Path'");
     if (pos == 0) {
-        m_extrusion_role = erInternalInfill;
+        set_extrusion_role(erInternalInfill);
         return true;
     }
 
     // ; 'Sparse Infill Path'
     pos = comment.find(" 'Sparse Infill Path'");
     if (pos == 0) {
-        m_extrusion_role = erSolidInfill;
+        set_extrusion_role(erSolidInfill);
         return true;
     }
 
@@ -2284,7 +2355,7 @@ void GCodeProcessor::process_G0(const GCodeReader::GCodeLine& line)
 
 void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 {
-    float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_filament_diameters.size()) ? m_filament_diameters[m_extruder_id] : m_filament_diameters.back();
+    float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_result.filament_diameters.size()) ? m_result.filament_diameters[m_extruder_id] : m_result.filament_diameters.back();
     float filament_radius = 0.5f * filament_diameter;
     float area_filament_cross_section = static_cast<float>(M_PI) * sqr(filament_radius);
     auto absolute_position = [this, area_filament_cross_section](Axis axis, const GCodeReader::GCodeLine& lineG1) {
@@ -2386,7 +2457,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
             m_width = delta_pos[E] * static_cast<float>(M_PI * sqr(1.05f * filament_radius)) / (delta_xyz * m_height);
         else if (m_extrusion_role == erBridgeInfill || m_extrusion_role == erNone)
             // cross section: circle
-            m_width = static_cast<float>(m_filament_diameters[m_extruder_id]) * std::sqrt(delta_pos[E] / delta_xyz);
+            m_width = static_cast<float>(m_result.filament_diameters[m_extruder_id]) * std::sqrt(delta_pos[E] / delta_xyz);
         else
             // cross section: rectangle + 2 semicircles
             m_width = delta_pos[E] * static_cast<float>(M_PI * sqr(filament_radius)) / (delta_xyz * m_height) + static_cast<float>(1.0 - 0.25 * M_PI) * m_height;
@@ -3024,8 +3095,7 @@ void GCodeProcessor::process_T(const std::string_view command)
         } else {
             unsigned char id = static_cast<unsigned char>(eid);
             if (m_extruder_id != id) {
-                unsigned char extruders_count = static_cast<unsigned char>(m_extruder_offsets.size());
-                if (id >= extruders_count)
+                if (id >= m_result.extruders_count)
                     BOOST_LOG_TRIVIAL(error) << "GCodeProcessor encountered an invalid toolchange, maybe from a custom gcode.";
                 else {
                     unsigned char old_extruder_id = m_extruder_id;
@@ -3096,6 +3166,12 @@ void GCodeProcessor::store_move_vertex(EMoveType type)
         }
     }
 #endif // ENABLE_EXTENDED_M73_LINES
+}
+
+void GCodeProcessor::set_extrusion_role(ExtrusionRole role)
+{
+    m_used_filaments.process_role_cache(this);
+    m_extrusion_role = role;
 }
 
 float GCodeProcessor::minimum_feedrate(PrintEstimatedStatistics::ETimeMode mode, float feedrate) const

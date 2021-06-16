@@ -146,6 +146,8 @@ struct ExtrudersSequence
     bool            is_mm_intervals     = true;
     double          interval_by_mm      = 3.0;
     int             interval_by_layers  = 10;
+    bool            random_sequence     { false };
+    bool            color_repetition    { false };
     std::vector<size_t>  extruders      = { 0 };
 
     bool operator==(const ExtrudersSequence& other) const
@@ -153,19 +155,23 @@ struct ExtrudersSequence
         return  (other.is_mm_intervals      == this->is_mm_intervals    ) &&
                 (other.interval_by_mm       == this->interval_by_mm     ) &&
                 (other.interval_by_layers   == this->interval_by_layers ) &&
+                (other.random_sequence      == this->random_sequence    ) &&
+                (other.color_repetition     == this->color_repetition   ) &&
                 (other.extruders            == this->extruders          ) ;
     }
     bool operator!=(const ExtrudersSequence& other) const
     {
-        return  (other.is_mm_intervals      != this->is_mm_intervals    ) &&
-                (other.interval_by_mm       != this->interval_by_mm     ) &&
-                (other.interval_by_layers   != this->interval_by_layers ) &&
+        return  (other.is_mm_intervals      != this->is_mm_intervals    ) ||
+                (other.interval_by_mm       != this->interval_by_mm     ) ||
+                (other.interval_by_layers   != this->interval_by_layers ) ||
+                (other.random_sequence      != this->random_sequence    ) ||
+                (other.color_repetition     != this->color_repetition   ) ||
                 (other.extruders            != this->extruders          ) ;
     }
 
-    void add_extruder(size_t pos)
+    void add_extruder(size_t pos, size_t extruder_id = size_t(0))
     {
-        extruders.insert(extruders.begin() + pos+1, size_t(0));
+        extruders.insert(extruders.begin() + pos+1, extruder_id);
     }
 
     void delete_extruder(size_t pos)
@@ -322,7 +328,7 @@ private:
     wxSize      get_size() const;
     void        get_size(int* w, int* h) const;
     double      get_double_value(const SelectedSlider& selection);
-    int         get_tick_from_value(double value);
+    int         get_tick_from_value(double value, bool force_lower_bound = false);
     wxString    get_tooltip(int tick = -1);
     int         get_edited_tick_for_position(wxPoint pos, Type type = ColorChange);
 
@@ -424,10 +430,13 @@ private:
     struct Ruler {
         double long_step;
         double short_step;
-        int count { 1 }; // > 1 for sequential print
+        std::vector<double> max_values;// max value for each object/instance in sequence print
+                                       // > 1 for sequential print
 
+        void init(const std::vector<double>& values);
         void update(wxWindow* win, const std::vector<double>& values, double scroll_step);
         bool is_ok() { return long_step > 0 && short_step > 0; }
+        size_t count() { return max_values.size(); }
     } m_ruler;
 };
 
