@@ -929,8 +929,6 @@ bool GUI_App::on_init_inner()
     if (scrn && is_editor())
         scrn->SetText(_L("Preparing settings tabs") + dots);
 
-    m_tabs_as_menu = dark_mode() || app_config->get("tabs_as_menu") == "1";
-
     mainframe = new MainFrame();
     // hide settings tabs after first Layout
     if (is_editor())
@@ -1043,6 +1041,7 @@ void GUI_App::init_label_colours()
     m_color_highlight_label_default = is_dark_mode ? wxColour(230, 230, 230): wxSystemSettings::GetColour(/*wxSYS_COLOUR_HIGHLIGHTTEXT*/wxSYS_COLOUR_WINDOWTEXT);
     m_color_highlight_default       = is_dark_mode ? wxColour(78, 78, 78)   : wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT);
     m_color_hovered_btn_label       = is_dark_mode ? wxColour(253, 111, 40) : wxColour(252, 77, 1);
+    m_color_selected_btn_bg         = is_dark_mode ? wxColour(95, 73, 62)   : wxColour(228, 220, 216);
 #else
     m_color_label_default = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 #endif
@@ -1220,6 +1219,11 @@ void GUI_App::set_label_clr_sys(const wxColour& clr)
     std::string str = clr_str.ToStdString();
     app_config->set("label_clr_sys", str);
     app_config->save();
+}
+
+bool GUI_App::tabs_as_menu() const
+{
+    return app_config->get("tabs_as_menu") == "1"; // || dark_mode();
 }
 
 wxSize GUI_App::get_min_size() const
@@ -1908,7 +1912,6 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
                         init_label_colours();
                     }
 #endif
-                    m_tabs_as_menu = dark_mode() || app_config->get("tabs_as_menu") == "1";
                     recreate_GUI(_L("Restart application") + dots);
                     return;
                 }

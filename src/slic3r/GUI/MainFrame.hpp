@@ -18,7 +18,6 @@
 #include "Event.hpp"
 #include "UnsavedChangesDialog.hpp"
 
-class wxNotebook;
 class wxBookCtrlBase;
 class wxProgressDialog;
 

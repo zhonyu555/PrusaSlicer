@@ -25,7 +25,6 @@ class PreferencesDialog : public DPIDialog
 	std::shared_ptr<ConfigOptionsGroup>	m_optgroup_render;
 #endif // ENABLE_ENVIRONMENT_MAP
 	wxSizer*                            m_icon_size_sizer;
-	wxRadioBox*							m_layout_mode_box;
 	wxColourPickerCtrl*					m_sys_colour {nullptr};
 	wxColourPickerCtrl*					m_mod_colour {nullptr};
     bool                                isOSX {false};

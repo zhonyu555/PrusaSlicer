@@ -490,7 +490,8 @@ void Tab::OnActivate()
 
     // Workaroud for Menu instead of NoteBook
 #ifdef _MSW_DARK_MODE
-    if (wxGetApp().tabs_as_menu()) {
+//    if (wxGetApp().tabs_as_menu()) 
+    {
         wxSize sz = m_presets_choice->GetSize(); 
         wxSize ok_sz = wxSize(35 * m_em_unit, m_presets_choice->GetBestSize().y+1);
         if (sz != ok_sz) {

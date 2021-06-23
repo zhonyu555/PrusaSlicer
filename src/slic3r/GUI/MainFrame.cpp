@@ -41,6 +41,7 @@
 #include "GUI_App.hpp"
 #include "UnsavedChangesDialog.hpp"
 #include "MsgDialog.hpp"
+#include "Notebook.hpp"
 
 #ifdef _WIN32
 #include <dbt.h>
@@ -428,7 +429,7 @@ void MainFrame::update_layout()
     {
         m_plater->Reparent(m_tabpanel);
         m_tabpanel->InsertPage(0, m_plater, _L("Plater"));
-        m_main_sizer->Add(m_tabpanel, 1, wxEXPAND);
+        m_main_sizer->Add(m_tabpanel, 1, wxEXPAND | wxTOP, 1);
         m_plater->Show();
         m_tabpanel->Show();
         // update Tabs
@@ -455,7 +456,7 @@ void MainFrame::update_layout()
     {
         m_main_sizer->Add(m_plater, 1, wxEXPAND);
         m_tabpanel->Reparent(&m_settings_dialog);
-        m_settings_dialog.GetSizer()->Add(m_tabpanel, 1, wxEXPAND);
+        m_settings_dialog.GetSizer()->Add(m_tabpanel, 1, wxEXPAND | wxTOP, 2);
         m_tabpanel->Show();
         m_plater->Show();
 
@@ -640,7 +641,7 @@ void MainFrame::init_tabpanel()
         wxGetApp().UpdateDarkUI(m_tabpanel);
     }
     else
-        m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
+        m_tabpanel = new Notebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
 #else
     m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
 #endif
@@ -652,7 +653,7 @@ void MainFrame::init_tabpanel()
     m_settings_dialog.set_tabpanel(m_tabpanel);
 
 #ifdef __WXMSW__
-    m_tabpanel->Bind(/*wxEVT_LISTBOOK_PAGE_CHANGED*/wxEVT_BOOKCTRL_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
+    m_tabpanel->Bind(wxEVT_BOOKCTRL_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
 #else
     m_tabpanel->Bind(wxEVT_NOTEBOOK_PAGE_CHANGED, [this](wxBookCtrlEvent& e) {
 #endif
@@ -2103,8 +2104,8 @@ SettingsDialog::SettingsDialog(MainFrame* mainframe)
     this->SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT));
 #else
     this->SetFont(wxGetApp().normal_font());
-#endif // __WXMSW__
     this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+#endif // __WXMSW__
 
     // Load the icon either from the exe, or from the ico file.
 #if _WIN32
