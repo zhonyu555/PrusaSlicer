@@ -72,6 +72,7 @@
 #include "DesktopIntegrationDialog.hpp"
 
 #include "BitmapCache.hpp"
+#include "Notebook.hpp"
 
 #ifdef __WXMSW__
 #include <dbt.h>
@@ -1766,6 +1767,11 @@ void GUI_App::save_mode(const /*ConfigOptionMode*/int mode)
 void GUI_App::update_mode()
 {
     sidebar().update_mode();
+
+#ifdef _MSW_DARK_MODE
+    if (!wxGetApp().tabs_as_menu())
+        dynamic_cast<Notebook*>(mainframe->m_tabpanel)->UpdateMode();
+#endif
 
     for (auto tab : tabs_list)
         tab->update_mode();

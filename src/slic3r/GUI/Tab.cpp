@@ -255,8 +255,11 @@ void Tab::create_preset_tab()
     m_modified_label_clr	= wxGetApp().get_label_clr_modified();
     m_default_text_clr		= wxGetApp().get_label_clr_default();
 
+#ifdef _MSW_DARK_MODE
     // Sizer with buttons for mode changing
-    m_mode_sizer = new ModeSizer(panel, int (0.5*em_unit(this)));
+    if (wxGetApp().tabs_as_menu())
+#endif
+        m_mode_sizer = new ModeSizer(panel, int (0.5*em_unit(this)));
 
     const float scale_factor = /*wxGetApp().*/em_unit(this)*0.1;// GetContentScaleFactor();
     m_hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -285,9 +288,11 @@ void Tab::create_preset_tab()
     // m_hsizer->AddStretchSpacer(32);
     // StretchSpacer has a strange behavior under OSX, so
     // There is used just additional sizer for m_mode_sizer with right alignment
-    auto mode_sizer = new wxBoxSizer(wxVERTICAL);
-    mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
-    m_hsizer->Add(mode_sizer, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, wxOSX ? 15 : 10);
+    if (m_mode_sizer) {
+        auto mode_sizer = new wxBoxSizer(wxVERTICAL);
+        mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
+        m_hsizer->Add(mode_sizer, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, wxOSX ? 15 : 10);
+    }
 
     //Horizontal sizer to hold the tree and the selected page.
     m_hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -944,7 +949,8 @@ void Tab::update_mode()
     m_mode = wxGetApp().get_mode();
 
     // update mode for ModeSizer
-    m_mode_sizer->SetMode(m_mode);
+    if (m_mode_sizer)
+        m_mode_sizer->SetMode(m_mode);
 
     update_visibility();
 
@@ -970,7 +976,8 @@ void Tab::msw_rescale()
 {
     m_em_unit = em_unit(m_parent);
 
-    m_mode_sizer->msw_rescale();
+    if (m_mode_sizer)
+        m_mode_sizer->msw_rescale();
     m_presets_choice->msw_rescale();
 
     m_treectrl->SetMinSize(wxSize(20 * m_em_unit, -1));
@@ -1027,7 +1034,8 @@ void Tab::sys_color_changed()
     update_label_colours();
 #ifdef _WIN32
     wxWindowUpdateLocker noUpdates(this);
-    m_mode_sizer->msw_rescale();
+    if (m_mode_sizer)
+        m_mode_sizer->msw_rescale();
     wxGetApp().UpdateDarkUI(this);
     wxGetApp().UpdateDarkUI(m_treectrl);
 #endif

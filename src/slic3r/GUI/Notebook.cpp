@@ -1,17 +1,16 @@
 #include "Notebook.hpp"
+
+#ifdef _WIN32
+
 #include "GUI_App.hpp"
+#include "wxExtensions.hpp"
 
 #include <wx/button.h>
 #include <wx/sizer.h>
 
-namespace Slic3r {
-namespace GUI {
-
-#ifdef _WIN32
-
 wxDEFINE_EVENT(wxCUSTOMEVT_NOTEBOOK_SEL_CHANGED, wxCommandEvent);
 
-ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent) :
+ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent, bool add_mode_buttons/* = false*/) :
     wxControl(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE | wxTAB_TRAVERSAL)
 {
 #ifdef __WINDOWS__
@@ -21,35 +20,55 @@ ButtonsListCtrl::ButtonsListCtrl(wxWindow *parent) :
     m_sizer = new wxBoxSizer(wxHORIZONTAL);
     this->SetSizer(m_sizer);
 
+    if (add_mode_buttons) {
+        m_mode_sizer = new ModeSizer(this, int(0.5 * em_unit(this)));
+        m_sizer->AddStretchSpacer(20);
+        m_sizer->Add(m_mode_sizer, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
+    }
+
     this->Bind(wxEVT_PAINT, &ButtonsListCtrl::OnPaint, this);
 }
 
 void ButtonsListCtrl::OnPaint(wxPaintEvent&)
 {
-    GUI::wxGetApp().UpdateDarkUI(this);
+    Slic3r::GUI::wxGetApp().UpdateDarkUI(this);
     const wxSize sz = GetSize();
     wxPaintDC dc(this);
 
     if (m_selection < 0 || m_selection >= (int)m_pageButtons.size())
         return;
+
     // highlight selected button
+
+    const wxColour& selected_btn_bg  = Slic3r::GUI::wxGetApp().get_color_selected_btn_bg();
+    const wxColour& default_btn_bg   = Slic3r::GUI::wxGetApp().get_highlight_default_clr();
+    const wxColour& btn_marker_color = Slic3r::GUI::wxGetApp().get_color_hovered_btn_label();
     for (int idx = 0; idx < m_pageButtons.size(); idx++) {
         wxButton* btn = m_pageButtons[idx];
 
-        btn->SetBackgroundColour(idx == m_selection ? wxGetApp().get_color_selected_btn_bg() : wxGetApp().get_highlight_default_clr());
+        btn->SetBackgroundColour(idx == m_selection ? selected_btn_bg : default_btn_bg);
 
         wxPoint pos = btn->GetPosition();
         wxSize size = btn->GetSize();
-        const wxColour& clr = idx == m_selection ? wxGetApp().get_color_hovered_btn_label() : wxGetApp().get_highlight_default_clr();
+        const wxColour& clr = idx == m_selection ? btn_marker_color : default_btn_bg;
         dc.SetPen(clr);
         dc.SetBrush(clr);
         dc.DrawRectangle(pos.x, sz.y - 3, size.x, 3);
     }
 
-    const wxColour& clr_sel = wxGetApp().get_color_hovered_btn_label();
-    dc.SetPen(clr_sel);
-    dc.SetBrush(clr_sel);
+    dc.SetPen(btn_marker_color);
+    dc.SetBrush(btn_marker_color);
     dc.DrawRectangle(1, sz.y - 1, sz.x, 1);
+}
+
+void ButtonsListCtrl::UpdateMode()
+{
+    m_mode_sizer->SetMode(Slic3r::GUI::wxGetApp().get_mode());
+}
+
+void ButtonsListCtrl::Rescale()
+{
+    m_mode_sizer->msw_rescale();
 }
 
 void ButtonsListCtrl::SetSelection(int sel)
@@ -72,7 +91,7 @@ bool ButtonsListCtrl::InsertPage(size_t n, const wxString& text, bool bSelect/* 
             Refresh();
         }
     });
-    wxGetApp().UpdateDarkUI(btn);
+    Slic3r::GUI::wxGetApp().UpdateDarkUI(btn);
     m_pageButtons.insert(m_pageButtons.begin() + n, btn);
     m_sizer->Insert(n, new wxSizerItem(btn, 0, wxEXPAND | wxRIGHT | wxBOTTOM, 3));
     m_sizer->Layout();
@@ -103,8 +122,5 @@ wxString ButtonsListCtrl::GetPageText(size_t n) const
 }
 
 #endif // _WIN32
-
-} // GUI
-} // Slic3r
 
 

@@ -1,12 +1,11 @@
 #ifndef slic3r_Notebook_hpp_
 #define slic3r_Notebook_hpp_
 
+#ifdef _WIN32
+
 #include <wx/bookctrl.h>
 
-namespace Slic3r {
-namespace GUI {
-
-#ifdef _WIN32
+class ModeSizer;
 
 // custom message the ButtonsListCtrl sends to its parent (Notebook) to notify a selection change:
 wxDECLARE_EVENT(wxCUSTOMEVT_NOTEBOOK_SEL_CHANGED, wxCommandEvent);
@@ -14,11 +13,13 @@ wxDECLARE_EVENT(wxCUSTOMEVT_NOTEBOOK_SEL_CHANGED, wxCommandEvent);
 class ButtonsListCtrl : public wxControl
 {
 public:
-    ButtonsListCtrl(wxWindow* parent);
+    ButtonsListCtrl(wxWindow* parent, bool add_mode_buttons = false);
     ~ButtonsListCtrl() {}
 
     void OnPaint(wxPaintEvent&);
     void SetSelection(int sel);
+    void UpdateMode();
+    void Rescale();
     bool InsertPage(size_t n, const wxString& text, bool bSelect = false);
     void RemovePage(size_t n);
     void SetPageText(size_t n, const wxString& strText);
@@ -29,6 +30,7 @@ private:
     wxBoxSizer*             m_sizer;
     std::vector<wxButton*>  m_pageButtons;
     int                     m_selection {-1};
+    ModeSizer*              m_mode_sizer {nullptr};
 };
 
 class Notebook: public wxBookCtrlBase
@@ -39,10 +41,10 @@ public:
                  const wxPoint & pos = wxDefaultPosition,
                  const wxSize & size = wxDefaultSize,
                  long style = 0,
-                 const wxString & name = wxEmptyString)
+                 bool add_mode_buttons = false)
     {
         Init();
-        Create(parent, winid, pos, size, style, name);
+        Create(parent, winid, pos, size, style, add_mode_buttons);
     }
 
     bool Create(wxWindow * parent,
@@ -50,12 +52,12 @@ public:
                 const wxPoint & pos = wxDefaultPosition,
                 const wxSize & size = wxDefaultSize,
                 long style = 0,
-                const wxString & name = wxEmptyString)
+                bool add_mode_buttons = false)
     {
-        if (!wxBookCtrlBase::Create(parent, winid, pos, size, style | wxBK_TOP, name))
+        if (!wxBookCtrlBase::Create(parent, winid, pos, size, style | wxBK_TOP))
             return false;
 
-        m_bookctrl = new ButtonsListCtrl(this);
+        m_bookctrl = new ButtonsListCtrl(this, add_mode_buttons);
 
         wxSizer* mainSizer = new wxBoxSizer(IsVertical() ? wxVERTICAL : wxHORIZONTAL);
 
@@ -186,6 +188,16 @@ public:
 
     ButtonsListCtrl* GetBtnsListCtrl() const { return static_cast<ButtonsListCtrl*>(m_bookctrl); }
 
+    void UpdateMode()
+    {
+        GetBtnsListCtrl()->UpdateMode();
+    }
+
+    void Rescale()
+    {
+        GetBtnsListCtrl()->Rescale();
+    }
+
 protected:
     virtual void UpdateSelectedPage(size_t WXUNUSED(newsel)) wxOVERRIDE
     {
@@ -255,6 +267,5 @@ private:
     ButtonsListCtrl* m_ctrl{ nullptr };
 
 };
-#endif
-}}
-#endif
+#endif // _WIN32
+#endif // slic3r_Notebook_hpp_

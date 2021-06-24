@@ -477,6 +477,11 @@ void MainFrame::update_layout()
     }
     }
 
+#ifdef _MSW_DARK_MODE
+    // Sizer with buttons for mode changing
+    m_plater->sidebar().show_mode_sizer(wxGetApp().tabs_as_menu() || m_layout != ESettingsLayout::Old);
+#endif
+
 #ifdef __WXMSW__
     if (update_scaling_state != State::noUpdate)
     {
@@ -641,7 +646,7 @@ void MainFrame::init_tabpanel()
         wxGetApp().UpdateDarkUI(m_tabpanel);
     }
     else
-        m_tabpanel = new Notebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
+        m_tabpanel = new Notebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME, true);
 #else
     m_tabpanel = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP | wxTAB_TRAVERSAL | wxNB_NOPAGETHEME);
 #endif
@@ -960,6 +965,12 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
 {
     wxGetApp().update_fonts(this);
     this->SetFont(this->normal_font());
+
+#ifdef _MSW_DARK_MODE
+    // update common mode sizer
+    if (!wxGetApp().tabs_as_menu())
+        dynamic_cast<Notebook*>(m_tabpanel)->Rescale();
+#endif
 
     // update Plater
     wxGetApp().plater()->msw_rescale();
@@ -2185,6 +2196,12 @@ void SettingsDialog::on_dpi_changed(const wxRect& suggested_rect)
 
     const int& em = em_unit();
     const wxSize& size = wxSize(85 * em, 50 * em);
+
+#ifdef _MSW_DARK_MODE
+    // update common mode sizer
+    if (!wxGetApp().tabs_as_menu())
+        dynamic_cast<Notebook*>(m_tabpanel)->Rescale();
+#endif
 
     // update Tabs
     for (auto tab : wxGetApp().tabs_list)
