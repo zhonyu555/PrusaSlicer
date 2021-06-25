@@ -44,6 +44,7 @@
 #include "UnsavedChangesDialog.hpp"
 #include "SavePresetDialog.hpp"
 #include "MsgDialog.hpp"
+#include "Notebook.hpp"
 
 #ifdef WIN32
 	#include <commctrl.h>
@@ -3094,7 +3095,15 @@ void Tab::load_current_preset()
                     }
                     if (tab->supports_printer_technology(printer_technology))
                     {
-                        wxGetApp().tab_panel()->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title());
+#ifdef _MSW_DARK_MODE
+                        if (!wxGetApp().tabs_as_menu()) {
+                            std::string bmp_name = tab->type() == Slic3r::Preset::TYPE_FILAMENT      ? "spool" :
+                                                   tab->type() == Slic3r::Preset::TYPE_SLA_MATERIAL  ? "resin" : "cog";
+                            dynamic_cast<Notebook*>(wxGetApp().tab_panel())->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title(), bmp_name);
+                        }
+                        else
+#endif
+                            wxGetApp().tab_panel()->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title());
                         #ifdef __linux__ // the tabs apparently need to be explicitly shown on Linux (pull request #1563)
                             int page_id = wxGetApp().tab_panel()->FindPage(tab);
                             wxGetApp().tab_panel()->GetPage(page_id)->Show(true);
@@ -3108,6 +3117,10 @@ void Tab::load_current_preset()
                 }
                 static_cast<TabPrinter*>(this)->m_printer_technology = printer_technology;
                 m_active_page = tmp_page;
+#ifdef _MSW_DARK_MODE
+                if (!wxGetApp().tabs_as_menu())
+                    dynamic_cast<Notebook*>(wxGetApp().tab_panel())->SetPageImage(wxGetApp().tab_panel()->FindPage(this), printer_technology == ptFFF ? "printer" : "sla_printer");
+#endif
             }
             on_presets_changed();
             if (printer_technology == ptFFF) {

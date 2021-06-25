@@ -125,7 +125,7 @@ private:
     wxColour        m_color_hovered_btn_label;
     wxColour        m_color_highlight_default;
     wxColour        m_color_selected_btn_bg;
-    //bool            m_force_sys_colors_update { false }; // #ysDarkMSW - Use to force dark colors for SystemLightMode
+    bool            m_force_colors_update { false };
 #endif
 
     wxFont		    m_small_font;
@@ -203,7 +203,7 @@ public:
     const wxColour& get_highlight_default_clr() { return m_color_highlight_default; }
     const wxColour& get_color_hovered_btn_label() { return m_color_hovered_btn_label; }
     const wxColour& get_color_selected_btn_bg() { return m_color_selected_btn_bg; }
-//    void            force_sys_colors_update()   { m_force_sys_colors_update = true; } // #ysDarkMSW - Use to force dark colors for SystemLightMode
+    void            force_colors_update();
 #endif
 
     const wxFont&   small_font()            { return m_small_font; }

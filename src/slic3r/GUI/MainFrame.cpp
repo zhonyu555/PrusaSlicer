@@ -42,6 +42,7 @@
 #include "UnsavedChangesDialog.hpp"
 #include "MsgDialog.hpp"
 #include "Notebook.hpp"
+#include "GUI_Factories.hpp"
 
 #ifdef _WIN32
 #include <dbt.h>
@@ -428,6 +429,11 @@ void MainFrame::update_layout()
     case ESettingsLayout::Old:
     {
         m_plater->Reparent(m_tabpanel);
+#ifdef _MSW_DARK_MODE
+        if (!wxGetApp().tabs_as_menu())
+            dynamic_cast<Notebook*>(m_tabpanel)->InsertPage(0, m_plater, _L("Plater"), std::string("plater"));
+        else
+#endif
         m_tabpanel->InsertPage(0, m_plater, _L("Plater"));
         m_main_sizer->Add(m_tabpanel, 1, wxEXPAND | wxTOP, 1);
         m_plater->Show();
@@ -448,6 +454,11 @@ void MainFrame::update_layout()
         m_tabpanel->Hide();
         m_main_sizer->Add(m_tabpanel, 1, wxEXPAND);
         m_plater_page = new wxPanel(m_tabpanel);
+#ifdef _MSW_DARK_MODE
+        if (!wxGetApp().tabs_as_menu())
+            dynamic_cast<Notebook*>(m_tabpanel)->InsertPage(0, m_plater_page, _L("Plater"), std::string("plater"));
+        else
+#endif
         m_tabpanel->InsertPage(0, m_plater_page, _L("Plater")); // empty panel just for Plater tab */
         m_plater->Show();
         break;
@@ -769,20 +780,25 @@ void MainFrame::register_win32_callbacks()
 void MainFrame::create_preset_tabs()
 {
     wxGetApp().update_label_colours_from_appconfig();
-    add_created_tab(new TabPrint(m_tabpanel));
-    add_created_tab(new TabFilament(m_tabpanel));
-    add_created_tab(new TabSLAPrint(m_tabpanel));
-    add_created_tab(new TabSLAMaterial(m_tabpanel));
-    add_created_tab(new TabPrinter(m_tabpanel));
+    add_created_tab(new TabPrint(m_tabpanel), "cog");
+    add_created_tab(new TabFilament(m_tabpanel), "spool");
+    add_created_tab(new TabSLAPrint(m_tabpanel), "cog");
+    add_created_tab(new TabSLAMaterial(m_tabpanel), "resin");
+    add_created_tab(new TabPrinter(m_tabpanel), wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() == ptFFF ? "printer" : "sla_printer");
 }
 
-void MainFrame::add_created_tab(Tab* panel)
+void MainFrame::add_created_tab(Tab* panel,  const std::string& bmp_name /*= ""*/)
 {
     panel->create_preset_tab();
 
     const auto printer_tech = wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology();
 
     if (panel->supports_printer_technology(printer_tech))
+#ifdef _MSW_DARK_MODE
+        if (!wxGetApp().tabs_as_menu())
+            dynamic_cast<Notebook*>(m_tabpanel)->AddPage(panel, panel->title(), bmp_name);
+        else
+#endif
         m_tabpanel->AddPage(panel, panel->title());
 }
 
@@ -980,9 +996,8 @@ void MainFrame::on_dpi_changed(const wxRect& suggested_rect)
         for (auto tab : wxGetApp().tabs_list)
             tab->msw_rescale();
 
-    wxMenuBar* menu_bar = this->GetMenuBar();
-    for (size_t id = 0; id < menu_bar->GetMenuCount(); id++)
-        msw_rescale_menu(menu_bar->GetMenu(id));
+    for (size_t id = 0; id < m_menubar->GetMenuCount(); id++)
+        msw_rescale_menu(m_menubar->GetMenu(id));
 
     // Workarounds for correct Window rendering after rescale
 
@@ -1015,6 +1030,11 @@ void MainFrame::on_sys_color_changed()
 #ifdef __WXMSW__
     wxGetApp().UpdateDarkUI(m_tabpanel);
     m_statusbar->update_dark_ui();
+#ifdef _MSW_DARK_MODE
+    // update common mode sizer
+    if (!wxGetApp().tabs_as_menu())
+        dynamic_cast<Notebook*>(m_tabpanel)->Rescale();
+#endif
 #endif
 
     // update Plater
@@ -1024,10 +1044,7 @@ void MainFrame::on_sys_color_changed()
     for (auto tab : wxGetApp().tabs_list)
         tab->sys_color_changed();
 
-    // msw_rescale_menu updates just icons, so use it
-    wxMenuBar* menu_bar = this->GetMenuBar();
-    for (size_t id = 0; id < menu_bar->GetMenuCount(); id++)
-        msw_rescale_menu(menu_bar->GetMenu(id));
+    MenuFactory::sys_color_changed(m_menubar);
 
     this->Refresh();
 }

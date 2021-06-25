@@ -69,6 +69,8 @@ void ButtonsListCtrl::UpdateMode()
 void ButtonsListCtrl::Rescale()
 {
     m_mode_sizer->msw_rescale();
+    for (ScalableButton* btn : m_pageButtons)
+        btn->msw_rescale();
 }
 
 void ButtonsListCtrl::SetSelection(int sel)
@@ -79,9 +81,9 @@ void ButtonsListCtrl::SetSelection(int sel)
     Refresh();
 }
 
-bool ButtonsListCtrl::InsertPage(size_t n, const wxString& text, bool bSelect/* = false*/)
+bool ButtonsListCtrl::InsertPage(size_t n, const wxString& text, bool bSelect/* = false*/, const std::string& bmp_name/* = ""*/)
 {
-    wxButton* btn = new wxButton(this, wxID_ANY, text);
+    ScalableButton* btn = new ScalableButton(this, wxID_ANY, bmp_name, text);
     btn->Bind(wxEVT_BUTTON, [this, btn](wxCommandEvent& event) {
         if (auto it = std::find(m_pageButtons.begin(), m_pageButtons.end(), btn); it != m_pageButtons.end()) {
             m_selection = it - m_pageButtons.begin();
@@ -100,7 +102,7 @@ bool ButtonsListCtrl::InsertPage(size_t n, const wxString& text, bool bSelect/* 
 
 void ButtonsListCtrl::RemovePage(size_t n)
 {
-    wxButton* btn = m_pageButtons[n];
+    ScalableButton* btn = m_pageButtons[n];
     m_pageButtons.erase(m_pageButtons.begin() + n);
     m_sizer->Remove(n);
     btn->Reparent(nullptr);
@@ -108,16 +110,22 @@ void ButtonsListCtrl::RemovePage(size_t n)
     m_sizer->Layout();
 }
 
+bool ButtonsListCtrl::SetPageImage(size_t n, const std::string& bmp_name) const
+{
+    if (n >= m_pageButtons.size())
+        return false;
+     return m_pageButtons[n]->SetBitmap_(bmp_name);
+}
 
 void ButtonsListCtrl::SetPageText(size_t n, const wxString& strText)
 {
-    wxButton* btn = m_pageButtons[n];
+    ScalableButton* btn = m_pageButtons[n];
     btn->SetLabel(strText);
 }
 
 wxString ButtonsListCtrl::GetPageText(size_t n) const
 {
-    wxButton* btn = m_pageButtons[n];
+    ScalableButton* btn = m_pageButtons[n];
     return btn->GetLabel();
 }
 

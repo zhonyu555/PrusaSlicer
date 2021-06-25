@@ -411,11 +411,7 @@ void PreferencesDialog::accept()
 //	if (m_values.find("no_defaults") != m_values.end()
 //		warning_catcher(this, wxString::Format(_L("You need to restart %s to make the changes effective."), SLIC3R_APP_NAME));
 
-	std::vector<std::string> options_to_recreate_GUI = { "no_defaults", "tabs_as_menu"
-#ifdef _MSW_DARK_MODE
-		,"dark_color_mode"
-#endif
-	};
+	std::vector<std::string> options_to_recreate_GUI = { "no_defaults", "tabs_as_menu" };
 
 	for (const std::string& option : options_to_recreate_GUI) {
 		if (m_values.find(option) != m_values.end()) {
@@ -429,9 +425,6 @@ void PreferencesDialog::accept()
 				wxICON_QUESTION | wxYES | wxNO);
 			if (dialog.ShowModal() == wxID_YES) {
 				m_recreate_GUI = true;
-#ifdef _MSW_DARK_MODE
-				m_color_mode_changed = m_values.find("dark_color_mode") != m_values.end();
-#endif
 			}
 			else {
 				for (const std::string& option : options_to_recreate_GUI)
@@ -491,6 +484,11 @@ void PreferencesDialog::accept()
 	}
 
 	EndModal(wxID_OK);
+
+#ifdef _MSW_DARK_MODE
+	if (m_values.find("dark_color_mode") != m_values.end())
+		wxGetApp().force_colors_update();
+#endif
 
 	if (m_settings_layout_changed)
 		;// application will be recreated after Preference dialog will be destroyed
@@ -582,7 +580,9 @@ void PreferencesDialog::create_icon_size_slider()
 
 void PreferencesDialog::create_settings_mode_widget()
 {
-	bool disable_new_layout = wxGetApp().tabs_as_menu();//wxGetApp().dark_mode();
+#ifdef _MSW_DARK_MODE
+	bool disable_new_layout = wxGetApp().tabs_as_menu();
+#endif
 	std::vector<wxString> choices = {  _L("Old regular layout with the tab bar"),
                                        _L("New layout, access via settings button in the top menu"),
                                        _L("Settings in non-modal window") };

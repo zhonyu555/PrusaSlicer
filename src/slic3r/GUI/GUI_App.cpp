@@ -1090,24 +1090,22 @@ void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool ju
             btn->Bind(wxEVT_LEAVE_WINDOW, [focus_button](wxMouseEvent& event) { focus_button(false); event.Skip(); });
         }
     }
-    else if (dark_mode()) {
-        if (wxTextCtrl* text = dynamic_cast<wxTextCtrl*>(window)) {
-            if (text->GetBorder() != wxBORDER_SIMPLE)
-                text->SetWindowStyle(text->GetWindowStyle() | wxBORDER_SIMPLE);
-        }
-        else if (wxCheckListBox* list = dynamic_cast<wxCheckListBox*>(window)) {
-            list->SetWindowStyle(list->GetWindowStyle() | wxBORDER_SIMPLE);
-            list->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
-            for (size_t i = 0; i < list->GetCount(); i++)
-                if (wxOwnerDrawn* item = list->GetItem(i)) {
-                    item->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
-                    item->SetTextColour(m_color_label_default);
-                }
-            return;
-        }
-        else if (dynamic_cast<wxListBox*>(window))
-            window->SetWindowStyle(window->GetWindowStyle() | wxBORDER_SIMPLE);
+    else if (wxTextCtrl* text = dynamic_cast<wxTextCtrl*>(window)) {
+        if (text->GetBorder() != wxBORDER_SIMPLE)
+            text->SetWindowStyle(text->GetWindowStyle() | wxBORDER_SIMPLE);
     }
+    else if (wxCheckListBox* list = dynamic_cast<wxCheckListBox*>(window)) {
+        list->SetWindowStyle(list->GetWindowStyle() | wxBORDER_SIMPLE);
+        list->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
+        for (size_t i = 0; i < list->GetCount(); i++)
+            if (wxOwnerDrawn* item = list->GetItem(i)) {
+                item->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
+                item->SetTextColour(m_color_label_default);
+            }
+        return;
+    }
+    else if (dynamic_cast<wxListBox*>(window))
+        window->SetWindowStyle(window->GetWindowStyle() | wxBORDER_SIMPLE);
 
     if (!just_font)
         window->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
@@ -1138,8 +1136,6 @@ void GUI_App::UpdateDlgDarkUI(wxDialog* dlg)
 void GUI_App::UpdateDVCDarkUI(wxDataViewCtrl* dvc, bool highlited/* = false*/)
 {
 #ifdef _WIN32
-    if (!dark_mode())
-        return;
     UpdateDarkUI(dvc, highlited);
     wxItemAttr attr(dark_mode() ? m_color_highlight_default : m_color_label_default,
         m_color_window_default,
@@ -1155,8 +1151,6 @@ void GUI_App::UpdateDVCDarkUI(wxDataViewCtrl* dvc, bool highlited/* = false*/)
 void GUI_App::UpdateAllStaticTextDarkUI(wxWindow* parent)
 {
 #ifdef _WIN32
-    if (!dark_mode())
-        return;
     wxGetApp().UpdateDarkUI(parent);
 
     auto children = parent->GetChildren();
@@ -1371,6 +1365,14 @@ void fatal_error(wxWindow* parent)
     //     exit 1; // #ys_FIXME
 }
 
+#ifdef _WIN32
+void GUI_App::force_colors_update()
+{
+    NppDarkMode::SetDarkMode(app_config->get("dark_color_mode") == "1");
+    m_force_colors_update = true;
+}
+#endif
+
 // Called after the Preferences dialog is closed and the program settings are saved.
 // Update the UI based on the current preferences.
 void GUI_App::update_ui_from_settings()
@@ -1378,13 +1380,13 @@ void GUI_App::update_ui_from_settings()
     update_label_colours();
     mainframe->update_ui_from_settings();
 
-#if 0 //#ifdef _WIN32  // #ysDarkMSW - Use to force dark colors for SystemLightMode
-    if (m_force_sys_colors_update) {
-        m_force_sys_colors_update = false;
-        mainframe->force_sys_color_changed();
-        mainframe->diff_dialog.force_sys_color_changed();
+#ifdef _WIN32
+    if (m_force_colors_update) {
+        m_force_colors_update = false;
+        mainframe->force_color_changed();
+        mainframe->diff_dialog.force_color_changed();
         if (m_wizard)
-            m_wizard->force_sys_color_changed();
+            m_wizard->force_color_changed();
     }
 #endif
 }
@@ -1912,12 +1914,6 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
                     this->plater_->refresh_print();
 
                 if (dlg.recreate_GUI()) {
-#ifdef _MSW_DARK_MODE
-                    if (dlg.color_mode_changed()) {
-                        NppDarkMode::SetDarkMode(app_config->get("dark_color_mode") == "1");
-                        init_label_colours();
-                    }
-#endif
                     recreate_GUI(_L("Restart application") + dots);
                     return;
                 }
