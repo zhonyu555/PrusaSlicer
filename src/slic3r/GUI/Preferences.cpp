@@ -622,7 +622,11 @@ void PreferencesDialog::create_settings_mode_widget()
 			dlg_id = 1;
 #endif
 
-        btn->Bind(wxEVT_RADIOBUTTON, [this, id, dlg_id, disable_new_layout](wxCommandEvent& ) {
+        btn->Bind(wxEVT_RADIOBUTTON, [this, id, dlg_id
+#ifdef _MSW_DARK_MODE
+			, disable_new_layout
+#endif
+		](wxCommandEvent& ) {
             m_values["old_settings_layout_mode"] = (id == 0) ? "1" : "0";
 #ifdef _MSW_DARK_MODE
 			if (!disable_new_layout)
