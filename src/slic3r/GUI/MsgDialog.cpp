@@ -162,7 +162,7 @@ WarningDialog::WarningDialog(wxWindow *parent,
     this->CenterOnParent();
 }
 
-
+#ifdef _WIN32
 // MessageDialog
 
 MessageDialog::MessageDialog(wxWindow* parent,
@@ -186,6 +186,7 @@ MessageDialog::MessageDialog(wxWindow* parent,
     Fit();
     this->CenterOnParent();
 }
+#endif
 
 }
 }
