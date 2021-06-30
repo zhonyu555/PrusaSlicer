@@ -1365,7 +1365,7 @@ void fatal_error(wxWindow* parent)
     //     exit 1; // #ys_FIXME
 }
 
-#ifdef _WIN32
+#ifdef _MSW_DARK_MODE
 void GUI_App::force_colors_update()
 {
     NppDarkMode::SetDarkMode(app_config->get("dark_color_mode") == "1");
