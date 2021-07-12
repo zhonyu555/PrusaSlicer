@@ -24,19 +24,27 @@ class GalleryDialog : public DPIDialog
         std::string name;
         bool        is_system;
     };
-    
-    Item    m_selected_item;
-    int     ADD_CUSTOM_MODEL_BTN_ID;
+    std::vector<Item>   m_selected_items;
+
+    int ID_BTN_ADD_CUSTOM_SHAPE;
+    int ID_BTN_DEL_CUSTOM_SHAPE;
+    int ID_BTN_REPLACE_CUSTOM_PNG;
 
     void load_label_icon_list();
+    void add_custom_shapes(wxEvent& event);
+    void del_custom_shapes(wxEvent& event);
+    void replace_custom_png(wxEvent& event);
+    void select(wxListEvent& event);
+    void deselect(wxListEvent& event);
 
-    void add_custom_model(wxEvent& event);
+    void update();
 
 public:
     GalleryDialog(wxWindow* parent);
     ~GalleryDialog();
 
-    std::string get_selected_path();
+    void get_input_files(wxArrayString& input_files);
+    bool load_files(const wxArrayString& input_files);
 
 protected:
     void on_dpi_changed(const wxRect& suggested_rect) override;

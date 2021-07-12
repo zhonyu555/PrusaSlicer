@@ -1384,10 +1384,11 @@ void ObjectList::load_part(ModelObject* model_object, std::vector<ModelVolume*>&
 
     if (from_galery) {
         GalleryDialog dlg(this);
-        if (dlg.ShowModal() == wxID_CANCEL || dlg.get_selected_path().empty())
+        if (dlg.ShowModal() == wxID_CANCEL)
             return;
-        
-        input_files.Add(from_u8(dlg.get_selected_path()));
+        dlg.get_input_files(input_files);
+        if (input_files.IsEmpty())
+            return;
     }
     else
         wxGetApp().import_model(parent, input_files);
