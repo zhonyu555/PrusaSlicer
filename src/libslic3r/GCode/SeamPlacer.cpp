@@ -300,7 +300,7 @@ void SeamPlacer::init(const Print& print)
 
 
 void SeamPlacer::plan_perimeters(const std::vector<const ExtrusionEntity*> perimeters,
-                            const Layer& layer, SeamPosition seam_position,
+                            const Layer& layer, SeamPosition seam_position, float seam_preferred_direction,
                             Point last_pos, coordf_t nozzle_dmr, const PrintObject* po,
                             const EdgeGrid::Grid* lower_layer_edge_grid)
 {
@@ -319,11 +319,13 @@ void SeamPlacer::plan_perimeters(const std::vector<const ExtrusionEntity*> perim
     for (int i = 0; i < int(perimeters.size()); ++i) {
         if (perimeters[i]->role() == erExternalPerimeter && perimeters[i]->is_loop()) {
             last_pos = this->calculate_seam(
-                layer, seam_position, *dynamic_cast<const ExtrusionLoop*>(perimeters[i]), nozzle_dmr,
+                layer, seam_position, seam_preferred_direction,
+                *dynamic_cast<const ExtrusionLoop*>(perimeters[i]), nozzle_dmr,
                 po, lower_layer_edge_grid, last_pos, false);
             m_plan[i].external = true;
         }
         m_plan[i].seam_position = seam_position;
+        m_plan[i].seam_preferred_direction = seam_preferred_direction;
         m_plan[i].layer = &layer;
         m_plan[i].po = po;
         m_plan[i].pt = last_pos;
@@ -345,7 +347,8 @@ void SeamPlacer::place_seam(ExtrusionLoop& loop, const Point& last_pos, bool ext
             // does not belong to the preceding ones and they are ordered so they end up
             // far from each other.
             if ((seam.cast<double>() - last_pos.cast<double>()).squaredNorm() > std::pow(scale_(5.*nozzle_diameter), 2.))
-                seam = this->calculate_seam(*m_plan[m_plan_idx].layer, m_plan[m_plan_idx].seam_position, loop, nozzle_diameter,
+                seam = this->calculate_seam(*m_plan[m_plan_idx].layer, m_plan[m_plan_idx].seam_position,
+                    m_plan[m_plan_idx].seam_preferred_direction, loop, nozzle_diameter,
                     m_plan[m_plan_idx].po, lower_layer_edge_grid, last_pos, false);
 
             if (m_plan[m_plan_idx].seam_position == spAligned)
@@ -436,7 +439,7 @@ void SeamPlacer::place_seam(ExtrusionLoop& loop, const Point& last_pos, bool ext
             // We will call the normal seam planning function, pretending that we are currently at the candidate point
             // and set to spNearest. If the ideal seam it finds is close to current candidate, use it.
             // This is to prevent having seams very close to corners, just because of external seam position.
-            seam = calculate_seam(*m_plan[m_plan_idx].layer, spNearest, loop, nozzle_diameter,
+            seam = calculate_seam(*m_plan[m_plan_idx].layer, spNearest, 0.0, loop, nozzle_diameter,
                 m_plan[m_plan_idx].po, lower_layer_edge_grid, seam, true);
         }
         m_plan[m_plan_idx].pt = seam;
@@ -479,7 +482,7 @@ void SeamPlacer::place_seam(ExtrusionLoop& loop, const Point& last_pos, bool ext
 
 
 // Returns "best" seam for a given perimeter.
-Point SeamPlacer::calculate_seam(const Layer& layer, const SeamPosition seam_position,
+Point SeamPlacer::calculate_seam(const Layer& layer, const SeamPosition seam_position, const float seam_preferred_direction,
                const ExtrusionLoop& loop, coordf_t nozzle_dmr, const PrintObject* po,
                const EdgeGrid::Grid* lower_layer_edge_grid, Point last_pos, bool prefer_nearest)
 {
@@ -530,12 +533,12 @@ Point SeamPlacer::calculate_seam(const Layer& layer, const SeamPosition seam_pos
                 }
             }
         }
-        else if (seam_position == spRear) {
+        else if (seam_position == spDirection) {
             // Object is centered around (0,0) in its current coordinate system.
             last_pos.x() = 0;
             last_pos.y() = coord_t(3. * po->bounding_box().radius());
             last_pos_weight = 5.f;
-        } if (seam_position == spNearest) {
+            last_pos.rotate((M_PI / 180.f) * seam_preferred_direction);
             // last_pos already contains current nozzle position
         }
 

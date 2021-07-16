@@ -2756,7 +2756,7 @@ std::string GCode::extrude_perimeters(const Print &print, const std::vector<Obje
                 lower_layer_edge_grid = calculate_layer_edge_grid(*m_layer->lower_layer);
 
             m_seam_placer.plan_perimeters(std::vector<const ExtrusionEntity*>(region.perimeters.begin(), region.perimeters.end()),
-                *m_layer, m_config.seam_position, this->last_pos(), EXTRUDER_CONFIG(nozzle_diameter),
+                *m_layer, m_config.seam_position, m_config.seam_preferred_direction, this->last_pos(), EXTRUDER_CONFIG(nozzle_diameter),
                 (m_layer == NULL ? nullptr : m_layer->object()),
                 (lower_layer_edge_grid ? lower_layer_edge_grid.get() : nullptr));
 
