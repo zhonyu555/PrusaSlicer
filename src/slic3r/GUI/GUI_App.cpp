@@ -608,7 +608,7 @@ static void generic_exception_handle()
         std::terminate();
         throw;
     } catch (const std::exception& ex) {
-        wxLogError("Internal error: %s", ex.what());
+        wxLogError(format_wxstr(_L("Internal error: %1%"), ex.what()));
         BOOST_LOG_TRIVIAL(error) << boost::format("Uncaught exception: %1%") % ex.what();
         throw;
     }
@@ -1138,7 +1138,7 @@ void GUI_App::UpdateDlgDarkUI(wxDialog* dlg, bool just_buttons_update/* = false*
 void GUI_App::UpdateDVCDarkUI(wxDataViewCtrl* dvc, bool highlited/* = false*/)
 {
 #ifdef _WIN32
-    UpdateDarkUI(dvc, highlited);
+    UpdateDarkUI(dvc, highlited ? dark_mode() : false);
     wxItemAttr attr(dark_mode() ? m_color_highlight_default : m_color_label_default,
         m_color_window_default,
         m_normal_font);
@@ -1908,11 +1908,7 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
                 PreferencesDialog dlg(mainframe);
                 dlg.ShowModal();
                 app_layout_changed = dlg.settings_layout_changed();
-#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
                 if (dlg.seq_top_layer_only_changed() || dlg.seq_seq_top_gcode_indices_changed())
-#else
-                if (dlg.seq_top_layer_only_changed())
-#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
                     this->plater_->refresh_print();
 
                 if (dlg.recreate_GUI()) {
