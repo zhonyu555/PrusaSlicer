@@ -32,7 +32,7 @@
 @ECHO                Default: none
 @ECHO  -d -DESTDIR   Deps destination directory
 @ECHO                Warning: Changing destdir path will not delete the old destdir.
-@ECHO                %PS_DESTDIR_DEFAULT_MSG%
+@ECHO                Default: %PS_DESTDIR_DEFAULT_MSG%
 @ECHO.
 @ECHO  Examples:
 @ECHO.
@@ -58,27 +58,15 @@ SET PS_CONFIG_LIST="Debug;MinSizeRel;Release;RelWithDebInfo"
 REM Probe build directories and system state for reasonable default arguments
 pushd %~dp0
 SET PS_CONFIG=RelWithDebInfo
-SET PS_ARCH=%PROCESSOR_ARCHITECTURE%
+SET PS_ARCH=%PROCESSOR_ARCHITECTURE:amd64=x64%
 CALL :TOLOWER PS_ARCH
-SET PS_DESTDIR=
-IF EXIST "%PS_DEPS_PATH_FILE%" (
-    FOR /F "tokens=* USEBACKQ" %%I IN ("%PS_DEPS_PATH_FILE%") DO SET PS_DESTDIR=%%I
-    IF EXIST build/ALL_BUILD.vcxproj (
-        SET PS_STEPS=app-dirty
-    ) ELSE SET PS_STEPS=app
-) ELSE SET PS_STEPS=all
 SET PS_RUN=none
-SET PS_DESTDIR_CACHED=%PS_DESTDIR%
+SET PS_DESTDIR=
+CALL :RESOLVE_DESTDIR_CACHE
 
 REM Set up parameters used by help menu
 SET PS_CONFIG_DEFAULT=%PS_CONFIG%
 SET PS_ARCH_HOST=%PS_ARCH%
-SET PS_STEPS_DEFAULT=%PS_STEPS%
-IF "%PS_DESTDIR%" NEQ "" (
-    SET PS_DESTDIR_DEFAULT_MSG=Default: %PS_DESTDIR%
-) ELSE (
-    SET PS_DESTDIR_DEFAULT_MSG=Argument required ^(no default available^)
-)
 (echo " -help /help -h /h -? /? ")| findstr /I /C:" %~1 ">nul && GOTO :HELP
 
 REM Parse arguments
@@ -97,25 +85,24 @@ IF "%PARSER_FAIL%" NEQ "" (
 
 REM Validate arguments
 SET PS_ASK_TO_CONTINUE=
+CALL :TOLOWER PS_ARCH
+SET PS_ARCH=%PS_ARCH:amd64=x64%
+CALL :PARSE_OPTION_VALUE %PS_CONFIG_LIST:;= % PS_CONFIG
+IF "%PS_CONFIG%" EQU "" GOTO :HELP
+REM RESOLVE_DESTDIR_CACHE must go after PS_ARCH and PS_CONFIG, but before PS STEPS
+CALL :RESOLVE_DESTDIR_CACHE
+IF "%PS_STEPS%" EQU "" SET PS_STEPS=%PS_STEPS_DEFAULT%
 CALL :PARSE_OPTION_VALUE "all all-dirty deps-dirty deps app-dirty app app-cmake" PS_STEPS
 IF "%PS_STEPS%" EQU "" GOTO :HELP
 (echo %PS_STEPS%)| findstr /I /C:"dirty">nul && SET PS_STEPS_DIRTY=1 || SET PS_STEPS_DIRTY=
 IF "%PS_STEPS%" EQU "app-cmake" SET PS_STEPS_DIRTY=1
-CALL :PARSE_OPTION_VALUE "console custom ide none viewer window" PS_RUN
-IF "%PS_RUN%" EQU "" GOTO :HELP
-IF "%PS_RUN%" NEQ "none" IF "%PS_STEPS:~0,4%" EQU "deps" (
-    @ECHO ERROR: RUN=%PS_RUN% specified with STEPS=%PS_STEPS%
-    @ECHO ERROR: RUN=none is the only valid option for STEPS "deps" or "deps-dirty"
+IF "%PS_DESTDIR%" EQU "" SET PS_DESTDIR=%PS_DESTDIR_CACHED%
+IF "%PS_DESTDIR%" EQU "" (
+    @ECHO ERROR: Parameter required: -DESTDIR 1>&2
     GOTO :HELP
 )
-CALL :TOLOWER PS_ARCH
 CALL :CANONICALIZE_PATH PS_DESTDIR "%PS_START_DIR%"
-IF "%PS_DESTDIR%" EQU "" (
-    IF "%PS_STEPS_DIRTY%" EQU "" (
-        @ECHO ERROR: Parameter required: -DESTDIR 1>&2
-        GOTO :HELP
-    )
-) ELSE IF "%PS_DESTDIR%" NEQ "%PS_DESTDIR_CACHED%" (
+IF "%PS_DESTDIR%" NEQ "%PS_DESTDIR_CACHED%" (
     (echo "all deps all-dirty deps-dirty")| findstr /I /C:"%PS_STEPS%">nul || (
         IF EXIST "%PS_DESTDIR%" (
             @ECHO WARNING: DESTDIR does not match cache: 1>&2
@@ -129,8 +116,13 @@ IF "%PS_DESTDIR%" EQU "" (
     )
 )
 SET PS_DESTDIR_DEFAULT_MSG=
-CALL :PARSE_OPTION_VALUE %PS_CONFIG_LIST:;= % PS_CONFIG
-IF "%PS_CONFIG%" EQU "" GOTO :HELP
+CALL :PARSE_OPTION_VALUE "console custom ide none viewer window" PS_RUN
+IF "%PS_RUN%" EQU "" GOTO :HELP
+IF "%PS_RUN%" NEQ "none" IF "%PS_STEPS:~0,4%" EQU "deps" (
+    @ECHO ERROR: RUN=%PS_RUN% specified with STEPS=%PS_STEPS%
+    @ECHO ERROR: RUN=none is the only valid option for STEPS "deps" or "deps-dirty"
+    GOTO :HELP
+)
 REM Give the user a chance to cancel if we found something odd.
 IF "%PS_ASK_TO_CONTINUE%" EQU "" GOTO :BUILD_ENV
 @ECHO.
@@ -192,9 +184,7 @@ FOR /F "tokens=2 delims=," %%I in (
 cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% || GOTO :END
 REM Skip the build step if we're using the undocumented app-cmake to regenerate the full config from inside devenv
 IF "%PS_STEPS%" NEQ "app-cmake" msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% || GOTO :END
-IF "%PS_DESTDIR_CACHED%" NEQ "" IF "%PS_DESTDIR%" NEQ "%PS_DESTDIR_CACHED%" (
-    (echo %PS_DESTDIR%)> "%PS_DEPS_PATH_FILE%"
-)
+(echo %PS_DESTDIR%)> "%PS_DEPS_PATH_FILE_FOR_CONFIG%"
 
 REM Run app
 :RUN_APP
@@ -269,6 +259,30 @@ exit /B %EXIT_STATUS%
 
 GOTO :EOF
 REM Functions and stubs start here.
+
+:RESOLVE_DESTDIR_CACHE
+@REM Resolves all DESTDIR cache values and sets PS_STEPS_DEFAULT
+@REM Note: This just sets global variableq, so it doesn't use setlocal.
+SET PS_DEPS_PATH_FILE_FOR_CONFIG=%~dp0build\%PS_ARCH%\%PS_CONFIG%\%PS_DEPS_PATH_FILE_NAME%
+CALL :CANONICALIZE_PATH PS_DEPS_PATH_FILE_FOR_CONFIG
+IF EXIST "%PS_DEPS_PATH_FILE_FOR_CONFIG%" (
+    FOR /F "tokens=* USEBACKQ" %%I IN ("%PS_DEPS_PATH_FILE_FOR_CONFIG%") DO (
+        SET PS_DESTDIR_CACHED=%%I
+        SET PS_DESTDIR_DEFAULT_MSG=%%I
+    )
+    SET PS_STEPS_DEFAULT=app-dirty
+) ELSE IF EXIST "%PS_DEPS_PATH_FILE%" (
+    FOR /F "tokens=* USEBACKQ" %%I IN ("%PS_DEPS_PATH_FILE%") DO (
+        SET PS_DESTDIR_CACHED=%%I
+        SET PS_DESTDIR_DEFAULT_MSG=%%I
+    )
+    SET PS_STEPS_DEFAULT=app
+) ELSE (
+    SET PS_DESTDIR_CACHED=
+    SET PS_DESTDIR_DEFAULT_MSG=Cache missing. Argument required.
+    SET PS_STEPS_DEFAULT=all
+)
+GOTO :EOF
 
 :PARSE_OPTION
 @REM Argument parser called for each argument
