@@ -23,9 +23,7 @@
 
 #include <GL/glew.h>
 #include <boost/log/trivial.hpp>
-#if ENABLE_GCODE_WINDOW
 #include <boost/algorithm/string/split.hpp>
-#endif // ENABLE_GCODE_WINDOW
 #include <boost/nowide/cstdio.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <wx/progdlg.h>
@@ -123,9 +121,7 @@ bool GCodeViewer::Path::matches(const GCodeProcessor::MoveVertex& move) const
     case EMoveType::Custom_GCode:
     case EMoveType::Retract:
     case EMoveType::Unretract:
-#if ENABLE_SEAMS_VISUALIZATION
     case EMoveType::Seam:
-#endif // ENABLE_SEAMS_VISUALIZATION
     case EMoveType::Extrude: {
         // use rounding to reduce the number of generated paths
         return type == move.type && extruder_id == move.extruder_id && cp_color_id == move.cp_color_id && role == move.extrusion_role &&
@@ -205,9 +201,7 @@ void GCodeViewer::SequentialRangeCap::reset() {
 void GCodeViewer::SequentialView::Marker::init()
 {
     m_model.init_from(stilized_arrow(16, 2.0f, 4.0f, 1.0f, 8.0f));
-#if ENABLE_SEQUENTIAL_LIMITS
     m_model.set_color(-1, { 1.0f, 1.0f, 1.0f, 0.5f });
-#endif // ENABLE_SEQUENTIAL_LIMITS
 }
 
 void GCodeViewer::SequentialView::Marker::set_world_position(const Vec3f& position)
@@ -229,9 +223,6 @@ void GCodeViewer::SequentialView::Marker::render() const
     glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
     shader->start_using();
-#if !ENABLE_SEQUENTIAL_LIMITS
-    shader->set_uniform("uniform_color", m_color);
-#endif // !ENABLE_SEQUENTIAL_LIMITS
     shader->set_uniform("emission_factor", 0.0);
 
     glsafe(::glPushMatrix());
@@ -274,7 +265,6 @@ void GCodeViewer::SequentialView::Marker::render() const
     ImGui::PopStyleVar();
 }
 
-#if ENABLE_GCODE_WINDOW
 void GCodeViewer::SequentialView::GCodeWindow::load_gcode()
 {
     if (m_filename.empty())
@@ -492,7 +482,6 @@ void GCodeViewer::SequentialView::render(float legend_height) const
         bottom -= wxGetApp().plater()->get_view_toolbar().get_height();
     gcode_window.render(legend_height, bottom, static_cast<uint64_t>(gcode_ids[current.last]));
 }
-#endif // ENABLE_GCODE_WINDOW
 
 const std::vector<GCodeViewer::Color> GCodeViewer::Extrusion_Role_Colors {{
     { 0.75f, 0.75f, 0.75f },   // erNone
@@ -516,9 +505,7 @@ const std::vector<GCodeViewer::Color> GCodeViewer::Extrusion_Role_Colors {{
 const std::vector<GCodeViewer::Color> GCodeViewer::Options_Colors {{
     { 0.803f, 0.135f, 0.839f },   // Retractions
     { 0.287f, 0.679f, 0.810f },   // Unretractions
-#if ENABLE_SEAMS_VISUALIZATION
     { 0.900f, 0.900f, 0.900f },   // Seams
-#endif // ENABLE_SEAMS_VISUALIZATION
     { 0.758f, 0.744f, 0.389f },   // ToolChanges
     { 0.856f, 0.582f, 0.546f },   // ColorChanges
     { 0.322f, 0.942f, 0.512f },   // PausePrints
@@ -561,20 +548,12 @@ GCodeViewer::GCodeViewer()
         case EMoveType::Pause_Print:
         case EMoveType::Custom_GCode:
         case EMoveType::Retract:
-#if ENABLE_SEAMS_VISUALIZATION
         case EMoveType::Unretract:
         case EMoveType::Seam: {
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Point;
             buffer.vertices.format = VBuffer::EFormat::Position;
             break;
         }
-#else
-        case EMoveType::Unretract: {
-            buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Point;
-            buffer.vertices.format = VBuffer::EFormat::Position;
-            break;
-        }
-#endif // ENABLE_SEAMS_VISUALIZATION
         case EMoveType::Wipe:
         case EMoveType::Extrude: {
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Triangle;
@@ -604,10 +583,8 @@ void GCodeViewer::load(const GCodeProcessor::Result& gcode_result, const Print& 
     // release gpu memory, if used
     reset(); 
 
-#if ENABLE_GCODE_WINDOW
     m_sequential_view.gcode_window.set_filename(gcode_result.filename);
     m_sequential_view.gcode_window.load_gcode();
-#endif // ENABLE_GCODE_WINDOW
 
     load_toolpaths(gcode_result);
 
@@ -766,9 +743,7 @@ void GCodeViewer::reset()
     m_layers_z_range = { 0, 0 };
     m_roles = std::vector<ExtrusionRole>();
     m_print_statistics.reset();
-#if ENABLE_GCODE_WINDOW
     m_sequential_view.gcode_window.reset();
-#endif // ENABLE_GCODE_WINDOW
 #if ENABLE_GCODE_VIEWER_STATISTICS
     m_statistics.reset_all();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
@@ -788,18 +763,11 @@ void GCodeViewer::render() const
             case EMoveType::Pause_Print:
             case EMoveType::Custom_GCode:
             case EMoveType::Retract:
-#if ENABLE_SEAMS_VISUALIZATION
             case EMoveType::Unretract:
             case EMoveType::Seam: {
                 buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
                 break;
             }
-#else
-            case EMoveType::Unretract: {
-                buffer.shader = wxGetApp().is_glsl_version_greater_or_equal_to(1, 20) ? "options_120" : "options_110";
-                break;
-            }
-#endif // ENABLE_SEAMS_VISUALIZATION
             case EMoveType::Wipe:
             case EMoveType::Extrude: {
                 buffer.shader = "gouraud_light";
@@ -837,20 +805,12 @@ void GCodeViewer::render() const
     glsafe(::glEnable(GL_DEPTH_TEST));
     render_toolpaths();
     render_shells();
-#if ENABLE_GCODE_WINDOW
     float legend_height = 0.0f;
     render_legend(legend_height);
-#else
-    render_legend();
-#endif // ENABLE_GCODE_WINDOW
     SequentialView* sequential_view = const_cast<SequentialView*>(&m_sequential_view);
     if (sequential_view->current.last != sequential_view->endpoints.last) {
         sequential_view->marker.set_world_position(sequential_view->current_position);
-#if ENABLE_GCODE_WINDOW
         sequential_view->render(legend_height);
-#else
-        sequential_view->marker.render();
-#endif // ENABLE_GCODE_WINDOW
     }
 #if ENABLE_GCODE_VIEWER_STATISTICS
     render_statistics();
@@ -932,9 +892,7 @@ unsigned int GCodeViewer::get_options_visibility_flags() const
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::Wipe), is_toolpath_move_type_visible(EMoveType::Wipe));
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::Retractions), is_toolpath_move_type_visible(EMoveType::Retract));
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::Unretractions), is_toolpath_move_type_visible(EMoveType::Unretract));
-#if ENABLE_SEAMS_VISUALIZATION
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::Seams), is_toolpath_move_type_visible(EMoveType::Seam));
-#endif // ENABLE_SEAMS_VISUALIZATION
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::ToolChanges), is_toolpath_move_type_visible(EMoveType::Tool_change));
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::ColorChanges), is_toolpath_move_type_visible(EMoveType::Color_change));
     flags = set_flag(flags, static_cast<unsigned int>(Preview::OptionType::PausePrints), is_toolpath_move_type_visible(EMoveType::Pause_Print));
@@ -955,9 +913,7 @@ void GCodeViewer::set_options_visibility_from_flags(unsigned int flags)
     set_toolpath_move_type_visible(EMoveType::Wipe, is_flag_set(static_cast<unsigned int>(Preview::OptionType::Wipe)));
     set_toolpath_move_type_visible(EMoveType::Retract, is_flag_set(static_cast<unsigned int>(Preview::OptionType::Retractions)));
     set_toolpath_move_type_visible(EMoveType::Unretract, is_flag_set(static_cast<unsigned int>(Preview::OptionType::Unretractions)));
-#if ENABLE_SEAMS_VISUALIZATION
     set_toolpath_move_type_visible(EMoveType::Seam, is_flag_set(static_cast<unsigned int>(Preview::OptionType::Seams)));
-#endif // ENABLE_SEAMS_VISUALIZATION
     set_toolpath_move_type_visible(EMoveType::Tool_change, is_flag_set(static_cast<unsigned int>(Preview::OptionType::ToolChanges)));
     set_toolpath_move_type_visible(EMoveType::Color_change, is_flag_set(static_cast<unsigned int>(Preview::OptionType::ColorChanges)));
     set_toolpath_move_type_visible(EMoveType::Pause_Print, is_flag_set(static_cast<unsigned int>(Preview::OptionType::PausePrints)));
@@ -1127,7 +1083,6 @@ void GCodeViewer::export_toolpaths_to_obj(const char* filename) const
     fclose(fp);
 }
 
-#if ENABLE_GCODE_WINDOW
 void GCodeViewer::start_mapping_gcode_window()
 {
     m_sequential_view.gcode_window.load_gcode();
@@ -1137,7 +1092,6 @@ void GCodeViewer::stop_mapping_gcode_window()
 {
     m_sequential_view.gcode_window.stop_mapping_file();
 }
-#endif // ENABLE_GCODE_WINDOW
 
 void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
 {
@@ -1435,11 +1389,7 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
             // for the gcode viewer we need to take in account all moves to correctly size the printbed
             m_paths_bounding_box.merge(move.position.cast<double>());
         else {
-#if ENABLE_START_GCODE_VISUALIZATION
             if (move.type == EMoveType::Extrude && move.extrusion_role != erCustom && move.width != 0.0f && move.height != 0.0f)
-#else
-            if (move.type == EMoveType::Extrude && move.width != 0.0f && move.height != 0.0f)
-#endif // ENABLE_START_GCODE_VISUALIZATION
                 m_paths_bounding_box.merge(move.position.cast<double>());
         }
     }
@@ -1448,12 +1398,10 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
     m_max_bounding_box = m_paths_bounding_box;
     m_max_bounding_box.merge(m_paths_bounding_box.max + m_sequential_view.marker.get_bounding_box().size()[2] * Vec3d::UnitZ());
 
-#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
     m_sequential_view.gcode_ids.clear();
     for (const GCodeProcessor::MoveVertex& move : gcode_result.moves) {
         m_sequential_view.gcode_ids.push_back(move.gcode_id);
     }
-#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
     std::vector<MultiVertexBuffer> vertices(m_buffers.size());
     std::vector<MultiIndexBuffer> indices(m_buffers.size());
@@ -2193,9 +2141,7 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         case EMoveType::Custom_GCode: { color = Options_Colors[static_cast<unsigned int>(EOptionsColors::CustomGCodes)]; break; }
         case EMoveType::Retract:      { color = Options_Colors[static_cast<unsigned int>(EOptionsColors::Retractions)]; break; }
         case EMoveType::Unretract:    { color = Options_Colors[static_cast<unsigned int>(EOptionsColors::Unretractions)]; break; }
-#if ENABLE_SEAMS_VISUALIZATION
         case EMoveType::Seam:         { color = Options_Colors[static_cast<unsigned int>(EOptionsColors::Seams)]; break; }
-#endif // ENABLE_SEAMS_VISUALIZATION
         case EMoveType::Extrude: {
             if (!top_layer_only ||
                 m_sequential_view.current.last == global_endpoints.last ||
@@ -2599,34 +2545,22 @@ void GCodeViewer::render_shells() const
 //    glsafe(::glDepthMask(GL_TRUE));
 }
 
-#if ENABLE_GCODE_WINDOW
 void GCodeViewer::render_legend(float& legend_height) const
-#else
-void GCodeViewer::render_legend() const
-#endif // ENABLE_GCODE_WINDOW
 {
     if (!m_legend_enabled)
         return;
 
-#if ENABLE_SCROLLABLE_LEGEND
     const Size cnv_size = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size();
-#endif // ENABLE_SCROLLABLE_LEGEND
 
     ImGuiWrapper& imgui = *wxGetApp().imgui();
 
     imgui.set_next_window_pos(0.0f, 0.0f, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::SetNextWindowBgAlpha(0.6f);
-#if ENABLE_SCROLLABLE_LEGEND
     const float max_height = 0.75f * static_cast<float>(cnv_size.get_height());
     const float child_height = 0.3333f * max_height;
     ImGui::SetNextWindowSizeConstraints({ 0.0f, 0.0f }, { -1.0f, max_height });
     imgui.begin(std::string("Legend"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-#else
-    imgui.begin(std::string("Legend"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
-
-    ImDrawList* draw_list = ImGui::GetWindowDrawList();
-#endif // ENABLE_SCROLLABLE_LEGEND
 
     enum class EItemType : unsigned char
     {
@@ -2637,30 +2571,22 @@ void GCodeViewer::render_legend() const
     };
 
     const PrintEstimatedStatistics::Mode& time_mode = m_print_statistics.modes[static_cast<size_t>(m_time_estimate_mode)];
-#if ENABLE_SCROLLABLE_LEGEND
     bool show_estimated_time = time_mode.time > 0.0f && (m_view_type == EViewType::FeatureType ||
         (m_view_type == EViewType::ColorPrint && !time_mode.custom_gcode_times.empty()));
-#endif // ENABLE_SCROLLABLE_LEGEND
 
     const float icon_size = ImGui::GetTextLineHeight();
     const float percent_bar_size = 2.0f * ImGui::GetTextLineHeight();
 
     bool imperial_units = wxGetApp().app_config->get("use_inches") == "1";
 
-#if ENABLE_SCROLLABLE_LEGEND
     auto append_item = [this, icon_size, percent_bar_size, &imgui, imperial_units](EItemType type, const Color& color, const std::string& label,
-#else
-    auto append_item = [this, draw_list, icon_size, percent_bar_size, &imgui, imperial_units](EItemType type, const Color& color, const std::string& label,
-#endif // ENABLE_SCROLLABLE_LEGEND
         bool visible = true, const std::string& time = "", float percent = 0.0f, float max_percent = 0.0f, const std::array<float, 4>& offsets = { 0.0f, 0.0f, 0.0f, 0.0f },
         double used_filament_m = 0.0, double used_filament_g = 0.0,
         std::function<void()> callback = nullptr) {
         if (!visible)
             ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.3333f);
 
-#if ENABLE_SCROLLABLE_LEGEND
         ImDrawList* draw_list = ImGui::GetWindowDrawList();
-#endif // ENABLE_SCROLLABLE_LEGEND
         ImVec2 pos = ImGui::GetCursorScreenPos();
         switch (type) {
         default:
@@ -3013,7 +2939,6 @@ void GCodeViewer::render_legend() const
     }
     case EViewType::ColorPrint:
     {
-#if ENABLE_SCROLLABLE_LEGEND
         const std::vector<CustomGCode::Item>& custom_gcode_per_print_z = wxGetApp().plater()->model().custom_gcode_per_print_z.gcodes;
         size_t total_items = 1;
         for (unsigned char i : m_extruder_ids) {
@@ -3025,9 +2950,6 @@ void GCodeViewer::render_legend() const
         // add scrollable region, if needed
         if (need_scrollable)
             ImGui::BeginChild("color_prints", { -1.0f, child_height }, false);
-#else
-        const std::vector<CustomGCode::Item>& custom_gcode_per_print_z = wxGetApp().plater()->model().custom_gcode_per_print_z.gcodes;
-#endif // ENABLE_SCROLLABLE_LEGEND
         if (m_extruders_count == 1) { // single extruder use case
             const std::vector<std::pair<Color, std::pair<double, double>>> cp_values = color_print_ranges(0, custom_gcode_per_print_z);
             const int items_cnt = static_cast<int>(cp_values.size());
@@ -3078,10 +3000,8 @@ void GCodeViewer::render_legend() const
                 }
             }
         }
-#if ENABLE_SCROLLABLE_LEGEND
         if (need_scrollable)
             ImGui::EndChild();
-#endif // ENABLE_SCROLLABLE_LEGEND
 
         break;
     }
@@ -3232,12 +3152,10 @@ void GCodeViewer::render_legend() const
 
             ImGui::Spacing();
             append_headers({ _u8L("Event"), _u8L("Remaining time"), _u8L("Duration"), _u8L("Used filament") }, offsets);
-#if ENABLE_SCROLLABLE_LEGEND
             const bool need_scrollable = static_cast<float>(partial_times.size()) * (icon_size + ImGui::GetStyle().ItemSpacing.y) > child_height;
             if (need_scrollable)
                 // add scrollable region
                 ImGui::BeginChild("events", { -1.0f, child_height }, false);
-#endif // ENABLE_SCROLLABLE_LEGEND
 
             for (const PartialTime& item : partial_times) {
                 switch (item.type)
@@ -3259,10 +3177,8 @@ void GCodeViewer::render_legend() const
                 }
             }
 
-#if ENABLE_SCROLLABLE_LEGEND
             if (need_scrollable)
                 ImGui::EndChild();
-#endif // ENABLE_SCROLLABLE_LEGEND
         }
     }
 
@@ -3321,12 +3237,8 @@ void GCodeViewer::render_legend() const
             available(EMoveType::Pause_Print) ||
             available(EMoveType::Retract) ||
             available(EMoveType::Tool_change) ||
-#if ENABLE_SEAMS_VISUALIZATION
             available(EMoveType::Unretract) ||
             available(EMoveType::Seam);
-#else
-            available(EMoveType::Unretract);
-#endif // ENABLE_SEAMS_VISUALIZATION
     };
 
     auto add_option = [this, append_item](EMoveType move_type, EOptionsColors color, const std::string& text) {
@@ -3344,9 +3256,7 @@ void GCodeViewer::render_legend() const
         // items
         add_option(EMoveType::Retract, EOptionsColors::Retractions, _u8L("Retractions"));
         add_option(EMoveType::Unretract, EOptionsColors::Unretractions, _u8L("Deretractions"));
-#if ENABLE_SEAMS_VISUALIZATION
         add_option(EMoveType::Seam, EOptionsColors::Seams, _u8L("Seams"));
-#endif // ENABLE_SEAMS_VISUALIZATION
         add_option(EMoveType::Tool_change, EOptionsColors::ToolChanges, _u8L("Tool changes"));
         add_option(EMoveType::Color_change, EOptionsColors::ColorChanges, _u8L("Color changes"));
         add_option(EMoveType::Pause_Print, EOptionsColors::PausePrints, _u8L("Print pauses"));
@@ -3412,14 +3322,7 @@ void GCodeViewer::render_legend() const
     }
 
     // total estimated printing time section
-#if ENABLE_SCROLLABLE_LEGEND
     if (show_estimated_time) {
-#else
-    if (time_mode.time > 0.0f && (m_view_type == EViewType::FeatureType ||
-        (m_view_type == EViewType::ColorPrint && !time_mode.custom_gcode_times.empty()))) {
-
-        ImGui::Spacing();
-#endif // ENABLE_SCROLLABLE_LEGEND
         ImGui::Spacing();
         std::string time_title = _u8L("Estimated printing times");
         switch (m_time_estimate_mode)
@@ -3434,11 +3337,17 @@ void GCodeViewer::render_legend() const
         std::string first_str = _u8L("First layer");
         std::string total_str = _u8L("Total");
 
-        float max_len = 10.0f + ImGui::GetStyle().ItemSpacing.x + std::max(ImGui::CalcTextSize(first_str.c_str()).x, ImGui::CalcTextSize(total_str.c_str()).x);
+        float max_len = 10.0f + ImGui::GetStyle().ItemSpacing.x;
+        if (time_mode.layers_times.empty())
+            max_len += ImGui::CalcTextSize(total_str.c_str()).x;
+        else
+            max_len += std::max(ImGui::CalcTextSize(first_str.c_str()).x, ImGui::CalcTextSize(total_str.c_str()).x);
 
-        imgui.text(first_str + ":");
-        ImGui::SameLine(max_len);
-        imgui.text(short_time(get_time_dhms(time_mode.layers_times.front())));
+        if (!time_mode.layers_times.empty()) {
+            imgui.text(first_str + ":");
+            ImGui::SameLine(max_len);
+            imgui.text(short_time(get_time_dhms(time_mode.layers_times.front())));
+        }
 
         imgui.text(total_str + ":");
         ImGui::SameLine(max_len);
@@ -3475,9 +3384,7 @@ void GCodeViewer::render_legend() const
         }
     }
 
-#if ENABLE_GCODE_WINDOW
     legend_height = ImGui::GetCurrentWindow()->Size.y;
-#endif // ENABLE_GCODE_WINDOW
 
     imgui.end();
     ImGui::PopStyleVar();

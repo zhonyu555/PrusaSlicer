@@ -322,12 +322,8 @@ public:
     Polygon       convex_hull_2d(const Transform3d &trafo_instance) const;
 
     void center_around_origin(bool include_modifiers = true);
-
-#if ENABLE_ALLOW_NEGATIVE_Z
     void ensure_on_bed(bool allow_negative_z = false);
-#else
-    void ensure_on_bed();
-#endif // ENABLE_ALLOW_NEGATIVE_Z
+
     void translate_instances(const Vec3d& vector);
     void translate_instance(size_t instance_idx, const Vec3d& vector);
     void translate(const Vec3d &vector) { this->translate(vector(0), vector(1), vector(2)); }
@@ -596,13 +592,14 @@ public:
         int volume_idx{ -1 };
         Vec3d mesh_offset{ Vec3d::Zero() };
         Geometry::Transformation transform;
-        bool is_converted_from_inches = false;
-        bool is_converted_from_meters = false;
+        bool is_converted_from_inches{ false };
+        bool is_converted_from_meters{ false };
+        bool is_from_builtin_objects{ false };
 
         template<class Archive> void serialize(Archive& ar) { 
             //FIXME Vojtech: Serialize / deserialize only if the Source is set.
             // likely testing input_file or object_idx would be sufficient.
-            ar(input_file, object_idx, volume_idx, mesh_offset, transform, is_converted_from_inches, is_converted_from_meters);
+            ar(input_file, object_idx, volume_idx, mesh_offset, transform, is_converted_from_inches, is_converted_from_meters, is_from_builtin_objects);
         }
     };
     Source              source;
@@ -1175,9 +1172,7 @@ void check_model_ids_validity(const Model &model);
 void check_model_ids_equal(const Model &model1, const Model &model2);
 #endif /* NDEBUG */
 
-#if ENABLE_ALLOW_NEGATIVE_Z
 static const float SINKING_Z_THRESHOLD = -0.001f;
-#endif // ENABLE_ALLOW_NEGATIVE_Z
 
 } // namespace Slic3r
 

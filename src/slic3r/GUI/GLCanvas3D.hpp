@@ -121,9 +121,7 @@ wxDECLARE_EVENT(EVT_GLCANVAS_INSTANCE_SCALED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_WIPETOWER_ROTATED, Vec3dEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, Event<bool>);
 wxDECLARE_EVENT(EVT_GLCANVAS_UPDATE_GEOMETRY, Vec3dsEvent<2>);
-#if ENABLE_SEQUENTIAL_LIMITS
 wxDECLARE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_STARTED, SimpleEvent);
-#endif // ENABLE_SEQUENTIAL_LIMITS
 wxDECLARE_EVENT(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_UPDATE_BED_SHAPE, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_TAB, SimpleEvent);
@@ -429,9 +427,7 @@ private:
     Model* m_model;
     BackgroundSlicingProcess *m_process;
 
-#if ENABLE_SCROLLABLE_LEGEND
     std::array<unsigned int, 2> m_old_size{ 0, 0 };
-#endif // ENABLE_SCROLLABLE_LEGEND
 
     // Screen is only refreshed from the OnIdle handler if it is dirty.
     bool m_dirty;
@@ -500,7 +496,6 @@ private:
 
     void load_arrange_settings();
 
-#if ENABLE_SEQUENTIAL_LIMITS
     class SequentialPrintClearance
     {
         GLModel m_fill;
@@ -521,7 +516,6 @@ private:
 
     SequentialPrintClearance m_sequential_print_clearance;
     bool m_sequential_print_clearance_first_displacement{ true };
-#endif // ENABLE_SEQUENTIAL_LIMITS
 
 public:
     explicit GLCanvas3D(wxGLCanvas* canvas);
@@ -548,10 +542,8 @@ public:
     const GCodeViewer::SequentialView& get_gcode_sequential_view() const { return m_gcode_viewer.get_sequential_view(); }
     void update_gcode_sequential_view_current(unsigned int first, unsigned int last) { m_gcode_viewer.update_sequential_view_current(first, last); }
 
-#if ENABLE_GCODE_WINDOW
     void start_mapping_gcode_window();
     void stop_mapping_gcode_window();
-#endif // ENABLE_GCODE_WINDOW
 
     void toggle_sla_auxiliaries_visibility(bool visible, const ModelObject* mo = nullptr, int instance_idx = -1);
     void toggle_model_objects_visibility(bool visible, const ModelObject* mo = nullptr, int instance_idx = -1);
@@ -770,7 +762,6 @@ public:
 #endif
     }
 
-#if ENABLE_SEQUENTIAL_LIMITS
     void reset_sequential_print_clearance() {
         m_sequential_print_clearance.set_visible(false);
         m_sequential_print_clearance.set_render_fill(false);
@@ -790,14 +781,11 @@ public:
     }
 
     void update_sequential_clearance();
-#endif // ENABLE_SEQUENTIAL_LIMITS
 
     const Print* fff_print() const;
     const SLAPrint* sla_print() const;
 
-#if ENABLE_SCROLLABLE_LEGEND
     void reset_old_size() { m_old_size = { 0, 0 }; }
-#endif // ENABLE_SCROLLABLE_LEGEND
 
 private:
     bool _is_shown_on_screen() const;
@@ -822,6 +810,7 @@ private:
     void _rectangular_selection_picking_pass();
     void _render_background() const;
     void _render_bed(bool bottom, bool show_axes);
+    void _render_bed_for_picking(bool bottom);
 #if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
     void _render_objects(GLVolumeCollection::ERenderType type);
 #else
@@ -829,9 +818,7 @@ private:
 #endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
     void _render_gcode() const;
     void _render_selection() const;
-#if ENABLE_SEQUENTIAL_LIMITS
     void _render_sequential_clearance();
-#endif // ENABLE_SEQUENTIAL_LIMITS
 #if ENABLE_RENDER_SELECTION_CENTER
     void _render_selection_center() const;
 #endif // ENABLE_RENDER_SELECTION_CENTER
@@ -907,7 +894,7 @@ private:
 
     float get_overlay_window_width() { return LayersEditing::get_overlay_window_width(); }
 
-    static std::vector<float> _parse_colors(const std::vector<std::string>& colors);
+    static std::vector<std::array<float, 4>> _parse_colors(const std::vector<std::string>& colors);
 };
 
 } // namespace GUI

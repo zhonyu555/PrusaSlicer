@@ -23,9 +23,7 @@
 #include "libslic3r/Format/STL.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/AppConfig.hpp"
-#if DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
 #include "libslic3r/PresetBundle.hpp"
-#endif // DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -286,21 +284,21 @@ void GLIndexedVertexArray::render(
     glsafe(::glBindBuffer(GL_ARRAY_BUFFER, 0));
 }
 
-const float GLVolume::SELECTED_COLOR[4] = { 0.0f, 1.0f, 0.0f, 1.0f };
-const float GLVolume::HOVER_SELECT_COLOR[4] = { 0.4f, 0.9f, 0.1f, 1.0f };
-const float GLVolume::HOVER_DESELECT_COLOR[4] = { 1.0f, 0.75f, 0.75f, 1.0f };
-const float GLVolume::OUTSIDE_COLOR[4] = { 0.0f, 0.38f, 0.8f, 1.0f };
-const float GLVolume::SELECTED_OUTSIDE_COLOR[4] = { 0.19f, 0.58f, 1.0f, 1.0f };
-const float GLVolume::DISABLED_COLOR[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
-const float GLVolume::MODEL_COLOR[4][4] = {
+const std::array<float, 4> GLVolume::SELECTED_COLOR = { 0.0f, 1.0f, 0.0f, 1.0f };
+const std::array<float, 4> GLVolume::HOVER_SELECT_COLOR = { 0.4f, 0.9f, 0.1f, 1.0f };
+const std::array<float, 4> GLVolume::HOVER_DESELECT_COLOR = { 1.0f, 0.75f, 0.75f, 1.0f };
+const std::array<float, 4> GLVolume::OUTSIDE_COLOR = { 0.0f, 0.38f, 0.8f, 1.0f };
+const std::array<float, 4> GLVolume::SELECTED_OUTSIDE_COLOR = { 0.19f, 0.58f, 1.0f, 1.0f };
+const std::array<float, 4> GLVolume::DISABLED_COLOR = { 0.25f, 0.25f, 0.25f, 1.0f };
+const std::array<float, 4> GLVolume::SLA_SUPPORT_COLOR = { 0.75f, 0.75f, 0.75f, 1.0f };
+const std::array<float, 4> GLVolume::SLA_PAD_COLOR = { 0.0f, 0.2f, 0.0f, 1.0f };
+const std::array<float, 4> GLVolume::NEUTRAL_COLOR = { 0.9f, 0.9f, 0.9f, 1.0f };
+const std::array<std::array<float, 4>, 4> GLVolume::MODEL_COLOR = { {
     { 1.0f, 1.0f, 0.0f, 1.f },
     { 1.0f, 0.5f, 0.5f, 1.f },
     { 0.5f, 1.0f, 0.5f, 1.f },
     { 0.5f, 0.5f, 1.0f, 1.f }
-};
-const float GLVolume::SLA_SUPPORT_COLOR[4] = { 0.75f, 0.75f, 0.75f, 1.0f };
-const float GLVolume::SLA_PAD_COLOR[4] = { 0.0f, 0.2f, 0.0f, 1.0f };
-const float GLVolume::NEUTRAL_COLOR[4] = { 0.9f, 0.9f, 0.9f, 1.0f };
+} };
 
 GLVolume::GLVolume(float r, float g, float b, float a)
     : m_transformed_bounding_box_dirty(true)
@@ -326,67 +324,47 @@ GLVolume::GLVolume(float r, float g, float b, float a)
     , tverts_range(0, size_t(-1))
     , qverts_range(0, size_t(-1))
 {
-    color[0] = r;
-    color[1] = g;
-    color[2] = b;
-    color[3] = a;
-    set_render_color(r, g, b, a);
+    color = { r, g, b, a };
+    set_render_color(color);
 }
 
 void GLVolume::set_render_color(float r, float g, float b, float a)
 {
-    render_color[0] = r;
-    render_color[1] = g;
-    render_color[2] = b;
-    render_color[3] = a;
+    render_color = { r, g, b, a };
 }
 
-void GLVolume::set_render_color(const float* rgba, unsigned int size)
+void GLVolume::set_render_color(const std::array<float, 4>& rgba)
 {
-    ::memcpy((void*)render_color, (const void*)rgba, (size_t)(std::min((unsigned int)4, size) * sizeof(float)));
+    render_color = rgba;
 }
 
 void GLVolume::set_render_color()
 {
-#if ENABLE_ALLOW_NEGATIVE_Z
     bool outside = is_outside || is_below_printbed();
-#endif // ENABLE_ALLOW_NEGATIVE_Z
 
     if (force_native_color || force_neutral_color) {
-#if ENABLE_ALLOW_NEGATIVE_Z
         if (outside && shader_outside_printer_detection_enabled)
-#else
-        if (is_outside && shader_outside_printer_detection_enabled)
-#endif // ENABLE_ALLOW_NEGATIVE_Z
-            set_render_color(OUTSIDE_COLOR, 4);
+            set_render_color(OUTSIDE_COLOR);
         else {
             if (force_native_color)
-                set_render_color(color, 4);
+                set_render_color(color);
             else
-                set_render_color(NEUTRAL_COLOR, 4);
+                set_render_color(NEUTRAL_COLOR);
         }
     }
     else {
         if (hover == HS_Select)
-            set_render_color(HOVER_SELECT_COLOR, 4);
+            set_render_color(HOVER_SELECT_COLOR);
         else if (hover == HS_Deselect)
-            set_render_color(HOVER_DESELECT_COLOR, 4);
+            set_render_color(HOVER_DESELECT_COLOR);
         else if (selected)
-#if ENABLE_ALLOW_NEGATIVE_Z
-            set_render_color(outside ? SELECTED_OUTSIDE_COLOR : SELECTED_COLOR, 4);
-#else
-            set_render_color(is_outside ? SELECTED_OUTSIDE_COLOR : SELECTED_COLOR, 4);
-#endif // ENABLE_ALLOW_NEGATIVE_Z
+            set_render_color(outside ? SELECTED_OUTSIDE_COLOR : SELECTED_COLOR);
         else if (disabled)
-            set_render_color(DISABLED_COLOR, 4);
-#if ENABLE_ALLOW_NEGATIVE_Z
+            set_render_color(DISABLED_COLOR);
         else if (outside && shader_outside_printer_detection_enabled)
-#else
-        else if (is_outside && shader_outside_printer_detection_enabled)
-#endif // ENABLE_ALLOW_NEGATIVE_Z
-            set_render_color(OUTSIDE_COLOR, 4);
+            set_render_color(OUTSIDE_COLOR);
         else
-            set_render_color(color, 4);
+            set_render_color(color);
     }
 
     if (!printable) {
@@ -399,29 +377,29 @@ void GLVolume::set_render_color()
         render_color[3] = color[3];
 }
 
-void GLVolume::set_color_from_model_volume(const ModelVolume *model_volume)
+void GLVolume::set_color_from_model_volume(const ModelVolume& model_volume)
 {
-    if (model_volume->is_negative_volume()) {
+    if (model_volume.is_negative_volume()) {
         color[0] = 0.2f;
         color[1] = 0.2f;
         color[2] = 0.2f;
     }
-    else if (model_volume->is_modifier()) {
+    else if (model_volume.is_modifier()) {
         color[0] = 0.2f;
         color[1] = 1.0f;
         color[2] = 0.2f;
     }
-    else if (model_volume->is_support_blocker()) {
+    else if (model_volume.is_support_blocker()) {
         color[0] = 1.0f;
         color[1] = 0.2f;
         color[2] = 0.2f;
     }
-    else if (model_volume->is_support_enforcer()) {
+    else if (model_volume.is_support_enforcer()) {
         color[0] = 0.2f;
         color[1] = 0.2f;
         color[2] = 1.0f;
     }
-    color[3] = model_volume->is_model_part() ? 1.f : 0.5f;
+    color[3] = model_volume.is_model_part() ? 1.f : 0.5f;
 }
 
 Transform3d GLVolume::world_matrix() const
@@ -526,14 +504,9 @@ void GLVolume::render() const
 bool GLVolume::is_sla_support() const { return this->composite_id.volume_id == -int(slaposSupportTree); }
 bool GLVolume::is_sla_pad() const { return this->composite_id.volume_id == -int(slaposPad); }
 
-#if ENABLE_ALLOW_NEGATIVE_Z
 bool GLVolume::is_sinking() const
 {
-#if DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
     if (is_modifier || GUI::wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() == ptSLA)
-#else
-    if (is_modifier)
-#endif // DISABLE_ALLOW_NEGATIVE_Z_FOR_SLA
         return false;
     const BoundingBoxf3& box = transformed_convex_hull_bounding_box();
     return box.min.z() < SINKING_Z_THRESHOLD && box.max.z() >= SINKING_Z_THRESHOLD;
@@ -543,7 +516,6 @@ bool GLVolume::is_below_printbed() const
 {
     return transformed_convex_hull_bounding_box().max(2) < 0.0;
 }
-#endif // ENABLE_ALLOW_NEGATIVE_Z
 
 std::vector<int> GLVolumeCollection::load_object(
     const ModelObject       *model_object,
@@ -571,22 +543,11 @@ int GLVolumeCollection::load_object_volume(
     const int            extruder_id  = model_volume->extruder_id();
     const ModelInstance *instance 	  = model_object->instances[instance_idx];
     const TriangleMesh  &mesh 		  = model_volume->mesh();
-    float 				 color[4];
-    memcpy(color, GLVolume::MODEL_COLOR[((color_by == "volume") ? volume_idx : obj_idx) % 4], sizeof(float) * 3);
-    /*    if (model_volume->is_support_blocker()) {
-            color[0] = 1.0f;
-            color[1] = 0.2f;
-            color[2] = 0.2f;
-        } else if (model_volume->is_support_enforcer()) {
-            color[0] = 0.2f;
-            color[1] = 0.2f;
-            color[2] = 1.0f;
-        }
-        color[3] = model_volume->is_model_part() ? 1.f : 0.5f; */
+    std::array<float, 4> color = GLVolume::MODEL_COLOR[((color_by == "volume") ? volume_idx : obj_idx) % 4];
     color[3] = model_volume->is_model_part() ? 1.f : 0.5f;
     this->volumes.emplace_back(new GLVolume(color));
     GLVolume& v = *this->volumes.back();
-    v.set_color_from_model_volume(model_volume);
+    v.set_color_from_model_volume(*model_volume);
 #if ENABLE_SMOOTH_NORMALS
     v.indexed_vertex_array.load_mesh(mesh, true);
 #else
@@ -664,7 +625,7 @@ int GLVolumeCollection::load_wipe_tower_preview(
         height = 0.1f;
 
     TriangleMesh mesh;
-    float color[4] = { 0.5f, 0.5f, 0.0f, 1.f };
+    std::array<float, 4> color = { 0.5f, 0.5f, 0.0f, 1.0f };
 
     // In case we don't know precise dimensions of the wipe tower yet, we'll draw
     // the box with different color with one side jagged:
@@ -712,8 +673,8 @@ int GLVolumeCollection::load_wipe_tower_preview(
     brim_mesh.translate(-brim_width, -brim_width, 0.f);
     mesh.merge(brim_mesh);
 
-    this->volumes.emplace_back(new GLVolume(color));
-    GLVolume& v = *this->volumes.back();
+    volumes.emplace_back(new GLVolume(color));
+    GLVolume& v = *volumes.back();
     v.indexed_vertex_array.load_mesh(mesh);
     v.indexed_vertex_array.finalize_geometry(opengl_initialized);
     v.set_volume_offset(Vec3d(pos_x, pos_y, 0.0));
@@ -723,17 +684,17 @@ int GLVolumeCollection::load_wipe_tower_preview(
     v.geometry_id.second = wipe_tower_instance_id().id;
     v.is_wipe_tower = true;
     v.shader_outside_printer_detection_enabled = !size_unknown;
-    return int(this->volumes.size() - 1);
+    return int(volumes.size() - 1);
 }
 
-GLVolume* GLVolumeCollection::new_toolpath_volume(const float *rgba, size_t reserve_vbo_floats)
+GLVolume* GLVolumeCollection::new_toolpath_volume(const std::array<float, 4>& rgba, size_t reserve_vbo_floats)
 {
 	GLVolume *out = new_nontoolpath_volume(rgba, reserve_vbo_floats);
 	out->is_extrusion_path = true;
 	return out;
 }
 
-GLVolume* GLVolumeCollection::new_nontoolpath_volume(const float *rgba, size_t reserve_vbo_floats)
+GLVolume* GLVolumeCollection::new_nontoolpath_volume(const std::array<float, 4>& rgba, size_t reserve_vbo_floats)
 {
 	GLVolume *out = new GLVolume(rgba);
 	out->is_extrusion_path = false;
@@ -748,13 +709,12 @@ GLVolumeWithIdAndZList volumes_to_render(const GLVolumePtrs& volumes, GLVolumeCo
     GLVolumeWithIdAndZList list;
     list.reserve(volumes.size());
 
-    for (unsigned int i = 0; i < (unsigned int)volumes.size(); ++i)
-    {
+    for (unsigned int i = 0; i < (unsigned int)volumes.size(); ++i) {
         GLVolume* volume = volumes[i];
         bool is_transparent = (volume->render_color[3] < 1.0f);
-        if ((((type == GLVolumeCollection::ERenderType::Opaque) && !is_transparent) ||
-             ((type == GLVolumeCollection::ERenderType::Transparent) && is_transparent) ||
-             (type == GLVolumeCollection::ERenderType::All)) &&
+        if (((type == GLVolumeCollection::ERenderType::Opaque && !is_transparent) ||
+             (type == GLVolumeCollection::ERenderType::Transparent && is_transparent) ||
+             type == GLVolumeCollection::ERenderType::All) &&
             (! filter_func || filter_func(*volume)))
             list.emplace_back(std::make_pair(volume, std::make_pair(i, 0.0)));
     }
@@ -783,8 +743,10 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     if (shader == nullptr)
         return;
 
-    glsafe(::glEnable(GL_BLEND));
-    glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    if (type == ERenderType::Transparent) {
+        glsafe(::glEnable(GL_BLEND));
+        glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
+    }
 
     glsafe(::glCullFace(GL_BACK));
     if (disable_cullface)
@@ -811,15 +773,11 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     GLVolumeWithIdAndZList to_render = volumes_to_render(this->volumes, type, view_matrix, filter_func);
     for (GLVolumeWithIdAndZ& volume : to_render) {
         volume.first->set_render_color();
-        shader->set_uniform("uniform_color", volume.first->render_color, 4);
+        shader->set_uniform("uniform_color", volume.first->render_color);
         shader->set_uniform("print_box.actived", volume.first->shader_outside_printer_detection_enabled);
         shader->set_uniform("print_box.volume_world_matrix", volume.first->world_matrix());
         shader->set_uniform("slope.actived", m_slope.active && !volume.first->is_modifier && !volume.first->is_wipe_tower);
         shader->set_uniform("slope.volume_world_normal_matrix", static_cast<Matrix3f>(volume.first->world_matrix().matrix().block(0, 0, 3, 3).inverse().transpose().cast<float>()));
-#if ENABLE_ALLOW_NEGATIVE_Z
-        shader->set_uniform("sinking", volume.first->is_sinking());
-#endif // ENABLE_ALLOW_NEGATIVE_Z
-
         volume.first->render();
     }
 
@@ -837,7 +795,8 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     if (disable_cullface)
         glsafe(::glEnable(GL_CULL_FACE));
 
-    glsafe(::glDisable(GL_BLEND));
+    if (type == ERenderType::Transparent)
+        glsafe(::glDisable(GL_BLEND));
 }
 
 bool GLVolumeCollection::check_outside_state(const DynamicPrintConfig* config, ModelInstanceEPrintVolumeState* out_state) const

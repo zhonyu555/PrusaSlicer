@@ -137,8 +137,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
     glsafe(::glMultMatrixd(instance_matrix.data()));
 
     std::array<float, 4> render_color;
-    for (size_t i = 0; i < cache_size; ++i)
-    {
+    for (size_t i = 0; i < cache_size; ++i) {
         const sla::SupportPoint& support_point = m_editing_mode ? m_editing_cache[i].support_point : m_normal_cache[i];
         const bool& point_selected = m_editing_mode ? m_editing_cache[i].selected : false;
 
@@ -149,7 +148,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         if (picking)
             render_color = picking_color_component(i);
         else {
-            if ((size_t(m_hover_id) == i && m_editing_mode)) // ignore hover state unless editing mode is active
+            if (size_t(m_hover_id) == i && m_editing_mode) // ignore hover state unless editing mode is active
                 render_color = { 0.f, 1.f, 1.f, 1.f };
             else { // neigher hover nor picking
                 bool supports_new_island = m_lock_unique_islands && support_point.is_new_island;
@@ -166,18 +165,11 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
                     render_color = { 0.5f, 0.5f, 0.5f, 1.f };
             }
         }
-        if (shader && ! picking) {
-#if ENABLE_SEQUENTIAL_LIMITS
-            const_cast<GLModel*>(&m_cone)->set_color(-1, render_color);
-            const_cast<GLModel*>(&m_sphere)->set_color(-1, render_color);
-#else
-            shader->set_uniform("uniform_color", render_color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
-            shader->set_uniform("emission_factor", 0.5);
-        }
-        else // picking
-            glsafe(::glColor4fv(render_color.data()));
 
+        const_cast<GLModel*>(&m_cone)->set_color(-1, render_color);
+        const_cast<GLModel*>(&m_sphere)->set_color(-1, render_color);
+        if (shader && !picking)
+            shader->set_uniform("emission_factor", 0.5);
 
         // Inverse matrix of the instance scaling is applied so that the mark does not scale with the object.
         glsafe(::glPushMatrix());
@@ -230,14 +222,9 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         render_color[1] = 0.7f;
         render_color[2] = 0.7f;
         render_color[3] = 0.7f;
-        if (shader) {
-#if ENABLE_SEQUENTIAL_LIMITS
-            const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
-#else
-            shader->set_uniform("uniform_color", render_color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
+        const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
+        if (shader)
             shader->set_uniform("emission_factor", 0.5);
-        }
         for (const sla::DrainHole& drain_hole : m_c->selection_info()->model_object()->sla_drain_holes) {
             if (is_mesh_point_clipped(drain_hole.pos.cast<double>()))
                 continue;
@@ -684,7 +671,7 @@ RENDER_AGAIN:
         //  - keep updating the head radius during sliding so it is continuosly refreshed in 3D scene
         //  - take correct undo/redo snapshot after the user is done with moving the slider
         float initial_value = m_new_point_head_diameter;
-        ImGui::SliderFloat("", &m_new_point_head_diameter, 0.1f, diameter_upper_cap, "%.1f");
+        m_imgui->slider_float("", &m_new_point_head_diameter, 0.1f, diameter_upper_cap, "%.1f");
         if (ImGui::IsItemClicked()) {
             if (m_old_point_head_diameter == 0.f)
                 m_old_point_head_diameter = initial_value;
@@ -744,7 +731,7 @@ RENDER_AGAIN:
         float density = static_cast<const ConfigOptionInt*>(opts[0])->value;
         float minimal_point_distance = static_cast<const ConfigOptionFloat*>(opts[1])->value;
 
-        ImGui::SliderFloat("", &minimal_point_distance, 0.f, 20.f, "%.f mm");
+        m_imgui->slider_float("", &minimal_point_distance, 0.f, 20.f, "%.f mm");
         bool slider_clicked = ImGui::IsItemClicked(); // someone clicked the slider
         bool slider_edited = ImGui::IsItemEdited(); // someone is dragging the slider
         bool slider_released = ImGui::IsItemDeactivatedAfterEdit(); // someone has just released the slider
@@ -753,7 +740,7 @@ RENDER_AGAIN:
         m_imgui->text(m_desc.at("points_density"));
         ImGui::SameLine(settings_sliders_left);
 
-        ImGui::SliderFloat(" ", &density, 0.f, 200.f, "%.f %%");
+        m_imgui->slider_float(" ", &density, 0.f, 200.f, "%.f %%");
         slider_clicked |= ImGui::IsItemClicked();
         slider_edited |= ImGui::IsItemEdited();
         slider_released |= ImGui::IsItemDeactivatedAfterEdit();
@@ -814,7 +801,7 @@ RENDER_AGAIN:
     ImGui::SameLine(clipping_slider_left);
     ImGui::PushItemWidth(window_width - clipping_slider_left);
     float clp_dist = m_c->object_clipper()->get_position();
-    if (ImGui::SliderFloat("  ", &clp_dist, 0.f, 1.f, "%.2f"))
+    if (m_imgui->slider_float("  ", &clp_dist, 0.f, 1.f, "%.2f"))
         m_c->object_clipper()->set_position(clp_dist, true);
 
 
