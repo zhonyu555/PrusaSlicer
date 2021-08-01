@@ -579,6 +579,7 @@ bool PrintObject::invalidate_state_by_config_options(
                opt_key == "interface_shells"
             || opt_key == "infill_only_where_needed"
             || opt_key == "infill_every_layers"
+            || opt_key == "solid_infill_specific_layer"
             || opt_key == "solid_infill_every_layers"
             || opt_key == "bottom_solid_min_thickness"
             || opt_key == "top_solid_layers"
@@ -1782,8 +1783,9 @@ void PrintObject::discover_horizontal_shells()
             Layer 					*layer  = m_layers[i];
             LayerRegion             *layerm = layer->regions()[region_id];
             const PrintRegionConfig &region_config = layerm->region().config();
-            if (region_config.solid_infill_every_layers.value > 0 && region_config.fill_density.value > 0 &&
-                (i % region_config.solid_infill_every_layers) == 0) {
+            if ((region_config.solid_infill_every_layers.value > 0 && region_config.fill_density.value > 0 &&
+                (i % region_config.solid_infill_every_layers) == 0) || 
+                (region_config.solid_infill_specific_layer.value > 0 && (region_config.solid_infill_specific_layer.value - 1) == i)) {
                 // Insert a solid internal layer. Mark stInternal surfaces as stInternalSolid or stInternalBridge.
                 SurfaceType type = (region_config.fill_density == 100) ? stInternalSolid : stInternalBridge;
                 for (Surface &surface : layerm->fill_surfaces.surfaces)

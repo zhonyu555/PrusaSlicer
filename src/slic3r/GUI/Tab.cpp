@@ -1490,6 +1490,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("infill_only_where_needed", category_path + "only-infill-where-needed");
 
         optgroup = page->new_optgroup(L("Advanced"));
+        optgroup->append_single_option_line("solid_infill_specific_layer", category_path + "solid-infill-specific-layer");
         optgroup->append_single_option_line("solid_infill_every_layers", category_path + "solid-infill-every-x-layers");
         optgroup->append_single_option_line("fill_angle", category_path + "fill-angle");
         optgroup->append_single_option_line("solid_infill_below_area", category_path + "solid-infill-threshold-area");

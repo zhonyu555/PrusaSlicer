@@ -2239,6 +2239,17 @@ void PrintConfigDef::init_fff_params()
     def->min = 1;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(1));
+    
+    def = this->add("solid_infill_specific_layer", coInt);
+    def->label = L("Solid infill on specific layer");
+    def->category = L("Infill");
+    def->tooltip = L("This feature allows to force a solid layer on a specific layer number. "
+                   "This is usefull when printing large objects with low infill rate."
+                   "Which avoids printing infill on the gaps between infill");
+    def->sidetext = L("layers");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(0));
 
     def = this->add("solid_infill_every_layers", coInt);
     def->label = L("Solid infill every");
