@@ -29,13 +29,14 @@ cmake .. -G "Visual Studio 16 2019" -DDESTDIR="c:\src\PrusaSlicer-deps"
 msbuild /m ALL_BUILD.vcxproj // This took 13.5 minutes on my machine: core I7-7700K @ 4.2Ghz with 32GB main memory and 20min on a average laptop
 ```
 
-### Generate Visual Studio project file for PrusaSlicer, referencing the precompiled dependencies.
+### Generate Visual Studio project file for PrusaSlicer, referencing the precompiled dependencies and build PrusaSlicer.
 Go to the Windows Start Menu and Click on "Visual Studio 2019" folder, then select the ->"x64 Native Tools Command Prompt" to open a command window and run the following:
 ```
 cd c:\src\PrusaSlicer\
 mkdir build
 cd build
 cmake .. -G "Visual Studio 16 2019" -DCMAKE_PREFIX_PATH="c:\src\PrusaSlicer-deps\usr\local"
+msbuild /m ALL_BUILD.vcxproj
 ```
 
 Note that `CMAKE_PREFIX_PATH` must be absolute path. A relative path like "..\..\PrusaSlicer-deps\usr\local" does not work.
