@@ -27,7 +27,8 @@ public:
 
     // Load ini files of all types (print, filament, printer) from Slic3r::data_dir() / presets.
     // Load selections (current print, current filaments, current printer) from config.ini
-    PresetsConfigSubstitutions load_presets(AppConfig &config, ForwardCompatibilitySubstitutionRule rule, const std::string &preferred_model_id = std::string());
+    PresetsConfigSubstitutions load_presets(AppConfig &config, ForwardCompatibilitySubstitutionRule rule,
+                                            const std::tuple<std::string, std::string, std::string, std::string>& preferred_presets = std::make_tuple("","","",""));
 
     // Export selections (current print, current filaments, current printer) into config.ini
     void            export_selections(AppConfig &config);
@@ -153,7 +154,7 @@ private:
 
     // Load selections (current print, current filaments, current printer) from config.ini
     // This is done just once on application start up.
-    void                        load_selections(AppConfig &config, const std::string &preferred_model_id = "");
+    void                        load_selections(AppConfig &config, const std::tuple<std::string, std::string, std::string, std::string>& preferred_presets = std::make_tuple("", "", "", ""));
 
     // Load print, filament & printer presets from a config. If it is an external config, then the name is extracted from the external path.
     // and the external config is just referenced, not stored into user profile directory.
