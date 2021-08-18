@@ -1385,12 +1385,12 @@ const Preset& PrinterPresetCollection::default_preset_for(const DynamicPrintConf
     return this->default_preset((opt_printer_technology == nullptr || opt_printer_technology->value == ptFFF) ? 0 : 1);
 }
 
-const Preset* PrinterPresetCollection::find_by_model_id_and_variant(const std::string &model_id, const std::string& variant) const
+const Preset* PrinterPresetCollection::find_system_preset_by_model_and_variant(const std::string &model_id, const std::string& variant) const
 {
     if (model_id.empty()) { return nullptr; }
 
     const auto it = std::find_if(cbegin(), cend(), [&](const Preset &preset) {
-        if (preset.config.opt_string("printer_model") != model_id)
+        if (!preset.is_system || preset.config.opt_string("printer_model") != model_id)
             return false;
         if (variant.empty())
             return true;

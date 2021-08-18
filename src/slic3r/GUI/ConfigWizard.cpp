@@ -2633,7 +2633,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     page_mode->serialize_mode(app_config);
 
     preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem, 
-                                std::make_tuple(preferred_model, preferred_variant, first_added_filament, first_added_sla_material));
+                                {preferred_model, preferred_variant, first_added_filament, first_added_sla_material});
 
     if (page_custom->custom_wanted()) {
         page_firmware->apply_custom_config(*custom_config);

@@ -189,7 +189,7 @@ void PresetBundle::setup_directories()
 }
 
 PresetsConfigSubstitutions PresetBundle::load_presets(AppConfig &config, ForwardCompatibilitySubstitutionRule substitution_rule, 
-                                                      const std::tuple<std::string, std::string, std::string, std::string>& preferred_presets/* = std::make_tuple("","","","")*/)
+                                                      const PresetPreferences& preferred_selection/* = PresetPreferences()*/)
 {
     // First load the vendor specific system presets.
     PresetsConfigSubstitutions substitutions;
@@ -241,7 +241,7 @@ PresetsConfigSubstitutions PresetBundle::load_presets(AppConfig &config, Forward
         throw Slic3r::RuntimeError(errors_cummulative);
 
     // ysToDo : set prefered filament or sla_material (relates to print technology) and force o use of preffered printer model if it was added
-    this->load_selections(config, preferred_presets);
+    this->load_selections(config, preferred_selection);
 
     return substitutions;
 }
@@ -443,8 +443,7 @@ void PresetBundle::load_installed_sla_materials(AppConfig &config)
 
 // Load selections (current print, current filaments, current printer) from config.ini
 // This is done on application start up or after updates are applied.
-void PresetBundle::load_selections(AppConfig &config,
-    const std::tuple<std::string, std::string, std::string, std::string>& preferred_presets/* = std::make_tuple("", "", "", "")*/)
+void PresetBundle::load_selections(AppConfig &config, const PresetPreferences& preferred_selection/* = PresetPreferences()*/)
 {
 	// Update visibility of presets based on application vendor / model / variant configuration.
 	this->load_installed_printers(config);
@@ -466,22 +465,20 @@ void PresetBundle::load_selections(AppConfig &config,
     // Do not select alternate profiles for the print / filament profiles as those presets
     // will be selected by the following call of this->update_compatible(PresetSelectCompatibleType::Always).
 
-    std::string preferred_model_id, preferred_variant, preferred_filament, preferred_sla_material;
-    std::tie(preferred_model_id, preferred_variant, preferred_filament, preferred_sla_material) = preferred_presets;
-
     const Preset *initial_printer = printers.find_preset(initial_printer_profile_name);
-    const Preset *preferred_printer = printers.find_by_model_id_and_variant(preferred_model_id, preferred_variant);
+    const Preset *preferred_printer = printers.find_system_preset_by_model_and_variant(preferred_selection.printer_model_id, preferred_selection.printer_variant);
     printers.select_preset_by_name(
         (preferred_printer != nullptr /*&& (initial_printer == nullptr || !initial_printer->is_visible)*/) ? 
             preferred_printer->name : 
             initial_printer_profile_name,
         true);
 
-    if (!preferred_filament.empty())
-        if (auto it = filaments.find_preset_internal(preferred_filament); it != filaments.end())
+    // select preferred filament/sla_material profile if any exists and is visible
+    if (!preferred_selection.filament.empty())
+        if (auto it = filaments.find_preset_internal(preferred_selection.filament); it != filaments.end() && it->is_visible)
             initial_filament_profile_name = it->name;
-    if (!preferred_sla_material.empty())
-        if (auto it = sla_materials.find_preset_internal(preferred_sla_material); it != sla_materials.end())
+    if (!preferred_selection.sla_material.empty())
+        if (auto it = sla_materials.find_preset_internal(preferred_selection.sla_material); it != sla_materials.end() && it->is_visible)
             initial_sla_material_profile_name = it->name;
 
     // Selects the profile, leaves it to -1 if the initial profile name is empty or if it was not found.
