@@ -1778,10 +1778,8 @@ void ObjectList::del_subobject_item(wxDataViewItem& item)
         del_layers_from_object(obj_idx);
     else if (type & itLayer && obj_idx != -1)
         del_layer_from_object(obj_idx, m_objects_model->GetLayerRangeByItem(item));
-    else if (type & itInfo && obj_idx != -1) {
-        Unselect(item);
-        Select(parent);
-    }
+    else if (type & itInfo && obj_idx != -1)
+        del_info_item(obj_idx, m_objects_model->GetInfoItemType(item));
     else if (idx == -1)
         return;
     else if (!del_subobject_from_object(obj_idx, idx, type))
@@ -1793,6 +1791,52 @@ void ObjectList::del_subobject_item(wxDataViewItem& item)
 
     m_objects_model->Delete(item);
     update_info_items(obj_idx);
+}
+
+void ObjectList::del_info_item(const int obj_idx, InfoItemType type)
+{
+    Plater* plater = wxGetApp().plater();
+    GLCanvas3D* cnv = plater->canvas3D();
+
+    switch (type) {
+    case InfoItemType::CustomSupports:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove paint-on supports"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->supported_facets.clear();
+        break;
+
+    case InfoItemType::CustomSeam:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove paint-on seam"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->seam_facets.clear();
+        break;
+
+    case InfoItemType::MmuSegmentation:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove Multi Material painting"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->mmu_segmentation_facets.clear();
+        break;
+
+    case InfoItemType::Sinking:
+        Plater::TakeSnapshot(plater, _L("Shift objects to bed"));
+        (*m_objects)[obj_idx]->ensure_on_bed();
+        cnv->reload_scene(true, true);
+        break;
+
+    case InfoItemType::VariableLayerHeight:
+        Plater::TakeSnapshot(plater, _L("Remove variable layer height"));
+        (*m_objects)[obj_idx]->layer_height_profile.clear();
+        if (cnv->is_layers_editing_enabled())
+            //cnv->post_event(SimpleEvent(EVT_GLTOOLBAR_LAYERSEDITING));
+            cnv->force_main_toolbar_left_action(cnv->get_main_toolbar_item_id("layersediting"));
+        break;
+
+    case InfoItemType::Undef : assert(false); break;
+    }
+    cnv->post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
 }
 
 void ObjectList::del_settings_from_config(const wxDataViewItem& parent_item)
@@ -3360,6 +3404,18 @@ void ObjectList::update_selections_on_canvas()
             std::vector<unsigned int> idxs = selection.get_volume_idxs_from_instance(obj_idx, inst_idx);
             volume_idxs.insert(volume_idxs.end(), idxs.begin(), idxs.end());
         }
+        else if (type == itInfo) {
+            // When selecting an info item, select one instance of the
+            // respective object - a gizmo may want to be opened.
+            int inst_idx = selection.get_instance_idx();
+            int scene_obj_idx = selection.get_object_idx();
+            mode = Selection::Instance;
+            // select first instance, unless an instance of the object is already selected
+            if (scene_obj_idx == -1 || inst_idx == -1 || scene_obj_idx != obj_idx)
+                inst_idx = 0;
+            std::vector<unsigned int> idxs = selection.get_volume_idxs_from_instance(obj_idx, inst_idx);
+            volume_idxs.insert(volume_idxs.end(), idxs.begin(), idxs.end());
+        }
         else
         {
             mode = Selection::Instance;
@@ -3374,7 +3430,7 @@ void ObjectList::update_selections_on_canvas()
 
     if (sel_cnt == 1) {
         wxDataViewItem item = GetSelection();
-        if (m_objects_model->GetItemType(item) & (itSettings | itInstanceRoot | itLayerRoot | itLayer | itInfo))
+        if (m_objects_model->GetItemType(item) & (itSettings | itInstanceRoot | itLayerRoot | itLayer))
             add_to_selection(m_objects_model->GetParent(item), selection, instance_idx, mode);
         else
             add_to_selection(item, selection, instance_idx, mode);
