@@ -1,0 +1,51 @@
+This is an unofficual example of a build on Ubuntu 20.
+For this example we'll be using the ninja build tools.
+It has not been formally tested yet and welcomes your feedback.
+
+Sources:
+
+https://github.com/prusa3d/PrusaSlicer/issues/3099#issuecomment-548268917 and other comments from this thread
+
+### Install dependencies
+
+```
+sudo apt update
+sudo apt -y install git libgtk2.0-dev libudev-dev ninja-build
+```
+
+### Clone repo
+
+```
+git clone https://github.com/prusa3d/PrusaSlicer
+cd PrusaSlicer
+```
+
+### [optional] If you don't want to build bleeding-edge, checkout version
+
+```
+git checkout "v2.4.0-alpha.1"
+```
+
+### Build
+
+#### A] Build normally
+
+```
+cd deps
+mkdir build
+cd build
+cmake -G Ninja ..
+ninja
+cd ../..
+mkdir build
+cd build
+cmake .. -G Ninja -DSLIC3R_STATIC=1 -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local"
+ninja
+```
+
+### Running the built executable
+
+```
+cd src
+./prusa-slicer
+```
