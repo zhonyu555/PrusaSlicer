@@ -3871,7 +3871,7 @@ msgstr "Höhere Druckqualität versus höhere Druckgeschwindigkeit."
 
 #: src/libslic3r/PrintConfig.cpp:463 src/libslic3r/PrintConfig.cpp:891
 msgid "Hilbert Curve"
-msgstr "HIlbertkurve"
+msgstr "Hilbertkurve"
 
 #: src/slic3r/GUI/Plater.cpp:916
 msgid "Hold Shift to Slice & Export G-code"
