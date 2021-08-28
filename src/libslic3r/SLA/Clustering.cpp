@@ -1,4 +1,5 @@
 #include "Clustering.hpp"
+#include "boost/geometry.hpp"
 #include "boost/geometry/index/rtree.hpp"
 
 #include <libslic3r/SLA/SpatIndex.hpp>
