@@ -59,13 +59,16 @@ enum FileType
     FT_GCODE,
     FT_MODEL,
     FT_PROJECT,
+    FT_GALLERY,
 
     FT_INI,
     FT_SVG,
 
     FT_TEX,
 
-    FT_PNGZIP,
+    FT_SL1,
+	// Workaround for OSX file picker, for some reason it always saves with the 1st extension.
+ 	FT_SL1S,
 
     FT_SIZE,
 };
@@ -176,6 +179,8 @@ public:
 
     static unsigned get_colour_approx_luma(const wxColour &colour);
     static bool     dark_mode();
+    const wxColour  get_label_default_clr_system();
+    const wxColour  get_label_default_clr_modified();
     void            init_label_colours();
     void            update_label_colours_from_appconfig();
     void            update_label_colours();
@@ -238,26 +243,26 @@ public:
     void            update_mode();
 
     void            add_config_menu(wxMenuBar *menu);
-#if ENABLE_PROJECT_DIRTY_STATE
     bool            has_unsaved_preset_changes() const;
     bool            has_current_preset_changes() const;
     void            update_saved_preset_from_current_preset();
     std::vector<std::pair<unsigned int, std::string>> get_selected_presets() const;
-    bool            check_and_save_current_preset_changes(const wxString& header = wxString());
-#else
-    bool            check_unsaved_changes(const wxString& header = wxString());
-#endif // ENABLE_PROJECT_DIRTY_STATE
+    bool            check_and_save_current_preset_changes(const wxString& header = wxString(), const wxString& caption = wxString());
     bool            check_print_host_queue();
     bool            checked_tab(Tab* tab);
     void            load_current_presets(bool check_printer_presets = true);
+    void            update_wizard_from_config();
 
     wxString        current_language_code() const { return m_wxLocale->GetCanonicalName(); }
 	// Translate the language code to a code, for which Prusa Research maintains translations. Defaults to "en_US".
     wxString 		current_language_code_safe() const;
     bool            is_localized() const { return m_wxLocale->GetLocale() != "English"; }
 
-    virtual bool OnExceptionInMainLoop() override;
+    void            open_preferences(size_t open_on_tab = 0);
 
+    virtual bool OnExceptionInMainLoop() override;
+    // Calls wxLaunchDefaultBrowser if user confirms in dialog.
+    bool            open_browser_with_warning_dialog(const wxString& url, int flags = 0);
 #ifdef __APPLE__
     void            OSXStoreOpenFiles(const wxArrayString &files) override;
     // wxWidgets override to get an event on open files.

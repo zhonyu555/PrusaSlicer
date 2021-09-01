@@ -47,7 +47,7 @@ PresetForPrinter::PresetForPrinter(PhysicalPrinterDialog* parent, const std::str
 {
     m_sizer = new wxBoxSizer(wxVERTICAL);
 
-    m_delete_preset_btn = new ScalableButton(parent, wxID_ANY, "cross", "", wxDefaultSize, wxDefaultPosition, /*wxBU_LEFT | */wxBU_EXACTFIT);
+    m_delete_preset_btn = new ScalableButton(parent, wxID_ANY, "cross");
     m_delete_preset_btn->SetFont(wxGetApp().normal_font());
     m_delete_preset_btn->SetToolTip(_L("Delete this preset from this printer device"));
     m_delete_preset_btn->Bind(wxEVT_BUTTON, &PresetForPrinter::DeletePreset, this);
@@ -175,7 +175,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
 
     wxStaticText* label_top = new wxStaticText(this, wxID_ANY, _L("Descriptive name for the printer") + ":");
 
-    m_add_preset_btn = new ScalableButton(this, wxID_ANY, "add_copies", "", wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT);
+    m_add_preset_btn = new ScalableButton(this, wxID_ANY, "add_copies");
     m_add_preset_btn->SetFont(wxGetApp().normal_font());
     m_add_preset_btn->SetToolTip(_L("Add preset for this printer device")); 
     m_add_preset_btn->Bind(wxEVT_BUTTON, &PhysicalPrinterDialog::AddPreset, this);
@@ -396,6 +396,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         m_optgroup->append_line(cafile_hint);
     }
     else {
+        
         Line line{ "", "" };
         line.full_width = 1;
 
@@ -411,7 +412,6 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
             sizer->Add(txt, 1, wxEXPAND);
             return sizer;
         };
-
         m_optgroup->append_line(line);
     }
 
@@ -420,6 +420,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         option.opt.width = Field::def_width_wider();
         m_optgroup->append_single_option_line(option);
     }
+
+#ifdef WIN32
+    option = m_optgroup->get_option("printhost_ssl_ignore_revoke");
+    option.opt.width = Field::def_width_wider();
+    m_optgroup->append_single_option_line(option);
+#endif
 
     m_optgroup->activate();
 
@@ -434,6 +440,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 e.Skip();
                 temp->GetToolTip()->Enable(true);
 #endif // __WXGTK__
+                // Remove all leading and trailing spaces from the input
+                std::string trimed_str, str = trimed_str = temp->GetValue().ToStdString();
+                boost::trim(trimed_str);
+                if (trimed_str != str)
+                    temp->SetValue(trimed_str);
+
                 TextCtrl* field = dynamic_cast<TextCtrl*>(printhost_field);
                 if (field)
                     field->propagate_value();

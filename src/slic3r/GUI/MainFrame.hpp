@@ -91,9 +91,6 @@ class MainFrame : public DPIFrame
     void on_value_changed(wxCommandEvent&);
 
     bool can_start_new_project() const;
-#if !ENABLE_PROJECT_DIRTY_STATE
-    bool can_save() const;
-#endif // !ENABLE_PROJECT_DIRTY_STATE
     bool can_export_model() const;
     bool can_export_toolpaths() const;
     bool can_export_supports() const;
@@ -161,6 +158,8 @@ public:
     void        init_menubar_as_editor();
     void        init_menubar_as_gcodeviewer();
     void        update_menubar();
+    // Open item in menu by menu and item index (visible order of items including separators)
+    //void        open_menubar_item(int menu_index, int item_index);
 #ifdef _WIN32
     void        show_tabs_menu(bool show);
 #endif
@@ -188,12 +187,10 @@ public:
     // Propagate changed configuration from the Tab to the Plater and save changes to the AppConfig
     void        on_config_changed(DynamicPrintConfig* cfg) const ;
 
-#if ENABLE_PROJECT_DIRTY_STATE
     bool can_save() const;
     bool can_save_as() const;
     void save_project();
     void save_project_as(const wxString& filename = wxString());
-#endif // ENABLE_PROJECT_DIRTY_STATE
 
     void        add_to_recent_projects(const wxString& filename);
     void        technology_changed();

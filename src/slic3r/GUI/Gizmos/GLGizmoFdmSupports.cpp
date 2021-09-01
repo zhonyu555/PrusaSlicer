@@ -67,8 +67,8 @@ void GLGizmoFdmSupports::render_painter_gizmo() const
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     render_triangles(selection);
-
     m_c->object_clipper()->render_cut();
+    m_c->instances_hider()->render_cut();
     render_cursor();
 
     glsafe(::glDisable(GL_BLEND));
@@ -131,6 +131,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
     m_imgui->text("");
     ImGui::Separator();
 
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc["highlight_by_angle"] + ":");
     ImGui::AlignTextToFramePadding();
     std::string format_str = std::string("%.f") + I18N::translate_utf8("°",
@@ -346,7 +347,8 @@ void GLGizmoFdmSupports::update_from_model_object()
         const TriangleMesh* mesh = &mv->mesh();
 
         m_triangle_selectors.emplace_back(std::make_unique<TriangleSelectorGUI>(*mesh));
-        m_triangle_selectors.back()->deserialize(mv->supported_facets.get_data());
+        // Reset of TriangleSelector is done inside TriangleSelectorGUI's constructor, so we don't need it to perform it again in deserialize().
+        m_triangle_selectors.back()->deserialize(mv->supported_facets.get_data(), false);
         m_triangle_selectors.back()->request_update_render_data();
     }
 }

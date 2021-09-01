@@ -49,7 +49,7 @@
 #include "libslic3r/Format/SL1.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Thread.hpp"
-#include "libslic3r/LibraryCheck.hpp"
+#include "libslic3r/BlacklistedLibraryCheck.hpp"
 
 #include "PrusaSlicer.hpp"
 
@@ -330,6 +330,8 @@ int CLI::run(int argc, char **argv)
             }
         } else if (opt_key == "dont_arrange") {
             // do nothing - this option alters other transform options
+        } else if (opt_key == "ensure_on_bed") {
+            // do nothing, the value is used later
         } else if (opt_key == "rotate") {
             for (auto &model : m_models)
                 for (auto &o : model.objects)
@@ -431,6 +433,13 @@ int CLI::run(int argc, char **argv)
             return 1;
         }
     }
+
+    // All transforms have been dealt with. Now ensure that the objects are on bed.
+    // (Unless the user said otherwise.)
+    if (m_config.opt_bool("ensure_on_bed"))
+        for (auto &model : m_models)
+            for (auto &o : model.objects)
+                o->ensure_on_bed();
 
     // loop through action options
     for (auto const &opt_key : m_actions) {
@@ -622,13 +631,18 @@ bool CLI::setup(int argc, char **argv)
     detect_platform();
 
 #ifdef WIN32
-    // Notify user if blacklisted library is already loaded (Nahimic)
-    // If there are cases of no reports with blacklisted lib - this check should be performed later.
-    // Some libraries are loaded when we load libraries during startup.
-    if (LibraryCheck::get_instance().perform_check()) { 
-        std::wstring text = L"Following libraries has been detected inside of the PrusaSlicer process."
-        L" We suggest stopping or uninstalling these services if you experience crashes or unexpected behaviour while using PrusaSlicer.\n\n";
-        text += LibraryCheck::get_instance().get_blacklisted_string();
+    // Notify user that a blacklisted DLL was injected into PrusaSlicer process (for example Nahimic, see GH #5573).
+    // We hope that if a DLL is being injected into a PrusaSlicer process, it happens at the very start of the application,
+    // thus we shall detect them now.
+    if (BlacklistedLibraryCheck::get_instance().perform_check()) {
+        std::wstring text = L"Following DLLs have been injected into the PrusaSlicer process:\n\n";
+        text += BlacklistedLibraryCheck::get_instance().get_blacklisted_string();
+        text += L"\n\n"
+                L"PrusaSlicer is known to not run correctly with these DLLs injected. "
+                L"We suggest stopping or uninstalling these services if you experience "
+                L"crashes or unexpected behaviour while using PrusaSlicer.\n"
+                L"For example, ASUS Sonic Studio injects a Nahimic driver, which makes PrusaSlicer "
+                L"to crash on a secondary monitor, see PrusaSlicer github issue #5573";
         MessageBoxW(NULL, text.c_str(), L"Warning"/*L"Incopatible library found"*/, MB_OK);
     }
 #endif

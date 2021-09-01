@@ -1,4 +1,5 @@
 #include "libslic3r/libslic3r.h"
+#include "libslic3r/Platform.hpp"
 #include "GLShadersManager.hpp"
 #include "3DScene.hpp"
 #include "GUI_App.hpp"
@@ -37,19 +38,39 @@ std::pair<bool, std::string> GLShadersManager::init()
     // used to render printbed
     valid &= append_shader("printbed", { "printbed.vs", "printbed.fs" });
     // used to render options in gcode preview
-    valid &= append_shader("options_110", { "options_110.vs", "options_110.fs" });
-    if (GUI::wxGetApp().is_glsl_version_greater_or_equal_to(1, 20))
-        valid &= append_shader("options_120", { "options_120.vs", "options_120.fs" });
+#if ENABLE_SEAMS_USING_MODELS
+    if (GUI::wxGetApp().is_gl_version_greater_or_equal_to(3, 3))
+        valid &= append_shader("gouraud_light_instanced", { "gouraud_light_instanced.vs", "gouraud_light_instanced.fs" });
+    else {
+#endif // ENABLE_SEAMS_USING_MODELS
+        valid &= append_shader("options_110", { "options_110.vs", "options_110.fs" });
+        if (GUI::wxGetApp().is_glsl_version_greater_or_equal_to(1, 20))
+            valid &= append_shader("options_120", { "options_120.vs", "options_120.fs" });
+#if ENABLE_SEAMS_USING_MODELS
+    }
+#endif // ENABLE_SEAMS_USING_MODELS
     // used to render extrusion and travel paths as lines in gcode preview
     valid &= append_shader("toolpaths_lines", { "toolpaths_lines.vs", "toolpaths_lines.fs" });
     // used to render objects in 3d editor
-    valid &= append_shader("gouraud", { "gouraud.vs", "gouraud.fs" }
+    // For Apple's on Arm CPU computed triangle normals inside fragment shader using dFdx and dFdy has the opposite direction.
+    // Because of this, objects had darker colors inside the multi-material gizmo.
+    // Based on https://stackoverflow.com/a/66206648, the similar behavior was also spotted on some other devices with Arm CPU.
+    if (platform_flavor() == PlatformFlavor::OSXOnArm)
+        valid &= append_shader("gouraud", { "gouraud.vs", "gouraud.fs" }, { "FLIP_TRIANGLE_NORMALS"sv
 #if ENABLE_ENVIRONMENT_MAP
-        , { "ENABLE_ENVIRONMENT_MAP"sv }
+            , "ENABLE_ENVIRONMENT_MAP"sv
+#endif
+        });
+    else
+        valid &= append_shader("gouraud", { "gouraud.vs", "gouraud.fs" }
+#if ENABLE_ENVIRONMENT_MAP
+            , { "ENABLE_ENVIRONMENT_MAP"sv }
 #endif
         );
     // used to render variable layers heights in 3d editor
     valid &= append_shader("variable_layer_height", { "variable_layer_height.vs", "variable_layer_height.fs" });
+    // used to render highlight contour around selected triangles inside the multi-material gizmo
+    valid &= append_shader("mm_contour", { "mm_contour.vs", "mm_contour.fs" });
 
     return { valid, error };
 }

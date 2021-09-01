@@ -8,6 +8,10 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Geometry.hpp"
 
+#if ENABLE_SINKING_CONTOURS
+#include "GLModel.hpp"
+#endif // ENABLE_SINKING_CONTOURS
+
 #include <functional>
 
 #define HAS_GLSAFE
@@ -250,6 +254,9 @@ public:
     enum EHoverState : unsigned char
     {
         HS_None,
+#if ENABLE_SINKING_CONTOURS
+        HS_Hover,
+#endif // ENABLE_SINKING_CONTOURS
         HS_Select,
         HS_Deselect
     };
@@ -262,7 +269,7 @@ private:
     Geometry::Transformation m_volume_transformation;
 
     // Shift in z required by sla supports+pad
-    double        		  m_sla_shift_z;
+    double        m_sla_shift_z;
     // Bounding box of this volume, in unscaled coordinates.
     BoundingBoxf3 m_transformed_bounding_box;
     // Whether or not is needed to recalculate the transformed bounding box.
@@ -273,6 +280,26 @@ private:
     BoundingBoxf3 m_transformed_convex_hull_bounding_box;
     // Whether or not is needed to recalculate the transformed convex hull bounding box.
     bool          m_transformed_convex_hull_bounding_box_dirty;
+
+#if ENABLE_SINKING_CONTOURS
+    class SinkingContours
+    {
+        static const float HalfWidth;
+        GLVolume& m_parent;
+        GUI::GLModel m_model;
+        BoundingBoxf3 m_old_box;
+        Vec3d m_shift{ Vec3d::Zero() };
+
+    public:
+        SinkingContours(GLVolume& volume) : m_parent(volume) {}
+        void render();
+
+    private:
+        void update();
+    };
+
+    SinkingContours m_sinking_contours;
+#endif // ENABLE_SINKING_CONTOURS
 
 public:
     // Color of the triangles / quads held by this volume.
@@ -334,7 +361,11 @@ public:
 	    bool                force_native_color : 1;
         // Whether or not render this volume in neutral
         bool                force_neutral_color : 1;
-	};
+#if ENABLE_SINKING_CONTOURS
+        // Whether or not to force rendering of sinking contours
+        bool                force_sinking_contours : 1;
+#endif // ENABLE_SINKING_CONTOURS
+    };
 
     // Is mouse or rectangle selection over this object to select/deselect it ?
     EHoverState         	hover;
@@ -461,6 +492,9 @@ public:
 
     bool                is_sinking() const;
     bool                is_below_printbed() const;
+#if ENABLE_SINKING_CONTOURS
+    void                render_sinking_contours();
+#endif // ENABLE_SINKING_CONTOURS
 
     // Return an estimate of the memory consumed by this class.
     size_t 				cpu_memory_used() const { 
@@ -505,6 +539,7 @@ private:
     };
 
     Slope m_slope;
+    bool m_show_sinking_contours = false;
 
 public:
     GLVolumePtrs volumes;
@@ -574,6 +609,7 @@ public:
     float get_slope_normal_z() const { return m_slope.normal_z; }
     void set_slope_normal_z(float normal_z) { m_slope.normal_z = normal_z; }
     void set_default_slope_normal_z() { m_slope.normal_z = -::cos(Geometry::deg2rad(90.0f - 45.0f)); }
+    void set_show_sinking_contours(bool show) { m_show_sinking_contours = show; }
 
     // returns true if all the volumes are completely contained in the print volume
     // returns the containment state in the given out_state, if non-null

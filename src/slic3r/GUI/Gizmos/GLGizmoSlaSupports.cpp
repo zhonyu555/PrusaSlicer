@@ -74,7 +74,7 @@ void GLGizmoSlaSupports::set_sla_support_data(ModelObject* model_object, const S
 
 
 
-void GLGizmoSlaSupports::on_render() const
+void GLGizmoSlaSupports::on_render()
 {
     ModelObject* mo = m_c->selection_info()->model_object();
     const Selection& selection = m_parent.get_selection();
@@ -101,7 +101,7 @@ void GLGizmoSlaSupports::on_render() const
 }
 
 
-void GLGizmoSlaSupports::on_render_for_picking() const
+void GLGizmoSlaSupports::on_render_for_picking()
 {
     const Selection& selection = m_parent.get_selection();
     //glsafe(::glEnable(GL_DEPTH_TEST));
@@ -169,7 +169,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         const_cast<GLModel*>(&m_cone)->set_color(-1, render_color);
         const_cast<GLModel*>(&m_sphere)->set_color(-1, render_color);
         if (shader && !picking)
-            shader->set_uniform("emission_factor", 0.5);
+            shader->set_uniform("emission_factor", 0.5f);
 
         // Inverse matrix of the instance scaling is applied so that the mark does not scale with the object.
         glsafe(::glPushMatrix());
@@ -224,7 +224,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         render_color[3] = 0.7f;
         const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
         if (shader)
-            shader->set_uniform("emission_factor", 0.5);
+            shader->set_uniform("emission_factor", 0.5f);
         for (const sla::DrainHole& drain_hole : m_c->selection_info()->model_object()->sla_drain_holes) {
             if (is_mesh_point_clipped(drain_hole.pos.cast<double>()))
                 continue;
@@ -447,7 +447,8 @@ bool GLGizmoSlaSupports::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
         }
 
         if (action ==  SLAGizmoEventType::DiscardChanges) {
-            editing_mode_discard_changes();
+            ask_about_changes_call_after([this](){ editing_mode_apply_changes(); },
+                                         [this](){ editing_mode_discard_changes(); });
             return true;
         }
 
@@ -785,8 +786,7 @@ RENDER_AGAIN:
 
     // Following is rendered in both editing and non-editing mode:
     ImGui::Separator();
-    if (m_c->object_clipper()->get_position() == 0.f)
-    {
+    if (m_c->object_clipper()->get_position() == 0.f) {
         ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("clipping_of_view"));
     }
@@ -879,6 +879,22 @@ CommonGizmosDataID GLGizmoSlaSupports::on_get_requirements() const
 
 
 
+void GLGizmoSlaSupports::ask_about_changes_call_after(std::function<void()> on_yes, std::function<void()> on_no)
+{
+    wxGetApp().CallAfter([this, on_yes, on_no]() {
+        // Following is called through CallAfter, because otherwise there was a problem
+        // on OSX with the wxMessageDialog being shown several times when clicked into.
+        MessageDialog dlg(GUI::wxGetApp().mainframe, _L("Do you want to save your manually "
+            "edited support points?") + "\n",_L("Save support points?"), wxICON_QUESTION | wxYES | wxNO | wxCANCEL );
+        int ret = dlg.ShowModal();
+            if (ret == wxID_YES)
+                on_yes();
+            else if (ret == wxID_NO)
+                on_no();
+    });
+}
+
+
 void GLGizmoSlaSupports::on_set_state()
 {
     if (m_state == m_old_state)
@@ -890,11 +906,7 @@ void GLGizmoSlaSupports::on_set_state()
             // data are not yet available, the CallAfter will postpone taking the
             // snapshot until they are. No, it does not feel right.
             wxGetApp().CallAfter([]() {
-#if ENABLE_PROJECT_DIRTY_STATE
                 Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("Entering SLA gizmo"));
-#else
-                Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("SLA gizmo turned on"));
-#endif // ENABLE_PROJECT_DIRTY_STATE
             });
         }
 
@@ -905,28 +917,15 @@ void GLGizmoSlaSupports::on_set_state()
     if (m_state == Off && m_old_state != Off) { // the gizmo was just turned Off
         bool will_ask = m_editing_mode && unsaved_changes() && on_is_activable();
         if (will_ask) {
-            wxGetApp().CallAfter([this]() {
-                // Following is called through CallAfter, because otherwise there was a problem
-                // on OSX with the wxMessageDialog being shown several times when clicked into.
-                //wxMessageDialog dlg(GUI::wxGetApp().mainframe, _L("Do you want to save your manually "
-                MessageDialog dlg(GUI::wxGetApp().mainframe, _L("Do you want to save your manually "
-                    "edited support points?") + "\n",_L("Save changes?"), wxICON_QUESTION | wxYES | wxNO);
-                    if (dlg.ShowModal() == wxID_YES)
-                        editing_mode_apply_changes();
-                    else
-                        editing_mode_discard_changes();
-            });
+            ask_about_changes_call_after([this](){ editing_mode_apply_changes(); },
+                                         [this](){ editing_mode_discard_changes(); });
             // refuse to be turned off so the gizmo is active when the CallAfter is executed
             m_state = m_old_state;
         }
         else {
             // we are actually shutting down
             disable_editing_mode(); // so it is not active next time the gizmo opens
-#if ENABLE_PROJECT_DIRTY_STATE
             Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("Leaving SLA gizmo"));
-#else
-            Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("SLA gizmo turned off"));
-#endif // ENABLE_PROJECT_DIRTY_STATE
             m_normal_cache.clear();
             m_old_mo_id = -1;
         }

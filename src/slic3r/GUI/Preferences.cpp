@@ -7,18 +7,19 @@
 #include "libslic3r/AppConfig.hpp"
 #include <wx/notebook.h>
 #include "Notebook.hpp"
+#include "ButtonsDescription.hpp"
 
 namespace Slic3r {
 namespace GUI {
 
-PreferencesDialog::PreferencesDialog(wxWindow* parent) : 
+PreferencesDialog::PreferencesDialog(wxWindow* parent, int selected_tab) :
     DPIDialog(parent, wxID_ANY, _L("Preferences"), wxDefaultPosition, 
               wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
 #ifdef __WXOSX__
     isOSX = true;
 #endif
-	build();
+	build(selected_tab);
 }
 
 static std::shared_ptr<ConfigOptionsGroup>create_options_tab(const wxString& title, wxBookCtrlBase* tabs)
@@ -44,7 +45,7 @@ static void activate_options_tab(std::shared_ptr<ConfigOptionsGroup> optgroup)
 	sizer->Add(optgroup->sizer, 0, wxEXPAND | wxALL, 10);
 }
 
-void PreferencesDialog::build()
+void PreferencesDialog::build(size_t selected_tab)
 {
 #ifdef _WIN32
 	wxGetApp().UpdateDarkUI(this);
@@ -292,14 +293,6 @@ void PreferencesDialog::build()
 	option = Option(def, "seq_top_layer_only");
 	m_optgroup_gui->append_single_option_line(option);
 
-	def.label = L("Sequential slider shows gcode line numbers");
-	def.type = coBool;
-	def.tooltip = L("If enabled, the sequential slider, in preview, shows the gcode lines numbers."
-		"If disabled, the sequential slider, in preview, shows the move index.");
-	def.set_default_value(new ConfigOptionBool{ app_config->get("seq_top_gcode_indices") == "1" });
-	option = Option(def, "seq_top_gcode_indices");
-	m_optgroup_gui->append_single_option_line(option);
-
 	if (is_editor) {
 		def.label = L("Show sidebar collapse/expand button");
 		def.type = coBool;
@@ -349,13 +342,20 @@ void PreferencesDialog::build()
 		option = Option(def, "tabs_as_menu");
 		m_optgroup_gui->append_single_option_line(option);
 #endif
+		
+		def.label = L("Show \"Tip of the day\" notification after start");
+		def.type = coBool;
+		def.tooltip = L("If enabled, useful hints are displayed at startup.");
+		def.set_default_value(new ConfigOptionBool{ app_config->get("show_hints") == "1" });
+		option = Option(def, "show_hints");
+		m_optgroup_gui->append_single_option_line(option);
 
 		def.label = L("Use custom size for toolbar icons");
 		def.type = coBool;
 		def.tooltip = L("If enabled, you can change size of toolbar icons manually.");
 		def.set_default_value(new ConfigOptionBool{ app_config->get("use_custom_toolbar_size") == "1" });
 		option = Option(def, "use_custom_toolbar_size");
-		m_optgroup_gui->append_single_option_line(option);
+		m_optgroup_gui->append_single_option_line(option);	
 	}
 
 	activate_options_tab(m_optgroup_gui);
@@ -387,13 +387,17 @@ void PreferencesDialog::build()
 	}
 #endif // ENABLE_ENVIRONMENT_MAP
 
+	if (selected_tab < tabs->GetPageCount())
+		tabs->SetSelection(selected_tab);
+
 	auto sizer = new wxBoxSizer(wxVERTICAL);
 	sizer->Add(tabs, 1, wxEXPAND | wxTOP | wxLEFT | wxRIGHT, 5);
 
 	auto buttons = CreateStdDialogButtonSizer(wxOK | wxCANCEL);
 	this->Bind(wxEVT_BUTTON, &PreferencesDialog::accept, this, wxID_OK);
 
-	wxGetApp().UpdateDlgDarkUI(this, true);
+	for (int id : {wxID_OK, wxID_CANCEL})
+		wxGetApp().UpdateDarkUI(static_cast<wxButton*>(FindWindowById(id, this)));
 
 	sizer->Add(buttons, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM | wxTOP, 10);
 
@@ -435,10 +439,6 @@ void PreferencesDialog::accept(wxEvent&)
 	m_seq_top_layer_only_changed = false;
 	if (auto it = m_values.find("seq_top_layer_only"); it != m_values.end())
 		m_seq_top_layer_only_changed = app_config->get("seq_top_layer_only") != it->second;
-
-	m_seq_top_gcode_indices_changed = false;
-	if (auto it = m_values.find("seq_top_gcode_indices"); it != m_values.end())
-		m_seq_top_gcode_indices_changed = app_config->get("seq_top_gcode_indices") != it->second;
 
 	m_settings_layout_changed = false;
 	for (const std::string& key : { "old_settings_layout_mode",
@@ -640,32 +640,7 @@ void PreferencesDialog::create_settings_text_color_widget()
 	if (!wxOSX) stb->SetBackgroundStyle(wxBG_STYLE_PAINT);
 
 	wxSizer* sizer = new wxStaticBoxSizer(stb, wxVERTICAL);
-	wxFlexGridSizer* grid_sizer = new wxFlexGridSizer(2, 5, 5);
-	sizer->Add(grid_sizer, 0, wxEXPAND);
-
-	auto sys_label = new wxStaticText(parent, wxID_ANY, _L("Value is the same as the system value"));
-	sys_label->SetForegroundColour(wxGetApp().get_label_clr_sys());
-	m_sys_colour = new wxColourPickerCtrl(parent, wxID_ANY, wxGetApp().get_label_clr_sys());
-	wxGetApp().UpdateDarkUI(m_sys_colour->GetPickerCtrl(), true);
-	m_sys_colour->Bind(wxEVT_COLOURPICKER_CHANGED, [this, sys_label](wxCommandEvent&) {
-		sys_label->SetForegroundColour(m_sys_colour->GetColour());
-		sys_label->Refresh();
-	});
-	
-	grid_sizer->Add(m_sys_colour, 0, wxALIGN_CENTRE_VERTICAL);
-	grid_sizer->Add(sys_label, 0, wxALIGN_CENTRE_VERTICAL | wxEXPAND);
-
-	auto mod_label = new wxStaticText(parent, wxID_ANY, _L("Value was changed and is not equal to the system value or the last saved preset"));
-	mod_label->SetForegroundColour(wxGetApp().get_label_clr_modified());
-	m_mod_colour = new wxColourPickerCtrl(parent, wxID_ANY, wxGetApp().get_label_clr_modified());
-	wxGetApp().UpdateDarkUI(m_mod_colour->GetPickerCtrl(), true);
-	m_mod_colour->Bind(wxEVT_COLOURPICKER_CHANGED, [this, mod_label](wxCommandEvent&) {
-		mod_label->SetForegroundColour(m_mod_colour->GetColour());
-		mod_label->Refresh();
-	});
-
-	grid_sizer->Add(m_mod_colour, 0, wxALIGN_CENTRE_VERTICAL);
-	grid_sizer->Add(mod_label, 0, wxALIGN_CENTRE_VERTICAL | wxEXPAND);
+	ButtonsDescription::FillSizerWithTextColorDescriptions(sizer, parent, &m_sys_colour, &m_mod_colour);
 
 	m_optgroup_gui->sizer->Add(sizer, 0, wxEXPAND | wxTOP, em_unit());
 }

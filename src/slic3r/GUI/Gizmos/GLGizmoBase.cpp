@@ -85,6 +85,7 @@ GLGizmoBase::GLGizmoBase(GLCanvas3D& parent, const std::string& icon_filename, u
     , m_dragging(false)
     , m_imgui(wxGetApp().imgui())
     , m_first_input_window_render(true)
+    , m_dirty(false)
 {
     m_base_color = DEFAULT_BASE_COLOR;
     m_drag_color = DEFAULT_DRAG_COLOR;
@@ -154,6 +155,13 @@ void GLGizmoBase::update(const UpdateData& data)
         on_update(data);
 }
 
+bool GLGizmoBase::update_items_state()
+{
+    bool res = m_dirty;
+    m_dirty  = false;
+    return res;
+};
+
 std::array<float, 4> GLGizmoBase::picking_color_component(unsigned int id) const
 {
     static const float INV_255 = 1.0f / 255.0f;
@@ -183,7 +191,7 @@ void GLGizmoBase::render_grabbers(float size) const
     if (shader == nullptr)
         return;
     shader->start_using();
-    shader->set_uniform("emission_factor", 0.1);
+    shader->set_uniform("emission_factor", 0.1f);
     for (int i = 0; i < (int)m_grabbers.size(); ++i) {
         if (m_grabbers[i].enabled)
             m_grabbers[i].render(m_hover_id == i, size);
@@ -207,6 +215,10 @@ void GLGizmoBase::render_grabbers_for_picking(const BoundingBoxf3& box) const
 std::string GLGizmoBase::format(float value, unsigned int decimals) const
 {
     return Slic3r::string_printf("%.*f", decimals, value);
+}
+
+void GLGizmoBase::set_dirty() {
+    m_dirty = true;
 }
 
 void GLGizmoBase::render_input_window(float x, float y, float bottom_limit)

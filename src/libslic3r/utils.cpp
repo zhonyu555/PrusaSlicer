@@ -1,6 +1,7 @@
 #include "Utils.hpp"
 #include "I18N.hpp"
 
+#include <atomic>
 #include <locale>
 #include <ctime>
 #include <cstdarg>
@@ -205,6 +206,23 @@ const std::string& data_dir()
 std::string custom_shapes_dir()
 {
     return (boost::filesystem::path(g_data_dir) / "shapes").string();
+}
+
+static std::atomic<bool> debug_out_path_called(false);
+
+std::string debug_out_path(const char *name, ...)
+{
+	static constexpr const char *SLIC3R_DEBUG_OUT_PATH_PREFIX = "out/";
+    if (! debug_out_path_called.exchange(true)) {
+		std::string path = boost::filesystem::system_complete(SLIC3R_DEBUG_OUT_PATH_PREFIX).string();
+        printf("Debugging output files will be written to %s\n", path.c_str());
+    }
+	char buffer[2048];
+	va_list args;
+	va_start(args, name);
+	std::vsprintf(buffer, name, args);
+	va_end(args);
+	return std::string(SLIC3R_DEBUG_OUT_PATH_PREFIX) + std::string(buffer);
 }
 
 #ifdef _WIN32
@@ -766,14 +784,19 @@ bool is_img_file(const std::string &path)
 	return boost::iends_with(path, ".png") || boost::iends_with(path, ".svg");
 }
 
-bool is_stl_file(const boost::filesystem::directory_entry& dir_entry)
+bool is_gallery_file(const boost::filesystem::directory_entry& dir_entry, char const* type)
 {
-	return is_plain_file(dir_entry) && strcasecmp(dir_entry.path().extension().string().c_str(), ".stl") == 0;
+	return is_plain_file(dir_entry) && strcasecmp(dir_entry.path().extension().string().c_str(), type) == 0;
 }
 
-bool is_stl_file(const std::string &path)
+bool is_gallery_file(const std::string &path, char const* type)
 {
-	return boost::iends_with(path, ".stl");
+	return boost::iends_with(path, type);
+}
+
+bool is_shapes_dir(const std::string& dir)
+{
+	return dir == sys_shapes_dir() || dir == custom_shapes_dir();
 }
 
 } // namespace Slic3r
@@ -883,7 +906,7 @@ unsigned get_current_pid()
 #endif
 }
 
-std::string xml_escape(std::string text)
+std::string xml_escape(std::string text, bool is_marked/* = false*/)
 {
     std::string::size_type pos = 0;
     for (;;)
@@ -898,8 +921,8 @@ std::string xml_escape(std::string text)
         case '\"': replacement = "&quot;"; break;
         case '\'': replacement = "&apos;"; break;
         case '&':  replacement = "&amp;";  break;
-        case '<':  replacement = "&lt;";   break;
-        case '>':  replacement = "&gt;";   break;
+        case '<':  replacement = is_marked ? "<" :"&lt;"; break;
+        case '>':  replacement = is_marked ? ">" :"&gt;"; break;
         default: break;
         }
 

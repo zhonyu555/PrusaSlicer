@@ -88,7 +88,9 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "filament_cost",
         "filament_spool_weight",
         "first_layer_acceleration",
+        "first_layer_acceleration_over_raft",
         "first_layer_bed_temperature",
+        "first_layer_speed_over_raft",
         "gcode_comments",
         "gcode_label_objects",
         "infill_acceleration",
@@ -159,7 +161,8 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "wipe_tower_rotation_angle") {
             steps.emplace_back(psSkirtBrim);
         } else if (
-               opt_key == "nozzle_diameter"
+               opt_key == "first_layer_height"
+            || opt_key == "nozzle_diameter"
             || opt_key == "resolution"
             // Spiral Vase forces different kind of slicing than the normal model:
             // In Spiral Vase mode, holes are closed and only the largest area contour is kept at each layer.

@@ -161,8 +161,10 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
     if (!result)
         throw Slic3r::RuntimeError("Loading of a model file failed.");
 
+#if !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
     if (model.objects.empty())
         throw Slic3r::RuntimeError("The supplied file couldn't be read because it's empty");
+#endif // !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
 
     for (ModelObject *o : model.objects)
     {
@@ -424,7 +426,7 @@ void Model::convert_multipart_object(unsigned int max_extruders)
     
     ModelObject* object = new ModelObject(this);
     object->input_file = this->objects.front()->input_file;
-    object->name = this->objects.front()->name;
+    object->name = boost::filesystem::path(this->objects.front()->input_file).stem().string();
     //FIXME copy the config etc?
 
     unsigned int extruder_counter = 0;
@@ -439,7 +441,7 @@ void Model::convert_multipart_object(unsigned int max_extruders)
             int counter = 1;
             auto copy_volume = [o, max_extruders, &counter, &extruder_counter](ModelVolume *new_v) {
                 assert(new_v != nullptr);
-                new_v->name = o->name + "_" + std::to_string(counter++);
+                new_v->name = (counter > 1) ? o->name + "_" + std::to_string(counter++) : o->name;
                 new_v->config.set("extruder", auto_extruder_id(max_extruders, extruder_counter));
                 return new_v;
             };
@@ -460,13 +462,15 @@ void Model::convert_multipart_object(unsigned int max_extruders)
     this->objects.push_back(object);
 }
 
+static constexpr const double volume_threshold_inches = 9.0; // 9 = 3*3*3;
+
 bool Model::looks_like_imperial_units() const
 {
     if (this->objects.size() == 0)
         return false;
 
     for (ModelObject* obj : this->objects)
-        if (obj->get_object_stl_stats().volume < 9.0) // 9 = 3*3*3;
+        if (obj->get_object_stl_stats().volume < volume_threshold_inches)
             return true;
 
     return false;
@@ -474,14 +478,18 @@ bool Model::looks_like_imperial_units() const
 
 void Model::convert_from_imperial_units(bool only_small_volumes)
 {
-    double in_to_mm = 25.4;
+    static constexpr const double in_to_mm = 25.4;
     for (ModelObject* obj : this->objects)
-        if (! only_small_volumes || obj->get_object_stl_stats().volume < 9.0) { // 9 = 3*3*3;
+        if (! only_small_volumes || obj->get_object_stl_stats().volume < volume_threshold_inches) {
             obj->scale_mesh_after_creation(Vec3d(in_to_mm, in_to_mm, in_to_mm));
-            for (ModelVolume* v : obj->volumes)
+            for (ModelVolume* v : obj->volumes) {
+                assert(! v->source.is_converted_from_meters);
                 v->source.is_converted_from_inches = true;
+            }
         }
 }
+
+static constexpr const double volume_threshold_meters = 0.001; // 0.001 = 0.1*0.1*0.1
 
 bool Model::looks_like_saved_in_meters() const
 {
@@ -489,7 +497,7 @@ bool Model::looks_like_saved_in_meters() const
         return false;
 
     for (ModelObject* obj : this->objects)
-        if (obj->get_object_stl_stats().volume < 0.001) // 0.001 = 0.1*0.1*0.1;
+        if (obj->get_object_stl_stats().volume < volume_threshold_meters)
             return true;
 
     return false;
@@ -497,12 +505,14 @@ bool Model::looks_like_saved_in_meters() const
 
 void Model::convert_from_meters(bool only_small_volumes)
 {
-    double m_to_mm = 1000;
+    static constexpr const double m_to_mm = 1000;
     for (ModelObject* obj : this->objects)
-        if (! only_small_volumes || obj->get_object_stl_stats().volume < 0.001) { // 0.001 = 0.1*0.1*0.1;
+        if (! only_small_volumes || obj->get_object_stl_stats().volume < volume_threshold_meters) {
             obj->scale_mesh_after_creation(Vec3d(m_to_mm, m_to_mm, m_to_mm));
-            for (ModelVolume* v : obj->volumes)
+            for (ModelVolume* v : obj->volumes) {
+                assert(! v->source.is_converted_from_inches);
                 v->source.is_converted_from_meters = true;
+            }
         }
 }
 
@@ -547,6 +557,21 @@ end:
 std::string Model::propose_export_file_name_and_path(const std::string &new_extension) const
 {
     return boost::filesystem::path(this->propose_export_file_name_and_path()).replace_extension(new_extension).string();
+}
+
+bool Model::is_fdm_support_painted() const
+{
+    return std::any_of(this->objects.cbegin(), this->objects.cend(), [](const ModelObject *mo) { return mo->is_fdm_support_painted(); });
+}
+
+bool Model::is_seam_painted() const
+{
+    return std::any_of(this->objects.cbegin(), this->objects.cend(), [](const ModelObject *mo) { return mo->is_seam_painted(); });
+}
+
+bool Model::is_mm_painted() const
+{
+    return std::any_of(this->objects.cbegin(), this->objects.cend(), [](const ModelObject *mo) { return mo->is_mm_painted(); });
 }
 
 ModelObject::~ModelObject()
@@ -723,6 +748,21 @@ void ModelObject::clear_volumes()
         delete v;
     this->volumes.clear();
     this->invalidate_bounding_box();
+}
+
+bool ModelObject::is_fdm_support_painted() const
+{
+    return std::any_of(this->volumes.cbegin(), this->volumes.cend(), [](const ModelVolume *mv) { return mv->is_fdm_support_painted(); });
+}
+
+bool ModelObject::is_seam_painted() const
+{
+    return std::any_of(this->volumes.cbegin(), this->volumes.cend(), [](const ModelVolume *mv) { return mv->is_seam_painted(); });
+}
+
+bool ModelObject::is_mm_painted() const
+{
+    return std::any_of(this->volumes.cbegin(), this->volumes.cend(), [](const ModelVolume *mv) { return mv->is_mm_painted(); });
 }
 
 void ModelObject::sort_volumes(bool full_sort)
@@ -943,9 +983,26 @@ void ModelObject::center_around_origin(bool include_modifiers)
 
 void ModelObject::ensure_on_bed(bool allow_negative_z)
 {
-    const double min_z = get_min_z();
-    if (!allow_negative_z || min_z > SINKING_Z_THRESHOLD)
-        translate_instances({ 0.0, 0.0, -min_z });
+    double z_offset = 0.0;
+
+    if (allow_negative_z) {
+        if (parts_count() == 1) {
+            const double min_z = get_min_z();
+            const double max_z = get_max_z();
+            if (min_z >= SINKING_Z_THRESHOLD || max_z < 0.0)
+                z_offset = -min_z;
+        }
+        else {
+            const double max_z = get_max_z();
+            if (max_z < SINKING_MIN_Z_THRESHOLD)
+                z_offset = SINKING_MIN_Z_THRESHOLD - max_z;
+        }
+    }
+    else
+        z_offset = -get_min_z();
+
+    if (z_offset != 0.0)
+        translate_instances(z_offset * Vec3d::UnitZ());
 }
 
 void ModelObject::translate_instances(const Vec3d& vector)
@@ -1070,6 +1127,7 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, ConversionType con
                     vol->source.is_converted_from_inches = conv_type == ConversionType::CONV_FROM_INCH;
                 if (conv_type == ConversionType::CONV_FROM_METER || conv_type == ConversionType::CONV_TO_METER)
                     vol->source.is_converted_from_meters = conv_type == ConversionType::CONV_FROM_METER;
+                assert(! vol->source.is_converted_from_inches || ! vol->source.is_converted_from_meters);
             }
             else
                 vol->set_offset(volume->get_offset());
@@ -1097,6 +1155,15 @@ size_t ModelObject::facets_count() const
     for (const ModelVolume *v : this->volumes)
         if (v->is_model_part())
             num += v->mesh().stl.stats.number_of_facets;
+    return num;
+}
+
+size_t ModelObject::parts_count() const
+{
+    size_t num = 0;
+    for (const ModelVolume* v : this->volumes)
+        if (v->is_model_part())
+            ++num;
     return num;
 }
 
@@ -1158,9 +1225,9 @@ ModelObjectPtrs ModelObject::cut(size_t instance, coordf_t z, ModelObjectCutAttr
     for (ModelVolume *volume : volumes) {
         const auto volume_matrix = volume->get_matrix();
 
-        volume->supported_facets.clear();
-        volume->seam_facets.clear();
-        volume->mmu_segmentation_facets.clear();
+        volume->supported_facets.reset();
+        volume->seam_facets.reset();
+        volume->mmu_segmentation_facets.reset();
 
         if (! volume->is_model_part()) {
             // Modifiers are not cut, but we still need to add the instance transformation
@@ -1415,6 +1482,19 @@ double ModelObject::get_min_z() const
     }
 }
 
+double ModelObject::get_max_z() const
+{
+    if (instances.empty())
+        return 0.0;
+    else {
+        double max_z = -DBL_MAX;
+        for (size_t i = 0; i < instances.size(); ++i) {
+            max_z = std::max(max_z, get_instance_max_z(i));
+        }
+        return max_z;
+    }
+}
+
 double ModelObject::get_instance_min_z(size_t instance_idx) const
 {
     double min_z = DBL_MAX;
@@ -1434,6 +1514,27 @@ double ModelObject::get_instance_min_z(size_t instance_idx) const
     }
 
     return min_z + inst->get_offset(Z);
+}
+
+double ModelObject::get_instance_max_z(size_t instance_idx) const
+{
+    double max_z = -DBL_MAX;
+
+    const ModelInstance* inst = instances[instance_idx];
+    const Transform3d& mi = inst->get_matrix(true);
+
+    for (const ModelVolume* v : volumes) {
+        if (!v->is_model_part())
+            continue;
+
+        const Transform3d mv = mi * v->get_matrix();
+        const TriangleMesh& hull = v->get_convex_hull();
+        for (const stl_facet& facet : hull.stl.facet_start)
+            for (int i = 0; i < 3; ++i)
+                max_z = std::max(max_z, (mv * facet.vertex[i].cast<double>()).z());
+    }
+
+    return max_z + inst->get_offset(Z);
 }
 
 unsigned int ModelObject::check_instances_print_volume_state(const BoundingBoxf3& print_volume)
@@ -1699,6 +1800,10 @@ size_t ModelVolume::split(unsigned int max_extruders)
 
     for (TriangleMesh *mesh : meshptrs) {
         mesh->repair();
+        if (mesh->empty())
+            // Repair may have removed unconnected triangles, thus emptying the mesh.
+            continue;
+
         if (idx == 0)
         {
             this->set_mesh(std::move(*mesh));
@@ -1736,18 +1841,15 @@ void ModelVolume::scale(const Vec3d& scaling_factors)
 
 void ModelObject::scale_to_fit(const Vec3d &size)
 {
-/*
-    BoundingBoxf3 instance_bounding_box(size_t instance_idx, bool dont_translate = false) const;
     Vec3d orig_size = this->bounding_box().size();
-    float factor = fminf(
-        size.x / orig_size.x,
-        fminf(
-            size.y / orig_size.y,
-            size.z / orig_size.z
+    double factor = std::min(
+        size.x() / orig_size.x(),
+        std::min(
+            size.y() / orig_size.y(),
+            size.z() / orig_size.z()
         )
     );
     this->scale(factor);
-*/
 }
 
 void ModelVolume::assign_new_unique_ids_recursive()
@@ -1821,6 +1923,7 @@ void ModelVolume::transform_this_mesh(const Matrix3d &matrix, bool fix_left_hand
 
 void ModelVolume::convert_from_imperial_units()
 {
+    assert(! this->source.is_converted_from_meters);
     double in_to_mm = 25.4;
     this->scale_geometry_after_creation(Vec3d(in_to_mm, in_to_mm, in_to_mm));
     this->set_offset(Vec3d(0, 0, 0));
@@ -1829,6 +1932,7 @@ void ModelVolume::convert_from_imperial_units()
 
 void ModelVolume::convert_from_meters()
 {
+    assert(! this->source.is_converted_from_inches);
     double m_to_mm = 1000;
     this->scale_geometry_after_creation(Vec3d(m_to_mm, m_to_mm, m_to_mm));
     this->set_offset(Vec3d(0, 0, 0));
@@ -1913,14 +2017,16 @@ arrangement::ArrangePolygon ModelInstance::get_arrange_polygon() const
 indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, EnforcerBlockerType type) const
 {
     TriangleSelector selector(mv.mesh());
-    selector.deserialize(m_data);
+    // Reset of TriangleSelector is done inside TriangleSelector's constructor, so we don't need it to perform it again in deserialize().
+    selector.deserialize(m_data, false);
     return selector.get_facets(type);
 }
 
 indexed_triangle_set FacetsAnnotation::get_facets_strict(const ModelVolume& mv, EnforcerBlockerType type) const
 {
     TriangleSelector selector(mv.mesh());
-    selector.deserialize(m_data);
+    // Reset of TriangleSelector is done inside TriangleSelector's constructor, so we don't need it to perform it again in deserialize().
+    selector.deserialize(m_data, false);
     return selector.get_facets_strict(type);
 }
 
@@ -1940,11 +2046,11 @@ bool FacetsAnnotation::set(const TriangleSelector& selector)
     return false;
 }
 
-void FacetsAnnotation::clear()
+void FacetsAnnotation::reset()
 {
     m_data.first.clear();
     m_data.second.clear();
-    this->reset_timestamp();
+    this->touch();
 }
 
 // Following function takes data from a triangle and encodes it as string

@@ -154,8 +154,11 @@ public:
 
     void update(const UpdateData& data);
 
-    void render() const { m_tooltip.clear(); on_render(); }
-    void render_for_picking() const { on_render_for_picking(); }
+    // returns True when Gizmo changed its state
+    bool update_items_state();
+
+    void render() { m_tooltip.clear(); on_render(); }
+    void render_for_picking() { on_render_for_picking(); }
     void render_input_window(float x, float y, float bottom_limit);
 
     virtual std::string get_tooltip() const { return ""; }
@@ -175,8 +178,8 @@ protected:
     virtual void on_start_dragging() {}
     virtual void on_stop_dragging() {}
     virtual void on_update(const UpdateData& data) {}
-    virtual void on_render() const = 0;
-    virtual void on_render_for_picking() const = 0;
+    virtual void on_render() = 0;
+    virtual void on_render_for_picking() = 0;
     virtual void on_render_input_window(float x, float y, float bottom_limit) {}
 
     // Returns the picking color for the given id, based on the BASE_ID constant
@@ -187,6 +190,13 @@ protected:
     void render_grabbers_for_picking(const BoundingBoxf3& box) const;
 
     std::string format(float value, unsigned int decimals) const;
+
+    // Mark gizmo as dirty to Re-Render when idle()
+    void set_dirty();
+private:
+    // Flag for dirty visible state of Gizmo
+    // When True then need new rendering
+    bool m_dirty;
 };
 
 // Produce an alpha channel checksum for the red green blue components. The alpha channel may then be used to verify, whether the rgb components
