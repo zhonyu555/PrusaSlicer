@@ -18,6 +18,7 @@
 #include "FillLine.hpp"
 #include "FillRectilinear.hpp"
 #include "FillAdaptive.hpp"
+#include "FillCustom.hpp"
 
 // #define INFILL_DEBUG_OUTPUT
 
@@ -44,6 +45,7 @@ Fill* Fill::new_from_type(const InfillPattern type)
     case ipAdaptiveCubic:       return new FillAdaptive::Filler();
     case ipSupportCubic:        return new FillAdaptive::Filler();
     case ipSupportBase:         return new FillSupportBase();
+    case ipCustom:              return new FillCustom();
     default: throw Slic3r::InvalidArgument("unknown type");
     }
 }
