@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\build\CMakeFiles\03f90d9edfdbeb420fdac298b3a9091c\encoding-check-avrdude.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\avrdude\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\CleverTech\PrusaSlicer\build\src\avrdude\CMakeFiles\encoding-check-avrdude" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{C41170D5-0B6F-31D4-A12E-FD3EE81E9776}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

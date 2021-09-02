@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\dict.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\geom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\memalloc.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\mesh.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\normal.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\priorityq.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\render.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\sweep.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\tess.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\tessmono.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\dict-list.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\dict.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\geom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\gluos.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\memalloc.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\normal.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\priorityq.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\priorityq-heap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\priorityq-sort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\render.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\sweep.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\tess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\src\tessmono.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\include\glu-libtess.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\glu-libtess\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BFD6BFA8-1FCD-3CA7-A14E-CE4E0CD6CB2D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B4C1F34B-5030-335F-8FFB-3807EEC679DD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

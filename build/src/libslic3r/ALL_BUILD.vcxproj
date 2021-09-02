@@ -1,0 +1,185 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{86CB6EB0-1202-3401-AA47-275844C9036C}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\libslic3r\CMakeLists.txt">
+      <StdOutEncoding>UTF-8</StdOutEncoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/libslic3r/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/libslic3r/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Common.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_CreateSingleSourceCGALProgram.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_GeneratorSpecificSettings.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Macros.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SCM.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupCGALDependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupVLD.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_TweakFindBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_VersionUtils.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_add_test.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_enable_end_of_configuration_hook.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_parse_version_h.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_setup_target_dependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_target_use_TBB.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindMPFR.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\PrecompiledHeader.cmake;D:\CleverTech\PrusaSlicer\src\libslic3r\libslic3r_version.h.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CleverTech\PrusaSlicer\build\src\libslic3r\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/libslic3r/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/libslic3r/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Common.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_CreateSingleSourceCGALProgram.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_GeneratorSpecificSettings.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Macros.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SCM.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupCGALDependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupVLD.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_TweakFindBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_VersionUtils.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_add_test.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_enable_end_of_configuration_hook.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_parse_version_h.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_setup_target_dependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_target_use_TBB.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindMPFR.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\PrecompiledHeader.cmake;D:\CleverTech\PrusaSlicer\src\libslic3r\libslic3r_version.h.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CleverTech\PrusaSlicer\build\src\libslic3r\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/libslic3r/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/libslic3r/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Common.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_CreateSingleSourceCGALProgram.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_GeneratorSpecificSettings.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Macros.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SCM.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupCGALDependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupVLD.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_TweakFindBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_VersionUtils.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_add_test.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_enable_end_of_configuration_hook.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_parse_version_h.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_setup_target_dependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_target_use_TBB.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindMPFR.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\PrecompiledHeader.cmake;D:\CleverTech\PrusaSlicer\src\libslic3r\libslic3r_version.h.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\CleverTech\PrusaSlicer\build\src\libslic3r\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/libslic3r/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/libslic3r/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeParseArguments.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGALConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Common.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_CreateSingleSourceCGALProgram.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_GeneratorSpecificSettings.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_Macros.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SCM.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupCGALDependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_SetupVLD.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_TweakFindBoost.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_VersionUtils.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_add_test.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_enable_end_of_configuration_hook.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_parse_version_h.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_setup_target_dependencies.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\CGAL_target_use_TBB.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindGMP.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\CGAL\FindMPFR.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\PrecompiledHeader.cmake;D:\CleverTech\PrusaSlicer\src\libslic3r\libslic3r_version.h.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\CleverTech\PrusaSlicer\build\src\libslic3r\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\ZERO_CHECK.vcxproj">
+      <Project>{668B8D7E-7268-331C-9BBD-EA919028A0C2}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\libnest2d\libnest2d.vcxproj">
+      <Project>{9EE52D7A-DEFE-31CD-A189-4C12E9D649F5}</Project>
+      <Name>libnest2d</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\libslic3r\libslic3r_cgal.vcxproj">
+      <Project>{A0D6B6A5-1276-3EC8-9E36-C4A829D0F60C}</Project>
+      <Name>libslic3r_cgal</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\arduino.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\avr.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\avrpart.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\avr910.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\bitbang.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\buspirate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\butterfly.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\config.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\config_gram.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\crc16.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\fileio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\lexer.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\linuxgpio.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\lists.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\pgm.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\pgm_type.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\pickit2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\pindefs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\safemode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\ser_avrdoper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\serbb_posix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\serbb_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\ser_posix.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\ser_win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\stk500.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\stk500generic.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\stk500v2.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\term.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\update.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\wiring.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\main.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\avrdude-slic3r.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\windows\utf8.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\windows\unistd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\avrdude\windows\getopt.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\avrdude\avrdude-slic3r.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\avrdude\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BFD6BFA8-1FCD-3CA7-A14E-CE4E0CD6CB2D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B4C1F34B-5030-335F-8FFB-3807EEC679DD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{86CB6EB0-1202-3401-AA47-275844C9036C}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>ALL_BUILD</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\hidapi\include;D:\CleverTech\PrusaSlicer\src\eigen;C:\src\PrusaSlicer-deps\usr\local\lib\vc_x64_lib\mswu;C:\src\PrusaSlicer-deps\usr\local\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\hidapi\include;D:\CleverTech\PrusaSlicer\src\eigen;C:\src\PrusaSlicer-deps\usr\local\lib\vc_x64_lib\mswu;C:\src\PrusaSlicer-deps\usr\local\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\hidapi\include;D:\CleverTech\PrusaSlicer\src\eigen;C:\src\PrusaSlicer-deps\usr\local\lib\vc_x64_lib\mswu;C:\src\PrusaSlicer-deps\usr\local\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\hidapi\include;D:\CleverTech\PrusaSlicer\src\eigen;C:\src\PrusaSlicer-deps\usr\local\lib\vc_x64_lib\mswu;C:\src\PrusaSlicer-deps\usr\local\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\CMakeLists.txt">
+      <StdOutEncoding>UTF-8</StdOutEncoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindJPEG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindTIFF.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindwxWidgets.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\UsewxWidgets.cmake;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer-gcodeviewer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.manifest.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\osx\Info.plist.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CleverTech\PrusaSlicer\build\src\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindJPEG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindTIFF.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindwxWidgets.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\UsewxWidgets.cmake;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer-gcodeviewer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.manifest.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\osx\Info.plist.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CleverTech\PrusaSlicer\build\src\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindJPEG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindTIFF.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindwxWidgets.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\UsewxWidgets.cmake;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer-gcodeviewer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.manifest.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\osx\Info.plist.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\CleverTech\PrusaSlicer\build\src\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/src/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindJPEG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindTIFF.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindwxWidgets.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\UsewxWidgets.cmake;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer-gcodeviewer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.manifest.in;D:\CleverTech\PrusaSlicer\src\platform\msw\PrusaSlicer.rc.in;D:\CleverTech\PrusaSlicer\src\platform\osx\Info.plist.in;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\CleverTech\PrusaSlicer\build\src\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\ZERO_CHECK.vcxproj">
+      <Project>{668B8D7E-7268-331C-9BBD-EA919028A0C2}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\PrusaSlicer.vcxproj">
+      <Project>{7838193B-2E0F-3E69-A813-BB2529FFAAAB}</Project>
+      <Name>PrusaSlicer</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\PrusaSlicerDllsCopy.vcxproj">
+      <Project>{C5082330-9A97-3EF3-BD0D-06BEC4EA7D0C}</Project>
+      <Name>PrusaSlicerDllsCopy</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\PrusaSlicer_app_console.vcxproj">
+      <Project>{A7414CDB-238F-3099-B719-DE566E8B4D88}</Project>
+      <Name>PrusaSlicer_app_console</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\PrusaSlicer_app_gcodeviewer.vcxproj">
+      <Project>{A87102D9-DF07-3C3C-B676-251D0C74EB34}</Project>
+      <Name>PrusaSlicer_app_gcodeviewer</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\PrusaSlicer_app_gui.vcxproj">
+      <Project>{C8C383AD-C656-360E-9913-A19655B8B59C}</Project>
+      <Name>PrusaSlicer_app_gui</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\Shiny\Shiny.vcxproj">
+      <Project>{99DE2D99-E028-3515-8607-21817249A97C}</Project>
+      <Name>Shiny</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\admesh\admesh.vcxproj">
+      <Project>{BAA0A771-CDEC-3C57-AEC3-1F9BAF028AE8}</Project>
+      <Name>admesh</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\avrdude\avrdude.vcxproj">
+      <Project>{8A7C3F9D-1A92-3B00-9F88-174419011AA6}</Project>
+      <Name>avrdude</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\avrdude\avrdude-slic3r.vcxproj">
+      <Project>{76F3E8F5-745F-3C9E-B00E-CE428CA231D3}</Project>
+      <Name>avrdude-slic3r</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\clipper\clipper.vcxproj">
+      <Project>{C4B65FCE-A6C8-38B1-8F7A-9AE35D6BAA1D}</Project>
+      <Name>clipper</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\build-utils\encoding-check.vcxproj">
+      <Project>{A129C527-82E1-3EFB-8D0C-DF351EE6AC60}</Project>
+      <Name>encoding-check</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\build-utils\global-encoding-check.vcxproj">
+      <Project>{405FD985-9F2C-311D-B4E7-D176DF5F0D47}</Project>
+      <Name>global-encoding-check</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\glu-libtess\glu-libtess.vcxproj">
+      <Project>{8F8BA1DB-B555-3B02-A724-77A44B206651}</Project>
+      <Name>glu-libtess</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\hidapi\hidapi.vcxproj">
+      <Project>{876010B9-B1F3-3001-83C3-4BAA746D3C9B}</Project>
+      <Name>hidapi</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\hints\hintsToPot.vcxproj">
+      <Project>{505FFF1B-AF18-3585-8DAE-46BBC80E2142}</Project>
+      <Name>hintsToPot</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\imgui\imgui.vcxproj">
+      <Project>{EC2F8655-A869-36FC-B5EF-1EAD96E9CC3F}</Project>
+      <Name>imgui</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\libnest2d\libnest2d.vcxproj">
+      <Project>{9EE52D7A-DEFE-31CD-A189-4C12E9D649F5}</Project>
+      <Name>libnest2d</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\libslic3r\libslic3r_cgal.vcxproj">
+      <Project>{A0D6B6A5-1276-3EC8-9E36-C4A829D0F60C}</Project>
+      <Name>libslic3r_cgal</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\libslic3r_gui.vcxproj">
+      <Project>{AB4A3150-7AE8-36D4-B174-535D2A1B4A69}</Project>
+      <Name>libslic3r_gui</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\miniz\miniz_static.vcxproj">
+      <Project>{536C0944-183E-3343-884B-0BD2B456B652}</Project>
+      <Name>miniz_static</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\boost\nowide.vcxproj">
+      <Project>{4023E832-D05A-3564-B9C7-60AB093636DE}</Project>
+      <Name>nowide</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\qhull\qhullstatic.vcxproj">
+      <Project>{79BD5B50-9082-32FC-8670-2E08DF355D4C}</Project>
+      <Name>qhullstatic</Name>
+    </ProjectReference>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\src\semver\semver.vcxproj">
+      <Project>{3C7EAD95-79E6-39B1-B992-36DE5ABF4012}</Project>
+      <Name>semver</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

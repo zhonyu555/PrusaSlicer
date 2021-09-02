@@ -1,0 +1,837 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="MinSizeRel|x64">
+      <Configuration>MinSizeRel</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="RelWithDebInfo|x64">
+      <Configuration>RelWithDebInfo</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{F5E5C9B1-97DC-335C-BE5A-E5C313A38216}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <Keyword>Win32Proj</Keyword>
+    <Platform>x64</Platform>
+    <ProjectName>gettext_po_to_mo</ProjectName>
+    <VCProjectUpgraderObjectName>NoUpgrade</VCProjectUpgraderObjectName>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v142</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <Message>																	</Message>
+      <Command>setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer_cs.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer_de.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer_en.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer_es.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer_fr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer_it.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer_ja.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer_nl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer_pl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer_pt_br.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer_ru.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer_tr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer_uk.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer_zh_CN.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer_zh_TW.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <Message>																	</Message>
+      <Command>setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer_cs.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer_de.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer_en.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer_es.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer_fr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer_it.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer_ja.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer_nl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer_pl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer_pt_br.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer_ru.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer_tr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer_uk.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer_zh_CN.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer_zh_TW.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <Message>																	</Message>
+      <Command>setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer_cs.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer_de.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer_en.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer_es.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer_fr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer_it.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer_ja.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer_nl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer_pl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer_pt_br.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer_ru.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer_tr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer_uk.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer_zh_CN.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer_zh_TW.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
+    <Midl>
+      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\10\Include\10.0.19041.0;D:\CleverTech\PrusaSlicer\src;D:\CleverTech\PrusaSlicer\build\src\platform;D:\CleverTech\PrusaSlicer\src\eigen;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
+      <HeaderFileName>%(Filename).h</HeaderFileName>
+      <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
+      <InterfaceIdentifierFileName>%(Filename)_i.c</InterfaceIdentifierFileName>
+      <ProxyFileName>%(Filename)_p.c</ProxyFileName>
+    </Midl>
+    <PreBuildEvent>
+      <Message>																	</Message>
+      <Command>setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/cs/PrusaSlicer_cs.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/de/PrusaSlicer_de.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/en/PrusaSlicer_en.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/es/PrusaSlicer_es.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/fr/PrusaSlicer_fr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/it/PrusaSlicer_it.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ja/PrusaSlicer_ja.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ko_KR/PrusaSlicer_ko_KR.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/nl/PrusaSlicer_nl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pl/PrusaSlicer_pl.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/pt_br/PrusaSlicer_pt_br.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/ru/PrusaSlicer_ru.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/tr/PrusaSlicer_tr.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/uk/PrusaSlicer_uk.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_cn/PrusaSlicer_zh_CN.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+setlocal
+msgfmt -o D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer.mo D:/CleverTech/PrusaSlicer/resources/localization/zh_tw/PrusaSlicer_zh_TW.po
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\CMakeLists.txt">
+      <StdOutEncoding>UTF-8</StdOutEncoding>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeDependentOption.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckIncludeFile.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckLibraryExists.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindEXPAT.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPNG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindThreads.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindZLIB.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GNUInstallDirs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GetPrerequisites.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\BoostDetectToolset-1.75.0.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\share\cmake\cereal\cereal-config.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\CheckAtomic.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindCURL.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindGLEW.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindNLopt.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindOpenVDB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageHandleStandardArgs_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageMessage_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindTBB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\Findcereal.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\OpenVDBUtils.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\SelectLibraryConfigurations_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\src\platform\unix\fhs.hpp.in;D:\CleverTech\PrusaSlicer\version.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">D:\CleverTech\PrusaSlicer\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeDependentOption.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckIncludeFile.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckLibraryExists.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindEXPAT.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPNG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindThreads.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindZLIB.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GNUInstallDirs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GetPrerequisites.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\BoostDetectToolset-1.75.0.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\share\cmake\cereal\cereal-config.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\CheckAtomic.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindCURL.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindGLEW.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindNLopt.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindOpenVDB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageHandleStandardArgs_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageMessage_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindTBB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\Findcereal.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\OpenVDBUtils.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\SelectLibraryConfigurations_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\src\platform\unix\fhs.hpp.in;D:\CleverTech\PrusaSlicer\version.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">D:\CleverTech\PrusaSlicer\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeDependentOption.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckIncludeFile.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckLibraryExists.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindEXPAT.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPNG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindThreads.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindZLIB.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GNUInstallDirs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GetPrerequisites.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\BoostDetectToolset-1.75.0.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\share\cmake\cereal\cereal-config.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\CheckAtomic.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindCURL.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindGLEW.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindNLopt.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindOpenVDB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageHandleStandardArgs_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageMessage_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindTBB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\Findcereal.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\OpenVDBUtils.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\SelectLibraryConfigurations_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\src\platform\unix\fhs.hpp.in;D:\CleverTech\PrusaSlicer\version.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">D:\CleverTech\PrusaSlicer\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule D:/CleverTech/PrusaSlicer/CMakeLists.txt</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" -SD:/CleverTech/PrusaSlicer -BD:/CleverTech/PrusaSlicer/build --check-stamp-file D:/CleverTech/PrusaSlicer/build/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCXXInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeCommonLanguageInclude.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeDependentOption.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeFindDependencyMacro.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeGenericSystem.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeInitializeConfigs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeLanguageInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeRCInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInformation.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CMakeSystemSpecificInitialize.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckCXXSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckIncludeFile.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\CheckLibraryExists.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\CMakeCommonCompilerMacros.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Compiler\MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindBoost.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindEXPAT.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindOpenGL.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPNG.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageHandleStandardArgs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPackageMessage.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindPkgConfig.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindThreads.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\FindZLIB.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GNUInstallDirs.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\GetPrerequisites.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Internal\CheckSourceCompiles.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-C.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC-CXX.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows-MSVC.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\Windows.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\Platform\WindowsPaths.cmake;C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\share\cmake-3.19\Modules\SelectLibraryConfigurations.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Blosc\BloscTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\Boost-1.75.0\BoostConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\BoostDetectToolset-1.75.0.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfig.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseConfigVersion.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-debug.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets-release.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\IlmBase\IlmBaseTargets.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\boost_atomic-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_atomic-1.75.0\libboost_atomic-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\boost_chrono-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_chrono-1.75.0\libboost_chrono-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\boost_date_time-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_date_time-1.75.0\libboost_date_time-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\boost_filesystem-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_filesystem-1.75.0\libboost_filesystem-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_headers-1.75.0\boost_headers-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\boost_iostreams-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_iostreams-1.75.0\libboost_iostreams-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\boost_locale-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_locale-1.75.0\libboost_locale-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\boost_log-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_log-1.75.0\libboost_log-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\boost_regex-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_regex-1.75.0\libboost_regex-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\boost_system-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_system-1.75.0\libboost_system-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config-version.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\boost_thread-config.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-gd-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\lib\cmake\boost_thread-1.75.0\libboost_thread-variant-vc142-mt-x64-1_75-static.cmake;C:\src\PrusaSlicer-deps\usr\local\share\cmake\cereal\cereal-config.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeCXXCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeRCCompiler.cmake;D:\CleverTech\PrusaSlicer\build\CMakeFiles\3.19.20122902-MSVC_2\CMakeSystem.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\CheckAtomic.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindCURL.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindGLEW.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindNLopt.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindOpenVDB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageHandleStandardArgs_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindPackageMessage_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\FindTBB.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\Findcereal.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\OpenVDBUtils.cmake;D:\CleverTech\PrusaSlicer\cmake\modules\SelectLibraryConfigurations_SLIC3R.cmake;D:\CleverTech\PrusaSlicer\src\platform\unix\fhs.hpp.in;D:\CleverTech\PrusaSlicer\version.inc;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">D:\CleverTech\PrusaSlicer\build\CMakeFiles\generate.stamp</Outputs>
+      <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="D:\CleverTech\PrusaSlicer\build\ZERO_CHECK.vcxproj">
+      <Project>{668B8D7E-7268-331C-9BBD-EA919028A0C2}</Project>
+      <Name>ZERO_CHECK</Name>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

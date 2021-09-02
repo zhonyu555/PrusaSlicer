@@ -1,0 +1,720 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\CMakeFiles\libslic3r_gui.dir\cmake_pch.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\pchheader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\AboutDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\SysInfoDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\KBShortcutsDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BackgroundSlicingProcess.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BitmapCache.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigSnapshotDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\3DScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLShadersManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLCanvas3D.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OpenGLManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Selection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmosManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmosCommon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoMove.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoRotate.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoScale.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSlaSupports.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoFdmSupports.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoFlatten.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoCut.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoHollow.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoPainterBase.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSeam.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSimplify.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoMmuSegmentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLSelectionRectangle.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLTexture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLToolbar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GCodeViewer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Preferences.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PresetHints.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Init.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Preview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_App.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\I18N.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MainFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Plater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PresetComboBoxes.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BitmapComboBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\SavePresetDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PhysicalPrinterDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Factories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GalleryDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectManipulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectLayers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MeshUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Tab.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigManipulation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Field.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OptionsGroup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OG_CustomCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BedShapeDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\2DBed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\3DBed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\wxExtensions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ExtruderSequenceDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\WipeTowerDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\RammingChart.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\RemovableDriveManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BonjourDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ButtonsDescription.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ImGuiWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Config\Snapshot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Config\Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\ASCIIFolding.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Serial.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigWizard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MsgDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\UpdateDialogs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\FirmwareDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PrintHostDialogs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\Job.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\PlaterJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\ArrangeJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\RotoptimizeJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\FillBedJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\SLAImportJob.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ProgressStatusBar.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Mouse3DController.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\DoubleSlider.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Notebook.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ObjectDataViewModel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\InstanceCheck.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Search.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\NotificationManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\UnsavedChangesDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ExtraRenderers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ProjectDirtyStateManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\DesktopIntegrationDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\HintNotification.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Http.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\FixModelByWin10.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\OctoPrint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Duet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\FlashAir.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\AstroBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Repetier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\PrintHost.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Bonjour.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\PresetUpdater.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Process.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\UndoRedo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\HexFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\pchheader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\AboutDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\SysInfoDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\KBShortcutsDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BackgroundSlicingProcess.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BitmapCache.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigSnapshotDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\3DScene.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\format.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLShadersManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLCanvas3D.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OpenGLManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Selection.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmosManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmosCommon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoBase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoMove.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoRotate.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoScale.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSlaSupports.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoFdmSupports.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoFlatten.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoCut.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoHollow.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoPainterBase.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSeam.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoSimplify.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Gizmos\GLGizmoMmuSegmentation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLSelectionRectangle.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLModel.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLTexture.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GLToolbar.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GCodeViewer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Preferences.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PresetHints.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Init.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Preview.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_App.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\I18N.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MainFrame.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Plater.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PresetComboBoxes.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BitmapComboBox.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\SavePresetDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PhysicalPrinterDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_Factories.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectList.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GalleryDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectManipulation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectSettings.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\GUI_ObjectLayers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MeshUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Tab.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigManipulation.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Field.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OptionsGroup.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\OG_CustomCtrl.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BedShapeDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\2DBed.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\3DBed.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Camera.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\wxExtensions.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ExtruderSequenceDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\WipeTowerDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\RammingChart.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\RemovableDriveManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\BonjourDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ButtonsDescription.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ImGuiWrapper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Config\Snapshot.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Config\Version.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\ASCIIFolding.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Serial.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigWizard.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ConfigWizard_private.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\MsgDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\UpdateDialogs.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\FirmwareDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\PrintHostDialogs.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\Job.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\PlaterJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\ArrangeJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\RotoptimizeJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\FillBedJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\SLAImportJob.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Jobs\ProgressIndicator.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ProgressStatusBar.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Mouse3DController.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\DoubleSlider.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Notebook.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ObjectDataViewModel.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\InstanceCheck.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\Search.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\NotificationManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\UnsavedChangesDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ExtraRenderers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\ProjectDirtyStateManager.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\DesktopIntegrationDialog.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\GUI\HintNotification.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Http.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\FixModelByWin10.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\OctoPrint.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Duet.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\FlashAir.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\AstroBox.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Repetier.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\PrintHost.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Bonjour.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\PresetUpdater.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Process.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\Profile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\UndoRedo.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\src\slic3r\Utils\HexFile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\CMakeFiles\libslic3r_gui.dir\Debug\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\CMakeFiles\libslic3r_gui.dir\Release\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\CMakeFiles\libslic3r_gui.dir\MinSizeRel\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+    <ClInclude Include="D:\CleverTech\PrusaSlicer\build\src\slic3r\CMakeFiles\libslic3r_gui.dir\RelWithDebInfo\cmake_pch.hxx">
+      <Filter>Precompile Header File</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="D:\CleverTech\PrusaSlicer\src\slic3r\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{BFD6BFA8-1FCD-3CA7-A14E-CE4E0CD6CB2D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Precompile Header File">
+      <UniqueIdentifier>{8282A8F3-6F36-348D-A3E2-F35FDCD77045}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B4C1F34B-5030-335F-8FFB-3807EEC679DD}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
