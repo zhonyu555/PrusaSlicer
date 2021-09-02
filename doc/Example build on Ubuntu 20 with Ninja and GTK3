@@ -43,6 +43,21 @@ cmake .. -G Ninja -DSLIC3R_STATIC=1 -DCMAKE_PREFIX_PATH="$PWD/../deps/build/dest
 ninja
 ```
 
+#### B] Build with GTK3
+
+```
+cd deps
+mkdir build
+cd build
+cmake -G Ninja .. -DDEP_WX_GTK3=ON
+ninja
+cd ../..
+mkdir build
+cd build
+cmake .. -G Ninja -DSLIC3R_STATIC=1 -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DSLIC3R_GTK=3
+ninja
+```
+
 ### Running the built executable
 
 ```
