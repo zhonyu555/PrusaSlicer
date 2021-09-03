@@ -1,5 +1,6 @@
 [Desktop Entry]
 Name=Prusa GCode viewer
+Name[de]=Prusa GCode Vorschau
 Exec=prusa-slicer --gcodeviewer %F
 Icon=PrusaSlicer-gcodeviewer
 Terminal=false
