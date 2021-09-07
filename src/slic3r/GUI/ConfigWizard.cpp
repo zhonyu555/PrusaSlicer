@@ -41,6 +41,7 @@
 #include "format.hpp"
 #include "MsgDialog.hpp"
 #include "libslic3r/libslic3r.h"
+#include "UnsavedChangesDialog.hpp"
 
 #if defined(__linux__) && defined(__WXGTK3__)
 #define wxLinux_gtk3 true
@@ -2851,8 +2852,19 @@ bool ConfigWizard::run(RunReason reason, StartPage start_page)
     p->set_start_page(start_page);
 
     if (ShowModal() == wxID_OK) {
+        wxString header = _L("Updates to Configuration Wizard causes a lost of preset modification.\n"
+                             "So, check unsaved changes, save them if necessary or keep modification.");
+        bool apply_keeped_changes = false;
+        using ab = UnsavedChangesDialog::ActionButtons;
+        if (!app.check_and_keep_current_preset_changes(_L("Configuration is editing from ConfigWizard"), header, ab::KEEP | ab::SAVE, &apply_keeped_changes))
+            return false;
+
         if (! p->apply_config(app.app_config, app.preset_bundle, app.preset_updater))
             return false;
+
+        if (apply_keeped_changes)
+            app.apply_keeped_preset_modifications();
+
         app.app_config->set_legacy_datadir(false);
         app.update_mode();
         app.obj_manipul()->update_ui_from_settings();

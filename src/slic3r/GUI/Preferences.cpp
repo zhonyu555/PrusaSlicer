@@ -73,7 +73,7 @@ void PreferencesDialog::build(size_t selected_tab)
 	// Add "General" tab
 	m_optgroup_general = create_options_tab(_L("General"), tabs);
 	m_optgroup_general->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
-		if (opt_key == "default_action_on_close_application" || opt_key == "default_action_on_select_preset")
+		if (opt_key == "default_action_on_close_application" || opt_key == "default_action_on_select_preset" || opt_key == "default_action_on_new_project")
 			m_values[opt_key] = boost::any_cast<bool>(value) ? "none" : "discard";
 		else
 		    m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "0";
@@ -186,9 +186,15 @@ void PreferencesDialog::build(size_t selected_tab)
 		option = Option(def, "single_instance");
 		m_optgroup_general->append_single_option_line(option);
 
-		def.label = L("Ask for unsaved changes when closing application");
+		def.label = L("Ask for unsaved changes when ??closing application??");
 		def.type = coBool;
-		def.tooltip = L("When closing the application, always ask for unsaved changes");
+		def.tooltip = L("Always ask for unsaved changes, when: \n"
+						"- closing the application,\n"
+						"- loading project,\n"
+						"- processing Undo / Redo with change of print technologie,\n"
+						"- taking/loading snapshot,\n"
+						"- loading config file/bundle,\n"
+						"- exporting config_bundle");
 		def.set_default_value(new ConfigOptionBool{ app_config->get("default_action_on_close_application") == "none" });
 		option = Option(def, "default_action_on_close_application");
 		m_optgroup_general->append_single_option_line(option);
@@ -198,6 +204,13 @@ void PreferencesDialog::build(size_t selected_tab)
 		def.tooltip = L("Always ask for unsaved changes when selecting new preset");
 		def.set_default_value(new ConfigOptionBool{ app_config->get("default_action_on_select_preset") == "none" });
 		option = Option(def, "default_action_on_select_preset");
+		m_optgroup_general->append_single_option_line(option);
+
+		def.label = L("Ask for unsaved changes when creating new project");
+		def.type = coBool;
+		def.tooltip = L("Always ask for unsaved changes when creating new project");
+		def.set_default_value(new ConfigOptionBool{ app_config->get("default_action_on_new_project") == "none" });
+		option = Option(def, "default_action_on_new_project");
 		m_optgroup_general->append_single_option_line(option);
 	}
 #ifdef _WIN32

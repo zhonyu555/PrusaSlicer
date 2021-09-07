@@ -4714,7 +4714,7 @@ void Plater::priv::undo_redo_to(std::vector<UndoRedo::Snapshot>::const_iterator 
     if (printer_technology_changed) {
         // Switching the printer technology when jumping forwards / backwards in time. Switch to the last active printer profile of the other type.
         std::string s_pt = (it_snapshot->snapshot_data.printer_technology == ptFFF) ? "FFF" : "SLA";
-        if (!wxGetApp().check_and_save_current_preset_changes(format_wxstr(_L(
+        if (!wxGetApp().check_and_save_current_preset_changes(_L("Undo / Redo is processing"), format_wxstr(_L(
             "%1% printer was active at the time the target Undo / Redo snapshot was taken. Switching to %1% printer requires reloading of %1% presets."), s_pt)))
             // Don't switch the profiles.
             return;
@@ -4910,8 +4910,19 @@ SLAPrint&       Plater::sla_print()         { return p->sla_print; }
 
 void Plater::new_project()
 {
-    if (p->save_project_if_dirty() == wxID_CANCEL)
+    if (int saved_project = p->save_project_if_dirty(); saved_project == wxID_CANCEL)
         return;
+    else {
+        wxString header = saved_project == wxID_YES ? _L("You can keep presets modifications to the new project or discard them") :
+                          _L("You can keep presets modifications to the new project, discard them or save changes as new presets.\n"
+                             "Note, if changes will be saved than new project wouldn't keep them");
+        using ab = UnsavedChangesDialog::ActionButtons;
+        int act_buttons = ab::KEEP;
+        if (saved_project == wxID_NO)
+            act_buttons |= ab::SAVE;
+        if (!wxGetApp().check_and_keep_current_preset_changes(_L("New Project is creating"), header, act_buttons))
+            return;
+    }
 
     p->select_view_3D("3D");
     take_snapshot(_L("New Project"));
@@ -4923,7 +4934,7 @@ void Plater::new_project()
 
 void Plater::load_project()
 {
-    if (p->save_project_if_dirty() == wxID_CANCEL)
+    if (!wxGetApp().can_load_project())
         return;
 
     // Ask user for a project file name.
@@ -5219,7 +5230,8 @@ bool Plater::load_files(const wxArrayString& filenames)
 
             switch (load_type) {
             case LoadType::OpenProject: {
-                load_project(from_path(*it));
+                if (wxGetApp().can_load_project())
+                    load_project(from_path(*it));
                 break;
             }
             case LoadType::LoadGeometry: {
