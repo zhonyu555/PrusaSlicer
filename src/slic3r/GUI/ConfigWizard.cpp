@@ -65,7 +65,9 @@ bool Bundle::load(fs::path source_path, bool ais_in_resources, bool ais_prusa_bu
     this->is_prusa_bundle = ais_prusa_bundle;
 
     std::string path_string = source_path.string();
-    auto [config_substitutions, presets_loaded] = preset_bundle->load_configbundle(path_string, PresetBundle::LoadConfigBundleAttribute::LoadSystem);
+    // Throw when parsing invalid configuration. Only valid configuration is supposed to be provided over the air.
+    auto [config_substitutions, presets_loaded] = preset_bundle->load_configbundle(
+        path_string, PresetBundle::LoadConfigBundleAttribute::LoadSystem, ForwardCompatibilitySubstitutionRule::Disable);
     UNUSED(config_substitutions);
     // No substitutions shall be reported when loading a system config bundle, no substitutions are allowed.
     assert(config_substitutions.empty());
@@ -492,15 +494,7 @@ PageWelcome::PageWelcome(ConfigWizard *parent)
 {
     welcome_text->Hide();
     cbox_reset->Hide();
-#ifdef __linux__
-    if (!DesktopIntegrationDialog::is_integrated())
-        cbox_integrate->Show(true);
-    else
-        cbox_integrate->Hide();
-#else
-    cbox_integrate->Hide();
-#endif
-    
+    cbox_integrate->Hide();    
 }
 
 void PageWelcome::set_run_reason(ConfigWizard::RunReason run_reason)
@@ -508,7 +502,7 @@ void PageWelcome::set_run_reason(ConfigWizard::RunReason run_reason)
     const bool data_empty = run_reason == ConfigWizard::RR_DATA_EMPTY;
     welcome_text->Show(data_empty);
     cbox_reset->Show(!data_empty);
-#ifdef __linux__
+#if defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION)
     if (!DesktopIntegrationDialog::is_integrated())
         cbox_integrate->Show(true);
     else
@@ -1606,25 +1600,17 @@ ConfigWizardIndex::ConfigWizardIndex(wxWindow *parent)
     , item_hover(NO_ITEM)
     , last_page((size_t)-1)
 {
+#ifndef __WXOSX__ 
+    SetDoubleBuffered(true);// SetDoubleBuffered exists on Win and Linux/GTK, but is missing on OSX
+#endif //__WXOSX__
     SetMinSize(bg.bmp().GetSize());
 
     const wxSize size = GetTextExtent("m");
     em_w = size.x;
     em_h = size.y;
 
-    // Add logo bitmap.
-    // This could be done in on_paint() along with the index labels, but I've found it tricky
-    // to get the bitmap rendered well on all platforms with transparent background.
-    // In some cases it didn't work at all. And so wxStaticBitmap is used here instead,
-    // because it has all the platform quirks figured out.
-    auto *sizer = new wxBoxSizer(wxVERTICAL);
-    logo = new wxStaticBitmap(this, wxID_ANY, bg.bmp());
-    sizer->AddStretchSpacer();
-    sizer->Add(logo);
-    SetSizer(sizer);
-    logo_height = logo->GetBitmap().GetHeight();
-
     Bind(wxEVT_PAINT, &ConfigWizardIndex::on_paint, this);
+    Bind(wxEVT_SIZE, [this](wxEvent& e) { e.Skip(); Refresh(); });
     Bind(wxEVT_MOTION, &ConfigWizardIndex::on_mouse_move, this);
 
     Bind(wxEVT_LEAVE_WINDOW, [this](wxMouseEvent &evt) {
@@ -1769,6 +1755,12 @@ void ConfigWizardIndex::on_paint(wxPaintEvent & evt)
         y += yinc;
         index_width = std::max(index_width, (int)x + text_size.x);
     }
+    
+    //draw logo
+    if (int y = size.y - bg.GetBmpHeight(); y>=0) {
+        dc.DrawBitmap(bg.bmp(), 0, y, false);
+        index_width = std::max(index_width, bg.GetBmpWidth() + em_w / 2);
+    }
 
     if (GetMinSize().x < index_width) {
         CallAfter([this, index_width]() {
@@ -1776,11 +1768,6 @@ void ConfigWizardIndex::on_paint(wxPaintEvent & evt)
             Refresh();
         });
     }
-
-    if ((int)y + logo_height > size.GetHeight())
-        logo->Hide();
-    else
-        logo->Show();
 }
 
 void ConfigWizardIndex::on_mouse_move(wxMouseEvent &evt)
@@ -1806,7 +1793,6 @@ void ConfigWizardIndex::msw_rescale()
 
     bg.msw_rescale();
     SetMinSize(bg.bmp().GetSize());
-    logo->SetBitmap(bg.bmp());
 
     bullet_black.msw_rescale();
     bullet_blue.msw_rescale();
@@ -2459,7 +2445,35 @@ bool ConfigWizard::priv::check_and_install_missing_materials(Technology technolo
     return true;
 }
 
-void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater)
+static std::set<std::string> get_new_added_presets(const std::map<std::string, std::string>& old_data, const std::map<std::string, std::string>& new_data) 
+{
+    auto get_aliases = [](const std::map<std::string, std::string>& data) {
+        std::set<std::string> old_aliases;
+        for (auto item : data) {
+            const std::string& name = item.first;
+            size_t pos = name.find("@");
+            old_aliases.emplace(pos == std::string::npos ? name : name.substr(0, pos-1));
+        }
+        return old_aliases;
+    };
+
+    std::set<std::string> old_aliases = get_aliases(old_data);
+    std::set<std::string> new_aliases = get_aliases(new_data);
+    std::set<std::string> diff;
+    std::set_difference(new_aliases.begin(), new_aliases.end(), old_aliases.begin(), old_aliases.end(), std::inserter(diff, diff.begin()));
+
+    return diff;
+}
+
+static std::string get_first_added_preset(const std::map<std::string, std::string>& old_data, const std::map<std::string, std::string>& new_data)
+{
+    std::set<std::string> diff = get_new_added_presets(old_data, new_data);
+    if (diff.empty())
+        return std::string();
+    return *diff.begin();
+}
+
+bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater)
 {
     const auto enabled_vendors = appconfig_new.vendors();
 
@@ -2514,14 +2528,14 @@ void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
             break;
     }
 
-    if (snapshot) {
-        SnapshotDB::singleton().take_snapshot(*app_config, snapshot_reason);
-    }
+    if (snapshot && ! take_config_snapshot_cancel_on_error(*app_config, snapshot_reason, "", _u8L("Continue with applying configuration changes?")))
+        return false;
 
     if (install_bundles.size() > 0) {
         // Install bundles from resources.
         // Don't create snapshot - we've already done that above if applicable.
-        updater->install_bundles_rsrc(std::move(install_bundles), false);
+        if (! updater->install_bundles_rsrc(std::move(install_bundles), false))
+            return false;
     } else {
         BOOST_LOG_TRIVIAL(info) << "No bundles need to be installed from resources";
     }
@@ -2531,13 +2545,61 @@ void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         preset_bundle->reset(true);
     }
 
+    std::string preferred_model;
+    std::string preferred_variant;
+    const auto enabled_vendors_old = app_config->vendors();
+    auto get_preferred_printer_model = [enabled_vendors, enabled_vendors_old](const std::string& bundle_name, const Bundle& bundle, std::string& variant) {
+        const auto config = enabled_vendors.find(bundle_name);
+        if (config == enabled_vendors.end())
+            return std::string();
+        for (const auto& model : bundle.vendor_profile->models) {
+            if (const auto model_it = config->second.find(model.id);
+                model_it != config->second.end() && model_it->second.size() > 0) {
+                variant = *model_it->second.begin();
+                const auto config_old = enabled_vendors_old.find(bundle_name);
+                if (config_old == enabled_vendors_old.end())
+                    return model.id;
+                const auto model_it_old = config_old->second.find(model.id);
+                if (model_it_old == config_old->second.end())
+                    return model.id;
+                else if (model_it_old->second != model_it->second) {
+                    for (const auto& var : model_it->second)
+                        if (model_it_old->second.find(var) == model_it_old->second.end()) {
+                            variant = var;
+                            return model.id;
+                        }
+                }
+            }
+        }
+        if (!variant.empty())
+            variant.clear();
+        return std::string();
+    };
+    // Prusa printers are considered first, then 3rd party.
+    if (preferred_model = get_preferred_printer_model("PrusaResearch", bundles.prusa_bundle(), preferred_variant);
+        preferred_model.empty()) {
+        for (const auto& bundle : bundles) {
+            if (bundle.second.is_prusa_bundle) { continue; }
+            if (preferred_model = get_preferred_printer_model(bundle.first, bundle.second, preferred_variant);
+                !preferred_model.empty())
+                    break;
+        }
+    }
+
+    std::string first_added_filament, first_added_sla_material;
+    auto apply_section = [this, app_config](const std::string& section_name, std::string& first_added_preset) {
+        if (appconfig_new.has_section(section_name)) {
+            // get first of new added preset names
+            const std::map<std::string, std::string>& old_presets = app_config->has_section(section_name) ? app_config->get_section(section_name) : std::map<std::string, std::string>();
+            first_added_preset = get_first_added_preset(old_presets, appconfig_new.get_section(section_name));
+            app_config->set_section(section_name, appconfig_new.get_section(section_name));
+        }
+    };
+    apply_section(AppConfig::SECTION_FILAMENTS, first_added_filament);
+    apply_section(AppConfig::SECTION_MATERIALS, first_added_sla_material);
+
     app_config->set_vendors(appconfig_new);
-    if (appconfig_new.has_section(AppConfig::SECTION_FILAMENTS)) {
-        app_config->set_section(AppConfig::SECTION_FILAMENTS, appconfig_new.get_section(AppConfig::SECTION_FILAMENTS));
-    }
-    if (appconfig_new.has_section(AppConfig::SECTION_MATERIALS)) {
-        app_config->set_section(AppConfig::SECTION_MATERIALS, appconfig_new.get_section(AppConfig::SECTION_MATERIALS));
-    }
+
     app_config->set("version_check", page_update->version_check ? "1" : "0");
     app_config->set("preset_update", page_update->preset_update ? "1" : "0");
     app_config->set("export_sources_full_pathnames", page_reload_from_disk->full_pathnames ? "1" : "0");
@@ -2562,43 +2624,8 @@ void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
 
     page_mode->serialize_mode(app_config);
 
-    std::string preferred_model;
-
-    // Figure out the default pre-selected printer based on the selections in the pickers.
-    // The default is the first selected printer model (one with at least 1 variant selected).
-    // The default is only applied by load_presets() if the user doesn't have a (visible) printer
-    // selected already.
-    // Prusa printers are considered first, then 3rd party.
-    const auto config_prusa = enabled_vendors.find("PrusaResearch");
-    if (config_prusa != enabled_vendors.end()) {
-        for (const auto &model : bundles.prusa_bundle().vendor_profile->models) {
-            const auto model_it = config_prusa->second.find(model.id);
-            if (model_it != config_prusa->second.end() && model_it->second.size() > 0) {
-                preferred_model = model.id;
-                break;
-            }
-        }
-    }
-    if (preferred_model.empty()) {
-        for (const auto &bundle : bundles) {
-            if (bundle.second.is_prusa_bundle) { continue; }
-
-            const auto config = enabled_vendors.find(bundle.first);
-			if (config == enabled_vendors.end()) { continue; }
-            for (const auto &model : bundle.second.vendor_profile->models) {
-                const auto model_it = config->second.find(model.id);
-                if (model_it != config->second.end() && model_it->second.size() > 0) {
-                    preferred_model = model.id;
-                    break;
-                }
-            }
-        }
-    }
-
-    // Reloading the configs after some modifications were done to PrusaSlicer.ini.
-    // Just perform the substitutions silently, as the substitutions were already presented to the user on application start-up
-    // and the Wizard shall not create any new values that would require substitution.
-    PresetsConfigSubstitutions substitutions = preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilent, preferred_model);
+    preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem, 
+                                {preferred_model, preferred_variant, first_added_filament, first_added_sla_material});
 
     if (page_custom->custom_wanted()) {
         page_firmware->apply_custom_config(*custom_config);
@@ -2612,6 +2639,8 @@ void ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
 
     // Update the selections from the compatibilty.
     preset_bundle->export_selections(*app_config);
+
+    return true;
 }
 void ConfigWizard::priv::update_presets_in_config(const std::string& section, const std::string& alias_key, bool add)
 {
@@ -2822,7 +2851,8 @@ bool ConfigWizard::run(RunReason reason, StartPage start_page)
     p->set_start_page(start_page);
 
     if (ShowModal() == wxID_OK) {
-        p->apply_config(app.app_config, app.preset_bundle, app.preset_updater);
+        if (! p->apply_config(app.app_config, app.preset_bundle, app.preset_updater))
+            return false;
         app.app_config->set_legacy_datadir(false);
         app.update_mode();
         app.obj_manipul()->update_ui_from_settings();

@@ -792,7 +792,7 @@ void GLCanvas3D::SequentialPrintClearance::set_polygons(const Polygons& polygons
     for (const Polygon& poly : polygons) {
         triangles_count += poly.points.size() - 2;
     }
-    size_t vertices_count = 3 * triangles_count;
+    const size_t vertices_count = 3 * triangles_count;
 
     if (m_render_fill) {
         GLModel::InitializationData fill_data;
@@ -803,13 +803,13 @@ void GLCanvas3D::SequentialPrintClearance::set_polygons(const Polygons& polygons
         entity.normals.reserve(vertices_count);
         entity.indices.reserve(vertices_count);
 
-        ExPolygons polygons_union = union_ex(polygons);
+        const ExPolygons polygons_union = union_ex(polygons);
         for (const ExPolygon& poly : polygons_union) {
-            std::vector<Vec3d> triangulation = triangulate_expolygon_3d(poly, false);
+            const std::vector<Vec3d> triangulation = triangulate_expolygon_3d(poly);
             for (const Vec3d& v : triangulation) {
                 entity.positions.emplace_back(v.cast<float>() + Vec3f(0.0f, 0.0f, 0.0125f)); // add a small positive z to avoid z-fighting
                 entity.normals.emplace_back(Vec3f::UnitZ());
-                size_t positions_count = entity.positions.size();
+                const size_t positions_count = entity.positions.size();
                 if (positions_count % 3 == 0) {
                     entity.indices.emplace_back(positions_count - 3);
                     entity.indices.emplace_back(positions_count - 2);
@@ -900,6 +900,8 @@ wxDEFINE_EVENT(EVT_GLCANVAS_ADAPTIVE_LAYER_HEIGHT_PROFILE, Event<float>);
 wxDEFINE_EVENT(EVT_GLCANVAS_SMOOTH_LAYER_HEIGHT_PROFILE, HeightProfileSmoothEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RELOAD_FROM_DISK, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RENDER_TIMER, wxTimerEvent/*RenderTimerEvent*/);
+wxDEFINE_EVENT(EVT_GLCANVAS_TOOLBAR_HIGHLIGHTER_TIMER, wxTimerEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_GIZMO_HIGHLIGHTER_TIMER, wxTimerEvent);
 
 const double GLCanvas3D::DefaultCameraZoomToBoxMarginFactor = 1.25;
 
@@ -1110,16 +1112,6 @@ int GLCanvas3D::check_volumes_outside_state() const
     ModelInstanceEPrintVolumeState state;
     m_volumes.check_outside_state(m_config, &state);
     return (int)state;
-}
-
-void GLCanvas3D::start_mapping_gcode_window()
-{
-    m_gcode_viewer.start_mapping_gcode_window();
-}
-
-void GLCanvas3D::stop_mapping_gcode_window()
-{
-    m_gcode_viewer.stop_mapping_gcode_window();
 }
 
 void GLCanvas3D::toggle_sla_auxiliaries_visibility(bool visible, const ModelObject* mo, int instance_idx)
@@ -1407,10 +1399,6 @@ void GLCanvas3D::render()
     if (!is_initialized() && !init())
         return;
 
-#if ENABLE_RENDER_STATISTICS
-    auto start_time = std::chrono::high_resolution_clock::now();
-#endif // ENABLE_RENDER_STATISTICS
-
     if (wxGetApp().plater()->get_bed().get_shape().empty()) {
         // this happens at startup when no data is still saved under <>\AppData\Roaming\Slic3rPE
         post_event(SimpleEvent(EVT_GLCANVAS_UPDATE_BED_SHAPE));
@@ -1505,19 +1493,12 @@ void GLCanvas3D::render()
     // draw overlays
     _render_overlays();
 
-#if ENABLE_RENDER_STATISTICS
     if (wxGetApp().plater()->is_render_statistic_dialog_visible()) {
         ImGuiWrapper& imgui = *wxGetApp().imgui();
         imgui.begin(std::string("Render statistics"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
-        imgui.text("Last frame:");
+        imgui.text("FPS (SwapBuffers() calls per second):");
         ImGui::SameLine();
-        int64_t average = m_render_stats.get_average();
-        imgui.text(std::to_string(average));
-        ImGui::SameLine();
-        imgui.text("ms");
-        imgui.text("FPS:");
-        ImGui::SameLine();
-        imgui.text(std::to_string((average == 0) ? 0 : static_cast<int>(1000.0f / static_cast<float>(average))));
+        imgui.text(std::to_string(m_render_stats.get_fps_and_reset_if_needed()));
         ImGui::Separator();
         imgui.text("Compressed textures:");
         ImGui::SameLine();
@@ -1527,7 +1508,6 @@ void GLCanvas3D::render()
         imgui.text(std::to_string(OpenGLManager::get_gl_info().get_max_tex_size()));
         imgui.end();
     }
-#endif // ENABLE_RENDER_STATISTICS
 
 #if ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
     if (wxGetApp().is_editor() && wxGetApp().plater()->is_view3D_shown())
@@ -1574,11 +1554,7 @@ void GLCanvas3D::render()
     wxGetApp().imgui()->render();
 
     m_canvas->SwapBuffers();
-
-#if ENABLE_RENDER_STATISTICS
-    auto end_time = std::chrono::high_resolution_clock::now();
-    m_render_stats.add_frame(std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count());
-#endif // ENABLE_RENDER_STATISTICS
+    m_render_stats.increment_fps_counter();
 }
 
 void GLCanvas3D::render_thumbnail(ThumbnailData& thumbnail_data, unsigned int w, unsigned int h, const ThumbnailsParams& thumbnail_params, Camera::EType camera_type)
@@ -1616,14 +1592,17 @@ void GLCanvas3D::delete_selected()
     m_selection.erase();
 }
 
-void GLCanvas3D::ensure_on_bed(unsigned int object_idx)
+void GLCanvas3D::ensure_on_bed(unsigned int object_idx, bool allow_negative_z)
 {
+    if (allow_negative_z)
+        return;
+
     typedef std::map<std::pair<int, int>, double> InstancesToZMap;
     InstancesToZMap instances_min_z;
 
     for (GLVolume* volume : m_volumes.volumes) {
         if (volume->object_idx() == (int)object_idx && !volume->is_modifier) {
-            double min_z = volume->transformed_convex_hull_bounding_box().min(2);
+            double min_z = volume->transformed_convex_hull_bounding_box().min.z();
             std::pair<int, int> instance = std::make_pair(volume->object_idx(), volume->instance_idx());
             InstancesToZMap::iterator it = instances_min_z.find(instance);
             if (it == instances_min_z.end())
@@ -2180,6 +2159,10 @@ void GLCanvas3D::bind_event_handlers()
         m_canvas->Bind(wxEVT_MOUSEWHEEL, &GLCanvas3D::on_mouse_wheel, this);
         m_canvas->Bind(wxEVT_TIMER, &GLCanvas3D::on_timer, this);
         m_canvas->Bind(EVT_GLCANVAS_RENDER_TIMER, &GLCanvas3D::on_render_timer, this);
+        m_toolbar_highlighter.set_timer_owner(m_canvas, 0);
+        m_canvas->Bind(EVT_GLCANVAS_TOOLBAR_HIGHLIGHTER_TIMER, [this](wxTimerEvent&) { m_toolbar_highlighter.blink(); });
+        m_gizmo_highlighter.set_timer_owner(m_canvas, 0);
+        m_canvas->Bind(EVT_GLCANVAS_GIZMO_HIGHLIGHTER_TIMER, [this](wxTimerEvent&) { m_gizmo_highlighter.blink(); });
         m_canvas->Bind(wxEVT_LEFT_DOWN, &GLCanvas3D::on_mouse, this);
         m_canvas->Bind(wxEVT_LEFT_UP, &GLCanvas3D::on_mouse, this);
         m_canvas->Bind(wxEVT_MIDDLE_DOWN, &GLCanvas3D::on_mouse, this);
@@ -2246,6 +2229,8 @@ void GLCanvas3D::on_idle(wxIdleEvent& evt)
     bool mouse3d_controller_applied = wxGetApp().plater()->get_mouse3d_controller().apply(wxGetApp().plater()->get_camera());
     m_dirty |= mouse3d_controller_applied;
     m_dirty |= wxGetApp().plater()->get_notification_manager()->update_notifications(*this);
+    auto gizmo = wxGetApp().plater()->canvas3D()->get_gizmos_manager().get_current();
+    if (gizmo != nullptr) m_dirty |= gizmo->update_items_state();
 
     if (!m_dirty)
         return;
@@ -2592,15 +2577,11 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
     {
         if (!m_gizmos.on_key(evt)) {
             if (evt.GetEventType() == wxEVT_KEY_UP) {
-#if ENABLE_RENDER_STATISTICS
                 if (evt.ShiftDown() && evt.ControlDown() && keyCode == WXK_SPACE) {
                     wxGetApp().plater()->toggle_render_statistic_dialog();
                     m_dirty = true;
                 }
                 if (m_tab_down && keyCode == WXK_TAB && !evt.HasAnyModifiers()) {
-#else
-                if (m_tab_down && keyCode == WXK_TAB && !evt.HasAnyModifiers()) {
-#endif // ENABLE_RENDER_STATISTICS
                     // Enable switching between 3D and Preview with Tab
                     // m_canvas->HandleAsNavigationKey(evt);   // XXX: Doesn't work in some cases / on Linux
                     post_event(SimpleEvent(EVT_GLCANVAS_TAB));
@@ -2791,11 +2772,10 @@ void GLCanvas3D::on_timer(wxTimerEvent& evt)
 
 void GLCanvas3D::on_render_timer(wxTimerEvent& evt)
 {
-    // no need to do anything here
-    // right after this event is recieved, idle event is fired
-
-    //m_dirty = true;
-    //wxWakeUpIdle();  
+    // no need to wake up idle
+    // right after this event, idle event is fired
+    // m_dirty = true; 
+    // wxWakeUpIdle(); 
 }
 
 
@@ -2813,21 +2793,15 @@ void GLCanvas3D::schedule_extra_frame(int miliseconds)
             return;
         }
     } 
-    // Start timer
-    int64_t now = timestamp_now();
+    int remaining_time = m_render_timer.GetInterval();
     // Timer is not running
-    if (! m_render_timer.IsRunning()) {
-        m_extra_frame_requested_delayed = miliseconds;
+    if (!m_render_timer.IsRunning()) {
         m_render_timer.StartOnce(miliseconds);
-        m_render_timer_start = now;
     // Timer is running - restart only if new period is shorter than remaning period
     } else {
-        const int64_t remaining_time = (m_render_timer_start + m_extra_frame_requested_delayed) - now;
         if (miliseconds + 20 < remaining_time) {
             m_render_timer.Stop(); 
-            m_extra_frame_requested_delayed = miliseconds;
             m_render_timer.StartOnce(miliseconds);
-            m_render_timer_start = now;
         }
     }
 }
@@ -2958,6 +2932,20 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         return;
     }
 
+#if ENABLE_SINKING_CONTOURS
+    for (GLVolume* volume : m_volumes.volumes) {
+        volume->force_sinking_contours = false;
+    }
+
+    auto show_sinking_contours = [this]() {
+        const Selection::IndicesList& idxs = m_selection.get_volume_idxs();
+        for (unsigned int idx : idxs) {
+            m_volumes.volumes[idx]->force_sinking_contours = true;
+        }
+        m_dirty = true;
+    };
+#endif // ENABLE_SINKING_CONTOURS
+
     if (m_gizmos.on_mouse(evt)) {
         if (wxWindow::FindFocus() != m_canvas)
             // Grab keyboard focus for input in gizmo dialogs.
@@ -2982,6 +2970,21 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             default: { break; }
             }
         }
+#if ENABLE_SINKING_CONTOURS
+        else if (evt.Dragging()) {
+            switch (m_gizmos.get_current_type())
+            {
+            case GLGizmosManager::EType::Move:
+            case GLGizmosManager::EType::Scale:
+            case GLGizmosManager::EType::Rotate:
+            {
+                show_sinking_contours();
+                break;
+            }
+            default: { break; }
+            }
+        }
+#endif // ENABLE_SINKING_CONTOURS
 
         return;
     }
@@ -3291,6 +3294,11 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
     else
         evt.Skip();
 
+#if ENABLE_SINKING_CONTOURS
+    if (m_moving)
+        show_sinking_contours();
+#endif // ENABLE_SINKING_CONTOURS
+
 #ifdef __WXMSW__
 	if (on_enter_workaround)
 		m_mouse.position = Vec2d(-1., -1.);
@@ -3403,6 +3411,7 @@ void GLCanvas3D::do_move(const std::string& snapshot_type)
             m_selection.translate(i.first, i.second, shift);
             m->translate_instance(i.second, shift);
         }
+        wxGetApp().obj_list()->update_info_items(static_cast<size_t>(i.first));
     }
 
     // if the selection is not valid to allow for layer editing after the move, we need to turn off the tool if it is running
@@ -3431,12 +3440,17 @@ void GLCanvas3D::do_rotate(const std::string& snapshot_type)
 
     // stores current min_z of instances
     std::map<std::pair<int, int>, double> min_zs;
-    if (!snapshot_type.empty()) {
-        for (int i = 0; i < static_cast<int>(m_model->objects.size()); ++i) {
-            const ModelObject* obj = m_model->objects[i];
-            for (int j = 0; j < static_cast<int>(obj->instances.size()); ++j) {
+    for (int i = 0; i < static_cast<int>(m_model->objects.size()); ++i) {
+        const ModelObject* obj = m_model->objects[i];
+        for (int j = 0; j < static_cast<int>(obj->instances.size()); ++j) {
+            if (snapshot_type.empty() && m_selection.get_object_idx() == i) {
+                // This means we are flattening this object. In that case pretend
+                // that it is not sinking (even if it is), so it is placed on bed
+                // later on (whatever is sinking will be left sinking).
+                min_zs[{ i, j }] = SINKING_Z_THRESHOLD;
+            } else
                 min_zs[{ i, j }] = obj->instance_bounding_box(j).min.z();
-            }
+
         }
     }
 
@@ -3476,13 +3490,15 @@ void GLCanvas3D::do_rotate(const std::string& snapshot_type)
     // Fixes sinking/flying instances
     for (const std::pair<int, int>& i : done) {
         ModelObject* m = m_model->objects[i.first];
-        double shift_z = m->get_instance_min_z(i.second);
+        const double shift_z = m->get_instance_min_z(i.second);
         // leave sinking instances as sinking
-        if (min_zs.empty() || min_zs.find({ i.first, i.second })->second >= SINKING_Z_THRESHOLD || shift_z > SINKING_Z_THRESHOLD) {
-            Vec3d shift(0.0, 0.0, -shift_z);
+        if (min_zs.find({ i.first, i.second })->second >= SINKING_Z_THRESHOLD || shift_z > SINKING_Z_THRESHOLD) {
+            const Vec3d shift(0.0, 0.0, -shift_z);
             m_selection.translate(i.first, i.second, shift);
             m->translate_instance(i.second, shift);
         }
+
+        wxGetApp().obj_list()->update_info_items(static_cast<size_t>(i.first));
     }
 
     if (!done.empty())
@@ -3550,6 +3566,7 @@ void GLCanvas3D::do_scale(const std::string& snapshot_type)
             m_selection.translate(i.first, i.second, shift);
             m->translate_instance(i.second, shift);
         }
+        wxGetApp().obj_list()->update_info_items(static_cast<size_t>(i.first));
     }
 
     if (!done.empty())
@@ -3575,14 +3592,24 @@ void GLCanvas3D::do_mirror(const std::string& snapshot_type)
     if (!snapshot_type.empty())
         wxGetApp().plater()->take_snapshot(_(snapshot_type));
 
+    // stores current min_z of instances
+    std::map<std::pair<int, int>, double> min_zs;
+    if (!snapshot_type.empty()) {
+        for (int i = 0; i < static_cast<int>(m_model->objects.size()); ++i) {
+            const ModelObject* obj = m_model->objects[i];
+            for (int j = 0; j < static_cast<int>(obj->instances.size()); ++j) {
+                min_zs[{ i, j }] = obj->instance_bounding_box(j).min.z();
+            }
+        }
+    }
+
     std::set<std::pair<int, int>> done;  // keeps track of modified instances
 
     Selection::EMode selection_mode = m_selection.get_mode();
 
-    for (const GLVolume* v : m_volumes.volumes)
-    {
+    for (const GLVolume* v : m_volumes.volumes) {
         int object_idx = v->object_idx();
-        if ((object_idx < 0) || ((int)m_model->objects.size() <= object_idx))
+        if (object_idx < 0 || (int)m_model->objects.size() <= object_idx)
             continue;
 
         int instance_idx = v->instance_idx();
@@ -3592,8 +3619,7 @@ void GLCanvas3D::do_mirror(const std::string& snapshot_type)
 
         // Mirror instances/volumes
         ModelObject* model_object = m_model->objects[object_idx];
-        if (model_object != nullptr)
-        {
+        if (model_object != nullptr) {
             if (selection_mode == Selection::Instance)
                 model_object->instances[instance_idx]->set_mirror(v->get_instance_mirror());
             else if (selection_mode == Selection::Volume)
@@ -3604,12 +3630,16 @@ void GLCanvas3D::do_mirror(const std::string& snapshot_type)
     }
 
     // Fixes sinking/flying instances
-    for (const std::pair<int, int>& i : done)
-    {
+    for (const std::pair<int, int>& i : done) {
         ModelObject* m = m_model->objects[i.first];
-        Vec3d shift(0.0, 0.0, -m->get_instance_min_z(i.second));
-        m_selection.translate(i.first, i.second, shift);
-        m->translate_instance(i.second, shift);
+        double shift_z = m->get_instance_min_z(i.second);
+        // leave sinking instances as sinking
+        if (min_zs.empty() || min_zs.find({ i.first, i.second })->second >= SINKING_Z_THRESHOLD || shift_z > SINKING_Z_THRESHOLD) {
+            Vec3d shift(0.0, 0.0, -shift_z);
+            m_selection.translate(i.first, i.second, shift);
+            m->translate_instance(i.second, shift);
+        }
+        wxGetApp().obj_list()->update_info_items(static_cast<size_t>(i.first));
     }
 
     post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
@@ -3838,6 +3868,15 @@ void GLCanvas3D::update_sequential_clearance()
     set_sequential_print_clearance_polygons(polygons);
 }
 
+bool GLCanvas3D::is_object_sinking(int object_idx) const
+{
+    for (const GLVolume* v : m_volumes.volumes) {
+        if (v->object_idx() == object_idx && v->is_sinking())
+            return true;
+    }
+    return false;
+}
+
 bool GLCanvas3D::_is_shown_on_screen() const
 {
     return (m_canvas != nullptr) ? m_canvas->IsShownOnScreen() : false;
@@ -4059,13 +4098,24 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, const
         }
     }
 
+#if !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
     if (visible_volumes.empty())
         return;
+#endif // !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
 
     BoundingBoxf3 volumes_box;
-    for (const GLVolume* vol : visible_volumes) {
-        volumes_box.merge(vol->transformed_bounding_box());
+#if ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
+    if (!visible_volumes.empty()) {
+#endif // ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
+        for (const GLVolume* vol : visible_volumes) {
+            volumes_box.merge(vol->transformed_bounding_box());
+        }
+#if ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
     }
+    else
+        // This happens for empty projects
+        volumes_box = wxGetApp().plater()->get_bed().get_bounding_box(true);
+#endif // ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
 
     Camera camera;
     camera.set_type(camera_type);
@@ -4099,7 +4149,7 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, const
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     shader->start_using();
-    shader->set_uniform("emission_factor", 0.0);
+    shader->set_uniform("emission_factor", 0.0f);
 
     for (GLVolume* vol : visible_volumes) {
         shader->set_uniform("uniform_color", (vol->printable && !vol->is_outside) ? orange : gray);
@@ -4381,6 +4431,23 @@ bool GLCanvas3D::_init_main_toolbar()
         // unable to init the toolbar texture, disable it
         m_main_toolbar.set_enabled(false);
         return true;
+    }
+    // init arrow
+    BackgroundTexture::Metadata arrow_data;
+    arrow_data.filename = "toolbar_arrow.svg";
+    arrow_data.left = 0;
+    arrow_data.top = 0;
+    arrow_data.right = 0;
+    arrow_data.bottom = 0;
+
+    if (!m_main_toolbar.init_arrow(arrow_data))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Main toolbar failed to load arrow texture.";
+    }
+
+    if (!m_gizmos.init_arrow(arrow_data))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Gizmos manager failed to load arrow texture.";
     }
 
 //    m_main_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
@@ -5035,6 +5102,7 @@ void GLCanvas3D::_render_objects()
         m_volumes.set_z_range(-FLT_MAX, FLT_MAX);
 
     m_volumes.set_clipping_plane(m_camera_clipping_plane.get_data());
+    m_volumes.set_show_sinking_contours(! m_gizmos.is_hiding_instances());
 
     GLShaderProgram* shader = wxGetApp().get_shader("gouraud");
     if (shader != nullptr) {
@@ -5103,7 +5171,7 @@ void GLCanvas3D::_render_objects()
     m_camera_clipping_plane = ClippingPlane::ClipsNothing();
 }
 
-void GLCanvas3D::_render_gcode() const
+void GLCanvas3D::_render_gcode()
 {
     m_gcode_viewer.render();
 }
@@ -5296,6 +5364,11 @@ void GLCanvas3D::_render_gizmos_overlay()
 #endif /* __WXMSW__ */
 
     m_gizmos.render_overlay();
+
+    if (m_gizmo_highlighter.m_render_arrow)
+    {
+        m_gizmos.render_arrow(*this, m_gizmo_highlighter.m_gizmo_type);
+    }
 }
 
 void GLCanvas3D::_render_main_toolbar()
@@ -5313,6 +5386,10 @@ void GLCanvas3D::_render_main_toolbar()
 
     m_main_toolbar.set_position(top, left);
     m_main_toolbar.render(*this);
+    if (m_toolbar_highlighter.m_render_arrow)
+    {
+        m_main_toolbar.render_arrow(*this, m_toolbar_highlighter.m_toolbar_item);
+    }
 }
 
 void GLCanvas3D::_render_undoredo_toolbar()
@@ -5596,6 +5673,11 @@ void GLCanvas3D::_update_volumes_hover_state()
                 }
             }
         }
+#if ENABLE_SINKING_CONTOURS
+        else if (volume.selected)
+            volume.hover = GLVolume::HS_Hover;
+#endif // ENABLE_SINKING_CONTOURS
+
     }
 }
 
@@ -6288,7 +6370,7 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
     case EWarning::ObjectOutside:      text = _u8L("An object outside the print area was detected."); break;
     case EWarning::ToolpathOutside:    text = _u8L("A toolpath outside the print area was detected."); error = ErrorType::SLICING_ERROR; break;
     case EWarning::SlaSupportsOutside: text = _u8L("SLA supports outside the print area were detected."); error = ErrorType::PLATER_ERROR; break;
-    case EWarning::SomethingNotShown:  text = _u8L("Some objects are not visible."); break;
+    case EWarning::SomethingNotShown:  text = _u8L("Some objects are not visible during editing."); break;
     case EWarning::ObjectClashed:
         text = _u8L("An object outside the print area was detected.\n"
             "Resolve the current problem to continue slicing.");
@@ -6475,6 +6557,24 @@ bool GLCanvas3D::_deactivate_collapse_toolbar_items()
     return false;
 }
 
+void GLCanvas3D::highlight_toolbar_item(const std::string& item_name)
+{
+    GLToolbarItem* item = m_main_toolbar.get_item(item_name);
+    if (!item)
+        item = m_undoredo_toolbar.get_item(item_name);
+    if (!item || !item->is_visible())
+        return;
+    m_toolbar_highlighter.init(item, this);
+}
+
+void GLCanvas3D::highlight_gizmo(const std::string& gizmo_name)
+{
+    GLGizmosManager::EType gizmo = m_gizmos.get_gizmo_from_name(gizmo_name);
+    if(gizmo == GLGizmosManager::EType::Undefined)
+        return;
+    m_gizmo_highlighter.init(&m_gizmos, gizmo, this);
+}
+
 const Print* GLCanvas3D::fff_print() const
 {
     return (m_process == nullptr) ? nullptr : m_process->fff_print();
@@ -6494,10 +6594,119 @@ void GLCanvas3D::WipeTowerInfo::apply_wipe_tower() const
     wxGetApp().get_tab(Preset::TYPE_PRINT)->load_config(cfg);
 }
 
-
-void  GLCanvas3D::RenderTimer::Notify()
+void GLCanvas3D::RenderTimer::Notify()
 {
     wxPostEvent((wxEvtHandler*)GetOwner(), RenderTimerEvent( EVT_GLCANVAS_RENDER_TIMER, *this));
 }
+
+void GLCanvas3D::ToolbarHighlighterTimer::Notify()
+{
+    wxPostEvent((wxEvtHandler*)GetOwner(), ToolbarHighlighterTimerEvent(EVT_GLCANVAS_TOOLBAR_HIGHLIGHTER_TIMER, *this));
+}
+
+void GLCanvas3D::GizmoHighlighterTimer::Notify()
+{
+    wxPostEvent((wxEvtHandler*)GetOwner(), GizmoHighlighterTimerEvent(EVT_GLCANVAS_GIZMO_HIGHLIGHTER_TIMER, *this));
+}
+
+void GLCanvas3D::ToolbarHighlighter::set_timer_owner(wxEvtHandler* owner, int timerid/* = wxID_ANY*/)
+{
+    m_timer.SetOwner(owner, timerid);
+}
+
+void GLCanvas3D::ToolbarHighlighter::init(GLToolbarItem* toolbar_item, GLCanvas3D* canvas)
+{
+    if (m_timer.IsRunning())
+        invalidate();
+    if (!toolbar_item || !canvas)
+        return;
+
+    m_timer.Start(300, false);
+
+    m_toolbar_item = toolbar_item;
+    m_canvas       = canvas;
+}
+
+void GLCanvas3D::ToolbarHighlighter::invalidate()
+{
+    m_timer.Stop();
+
+    if (m_toolbar_item) {
+        m_toolbar_item->set_highlight(GLToolbarItem::EHighlightState::NotHighlighted);
+    }
+    m_toolbar_item = nullptr;
+    m_blink_counter = 0;
+    m_render_arrow = false;
+}
+
+void GLCanvas3D::ToolbarHighlighter::blink()
+{
+    if (m_toolbar_item) {
+        char state = m_toolbar_item->get_highlight();
+        if (state != (char)GLToolbarItem::EHighlightState::HighlightedShown)
+            m_toolbar_item->set_highlight(GLToolbarItem::EHighlightState::HighlightedShown);
+        else 
+            m_toolbar_item->set_highlight(GLToolbarItem::EHighlightState::HighlightedHidden);
+
+        m_render_arrow = !m_render_arrow;
+        m_canvas->set_as_dirty();
+    }
+    else
+        invalidate();
+
+    if ((++m_blink_counter) >= 11)
+        invalidate();
+}
+
+void GLCanvas3D::GizmoHighlighter::set_timer_owner(wxEvtHandler* owner, int timerid/* = wxID_ANY*/)
+{
+    m_timer.SetOwner(owner, timerid);
+}
+
+void GLCanvas3D::GizmoHighlighter::init(GLGizmosManager* manager, GLGizmosManager::EType gizmo, GLCanvas3D* canvas)
+{
+    if (m_timer.IsRunning())
+        invalidate();
+    if (!gizmo || !canvas)
+        return;
+
+    m_timer.Start(300, false);
+
+    m_gizmo_manager = manager;
+    m_gizmo_type    = gizmo;
+    m_canvas        = canvas;
+}
+
+void GLCanvas3D::GizmoHighlighter::invalidate()
+{
+    m_timer.Stop();
+
+    if (m_gizmo_manager) {
+        m_gizmo_manager->set_highlight(GLGizmosManager::EType::Undefined, false);
+    }
+    m_gizmo_manager = nullptr;
+    m_gizmo_type = GLGizmosManager::EType::Undefined;
+    m_blink_counter = 0;
+    m_render_arrow = false;
+}
+
+void GLCanvas3D::GizmoHighlighter::blink()
+{
+    if (m_gizmo_manager) {
+        if (m_blink_counter % 2 == 0)
+            m_gizmo_manager->set_highlight(m_gizmo_type, true);
+        else
+            m_gizmo_manager->set_highlight(m_gizmo_type, false);
+
+        m_render_arrow = !m_render_arrow;
+        m_canvas->set_as_dirty();
+    }
+    else
+        invalidate();
+
+    if ((++m_blink_counter) >= 11)
+        invalidate();
+}
+
 } // namespace GUI
 } // namespace Slic3r

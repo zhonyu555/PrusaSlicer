@@ -48,7 +48,7 @@ bool GLGizmoSeam::on_init()
 
 std::string GLGizmoSeam::on_get_name() const
 {
-    return (_L("Seam painting") + " [P]").ToUTF8().data();
+    return _u8L("Seam painting");
 }
 
 
@@ -63,6 +63,7 @@ void GLGizmoSeam::render_painter_gizmo() const
     render_triangles(selection);
 
     m_c->object_clipper()->render_cut();
+    m_c->instances_hider()->render_cut();
     render_cursor();
 
     glsafe(::glDisable(GL_BLEND));
@@ -78,7 +79,7 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
     const float approx_height = m_imgui->scaled(14.0f);
     y = std::min(y, bottom_limit - approx_height);
     m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
-    m_imgui->begin(on_get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
+    m_imgui->begin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
     // First calculate width of all the texts that are could possibly be shown. We will decide set the dialog width based on that:
     const float clipping_slider_left = std::max(m_imgui->calc_text_size(m_desc.at("clipping_of_view")).x,
@@ -137,6 +138,7 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
 
     const float max_tooltip_width = ImGui::GetFontSize() * 20.0f;
 
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc.at("cursor_size"));
     ImGui::SameLine(cursor_size_slider_left);
     ImGui::PushItemWidth(window_width - cursor_size_slider_left);
@@ -187,8 +189,10 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
 
 
     ImGui::Separator();
-    if (m_c->object_clipper()->get_position() == 0.f)
+    if (m_c->object_clipper()->get_position() == 0.f) {
+        ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("clipping_of_view"));
+    }
     else {
         if (m_imgui->button(m_desc.at("reset_direction"))) {
             wxGetApp().CallAfter([this](){
@@ -256,7 +260,8 @@ void GLGizmoSeam::update_from_model_object()
         const TriangleMesh* mesh = &mv->mesh();
 
         m_triangle_selectors.emplace_back(std::make_unique<TriangleSelectorGUI>(*mesh));
-        m_triangle_selectors.back()->deserialize(mv->seam_facets.get_data());
+        // Reset of TriangleSelector is done inside TriangleSelectorGUI's constructor, so we don't need it to perform it again in deserialize().
+        m_triangle_selectors.back()->deserialize(mv->seam_facets.get_data(), false);
         m_triangle_selectors.back()->request_update_render_data();
     }
 }

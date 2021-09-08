@@ -2,6 +2,7 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/nowide/fstream.hpp>
+#include <charconv>
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -12,19 +13,27 @@
 
 namespace Slic3r {
 
+static inline char get_extrusion_axis_char(const GCodeConfig &config)
+{
+    std::string axis = get_extrusion_axis(config);
+    assert(axis.size() <= 1);
+    // Return 0 for gcfNoExtrusion
+    return axis.empty() ? 0 : axis[0];
+}
+
 void GCodeReader::apply_config(const GCodeConfig &config)
 {
     m_config = config;
-    m_extrusion_axis = get_extrusion_axis(m_config)[0];
+    m_extrusion_axis = get_extrusion_axis_char(m_config);
 }
 
 void GCodeReader::apply_config(const DynamicPrintConfig &config)
 {
     m_config.apply(config, true);
-    m_extrusion_axis = get_extrusion_axis(m_config)[0];
+    m_extrusion_axis = get_extrusion_axis_char(m_config);
 }
 
-const char* GCodeReader::parse_line_internal(const char *ptr, GCodeLine &gline, std::pair<const char*, const char*> &command)
+const char* GCodeReader::parse_line_internal(const char *ptr, const char *end, GCodeLine &gline, std::pair<const char*, const char*> &command)
 {
     PROFILE_FUNC();
 
@@ -52,18 +61,26 @@ const char* GCodeReader::parse_line_internal(const char *ptr, GCodeLine &gline, 
             case 'Z': axis = Z; break;
             case 'F': axis = F; break;
             default:
-                if (*c == m_extrusion_axis)
-                    axis = E;
-                else if (*c >= 'A' && *c <= 'Z')
+                if (*c == m_extrusion_axis) {
+                    if (m_extrusion_axis != 0)
+                        axis = E;
+                } else if (*c >= 'A' && *c <= 'Z')
                 	// Unknown axis, but we still want to remember that such a axis was seen.
                 	axis = UNKNOWN_AXIS;
                 break;
             }
             if (axis != NUM_AXES_WITH_UNKNOWN) {
                 // Try to parse the numeric value.
+#ifdef WIN32
+                double v;
+                auto [pend, ec] = std::from_chars(++ c, end, v);
+                if (pend != c && is_end_of_word(*pend)) {
+#else
+                // The older version of GCC and Clang support std::from_chars just for integers, so strtod we used it instead.
                 char   *pend = nullptr;
                 double  v = strtod(++ c, &pend);
                 if (pend != nullptr && is_end_of_word(*pend)) {
+#endif
                     // The axis value has been parsed correctly.
                     if (axis != UNKNOWN_AXIS)
 	                    gline.m_axis[int(axis)] = float(v);
@@ -116,13 +133,42 @@ void GCodeReader::update_coordinates(GCodeLine &gline, std::pair<const char*, co
     }
 }
 
-void GCodeReader::parse_file(const std::string &file, callback_t callback)
+bool GCodeReader::parse_file(const std::string &file, callback_t callback)
 {
     boost::nowide::ifstream f(file);
+    f.sync_with_stdio(false);
+    std::vector<char> buffer(65536 * 10, 0);
     std::string line;
     m_parsing = true;
-    while (m_parsing && std::getline(f, line))
-        this->parse_line(line, callback);
+    GCodeLine gline;
+    while (m_parsing && ! f.eof()) {
+        f.read(buffer.data(), buffer.size());
+        if (! f.eof() && ! f.good())
+            // Reading the input file failed.
+            return false;
+        auto it        = buffer.begin();
+        auto it_bufend = buffer.begin() + f.gcount();
+        while (it != it_bufend) {
+            bool eol = false;
+            auto it_end = it;
+            for (; it_end != it_bufend && ! (eol = *it_end == '\r' || *it_end == '\n'); ++ it_end) ;
+            eol |= f.eof() && it_end == it_bufend;
+            if (eol) {
+                gline.reset();
+                if (line.empty())
+                    this->parse_line(&(*it), &(*it_end), gline, callback);
+                else {
+                    line.insert(line.end(), it, it_end);
+                    this->parse_line(line.c_str(), line.c_str() + line.size(), gline, callback);
+                    line.clear();
+                }
+            } else
+                line.insert(line.end(), it, it_end);
+            // Skip all the empty lines.
+            for (it = it_end; it != it_bufend && (*it == '\r' || *it == '\n'); ++ it) ;
+        }
+    }
+    return true;
 }
 
 bool GCodeReader::GCodeLine::has(char axis) const
@@ -190,6 +236,8 @@ void GCodeReader::GCodeLine::set(const GCodeReader &reader, const Axis axis, con
         match[1] = 'F';
     else {
         assert(axis == E);
+        // Extruder axis is set.
+        assert(reader.extrusion_axis() != 0);
         match[1] = reader.extrusion_axis();
     }
 

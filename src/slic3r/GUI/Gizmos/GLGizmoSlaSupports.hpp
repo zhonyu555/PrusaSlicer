@@ -67,11 +67,13 @@ public:
     bool has_backend_supports() const;
     void reslice_SLA_supports(bool postpone_error_messages = false) const;
 
+    bool wants_enter_leave_snapshots() const override { return true; }
+
 private:
     bool on_init() override;
     void on_update(const UpdateData& data) override;
-    void on_render() const override;
-    void on_render_for_picking() const override;
+    void on_render() override;
+    void on_render_for_picking() override;
 
     void render_points(const Selection& selection, bool picking = false) const;
     bool unsaved_changes() const;
@@ -117,6 +119,7 @@ private:
     void auto_generate();
     void switch_to_editing_mode();
     void disable_editing_mode();
+    void ask_about_changes_call_after(std::function<void()> on_yes, std::function<void()> on_no);
 
 protected:
     void on_set_state() override;

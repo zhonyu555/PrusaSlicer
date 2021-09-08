@@ -76,7 +76,7 @@ bool GLGizmoScale3D::on_init()
 
 std::string GLGizmoScale3D::on_get_name() const
 {
-    return (_L("Scale") + " [S]").ToUTF8().data();
+    return _u8L("Scale");
 }
 
 bool GLGizmoScale3D::on_is_activable() const
@@ -115,7 +115,7 @@ void GLGizmoScale3D::on_update(const UpdateData& data)
         do_scale_uniform(data);
 }
 
-void GLGizmoScale3D::on_render() const
+void GLGizmoScale3D::on_render()
 {
     const Selection& selection = m_parent.get_selection();
 
@@ -236,7 +236,7 @@ void GLGizmoScale3D::on_render() const
         GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
         if (shader != nullptr) {
             shader->start_using();
-            shader->set_uniform("emission_factor", 0.1);
+            shader->set_uniform("emission_factor", 0.1f);
             // draw grabbers
             m_grabbers[0].render(true, grabber_mean_size);
             m_grabbers[1].render(true, grabber_mean_size);
@@ -251,7 +251,7 @@ void GLGizmoScale3D::on_render() const
         GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
         if (shader != nullptr) {
             shader->start_using();
-            shader->set_uniform("emission_factor", 0.1);
+            shader->set_uniform("emission_factor", 0.1f);
             // draw grabbers
             m_grabbers[2].render(true, grabber_mean_size);
             m_grabbers[3].render(true, grabber_mean_size);
@@ -266,7 +266,7 @@ void GLGizmoScale3D::on_render() const
         GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
         if (shader != nullptr) {
             shader->start_using();
-            shader->set_uniform("emission_factor", 0.1);
+            shader->set_uniform("emission_factor", 0.1f);
             // draw grabbers
             m_grabbers[4].render(true, grabber_mean_size);
             m_grabbers[5].render(true, grabber_mean_size);
@@ -284,7 +284,7 @@ void GLGizmoScale3D::on_render() const
         GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
         if (shader != nullptr) {
             shader->start_using();
-            shader->set_uniform("emission_factor", 0.1);
+            shader->set_uniform("emission_factor", 0.1f);
             // draw grabbers
             for (int i = 6; i < 10; ++i) {
                 m_grabbers[i].render(true, grabber_mean_size);
@@ -294,7 +294,7 @@ void GLGizmoScale3D::on_render() const
     }
 }
 
-void GLGizmoScale3D::on_render_for_picking() const
+void GLGizmoScale3D::on_render_for_picking()
 {
     glsafe(::glDisable(GL_DEPTH_TEST));
     render_grabbers_for_picking(m_parent.get_selection().get_bounding_box());

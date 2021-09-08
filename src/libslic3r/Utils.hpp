@@ -58,6 +58,11 @@ void set_data_dir(const std::string &path);
 // Return a full path to the GUI resource files.
 const std::string& data_dir();
 
+// Format an output path for debugging purposes.
+// Writes out the output path prefix to the console for the first time the function is called,
+// so the user knows where to search for the debugging output.
+std::string debug_out_path(const char *name, ...);
+
 // A special type for strings encoded in the local Windows 8-bit code page.
 // This type is only needed for Perl bindings to relay to Perl that the string is raw, not UTF-8 encoded.
 typedef std::string local_encoded_string;
@@ -100,8 +105,9 @@ extern bool is_ini_file(const boost::filesystem::directory_entry &path);
 extern bool is_idx_file(const boost::filesystem::directory_entry &path);
 extern bool is_gcode_file(const std::string &path);
 extern bool is_img_file(const std::string& path);
-extern bool is_stl_file(const boost::filesystem::directory_entry& path);
-extern bool is_stl_file(const std::string& path);
+extern bool is_gallery_file(const boost::filesystem::directory_entry& path, char const* type);
+extern bool is_gallery_file(const std::string& path, char const* type);
+extern bool is_shapes_dir(const std::string& dir);
 
 // File path / name / extension splitting utilities, working with UTF-8,
 // to be published to Perl.
@@ -237,7 +243,7 @@ inline typename CONTAINER_TYPE::value_type& next_value_modulo(typename CONTAINER
 	return container[next_idx_modulo(idx, container.size())];
 }
 
-extern std::string xml_escape(std::string text);
+extern std::string xml_escape(std::string text, bool is_marked = false);
 
 
 #if defined __GNUC__ && __GNUC__ < 5 && !defined __clang__

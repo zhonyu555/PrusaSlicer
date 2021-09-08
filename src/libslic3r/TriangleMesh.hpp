@@ -118,6 +118,7 @@ private:
 // Used for chaining slice lines into polygons.
 std::vector<Vec3i> its_face_edge_ids(const indexed_triangle_set &its);
 std::vector<Vec3i> its_face_edge_ids(const indexed_triangle_set &its, std::function<void()> throw_on_cancel_callback);
+std::vector<Vec3i> its_face_edge_ids(const indexed_triangle_set &its, const std::vector<bool> &face_mask);
 // Having the face neighbors available, assign unique edge IDs to face edges for chaining of polygons over slices.
 std::vector<Vec3i> its_face_edge_ids(const indexed_triangle_set &its, std::vector<Vec3i> &face_neighbors, bool assign_unbound_edges = false, int *num_edges = nullptr);
 
@@ -138,6 +139,10 @@ int its_remove_degenerate_faces(indexed_triangle_set &its, bool shrink_to_fit = 
 
 // Remove vertices, which none of the faces references. Return number of freed vertices.
 int its_compactify_vertices(indexed_triangle_set &its, bool shrink_to_fit = true);
+
+// store part of index triangle set
+bool its_store_triangle(const indexed_triangle_set &its, const char *obj_filename, size_t triangle_index);
+bool its_store_triangles(const indexed_triangle_set &its, const char *obj_filename, const std::vector<size_t>& triangles);
 
 std::vector<indexed_triangle_set> its_split(const indexed_triangle_set &its);
 
@@ -194,6 +199,7 @@ inline stl_normal its_unnormalized_normal(const indexed_triangle_set &its,
 }
 
 float its_volume(const indexed_triangle_set &its);
+float its_average_edge_length(const indexed_triangle_set &its);
 
 void its_merge(indexed_triangle_set &A, const indexed_triangle_set &B);
 void its_merge(indexed_triangle_set &A, const std::vector<Vec3f> &triangles);

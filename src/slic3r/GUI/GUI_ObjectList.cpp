@@ -9,9 +9,7 @@
 #include "Plater.hpp"
 #include "BitmapComboBox.hpp"
 #include "GalleryDialog.hpp"
-#if ENABLE_PROJECT_DIRTY_STATE
 #include "MainFrame.hpp"
-#endif // ENABLE_PROJECT_DIRTY_STATE
 
 #include "OptionsGroup.hpp"
 #include "Tab.hpp"
@@ -20,6 +18,7 @@
 #include "GLCanvas3D.hpp"
 #include "Selection.hpp"
 #include "format.hpp"
+#include "NotificationManager.hpp"
 
 #include <boost/algorithm/string.hpp>
 #include <wx/progdlg.h>
@@ -1045,13 +1044,8 @@ void ObjectList::key_event(wxKeyEvent& event)
 {
     if (event.GetKeyCode() == WXK_TAB)
         Navigate(event.ShiftDown() ? wxNavigationKeyEvent::IsBackward : wxNavigationKeyEvent::IsForward);
-    else if (event.GetKeyCode() == WXK_DELETE
-#ifdef __WXOSX__
-        || event.GetKeyCode() == WXK_BACK
-#endif //__WXOSX__
-        ) {
+    else if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_BACK )
         remove();
-    }
     else if (event.GetKeyCode() == WXK_F5)
         wxGetApp().plater()->reload_all_from_disk();
     else if (wxGetKeyState(wxKeyCode('A')) && wxGetKeyState(WXK_CONTROL/*WXK_SHIFT*/))
@@ -1672,9 +1666,7 @@ void ObjectList::load_shape_object(const std::string& type_name)
     BoundingBoxf3 bb;
     TriangleMesh mesh = create_mesh(type_name, bb);
     load_mesh_object(mesh, _L("Shape") + "-" + _(type_name));
-#if ENABLE_PROJECT_DIRTY_STATE
     wxGetApp().mainframe->update_title();
-#endif // ENABLE_PROJECT_DIRTY_STATE
 }
 
 void ObjectList::load_shape_object_from_gallery()
@@ -1705,13 +1697,8 @@ void ObjectList::load_shape_object_from_gallery(const wxArrayString& input_files
         snapshot_label += ", " + wxString::FromUTF8(paths[i].filename().string().c_str());
 
     take_snapshot(snapshot_label);
-#if ENABLE_PROJECT_DIRTY_STATE
-    std::vector<size_t> res = wxGetApp().plater()->load_files(paths, true, false);
-    if (!res.empty())
+    if (! wxGetApp().plater()->load_files(paths, true, false).empty())
         wxGetApp().mainframe->update_title();
-#else
-    load_files(paths, true, false);
-#endif // ENABLE_PROJECT_DIRTY_STATE
 }
 
 void ObjectList::load_mesh_object(const TriangleMesh &mesh, const wxString &name, bool center)
@@ -1785,10 +1772,8 @@ void ObjectList::del_subobject_item(wxDataViewItem& item)
         del_layers_from_object(obj_idx);
     else if (type & itLayer && obj_idx != -1)
         del_layer_from_object(obj_idx, m_objects_model->GetLayerRangeByItem(item));
-    else if (type & itInfo && obj_idx != -1) {
-        Unselect(item);
-        Select(parent);
-    }
+    else if (type & itInfo && obj_idx != -1)
+        del_info_item(obj_idx, m_objects_model->GetInfoItemType(item));
     else if (idx == -1)
         return;
     else if (!del_subobject_from_object(obj_idx, idx, type))
@@ -1800,6 +1785,52 @@ void ObjectList::del_subobject_item(wxDataViewItem& item)
 
     m_objects_model->Delete(item);
     update_info_items(obj_idx);
+}
+
+void ObjectList::del_info_item(const int obj_idx, InfoItemType type)
+{
+    Plater* plater = wxGetApp().plater();
+    GLCanvas3D* cnv = plater->canvas3D();
+
+    switch (type) {
+    case InfoItemType::CustomSupports:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove paint-on supports"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->supported_facets.reset();
+        break;
+
+    case InfoItemType::CustomSeam:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove paint-on seam"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->seam_facets.reset();
+        break;
+
+    case InfoItemType::MmuSegmentation:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove Multi Material painting"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->mmu_segmentation_facets.reset();
+        break;
+
+    case InfoItemType::Sinking:
+        Plater::TakeSnapshot(plater, _L("Shift objects to bed"));
+        (*m_objects)[obj_idx]->ensure_on_bed();
+        cnv->reload_scene(true, true);
+        break;
+
+    case InfoItemType::VariableLayerHeight:
+        Plater::TakeSnapshot(plater, _L("Remove variable layer height"));
+        (*m_objects)[obj_idx]->layer_height_profile.clear();
+        if (cnv->is_layers_editing_enabled())
+            //cnv->post_event(SimpleEvent(EVT_GLTOOLBAR_LAYERSEDITING));
+            cnv->force_main_toolbar_left_action(cnv->get_main_toolbar_item_id("layersediting"));
+        break;
+
+    case InfoItemType::Undef : assert(false); break;
+    }
+    cnv->post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
 }
 
 void ObjectList::del_settings_from_config(const wxDataViewItem& parent_item)
@@ -1819,7 +1850,7 @@ void ObjectList::del_settings_from_config(const wxDataViewItem& parent_item)
     if (is_layer_settings)
         layer_height = m_config->opt_float("layer_height");
 
-    m_config->clear();
+    m_config->reset();
 
     if (extruder >= 0)
         m_config->set_key_value("extruder", new ConfigOptionInt(extruder));
@@ -1883,20 +1914,19 @@ bool ObjectList::del_subobject_from_object(const int obj_idx, const int idx, con
             if (vol->is_model_part())
                 ++solid_cnt;
         if (volume->is_model_part() && solid_cnt == 1) {
-            Slic3r::GUI::show_error(nullptr, _(L("From Object List You can't delete the last solid part from object.")));
+            Slic3r::GUI::show_error(nullptr, _L("From Object List You can't delete the last solid part from object."));
             return false;
         }
 
-        take_snapshot(_(L("Delete Subobject")));
+        take_snapshot(_L("Delete Subobject"));
 
         object->delete_volume(idx);
 
-        if (object->volumes.size() == 1)
-        {
+        if (object->volumes.size() == 1) {
             const auto last_volume = object->volumes[0];
             if (!last_volume->config.empty()) {
                 object->config.apply(last_volume->config);
-                last_volume->config.clear();
+                last_volume->config.reset();
 
                 // update extruder color in ObjectList
                 wxDataViewItem obj_item = m_objects_model->GetItemById(obj_idx);
@@ -1911,11 +1941,11 @@ bool ObjectList::del_subobject_from_object(const int obj_idx, const int idx, con
     }
     else if (type == itInstance) {
         if (object->instances.size() == 1) {
-            Slic3r::GUI::show_error(nullptr, _(L("Last instance of an object cannot be deleted.")));
+            Slic3r::GUI::show_error(nullptr, _L("Last instance of an object cannot be deleted."));
             return false;
         }
 
-        take_snapshot(_(L("Delete Instance")));
+        take_snapshot(_L("Delete Instance"));
         object->delete_instance(idx);
     }
     else
@@ -2386,15 +2416,28 @@ void ObjectList::part_selection_changed()
 
                 if (type == itInfo) {
                     InfoItemType info_type = m_objects_model->GetInfoItemType(item);
-                    if (info_type != InfoItemType::VariableLayerHeight) {
+                    switch (info_type)
+                    {
+                    case InfoItemType::VariableLayerHeight:
+                    {
+                        wxGetApp().plater()->toggle_layers_editing(true);
+                        break;
+                    }
+                    case InfoItemType::CustomSupports:
+                    case InfoItemType::CustomSeam:
+                    case InfoItemType::MmuSegmentation:
+                    {
                         GLGizmosManager::EType gizmo_type = info_type == InfoItemType::CustomSupports ? GLGizmosManager::EType::FdmSupports :
-                                                            info_type == InfoItemType::CustomSeam     ? GLGizmosManager::EType::Seam :
-                                                                                                        GLGizmosManager::EType::MmuSegmentation;
+                                                            info_type == InfoItemType::CustomSeam ? GLGizmosManager::EType::Seam :
+                                                            GLGizmosManager::EType::MmuSegmentation;
                         GLGizmosManager& gizmos_mgr = wxGetApp().plater()->canvas3D()->get_gizmos_manager();
                         if (gizmos_mgr.get_current_type() != gizmo_type)
                             gizmos_mgr.open_gizmo(gizmo_type);
-                    } else
-                        wxGetApp().plater()->toggle_layers_editing(true);
+                        break;
+                    }
+                    case InfoItemType::Sinking: { break; }
+                    default: { break; }
+                    }
                 }
             }
             else {
@@ -2511,8 +2554,11 @@ wxDataViewItem ObjectList::add_settings_item(wxDataViewItem parent_item, const D
 }
 
 
-void ObjectList::update_info_items(size_t obj_idx)
+void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selections/* = nullptr*/, bool added_object/* = false*/)
 {
+    if (obj_idx >= m_objects->size())
+        return;
+
     const ModelObject* model_object = (*m_objects)[obj_idx];
     wxDataViewItem item_obj = m_objects_model->GetItemById(obj_idx);
     assert(item_obj.IsOk());
@@ -2520,6 +2566,7 @@ void ObjectList::update_info_items(size_t obj_idx)
     for (InfoItemType type : {InfoItemType::CustomSupports,
                               InfoItemType::CustomSeam,
                               InfoItemType::MmuSegmentation,
+                              InfoItemType::Sinking,
                               InfoItemType::VariableLayerHeight}) {
         wxDataViewItem item = m_objects_model->GetInfoItemByType(item_obj, type);
         bool shows = item.IsOk();
@@ -2542,17 +2589,37 @@ void ObjectList::update_info_items(size_t obj_idx)
             should_show = printer_technology() == ptFFF
                        && ! model_object->layer_height_profile.empty();
             break;
+        case InfoItemType::Sinking:
+        {
+            should_show = printer_technology() == ptFFF &&
+                wxGetApp().plater()->canvas3D()->is_object_sinking(obj_idx);
+            break;
+        }
         default: break;
         }
 
         if (! shows && should_show) {
             m_objects_model->AddInfoChild(item_obj, type);
             Expand(item_obj);
+            if (added_object)
+                wxGetApp().notification_manager()->push_updated_item_info_notification(type); 
         }
         else if (shows && ! should_show) {
-            Unselect(item);
+            if (!selections)
+                Unselect(item);
             m_objects_model->Delete(item);
-            Select(item_obj);
+            if (selections) {
+                if (selections->Index(item) != wxNOT_FOUND) {
+                    // If info item was deleted from the list, 
+                    // it's need to be deleted from selection array, if it was there
+                    selections->Remove(item);
+                    // Select item_obj, if info_item doesn't exist for item anymore, but was selected
+                    if (selections->Index(item_obj) == wxNOT_FOUND)
+                        selections->Add(item_obj);
+                }
+            }
+            else
+                Select(item_obj);
         }
     }
 }
@@ -2567,7 +2634,7 @@ void ObjectList::add_object_to_list(size_t obj_idx, bool call_selection_changed)
                       model_object->config.has("extruder") ? model_object->config.extruder() : 0,
                       get_mesh_errors_count(obj_idx) > 0);
 
-    update_info_items(obj_idx);
+    update_info_items(obj_idx, nullptr, call_selection_changed);
 
     // add volumes to the object
     if (model_object->volumes.size() > 1) {
@@ -2660,8 +2727,9 @@ void ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
         return;
 
     m_prevent_list_events = true;
-    for (std::vector<ItemForDelete>::const_reverse_iterator item = items_for_delete.rbegin(); item != items_for_delete.rend(); ++item)
-    {
+
+    std::set<size_t> modified_objects_ids;
+    for (std::vector<ItemForDelete>::const_reverse_iterator item = items_for_delete.rbegin(); item != items_for_delete.rend(); ++item) {
         if (!(item->type&(itObject | itVolume | itInstance)))
             continue;
         if (item->type&itObject) {
@@ -2671,8 +2739,7 @@ void ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
         else {
             if (!del_subobject_from_object(item->obj_idx, item->sub_obj_idx, item->type))
                 continue;
-            if (item->type&itVolume)
-            {
+            if (item->type&itVolume) {
                 m_objects_model->Delete(m_objects_model->GetItemByVolumeId(item->obj_idx, item->sub_obj_idx));
                 ModelObject* obj = object(item->obj_idx);
                 if (obj->volumes.size() == 1) {
@@ -2685,12 +2752,19 @@ void ObjectList::delete_from_model_and_list(const std::vector<ItemForDelete>& it
                     if (obj->get_mesh_errors_count() == 0)
                         m_objects_model->DeleteWarningIcon(parent);
                 }
-                wxGetApp().plater()->canvas3D()->ensure_on_bed(item->obj_idx);
+                wxGetApp().plater()->canvas3D()->ensure_on_bed(item->obj_idx, printer_technology() != ptSLA);
             }
             else
                 m_objects_model->Delete(m_objects_model->GetItemByInstanceId(item->obj_idx, item->sub_obj_idx));
         }
+
+        modified_objects_ids.insert(static_cast<size_t>(item->obj_idx));
     }
+
+    for (size_t id : modified_objects_ids) {
+        update_info_items(id);
+    }
+
     m_prevent_list_events = true;
     part_selection_changed();
 }
@@ -3333,6 +3407,18 @@ void ObjectList::update_selections_on_canvas()
             std::vector<unsigned int> idxs = selection.get_volume_idxs_from_instance(obj_idx, inst_idx);
             volume_idxs.insert(volume_idxs.end(), idxs.begin(), idxs.end());
         }
+        else if (type == itInfo) {
+            // When selecting an info item, select one instance of the
+            // respective object - a gizmo may want to be opened.
+            int inst_idx = selection.get_instance_idx();
+            int scene_obj_idx = selection.get_object_idx();
+            mode = Selection::Instance;
+            // select first instance, unless an instance of the object is already selected
+            if (scene_obj_idx == -1 || inst_idx == -1 || scene_obj_idx != obj_idx)
+                inst_idx = 0;
+            std::vector<unsigned int> idxs = selection.get_volume_idxs_from_instance(obj_idx, inst_idx);
+            volume_idxs.insert(volume_idxs.end(), idxs.begin(), idxs.end());
+        }
         else
         {
             mode = Selection::Instance;
@@ -3347,7 +3433,7 @@ void ObjectList::update_selections_on_canvas()
 
     if (sel_cnt == 1) {
         wxDataViewItem item = GetSelection();
-        if (m_objects_model->GetItemType(item) & (itSettings | itInstanceRoot | itLayerRoot | itLayer | itInfo))
+        if (m_objects_model->GetItemType(item) & (itSettings | itInstanceRoot | itLayerRoot | itLayer))
             add_to_selection(m_objects_model->GetParent(item), selection, instance_idx, mode);
         else
             add_to_selection(item, selection, instance_idx, mode);
@@ -3680,7 +3766,7 @@ void ObjectList::last_volume_is_deleted(const int obj_idx)
     auto volume = (*m_objects)[obj_idx]->volumes.front();
 
     // clear volume's config values
-    volume->config.clear();
+    volume->config.reset();
 
     // set a default extruder value, since user can't add it manually
     volume->config.set_key_value("extruder", new ConfigOptionInt(0));
@@ -3745,7 +3831,7 @@ void ObjectList::update_object_list_by_printer_technology()
 
     for (auto& object_item : object_items) {
         // update custom supports info
-        update_info_items(m_objects_model->GetObjectIdByItem(object_item));
+        update_info_items(m_objects_model->GetObjectIdByItem(object_item), &sel);
 
         // Update Settings Item for object
         update_settings_item_and_selection(object_item, sel);
@@ -3830,6 +3916,7 @@ void ObjectList::instances_to_separated_object(const int obj_idx, const std::set
 
     // update printable state for new volumes on canvas3D
     wxGetApp().plater()->canvas3D()->update_instance_printable_state_for_object(new_obj_indx);
+    update_info_items(new_obj_indx);
 }
 
 void ObjectList::instances_to_separated_objects(const int obj_idx)
@@ -3862,6 +3949,8 @@ void ObjectList::instances_to_separated_objects(const int obj_idx)
 
     // update printable state for new volumes on canvas3D
     wxGetApp().plater()->canvas3D()->update_instance_printable_state_for_objects(object_idxs);
+    for (size_t object : object_idxs)
+        update_info_items(object);
 }
 
 void ObjectList::split_instances()
@@ -3926,6 +4015,24 @@ void ObjectList::fix_through_netfabb()
     wxGetApp().plater()->fix_through_netfabb(obj_idx, vol_idx);
     
     update_item_error_icon(obj_idx, vol_idx);
+    update_info_items(obj_idx);
+}
+
+void ObjectList::simplify()
+{
+    auto plater = wxGetApp().plater();
+    GLGizmosManager& gizmos_mgr = plater->canvas3D()->get_gizmos_manager();
+
+    // Do not simplify when a gizmo is open. There might be issues with updates
+    // and what is worse, the snapshot time would refer to the internal stack.
+    if (! gizmos_mgr.check_gizmos_closed_except(GLGizmosManager::EType::Simplify))
+        return;
+
+    if (gizmos_mgr.get_current_type() == GLGizmosManager::Simplify) {
+        // close first
+        gizmos_mgr.open_gizmo(GLGizmosManager::EType::Simplify);
+    }
+    gizmos_mgr.open_gizmo(GLGizmosManager::EType::Simplify);
 }
 
 void ObjectList::update_item_error_icon(const int obj_idx, const int vol_idx) const 
@@ -3945,6 +4052,8 @@ void ObjectList::update_item_error_icon(const int obj_idx, const int vol_idx) co
             // unmark fixed item only
             m_objects_model->DeleteWarningIcon(item);
     }
+    else
+        m_objects_model->AddWarningIcon(item);
 }
 
 void ObjectList::msw_rescale()
@@ -4052,7 +4161,7 @@ void ObjectList::set_extruder_for_selected_items(const int extruder) const
         const int obj_idx = type & itObject ? m_objects_model->GetIdByItem(item) :
                             m_objects_model->GetIdByItem(m_objects_model->GetTopParent(item));
 
-        wxGetApp().plater()->canvas3D()->ensure_on_bed(obj_idx);
+        wxGetApp().plater()->canvas3D()->ensure_on_bed(obj_idx, printer_technology() != ptSLA);
     }
 
     // update scene
@@ -4211,6 +4320,11 @@ ModelObject* ObjectList::object(const int obj_idx) const
         return nullptr;
 
     return (*m_objects)[obj_idx];
+}
+
+bool ObjectList::has_paint_on_segmentation()
+{
+    return m_objects_model->HasInfoItem(InfoItemType::MmuSegmentation);
 }
 
 } //namespace GUI

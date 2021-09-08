@@ -28,7 +28,7 @@ void GLGizmoFdmSupports::on_shutdown()
 
 std::string GLGizmoFdmSupports::on_get_name() const
 {
-    return (_L("Paint-on supports") + " [L]").ToUTF8().data();
+    return _u8L("Paint-on supports");
 }
 
 
@@ -67,8 +67,8 @@ void GLGizmoFdmSupports::render_painter_gizmo() const
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     render_triangles(selection);
-
     m_c->object_clipper()->render_cut();
+    m_c->instances_hider()->render_cut();
     render_cursor();
 
     glsafe(::glDisable(GL_BLEND));
@@ -85,7 +85,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
     y = std::min(y, bottom_limit - approx_height);
     m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
 
-    m_imgui->begin(on_get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
+    m_imgui->begin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
     // First calculate width of all the texts that are could possibly be shown. We will decide set the dialog width based on that:
     const float clipping_slider_left = std::max(m_imgui->calc_text_size(m_desc.at("clipping_of_view")).x,
@@ -131,6 +131,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
     m_imgui->text("");
     ImGui::Separator();
 
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc["highlight_by_angle"] + ":");
     ImGui::AlignTextToFramePadding();
     std::string format_str = std::string("%.f") + I18N::translate_utf8("°",
@@ -346,7 +347,8 @@ void GLGizmoFdmSupports::update_from_model_object()
         const TriangleMesh* mesh = &mv->mesh();
 
         m_triangle_selectors.emplace_back(std::make_unique<TriangleSelectorGUI>(*mesh));
-        m_triangle_selectors.back()->deserialize(mv->supported_facets.get_data());
+        // Reset of TriangleSelector is done inside TriangleSelectorGUI's constructor, so we don't need it to perform it again in deserialize().
+        m_triangle_selectors.back()->deserialize(mv->supported_facets.get_data(), false);
         m_triangle_selectors.back()->request_update_render_data();
     }
 }
