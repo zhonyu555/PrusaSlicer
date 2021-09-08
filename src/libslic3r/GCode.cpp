@@ -1154,7 +1154,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     print.throw_if_canceled();
 
     // adds tags for time estimators
-    if (print.config().remaining_times.value)
+    if (print.config().remaining_times.value || print.config().print_remaining_times.value)
         file.write_format(";%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::First_Line_M73_Placeholder).c_str());
 
     // Prepare the helper object for replacing placeholders in custom G-code and output filename.
@@ -1449,7 +1449,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     file.write(m_writer.postamble());
 
     // adds tags for time estimators
-    if (print.config().remaining_times.value)
+    if (print.config().remaining_times.value || print.config().print_remaining_times.value)
         file.write_format(";%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Last_Line_M73_Placeholder).c_str());
 
     print.throw_if_canceled();
