@@ -74,7 +74,12 @@ void write_used_binary(const std::vector<std::string>& ids)
 }
 void read_used_binary(std::vector<std::string>& ids)
 {
-	boost::filesystem::ifstream file((boost::filesystem::path(data_dir()) / "cache" / "hints.cereal"));
+	boost::filesystem::path path(boost::filesystem::path(data_dir()) / "cache" / "hints.cereal");
+	if (!boost::filesystem::exists(path)) {
+		BOOST_LOG_TRIVIAL(warning) << "Failed to load to hints.cereal. File does not exists. " << path.string();
+		return;
+	}
+	boost::filesystem::ifstream file(path);
 	cereal::BinaryInputArchive archive(file);
 	HintsCerealData cd;
 	try
@@ -242,6 +247,13 @@ HintDatabase::~HintDatabase()
 		write_used_binary(m_used_ids);
 	}
 }
+void HintDatabase::uninit()
+{
+	if (m_initialized) {
+		write_used_binary(m_used_ids);
+	}
+	m_initialized = false;
+}
 void HintDatabase::init()
 {
 	load_hints_from_file(std::move(boost::filesystem::path(resources_dir()) / "data" / "hints.ini"));
@@ -379,12 +391,12 @@ void HintDatabase::load_hints_from_file(const boost::filesystem::path& path)
 						wxGetApp().obj_list()->load_shape_object_from_gallery(); } 
 					};
 					m_loaded_hints.emplace_back(hint_data);
-				} /*else if (dict["hypertext_type"] == "menubar") {
-					int			menu = std::atoi(dict["hypertext_menubar_menu_id"].c_str()); 
-					int			item = std::atoi(dict["hypertext_menubar_item_id"].c_str());
+				} else if (dict["hypertext_type"] == "menubar") {
+					wxString menu(_L("&" + dict["hypertext_menubar_menu_name"]));
+					wxString item(_L(dict["hypertext_menubar_item_name"]));
 					HintData	hint_data{ id_string, text1, weight, was_displayed, hypertext_text, follow_text, disabled_tags, enabled_tags, true, documentation_link, [menu, item]() { wxGetApp().mainframe->open_menubar_item(menu, item); } };
 					m_loaded_hints.emplace_back(hint_data);
-				}*/
+				}
 			} else {
 				// plain text without hypertext
 				HintData hint_data{ id_string, text1, weight, was_displayed, hypertext_text, follow_text, disabled_tags, enabled_tags, false, documentation_link };

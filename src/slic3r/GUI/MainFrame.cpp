@@ -142,11 +142,11 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     default:
     case GUI_App::EAppMode::Editor:
         m_taskbar_icon = std::make_unique<PrusaSlicerTaskBarIcon>(wxTBI_DOCK);
-        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("PrusaSlicer_128px.png"), wxBITMAP_TYPE_PNG), "PrusaSlicer");
+        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("PrusaSlicer-mac_128px.png"), wxBITMAP_TYPE_PNG), "PrusaSlicer");
         break;
     case GUI_App::EAppMode::GCodeViewer:
         m_taskbar_icon = std::make_unique<GCodeViewerTaskBarIcon>(wxTBI_DOCK);
-        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("PrusaSlicer-gcodeviewer_128px.png"), wxBITMAP_TYPE_PNG), "G-code Viewer");
+        m_taskbar_icon->SetIcon(wxIcon(Slic3r::var("PrusaSlicer-gcodeviewer-mac_128px.png"), wxBITMAP_TYPE_PNG), "G-code Viewer");
         break;
     }
 #endif // __APPLE__
@@ -1480,29 +1480,34 @@ void MainFrame::init_menubar_as_editor()
     if (plater()->printer_technology() == ptSLA)
         update_menubar();
 }
-/*
-void MainFrame::open_menubar_item(int menu_index, int item_index)
+
+void MainFrame::open_menubar_item(const wxString& menu_name,const wxString& item_name)
 {
     if (m_menubar == nullptr)
         return;
-    wxMenu* menu = m_menubar->GetMenu(menu_index);
+    // Get menu object from menubar
+    int     menu_index = m_menubar->FindMenu(menu_name);
+    wxMenu* menu       = m_menubar->GetMenu(menu_index);
     if (menu == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << "Mainframe open_menubar_item function couldn't find menu: " << menu_index;
+        BOOST_LOG_TRIVIAL(error) << "Mainframe open_menubar_item function couldn't find menu: " << menu_name;
         return;
     }
-    wxMenuItemList items = menu->GetMenuItems();
-    if (items.size() <= item_index) {
-        BOOST_LOG_TRIVIAL(error) << "Mainframe open_menubar_item function couldn't find item: " << item_index;
-        return;
-    } 
-    wxMenuItem* item = items[item_index];
-    if (item == nullptr) {
-        BOOST_LOG_TRIVIAL(error) << "Mainframe open_menubar_item function couldn't find item: " << item_index;
+    // Get item id from menu
+    int     item_id   = menu->FindItem(item_name);
+    if (item_id == wxNOT_FOUND)
+    {
+        // try adding three dots char
+        item_id = menu->FindItem(item_name + dots);
+    }
+    if (item_id == wxNOT_FOUND)
+    {
+        BOOST_LOG_TRIVIAL(error) << "Mainframe open_menubar_item function couldn't find item: " << item_name;
         return;
     }
-    wxPostEvent((wxEvtHandler*)menu, wxCommandEvent(wxEVT_MENU, item->GetId()));
+    // wxEVT_MENU will trigger item
+    wxPostEvent((wxEvtHandler*)menu, wxCommandEvent(wxEVT_MENU, item_id));
 }
-*/
+
 void MainFrame::init_menubar_as_gcodeviewer()
 {
     wxMenu* fileMenu = new wxMenu;

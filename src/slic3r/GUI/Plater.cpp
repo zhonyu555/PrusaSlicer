@@ -2073,6 +2073,8 @@ Plater::priv::~priv()
 {
     if (config != nullptr)
         delete config;
+    if (notification_manager != nullptr)
+        delete notification_manager;
 }
 
 void Plater::priv::update(unsigned int flags)
@@ -3184,6 +3186,9 @@ void Plater::priv::update_sla_scene()
 
 void Plater::priv::replace_with_stl()
 {
+    if (! q->canvas3D()->get_gizmos_manager().check_gizmos_closed_except(GLGizmosManager::EType::Undefined))
+        return;
+
     const Selection& selection = get_selection();
 
     if (selection.is_wipe_tower() || get_selection().get_volume_idxs().size() != 1)
@@ -3528,14 +3533,8 @@ void Plater::priv::fix_through_netfabb(const int obj_idx, const int vol_idx/* = 
 
     // Do not fix anything when a gizmo is open. There might be issues with updates
     // and what is worse, the snapshot time would refer to the internal stack.
-    if (q->canvas3D()->get_gizmos_manager().get_current_type() != GLGizmosManager::Undefined) {
-        notification_manager->push_notification(
-                    NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
-                    NotificationManager::NotificationLevel::RegularNotification,
-                    _u8L("ERROR: Please close all manipulators available from "
-                         "the left toolbar before fixing the mesh."));
+    if (! q->canvas3D()->get_gizmos_manager().check_gizmos_closed_except(GLGizmosManager::Undefined))
         return;
-    }
 
     // size_t snapshot_time = undo_redo_stack().active_snapshot_time();
     Plater::TakeSnapshot snapshot(q, _L("Fix through NetFabb"));
@@ -4759,7 +4758,7 @@ SLAPrint&       Plater::sla_print()         { return p->sla_print; }
 
 void Plater::new_project()
 {
-    if (!p->save_project_if_dirty())
+    if (p->save_project_if_dirty() == wxID_CANCEL)
         return;
 
     p->select_view_3D("3D");
@@ -4772,7 +4771,7 @@ void Plater::new_project()
 
 void Plater::load_project()
 {
-    if (!p->save_project_if_dirty())
+    if (p->save_project_if_dirty() == wxID_CANCEL)
         return;
 
     // Ask user for a project file name.
@@ -4872,10 +4871,9 @@ void Plater::load_gcode(const wxString& filename)
 
     // process gcode
     GCodeProcessor processor;
-    processor.enable_producers(true);
     try
     {
-        processor.process_file(filename.ToUTF8().data(), false);
+        processor.process_file(filename.ToUTF8().data());
     }
     catch (const std::exception& ex)
     {
@@ -6142,16 +6140,6 @@ GLCanvas3D* Plater::get_current_canvas3D()
 BoundingBoxf Plater::bed_shape_bb() const
 {
     return p->bed_shape_bb();
-}
-
-void Plater::start_mapping_gcode_window()
-{
-    p->preview->get_canvas3d()->start_mapping_gcode_window();
-}
-
-void Plater::stop_mapping_gcode_window()
-{
-    p->preview->get_canvas3d()->stop_mapping_gcode_window();
 }
 
 void Plater::arrange()

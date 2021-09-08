@@ -1044,13 +1044,8 @@ void ObjectList::key_event(wxKeyEvent& event)
 {
     if (event.GetKeyCode() == WXK_TAB)
         Navigate(event.ShiftDown() ? wxNavigationKeyEvent::IsBackward : wxNavigationKeyEvent::IsForward);
-    else if (event.GetKeyCode() == WXK_DELETE
-#ifdef __WXOSX__
-        || event.GetKeyCode() == WXK_BACK
-#endif //__WXOSX__
-        ) {
+    else if (event.GetKeyCode() == WXK_DELETE || event.GetKeyCode() == WXK_BACK )
         remove();
-    }
     else if (event.GetKeyCode() == WXK_F5)
         wxGetApp().plater()->reload_all_from_disk();
     else if (wxGetKeyState(wxKeyCode('A')) && wxGetKeyState(WXK_CONTROL/*WXK_SHIFT*/))
@@ -2561,6 +2556,9 @@ wxDataViewItem ObjectList::add_settings_item(wxDataViewItem parent_item, const D
 
 void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selections/* = nullptr*/, bool added_object/* = false*/)
 {
+    if (obj_idx >= m_objects->size())
+        return;
+
     const ModelObject* model_object = (*m_objects)[obj_idx];
     wxDataViewItem item_obj = m_objects_model->GetItemById(obj_idx);
     assert(item_obj.IsOk());
@@ -4027,17 +4025,12 @@ void ObjectList::simplify()
 
     // Do not simplify when a gizmo is open. There might be issues with updates
     // and what is worse, the snapshot time would refer to the internal stack.
-    auto current_type = gizmos_mgr.get_current_type();
-    if (current_type == GLGizmosManager::Simplify) {
+    if (! gizmos_mgr.check_gizmos_closed_except(GLGizmosManager::EType::Simplify))
+        return;
+
+    if (gizmos_mgr.get_current_type() == GLGizmosManager::Simplify) {
         // close first
         gizmos_mgr.open_gizmo(GLGizmosManager::EType::Simplify);
-    }else if (current_type != GLGizmosManager::Undefined) {
-        plater->get_notification_manager()->push_notification(
-            NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
-            NotificationManager::NotificationLevel::RegularNotification,
-            _u8L("ERROR: Please close all manipulators available from "
-                 "the left toolbar before start simplify the mesh."));
-        return;
     }
     gizmos_mgr.open_gizmo(GLGizmosManager::EType::Simplify);
 }
