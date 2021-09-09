@@ -1,0 +1,32 @@
+# CMake generation dependency list for this directory.
+C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.19/Modules/CMakeParseArguments.cmake
+C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.19/Modules/FindBoost.cmake
+C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.19/Modules/FindPackageHandleStandardArgs.cmake
+C:/Program Files (x86)/Microsoft Visual Studio/2019/BuildTools/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/share/cmake-3.19/Modules/FindPackageMessage.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/Boost-1.75.0/BoostConfig.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/Boost-1.75.0/BoostConfigVersion.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGALConfig.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGALConfigVersion.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_Common.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_CreateSingleSourceCGALProgram.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_GeneratorSpecificSettings.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_Macros.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_SCM.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_SetupBoost.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_SetupCGALDependencies.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_SetupGMP.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_SetupVLD.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_TweakFindBoost.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_VersionUtils.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_add_test.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_enable_end_of_configuration_hook.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_parse_version_h.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_setup_target_dependencies.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/CGAL_target_use_TBB.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/FindGMP.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/CGAL/FindMPFR.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/boost_headers-1.75.0/boost_headers-config-version.cmake
+C:/src/PrusaSlicer-deps/usr/local/lib/cmake/boost_headers-1.75.0/boost_headers-config.cmake
+D:/CleverTech/PrusaSlicer/cmake/modules/PrecompiledHeader.cmake
+D:/CleverTech/PrusaSlicer/src/libslic3r/CMakeLists.txt
+D:/CleverTech/PrusaSlicer/src/libslic3r/libslic3r_version.h.in
