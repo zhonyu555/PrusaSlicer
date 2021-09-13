@@ -1,6 +1,11 @@
 #ifndef slic3r_FillLargix_hpp_
 #define slic3r_FillLargix_hpp_
 
+#include <polygon.h>
+#include <point.h>
+#include <layer.h>
+#include <buildlayer.h>
+
 #include "../libslic3r.h"
 
 #include "FillBase.hpp"
@@ -42,6 +47,9 @@ protected:
         	&& (dist_X <= (this->_line_spacing + this->_line_oscillation) + TOLERANCE)
         	&& (dist_Y <= this->_diagonal_distance);
     }
+
+	bool _convert_polygon_2_largix(ExPolygon &src, Largix::Polygon &dst);
+    bool _convert_layer_2_prusa(Largix::Layer &src, Polylines &dst);
 };
 
 }; // namespace Slic3r
