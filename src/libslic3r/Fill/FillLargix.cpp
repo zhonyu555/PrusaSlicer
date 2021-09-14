@@ -26,14 +26,16 @@ void FillLargix::_fill_surface_single(
     Largix::Polygon pol;
     this->_convert_polygon_2_largix(expolygon, pol);
     Largix::PolygonValidator::correct(pol);
+    
     Largix::PolygonHelper ph(pol);
-    if (pol.outer().size() < 10) ph.saveToFile("polygon.txt");
+    ph.saveToFile("polygon" + std::sstr((int)&expolygon) + ".txt");
+
     Largix::Layer      layer;
 
     const Largix::Size2D sz(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
     Largix::BuildLayer buider(pol, sz);
 
-    buider.build(layer, 4);
+    buider.build(layer, 1);
 
     this->_convert_layer_2_prusa(layer, polylines_out);
 
@@ -63,13 +65,12 @@ bool FillLargix::_convert_layer_2_prusa(Largix::Layer &src, Polylines &dst)
     
     for (auto strand : src.strands())
     { 
+        Polyline pline;
         for (auto bin : strand.bins()) 
         {
-            Polyline pline;
             pline.points.push_back(Point::new_scale(bin.center().x(), bin.center().y()));
-            dst.push_back(pline);
         }
-        
+        dst.push_back(pline);
     }
     
     return true;
