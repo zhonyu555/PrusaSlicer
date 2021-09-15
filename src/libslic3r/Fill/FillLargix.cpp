@@ -4,6 +4,7 @@
 
 #include <PolygonValidator.h>
 #include <PolygonHelper.h>
+#include <PolygonIO.h>
 #include <Size.h>
 #include <TeddyDef.h>
 
@@ -11,6 +12,9 @@
 #include "../ExPolygon.hpp"
 #include "../ShortestPath.hpp"
 #include "../Surface.hpp"
+
+#include <sstream> 
+
 
 #include "FillLargix.hpp"
 
@@ -23,12 +27,18 @@ void FillLargix::_fill_surface_single(
     ExPolygon                        expolygon,
     Polylines                       &polylines_out)
 {
+    static int  _count = 0;
     Largix::Polygon pol;
     this->_convert_polygon_2_largix(expolygon, pol);
-    Largix::PolygonValidator::correct(pol);
-    
-    Largix::PolygonHelper ph(pol);
-    ph.saveToFile("polygon" + std::sstr((int)&expolygon) + ".txt");
+
+    Largix::PolygonValidator pv(pol);
+    pv.simplify(pol);
+    pv.correct(pol);
+
+   
+    //std::stringstream  ss;
+    //ss << "C:\\Temp\\Polygons\\polygon"  << (++_count) << ".wkt";
+    //Largix::PolygonIO::saveToWktFile(pol, ss.str());
 
     Largix::Layer      layer;
 
