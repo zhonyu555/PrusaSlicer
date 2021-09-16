@@ -764,6 +764,8 @@ std::vector<std::string> DiffViewCtrl::selected_options()
 //          UnsavedChangesDialog
 //------------------------------------------
 
+static std::string none{"none"};
+
 UnsavedChangesDialog::UnsavedChangesDialog(const wxString& caption, const wxString& header, 
                                            const std::string& app_config_key, int act_buttons)
     : DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY, caption + ": " + _L("Unsaved Changes"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
@@ -772,8 +774,8 @@ UnsavedChangesDialog::UnsavedChangesDialog(const wxString& caption, const wxStri
 {
     build(Preset::TYPE_INVALID, nullptr, "", header);
 
-    const std::string& def_action = wxGetApp().app_config->get(m_app_config_key);
-    if (def_action == "none")
+    const std::string& def_action = m_app_config_key.empty() ? none : wxGetApp().app_config->get(m_app_config_key);
+    if (def_action == none)
         this->CenterOnScreen();
     else {
         m_exit_action = def_action == ActTransfer   ? Action::Transfer  :
@@ -791,7 +793,7 @@ UnsavedChangesDialog::UnsavedChangesDialog(Preset::Type type, PresetCollection* 
     build(type, dependent_presets, new_selected_preset);
 
     const std::string& def_action = wxGetApp().app_config->get(m_app_config_key);
-    if (def_action == "none") {
+    if (def_action == none) {
         if (wxGetApp().mainframe->is_dlg_layout() && wxGetApp().mainframe->m_settings_dialog.HasFocus())
             this->SetPosition(wxGetApp().mainframe->m_settings_dialog.GetPosition());
         this->CenterOnScreen();
@@ -882,39 +884,42 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection* dependent_
     m_info_line->SetFont(wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT).Bold());
     m_info_line->Hide();
 
-    m_remember_choice = new wxCheckBox(this, wxID_ANY, _L("Remember my choice"));
-    m_remember_choice->SetValue(wxGetApp().app_config->get(m_app_config_key) != "none");
-    m_remember_choice->Bind(wxEVT_CHECKBOX, [type, this](wxCommandEvent& evt)
-    {
-        if (!evt.IsChecked())
-            return;
-        wxString preferences_item = m_app_config_key == "default_action_on_new_project"     ? _L("Ask for unsaved changes when creating new project") : 
-                                    m_app_config_key == "default_action_on_select_preset"   ? _L("Ask for unsaved changes when selecting new preset") :
-                                                                                              _L("Ask for unsaved changes when ??closing application??") ;
-        wxString action = m_app_config_key == "default_action_on_new_project"   ? _L("You will not be asked about the unsaved changes the next time you create new project") : 
-                          m_app_config_key == "default_action_on_select_preset" ? _L("You will not be asked about the unsaved changes the next time you switch a preset") :
-                                                                                  _L("You will not be asked about the unsaved changes the next time you: \n"
-                                                                                        "- close the application,\n"
-                                                                                        "- load project,\n"
-                                                                                        "- process Undo / Redo with change of print technologie,\n"
-                                                                                        "- take/load snapshot,\n"
-                                                                                        "- load config file/bundle,\n"
-                                                                                        "- export config_bundle") ;
-        wxString msg = _L("PrusaSlicer will remember your action.") + "\n\n" + action + "\n\n" +
-                       format_wxstr(_L("Visit \"Preferences\" and check \"%1%\"\nto be asked about unsaved changes again."), preferences_item);
+    if (!m_app_config_key.empty()) {
+        m_remember_choice = new wxCheckBox(this, wxID_ANY, _L("Remember my choice"));
+        m_remember_choice->SetValue(wxGetApp().app_config->get(m_app_config_key) != none);
+        m_remember_choice->Bind(wxEVT_CHECKBOX, [type, this](wxCommandEvent& evt)
+        {
+            if (!evt.IsChecked())
+                return;
+            wxString preferences_item = m_app_config_key == "default_action_on_new_project"     ? _L("Ask for unsaved changes when creating new project") : 
+                                        m_app_config_key == "default_action_on_select_preset"   ? _L("Ask for unsaved changes when selecting new preset") :
+                                                                                                  _L("Ask for unsaved changes when ??closing application??") ;
+            wxString action = m_app_config_key == "default_action_on_new_project"   ? _L("You will not be asked about the unsaved changes the next time you create new project") : 
+                              m_app_config_key == "default_action_on_select_preset" ? _L("You will not be asked about the unsaved changes the next time you switch a preset") :
+                                                                                      _L("You will not be asked about the unsaved changes the next time you: \n"
+                                                                                            "- close the application,\n"
+                                                                                            "- load project,\n"
+                                                                                            "- process Undo / Redo with change of print technologie,\n"
+                                                                                            "- take/load snapshot,\n"
+                                                                                            "- load config file/bundle,\n"
+                                                                                            "- export config_bundle") ;
+            wxString msg = _L("PrusaSlicer will remember your action.") + "\n\n" + action + "\n\n" +
+                           format_wxstr(_L("Visit \"Preferences\" and check \"%1%\"\nto be asked about unsaved changes again."), preferences_item);
     
-        MessageDialog dialog(nullptr, msg, _L("PrusaSlicer: Don't ask me again"), wxOK | wxCANCEL | wxICON_INFORMATION);
-        if (dialog.ShowModal() == wxID_CANCEL)
-            m_remember_choice->SetValue(false);
-    });
+            MessageDialog dialog(nullptr, msg, _L("PrusaSlicer: Don't ask me again"), wxOK | wxCANCEL | wxICON_INFORMATION);
+            if (dialog.ShowModal() == wxID_CANCEL)
+                m_remember_choice->SetValue(false);
+        });
+    }
 
     wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
 
     topSizer->Add(m_action_line,0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(m_tree,       1, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(m_info_line,  0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, 2*border);
-    topSizer->Add(buttons,      0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
-    topSizer->Add(m_remember_choice, 0, wxEXPAND | wxALL, border);
+    topSizer->Add(buttons,      0, wxEXPAND | wxALL, border);
+    if (m_remember_choice)
+        topSizer->Add(m_remember_choice, 0, wxEXPAND | wxLEFT | wxBOTTOM | wxRIGHT, border);
 
     update(type, dependent_presets, new_selected_preset, header);
 
@@ -957,7 +962,7 @@ void UnsavedChangesDialog::show_info_line(Action action, std::string preset_name
 
 void UnsavedChangesDialog::update_config(Action action)
 {
-    if (!m_remember_choice->GetValue())
+    if (!m_remember_choice || !m_remember_choice->GetValue())
         return;
 
     std::string act = action == Action::Transfer ? ActTransfer :

@@ -1575,16 +1575,18 @@ struct Plater::priv
 
     bool is_project_dirty() const { return dirty_state.is_dirty(); }
     void update_project_dirty_from_presets() { dirty_state.update_from_presets(); }
-    int save_project_if_dirty() {
+    int save_project_if_dirty(const wxString& reason) {
         int res = wxID_NO;
         if (dirty_state.is_dirty()) {
             MainFrame* mainframe = wxGetApp().mainframe;
             if (mainframe->can_save_as()) {
-                //wxMessageDialog dlg(mainframe, _L("Do you want to save the changes to the current project ?"), wxString(SLIC3R_APP_NAME), wxYES_NO | wxCANCEL);
-                MessageDialog dlg(mainframe, _L("Do you want to save the changes to the current project ?"), wxString(SLIC3R_APP_NAME), wxYES_NO | wxCANCEL);
+                fs::path output_file = get_export_file_path(FT_3MF);
+                MessageDialog dlg(mainframe, reason + "\n" + format_wxstr(_L("Do you want to save the changes to \"%1%\"?"), 
+                                             output_file.empty() ? _L("Untitled") : from_u8(output_file.string())), wxString(SLIC3R_APP_NAME), wxYES_NO | wxCANCEL);
                 res = dlg.ShowModal();
                 if (res == wxID_YES)
-                    mainframe->save_project_as(wxGetApp().plater()->get_project_filename());
+                    if (!mainframe->save_project_as(get_project_filename(".3mf")))
+                        res = wxID_CANCEL;
             }
         }
         return res;
@@ -1644,6 +1646,7 @@ struct Plater::priv
     std::vector<size_t> load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool used_inches = false);
     std::vector<size_t> load_model_objects(const ModelObjectPtrs& model_objects, bool allow_negative_z = false);
 
+    fs::path get_export_file_path(GUI::FileType file_type);
     wxString get_export_file(GUI::FileType file_type);
 
     const Selection& get_selection() const;
@@ -2599,22 +2602,8 @@ std::vector<size_t> Plater::priv::load_model_objects(const ModelObjectPtrs& mode
     return obj_idxs;
 }
 
-wxString Plater::priv::get_export_file(GUI::FileType file_type)
+fs::path Plater::priv::get_export_file_path(GUI::FileType file_type)
 {
-    wxString wildcard;
-    switch (file_type) {
-        case FT_STL:
-        case FT_AMF:
-        case FT_3MF:
-        case FT_GCODE:
-        case FT_OBJ:
-            wildcard = file_wildcards(file_type);
-        break;
-        default:
-            wildcard = file_wildcards(FT_MODEL);
-        break;
-    }
-
     // Update printbility state of each of the ModelInstances.
     this->update_print_volume_state();
 
@@ -2640,6 +2629,52 @@ wxString Plater::priv::get_export_file(GUI::FileType file_type)
             // Find the file name of the first object.
             output_file = this->model.objects[0]->get_export_filename();
     }
+    return output_file;
+}
+
+wxString Plater::priv::get_export_file(GUI::FileType file_type)
+{
+    wxString wildcard;
+    switch (file_type) {
+        case FT_STL:
+        case FT_AMF:
+        case FT_3MF:
+        case FT_GCODE:
+        case FT_OBJ:
+            wildcard = file_wildcards(file_type);
+        break;
+        default:
+            wildcard = file_wildcards(FT_MODEL);
+        break;
+    }
+
+    //// Update printbility state of each of the ModelInstances.
+    //this->update_print_volume_state();
+
+    //const Selection& selection = get_selection();
+    //int obj_idx = selection.get_object_idx();
+
+    //fs::path output_file;
+    //if (file_type == FT_3MF)
+    //    // for 3mf take the path from the project filename, if any
+    //    output_file = into_path(get_project_filename(".3mf"));
+
+    //if (output_file.empty())
+    //{
+    //    // first try to get the file name from the current selection
+    //    if ((0 <= obj_idx) && (obj_idx < (int)this->model.objects.size()))
+    //        output_file = this->model.objects[obj_idx]->get_export_filename();
+
+    //    if (output_file.empty())
+    //        // Find the file name of the first printable object.
+    //        output_file = this->model.propose_export_file_name_and_path();
+
+    //    if (output_file.empty() && !model.objects.empty())
+    //        // Find the file name of the first object.
+    //        output_file = this->model.objects[0]->get_export_filename();
+    //}
+
+    fs::path output_file = get_export_file_path(file_type);
 
     wxString dlg_title;
     switch (file_type) {
@@ -4714,8 +4749,10 @@ void Plater::priv::undo_redo_to(std::vector<UndoRedo::Snapshot>::const_iterator 
     if (printer_technology_changed) {
         // Switching the printer technology when jumping forwards / backwards in time. Switch to the last active printer profile of the other type.
         std::string s_pt = (it_snapshot->snapshot_data.printer_technology == ptFFF) ? "FFF" : "SLA";
-        if (!wxGetApp().check_and_save_current_preset_changes(_L("Undo / Redo is processing"), format_wxstr(_L(
-            "%1% printer was active at the time the target Undo / Redo snapshot was taken. Switching to %1% printer requires reloading of %1% presets."), s_pt)))
+        if (!wxGetApp().check_and_save_current_preset_changes(_L("Undo / Redo is processing"), 
+//            format_wxstr(_L("%1% printer was active at the time the target Undo / Redo snapshot was taken. Switching to %1% printer requires reloading of %1% presets."), s_pt)))
+            format_wxstr(_L("Switching the printer technology from %1% to %2%.\n"
+                            "Some %1% presets were modified, which will be lost after switching the printer technology."), s_pt =="FFF" ? "SLA" : "FFF", s_pt), false))
             // Don't switch the profiles.
             return;
     }
@@ -4893,7 +4930,7 @@ Plater::Plater(wxWindow *parent, MainFrame *main_frame)
 
 bool Plater::is_project_dirty() const { return p->is_project_dirty(); }
 void Plater::update_project_dirty_from_presets() { p->update_project_dirty_from_presets(); }
-int  Plater::save_project_if_dirty() { return p->save_project_if_dirty(); }
+int  Plater::save_project_if_dirty(const wxString& reason) { return p->save_project_if_dirty(reason); }
 void Plater::reset_project_dirty_after_save() { p->reset_project_dirty_after_save(); }
 void Plater::reset_project_dirty_initial_presets() { p->reset_project_dirty_initial_presets(); }
 #if ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
@@ -4910,12 +4947,13 @@ SLAPrint&       Plater::sla_print()         { return p->sla_print; }
 
 void Plater::new_project()
 {
-    if (int saved_project = p->save_project_if_dirty(); saved_project == wxID_CANCEL)
+    if (int saved_project = p->save_project_if_dirty(_L("Creating a new project while the current project is modified.")); saved_project == wxID_CANCEL)
         return;
     else {
-        wxString header = saved_project == wxID_YES ? _L("You can keep presets modifications to the new project or discard them") :
+        wxString header = _L("Creating a new project while some presets are modified.") + "\n" + 
+                          (saved_project == wxID_YES ? _L("You can keep presets modifications to the new project or discard them") :
                           _L("You can keep presets modifications to the new project, discard them or save changes as new presets.\n"
-                             "Note, if changes will be saved than new project wouldn't keep them");
+                             "Note, if changes will be saved than new project wouldn't keep them"));
         using ab = UnsavedChangesDialog::ActionButtons;
         int act_buttons = ab::KEEP;
         if (saved_project == wxID_NO)

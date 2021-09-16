@@ -1866,8 +1866,8 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
 #endif
         case ConfigMenuTakeSnapshot:
             // Take a configuration snapshot.
-            if (wxString action_name = _L("Taking configuration snapshot");
-                check_and_save_current_preset_changes(action_name, _L("Only saved presets will be added to configuration snapshot."), true)) {
+            if (wxString action_name = _L("Taking a configuration snapshot");
+                check_and_save_current_preset_changes(action_name, _L("Some presets are modified and the unsaved changes will not be captured by the configuration snapshot."), false, true)) {
                 wxTextEntryDialog dlg(nullptr, action_name, _L("Snapshot name"));
                 UpdateDlgDarkUI(&dlg);
                 
@@ -1884,7 +1884,7 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
             }
             break;
         case ConfigMenuSnapshots:
-            if (check_and_save_current_preset_changes(_L("Loading configuration snapshot"))) {
+            if (check_and_save_current_preset_changes(_L("Loading a configuration snapshot"), "", false)) {
                 std::string on_snapshot;
                 if (Config::SnapshotDB::singleton().is_on_snapshot(*app_config))
                     on_snapshot = app_config->get("on_snapshot");
@@ -2086,15 +2086,15 @@ std::vector<std::pair<unsigned int, std::string>> GUI_App::get_selected_presets(
 // This is called when:
 // - Exporting config_bundle
 // - Taking snapshot
-bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, const wxString& header /*= wxEmptyString*/, bool dont_save_insted_of_discard/* = false*/)
+bool GUI_App::check_and_save_current_preset_changes(const wxString& caption, const wxString& header, bool remember_choice/* = true*/, bool dont_save_insted_of_discard/* = false*/)
 {
     if (has_current_preset_changes()) {
-        const std::string app_config_key = "default_action_on_close_application";
+        const std::string app_config_key = remember_choice ? "default_action_on_close_application" : "";
         int act_buttons = UnsavedChangesDialog::ActionButtons::SAVE;
         if (dont_save_insted_of_discard)
             act_buttons |= UnsavedChangesDialog::ActionButtons::DONT_SAVE;
         UnsavedChangesDialog dlg(caption, header, app_config_key, act_buttons);
-        std::string act = wxGetApp().app_config->get(app_config_key);
+        std::string act = app_config_key.empty() ? "none" : wxGetApp().app_config->get(app_config_key);
         if (act == "none" && dlg.ShowModal() == wxID_CANCEL)
             return false;
 
@@ -2139,9 +2139,10 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
     if (has_current_preset_changes()) {
         bool is_called_from_configwizard = postponed_apply_of_keeped_changes != nullptr;
 
-        const std::string app_config_key = is_called_from_configwizard ? "default_action_on_select_preset" : "default_action_on_new_project";
+        const std::string app_config_key = is_called_from_configwizard ? "" : "default_action_on_new_project";
         UnsavedChangesDialog dlg(caption, header, app_config_key, action_buttons);
-        if (wxGetApp().app_config->get(app_config_key) == "none" && dlg.ShowModal() == wxID_CANCEL)
+        std::string act = app_config_key.empty() ? "none" : wxGetApp().app_config->get(app_config_key);
+        if (act == "none" && dlg.ShowModal() == wxID_CANCEL)
             return false;
 
         auto reset_modifications = [this, is_called_from_configwizard]() {
@@ -2210,9 +2211,10 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
 
 bool GUI_App::can_load_project()
 {
-    int saved_project = plater()->save_project_if_dirty();
+    int saved_project = plater()->save_project_if_dirty(_L("Loading a new project while the current project is modified."));
     if (saved_project == wxID_CANCEL ||
-        (plater()->is_project_dirty() && saved_project == wxID_NO && !check_and_save_current_preset_changes(_L("Project is loading"), "")))
+        (plater()->is_project_dirty() && saved_project == wxID_NO && 
+         !check_and_save_current_preset_changes(_L("Project is loading"), _L("Loading a new project while some presets are modified."))))
         return false;
     return true;
 }

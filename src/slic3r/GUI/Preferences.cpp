@@ -186,22 +186,18 @@ void PreferencesDialog::build(size_t selected_tab)
 		option = Option(def, "single_instance");
 		m_optgroup_general->append_single_option_line(option);
 
-		def.label = L("Ask for unsaved changes when ??closing application??");
+		def.label = L("Ask for unsaved changes when closing application or loading new project");
 		def.type = coBool;
 		def.tooltip = L("Always ask for unsaved changes, when: \n"
-						"- closing the application,\n"
-						"- loading project,\n"
-						"- processing Undo / Redo with change of print technologie,\n"
-						"- taking/loading snapshot,\n"
-						"- loading config file/bundle,\n"
-						"- exporting config_bundle");
+						"- Closing PrusaSlicer while some presets are modified,\n"
+						"- Loading a new project while some presets are modified");
 		def.set_default_value(new ConfigOptionBool{ app_config->get("default_action_on_close_application") == "none" });
 		option = Option(def, "default_action_on_close_application");
 		m_optgroup_general->append_single_option_line(option);
 
 		def.label = L("Ask for unsaved changes when selecting new preset");
 		def.type = coBool;
-		def.tooltip = L("Always ask for unsaved changes when selecting new preset");
+		def.tooltip = L("Always ask for unsaved changes when selecting new preset or resetting a preset");
 		def.set_default_value(new ConfigOptionBool{ app_config->get("default_action_on_select_preset") == "none" });
 		option = Option(def, "default_action_on_select_preset");
 		m_optgroup_general->append_single_option_line(option);
