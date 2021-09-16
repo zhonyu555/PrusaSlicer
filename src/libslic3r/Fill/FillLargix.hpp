@@ -10,6 +10,12 @@
 
 #include "FillBase.hpp"
 
+#include "Polygon.h"
+
+namespace Largix {
+class Layer;
+}
+
 namespace Slic3r {
 
 class Surface;
