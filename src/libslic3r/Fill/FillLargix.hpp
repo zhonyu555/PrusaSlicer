@@ -1,14 +1,15 @@
 #ifndef slic3r_FillLargix_hpp_
 #define slic3r_FillLargix_hpp_
 
-#include <polygon.h>
-#include <point.h>
-#include <layer.h>
-#include <buildlayer.h>
-
 #include "../libslic3r.h"
 
 #include "FillBase.hpp"
+
+#include "Polygon.h"
+
+namespace Largix {
+class Layer;
+}
 
 namespace Slic3r {
 

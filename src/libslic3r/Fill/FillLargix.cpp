@@ -1,13 +1,3 @@
-#include <boost/geometry.hpp>
-#include <boost/geometry/geometries/point.hpp>
-#include <boost/geometry/geometries/polygon.hpp>
-
-#include <PolygonValidator.h>
-#include <PolygonHelper.h>
-#include <PolygonIO.h>
-#include <Size.h>
-#include <TeddyDef.h>
-
 #include "../ClipperUtils.hpp"
 #include "../ExPolygon.hpp"
 #include "../ShortestPath.hpp"
@@ -15,8 +5,14 @@
 
 #include <sstream> 
 
-
 #include "FillLargix.hpp"
+
+#include <Layer.h>
+#include <PolygonValidator.h>
+#include <PolygonIO.h>
+#include <BuildLayer.h>
+#include <Size.h>
+#include <TeddyDef.h>
 
 namespace Slic3r {
 
