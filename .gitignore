@@ -1,10 +1,6 @@
 Build
 Build.bat
-/build/x64
-/build/CMakeFiles
-/build/.vs
-/build/src/*/debug
-/build/src/*/x64
+/build
 MYMETA.json
 MYMETA.yml
 _build
