@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(libslic3r)
 
+set(LARGIX_PATH $ENV{PATH_NAVIGATOR_PATH})
+
 include(PrecompiledHeader)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libslic3r_version.h.in ${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h @ONLY)
@@ -13,6 +15,8 @@ set(OpenVDBUtils_SOURCES "")
 if (TARGET OpenVDB::openvdb)
     set(OpenVDBUtils_SOURCES OpenVDBUtils.cpp OpenVDBUtils.hpp)
 endif()
+
+include_directories(libslic3r PUBLIC ${LARGIX_PATH}/PathNavigator)
 
 add_library(libslic3r STATIC
     pchheader.cpp
@@ -355,3 +359,12 @@ endif()
 if (SLIC3R_PCH AND NOT SLIC3R_SYNTAXONLY)
     add_precompiled_header(libslic3r pchheader.hpp FORCEINCLUDE)
 endif ()
+
+add_library(PathNavigator STATIC IMPORTED)
+set_property(TARGET PathNavigator PROPERTY
+             IMPORTED_LOCATION ${LARGIX_PATH}/x64/Debug/PathNavigator.lib)
+
+target_link_libraries(libslic3r PathNavigator)
+
+add_custom_command(TARGET libslic3r PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${LARGIX_PATH}/x64/Debug/PathNavigator.dll ${CMAKE_CURRENT_BINARY_DIR}/../Debug/PathNavigator.dll)
+
