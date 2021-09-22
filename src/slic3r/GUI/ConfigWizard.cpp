@@ -2477,8 +2477,8 @@ static std::string get_first_added_preset(const std::map<std::string, std::strin
 bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater, bool& apply_keeped_changes)
 {
     wxString header, caption = _L("Configuration is editing from ConfigWizard");
-    bool check_unsaved_preset_changes{ false };
-    if (check_unsaved_preset_changes = page_welcome->reset_user_profile())
+    bool check_unsaved_preset_changes = page_welcome->reset_user_profile();
+    if (check_unsaved_preset_changes)
         header = _L("All user presets will be deleted.");
     int act_btns = UnsavedChangesDialog::ActionButtons::KEEP;
     if (!check_unsaved_preset_changes)
@@ -2510,7 +2510,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
     }
     if (!check_unsaved_preset_changes)
-        if (check_unsaved_preset_changes = install_bundles.size() > 0)
+        if ((check_unsaved_preset_changes = install_bundles.size() > 0))
             header = _L_PLURAL("New vendor was installed and one of its printer will be activated", "New vendors were installed and one of theirs printer will be activated", install_bundles.size());
 
 #ifdef __linux__
@@ -2603,17 +2603,18 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     }
 
     // if unsaved changes was not cheched till this moment
-    if (!check_unsaved_preset_changes)
-        if (check_unsaved_preset_changes = !preferred_model.empty()) {
+    if (!check_unsaved_preset_changes) {
+        if ((check_unsaved_preset_changes = !preferred_model.empty())) {
             header = _L("A new Printer was installed and it will be activated.");
-            if(!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
+            if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                 return false;
         }
-        else if (check_unsaved_preset_changes = enabled_vendors_old != enabled_vendors) {
+        else if ((check_unsaved_preset_changes = enabled_vendors_old != enabled_vendors)) {
             header = _L("Some Printers were uninstalled.");
             if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                 return false;
         }
+    }
 
     std::string first_added_filament, first_added_sla_material;
     auto get_first_added_material_preset = [this, app_config](const std::string& section_name, std::string& first_added_preset) {
@@ -2627,21 +2628,22 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     get_first_added_material_preset(AppConfig::SECTION_MATERIALS, first_added_sla_material);
 
     // if unsaved changes was not cheched till this moment
-    if (!check_unsaved_preset_changes)
-        if (check_unsaved_preset_changes = ( !first_added_filament.empty() || !first_added_sla_material.empty() ) ) {
+    if (!check_unsaved_preset_changes) {
+        if ((check_unsaved_preset_changes = !first_added_filament.empty() || !first_added_sla_material.empty())) {
             header = format_wxstr(_L("A new %1% was installed and it will be activated."), !first_added_filament.empty() ? _L("Filament") : _L("SLA material"));
-            if(!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
+            if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                 return false;
         }
         else {
-            bool is_filaments_changed     = app_config->get_section(AppConfig::SECTION_FILAMENTS) != appconfig_new.get_section(AppConfig::SECTION_FILAMENTS);
+            bool is_filaments_changed = app_config->get_section(AppConfig::SECTION_FILAMENTS) != appconfig_new.get_section(AppConfig::SECTION_FILAMENTS);
             bool is_sla_materials_changed = app_config->get_section(AppConfig::SECTION_MATERIALS) != appconfig_new.get_section(AppConfig::SECTION_MATERIALS);
-            if (check_unsaved_preset_changes = (is_filaments_changed || is_sla_materials_changed)) {
+            if ((check_unsaved_preset_changes = is_filaments_changed || is_sla_materials_changed)) {
                 header = format_wxstr(_L("Some %1% were uninstalled."), is_filaments_changed ? _L("Filaments") : _L("SLA materials"));
                 if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                     return false;
             }
         }
+    }
 
     // apply materials in app_config
     for (const std::string& section_name : {AppConfig::SECTION_FILAMENTS, AppConfig::SECTION_MATERIALS})

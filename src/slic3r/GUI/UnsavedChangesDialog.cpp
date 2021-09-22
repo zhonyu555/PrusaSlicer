@@ -887,7 +887,7 @@ void UnsavedChangesDialog::build(Preset::Type type, PresetCollection* dependent_
     if (!m_app_config_key.empty()) {
         m_remember_choice = new wxCheckBox(this, wxID_ANY, _L("Remember my choice"));
         m_remember_choice->SetValue(wxGetApp().app_config->get(m_app_config_key) != none);
-        m_remember_choice->Bind(wxEVT_CHECKBOX, [type, this](wxCommandEvent& evt)
+        m_remember_choice->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& evt)
         {
             if (!evt.IsChecked())
                 return;
