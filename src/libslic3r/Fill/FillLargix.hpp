@@ -55,7 +55,8 @@ protected:
     }
 
 	bool _convert_polygon_2_largix(ExPolygon &src, Largix::Polygon &dst);
-    bool _convert_layer_2_prusa(Largix::Layer &src, Polylines &dst);
+    bool _convert_layer_2_prusa(Largix::Layer & src,
+                                Polylines &     dst);
 };
 
 }; // namespace Slic3r

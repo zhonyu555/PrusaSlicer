@@ -40,17 +40,20 @@ void FillLargix::_fill_surface_single(
     pv.simplify(pol);
     pv.correct(pol);
 
-   
-    //std::stringstream  ss;
-    //ss << "C:\\Temp\\Polygons\\polygon"  << (++_count) << ".wkt";
-    //Largix::PolygonIO::saveToWktFile(pol, ss.str());
-
     Largix::Layer      layer;
 
     const Largix::Size2D sz(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
     Largix::BuildLayer buider(pol, sz);
 
     buider.build(layer, 1);
+
+    if (std::any_of(layer.strands().begin(), layer.strands().end(),
+                    [](const Largix::Strand &item) { return !item.isClosed(); })) 
+    {
+        std::stringstream ss;
+        ss << "C:\\Temp\\Polygons\\polygon" << (++_count) << ".wkt";
+        Largix::PolygonIO::saveToWktFile(pol, ss.str());
+    }
 
     this->_convert_layer_2_prusa(layer, polylines_out);
 
@@ -75,17 +78,31 @@ bool FillLargix::_convert_polygon_2_largix(ExPolygon       &src,
     return true;
 }
 
-bool FillLargix::_convert_layer_2_prusa(Largix::Layer &src, Polylines &dst)
+bool FillLargix::_convert_layer_2_prusa(Largix::Layer &  src,
+                                        Polylines &      dst)
 {
     
     for (auto strand : src.strands())
     { 
-        Polyline pline;
-        for (auto bin : strand.bins()) 
-        {
-            pline.points.push_back(Point::new_scale(bin.center().x(), bin.center().y()));
+        std::vector<std::array<Largix::Point2D, 4>> points;
+        strand.get4StrandPoints(points);
+
+        std::array<Polyline,4> pline;
+        for (auto point : points) 
+        { 
+            pline[0].points.push_back(
+                Point::new_scale(point[0].x(), point[0].y()));
+            pline[1].points.push_back(
+                Point::new_scale(point[1].x(), point[1].y()));
+            pline[2].points.push_back(
+                Point::new_scale(point[2].x(), point[2].y()));
+            pline[3].points.push_back(
+                Point::new_scale(point[3].x(), point[3].y()));
         }
-        dst.push_back(pline);
+        dst.push_back(pline[0]);
+        dst.push_back(pline[1]);
+        dst.push_back(pline[2]);
+        dst.push_back(pline[3]);
     }
     
     return true;
