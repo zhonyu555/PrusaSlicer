@@ -1580,12 +1580,16 @@ struct Plater::priv
         if (dirty_state.is_dirty()) {
             MainFrame* mainframe = wxGetApp().mainframe;
             if (mainframe->can_save_as()) {
-                fs::path output_file = get_export_file_path(FT_3MF);
-                MessageDialog dlg(mainframe, reason + "\n" + format_wxstr(_L("Do you want to save the changes to \"%1%\"?"), 
-                                             output_file.empty() ? _L("Untitled") : from_u8(output_file.string())), wxString(SLIC3R_APP_NAME), wxYES_NO | wxCANCEL);
-                res = dlg.ShowModal();
+                wxString suggested_project_name;
+                wxString project_name = suggested_project_name = get_project_filename(".3mf");
+                if (suggested_project_name.IsEmpty()) {
+                    fs::path output_file = get_export_file_path(FT_3MF);
+                    suggested_project_name = output_file.empty() ? _L("Untitled") : from_u8(output_file.stem().string());
+                }
+                res = MessageDialog(mainframe, reason + "\n" + format_wxstr(_L("Do you want to save the changes to \"%1%\"?"), suggested_project_name), 
+                                    wxString(SLIC3R_APP_NAME), wxYES_NO | wxCANCEL).ShowModal();
                 if (res == wxID_YES)
-                    if (!mainframe->save_project_as(get_project_filename(".3mf")))
+                    if (!mainframe->save_project_as(project_name))
                         res = wxID_CANCEL;
             }
         }
@@ -2628,6 +2632,10 @@ fs::path Plater::priv::get_export_file_path(GUI::FileType file_type)
         if (output_file.empty() && !model.objects.empty())
             // Find the file name of the first object.
             output_file = this->model.objects[0]->get_export_filename();
+
+        if (output_file.empty())
+            // Use _L("Untitled") name
+            output_file = into_path(_L("Untitled"));
     }
     return output_file;
 }
@@ -2647,32 +2655,6 @@ wxString Plater::priv::get_export_file(GUI::FileType file_type)
             wildcard = file_wildcards(FT_MODEL);
         break;
     }
-
-    //// Update printbility state of each of the ModelInstances.
-    //this->update_print_volume_state();
-
-    //const Selection& selection = get_selection();
-    //int obj_idx = selection.get_object_idx();
-
-    //fs::path output_file;
-    //if (file_type == FT_3MF)
-    //    // for 3mf take the path from the project filename, if any
-    //    output_file = into_path(get_project_filename(".3mf"));
-
-    //if (output_file.empty())
-    //{
-    //    // first try to get the file name from the current selection
-    //    if ((0 <= obj_idx) && (obj_idx < (int)this->model.objects.size()))
-    //        output_file = this->model.objects[obj_idx]->get_export_filename();
-
-    //    if (output_file.empty())
-    //        // Find the file name of the first printable object.
-    //        output_file = this->model.propose_export_file_name_and_path();
-
-    //    if (output_file.empty() && !model.objects.empty())
-    //        // Find the file name of the first object.
-    //        output_file = this->model.objects[0]->get_export_filename();
-    //}
 
     fs::path output_file = get_export_file_path(file_type);
 
