@@ -17,4 +17,6 @@ Actions=GCodeViewer;
 Exec=prusa-slicer --gcodeviewer %F
 Name=G-Code Viewer
 Name[de]=G-Code Vorschau
+Name[pt_BR]=Visualizador G-Code
 Icon=PrusaSlicer-gcodeviewer
+
