@@ -12,6 +12,7 @@
 #include "Thread.hpp"
 #include "GCode.hpp"
 #include "GCode/WipeTower.hpp"
+#include "Teddy.hpp"
 #include "Utils.hpp"
 
 #include <float.h>
@@ -897,6 +898,12 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
     // The following line may die for multiple reasons.
     GCode gcode;
     gcode.do_export(this, path.c_str(), result, thumbnail_cb);
+
+    boost::filesystem::path tmp{path};
+    
+    Teddy scv;
+    tmp.replace_extension(TEDDY_EXTESION);
+    scv.do_export(this, tmp.string().c_str());
     return path.c_str();
 }
 

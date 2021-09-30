@@ -54,8 +54,8 @@ protected:
         	&& (dist_Y <= this->_diagonal_distance);
     }
 
-	bool _convert_polygon_2_largix(ExPolygon &src, Largix::Polygon &dst);
-    bool _convert_layer_2_prusa(Largix::Layer & src,
+	static bool _convert_polygon_2_largix(ExPolygon &src, Largix::Polygon &dst);
+    static bool _convert_layer_2_prusa(Largix::Layer & src,
                                 Polylines &     dst);
 };
 

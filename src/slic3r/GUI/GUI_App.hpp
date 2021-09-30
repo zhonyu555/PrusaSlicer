@@ -70,6 +70,8 @@ enum FileType
 	// Workaround for OSX file picker, for some reason it always saves with the 1st extension.
  	FT_SL1S,
 
+    FT_SCV,
+
     FT_SIZE,
 };
 

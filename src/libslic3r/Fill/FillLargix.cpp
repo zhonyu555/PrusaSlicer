@@ -6,6 +6,7 @@
 #include <PolygonHelper.h>
 #include <Size.h>
 #include <TeddyDef.h>
+#include <Settings.h>
 
 #include "../ClipperUtils.hpp"
 #include "../ExPolygon.hpp"
@@ -43,7 +44,12 @@ void FillLargix::_fill_surface_single(
     Largix::Layer      layer;
 
     const Largix::Size2D sz(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
-    Largix::BuildLayer buider(pol, sz);
+
+    Largix::Settings set;
+    set.szBin = Largix::szBin4_;
+    set.minStrandLength = set.szBin[1] * 2.5;
+
+    Largix::BuildLayer buider(pol, set);
 
     buider.build(layer, 1);
 
@@ -70,9 +76,10 @@ bool FillLargix::_convert_polygon_2_largix(ExPolygon       &src,
     auto it = dst.inners().begin();
     for (auto poly : src.holes) {
         for (auto point : poly) {
-            (*it++).push_back(Largix::Point2D(point.x() * SCALING_FACTOR,
+            (*it).push_back(Largix::Point2D(point.x() * SCALING_FACTOR,
                                                 point.y() * SCALING_FACTOR));
         }
+        it++;
     }
     
     return true;

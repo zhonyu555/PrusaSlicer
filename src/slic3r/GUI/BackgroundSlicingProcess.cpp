@@ -4,6 +4,7 @@
 #include "MainFrame.hpp"
 #include "format.hpp"
 
+
 #include <wx/app.h>
 #include <wx/panel.h>
 #include <wx/stdpaths.h>
@@ -23,7 +24,6 @@
 #include "libslic3r/Format/SL1.hpp"
 #include "libslic3r/Thread.hpp"
 #include "libslic3r/libslic3r.h"
-
 #include <cassert>
 #include <stdexcept>
 #include <cctype>
@@ -684,6 +684,13 @@ void BackgroundSlicingProcess::finalize_gcode()
 	int copy_ret_val = CopyFileResult::SUCCESS;
 	try
 	{
+        boost::filesystem::path in_scv(output_path);
+        boost::filesystem::path out_scv(export_path);
+        in_scv.replace_extension(TEDDY_EXTESION);
+        if (boost::filesystem::exists(in_scv) &&
+            out_scv.extension() == ("." + std::string(TEDDY_EXTESION))) {
+            output_path = in_scv.string();
+        }
 		copy_ret_val = copy_file(output_path, export_path, error_message, m_export_path_on_removable_media);
 		remove_post_processed_temp_file();
 	}

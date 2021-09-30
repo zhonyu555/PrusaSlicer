@@ -17,6 +17,7 @@ if (TARGET OpenVDB::openvdb)
 endif()
 
 include_directories(libslic3r PUBLIC ${LARGIX_PATH}/PathNavigator)
+include_directories(libslic3r PUBLIC ${LARGIX_PATH}/../GCodeConvert/TeddyConvert)
 
 add_library(libslic3r STATIC
     pchheader.cpp
@@ -120,6 +121,8 @@ add_library(libslic3r STATIC
     # GCodeSender.hpp
     GCodeWriter.cpp
     GCodeWriter.hpp
+    Teddy.cpp
+    Teddy.hpp
     Geometry.cpp
     Geometry.hpp
     Int128.hpp
@@ -364,7 +367,14 @@ add_library(PathNavigator STATIC IMPORTED)
 set_property(TARGET PathNavigator PROPERTY
              IMPORTED_LOCATION ${LARGIX_PATH}/x64/Debug/PathNavigator.lib)
 
-target_link_libraries(libslic3r PathNavigator)
+add_library(TeddyConvert STATIC IMPORTED)
+set_property(TARGET TeddyConvert PROPERTY
+             IMPORTED_LOCATION ${LARGIX_PATH}/../GCodeConvert/x64/Debug/TeddyConvert.lib)
 
-add_custom_command(TARGET libslic3r PRE_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${LARGIX_PATH}/x64/Debug/PathNavigator.dll ${CMAKE_CURRENT_BINARY_DIR}/../Debug/PathNavigator.dll)
+
+target_link_libraries(libslic3r PathNavigator TeddyConvert)
+
+add_custom_command(TARGET libslic3r POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${LARGIX_PATH}/x64/Debug/PathNavigator.dll ${CMAKE_CURRENT_BINARY_DIR}/../Debug/PathNavigator.dll)
+add_custom_command(TARGET libslic3r POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${LARGIX_PATH}/../GCodeConvert/x64/Debug/TeddyConvert.dll ${CMAKE_CURRENT_BINARY_DIR}/../Debug/TeddyConvert.dll)
+add_custom_command(TARGET libslic3r POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy ${LARGIX_PATH}/../GCodeConvert/x64/Debug/GCodeParser.dll ${CMAKE_CURRENT_BINARY_DIR}/../Debug/GCodeParser.dll)
 
