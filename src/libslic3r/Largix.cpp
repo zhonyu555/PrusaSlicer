@@ -11,16 +11,17 @@
 #include "libslic3r.h"
 #include "I18N.hpp"
 #include "GCode.hpp"
-#include "Teddy.hpp"
+#include "Largix.hpp"
 #include "Exception.hpp"
 #include "ExtrusionEntity.hpp"
 #include "Print.hpp"
 #include "Layer.hpp"
+#include "LargixHelper.hpp"
 
 
 namespace Slic3r {
 
-bool Teddy::do_export(Print *print, const char *path)
+bool LargixExport::do_export(Print *print, const char *path)
 {
     Largix::Slices          slices;
     Largix::ConvertSettings settings;
@@ -36,7 +37,7 @@ bool Teddy::do_export(Print *print, const char *path)
                 std::vector<std::array<Largix::Point2D, 4>> lines;
                 lines.reserve(pLines.size() / 4);
                 for (int i = 0; i < pLines.size(); i += 4) {
-                    convertPolylineToLargix(pLines.at(i), pLines.at(i+1),
+                    LargixHelper::convertPolylineToLargix(pLines.at(i), pLines.at(i+1),
                                             pLines.at(i+2), pLines.at(i + 3),
                                             lines);
                 }
@@ -57,25 +58,4 @@ bool Teddy::do_export(Print *print, const char *path)
     return true;
 }
 
-bool Teddy::convertPolylineToLargix(
-                            Polyline &                              pLine1,
-                            Polyline &                              pLine2,
-                            Polyline &                              pLine3,
-                            Polyline &                              pLine4,
-                            std::vector<std::array<Largix::Point2D, 4>> &pLineOut)
-{
-    if (pLine1.points.size() != pLine2.points.size() ||
-        pLine2.points.size() != pLine3.points.size() ||
-        pLine3.points.size() != pLine4.points.size())
-        return false;
-    for (int i = 0; i < pLine1.points.size(); i++) {
-        pLineOut.push_back(std::array<Largix::Point2D, 4> {
-            Largix::Point2D(pLine1.points[i].x() * SCALING_FACTOR,pLine1.points[i].y() * SCALING_FACTOR),
-            Largix::Point2D(pLine2.points[i].x() * SCALING_FACTOR,pLine2.points[i].y() * SCALING_FACTOR),
-            Largix::Point2D(pLine3.points[i].x() * SCALING_FACTOR,pLine3.points[i].y() * SCALING_FACTOR),
-            Largix::Point2D(pLine4.points[i].x() * SCALING_FACTOR,pLine4.points[i].y() * SCALING_FACTOR)}
-        );
-    }
-    return true;
-}
 } // namespace Slic3r

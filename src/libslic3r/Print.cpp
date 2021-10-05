@@ -12,7 +12,7 @@
 #include "Thread.hpp"
 #include "GCode.hpp"
 #include "GCode/WipeTower.hpp"
-#include "Teddy.hpp"
+#include "Largix.hpp"
 #include "Utils.hpp"
 
 #include <float.h>
@@ -901,8 +901,8 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
 
     boost::filesystem::path tmp{path};
     
-    Teddy scv;
-    tmp.replace_extension(TEDDY_EXTESION);
+    LargixExport scv;
+    tmp.replace_extension(LARGIX_EXTESION);
     scv.do_export(this, tmp.string().c_str());
     return path.c_str();
 }
