@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="19" height="19" version="1.1" viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg">
+ <path id="circle_white" d="m19 9.5a9.5 9.5 0 0 1-9.5 9.5 9.5 9.5 0 0 1-9.5-9.5 9.5 9.5 0 0 1 9.5-9.5 9.5 9.5 0 0 1 9.5 9.5z" fill="#fff"/>
+ <path id="circle_orange" d="m18.5 9.5a9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 9-9 9 9 0 0 1 9 9z" fill="#ed6b21"/>
+ <path id="plus_white" d="m8.4219 3.9238v4.498h-4.498v2.1563h4.498v4.498h2.1562v-4.498h4.498v-2.1563h-4.498v-4.498z" fill="#fff"/>
+</svg>

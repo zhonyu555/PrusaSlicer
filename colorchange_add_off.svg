@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="19" height="19" version="1.1" viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg">
+ <path id="circle_orange" d="M 19,9.5 A 9.5,9.5 0 0 1 9.5,19 9.5,9.5 0 0 1 0,9.5 9.5,9.5 0 0 1 9.5,0 9.5,9.5 0 0 1 19,9.5 Z" fill="#ed6b21"/>
+ <path id="plus_white" d="m8.4219 3.9238v4.498h-4.498v2.1562h4.498v4.498h2.1562v-4.498h4.498v-2.1562h-4.498v-4.498h-2.1562z" fill="#fff"/>
+</svg>
