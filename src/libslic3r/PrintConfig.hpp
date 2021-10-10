@@ -754,6 +754,10 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionFloats,             wiping_volumes_matrix))
     ((ConfigOptionFloats,             wiping_volumes_extruders))
     ((ConfigOptionFloat,              z_offset))
+    // My test options for largix
+    ((ConfigOptionFloat,              printer_largix_min_radius))
+    ((ConfigOptionFloat,              printer_largix_min_strand_lenght))
+    ((ConfigOptionInt,                printer_largix_strands_number))
 )
 
 // This object is mapped to Perl as Slic3r::Config::Full.

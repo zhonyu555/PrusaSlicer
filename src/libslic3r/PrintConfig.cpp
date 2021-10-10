@@ -259,6 +259,40 @@ void PrintConfigDef::init_common_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0.3));
 
+    // My test to adding new parameters
+    def = this->add("printer_largix_min_radius", coFloat);
+    def->label    = L("Strand radius");
+    def->category = L("Advanced");
+    def->tooltip  = L(
+        "Minimal strand radius");
+    def->sidetext = L("mm");
+    def->min      = 2;
+    def->max      = 100;
+    def->set_default_value(new ConfigOptionFloat(3.0));
+
+
+    def           = this->add("printer_largix_min_strand_lenght", coFloat);
+    def->label    = L("Strand length");
+    def->category = L("Advanced");
+    def->tooltip  = L(
+        "Minimal strand length.");
+    def->sidetext = L("mm");
+    def->min      = 1;
+    def->set_default_value(new ConfigOptionFloat(4));
+
+    def = this->add("printer_largix_strands_number", coInt);
+    def->label = L("Strands number");
+    def->category = L("Advanced");
+    def->tooltip = L(
+        "Maximal strands number per layer.");
+    def->sidetext = L("pieces");
+    def->min = 1;
+    def->max = 1000;
+    def->set_default_value(new ConfigOptionInt(2));
+    // end of my test     
+
+    
+
     def = this->add("max_print_height", coFloat);
     def->label = L("Max print height");
     def->tooltip = L("Set this to the maximum height that can be reached by your extruder while printing.");
@@ -2990,6 +3024,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0));
+
 
     // Declare retract values for filament profile, overriding the printer's extruder profile.
     for (const char *opt_key : {

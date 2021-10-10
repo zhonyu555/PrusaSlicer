@@ -2397,6 +2397,33 @@ void TabPrinter::build_fff()
         option.opt.height = gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
+        // Largix -----------------------------------------------------------------------
+  
+    page = add_options_page(L("Largix"), "note.png");
+        optgroup = page->new_optgroup(L("Largix settings"), 20);
+        
+
+        option = optgroup->get_option("printer_largix_min_radius");
+        option.opt.set_default_value(new ConfigOptionFloat(3.0));
+        //option.opt.height = 10;
+        //option.opt.width = 100;
+        
+        optgroup->append_single_option_line(option);
+
+        option = optgroup->get_option("printer_largix_min_strand_lenght");
+        option.opt.set_default_value(new ConfigOptionFloat(4.0));
+        optgroup->append_single_option_line(option);
+
+        option = optgroup->get_option("printer_largix_strands_number");
+        option.opt.set_default_value(new ConfigOptionInt(2));
+        optgroup->append_single_option_line(option);
+
+        //option = optgroup->get_option("printer_notes");
+        // option.opt.full_width = true;
+        //option.opt.height = notes_field_height;//250;
+        //optgroup->append_single_option_line(option);
+
+
     page = add_options_page(L("Notes"), "note.png");
         optgroup = page->new_optgroup(L("Notes"), 0);
         option = optgroup->get_option("printer_notes");
