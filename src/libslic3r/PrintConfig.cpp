@@ -259,8 +259,8 @@ void PrintConfigDef::init_common_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0.3));
 
-    // My test to adding new parameters
-    def = this->add("printer_largix_min_radius", coFloat);
+    //  Configuring settings for Largix tab
+    def = this->add("printer_largix_min_radius", coFloat); // strand min radius
     def->label    = L("Strand radius");
     def->category = L("Advanced");
     def->tooltip  = L(
@@ -270,8 +270,7 @@ void PrintConfigDef::init_common_params()
     def->max      = 100;
     def->set_default_value(new ConfigOptionFloat(3.0));
 
-
-    def           = this->add("printer_largix_min_strand_lenght", coFloat);
+    def           = this->add("printer_largix_min_strand_lenght", coFloat); // strand min length
     def->label    = L("Strand length");
     def->category = L("Advanced");
     def->tooltip  = L(
@@ -280,7 +279,7 @@ void PrintConfigDef::init_common_params()
     def->min      = 1;
     def->set_default_value(new ConfigOptionFloat(4));
 
-    def = this->add("printer_largix_strands_number", coInt);
+    def = this->add("printer_largix_strands_number", coInt); // strands per payer
     def->label = L("Strands number");
     def->category = L("Advanced");
     def->tooltip = L(
@@ -289,9 +288,7 @@ void PrintConfigDef::init_common_params()
     def->min = 1;
     def->max = 1000;
     def->set_default_value(new ConfigOptionInt(2));
-    // end of my test     
-
-    
+    // end configuring section     
 
     def = this->add("max_print_height", coFloat);
     def->label = L("Max print height");
