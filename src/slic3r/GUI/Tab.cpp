@@ -2399,8 +2399,8 @@ void TabPrinter::build_fff()
 
         // Add Largix page
   
-    page = add_options_page(L("Largix"), "note.png");
-        optgroup = page->new_optgroup(L("Largix settings"), 20);
+    page = add_options_page(L("Largix"), "Largix_icon.png");
+        optgroup = page->new_optgroup(L("Strand Settings"), 20);
         
         //add minimal strand radius
         option = optgroup->get_option("printer_largix_min_radius");

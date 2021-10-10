@@ -261,7 +261,7 @@ void PrintConfigDef::init_common_params()
 
     //  Configuring settings for Largix tab
     def = this->add("printer_largix_min_radius", coFloat); // strand min radius
-    def->label    = L("Strand radius");
+    def->label    = L("Minimal Radius");
     def->category = L("Advanced");
     def->tooltip  = L(
         "Minimal strand radius");
@@ -271,7 +271,7 @@ void PrintConfigDef::init_common_params()
     def->set_default_value(new ConfigOptionFloat(3.0));
 
     def           = this->add("printer_largix_min_strand_lenght", coFloat); // strand min length
-    def->label    = L("Strand length");
+    def->label    = L("Minimal Length");
     def->category = L("Advanced");
     def->tooltip  = L(
         "Minimal strand length.");
@@ -280,7 +280,7 @@ void PrintConfigDef::init_common_params()
     def->set_default_value(new ConfigOptionFloat(4));
 
     def = this->add("printer_largix_strands_number", coInt); // strands per payer
-    def->label = L("Strands number");
+    def->label = L("Maximal Number in Layer");
     def->category = L("Advanced");
     def->tooltip = L(
         "Maximal strands number per layer.");
