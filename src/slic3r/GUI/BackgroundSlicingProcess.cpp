@@ -686,9 +686,9 @@ void BackgroundSlicingProcess::finalize_gcode()
 	{
         boost::filesystem::path in_scv(output_path);
         boost::filesystem::path out_scv(export_path);
-        in_scv.replace_extension(TEDDY_EXTESION);
+        in_scv.replace_extension(LARGIX_EXTESION);
         if (boost::filesystem::exists(in_scv) &&
-            out_scv.extension() == ("." + std::string(TEDDY_EXTESION))) {
+            out_scv.extension() == ("." + std::string(LARGIX_EXTESION))) {
             output_path = in_scv.string();
         }
 		copy_ret_val = copy_file(output_path, export_path, error_message, m_export_path_on_removable_media);

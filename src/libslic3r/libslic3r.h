@@ -6,7 +6,7 @@
 #define GCODEVIEWER_APP_KEY  "PrusaSlicerGcodeViewer"
 #define GCODEVIEWER_BUILD_ID std::string("PrusaSlicer G-code Viewer-") + std::string(SLIC3R_VERSION) + std::string("-UNKNOWN")
 
-#define TEDDY_EXTESION "scv"
+#define LARGIX_EXTESION "scv"
 
 // this needs to be included early for MSVC (listing it in Build.PL is not enough)
 #include <memory>

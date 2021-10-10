@@ -53,10 +53,6 @@ protected:
         	&& (dist_X <= (this->_line_spacing + this->_line_oscillation) + TOLERANCE)
         	&& (dist_Y <= this->_diagonal_distance);
     }
-
-	static bool _convert_polygon_2_largix(ExPolygon &src, Largix::Polygon &dst);
-    static bool _convert_layer_2_prusa(Largix::Layer & src,
-                                Polylines &     dst);
 };
 
 }; // namespace Slic3r

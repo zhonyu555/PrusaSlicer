@@ -121,8 +121,10 @@ add_library(libslic3r STATIC
     # GCodeSender.hpp
     GCodeWriter.cpp
     GCodeWriter.hpp
-    Teddy.cpp
-    Teddy.hpp
+    Largix.cpp
+    Largix.hpp
+    LargixHelper.cpp
+    LargixHelper.hpp
     Geometry.cpp
     Geometry.hpp
     Int128.hpp

@@ -16,6 +16,7 @@
 #include <sstream> 
 
 #include "FillLargix.hpp"
+#include "LargixHelper.hpp"
 
 #include <Layer.h>
 #include <PolygonValidator.h>
@@ -35,7 +36,7 @@ void FillLargix::_fill_surface_single(
 {
     static int  _count = 0;
     Largix::Polygon pol;
-    this->_convert_polygon_2_largix(expolygon, pol);
+    LargixHelper::convert_polygon_2_largix(expolygon, pol);
 
     Largix::PolygonValidator pv(pol);
     pv.simplify(pol);
@@ -61,58 +62,8 @@ void FillLargix::_fill_surface_single(
         Largix::PolygonIO::saveToWktFile(pol, ss.str());
     }
 
-    this->_convert_layer_2_prusa(layer, polylines_out);
+    LargixHelper::convert_layer_2_prusa(layer, polylines_out);
 
-}
-
-bool FillLargix::_convert_polygon_2_largix(ExPolygon       &src,
-                                           Largix::Polygon &dst)
-{
-    for (Slic3r::Point point : src.contour) {
-        dst.outer().push_back(Largix::Point2D(point.x() * SCALING_FACTOR,
-                                                point.y() * SCALING_FACTOR));
-    }
-    dst.inners().resize(src.holes.size());
-    auto it = dst.inners().begin();
-    for (auto poly : src.holes) {
-        for (auto point : poly) {
-            (*it).push_back(Largix::Point2D(point.x() * SCALING_FACTOR,
-                                                point.y() * SCALING_FACTOR));
-        }
-        it++;
-    }
-    
-    return true;
-}
-
-bool FillLargix::_convert_layer_2_prusa(Largix::Layer &  src,
-                                        Polylines &      dst)
-{
-    
-    for (auto strand : src.strands())
-    { 
-        std::vector<std::array<Largix::Point2D, 4>> points;
-        strand.get4StrandPoints(points);
-
-        std::array<Polyline,4> pline;
-        for (auto point : points) 
-        { 
-            pline[0].points.push_back(
-                Point::new_scale(point[0].x(), point[0].y()));
-            pline[1].points.push_back(
-                Point::new_scale(point[1].x(), point[1].y()));
-            pline[2].points.push_back(
-                Point::new_scale(point[2].x(), point[2].y()));
-            pline[3].points.push_back(
-                Point::new_scale(point[3].x(), point[3].y()));
-        }
-        dst.push_back(pline[0]);
-        dst.push_back(pline[1]);
-        dst.push_back(pline[2]);
-        dst.push_back(pline[3]);
-    }
-    
-    return true;
 }
 
 } // namespace Slic3r
