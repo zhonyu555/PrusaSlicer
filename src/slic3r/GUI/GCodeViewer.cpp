@@ -508,7 +508,8 @@ void GCodeViewer::SequentialView::render(float legend_height) const
     float bottom = wxGetApp().plater()->get_current_canvas3D()->get_canvas_size().get_height();
     if (wxGetApp().is_editor())
         bottom -= wxGetApp().plater()->get_view_toolbar().get_height();
-    gcode_window.render(legend_height, bottom, static_cast<uint64_t>(gcode_ids[current.last]));
+    if (current.last < gcode_ids.size())
+        gcode_window.render(legend_height, bottom, static_cast<uint64_t>(gcode_ids[current.last]));
 }
 
 const std::vector<GCodeViewer::Color> GCodeViewer::Extrusion_Role_Colors {{
@@ -2075,131 +2076,186 @@ void GCodeViewer::load_shells(const Print& print, bool initialized)
     }
 }
 
-void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool keep_sequential_current_last) const
+void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first,
+                                       bool keep_sequential_current_last) const
 {
 #if ENABLE_GCODE_VIEWER_STATISTICS
     auto start_time = std::chrono::high_resolution_clock::now();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
 
-    auto extrusion_color = [this](const Path& path) {
+    auto extrusion_color = [this](const Path &path) {
         Color color;
-        switch (m_view_type)
-        {
-        case EViewType::FeatureType:    { color = Extrusion_Role_Colors[static_cast<unsigned int>(path.role)]; break; }
-        case EViewType::Height:         { color = m_extrusions.ranges.height.get_color_at(path.height); break; }
-        case EViewType::Width:          { color = m_extrusions.ranges.width.get_color_at(path.width); break; }
-        case EViewType::Feedrate:       { color = m_extrusions.ranges.feedrate.get_color_at(path.feedrate); break; }
-        case EViewType::FanSpeed:       { color = m_extrusions.ranges.fan_speed.get_color_at(path.fan_speed); break; }
-        case EViewType::Temperature:    { color = m_extrusions.ranges.temperature.get_color_at(path.temperature); break; }
-        case EViewType::VolumetricRate: { color = m_extrusions.ranges.volumetric_rate.get_color_at(path.volumetric_rate); break; }
-        case EViewType::Tool:           { color = m_tool_colors[path.extruder_id]; break; }
-        case EViewType::ColorPrint:     {
-            if (path.cp_color_id >= static_cast<unsigned char>(m_tool_colors.size()))
-                color = { 0.5f, 0.5f, 0.5f, 1.0f };
+        switch (m_view_type) {
+        case EViewType::FeatureType: {
+            color = Extrusion_Role_Colors[static_cast<unsigned int>(path.role)];
+            break;
+        }
+        case EViewType::Height: {
+            color = m_extrusions.ranges.height.get_color_at(path.height);
+            break;
+        }
+        case EViewType::Width: {
+            color = m_extrusions.ranges.width.get_color_at(path.width);
+            break;
+        }
+        case EViewType::Feedrate: {
+            color = m_extrusions.ranges.feedrate.get_color_at(path.feedrate);
+            break;
+        }
+        case EViewType::FanSpeed: {
+            color = m_extrusions.ranges.fan_speed.get_color_at(path.fan_speed);
+            break;
+        }
+        case EViewType::Temperature: {
+            color = m_extrusions.ranges.temperature.get_color_at(
+                path.temperature);
+            break;
+        }
+        case EViewType::VolumetricRate: {
+            color = m_extrusions.ranges.volumetric_rate.get_color_at(
+                path.volumetric_rate);
+            break;
+        }
+        case EViewType::Tool: {
+            color = m_tool_colors[path.extruder_id];
+            break;
+        }
+        case EViewType::ColorPrint: {
+            if (path.cp_color_id >=
+                static_cast<unsigned char>(m_tool_colors.size()))
+                color = {0.5f, 0.5f, 0.5f, 1.0f};
             else
                 color = m_tool_colors[path.cp_color_id];
 
             break;
         }
-        default: { color = { 1.0f, 1.0f, 1.0f, 1.0f }; break; }
+        default: {
+            color = {1.0f, 1.0f, 1.0f, 1.0f};
+            break;
+        }
         }
 
         return color;
     };
 
-    auto travel_color = [](const Path& path) {
-        return (path.delta_extruder < 0.0f) ? Travel_Colors[2] /* Retract */ :
-            ((path.delta_extruder > 0.0f) ? Travel_Colors[1] /* Extrude */ :
-                Travel_Colors[0] /* Move */);
+    auto travel_color = [](const Path &path) {
+        return (path.delta_extruder < 0.0f) ?
+                   Travel_Colors[2] /* Retract */ :
+                   ((path.delta_extruder > 0.0f) ?
+                        Travel_Colors[1] /* Extrude */ :
+                        Travel_Colors[0] /* Move */);
     };
 
-    auto is_in_layers_range = [this](const Path& path, size_t min_id, size_t max_id) {
+    auto is_in_layers_range = [this](const Path &path, size_t min_id,
+                                     size_t max_id) {
         auto in_layers_range = [this, min_id, max_id](size_t id) {
-            return m_layers.get_endpoints_at(min_id).first <= id && id <= m_layers.get_endpoints_at(max_id).last;
+            return m_layers.get_endpoints_at(min_id).first <= id &&
+                   id <= m_layers.get_endpoints_at(max_id).last;
         };
 
-        return in_layers_range(path.sub_paths.front().first.s_id) || in_layers_range(path.sub_paths.back().last.s_id);
+        return in_layers_range(path.sub_paths.front().first.s_id) ||
+               in_layers_range(path.sub_paths.back().last.s_id);
     };
 
-    auto is_travel_in_layers_range = [this](size_t path_id, size_t min_id, size_t max_id) {
-        const TBuffer& buffer = m_buffers[buffer_id(EMoveType::Travel)];
-        if (path_id >= buffer.paths.size())
-            return false;
+    auto is_travel_in_layers_range = [this](size_t path_id, size_t min_id,
+                                            size_t max_id) {
+        const TBuffer &buffer = m_buffers[buffer_id(EMoveType::Travel)];
+        if (path_id >= buffer.paths.size()) return false;
 
-        Path path = buffer.paths[path_id];
+        Path   path  = buffer.paths[path_id];
         size_t first = path_id;
-        size_t last = path_id;
+        size_t last  = path_id;
 
         // check adjacent paths
-        while (first > 0 && path.sub_paths.front().first.position.isApprox(buffer.paths[first - 1].sub_paths.back().last.position)) {
+        while (first > 0 &&
+               path.sub_paths.front().first.position.isApprox(
+                   buffer.paths[first - 1].sub_paths.back().last.position)) {
             --first;
-            path.sub_paths.front().first = buffer.paths[first].sub_paths.front().first;
+            path.sub_paths.front().first =
+                buffer.paths[first].sub_paths.front().first;
         }
-        while (last < buffer.paths.size() - 1 && path.sub_paths.back().last.position.isApprox(buffer.paths[last + 1].sub_paths.front().first.position)) {
+        while (last < buffer.paths.size() - 1 &&
+               path.sub_paths.back().last.position.isApprox(
+                   buffer.paths[last + 1].sub_paths.front().first.position)) {
             ++last;
-            path.sub_paths.back().last = buffer.paths[last].sub_paths.back().last;
+            path.sub_paths.back().last =
+                buffer.paths[last].sub_paths.back().last;
         }
 
         const size_t min_s_id = m_layers.get_endpoints_at(min_id).first;
         const size_t max_s_id = m_layers.get_endpoints_at(max_id).last;
 
-        return (min_s_id <= path.sub_paths.front().first.s_id && path.sub_paths.front().first.s_id <= max_s_id) ||
-            (min_s_id <= path.sub_paths.back().last.s_id && path.sub_paths.back().last.s_id <= max_s_id);
+        return (min_s_id <= path.sub_paths.front().first.s_id &&
+                path.sub_paths.front().first.s_id <= max_s_id) ||
+               (min_s_id <= path.sub_paths.back().last.s_id &&
+                path.sub_paths.back().last.s_id <= max_s_id);
     };
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
-    Statistics* statistics = const_cast<Statistics*>(&m_statistics);
+    Statistics *statistics        = const_cast<Statistics *>(&m_statistics);
     statistics->render_paths_size = 0;
 #if ENABLE_SEAMS_USING_MODELS
     statistics->models_instances_size = 0;
 #endif // ENABLE_SEAMS_USING_MODELS
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
 
-    const bool top_layer_only = get_app_config()->get("seq_top_layer_only") == "1";
+    const bool top_layer_only = get_app_config()->get("seq_top_layer_only") ==
+                                "1";
 
-    SequentialView::Endpoints global_endpoints = { m_moves_count , 0 };
+    SequentialView::Endpoints global_endpoints    = {m_moves_count, 0};
     SequentialView::Endpoints top_layer_endpoints = global_endpoints;
-    SequentialView* sequential_view = const_cast<SequentialView*>(&m_sequential_view);
-    if (top_layer_only || !keep_sequential_current_first) sequential_view->current.first = 0;
-    if (!keep_sequential_current_last) sequential_view->current.last = m_moves_count;
+    SequentialView *          sequential_view = const_cast<SequentialView *>(
+        &m_sequential_view);
+    if (top_layer_only || !keep_sequential_current_first)
+        sequential_view->current.first = 0;
+    if (!keep_sequential_current_last)
+        sequential_view->current.last = m_moves_count;
 
     // first pass: collect visible paths and update sequential view data
-    std::vector<std::tuple<unsigned char, unsigned int, unsigned int, unsigned int>> paths;
+    std::vector<
+        std::tuple<unsigned char, unsigned int, unsigned int, unsigned int>>
+        paths;
     for (size_t b = 0; b < m_buffers.size(); ++b) {
-        TBuffer& buffer = const_cast<TBuffer&>(m_buffers[b]);
+        TBuffer &buffer = const_cast<TBuffer &>(m_buffers[b]);
         // reset render paths
         buffer.render_paths.clear();
 
-        if (!buffer.visible)
-            continue;
+        if (!buffer.visible) continue;
 
 #if ENABLE_SEAMS_USING_MODELS
-        if (buffer.render_primitive_type == TBuffer::ERenderPrimitiveType::Model) {
+        if (buffer.render_primitive_type ==
+            TBuffer::ERenderPrimitiveType::Model) {
             for (size_t id : buffer.model.instances.s_ids) {
-                if (id < m_layers.get_endpoints_at(m_layers_z_range[0]).first || m_layers.get_endpoints_at(m_layers_z_range[1]).last < id)
+                if (id < m_layers.get_endpoints_at(m_layers_z_range[0]).first ||
+                    m_layers.get_endpoints_at(m_layers_z_range[1]).last < id)
                     continue;
 
                 global_endpoints.first = std::min(global_endpoints.first, id);
-                global_endpoints.last = std::max(global_endpoints.last, id);
+                global_endpoints.last  = std::max(global_endpoints.last, id);
 
                 if (top_layer_only) {
-                    if (id < m_layers.get_endpoints_at(m_layers_z_range[1]).first || m_layers.get_endpoints_at(m_layers_z_range[1]).last < id)
+                    if (id < m_layers.get_endpoints_at(m_layers_z_range[1])
+                                 .first ||
+                        m_layers.get_endpoints_at(m_layers_z_range[1]).last <
+                            id)
                         continue;
 
-                    top_layer_endpoints.first = std::min(top_layer_endpoints.first, id);
-                    top_layer_endpoints.last = std::max(top_layer_endpoints.last, id);
+                    top_layer_endpoints.first =
+                        std::min(top_layer_endpoints.first, id);
+                    top_layer_endpoints.last =
+                        std::max(top_layer_endpoints.last, id);
                 }
             }
-        }
-        else {
+        } else {
 #endif // ENABLE_SEAMS_USING_MODELS
             for (size_t i = 0; i < buffer.paths.size(); ++i) {
-                const Path& path = buffer.paths[i];
+                const Path &path = buffer.paths[i];
                 if (path.type == EMoveType::Travel) {
-                    if (!is_travel_in_layers_range(i, m_layers_z_range[0], m_layers_z_range[1]))
+                    if (!is_travel_in_layers_range(i, m_layers_z_range[0],
+                                                   m_layers_z_range[1]))
                         continue;
-                }
-                else if (!is_in_layers_range(path, m_layers_z_range[0], m_layers_z_range[1]))
+                } else if (!is_in_layers_range(path, m_layers_z_range[0],
+                                               m_layers_z_range[1]))
                     continue;
 
                 if (path.type == EMoveType::Extrude && !is_visible(path))
@@ -2207,22 +2263,38 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
 
                 // store valid path
                 for (size_t j = 0; j < path.sub_paths.size(); ++j) {
-                    paths.push_back({ static_cast<unsigned char>(b), path.sub_paths[j].first.b_id, static_cast<unsigned int>(i), static_cast<unsigned int>(j) });
+                    paths.push_back({static_cast<unsigned char>(b),
+                                     path.sub_paths[j].first.b_id,
+                                     static_cast<unsigned int>(i),
+                                     static_cast<unsigned int>(j)});
                 }
 
-                global_endpoints.first = std::min(global_endpoints.first, path.sub_paths.front().first.s_id);
-                global_endpoints.last = std::max(global_endpoints.last, path.sub_paths.back().last.s_id);
+                global_endpoints.first =
+                    std::min(global_endpoints.first,
+                             path.sub_paths.front().first.s_id);
+                global_endpoints.last =
+                    std::max(global_endpoints.last,
+                             path.sub_paths.back().last.s_id);
 
                 if (top_layer_only) {
                     if (path.type == EMoveType::Travel) {
-                        if (is_travel_in_layers_range(i, m_layers_z_range[1], m_layers_z_range[1])) {
-                            top_layer_endpoints.first = std::min(top_layer_endpoints.first, path.sub_paths.front().first.s_id);
-                            top_layer_endpoints.last = std::max(top_layer_endpoints.last, path.sub_paths.back().last.s_id);
+                        if (is_travel_in_layers_range(i, m_layers_z_range[1],
+                                                      m_layers_z_range[1])) {
+                            top_layer_endpoints.first =
+                                std::min(top_layer_endpoints.first,
+                                         path.sub_paths.front().first.s_id);
+                            top_layer_endpoints.last =
+                                std::max(top_layer_endpoints.last,
+                                         path.sub_paths.back().last.s_id);
                         }
-                    }
-                    else if (is_in_layers_range(path, m_layers_z_range[1], m_layers_z_range[1])) {
-                        top_layer_endpoints.first = std::min(top_layer_endpoints.first, path.sub_paths.front().first.s_id);
-                        top_layer_endpoints.last = std::max(top_layer_endpoints.last, path.sub_paths.back().last.s_id);
+                    } else if (is_in_layers_range(path, m_layers_z_range[1],
+                                                  m_layers_z_range[1])) {
+                        top_layer_endpoints.first =
+                            std::min(top_layer_endpoints.first,
+                                     path.sub_paths.front().first.s_id);
+                        top_layer_endpoints.last =
+                            std::max(top_layer_endpoints.last,
+                                     path.sub_paths.back().last.s_id);
                     }
                 }
             }
@@ -2231,9 +2303,19 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
 #endif // ENABLE_SEAMS_USING_MODELS
     }
 
-    // update current sequential position
-    sequential_view->current.first = !top_layer_only && keep_sequential_current_first ? std::clamp(sequential_view->current.first, global_endpoints.first, global_endpoints.last) : global_endpoints.first;
-    sequential_view->current.last = keep_sequential_current_last ? std::clamp(sequential_view->current.last, global_endpoints.first, global_endpoints.last) : global_endpoints.last;
+    if (sequential_view->current.last > global_endpoints.first) {
+        // update current sequential position
+        sequential_view->current.first =
+            !top_layer_only && keep_sequential_current_first ?
+                std::clamp(sequential_view->current.first,
+                           global_endpoints.first, global_endpoints.last) :
+                global_endpoints.first;
+        sequential_view->current.last =
+            keep_sequential_current_last ?
+                std::clamp(sequential_view->current.last,
+                           global_endpoints.first, global_endpoints.last) :
+                global_endpoints.last;
+    }
 
     // get the world position from the vertex buffer
     bool found = false;
