@@ -52,7 +52,7 @@ void FillLargix::_fill_surface_single(
 
     Largix::BuildLayer buider(pol, set);
 
-    buider.build(layer, 1);
+    buider.build(layer);
 
     if (std::any_of(layer.strands().begin(), layer.strands().end(),
                     [](const Largix::Strand &item) { return !item.isClosed(); })) 

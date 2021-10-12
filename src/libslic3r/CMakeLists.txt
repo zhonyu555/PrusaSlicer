@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(libslic3r)
 
-set(LARGIX_PATH $ENV{PATH_NAVIGATOR_PATH})
+set(LARGIX_PATH $ENV{LARGIX_PATH})
 
 include(PrecompiledHeader)
 
