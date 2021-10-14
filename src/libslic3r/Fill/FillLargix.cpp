@@ -37,24 +37,32 @@ void FillLargix::_fill_surface_single(
     static int  _count = 0;
     Largix::Polygon pol;
     LargixHelper::convert_polygon_2_largix(expolygon, pol);
-
+    if (pol.outer().size() == 0) 
+    { 
+        assert(!"Empty polygon for filling");
+        return; 
+    }
     Largix::PolygonValidator pv(pol);
+    if (!pv.correct(pol)) {
+        assert(!"Failed to correct polygon, it is not valid.");
+        return;
+    }
+
     pv.simplify(pol);
-    pv.correct(pol);
-
-    Largix::Layer      layer;
-
-    const Largix::Size2D sz(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
 
     Largix::Settings set;
-    set.szBin = Largix::szBin4_;
+    set.szBin = Largix::Size2D(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
     set.minStrandLength = set.szBin[1] * 2.5;
+    set.minStrandRadius = 5;
+    set.maxNumbersStrandsPerLayer = 1;
 
+    Largix::Layer layer;
     Largix::BuildLayer buider(pol, set);
 
     buider.build(layer);
 
-    if (std::any_of(layer.strands().begin(), layer.strands().end(),
+    if (layer.getNumBins() == 0 ||
+        std::any_of(layer.strands().begin(), layer.strands().end(),
                     [](const Largix::Strand &item) { return !item.isClosed(); })) 
     {
         std::stringstream ss;
