@@ -5402,7 +5402,7 @@ void Plater::export_gcode(bool prefer_removable)
                                                  FT_SL1S :
                                                  FT_SL1,
                                              ext) +
-                             "|" + GUI::file_wildcards(FT_SCV),
+                             "|" + GUI::file_wildcards(FT_CSV),
             wxFD_SAVE | wxFD_OVERWRITE_PROMPT
         );
             if (dlg.ShowModal() == wxID_OK)

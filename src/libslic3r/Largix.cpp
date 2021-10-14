@@ -53,7 +53,7 @@ bool LargixExport::do_export(Print *print, const char *path)
     Largix::TeddyConvert convert(slices, settings);
     if (!convert.convert()) { return false; }
 
-    if (!writeTeddySCV(path, convert.getProgram())) { return false; }
+    if (!writeTeddyCSV(path, convert.getProgram())) { return false; }
 
     return true;
 }
