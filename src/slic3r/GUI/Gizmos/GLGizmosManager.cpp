@@ -172,6 +172,7 @@ void GLGizmosManager::reset_all_states()
         return;
 
     activate_gizmo(Undefined);
+    update_data();
     m_hover = Undefined;
 }
 
