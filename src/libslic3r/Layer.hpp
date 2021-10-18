@@ -149,8 +149,8 @@ public:
         return false;
     }
     void                    make_perimeters();
-    void                    make_fills() { this->make_fills(nullptr, nullptr, nullptr); };
-    void                    make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree, PrintConfig* printer_options);
+    void                    make_fills() { this->make_fills(nullptr, nullptr); };
+    void                    make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree);
     void 					make_ironing();
 
     void                    export_region_slices_to_svg(const char *path) const;

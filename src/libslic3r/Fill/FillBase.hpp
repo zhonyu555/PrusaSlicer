@@ -14,6 +14,7 @@
 #include "../Exception.hpp"
 #include "../Utils.hpp"
 #include "../PrintConfig.hpp"
+#include "../Print.hpp"
 
 namespace Slic3r {
 
@@ -57,7 +58,7 @@ struct FillParams
     bool        complete 		{ false };
 
     // For Largix we using pointer to some printer settings 
-    PrintConfig* printer_options{ nullptr };
+    PrintObject* print_options{ nullptr };
 };
 static_assert(IsTriviallyCopyable<FillParams>::value, "FillParams class is not POD (and it should be - see constructor).");
 

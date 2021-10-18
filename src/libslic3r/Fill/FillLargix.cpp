@@ -52,11 +52,11 @@ void FillLargix::_fill_surface_single(
 
     Largix::Settings set;
     set.szBin = Largix::Size2D(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
-    if (params.printer_options)
+    if (params.print_options)
     {
-        set.maxNumbersStrandsPerLayer = params.printer_options->printer_largix_strands_number;
-        set.minStrandRadius = params.printer_options->printer_largix_min_radius;
-        set.minStrandLength = params.printer_options->printer_largix_min_strand_lenght;
+        set.maxNumbersStrandsPerLayer = params.print_options->config().largix_strands_number;
+        set.minStrandRadius = params.print_options->config().largix_min_radius;
+        set.minStrandLength = params.print_options->config().largix_min_strand_lenght;
     }
     else
     {

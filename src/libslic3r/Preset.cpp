@@ -445,7 +445,7 @@ static std::vector<std::string> s_Preset_print_options {
     "elefant_foot_compensation", "xy_size_compensation", "threads", "resolution", "wipe_tower", "wipe_tower_x", "wipe_tower_y",
     "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_bridging", "single_extruder_multi_material_priming", "mmu_segmented_region_max_width",
     "wipe_tower_no_sparse_layers", "compatible_printers", "compatible_printers_condition", "inherits",
-    "printer_largix_min_radius","printer_largix_min_strand_lenght","printer_largix_strands_number"
+    "largix_min_radius","largix_min_strand_lenght","largix_strands_number"
 };
 
 static std::vector<std::string> s_Preset_filament_options {
@@ -483,7 +483,7 @@ static std::vector<std::string> s_Preset_printer_options {
     "cooling_tube_length", "high_current_on_filament_swap", "parking_pos_retraction", "extra_loading_move", "max_print_height",
     "default_print_profile", "inherits",
     "remaining_times", "silent_mode",
-    "machine_limits_usage", "thumbnails","printer_largix_min_radius","printer_largix_min_strand_lenght","printer_largix_strands_number"
+    "machine_limits_usage", "thumbnails"
 };
 
 static std::vector<std::string> s_Preset_sla_print_options {

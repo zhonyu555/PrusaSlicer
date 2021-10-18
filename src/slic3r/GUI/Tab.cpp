@@ -1511,6 +1511,24 @@ void TabPrint::build()
         optgroup->append_single_option_line("brim_width", category_path + "brim");
         optgroup->append_single_option_line("brim_separation", category_path + "brim");
 
+        // largix 2 settings
+        page = add_options_page(L("Largix"), "Largix_icon.png");
+        optgroup = page->new_optgroup(L("Strand Settings"), 20);
+
+        //add minimal strand radius
+        option = optgroup->get_option("largix_min_radius");
+        option.opt.set_default_value(new ConfigOptionFloat(3.0));
+        optgroup->append_single_option_line(option);
+        //add minimal strand length
+        option = optgroup->get_option("largix_min_strand_lenght");
+        option.opt.set_default_value(new ConfigOptionFloat(4.0));
+        optgroup->append_single_option_line(option);
+        //add strands numbers per layer
+        option = optgroup->get_option("largix_strands_number");
+        option.opt.set_default_value(new ConfigOptionInt(2));
+        optgroup->append_single_option_line(option);
+
+        // end largix 2 settings
     page = add_options_page(L("Support material"), "support");
         category_path = "support-material_1698#";
         optgroup = page->new_optgroup(L("Support material"));
@@ -2395,24 +2413,6 @@ void TabPrinter::build_fff()
         option = optgroup->get_option("template_custom_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
-        optgroup->append_single_option_line(option);
-
-        // Add Largix page
-  
-    page = add_options_page(L("Largix"), "Largix_icon.png");
-        optgroup = page->new_optgroup(L("Strand Settings"), 20);
-        
-        //add minimal strand radius
-        option = optgroup->get_option("printer_largix_min_radius");
-        option.opt.set_default_value(new ConfigOptionFloat(3.0));
-        optgroup->append_single_option_line(option);
-        //add minimal strand length
-        option = optgroup->get_option("printer_largix_min_strand_lenght");
-        option.opt.set_default_value(new ConfigOptionFloat(4.0));
-        optgroup->append_single_option_line(option);
-        //add strands numbers per layer
-        option = optgroup->get_option("printer_largix_strands_number");
-        option.opt.set_default_value(new ConfigOptionInt(2));
         optgroup->append_single_option_line(option);
 
     page = add_options_page(L("Notes"), "note.png");
