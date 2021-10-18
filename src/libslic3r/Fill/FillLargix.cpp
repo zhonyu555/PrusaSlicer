@@ -21,7 +21,7 @@
 #include <Layer.h>
 #include <PolygonValidator.h>
 #include <PolygonIO.h>
-#include <BuildLayer.h>
+#include <BuildLayerMgr.h>
 #include <Size.h>
 #include <TeddyDef.h>
 
@@ -66,7 +66,7 @@ void FillLargix::_fill_surface_single(
     }
 
     Largix::Layer layer;
-    Largix::BuildLayer buider(pol, set);
+    Largix::BuildLayerMgr buider(pol, set);
 
     buider.build(layer);
 

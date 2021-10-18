@@ -43,10 +43,13 @@ bool LargixExport::do_export(Print *print, const char *path)
                 }
                 slice.second.swap(lines);
             }
-
-            Largix::TeddySlice4Convert conv(slice, settings);
-            conv.convert();
-            slices.push_back(conv.getSlice());
+            if (slice.second.size() > 0) {
+                Largix::TeddySlice4Convert conv(slice, settings);
+                conv.convert();
+                slices.push_back(conv.getSlice());
+            } else {
+                assert(!"Empty Slice!");
+            }
         }
     }
 
