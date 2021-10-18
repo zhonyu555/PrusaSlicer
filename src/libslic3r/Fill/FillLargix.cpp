@@ -21,7 +21,7 @@
 #include <Layer.h>
 #include <PolygonValidator.h>
 #include <PolygonIO.h>
-#include <BuildLayer.h>
+#include <BuildLayerMgr.h>
 #include <Size.h>
 #include <TeddyDef.h>
 
@@ -66,7 +66,7 @@ void FillLargix::_fill_surface_single(
     }
 
     Largix::Layer layer;
-    Largix::BuildLayer buider(pol, set);
+    Largix::BuildLayerMgr buider(pol, set);
 
     buider.build(layer);
 
@@ -79,7 +79,7 @@ void FillLargix::_fill_surface_single(
         Largix::PolygonIO::saveToWktFile(pol, ss.str());
     }
 
-    LargixHelper::convert_layer_2_prusa(layer, polylines_out);
+    LargixHelper::convert_layer_2_prusa_1(layer, polylines_out);
 
 }
 

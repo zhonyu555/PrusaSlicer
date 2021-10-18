@@ -39,23 +39,6 @@ LayerPtrs new_layers(
     return out;
 }
 
-//FIXME The admesh repair function may break the face connectivity, rather refresh it here as the slicing code relies on it.
-// This function will go away once we get rid of admesh from ModelVolume.
-static indexed_triangle_set get_mesh_its_fix_mesh_connectivity(TriangleMesh mesh)
-{
-    assert(mesh.repaired && mesh.has_shared_vertices());
-    if (mesh.stl.stats.number_of_facets > 0) {
-        assert(mesh.repaired && mesh.has_shared_vertices());
-        auto nr_degenerated = mesh.stl.stats.degenerate_facets;
-        stl_check_facets_exact(&mesh.stl);
-        if (nr_degenerated != mesh.stl.stats.degenerate_facets)
-            // stl_check_facets_exact() removed some newly degenerated faces. Some faces could become degenerate after some mesh transformation.
-            stl_generate_shared_vertices(&mesh.stl, mesh.its);
-    } else
-        mesh.its.clear();
-    return std::move(mesh.its);
-}
-
 // Slice single triangle mesh.
 static std::vector<ExPolygons> slice_volume(
     const ModelVolume             &volume,
@@ -65,7 +48,7 @@ static std::vector<ExPolygons> slice_volume(
 {
     std::vector<ExPolygons> layers;
     if (! zs.empty()) {
-        indexed_triangle_set its = get_mesh_its_fix_mesh_connectivity(volume.mesh());
+        indexed_triangle_set its = volume.mesh().its;
         if (its.indices.size() > 0) {
             MeshSlicingParamsEx params2 { params };
             params2.trafo = params2.trafo * volume.get_matrix();
@@ -410,7 +393,7 @@ static std::vector<std::vector<ExPolygons>> slices_to_regions(
                                 }
                             }
                         if (merged)
-                            expolygons = offset2_ex(expolygons, float(scale_(EPSILON)), -float(scale_(EPSILON)));
+                            expolygons = closing_ex(expolygons, float(scale_(EPSILON)));
                         slices_by_region[temp_slices[i].region_id][z_idx] = std::move(expolygons);
                         i = j;
                     }
@@ -665,7 +648,7 @@ static inline void apply_mm_segmentation(PrintObject &print_object, ThrowOnCance
                     ByRegion &src = by_region[region_id];
                     if (src.needs_merge)
                         // Multiple regions were merged into one.
-                        src.expolygons = offset2_ex(src.expolygons, float(scale_(10 * EPSILON)), - float(scale_(10 * EPSILON)));
+                        src.expolygons = closing_ex(src.expolygons, float(scale_(10 * EPSILON)));
                     layer->get_region(region_id)->slices.set(std::move(src.expolygons), stInternal);
                 }
             }

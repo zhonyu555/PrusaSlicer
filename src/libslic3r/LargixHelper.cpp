@@ -46,18 +46,14 @@ bool LargixHelper::convert_polygon_2_largix(ExPolygon &      src,
     return true;
 }
 
-bool LargixHelper::convert_layer_2_prusa(Largix::Layer &src,
-                                        Polylines &      dst)
+bool LargixHelper::convert_layer_2_prusa(Largix::Layer &src, Polylines &dst)
 {
-    
-    for (auto strand : src.strands())
-    { 
+    for (auto strand : src.strands()) {
         std::vector<std::array<Largix::Point2D, 4>> points;
         strand.get4StrandPoints(points);
 
-        std::array<Polyline,4> pline;
-        for (auto point : points) 
-        { 
+        std::array<Polyline, 4> pline;
+        for (auto point : points) {
             pline[0].points.push_back(
                 Point::new_scale(point[0].x(), point[0].y()));
             pline[1].points.push_back(
@@ -72,7 +68,35 @@ bool LargixHelper::convert_layer_2_prusa(Largix::Layer &src,
         dst.push_back(pline[2]);
         dst.push_back(pline[3]);
     }
-    
+
+    return true;
+}
+
+bool LargixHelper::convert_layer_2_prusa_1(Largix::Layer &src, Polylines &dst)
+{
+    for (auto strand : src.strands()) {
+        std::vector<Largix::Point2D> points;
+        strand.getStrandPoints(points);
+
+        Polyline pline;
+        for (auto point : points) {
+            pline.points.push_back(
+                Point::new_scale(point.x(), point.y()));
+        }
+        dst.push_back(pline);
+    }
+
+    return true;
+}
+
+bool LargixHelper::convertPolylineToLargix(
+    Polyline &pLine, std::vector<Largix::Point2D> &pLineOut)
+{
+    for (auto point : pLine.points) 
+    {
+        pLineOut.push_back(Largix::Point2D(point.x() * SCALING_FACTOR,
+                                           point.y() * SCALING_FACTOR));
+    }
     return true;
 }
 
@@ -98,7 +122,24 @@ bool LargixHelper::convertPolylineToLargix(
             Largix::Point2D(pLine4.points[i].x() * SCALING_FACTOR,
                             pLine4.points[i].y() * SCALING_FACTOR)});
     }
+    LargixHelper::saveLargixStrand(pLineOut);
     return true;
+}
+
+void LargixHelper::saveLargixStrand(
+    std::vector<std::array<Largix::Point2D, 4>> &strand)
+{
+    static int i = 0;
+    std::stringstream ss;
+    ss << "c:\\temp\\strand" << i++ << ".txt";
+    std::ofstream file(ss.str());
+    for (auto item : strand) {
+        file << item[0].x() << " " << item[0].y() << " " 
+             << item[1].x() << " " << item[1].y() << " " 
+             << item[2].x() << " " << item[2].y() << " " 
+             << item[3].x() << " " << item[3].y() << std::endl;
+    }
+    file.close();
 }
 
 
