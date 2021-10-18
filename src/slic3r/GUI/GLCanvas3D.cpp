@@ -23,6 +23,7 @@
 #include "slic3r/GUI/3DBed.hpp"
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
+#include "slic3r/Utils/UndoRedo.hpp"
 
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
@@ -1107,21 +1108,11 @@ void GLCanvas3D::reset_volumes()
     _set_warning_notification(EWarning::ObjectOutside, false);
 }
 
-int GLCanvas3D::check_volumes_outside_state() const
+ModelInstanceEPrintVolumeState GLCanvas3D::check_volumes_outside_state() const
 {
     ModelInstanceEPrintVolumeState state;
     m_volumes.check_outside_state(m_config, &state);
-    return (int)state;
-}
-
-void GLCanvas3D::start_mapping_gcode_window()
-{
-    m_gcode_viewer.start_mapping_gcode_window();
-}
-
-void GLCanvas3D::stop_mapping_gcode_window()
-{
-    m_gcode_viewer.stop_mapping_gcode_window();
+    return state;
 }
 
 void GLCanvas3D::toggle_sla_auxiliaries_visibility(bool visible, const ModelObject* mo, int instance_idx)
@@ -1295,12 +1286,14 @@ bool GLCanvas3D::is_reload_delayed() const
 void GLCanvas3D::enable_layers_editing(bool enable)
 {
     m_layers_editing.set_enabled(enable);
+#if !ENABLE_MODIFIERS_ALWAYS_TRANSPARENT
     const Selection::IndicesList& idxs = m_selection.get_volume_idxs();
     for (unsigned int idx : idxs) {
         GLVolume* v = m_volumes.volumes[idx];
         if (v->is_modifier)
             v->force_transparent = enable;
     }
+#endif // !ENABLE_MODIFIERS_ALWAYS_TRANSPARENT
 
     set_as_dirty();
 }
@@ -1409,6 +1402,11 @@ void GLCanvas3D::render()
     if (!is_initialized() && !init())
         return;
 
+#if ENABLE_SEAMS_USING_MODELS
+    if (!m_main_toolbar.is_enabled())
+        m_gcode_viewer.init();
+#endif // ENABLE_SEAMS_USING_MODELS
+
     if (wxGetApp().plater()->get_bed().get_shape().empty()) {
         // this happens at startup when no data is still saved under <>\AppData\Roaming\Slic3rPE
         post_event(SimpleEvent(EVT_GLCANVAS_UPDATE_BED_SHAPE));
@@ -1460,19 +1458,13 @@ void GLCanvas3D::render()
     glsafe(::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     _render_background();
 
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
     _render_objects(GLVolumeCollection::ERenderType::Opaque);
-#else
-    _render_objects();
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
     if (!m_main_toolbar.is_enabled())
         _render_gcode();
     _render_sla_slices();
     _render_selection();
     _render_bed(!camera.is_looking_downward(), true);
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
     _render_objects(GLVolumeCollection::ERenderType::Transparent);
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
 
     _render_sequential_clearance();
 #if ENABLE_RENDER_SELECTION_CENTER
@@ -1855,7 +1847,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                     volume->extruder_id = extruder_id;
 
                 volume->is_modifier = !mvs->model_volume->is_model_part();
-                volume->set_color_from_model_volume(*mvs->model_volume);
+                volume->set_color(color_from_model_volume(*mvs->model_volume));
 
                 // updates volumes transformations
                 volume->set_instance_transformation(mvs->model_volume->get_object()->instances[mvs->composite_id.instance_id]->get_transformation());
@@ -2049,9 +2041,10 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
     // checks for geometry outside the print volume to render it accordingly
     if (!m_volumes.empty()) {
-        bool partlyOut = false;
-        bool fullyOut = false;
-        const bool contained_min_one = m_volumes.check_outside_state(m_config, partlyOut, fullyOut);
+        ModelInstanceEPrintVolumeState state;
+        const bool contained_min_one = m_volumes.check_outside_state(m_config, &state);
+        const bool partlyOut = (state == ModelInstanceEPrintVolumeState::ModelInstancePVS_Partly_Outside);
+        const bool fullyOut = (state == ModelInstanceEPrintVolumeState::ModelInstancePVS_Fully_Outside);
 
         _set_warning_notification(EWarning::ObjectClashed, partlyOut);
         _set_warning_notification(EWarning::ObjectOutside, fullyOut);
@@ -2101,7 +2094,7 @@ static void reserve_new_volume_finalize_old_volume(GLVolume& vol_new, GLVolume& 
 	vol_old.finalize_geometry(gl_initialized);
 }
 
-void GLCanvas3D::load_gcode_preview(const GCodeProcessor::Result& gcode_result)
+void GLCanvas3D::load_gcode_preview(const GCodeProcessor::Result& gcode_result, const std::vector<std::string>& str_tool_colors)
 {
     m_gcode_viewer.load(gcode_result, *this->fff_print(), m_initialized);
 
@@ -2109,10 +2102,7 @@ void GLCanvas3D::load_gcode_preview(const GCodeProcessor::Result& gcode_result)
         m_gcode_viewer.update_shells_color_by_extruder(m_config);
         _set_warning_notification_if_needed(EWarning::ToolpathOutside);
     }
-}
 
-void GLCanvas3D::refresh_gcode_preview(const GCodeProcessor::Result& gcode_result, const std::vector<std::string>& str_tool_colors)
-{
     m_gcode_viewer.refresh(gcode_result, str_tool_colors);
     set_as_dirty();
     request_extra_frame();
@@ -2127,12 +2117,14 @@ void GLCanvas3D::refresh_gcode_preview_render_paths()
 
 void GLCanvas3D::load_sla_preview()
 {
-    const SLAPrint* print = this->sla_print();
+    const SLAPrint* print = sla_print();
     if (m_canvas != nullptr && print != nullptr) {
         _set_current();
 	    // Release OpenGL data before generating new data.
-	    this->reset_volumes();
+	    reset_volumes();
         _load_sla_shells();
+        const BoundingBoxf3& bed_bb = wxGetApp().plater()->get_bed().get_bounding_box(false);
+        m_volumes.set_print_box(float(bed_bb.min.x()) - BedEpsilon, float(bed_bb.min.y()) - BedEpsilon, 0.0f, float(bed_bb.max.x()) + BedEpsilon, float(bed_bb.max.y()) + BedEpsilon, (float)m_config->opt_float("max_print_height"));
         _update_sla_shells_outside_state();
         _set_warning_notification_if_needed(EWarning::SlaSupportsOutside);
     }
@@ -2942,7 +2934,6 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         return;
     }
 
-#if ENABLE_SINKING_CONTOURS
     for (GLVolume* volume : m_volumes.volumes) {
         volume->force_sinking_contours = false;
     }
@@ -2954,7 +2945,6 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         }
         m_dirty = true;
     };
-#endif // ENABLE_SINKING_CONTOURS
 
     if (m_gizmos.on_mouse(evt)) {
         if (wxWindow::FindFocus() != m_canvas)
@@ -2980,7 +2970,6 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             default: { break; }
             }
         }
-#if ENABLE_SINKING_CONTOURS
         else if (evt.Dragging()) {
             switch (m_gizmos.get_current_type())
             {
@@ -2994,7 +2983,6 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             default: { break; }
             }
         }
-#endif // ENABLE_SINKING_CONTOURS
 
         return;
     }
@@ -3304,10 +3292,8 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
     else
         evt.Skip();
 
-#if ENABLE_SINKING_CONTOURS
     if (m_moving)
         show_sinking_contours();
-#endif // ENABLE_SINKING_CONTOURS
 
 #ifdef __WXMSW__
 	if (on_enter_workaround)
@@ -4108,13 +4094,24 @@ void GLCanvas3D::_render_thumbnail_internal(ThumbnailData& thumbnail_data, const
         }
     }
 
+#if !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
     if (visible_volumes.empty())
         return;
+#endif // !ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
 
     BoundingBoxf3 volumes_box;
-    for (const GLVolume* vol : visible_volumes) {
-        volumes_box.merge(vol->transformed_bounding_box());
+#if ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
+    if (!visible_volumes.empty()) {
+#endif // ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
+        for (const GLVolume* vol : visible_volumes) {
+            volumes_box.merge(vol->transformed_bounding_box());
+        }
+#if ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
     }
+    else
+        // This happens for empty projects
+        volumes_box = wxGetApp().plater()->get_bed().get_bounding_box(true);
+#endif // ENABLE_SAVE_COMMANDS_ALWAYS_ENABLED
 
     Camera camera;
     camera.set_type(camera_type);
@@ -4438,12 +4435,11 @@ bool GLCanvas3D::_init_main_toolbar()
     arrow_data.top = 0;
     arrow_data.right = 0;
     arrow_data.bottom = 0;
-
     if (!m_main_toolbar.init_arrow(arrow_data))
     {
         BOOST_LOG_TRIVIAL(error) << "Main toolbar failed to load arrow texture.";
     }
-
+    // m_gizmos is created at constructor, thus we can init arrow here.
     if (!m_gizmos.init_arrow(arrow_data))
     {
         BOOST_LOG_TRIVIAL(error) << "Gizmos manager failed to load arrow texture.";
@@ -4652,6 +4648,18 @@ bool GLCanvas3D::_init_undoredo_toolbar()
         // unable to init the toolbar texture, disable it
         m_undoredo_toolbar.set_enabled(false);
         return true;
+    }
+
+    // init arrow
+    BackgroundTexture::Metadata arrow_data;
+    arrow_data.filename = "toolbar_arrow.svg";
+    arrow_data.left = 0;
+    arrow_data.top = 0;
+    arrow_data.right = 0;
+    arrow_data.bottom = 0;
+    if (!m_undoredo_toolbar.init_arrow(arrow_data))
+    {
+        BOOST_LOG_TRIVIAL(error) << "Undo/Redo toolbar failed to load arrow texture.";
     }
 
 //    m_undoredo_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
@@ -5070,12 +5078,7 @@ void GLCanvas3D::_render_bed_for_picking(bool bottom)
     wxGetApp().plater()->get_bed().render_for_picking(*this, bottom, scale_factor);
 }
 
-
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
 void GLCanvas3D::_render_objects(GLVolumeCollection::ERenderType type)
-#else
-void GLCanvas3D::_render_objects()
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
 {
     if (m_volumes.empty())
         return;
@@ -5107,20 +5110,14 @@ void GLCanvas3D::_render_objects()
     if (shader != nullptr) {
         shader->start_using();
 
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
         switch (type)
         {
         default:
         case GLVolumeCollection::ERenderType::Opaque:
         {
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
             if (m_picking_enabled && !m_gizmos.is_dragging() && m_layers_editing.is_enabled() && (m_layers_editing.last_object_id != -1) && (m_layers_editing.object_max_z() > 0.0f)) {
                 int object_id = m_layers_editing.last_object_id;
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
                 m_volumes.render(type, false, wxGetApp().plater()->get_camera().get_view_matrix(), [object_id](const GLVolume& volume) {
-#else
-                m_volumes.render(GLVolumeCollection::ERenderType::Opaque, false, wxGetApp().plater()->get_camera().get_view_matrix(), [object_id](const GLVolume& volume) {
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
                     // Which volume to paint without the layer height profile shader?
                     return volume.is_active && (volume.is_modifier || volume.composite_id.object_id != object_id);
                     });
@@ -5129,11 +5126,7 @@ void GLCanvas3D::_render_objects()
             }
             else {
                 // do not cull backfaces to show broken geometry, if any
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
                 m_volumes.render(type, m_picking_enabled, wxGetApp().plater()->get_camera().get_view_matrix(), [this](const GLVolume& volume) {
-#else
-                m_volumes.render(GLVolumeCollection::ERenderType::Opaque, m_picking_enabled, wxGetApp().plater()->get_camera().get_view_matrix(), [this](const GLVolume& volume) {
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
                     return (m_render_sla_auxiliaries || volume.composite_id.volume_id >= 0);
                     });
             }
@@ -5146,13 +5139,13 @@ void GLCanvas3D::_render_objects()
                 GLGizmosManager::EType type = gm.get_current_type();
                 if (type == GLGizmosManager::FdmSupports
                     || type == GLGizmosManager::Seam
-                    || type == GLGizmosManager::MmuSegmentation) {
+                    || type == GLGizmosManager::MmuSegmentation 
+                    || type == GLGizmosManager::Simplify ) {
                     shader->stop_using();
                     gm.render_painter_gizmo();
                     shader->start_using();
                 }
             }
-#if ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
             break;
         }
         case GLVolumeCollection::ERenderType::Transparent:
@@ -5161,9 +5154,6 @@ void GLCanvas3D::_render_objects()
             break;
         }
         }
-#else
-        m_volumes.render(GLVolumeCollection::ERenderType::Transparent, false, wxGetApp().plater()->get_camera().get_view_matrix());
-#endif // ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING
         shader->stop_using();
     }
 
@@ -5406,6 +5396,10 @@ void GLCanvas3D::_render_undoredo_toolbar()
 
     m_undoredo_toolbar.set_position(top, left);
     m_undoredo_toolbar.render(*this);
+    if (m_toolbar_highlighter.m_render_arrow)
+    {
+        m_undoredo_toolbar.render_arrow(*this, m_toolbar_highlighter.m_toolbar_item);
+    }
 }
 
 void GLCanvas3D::_render_collapse_toolbar() const
@@ -5672,11 +5666,8 @@ void GLCanvas3D::_update_volumes_hover_state()
                 }
             }
         }
-#if ENABLE_SINKING_CONTOURS
         else if (volume.selected)
             volume.hover = GLVolume::HS_Hover;
-#endif // ENABLE_SINKING_CONTOURS
-
     }
 }
 
@@ -6445,7 +6436,7 @@ void GLCanvas3D::_update_selection_from_hover()
 
         // the selection is going to be modified (Add)
         if (!contains_all) {
-            wxGetApp().plater()->take_snapshot(_(L("Selection-Add from rectangle")));
+            wxGetApp().plater()->take_snapshot(_(L("Selection-Add from rectangle")), UndoRedo::SnapshotType::Selection);
             selection_changed = true;
         }
     }
@@ -6460,7 +6451,7 @@ void GLCanvas3D::_update_selection_from_hover()
 
         // the selection is going to be modified (Remove)
         if (contains_any) {
-            wxGetApp().plater()->take_snapshot(_(L("Selection-Remove from rectangle")));
+            wxGetApp().plater()->take_snapshot(_(L("Selection-Remove from rectangle")), UndoRedo::SnapshotType::Selection);
             selection_changed = true;
         }
     }

@@ -20,7 +20,7 @@ namespace GUI {
 GLGizmoHollow::GLGizmoHollow(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id)
     : GLGizmoBase(parent, icon_filename, sprite_id)
 {
-    m_vbo_cylinder.init_from(make_cylinder(1., 1.));
+    m_vbo_cylinder.init_from(its_make_cylinder(1., 1.));
 }
 
 
@@ -505,7 +505,7 @@ RENDER_AGAIN:
     y = std::min(y, bottom_limit - approx_height);
     m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
 
-    m_imgui->begin(on_get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
+    m_imgui->begin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
     // First calculate width of all the texts that are could possibly be shown. We will decide set the dialog width based on that:
     const float settings_sliders_left =
@@ -547,13 +547,9 @@ RENDER_AGAIN:
     ImGui::SameLine(settings_sliders_left);
     ImGui::PushItemWidth(window_width - settings_sliders_left);
     m_imgui->slider_float("   ", &offset, offset_min, offset_max, "%.1f mm");
-    if (ImGui::IsItemHovered()) {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(max_tooltip_width);
-        ImGui::TextUnformatted((_utf8(opts[0].second->tooltip)).c_str());
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
+    if (ImGui::IsItemHovered())
+        m_imgui->tooltip((_utf8(opts[0].second->tooltip)).c_str(), max_tooltip_width);
+
     bool slider_clicked = ImGui::IsItemClicked(); // someone clicked the slider
     bool slider_edited = ImGui::IsItemEdited(); // someone is dragging the slider
     bool slider_released = ImGui::IsItemDeactivatedAfterEdit(); // someone has just released the slider
@@ -563,13 +559,9 @@ RENDER_AGAIN:
         m_imgui->text(m_desc.at("quality"));
         ImGui::SameLine(settings_sliders_left);
         m_imgui->slider_float("    ", &quality, quality_min, quality_max, "%.1f");
-        if (ImGui::IsItemHovered()) {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(max_tooltip_width);
-            ImGui::TextUnformatted((_utf8(opts[1].second->tooltip)).c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
+        if (ImGui::IsItemHovered())
+            m_imgui->tooltip((_utf8(opts[1].second->tooltip)).c_str(), max_tooltip_width);
+
         slider_clicked |= ImGui::IsItemClicked();
         slider_edited |= ImGui::IsItemEdited();
         slider_released |= ImGui::IsItemDeactivatedAfterEdit();
@@ -580,13 +572,9 @@ RENDER_AGAIN:
         m_imgui->text(m_desc.at("closing_distance"));
         ImGui::SameLine(settings_sliders_left);
         m_imgui->slider_float("      ", &closing_d, closing_d_min, closing_d_max, "%.1f mm");
-        if (ImGui::IsItemHovered()) {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(max_tooltip_width);
-            ImGui::TextUnformatted((_utf8(opts[2].second->tooltip)).c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
+        if (ImGui::IsItemHovered())
+            m_imgui->tooltip((_utf8(opts[2].second->tooltip)).c_str(), max_tooltip_width);
+
         slider_clicked |= ImGui::IsItemClicked();
         slider_edited |= ImGui::IsItemEdited();
         slider_released |= ImGui::IsItemDeactivatedAfterEdit();
@@ -773,7 +761,7 @@ bool GLGizmoHollow::on_is_selectable() const
 
 std::string GLGizmoHollow::on_get_name() const
 {
-    return (_(L("Hollow and drill")) + " [H]").ToUTF8().data();
+    return _u8L("Hollow and drill");
 }
 
 

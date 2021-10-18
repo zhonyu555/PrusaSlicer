@@ -242,11 +242,9 @@ namespace Slic3r {
             float acceleration; // mm/s^2
             // hard limit for the acceleration, to which the firmware will clamp.
             float max_acceleration; // mm/s^2
-#if ENABLE_RETRACT_ACCELERATION
             float retract_acceleration; // mm/s^2
             // hard limit for the acceleration, to which the firmware will clamp.
             float max_retract_acceleration; // mm/s^2
-#endif // ENABLE_RETRACT_ACCELERATION
             float travel_acceleration; // mm/s^2
             // hard limit for the travel acceleration, to which the firmware will clamp.
             float max_travel_acceleration; // mm/s^2
@@ -306,7 +304,7 @@ namespace Slic3r {
 
             // post process the file with the given filename to add remaining time lines M73
             // and updates moves' gcode ids accordingly
-            void post_process(const std::string& filename, std::vector<MoveVertex>& moves);
+            void post_process(const std::string& filename, std::vector<MoveVertex>& moves, std::vector<size_t>& lines_ends);
         };
 
         struct UsedFilaments  // filaments per ColorChange
@@ -350,6 +348,8 @@ namespace Slic3r {
             std::string filename;
             unsigned int id;
             std::vector<MoveVertex> moves;
+            // Positions of ends of lines of the final G-code this->filename after TimeProcessor::post_process() finalizes the G-code.
+            std::vector<size_t> lines_ends;
             Pointfs bed_shape;
             SettingsIds settings_ids;
             size_t extruders_count;
@@ -357,9 +357,7 @@ namespace Slic3r {
             std::vector<float> filament_diameters;
             std::vector<float> filament_densities;
             PrintEstimatedStatistics print_statistics;
-#if ENABLE_FIX_IMPORTING_COLOR_PRINT_VIEW_INTO_GCODEVIEWER
             std::vector<CustomGCode::Item> custom_gcode_per_print_z;
-#endif // ENABLE_FIX_IMPORTING_COLOR_PRINT_VIEW_INTO_GCODEVIEWER
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
             int64_t time{ 0 };
@@ -387,6 +385,45 @@ namespace Slic3r {
             bool is_active() const { return m_active; }
             bool has_first_vertex() const { return m_first_vertex.has_value(); }
         };
+
+#if ENABLE_FIX_PREVIEW_OPTIONS_Z
+        // Helper class used to fix the z for color change, pause print and
+        // custom gcode markes
+        class OptionsZCorrector
+        {
+            Result& m_result;
+            std::optional<size_t> m_move_id;
+            std::optional<size_t> m_custom_gcode_per_print_z_id;
+
+        public:
+            explicit OptionsZCorrector(Result& result) : m_result(result) {
+            }
+
+            void set() {
+                m_move_id = m_result.moves.size() - 1;
+                m_custom_gcode_per_print_z_id = m_result.custom_gcode_per_print_z.size() - 1;
+            }
+
+            void update(float height) {
+                if (!m_move_id.has_value() || !m_custom_gcode_per_print_z_id.has_value())
+                    return;
+
+                const Vec3f position = m_result.moves.back().position;
+
+                MoveVertex& move = m_result.moves.emplace_back(m_result.moves[*m_move_id]);
+                move.position = position;
+                move.height = height;
+                m_result.moves.erase(m_result.moves.begin() + *m_move_id);
+                m_result.custom_gcode_per_print_z[*m_custom_gcode_per_print_z_id].print_z = position.z();
+                reset();
+            }
+
+            void reset() {
+                m_move_id.reset();
+                m_custom_gcode_per_print_z_id.reset();
+            }
+        };
+#endif // ENABLE_FIX_PREVIEW_OPTIONS_Z
 
 #if ENABLE_GCODE_VIEWER_DATA_CHECKING
         struct DataChecker
@@ -492,9 +529,13 @@ namespace Slic3r {
         CpColor m_cp_color;
         bool m_use_volumetric_e;
         SeamsDetector m_seams_detector;
-#if ENABLE_FIX_IMPORTING_COLOR_PRINT_VIEW_INTO_GCODEVIEWER
+#if ENABLE_FIX_PREVIEW_OPTIONS_Z
+        OptionsZCorrector m_options_z_corrector;
+#endif // ENABLE_FIX_PREVIEW_OPTIONS_Z
         size_t m_last_default_color_id;
-#endif // ENABLE_FIX_IMPORTING_COLOR_PRINT_VIEW_INTO_GCODEVIEWER
+#if ENABLE_GCODE_VIEWER_STATISTICS
+        std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
+#endif // ENABLE_GCODE_VIEWER_STATISTICS
 
         enum class EProducer
         {
@@ -502,6 +543,9 @@ namespace Slic3r {
             PrusaSlicer,
             Slic3rPE,
             Slic3r,
+#if ENABLE_FIX_SUPERSLICER_GCODE_IMPORT
+            SuperSlicer,
+#endif // ENABLE_FIX_SUPERSLICER_GCODE_IMPORT
             Cura,
             Simplify3D,
             CraftWare,
@@ -511,7 +555,6 @@ namespace Slic3r {
 
         static const std::vector<std::pair<GCodeProcessor::EProducer, std::string>> Producers;
         EProducer m_producer;
-        bool m_producers_enabled;
 
         TimeProcessor m_time_processor;
         UsedFilaments m_used_filaments;
@@ -534,15 +577,19 @@ namespace Slic3r {
             return m_time_processor.machines[static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Stealth)].enabled;
         }
         void enable_machine_envelope_processing(bool enabled) { m_time_processor.machine_envelope_processing_enabled = enabled; }
-        void enable_producers(bool enabled) { m_producers_enabled = enabled; }
         void reset();
 
         const Result& get_result() const { return m_result; }
         Result&& extract_result() { return std::move(m_result); }
 
-        // Process the gcode contained in the file with the given filename
+        // Load a G-code into a stand-alone G-code viewer.
         // throws CanceledException through print->throw_if_canceled() (sent by the caller as callback).
-        void process_file(const std::string& filename, bool apply_postprocess, std::function<void()> cancel_callback = nullptr);
+        void process_file(const std::string& filename, std::function<void()> cancel_callback = nullptr);
+
+        // Streaming interface, for processing G-codes just generated by PrusaSlicer in a pipelined fashion.
+        void initialize(const std::string& filename);
+        void process_buffer(const std::string& buffer);
+        void finalize(bool post_process);
 
         float get_time(PrintEstimatedStatistics::ETimeMode mode) const;
         std::string get_time_dhm(PrintEstimatedStatistics::ETimeMode mode) const;
@@ -555,10 +602,13 @@ namespace Slic3r {
     private:
         void apply_config(const DynamicPrintConfig& config);
         void apply_config_simplify3d(const std::string& filename);
-        void process_gcode_line(const GCodeReader::GCodeLine& line);
+#if ENABLE_FIX_SUPERSLICER_GCODE_IMPORT
+        void apply_config_superslicer(const std::string& filename);
+#endif // ENABLE_FIX_SUPERSLICER_GCODE_IMPORT
+        void process_gcode_line(const GCodeReader::GCodeLine& line, bool producers_enabled);
 
         // Process tags embedded into comments
-        void process_tags(const std::string_view comment);
+        void process_tags(const std::string_view comment, bool producers_enabled);
         bool process_producers_tags(const std::string_view comment);
         bool process_prusaslicer_tags(const std::string_view comment);
         bool process_cura_tags(const std::string_view comment);
@@ -674,9 +724,7 @@ namespace Slic3r {
         float get_axis_max_acceleration(PrintEstimatedStatistics::ETimeMode mode, Axis axis) const;
         float get_axis_max_jerk(PrintEstimatedStatistics::ETimeMode mode, Axis axis) const;
         float get_retract_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;
-#if ENABLE_RETRACT_ACCELERATION
         void  set_retract_acceleration(PrintEstimatedStatistics::ETimeMode mode, float value);
-#endif // ENABLE_RETRACT_ACCELERATION
         float get_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;
         void  set_acceleration(PrintEstimatedStatistics::ETimeMode mode, float value);
         float get_travel_acceleration(PrintEstimatedStatistics::ETimeMode mode) const;

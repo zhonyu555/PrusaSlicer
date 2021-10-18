@@ -55,7 +55,6 @@ enum FileType
     FT_OBJ,
     FT_AMF,
     FT_3MF,
-    FT_PRUSA,
     FT_GCODE,
     FT_MODEL,
     FT_PROJECT,
@@ -153,7 +152,6 @@ private:
 
     std::unique_ptr<ImGuiWrapper> m_imgui;
     std::unique_ptr<PrintHostJobQueue> m_printhost_job_queue;
-    ConfigWizard* m_wizard;    // Managed by wxWindow tree
 	std::unique_ptr <OtherInstanceMessageHandler> m_other_instance_message_handler;
     std::unique_ptr <wxSingleInstanceChecker> m_single_instance_checker;
     std::string m_instance_hash_string;
@@ -170,6 +168,7 @@ public:
     bool is_editor() const { return m_app_mode == EAppMode::Editor; }
     bool is_gcode_viewer() const { return m_app_mode == EAppMode::GCodeViewer; }
     bool is_recreating_gui() const { return m_is_recreating_gui; }
+    std::string logo_name() const { return is_editor() ? "PrusaSlicer" : "PrusaSlicer-gcodeviewer"; }
 
     // To be called after the GUI is fully built up.
     // Process command line parameters cached in this->init_params,
@@ -249,18 +248,20 @@ public:
     bool            has_current_preset_changes() const;
     void            update_saved_preset_from_current_preset();
     std::vector<std::pair<unsigned int, std::string>> get_selected_presets() const;
-    bool            check_and_save_current_preset_changes(const wxString& header = wxString());
+    bool            check_and_save_current_preset_changes(const wxString& caption, const wxString& header, bool remember_choice = true, bool use_dont_save_insted_of_discard = false);
+    void            apply_keeped_preset_modifications();
+    bool            check_and_keep_current_preset_changes(const wxString& caption, const wxString& header, int action_buttons, bool* postponed_apply_of_keeped_changes = nullptr);
+    bool            can_load_project();
     bool            check_print_host_queue();
     bool            checked_tab(Tab* tab);
     void            load_current_presets(bool check_printer_presets = true);
-    void            update_wizard_from_config();
 
     wxString        current_language_code() const { return m_wxLocale->GetCanonicalName(); }
 	// Translate the language code to a code, for which Prusa Research maintains translations. Defaults to "en_US".
     wxString 		current_language_code_safe() const;
     bool            is_localized() const { return m_wxLocale->GetLocale() != "English"; }
 
-    void            open_preferences(size_t open_on_tab = 0);
+    void            open_preferences(size_t open_on_tab = 0, const std::string& highlight_option = std::string());
 
     virtual bool OnExceptionInMainLoop() override;
     // Calls wxLaunchDefaultBrowser if user confirms in dialog.
@@ -278,7 +279,7 @@ public:
     ObjectLayers*        obj_layers();
     Plater*              plater();
     Model&      		 model();
-    NotificationManager* notification_manager();
+    NotificationManager * notification_manager();
 
     // Parameters extracted from the command line to be passed to GUI after initialization.
     GUI_InitParams* init_params { nullptr };
@@ -311,6 +312,7 @@ public:
     PrintHostJobQueue& printhost_job_queue() { return *m_printhost_job_queue.get(); }
 
     void            open_web_page_localized(const std::string &http_address);
+    bool            may_switch_to_SLA_preset(const wxString& caption);
     bool            run_wizard(ConfigWizard::RunReason reason, ConfigWizard::StartPage start_page = ConfigWizard::SP_WELCOME);
     void            show_desktop_integration_dialog();
 
