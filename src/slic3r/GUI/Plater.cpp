@@ -1790,6 +1790,8 @@ struct Plater::priv
     void on_layer_editing_toggled(bool enable);
 	void on_slicing_began();
 
+    void invalidate_plater();
+
 	void clear_warnings();
 	void add_warning(const Slic3r::PrintStateBase::Warning &warning, size_t oid);
     // Update notification manager with the current state of warnings produced by the background process (slicing).
@@ -2036,6 +2038,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         preview->move_moves_slider(evt);
         });
     preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_EDIT_COLOR_CHANGE, [this](wxKeyEvent& evt) { preview->edit_layers_slider(evt); });
+    preview->get_wxglcanvas()->Bind(EVT_GLCANVAS_INVALIDATE_PLATER, [this](SimpleEvent&) { this->invalidate_plater(); });
     if (wxGetApp().is_gcode_viewer())
         preview->Bind(EVT_GLCANVAS_RELOAD_FROM_DISK, [this](SimpleEvent&) { this->q->reload_gcode_from_disk(); });
 
@@ -4099,6 +4102,15 @@ bool Plater::priv::warnings_dialog()
 	return res == wxID_OK;
 
 }
+
+void Plater::priv::invalidate_plater()
+{
+    const wxString invalid_str = _L("Invalid data");
+    for (auto btn : { ActionButtonType::abReslice, ActionButtonType::abSendGCode, ActionButtonType::abExport })
+        sidebar->set_btn_label(btn, invalid_str);
+    process_completed_with_error = true;
+}
+
 void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
 {
     // Stop the background task, wait until the thread goes into the "Idle" state.
@@ -4129,10 +4141,7 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
 //        this->statusbar()->set_status_text(from_u8(message.first));
         if (evt.invalidate_plater())
         {
-            const wxString invalid_str = _L("Invalid data");
-            for (auto btn : { ActionButtonType::abReslice, ActionButtonType::abSendGCode, ActionButtonType::abExport })
-                sidebar->set_btn_label(btn, invalid_str);
-            process_completed_with_error = true;
+            invalidate_plater();
         }
         has_error = true;
     }
@@ -5637,9 +5646,11 @@ void Plater::export_gcode(bool prefer_removable)
     if (canvas3D()->get_gizmos_manager().is_in_editing_mode(true))
         return;
 
+    select_view_3D("Preview");
 
     if (p->process_completed_with_error)
         return;
+    
 
     // If possible, remove accents from accented latin characters.
     // This function is useful for generating file names to be processed by legacy firmwares.
