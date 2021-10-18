@@ -2116,6 +2116,17 @@ void GLCanvas3D::load_gcode_preview(const GCodeProcessor::Result& gcode_result, 
     request_extra_frame();
 }
 
+void GLCanvas3D::check_toolpath(const GCodeProcessor::Result& gcode_result, const std::vector<std::string>& str_tool_colors)
+{
+    m_gcode_viewer.load(gcode_result, *this->fff_print(), m_initialized, false);
+
+    if (wxGetApp().is_editor()) {
+        //m_gcode_viewer.update_shells_color_by_extruder(m_config);
+        _set_warning_notification_if_needed(EWarning::ToolpathOutside);
+    }
+   
+}
+
 void GLCanvas3D::refresh_gcode_preview_render_paths()
 {
     m_gcode_viewer.refresh_render_paths();

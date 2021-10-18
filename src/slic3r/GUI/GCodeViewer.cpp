@@ -661,13 +661,13 @@ void GCodeViewer::init()
 }
 #endif // ENABLE_SEAMS_USING_MODELS
 
-void GCodeViewer::load(const GCodeProcessor::Result& gcode_result, const Print& print, bool initialized)
+void GCodeViewer::load(const GCodeProcessor::Result& gcode_result, const Print& print, bool initialized, bool save_result_id/* = true*/)
 {
     // avoid processing if called with the same gcode_result
     if (m_last_result_id == gcode_result.id)
         return;
-
-    m_last_result_id = gcode_result.id;
+    if (save_result_id)
+        m_last_result_id = gcode_result.id; 
 
     // release gpu memory, if used
     reset(); 

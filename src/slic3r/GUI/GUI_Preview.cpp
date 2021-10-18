@@ -974,6 +974,9 @@ void Preview::load_print_as_fff(bool keep_z_range)
             m_canvas_widget->Refresh();
         } else
             update_layers_slider(zs, keep_z_range);
+    // if background processing is enabled, load gcode preview to check toolpath outside
+    } else if (wxGetApp().app_config->get("background_processing") == "1" && gcode_preview_data_valid && wxGetApp().is_editor()) {
+        m_canvas->check_toolpath(*m_gcode_result, colors);
     }
 }
 

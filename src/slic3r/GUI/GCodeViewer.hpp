@@ -820,7 +820,7 @@ public:
 #endif // ENABLE_SEAMS_USING_MODELS
 
     // extract rendering data from the given parameters
-    void load(const GCodeProcessor::Result& gcode_result, const Print& print, bool initialized);
+    void load(const GCodeProcessor::Result& gcode_result, const Print& print, bool initialized, bool save_result_id = true);
     // recalculate ranges in dependence of what is visible and sets tool/print colors
     void refresh(const GCodeProcessor::Result& gcode_result, const std::vector<std::string>& str_tool_colors);
     void refresh_render_paths();
