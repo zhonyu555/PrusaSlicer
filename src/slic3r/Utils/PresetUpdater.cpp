@@ -141,7 +141,8 @@ struct Updates
 
 
 wxDEFINE_EVENT(EVT_SLIC3R_VERSION_ONLINE, wxCommandEvent);
-
+wxDEFINE_EVENT(EVT_SLIC3R_ALPHA_VERSION_ONLINE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_SLIC3R_BETA_VERSION_ONLINE, wxCommandEvent);
 
 struct PresetUpdater::priv
 {
@@ -167,6 +168,7 @@ struct PresetUpdater::priv
 	bool get_file(const std::string &url, const fs::path &target_path) const;
 	void prune_tmps() const;
 	void sync_version() const;
+	void parse_version_string(const std::string& body) const;
 	void sync_config(const VendorMap vendors);
 
 	void check_install_indices() const;
@@ -262,23 +264,68 @@ void PresetUpdater::priv::sync_version() const
 		})
 		.on_complete([&](std::string body, unsigned /* http_status */) {
 			boost::trim(body);
-			const auto nl_pos = body.find_first_of("\n\r");
-			if (nl_pos != std::string::npos) {
-				body.resize(nl_pos);
-			}
-
-			if (! Semver::parse(body)) {
-				BOOST_LOG_TRIVIAL(warning) << format("Received invalid contents from `%1%`: Not a correct semver: `%2%`", SLIC3R_APP_NAME, body);
-				return;
-			}
-
-			BOOST_LOG_TRIVIAL(info) << format("Got %1% online version: `%2%`. Sending to GUI thread...", SLIC3R_APP_NAME, body);
-
-			wxCommandEvent* evt = new wxCommandEvent(EVT_SLIC3R_VERSION_ONLINE);
-			evt->SetString(GUI::from_u8(body));
-			GUI::wxGetApp().QueueEvent(evt);
+			parse_version_string(body);
 		})
 		.perform_sync();
+}
+
+// Parses version string obtained in sync_version() and sends events to UI thread.
+// Version string must contain release version on first line. Follows non-mandatory alpha / beta releases on following lines (alpha=2.0.0-alpha1).
+void PresetUpdater::priv::parse_version_string(const std::string& body) const
+{
+	// release version
+	std::string version;
+	const auto first_nl_pos = body.find_first_of("\n\r");
+	if (first_nl_pos != std::string::npos)
+		version = body.substr(0, first_nl_pos);
+	else
+		version = body;
+	if (!Semver::parse(version)) {
+		BOOST_LOG_TRIVIAL(warning) << format("Received invalid contents from `%1%`: Not a correct semver: `%2%`", SLIC3R_APP_NAME, version);
+		return;
+	}
+	BOOST_LOG_TRIVIAL(info) << format("Got %1% online version: `%2%`. Sending to GUI thread...", SLIC3R_APP_NAME, version);
+	wxCommandEvent* evt = new wxCommandEvent(EVT_SLIC3R_VERSION_ONLINE);
+	evt->SetString(GUI::from_u8(version));
+	GUI::wxGetApp().QueueEvent(evt);
+
+	// alpha / beta version
+	size_t nexn_nl_pos = first_nl_pos;
+	while (nexn_nl_pos != std::string::npos && body.size() > nexn_nl_pos + 1) {
+		const auto last_nl_pos = nexn_nl_pos;
+		nexn_nl_pos = body.find_first_of("\n\r", last_nl_pos + 1);
+		std::string line;
+		if (nexn_nl_pos == std::string::npos)
+			line = body.substr(last_nl_pos + 1);
+		else
+			line = body.substr(last_nl_pos + 1, nexn_nl_pos - last_nl_pos - 1);
+
+		// alpha
+		if (line.substr(0, 6) == "alpha=") {
+			version = line.substr(6);
+			if (!Semver::parse(version)) {
+				BOOST_LOG_TRIVIAL(warning) << format("Received invalid contents for alpha release from `%1%`: Not a correct semver: `%2%`", SLIC3R_APP_NAME, version);
+				return;
+			}
+			BOOST_LOG_TRIVIAL(info) << format("Got %1% online version of alpha release: `%2%`. Sending to GUI thread...", SLIC3R_APP_NAME, version);
+			wxCommandEvent* evt = new wxCommandEvent(EVT_SLIC3R_ALPHA_VERSION_ONLINE);
+			evt->SetString(GUI::from_u8(version));
+			GUI::wxGetApp().QueueEvent(evt);
+
+		// beta
+		}
+		else if (line.substr(0, 5) == "beta=") {
+			version = line.substr(5);
+			if (!Semver::parse(version)) {
+				BOOST_LOG_TRIVIAL(warning) << format("Received invalid contents for beta release from `%1%`: Not a correct semver: `%2%`", SLIC3R_APP_NAME, version);
+				return;
+			}
+			BOOST_LOG_TRIVIAL(info) << format("Got %1% online version of beta release: `%2%`. Sending to GUI thread...", SLIC3R_APP_NAME, version);
+			wxCommandEvent* evt = new wxCommandEvent(EVT_SLIC3R_BETA_VERSION_ONLINE);
+			evt->SetString(GUI::from_u8(version));
+			GUI::wxGetApp().QueueEvent(evt);
+		}
+	}
 }
 
 // Download vendor indices. Also download new bundles if an index indicates there's a new one available.
@@ -720,8 +767,13 @@ void PresetUpdater::slic3r_update_notify()
 	}
 }
 
-static void reload_configs_update_gui()
+static bool reload_configs_update_gui()
 {
+	wxString header = _L("Configuration Updates causes a lost of preset modification.\n"
+						 "So, check unsaved changes and save them if necessary.");
+	if (!GUI::wxGetApp().check_and_save_current_preset_changes(_L("Updater is processing"), header, false ))
+		return false;
+
 	// Reload global configuration
 	auto* app_config = GUI::wxGetApp().app_config;
 	// System profiles should not trigger any substitutions, user profiles may trigger substitutions, but these substitutions
@@ -730,7 +782,8 @@ static void reload_configs_update_gui()
 	GUI::wxGetApp().preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem);
 	GUI::wxGetApp().load_current_presets();
 	GUI::wxGetApp().plater()->set_bed_shape();
-	GUI::wxGetApp().update_wizard_from_config();
+
+	return true;
 }
 
 PresetUpdater::UpdateResult PresetUpdater::config_update(const Semver& old_slic3r_version, UpdateParams params) const
@@ -803,9 +856,9 @@ PresetUpdater::UpdateResult PresetUpdater::config_update(const Semver& old_slic3
 			const auto res = dlg.ShowModal();
 			if (res == wxID_OK) {
 				BOOST_LOG_TRIVIAL(info) << "User wants to update...";
-				if (! p->perform_updates(std::move(updates)))
+				if (! p->perform_updates(std::move(updates)) ||
+					! reload_configs_update_gui())
 					return R_INCOMPAT_EXIT;
-				reload_configs_update_gui();
 				return R_UPDATE_INSTALLED;
 			}
 			else {
@@ -833,9 +886,9 @@ PresetUpdater::UpdateResult PresetUpdater::config_update(const Semver& old_slic3
 			const auto res = dlg.ShowModal();
 			if (res == wxID_OK) {
 				BOOST_LOG_TRIVIAL(debug) << "User agreed to perform the update";
-				if (! p->perform_updates(std::move(updates)))
+				if (! p->perform_updates(std::move(updates)) ||
+					! reload_configs_update_gui())
 					return R_ALL_CANCELED;
-				reload_configs_update_gui();
 				return R_UPDATE_INSTALLED;
 			}
 			else {
@@ -886,8 +939,8 @@ void PresetUpdater::on_update_notification_confirm()
 	const auto res = dlg.ShowModal();
 	if (res == wxID_OK) {
 		BOOST_LOG_TRIVIAL(debug) << "User agreed to perform the update";
-		if (p->perform_updates(std::move(p->waiting_updates))) {
-			reload_configs_update_gui();
+		if (p->perform_updates(std::move(p->waiting_updates)) &&
+			reload_configs_update_gui()) {
 			p->has_waiting_updates = false;
 		}
 	}

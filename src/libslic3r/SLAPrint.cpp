@@ -138,14 +138,14 @@ Transform3d SLAPrint::sla_trafo(const ModelObject &model_object) const
     offset(1) = 0.;
     rotation(2) = 0.;
 
-    offset(Z) *= corr(Z);
+    offset.z() *= corr.z();
 
     auto trafo = Transform3d::Identity();
     trafo.translate(offset);
     trafo.scale(corr);
-    trafo.rotate(Eigen::AngleAxisd(rotation(2), Vec3d::UnitZ()));
-    trafo.rotate(Eigen::AngleAxisd(rotation(1), Vec3d::UnitY()));
-    trafo.rotate(Eigen::AngleAxisd(rotation(0), Vec3d::UnitX()));
+    trafo.rotate(Eigen::AngleAxisd(rotation.z(), Vec3d::UnitZ()));
+    trafo.rotate(Eigen::AngleAxisd(rotation.y(), Vec3d::UnitY()));
+    trafo.rotate(Eigen::AngleAxisd(rotation.x(), Vec3d::UnitX()));
     trafo.scale(model_instance.get_scaling_factor());
     trafo.scale(model_instance.get_mirror());
 
@@ -670,7 +670,7 @@ std::string SLAPrint::validate(std::string*) const
     return "";
 }
 
-void SLAPrint::set_printer(SLAPrinter *arch)
+void SLAPrint::set_printer(SLAArchive *arch)
 {
     invalidate_step(slapsRasterize);
     m_printer = arch;
@@ -693,7 +693,7 @@ void SLAPrint::process()
     if (m_objects.empty())
         return;
 
-    name_tbb_thread_pool_threads();
+    name_tbb_thread_pool_threads_set_locale();
 
     // Assumption: at this point the print objects should be populated only with
     // the model objects we have to process and the instances are also filtered
@@ -896,7 +896,6 @@ SLAPrintObject::SLAPrintObject(SLAPrint *print, ModelObject *model_object)
         obj = m_model_object->raw_mesh();
         if (!obj.empty()) {
             obj.transform(m_trafo);
-            obj.require_shared_vertices();
         }
     })
 {}
@@ -1048,15 +1047,15 @@ Vec3d SLAPrint::relative_correction() const
     Vec3d corr(1., 1., 1.);
 
     if(printer_config().relative_correction.values.size() >= 2) {
-        corr(X) = printer_config().relative_correction.values[0];
-        corr(Y) = printer_config().relative_correction.values[0];
-        corr(Z) = printer_config().relative_correction.values.back();
+        corr.x() = printer_config().relative_correction.values[0];
+        corr.y() = corr.x();
+        corr.z() = printer_config().relative_correction.values[1];
     }
 
     if(material_config().material_correction.values.size() >= 2) {
-        corr(X) *= material_config().material_correction.values[0];
-        corr(Y) *= material_config().material_correction.values[0];
-        corr(Z) *= material_config().material_correction.values.back();
+        corr.x() *= material_config().material_correction.values[0];
+        corr.y() =  corr.x();
+        corr.z() *= material_config().material_correction.values[1];
     }
 
     return corr;

@@ -79,7 +79,7 @@ void FillLargix::_fill_surface_single(
         Largix::PolygonIO::saveToWktFile(pol, ss.str());
     }
 
-    LargixHelper::convert_layer_2_prusa(layer, polylines_out);
+    LargixHelper::convert_layer_2_prusa_1(layer, polylines_out);
 
 }
 
