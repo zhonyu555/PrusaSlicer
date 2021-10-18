@@ -681,12 +681,12 @@ void BackgroundSlicingProcess::finalize_gcode()
 	int copy_ret_val = CopyFileResult::SUCCESS;
 	try
 	{
-        boost::filesystem::path in_scv(output_path);
-        boost::filesystem::path out_scv(export_path);
-        in_scv.replace_extension(LARGIX_EXTESION);
-        if (boost::filesystem::exists(in_scv) &&
-            out_scv.extension() == ("." + std::string(LARGIX_EXTESION))) {
-            output_path = in_scv.string();
+        boost::filesystem::path in_csv(output_path);
+        boost::filesystem::path out_csv(export_path);
+        in_csv.replace_extension(LARGIX_EXTESION);
+        if (boost::filesystem::exists(in_csv) &&
+            out_csv.extension() == ("." + std::string(LARGIX_EXTESION))) {
+            output_path = in_csv.string();
         }
 		copy_ret_val = copy_file(output_path, export_path, error_message, m_export_path_on_removable_media);
 		remove_post_processed_temp_file();

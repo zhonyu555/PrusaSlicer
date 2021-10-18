@@ -21,7 +21,7 @@
 #include <Layer.h>
 #include <PolygonValidator.h>
 #include <PolygonIO.h>
-#include <BuildLayer.h>
+#include <BuildLayerMgr.h>
 #include <Size.h>
 #include <TeddyDef.h>
 
@@ -52,12 +52,21 @@ void FillLargix::_fill_surface_single(
 
     Largix::Settings set;
     set.szBin = Largix::Size2D(Largix::STRAND_4_WIDTH, Largix::STRAND_HEIGHT);
-    set.minStrandLength = set.szBin[1] * 2.5;
-    set.minStrandRadius = 5;
-    set.maxNumbersStrandsPerLayer = 1;
+    if (params.printer_options)
+    {
+        set.maxNumbersStrandsPerLayer = params.printer_options->printer_largix_strands_number;
+        set.minStrandRadius = params.printer_options->printer_largix_min_radius;
+        set.minStrandLength = params.printer_options->printer_largix_min_strand_lenght;
+    }
+    else
+    {
+        set.minStrandLength = set.szBin[1] * 2.5;
+        set.minStrandRadius = 5;
+        set.maxNumbersStrandsPerLayer = 1;
+    }
 
     Largix::Layer layer;
-    Largix::BuildLayer buider(pol, set);
+    Largix::BuildLayerMgr buider(pol, set);
 
     buider.build(layer);
 

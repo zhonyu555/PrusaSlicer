@@ -443,7 +443,7 @@ wxString file_wildcards(FileType file_type, const std::string &custom_extension)
         /* FT_SL1 */     "Masked SLA files (*.sl1, *.sl1s)|*.sl1;*.SL1;*.sl1s;*.SL1S",
         // Workaround for OSX file picker, for some reason it always saves with the 1st extension.
         /* FT_SL1S */    "Masked SLA files (*.sl1s, *.sl1)|*.sl1s;*.SL1S;*.sl1;*.SL1",
-        /* FT_SCV */     "Largix program (*.scv)|*.scv",
+        /* FT_CSV */     "Largix program (*.csv)|*.csv",
     };
 
 	std::string out = defaults[file_type];

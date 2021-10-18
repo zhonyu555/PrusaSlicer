@@ -872,9 +872,9 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
 
     boost::filesystem::path tmp{path};
     
-    LargixExport scv;
+    LargixExport csv;
     tmp.replace_extension(LARGIX_EXTESION);
-    scv.do_export(this, tmp.string().c_str());
+    csv.do_export(this, tmp.string().c_str());
     return path.c_str();
 }
 

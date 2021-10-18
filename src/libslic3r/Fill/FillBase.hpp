@@ -13,6 +13,7 @@
 #include "../BoundingBox.hpp"
 #include "../Exception.hpp"
 #include "../Utils.hpp"
+#include "../PrintConfig.hpp"
 
 namespace Slic3r {
 
@@ -54,6 +55,9 @@ struct FillParams
     // we were requested to complete each loop;
     // in this case we don't try to make more continuous paths
     bool        complete 		{ false };
+
+    // For Largix we using pointer to some printer settings 
+    PrintConfig* printer_options{ nullptr };
 };
 static_assert(IsTriviallyCopyable<FillParams>::value, "FillParams class is not POD (and it should be - see constructor).");
 
