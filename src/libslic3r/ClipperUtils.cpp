@@ -61,7 +61,7 @@ namespace ClipperUtils {
     Points SinglePathProvider::s_end;
 }
 
-static ExPolygons PolyTreeToExPolygons(ClipperLib::PolyTree &&polytree)
+ExPolygons PolyTreeToExPolygons(ClipperLib::PolyTree &&polytree)
 {
     struct Inner {
         static void PolyTreeToExPolygonsRecursive(ClipperLib::PolyNode &&polynode, ExPolygons *expolygons)

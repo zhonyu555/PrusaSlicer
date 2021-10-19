@@ -546,6 +546,8 @@ void traverse_pt(const ClipperLib::PolyNodes &nodes, ExOrJustPolygons *retval)
     });
 }
 
+ExPolygons PolyTreeToExPolygons(ClipperLib::PolyTree &&polytree);
+
 
 /* OTHER */
 Slic3r::Polygons simplify_polygons(const Slic3r::Polygons &subject, bool preserve_collinear = false);
