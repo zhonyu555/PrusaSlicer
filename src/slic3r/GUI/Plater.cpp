@@ -3234,21 +3234,29 @@ void Plater::priv::export_gcode(fs::path output_path, bool output_path_on_remova
 {
     wxCHECK_RET(!(output_path.empty() && upload_job.empty()), "export_gcode: output_path and upload_job empty");
 
-    if (model.objects.empty())
+    if (model.objects.empty()) {
+        exporting_status = ExportingStatus::NOT_EXPORTING;
         return;
+    }
 
     if (background_process.is_export_scheduled()) {
         GUI::show_error(q, _L("Another export job is currently running."));
         return;
     }
 
+    if (process_completed_with_error) {
+        exporting_status = ExportingStatus::NOT_EXPORTING;
+        return;
+    }
     // bitmask of UpdateBackgroundProcessReturnState
     unsigned int state = update_background_process(true);
     if (state & priv::UPDATE_BACKGROUND_PROCESS_REFRESH_SCENE)
         view3D->reload_scene(false);
 
-    if ((state & priv::UPDATE_BACKGROUND_PROCESS_INVALID) != 0)
+    if ((state & priv::UPDATE_BACKGROUND_PROCESS_INVALID) != 0) {
+        exporting_status = ExportingStatus::NOT_EXPORTING;
         return;
+    }
 
     show_warning_dialog = true;
     if (! output_path.empty()) {
@@ -5646,11 +5654,10 @@ void Plater::export_gcode(bool prefer_removable)
     if (canvas3D()->get_gizmos_manager().is_in_editing_mode(true))
         return;
 
-    select_view_3D("Preview");
-
     if (p->process_completed_with_error)
         return;
     
+    select_view_3D("Preview");
 
     // If possible, remove accents from accented latin characters.
     // This function is useful for generating file names to be processed by legacy firmwares.
