@@ -53,7 +53,9 @@ void eval_clipping(const char *prefix, const ExPolygon &a, const ExPolygon &b)
                 ClipperLib::PolyTree tree;
                 clipper.Execute(cliptype, tree, filltype);
                 SVG svg{std::string{prefix} + "_clipping_" + CLIPTYPE_STR[cliptype] + "_" + PTYPE_STR[bPolyType] + "_" + FILLTYPE_STR[filltype] + ".svg", bb};
-                svg.draw(PolyTreeToExPolygons(std::move(tree)), "green");
+                ExPolygons res = PolyTreeToExPolygons(std::move(tree));
+                svg.draw(res, "green");
+                svg.draw_outline(res);
             }
 }
 
@@ -104,7 +106,9 @@ void eval_offsetting(const char *prefix, const ExPolygons &polys)
             offset.Execute(tree, scaled(delta));
 
             SVG svg{std::string{prefix} + "_offsetting_delta_" + std::to_string(delta) + "_" + JOINTYPE_STR[jointype] + ".svg", bb};
-            svg.draw(PolyTreeToExPolygons(std::move(tree)), "green");
+            ExPolygons res = PolyTreeToExPolygons(std::move(tree));
+            svg.draw(res, "green");
+            svg.draw_outline(res);
         }
 }
 
