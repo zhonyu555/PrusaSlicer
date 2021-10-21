@@ -2852,6 +2852,26 @@ void PrintObjectSupportMaterial::trim_support_layers_by_object(
 {
     const float gap_xy_scaled = float(scale_(gap_xy));
 
+    // Calculate the minimum object width, depending on whether thin walls are enabled, to ensure full object support accounting for disappearing widths.
+    // We use the minimum nozzle diameter of all extruders divided by 3, because we can't determine the exact perimeter_extruder without knowing a region.
+    // We use the (initial?) support extrusion width, because it's next to impossible to get the external perimeter scaled_width at this point.
+    // This is copied and modified partly from FillAdaptive.cpp and partly from PerimeterGenerator.cpp
+    
+    float min_nozzle_diameter = 0.;
+    bool thin_walls = false;
+
+    for (size_t region_id = 0; region_id < object.num_printing_regions(); ++region_id) {
+        thin_walls = object.printing_region(region_id).config().thin_walls.getBool();
+        if (thin_walls) {
+            const std::vector<double>& nozzle_diameters = object.print()->config().nozzle_diameter.values;
+            min_nozzle_diameter = *std::min_element(nozzle_diameters.begin(), nozzle_diameters.end());
+            break;
+        }
+    }
+
+    // Minimum thickness that will be extruded as the object. Areas smaller than this will be filtered out to allow support to contact above extrusions.
+    float min_lslice_width = thin_walls ? scaled(min_nozzle_diameter / 3) : m_support_params.support_material_flow.scaled_width();
+
     // Collect non-empty layers to be processed in parallel.
     // This is a good idea as pulling a thread from a thread pool for an empty task is expensive.
     MyLayersPtr nonempty_layers;
@@ -2867,7 +2887,7 @@ void PrintObjectSupportMaterial::trim_support_layers_by_object(
     BOOST_LOG_TRIVIAL(debug) << "PrintObjectSupportMaterial::trim_support_layers_by_object() in parallel - start";
     tbb::parallel_for(
         tbb::blocked_range<size_t>(0, nonempty_layers.size()),
-        [this, &object, &nonempty_layers, gap_extra_above, gap_extra_below, gap_xy_scaled](const tbb::blocked_range<size_t>& range) {
+        [this, &object, &nonempty_layers, gap_extra_above, gap_extra_below, gap_xy_scaled, min_lslice_width](const tbb::blocked_range<size_t>& range) {
             size_t idx_object_layer_overlapping = size_t(-1);
             for (size_t idx_layer = range.begin(); idx_layer < range.end(); ++ idx_layer) {
                 MyLayer &support_layer = *nonempty_layers[idx_layer];
@@ -2885,7 +2905,8 @@ void PrintObjectSupportMaterial::trim_support_layers_by_object(
                     const Layer &object_layer = *object.layers()[i];
                     if (object_layer.bottom_z() > support_layer.print_z + gap_extra_above - EPSILON)
                         break;
-                    polygons_append(polygons_trimming, offset(object_layer.lslices, gap_xy_scaled, SUPPORT_SURFACES_OFFSET_PARAMETERS));
+                    // Opening with min_lslice_width to support even where object is too thin to extrude
+                    polygons_append(polygons_trimming, offset(opening_ex(object_layer.lslices, min_lslice_width * 0.5, SUPPORT_SURFACES_OFFSET_PARAMETERS), gap_xy_scaled, SUPPORT_SURFACES_OFFSET_PARAMETERS));
                 }
                 if (! m_slicing_params.soluble_interface && m_object_config->thick_bridges) {
                     // Collect all bottom surfaces, which will be extruded with a bridging flow.
