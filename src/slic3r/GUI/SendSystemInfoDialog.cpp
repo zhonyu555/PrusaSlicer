@@ -69,6 +69,7 @@ public:
 private:
     bool send_info();
     const std::string m_system_info_json;
+    wxButton* m_btn_show_data;
     wxButton* m_btn_send;
     wxButton* m_btn_dont_send;
     wxButton* m_btn_ask_later;
@@ -548,7 +549,6 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
            "installation are sent. PrusaSlicer is open source, if you want to "
            "inspect the code actually performing the communication, see %1%."),
            std::string("<i>") + filename + "</i>");
-    wxString label3 = _L("Show verbatim data that will be sent");
 
     auto* html_window = new wxHtmlWindow(this, wxID_ANY, wxDefaultPosition, wxSize(70*em, 34*em), wxHW_SCROLLBAR_NEVER);
     wxString html = GUI::format_wxstr(
@@ -560,16 +560,13 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
             + text1 + "<br /><br />"
             "</td></tr></table>"
             + "<b>" + label2 + "</b><br />"
-            + text2 + "<br /><br />"
-            + "<b><a href=\"show\">" + label3 + "</a></b><br />"
+            + text2
             + "</font></body></html>", bgr_clr_str, text_clr_str);
     html_window->SetPage(html);
-    html_window->Bind(wxEVT_HTML_LINK_CLICKED, [this](wxHtmlLinkEvent&) {
-                                                   ShowJsonDialog dlg(this, m_system_info_json, GetSize().Scale(0.9, 0.7));
-                                                   dlg.ShowModal();
-    });
 
     vsizer->Add(html_window, 1, wxEXPAND);
+
+    m_btn_show_data = new wxButton(this, wxID_ANY, _L("Show verbatim data that will be sent"));
 
     m_btn_ask_later = new wxButton(this, wxID_ANY, _L("Ask me next time"));
     m_btn_dont_send = new wxButton(this, wxID_ANY, _L("Do not send anything"));
@@ -582,6 +579,7 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
     hsizer->AddSpacer(em);
     hsizer->Add(m_btn_send);
 
+    vsizer->Add(m_btn_show_data, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 20);
     vsizer->Add(hsizer, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
     topSizer->Add(vsizer, 1, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, 10);
 
@@ -598,6 +596,11 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
             std::max(size.GetHeight(), MIN_HEIGHT * em));
 
     CenterOnParent();
+
+    m_btn_show_data->Bind(wxEVT_BUTTON, [this](wxEvent&) {
+                                            ShowJsonDialog dlg(this, m_system_info_json, GetSize().Scale(0.9, 0.7));
+                                            dlg.ShowModal();
+                                        });
 
     m_btn_send->Bind(wxEVT_BUTTON, [this](const wxEvent&)
                                     {
@@ -620,6 +623,7 @@ void SendSystemInfoDialog::on_dpi_changed(const wxRect&)
 {
     const int& em = em_unit();
     msw_buttons_rescale(this, em, { m_btn_send->GetId(),
+                                    m_btn_show_data->GetId(),
                                     m_btn_dont_send->GetId(),
                                     m_btn_ask_later->GetId() });
     SetMinSize(wxSize(MIN_WIDTH * em, MIN_HEIGHT * em));
