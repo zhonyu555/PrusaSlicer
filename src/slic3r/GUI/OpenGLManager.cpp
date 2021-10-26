@@ -186,7 +186,7 @@ std::string OpenGLManager::GLInfo::to_string(bool for_github) const
 
         if (!extensions_list.empty()) {
             if (for_github)
-                out << "<details>\n<summary>Installed extensions:</summary>\n";
+                out << "<details>\n<summary>Installed extensions:</summary>\n\n";
             else
                 out << h2_start << "Installed extensions:" << h2_end << line_end;
 
