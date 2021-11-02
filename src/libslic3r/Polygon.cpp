@@ -471,10 +471,8 @@ void remove_with_small_diameter(Polygons &polygons, double min_diameter)
     size_t       end = 0;
     for (size_t i = 0; i < polygons.size(); ++ i) {
         Polygon &poly = polygons[i];
-        bool keep = true;
-        if (poly.size() < 2) {
-            keep = false;
-        } else {
+        bool keep = false;
+        if (poly.size() >= 2) {
             Point pmin = poly.front();
             Point pmax = poly.points[1];
             for (size_t k = 2; k < poly.size(); ++k) {
@@ -519,8 +517,8 @@ void remove_with_small_diameter(Polygons &polygons, double min_diameter)
             ++ end;
         }
 #endif
-        polygons.erase(polygons.begin() + end, polygons.end());
     }
+    polygons.erase(polygons.begin() + end, polygons.end());
 }
 
 void remove_collinear(Polygon &poly)
