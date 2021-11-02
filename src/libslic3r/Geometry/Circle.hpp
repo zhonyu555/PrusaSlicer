@@ -141,6 +141,10 @@ Circle<Vector> smallest_enclosing_circle_welzl(const Points &points, const typen
 }
 
 // Randomized algorithm by Emo Welzl. The returned circle radius is inflated by SCALED_EPSILON.
+inline CircleSqd smallest_enclosing_circle2_welzl(const Points &points)
+{
+    return smallest_enclosing_circle2_welzl<Vec2d, Points>(points, SCALED_EPSILON);
+}
 inline Circled smallest_enclosing_circle_welzl(const Points &points)
 {
     return smallest_enclosing_circle_welzl<Vec2d, Points>(points, SCALED_EPSILON);

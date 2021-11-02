@@ -492,6 +492,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,               support_material_interface_spacing))
     ((ConfigOptionFloatOrPercent,      support_material_interface_speed))
     ((ConfigOptionEnum<SupportMaterialPattern>, support_material_pattern))
+    ((ConfigOptionFloat,               support_material_min_diameter))
     ((ConfigOptionEnum<SupportMaterialInterfacePattern>, support_material_interface_pattern))
     // Morphological closing of support areas. Only used for "sung" supports.
     ((ConfigOptionFloat,               support_material_closing_radius))

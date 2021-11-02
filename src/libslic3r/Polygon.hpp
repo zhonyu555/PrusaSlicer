@@ -112,7 +112,12 @@ bool remove_sticks(Polygons &polys);
 
 // Remove polygons with less than 3 edges.
 bool remove_degenerate(Polygons &polys);
+// Remove polygons with absolute area smaller then threshold.
+// Thus this function may fill holes of some polygons, which may not be what one expects.
 bool remove_small(Polygons &polys, double min_area);
+// Remove polygons with minimum enclosing circle diameter smaller than min_diameter.
+// Again, this function may fill holes of some polygons, which may not be what one expects.
+void remove_with_small_diameter(Polygons& polygons, double min_diameter);
 void remove_collinear(Polygon &poly);
 void remove_collinear(Polygons &polys);
 

@@ -1446,7 +1446,9 @@ static inline std::tuple<Polygons, Polygons, Polygons, float> detect_overhangs(
     const PrintObjectConfig &object_config,
     SupportAnnotations      &annotations, 
     SlicesMarginCache       &slices_margin, 
-    const double             gap_xy
+    const double             gap_xy,
+    // Scaled, minimum diameter of a support island to be supported.
+    const double             min_support_diameter
 #ifdef SLIC3R_DEBUG
     , size_t                 iRun
 #endif // SLIC3R_DEBUG
@@ -1600,6 +1602,10 @@ static inline std::tuple<Polygons, Polygons, Polygons, float> detect_overhangs(
                 //FIXME Expensive, potentially not precise enough. Misses gap fill extrusions, which bridge.
                 SupportMaterialInternal::remove_bridges_from_contacts(
                     print_config, lower_layer, lower_layer_polygons, *layerm, fw, diff_polygons);
+
+            if (min_support_diameter > 0)
+                // Remove polygons with their circumscribed circle radius smaller than min_diameter.
+                remove_with_small_diameter(diff_polygons, min_support_diameter);
 
             if (diff_polygons.empty())
                 continue;
@@ -1995,6 +2001,7 @@ PrintObjectSupportMaterial::MyLayersPtr PrintObjectSupportMaterial::top_contact_
     tbb::parallel_for(tbb::blocked_range<size_t>(this->has_raft() ? 0 : 1, num_layers),
         [this, &object, &annotations, &layer_storage, &layer_storage_mutex, &contact_out]
         (const tbb::blocked_range<size_t>& range) {
+            const double min_support_diameter = scaled<double>(object.config().support_material_min_diameter.value);
             for (size_t layer_id = range.begin(); layer_id < range.end(); ++ layer_id) 
             {
                 const Layer        &layer                = *object.layers()[layer_id];
@@ -2002,7 +2009,7 @@ PrintObjectSupportMaterial::MyLayersPtr PrintObjectSupportMaterial::top_contact_
                 SlicesMarginCache   slices_margin;
 
                 auto [overhang_polygons, contact_polygons, enforcer_polygons, no_interface_offset] =
-                    detect_overhangs(layer, layer_id, lower_layer_polygons, *m_print_config, *m_object_config, annotations, slices_margin, m_support_params.gap_xy
+                    detect_overhangs(layer, layer_id, lower_layer_polygons, *m_print_config, *m_object_config, annotations, slices_margin, m_support_params.gap_xy, min_support_diameter
                 #ifdef SLIC3R_DEBUG
                                     , iRun
                 #endif // SLIC3R_DEBUG

@@ -1,8 +1,12 @@
 #include "BoundingBox.hpp"
 #include "ClipperUtils.hpp"
 #include "Exception.hpp"
+#include "Geometry/Circle.hpp"
 #include "Polygon.hpp"
 #include "Polyline.hpp"
+
+#include <algorithm>
+#include <random>
 
 namespace Slic3r {
 
@@ -437,6 +441,8 @@ bool remove_degenerate(Polygons &polys)
     return modified;
 }
 
+// Remove polygons with absolute area smaller then threshold.
+// Thus this function may fill holes of some polygons, which may not be what one expects.
 bool remove_small(Polygons &polys, double min_area)
 {
     bool modified = false;
@@ -452,6 +458,69 @@ bool remove_small(Polygons &polys, double min_area)
     if (j < polys.size())
         polys.erase(polys.begin() + j, polys.end());
     return modified;
+}
+
+// Remove polygons with minimum enclosing circle diameter smaller than min_diameter.
+// Again, this function may fill holes of some polygons, which may not be what one expects.
+void remove_with_small_diameter(Polygons &polygons, double min_diameter)
+{
+    coord_t      min_size = coord_t(min_diameter);
+    double       min_diameter2 = min_diameter * min_diameter;
+    std::mt19937 g;
+    Points       poly_shuffled;
+    size_t       end = 0;
+    for (size_t i = 0; i < polygons.size(); ++ i) {
+        Polygon &poly = polygons[i];
+        bool keep = true;
+        if (poly.size() < 2) {
+            keep = false;
+        } else {
+            Point pmin = poly.front();
+            Point pmax = poly.points[1];
+            for (size_t k = 2; k < poly.size(); ++k) {
+                const Point& p = poly.points[k];
+                pmin = pmin.cwiseMin(p);
+                pmax = pmax.cwiseMax(p);
+                if (pmax.x() - pmin.x() > min_size || pmax.y() - pmin.y() > min_size) {
+                    // Diameter of the polygon is certainly above min_diameter.
+                    keep = true;
+                    break;
+                }
+            }
+            if (! keep) {
+                // Measure diameter of a circumscribed circle around the polygon's bounding box.
+                Vec2d size = pmax.cast<double>() - pmin.cast<double>();
+                if (size.squaredNorm() > min_diameter2) {
+                    // There is a chance that the diameter of a polygon is above min_diameter.
+                    poly_shuffled = poly.points;
+                    std::shuffle(poly_shuffled.begin(), poly_shuffled.end(), g);
+                    if (Geometry::CircleSqd circle = Geometry::smallest_enclosing_circle2_welzl(poly_shuffled); circle.radius2 > 0.25 * min_diameter2)
+                        keep = true;
+                }
+            }
+        }
+#if 0
+        //FIXME implement smarter removal of holes: Holes shall not be removed if their outer contour was not removed.
+        if (!keep) {
+            if (poly.is_counter_clockwise()) {
+                // Remove the outer contour.
+                if (i < --end) {
+                    std::swap(poly, polygons[end])
+                        --i;
+                }
+            }
+            else
+                holes.emplace_back(std::move(poly));
+        }
+#else
+        if (keep) {
+            if (end < i)
+                polygons[end] = std::move(poly);
+            ++ end;
+        }
+#endif
+        polygons.erase(polygons.begin() + end, polygons.end());
+    }
 }
 
 void remove_collinear(Polygon &poly)

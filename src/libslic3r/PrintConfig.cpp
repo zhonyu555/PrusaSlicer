@@ -2670,6 +2670,18 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpRectilinear));
 
+    def = this->add("support_material_min_diameter", coFloat);
+    def->label = L("Minimum support size");
+    def->category = L("Support material");
+    def->tooltip = L("Minimum diameter of an overhang to be supported. "
+                     "Increasing this value will filter out likely unneccessary supports of tiny overhangs protruding from an object body. "
+                     "However filtering small overhangs may leave some long thin features unsupported, "
+                     "requiring user intervention using the paint-on supports tool.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("support_material_spacing", coFloat);
     def->label = L("Pattern spacing");
     def->category = L("Support material");

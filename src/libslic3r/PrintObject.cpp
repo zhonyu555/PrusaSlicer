@@ -554,6 +554,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "support_material_interface_contact_loops"
             || opt_key == "support_material_interface_extruder"
             || opt_key == "support_material_interface_spacing"
+            || opt_key == "support_material_min_diameter"
             || opt_key == "support_material_pattern"
             || opt_key == "support_material_style"
             || opt_key == "support_material_xy_spacing"
