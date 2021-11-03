@@ -1285,40 +1285,71 @@ void GCodeViewer::load_toolpaths(const GCodeProcessor::Result& gcode_result)
         Path& last_path = buffer.paths.back();
 
         const Vec3f dir = (curr.position - prev.position).normalized();
-        const Vec3f right = Vec3f(dir.y(), -dir.x(), 0.0f).normalized();
-        const Vec3f left = -right;
-        const Vec3f up = right.cross(dir);
-        const Vec3f down = -up;
-        const float half_width = 0.5f * last_path.width;
+        const Vec3f right      = Vec3f(dir.y(), -dir.x(), 0.0f).normalized();
+        const Vec3f left       = -right;
+        const Vec3f up         = right.cross(dir);
+        const Vec3f down       = -up;
+        const Vec3f up_left    = (up+left).normalized();
+        const Vec3f up_right   = (up+right).normalized();
+        const Vec3f down_right = (down + right).normalized();
+        const Vec3f down_left  = (down + left).normalized();
+        const float half_width  = 0.5f * last_path.width;
         const float half_height = 0.5f * last_path.height;
-        const Vec3f prev_pos = prev.position - half_height * up;
+        const float width  = last_path.width;
+        const float height = last_path.height;
+        const Vec3f prev_pos    = prev.position - half_height * up;
         const Vec3f curr_pos = curr.position - half_height * up;
-        const Vec3f d_up = half_height * up;
-        const Vec3f d_down = -half_height * up;
-        const Vec3f d_right = half_width * right;
-        const Vec3f d_left = -half_width * right;
+        const Vec3f d_up        = half_height * up;
+        const Vec3f d_down      = -half_height * up;
+        const Vec3f d_right     = half_width * right;
+        const Vec3f d_left      = -half_width * right;
+        const Vec3f d_up_left   = half_height * up + left * half_width;
+        const Vec3f d_up_right   = half_height * up + right * half_width;
+        const Vec3f d_down_right = -half_height * up + right * half_width;
+        const Vec3f d_down_left  = -half_height * up + left * half_width;
 
         // vertices 1st endpoint
         if (last_path.vertices_count() == 1 || vertices.empty()) {
             // 1st segment or restart into a new vertex buffer
             // ===============================================
-            store_vertex(vertices, prev_pos + d_up, up);
-            store_vertex(vertices, prev_pos + d_right, right);
-            store_vertex(vertices, prev_pos + d_down, down);
-            store_vertex(vertices, prev_pos + d_left, left);
-        }
-        else {
+            store_vertex(vertices, prev_pos + d_up_left, up_left);
+            store_vertex(vertices, prev_pos + d_up_right, up_right);
+            store_vertex(vertices, prev_pos + d_down_right, down_right);
+            store_vertex(vertices, prev_pos + d_down_left, down_left);
+        } else {
             // any other segment
             // =================
-            store_vertex(vertices, prev_pos + d_right, right);
-            store_vertex(vertices, prev_pos + d_left, left);
+            store_vertex(vertices, prev_pos + d_up_right, up_right);
+            store_vertex(vertices, prev_pos + d_down_left, down_left);
         }
 
         // vertices 2nd endpoint
-        store_vertex(vertices, curr_pos + d_up, up);
-        store_vertex(vertices, curr_pos + d_right, right);
-        store_vertex(vertices, curr_pos + d_down, down);
-        store_vertex(vertices, curr_pos + d_left, left);
+        store_vertex(vertices, curr_pos + d_up_left, up_left);
+        store_vertex(vertices, curr_pos + d_up_right, up_right);
+        store_vertex(vertices, curr_pos + d_down_right, down_right);
+        store_vertex(vertices, curr_pos + d_down_left, down_left);
+
+        //// vertices 1st endpoint
+        //if (last_path.vertices_count() == 1 || vertices.empty()) {
+        //    // 1st segment or restart into a new vertex buffer
+        //    // ===============================================
+        //    store_vertex(vertices, prev_pos + d_up, up);
+        //    store_vertex(vertices, prev_pos + d_right, right);
+        //    store_vertex(vertices, prev_pos + d_down, down);
+        //    store_vertex(vertices, prev_pos + d_left, left);
+        //}
+        //else {
+        //    // any other segment
+        //    // =================
+        //    store_vertex(vertices, prev_pos + d_right, right);
+        //    store_vertex(vertices, prev_pos + d_left, left);
+        //}
+
+        //// vertices 2nd endpoint
+        //store_vertex(vertices, curr_pos + d_up, up);
+        //store_vertex(vertices, curr_pos + d_right, right);
+        //store_vertex(vertices, curr_pos + d_down, down);
+        //store_vertex(vertices, curr_pos + d_left, left);
 
         last_path.sub_paths.back().last = { vbuffer_id, vertices.size(), move_id, curr.position };
     };

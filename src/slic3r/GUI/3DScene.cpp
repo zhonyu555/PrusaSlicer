@@ -1326,6 +1326,258 @@ static void thick_lines_to_indexed_vertex_array(
 #undef BOTTOM
 }
 
+static void thick_lines_to_indexed_vertex_array_square(
+    const Lines &              lines,
+    const std::vector<double> &widths,
+    const std::vector<double> &heights,
+    bool                       closed,
+    double                     top_z,
+    GLIndexedVertexArray &     volume)
+{
+    assert(!lines.empty());
+    if (lines.empty()) return;
+
+#define LEFT 0
+#define RIGHT 1
+#define TOP 2
+#define BOTTOM 3
+
+    // right, left, top, bottom
+    int    idx_prev[4]   = {-1, -1, -1, -1};
+    double bottom_z_prev = 0.;
+    Vec2d  b1_prev(Vec2d::Zero());
+    Vec2d  v_prev(Vec2d::Zero());
+    int    idx_initial[4]   = {-1, -1, -1, -1};
+    double width_initial    = 0.;
+    double bottom_z_initial = 0.0;
+    double len_prev         = 0.0;
+
+    // loop once more in case of closed loops
+    size_t lines_end = closed ? (lines.size() + 1) : lines.size();
+    for (size_t ii = 0; ii < lines_end; ++ii) {
+        size_t      i        = (ii == lines.size()) ? 0 : ii;
+        const Line &line     = lines[i];
+        double      bottom_z = top_z - heights[i];
+        double      middle_z = 0.5 * (top_z + bottom_z);
+        double      width    = widths[i];
+
+        bool is_first   = (ii == 0);
+        bool is_last    = (ii == lines_end - 1);
+        bool is_closing = closed && is_last;
+
+        Vec2d  v   = unscale(line.vector()).normalized();
+        double len = unscale<double>(line.length());
+
+        Vec2d a  = unscale(line.a);
+        Vec2d b  = unscale(line.b);
+        Vec2d a1 = a;
+        Vec2d a2 = a;
+        Vec2d b1 = b;
+        Vec2d b2 = b;
+        {
+            double dist = 0.5 * width; // scaled
+            double dx   = dist * v(0);
+            double dy   = dist * v(1);
+            a1 += Vec2d(+dy, -dx);
+            a2 += Vec2d(-dy, +dx);
+            b1 += Vec2d(+dy, -dx);
+            b2 += Vec2d(-dy, +dx);
+        }
+
+        // calculate new XY normals
+        Vec2d xy_right_normal = unscale(line.normal()).normalized();
+
+        int idx_a[4] = {0, 0, 0, 0}; // initialized to avoid warnings
+        int idx_b[4] = {0, 0, 0, 0}; // initialized to avoid warnings
+        int idx_last = int(volume.vertices_and_normals_interleaved.size() / 6);
+
+        bool bottom_z_different = bottom_z_prev != bottom_z;
+        bottom_z_prev           = bottom_z;
+
+        if (!is_first && bottom_z_different) {
+            // Found a change of the layer thickness -> Add a cap at the end
+            // of the previous segment.
+            volume.push_quad(idx_b[BOTTOM], idx_b[LEFT], idx_b[TOP],
+                             idx_b[RIGHT]);
+        }
+
+        // Share top / bottom vertices if possible.
+        if (is_first) {
+            idx_a[TOP] = idx_last++;
+            volume.push_geometry(a1(0), a1(1), top_z, 0., 0., 1.);
+        } else {
+            idx_a[TOP] = idx_prev[TOP];
+        }
+
+        if (is_first || bottom_z_different) {
+            // Start of the 1st line segment or a change of the layer
+            // thickness while maintaining the print_z.
+            idx_a[BOTTOM] = idx_last++;
+            volume.push_geometry(a2(0), a2(1), bottom_z, 0., 0., -1.);
+            idx_a[LEFT] = idx_last++;
+            volume.push_geometry(a2(0), a2(1), top_z, -xy_right_normal(0),
+                                 -xy_right_normal(1), 0.0);
+            idx_a[RIGHT] = idx_last++;
+            volume.push_geometry(a1(0), a1(1), bottom_z, xy_right_normal(0),
+                                 xy_right_normal(1), 0.0);
+        } else {
+            idx_a[BOTTOM] = idx_prev[BOTTOM];
+        }
+
+        if (is_first) {
+            // Start of the 1st line segment.
+            width_initial    = width;
+            bottom_z_initial = bottom_z;
+            memcpy(idx_initial, idx_a, sizeof(int) * 4);
+        } else {
+            // Continuing a previous segment.
+            // Share left / right vertices if possible.
+            double v_dot = v_prev.dot(v);
+            // To reduce gpu memory usage, we try to reuse vertices
+            // To reduce the visual artifacts, due to averaged normals, we allow
+            // to reuse vertices only when any of two adjacent edges is longer
+            // than a fixed threshold. The following value is arbitrary, it comes
+            // from tests made on a bunch of models showing the visual artifacts
+            double len_threshold = 2.5;
+
+            // Generate new vertices if the angle between adjacent edges is
+            // greater than 45 degrees or thresholds conditions are met
+            bool sharp = (v_dot < 0.707) || (len_prev > len_threshold) ||
+                         (len > len_threshold);
+            if (sharp) {
+                if (!bottom_z_different) {
+                    // Allocate new left / right points for the start of this
+                    // segment as these points will receive their own normals
+                    // to indicate a sharp turn.
+                    idx_a[RIGHT] = idx_last++;
+                    volume.push_geometry(a1(0), a1(1), bottom_z,
+                                         xy_right_normal(0),
+                                         xy_right_normal(1), 0.0);
+                    idx_a[LEFT] = idx_last++;
+                    volume.push_geometry(a2(0), a2(1), top_z,
+                                         -xy_right_normal(0),
+                                         -xy_right_normal(1), 0.0);
+                    if (cross2(v_prev, v) > 0.) {
+                        // Right turn. Fill in the right turn wedge.
+                        volume.push_triangle(idx_prev[RIGHT], idx_a[RIGHT],
+                                             idx_prev[TOP]);
+                        volume.push_triangle(idx_prev[RIGHT],
+                                             idx_prev[BOTTOM], idx_a[RIGHT]);
+                    } else {
+                        // Left turn. Fill in the left turn wedge.
+                        volume.push_triangle(idx_prev[LEFT], idx_prev[TOP],
+                                             idx_a[LEFT]);
+                        volume.push_triangle(idx_prev[LEFT], idx_a[LEFT],
+                                             idx_prev[BOTTOM]);
+                    }
+                }
+            } else {
+                if (!bottom_z_different) {
+                    // The two successive segments are nearly collinear.
+                    idx_a[LEFT]  = idx_prev[LEFT];
+                    idx_a[RIGHT] = idx_prev[RIGHT];
+                }
+            }
+            if (is_closing) {
+                if (!sharp) {
+                    if (!bottom_z_different) {
+                        // Closing a loop with smooth transition. Unify the
+                        // closing left / right vertices.
+                        memcpy(volume.vertices_and_normals_interleaved.data() +
+                                   idx_initial[LEFT] * 6,
+                               volume.vertices_and_normals_interleaved.data() +
+                                   idx_prev[LEFT] * 6,
+                               sizeof(float) * 6);
+                        memcpy(volume.vertices_and_normals_interleaved.data() +
+                                   idx_initial[RIGHT] * 6,
+                               volume.vertices_and_normals_interleaved.data() +
+                                   idx_prev[RIGHT] * 6,
+                               sizeof(float) * 6);
+                        volume.vertices_and_normals_interleaved.erase(
+                            volume.vertices_and_normals_interleaved.end() - 12,
+                            volume.vertices_and_normals_interleaved.end());
+                        // Replace the left / right vertex indices to point to
+                        // the start of the loop.
+                        for (size_t u = volume.quad_indices.size() - 16;
+                             u < volume.quad_indices.size(); ++u) {
+                            if (volume.quad_indices[u] == idx_prev[LEFT])
+                                volume.quad_indices[u] = idx_initial[LEFT];
+                            else if (volume.quad_indices[u] == idx_prev[RIGHT])
+                                volume.quad_indices[u] = idx_initial[RIGHT];
+                        }
+                    }
+                }
+                // This is the last iteration, only required to solve the transition.
+                break;
+            }
+        }
+
+        // Only new allocate top / bottom vertices, if not closing a loop.
+        if (is_closing) {
+            idx_b[TOP] = idx_initial[TOP];
+        } else {
+            idx_b[TOP] = idx_last++;
+            volume.push_geometry(b1(0), b1(1), top_z, 0., 0., 1.);
+        }
+
+        if (is_closing && (width == width_initial) &&
+            (bottom_z == bottom_z_initial)) {
+            idx_b[BOTTOM] = idx_initial[BOTTOM];
+        } else {
+            idx_b[BOTTOM] = idx_last++;
+            volume.push_geometry(b2(0), b2(1), bottom_z, 0., 0., -1.);
+        }
+        // Generate new vertices for the end of this line segment.
+        idx_b[LEFT] = idx_last++;
+        volume.push_geometry(b2(0), b2(1), top_z, -xy_right_normal(0),
+                             -xy_right_normal(1), 0.0);
+        idx_b[RIGHT] = idx_last++;
+        volume.push_geometry(b1(0), b1(1), bottom_z, xy_right_normal(0),
+                             xy_right_normal(1), 0.0);
+
+        memcpy(idx_prev, idx_b, 4 * sizeof(int));
+        bottom_z_prev = bottom_z;
+        b1_prev       = b1;
+        v_prev        = v;
+        len_prev      = len;
+
+        if (bottom_z_different && (closed || (!is_first && !is_last))) {
+            // Found a change of the layer thickness -> Add a cap at the
+            // beginning of this segment.
+            volume.push_quad(idx_a[BOTTOM], idx_a[RIGHT], idx_a[TOP],
+                             idx_a[LEFT]);
+        }
+
+        if (!closed) {
+            // Terminate open paths with caps.
+            if (is_first)
+                volume.push_quad(idx_a[BOTTOM], idx_a[RIGHT], idx_a[TOP],
+                                 idx_a[LEFT]);
+            // We don't use 'else' because both cases are true if we have only
+            // one line.
+            if (is_last)
+                volume.push_quad(idx_b[BOTTOM], idx_b[LEFT], idx_b[TOP],
+                                 idx_b[RIGHT]);
+        }
+
+        // Add quads for a straight hollow tube-like segment.
+        // bottom-right face
+        volume.push_quad(idx_a[BOTTOM], idx_b[BOTTOM], idx_b[RIGHT],
+                         idx_a[RIGHT]);
+        // top-right face
+        volume.push_quad(idx_a[RIGHT], idx_b[RIGHT], idx_b[TOP], idx_a[TOP]);
+        // top-left face
+        volume.push_quad(idx_a[TOP], idx_b[TOP], idx_b[LEFT], idx_a[LEFT]);
+        // bottom-left face
+        volume.push_quad(idx_a[LEFT], idx_b[LEFT], idx_b[BOTTOM],
+                         idx_a[BOTTOM]);
+    }
+
+#undef LEFT
+#undef RIGHT
+#undef TOP
+#undef BOTTOM
+}
 // caller is responsible for supplying NO lines with zero length
 static void thick_lines_to_indexed_vertex_array(const Lines3& lines,
     const std::vector<double>& widths,
@@ -1621,7 +1873,9 @@ void _3DScene::thick_lines_to_verts(
     double                       top_z,
     GLVolume                    &volume)
 {
-    thick_lines_to_indexed_vertex_array(lines, widths, heights, closed, top_z, volume.indexed_vertex_array);
+    thick_lines_to_indexed_vertex_array_square(lines, widths, heights, closed,
+                                               top_z,
+                                               volume.indexed_vertex_array);
 }
 
 void _3DScene::thick_lines_to_verts(const Lines3& lines,
