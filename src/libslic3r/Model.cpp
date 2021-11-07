@@ -11,6 +11,7 @@
 #include "Format/OBJ.hpp"
 #include "Format/STL.hpp"
 #include "Format/3mf.hpp"
+#include "Format/SML.hpp"
 
 #include <float.h>
 
@@ -149,8 +150,10 @@ Model Model::read_from_file(const std::string& input_file, DynamicPrintConfig* c
     else if (boost::algorithm::iends_with(input_file, ".3mf"))
         //FIXME options & LoadAttribute::CheckVersion ? 
         result = load_3mf(input_file.c_str(), *config, *config_substitutions, &model, false);
+	else if (boost::algorithm::iends_with(input_file, ".sml"))
+		result = load_sml(input_file.c_str(), &model);
     else
-        throw Slic3r::RuntimeError("Unknown file format. Input file must have .stl, .obj, .amf(.xml) or .prusa extension.");
+        throw Slic3r::RuntimeError("Unknown file format. Input file must have .stl, .obj, .amf(.xml), .sml or .prusa extension.");
 
     if (! result)
         throw Slic3r::RuntimeError("Loading of a model file failed.");

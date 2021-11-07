@@ -82,6 +82,8 @@ add_library(libslic3r STATIC
     Format/STL.hpp
     Format/SL1.hpp
     Format/SL1.cpp
+    Format/SML.hpp
+    Format/SML.cpp
     GCode/ThumbnailData.cpp
     GCode/ThumbnailData.hpp
     GCode/CoolingBuffer.cpp

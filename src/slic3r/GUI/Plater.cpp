@@ -5294,7 +5294,7 @@ void ProjectDropDialog::on_dpi_changed(const wxRect& suggested_rect)
 
 bool Plater::load_files(const wxArrayString& filenames)
 {
-    const std::regex pattern_drop(".*[.](stl|obj|amf|3mf|prusa)", std::regex::icase);
+    const std::regex pattern_drop(".*[.](stl|obj|amf|3mf|sml|prusa)", std::regex::icase);
     const std::regex pattern_gcode_drop(".*[.](gcode|g)", std::regex::icase);
 
     std::vector<fs::path> paths;

@@ -55,6 +55,7 @@ enum FileType
     FT_OBJ,
     FT_AMF,
     FT_3MF,
+    FT_SML,
     FT_GCODE,
     FT_MODEL,
     FT_PROJECT,
