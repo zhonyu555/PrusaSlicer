@@ -203,8 +203,8 @@ IF "%PS_CURRENT_STEP%" NEQ "arguments" (
 )
 SET EXIT_STATUS=5
 SET PS_CURRENT_STEP=run
-cd src\%PS_CONFIG% || GOTO :END
 IF "%PS_RUN%" EQU "none" GOTO :PROLOGUE
+cd src\%PS_CONFIG% || GOTO :END
 SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'
