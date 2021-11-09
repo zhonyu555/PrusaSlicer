@@ -288,6 +288,90 @@ void PrintConfigDef::init_common_params()
     def->min = 1;
     def->max = 1000;
     def->set_default_value(new ConfigOptionInt(2));
+
+    def        = this->add("largix_max_angle", coFloat);
+    def->label    = L("Max angle");
+    def->category = L("Largix");
+    def->tooltip  = L("Max angle.");
+    def->sidetext = L("degree");
+    def->min      = -360;
+    def->max      = 360;
+    def->set_default_value(new ConfigOptionFloat(357.0));
+
+    def           = this->add("largix_angle_jump", coFloat);
+    def->label    = L("Angle jump");
+    def->category = L("Largix");
+    def->tooltip  = L("Angle jump");
+    def->sidetext = L("degree");
+    def->min      = -360;
+    def->max      = 360;
+    def->set_default_value(new ConfigOptionFloat(300.0));
+
+    def           = this->add("largix_angle_jump_lr", coFloat);
+    def->label    = L("Angle jump LR");
+    def->category = L("Largix");
+    def->tooltip  = L("Angle jump LR");
+    def->sidetext = L("degree");
+    def->min      = -360;
+    def->max      = 360;
+    def->set_default_value(new ConfigOptionFloat(8.0));
+
+    def        = this->add("largix_laser_rotation_axis_offset", coFloat);
+    def->label = L("Offset in millimeters from the printer head");
+    def->category = L("Largix");
+    def->tooltip  = L("Offset in millimeters from the printer head to the "
+                     "axis of rotation of the laser");
+    def->sidetext = L("mm");
+    def->set_default_value(new ConfigOptionFloat(-20.0));
+
+    def        = this->add("largix_laser_rotation_radius", coFloat);
+    def->label = L("Laser rotation radius (not used in the algorithm)");
+    def->category = L("Largix");
+    def->tooltip  = L("Laser rotation radius (not used in the algorithm)");
+    def->sidetext = L("mm");
+    def->set_default_value(new ConfigOptionFloat(80.0));
+
+    def        = this->add("largix_laser_spot_offset", coFloat);
+    def->label = L("Offset in millimeters from the position of the pressure wheel to the laser");
+    def->category = L("Largix");
+    def->tooltip  = L(
+        "Offset in millimeters from the position of the pressure wheel to "
+        "the laser light spot forward along the contour");
+    def->sidetext = L("mm");
+    def->set_default_value(new ConfigOptionFloat(10.0));
+
+    def           = this->add("largix_wheel_axis_offset", coFloat);
+    def->label    = L("Distance from head to axis of rotation wheel");
+    def->category = L("Largix");
+    def->tooltip  = L("Distance from head to axis of rotation wheel");
+    def->sidetext = L("mm");
+    def->set_default_value(new ConfigOptionFloat(45.0));
+
+    def           = this->add("largix_wheel_rotation_radius", coFloat);
+    def->label    = L("Wheel rotation radius");
+    def->category = L("Largix");
+    def->tooltip  = L("Wheel rotation radius");
+    def->sidetext = L("mm");
+    def->set_default_value(new ConfigOptionFloat(40.0));
+
+    def           = this->add("largix_min_rotation_angle", coFloat);
+    def->label    = L("Min rotation angle");
+    def->category = L("Largix");
+    def->tooltip  = L("Min rotation angle");
+    def->min      = -360.0;
+    def->max      = 360.0;
+    def->sidetext = L("degree");
+    def->set_default_value(new ConfigOptionFloat(-90.0));
+
+    def           = this->add("largix_max_rotation_angle", coFloat);
+    def->label    = L("Max rotation angle");
+    def->category = L("Largix");
+    def->tooltip  = L("Max rotation angle");
+    def->min      = -360;
+    def->max      = 360;
+    def->sidetext = L("degree");
+    def->set_default_value(new ConfigOptionFloat(90.0));
+
     // end largix configuring section   
 
     def = this->add("max_print_height", coFloat);

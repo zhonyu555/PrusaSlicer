@@ -476,7 +476,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                support_material))
     // Automatic supports (generated based on support_material_threshold).
     ((ConfigOptionBool,                support_material_auto))
-    // Direction of the support pattern (in XY plane).`
+    // Direction of the support pattern (in XY plane).
     ((ConfigOptionFloat,               support_material_angle))
     ((ConfigOptionBool,                support_material_buildplate_only))
     ((ConfigOptionFloat,               support_material_contact_distance))
@@ -510,7 +510,17 @@ PRINT_CONFIG_CLASS_DEFINE(
     // My test options for largix 2
     ((ConfigOptionFloat, largix_min_radius))
     ((ConfigOptionFloat, largix_min_strand_lenght))
-    ((ConfigOptionInt, largix_strands_number))
+    ((ConfigOptionInt, largix_strands_number)) 
+    ((ConfigOptionFloat, largix_max_angle))
+    ((ConfigOptionFloat, largix_angle_jump))
+    ((ConfigOptionFloat, largix_angle_jump_lr))
+    ((ConfigOptionFloat, largix_laser_rotation_axis_offset))
+    ((ConfigOptionFloat, largix_laser_rotation_radius))
+    ((ConfigOptionFloat, largix_laser_spot_offset))
+    ((ConfigOptionFloat, largix_wheel_axis_offset))
+    ((ConfigOptionFloat, largix_wheel_rotation_radius))
+    ((ConfigOptionFloat, largix_min_rotation_angle))
+    ((ConfigOptionFloat, largix_max_rotation_angle))
 )
 
 // This object is mapped to Perl as Slic3r::Config::PrintRegion.
