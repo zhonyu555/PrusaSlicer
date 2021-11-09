@@ -472,7 +472,8 @@ static std::vector<std::string> s_Preset_machine_limits_options {
 
 static std::vector<std::string> s_Preset_printer_options {
     "printer_technology",
-    "bed_shape", "bed_custom_texture", "bed_custom_model", "z_offset", "gcode_flavor", "use_relative_e_distances",
+    "bed_shape", "bed_custom_texture", "bed_custom_model", "bed_avoid_boundingboxes", "bed_avoid_boundingboxes_color", "bed_enable_avoid_boundingboxes",
+    "z_offset", "gcode_flavor", "use_relative_e_distances",
     "use_firmware_retraction", "use_volumetric_e", "variable_layer_height",
     //FIXME the print host keys are left here just for conversion from the Printer preset to Physical Printer preset.
     "host_type", "print_host", "printhost_apikey", "printhost_cafile",
@@ -553,7 +554,8 @@ static std::vector<std::string> s_Preset_sla_material_options {
 
 static std::vector<std::string> s_Preset_sla_printer_options {
     "printer_technology",
-    "bed_shape", "bed_custom_texture", "bed_custom_model", "max_print_height",
+    "bed_shape", "bed_custom_texture", "bed_custom_model", "bed_avoid_boundingboxes", "bed_avoid_boundingboxes_color", "bed_enable_avoid_boundingboxes",
+    "max_print_height",
     "display_width", "display_height", "display_pixels_x", "display_pixels_y",
     "display_mirror_x", "display_mirror_y",
     "display_orientation",

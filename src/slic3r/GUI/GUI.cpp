@@ -196,6 +196,9 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 			config.option<ConfigOptionPoints>(opt_key)->set_at(vec_new, opt_index, 0);
 			}
 			break;
+                case coBoundingBoxes:
+                        config.option<ConfigOptionBoundingBoxes>(opt_key)->values = boost::any_cast<std::vector<BoundingBox>>(value);
+                        break;
 		case coNone:
 			break;
 		default:

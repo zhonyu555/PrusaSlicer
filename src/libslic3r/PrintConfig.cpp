@@ -232,6 +232,20 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
 
+    def = this->add("bed_avoid_boundingboxes", coBoundingBoxes);
+    def->label = L("Bed avoid boundingboxes");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBoundingBoxes());
+
+    def = this->add("bed_enable_avoid_boundingboxes", coBool);
+    def->label = L("Bed should avoid boundingboxes whose stroke color matches bed_avoid_boundingboxes_color");
+    def->set_default_value(new ConfigOptionBool { false });
+
+    def = this->add("bed_avoid_boundingboxes_color", coString);
+    def->label = L("Bed stroke avoid color");
+    def->tooltip = L("The RGB stroke color of polygons to avoid in the bed's texture (only works with SVG). Empty means unset.");
+    def->set_default_value(new ConfigOptionString("#FF0000"));
+
     def = this->add("elefant_foot_compensation", coFloat);
     def->label = L("Elephant foot compensation");
     def->category = L("Advanced");
