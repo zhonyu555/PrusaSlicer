@@ -345,7 +345,7 @@ bool polygon_is_convex(const Points &poly)
     for (size_t i = 0; i < poly.size(); ++ i) {
         Point p2 = poly[i];
         auto det = cross2((p1 - p0).cast<int64_t>(), (p2 - p1).cast<int64_t>());
-        if (det >= 0)
+        if (det < 0)
             return false;
         p0 = p1;
         p1 = p2;
