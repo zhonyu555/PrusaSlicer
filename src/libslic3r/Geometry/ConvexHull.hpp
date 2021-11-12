@@ -25,4 +25,3 @@ bool inside_convex_polygon(const std::pair<std::vector<Vec2d>, std::vector<Vec2d
 } } // namespace Slicer::Geometry
 
 #endif
-\
