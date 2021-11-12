@@ -4,6 +4,7 @@
 #include "MeshSplitImpl.hpp"
 #include "ClipperUtils.hpp"
 #include "Geometry.hpp"
+#include "Geometry/ConvexHull.hpp"
 #include "Point.hpp"
 #include "Execution/ExecutionTBB.hpp"
 #include "Execution/ExecutionSeq.hpp"

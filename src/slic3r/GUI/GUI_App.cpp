@@ -2654,6 +2654,11 @@ Plater* GUI_App::plater()
     return plater_;
 }
 
+const Plater* GUI_App::plater() const
+{
+    return plater_;
+}
+
 Model& GUI_App::model()
 {
     return plater_->model();
