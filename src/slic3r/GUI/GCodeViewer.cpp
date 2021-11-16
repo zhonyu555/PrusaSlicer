@@ -520,7 +520,7 @@ const std::vector<GCodeViewer::Color> GCodeViewer::Travel_Colors {{
     { 0.505f, 0.064f, 0.028f, 1.0f }  // Retract
 }};
 
-#if 1
+#if 0
 // Normal ranges
 const std::vector<GCodeViewer::Color> GCodeViewer::Range_Colors {{
     { 0.043f, 0.173f, 0.478f, 1.0f }, // bluish
