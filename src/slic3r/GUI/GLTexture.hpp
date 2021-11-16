@@ -89,8 +89,9 @@ namespace GUI {
         GLTexture() : m_compressor(*this) {}
         virtual ~GLTexture() { reset(); }
 
-        bool load_from_file(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
+        bool load_from_png_file(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
         bool load_from_svg_file(const std::string& filename, bool use_mipmaps, bool compress, bool apply_anisotropy, unsigned int max_size_px);
+        bool load_from_ideamaker_texture_file(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
         // meanings of states: (std::pair<int, bool>)
         // first field (int):
         // 0 -> no changes
@@ -100,6 +101,8 @@ namespace GUI {
         // false -> no changes
         // true -> add background color
         bool load_from_svg_files_as_sprites_array(const std::vector<std::string>& filenames, const std::vector<std::pair<int, bool>>& states, unsigned int sprite_size_px, bool compress);
+        bool load_from_png_buffer(const std::vector<unsigned char>& png_buffer, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
+
         void reset();
 
         unsigned int get_id() const { return m_id; }
@@ -116,8 +119,8 @@ namespace GUI {
         static void render_sub_texture(unsigned int tex_id, float left, float right, float bottom, float top, const Quad_UVs& uvs);
 
     private:
-        bool load_from_png(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
-        bool load_from_svg(const std::string& filename, bool use_mipmaps, bool compress, bool apply_anisotropy, unsigned int max_size_px);
+        bool load_from_png_internal(const std::string& filename, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy);
+        bool load_from_svg_internal(const std::string& filename, bool use_mipmaps, bool compress, bool apply_anisotropy, unsigned int max_size_px);
 
         bool adjust_size_for_compression();
         void send_to_gpu(std::vector<unsigned char>& data, bool use_mipmaps, ECompressionType compression_type, bool apply_anisotropy,
