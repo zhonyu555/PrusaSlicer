@@ -969,7 +969,7 @@ bool GLVolumeCollection::check_outside_state(const BuildVolume &build_volume, Mo
             case BuildVolume::Type::Convex:
             //FIXME doing test on convex hull until we learn to do test on non-convex polygons efficiently.
             case BuildVolume::Type::Custom:
-                state = build_volume.volume_state_convex(volume_convex_mesh(*volume), volume->world_matrix().cast<float>());
+                state = build_volume.object_state(volume_convex_mesh(*volume).its, volume->world_matrix().cast<float>(), volume_sinking(*volume));
                 break;
             default:
                 // Ignore, don't produce any collision.

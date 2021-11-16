@@ -1541,7 +1541,7 @@ unsigned int ModelObject::update_instances_print_volume_state(const BuildVolume 
         for (const ModelVolume* vol : this->volumes)
             if (vol->is_model_part()) {
                 const Transform3d matrix = model_instance->get_matrix() * vol->get_matrix();
-                BuildVolume::ObjectState state = build_volume.object_state(vol->mesh().its, matrix.cast<float>());
+                BuildVolume::ObjectState state = build_volume.object_state(vol->mesh().its, matrix.cast<float>(), true /* may be below print bed */);
                 if (state == BuildVolume::ObjectState::Inside)
                     inside_outside |= INSIDE;
                 else if (state == BuildVolume::ObjectState::Outside)

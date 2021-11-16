@@ -76,8 +76,6 @@ BuildVolume::BuildVolume(const std::vector<Vec2d> &bed_shape, const double max_p
     BOOST_LOG_TRIVIAL(debug) << "BuildVolume bed_shape clasified as: " << this->type_name();
 }
 
-static constexpr const float world_min_z = 0;
-
 #if 0
 // Tests intersections of projected triangles, not just their vertices against a bounding box.
 // This test also correctly evaluates collision of a non-convex object with the bounding box.
@@ -187,41 +185,84 @@ static inline BuildVolume::ObjectState rectangle_test(const indexed_triangle_set
 // Trim the input transformed triangle mesh with print bed and test the remaining vertices with is_inside callback.
 // Return inside / colliding / outside state.
 template<typename InsideFn>
-BuildVolume::ObjectState object_state_templ(const indexed_triangle_set &its, const Transform3f &trafo, InsideFn is_inside)
+BuildVolume::ObjectState object_state_templ(const indexed_triangle_set &its, const Transform3f &trafo, bool may_be_below_bed, InsideFn is_inside)
 {
-    bool inside  = false;
-    bool outside = false;
-    for (const stl_triangle_vertex_indices &tri : its.indices) {
-        const Vec3f pts[3] = { trafo * its.vertices[tri(0)], trafo * its.vertices[tri(1)], trafo * its.vertices[tri(2)] };
-        int iprev = 2;
-        for (int iedge = 0; iedge < 3; ++iedge) {
-            const Vec3f &p1 = pts[iprev];
-            const Vec3f &p2 = pts[iedge];
-            Vec3f pt;
-            if ((p1.z() < world_min_z && p2.z() > world_min_z) || (p2.z() < world_min_z && p1.z() > world_min_z)) {
-                // Edge crosses the z plane. Calculate intersection point with the plane.
-                const float t = (world_min_z - p1.z()) / (p2.z() - p1.z());
-                pt = Vec3f(p1.x() + (p2.x() - p1.x()) * t, p1.y() + (p2.y() - p1.y()) * t, world_min_z);
-            } else
-                pt = p2;
-            if (pt.z() >= world_min_z) {
-                if (is_inside(pt)) {
-                    inside = true;
-                    if (outside)
-                        break;
-                } else {
-                    outside = true;
-                    if (inside)
+    size_t num_inside = 0;
+    size_t num_above  = 0;
+    bool   inside     = false;
+    bool   outside    = false;
+    static constexpr const auto world_min_z = float(-BuildVolume::SceneEpsilon);
+
+    if (may_be_below_bed) 
+    {
+        // Slower test, needs to clip the object edges with the print bed plane.
+        // 1) Allocate transformed vertices with their position with respect to print bed surface.
+        std::vector<char> sides;
+        sides.reserve(its.vertices.size());
+
+        const auto sign = [](const stl_vertex& pt) { return pt.z() > world_min_z ? 1 : pt.z() < world_min_z ? -1 : 0; };
+
+        for (const stl_vertex &v : its.vertices) {
+            const stl_vertex pt = trafo * v;
+            const int        s = sign(pt);
+            sides.emplace_back(s);
+            if (s >= 0) {
+                // Vertex above or on print bed surface. Test whether it is inside the build volume.
+                ++ num_above;
+                if (is_inside(pt))
+                    ++ num_inside;
+            }
+        }
+
+        // 2) Calculate intersections of triangle edges with the build surface.
+        inside  = num_inside > 0;
+        outside = num_inside < num_above;
+        if (num_above < its.vertices.size() && ! (inside && outside)) {
+            // Not completely above the build surface and status may still change by testing edges intersecting the build platform.
+            for (const stl_triangle_vertex_indices &tri : its.indices) {
+                const int s[3] = { sides[tri(0)], sides[tri(1)], sides[tri(2)] };
+                if (std::min(s[0], std::min(s[1], s[2])) < 0 && std::max(s[0], std::max(s[1], s[2])) > 0) {
+                    // Some edge of this triangle intersects the build platform. Calculate the intersection.
+                    int iprev = 2;
+                    for (int iedge = 0; iedge < 3; ++ iedge) {
+                        if (s[iprev] * s[iedge] == -1) {
+                            // edge intersects the build surface. Calculate intersection point.
+                            const stl_vertex p1 = trafo * its.vertices[tri(iprev)];
+                            const stl_vertex p2 = trafo * its.vertices[tri(iedge)];
+                            assert(sign(p1) == s[iprev]);
+                            assert(sign(p2) == s[iedge]);
+                            assert(p1.z() * p2.z() < 0);
+                            // Edge crosses the z plane. Calculate intersection point with the plane.
+                            const float t = (world_min_z - p1.z()) / (p2.z() - p1.z());
+                            (is_inside(Vec3f(p1.x() + (p2.x() - p1.x()) * t, p1.y() + (p2.y() - p1.y()) * t, world_min_z)) ? inside : outside) = true;
+                        }
+                        iprev = iedge;
+                    }
+                    if (inside && outside)
                         break;
                 }
             }
-            iprev = iedge;
         }
     }
+    else 
+    {
+        // Much simpler and faster code, not clipping the object with the print bed.
+        assert(! may_be_below_bed);
+        num_above = its.vertices.size();
+        for (const stl_vertex &v : its.vertices) {
+            const stl_vertex pt = trafo * v;
+            assert(pt.z() >= world_min_z);
+            if (is_inside(pt))
+                ++ num_inside;
+        }
+        inside  = num_inside > 0;
+        outside = num_inside < num_above;
+    }
+
     return inside ? (outside ? BuildVolume::ObjectState::Colliding : BuildVolume::ObjectState::Inside) : BuildVolume::ObjectState::Outside;
 }
 
-BuildVolume::ObjectState BuildVolume::object_state(const indexed_triangle_set &its, const Transform3f &trafo) const
+BuildVolume::ObjectState BuildVolume::object_state(const indexed_triangle_set &its, const Transform3f &trafo, bool may_be_below_bed) const
 {
     switch (m_type) {
     case Type::Rectangle:
@@ -233,21 +274,21 @@ BuildVolume::ObjectState BuildVolume::object_state(const indexed_triangle_set &i
         // The following test correctly interprets intersection of a non-convex object with a rectangular build volume.
         //return rectangle_test(its, trafo, to_2d(build_volume.min), to_2d(build_volume.max), build_volume.max.z());
         //FIXME This test does NOT correctly interprets intersection of a non-convex object with a rectangular build volume.
-        return object_state_templ(its, trafo, [build_volumef](const Vec3f &pt) { return build_volumef.contains(pt); });
+        return object_state_templ(its, trafo, may_be_below_bed, [build_volumef](const Vec3f &pt) { return build_volumef.contains(pt); });
     }
     case Type::Circle:
     {
         Geometry::Circlef circle { unscaled<float>(m_circle.center), unscaled<float>(m_circle.radius + SceneEpsilon) };
         return m_max_print_height == 0 ? 
-            object_state_templ(its, trafo, [circle](const Vec3f &pt) { return circle.contains(to_2d(pt)); }) :
-            object_state_templ(its, trafo, [circle, z = m_max_print_height + SceneEpsilon](const Vec3f &pt) { return pt.z() < z && circle.contains(to_2d(pt)); });
+            object_state_templ(its, trafo, may_be_below_bed, [circle](const Vec3f &pt) { return circle.contains(to_2d(pt)); }) :
+            object_state_templ(its, trafo, may_be_below_bed, [circle, z = m_max_print_height + SceneEpsilon](const Vec3f &pt) { return pt.z() < z && circle.contains(to_2d(pt)); });
     }
     case Type::Convex:
     //FIXME doing test on convex hull until we learn to do test on non-convex polygons efficiently.
     case Type::Custom:
         return m_max_print_height == 0 ? 
-            object_state_templ(its, trafo, [this](const Vec3f &pt) { return Geometry::inside_convex_polygon(m_top_bottom_convex_hull_decomposition_scene, to_2d(pt).cast<double>()); }) :
-            object_state_templ(its, trafo, [this, z = m_max_print_height + SceneEpsilon](const Vec3f &pt) { return pt.z() < z && Geometry::inside_convex_polygon(m_top_bottom_convex_hull_decomposition_scene, to_2d(pt).cast<double>()); });
+            object_state_templ(its, trafo, may_be_below_bed, [this](const Vec3f &pt) { return Geometry::inside_convex_polygon(m_top_bottom_convex_hull_decomposition_scene, to_2d(pt).cast<double>()); }) :
+            object_state_templ(its, trafo, may_be_below_bed, [this, z = m_max_print_height + SceneEpsilon](const Vec3f &pt) { return pt.z() < z && Geometry::inside_convex_polygon(m_top_bottom_convex_hull_decomposition_scene, to_2d(pt).cast<double>()); });
     case Type::Invalid:
     default:
         return ObjectState::Inside;
@@ -261,28 +302,6 @@ BuildVolume::ObjectState BuildVolume::volume_state_bbox(const BoundingBoxf3 &vol
     if (m_max_print_height == 0)
         build_volume.max.z() = std::numeric_limits<double>::max();
     return build_volume.contains(volume_bbox) ? ObjectState::Inside : build_volume.intersects(volume_bbox) ? ObjectState::Colliding : ObjectState::Outside;
-}
-
-BuildVolume::ObjectState BuildVolume::volume_state_convex(const TriangleMesh &volume_mesh, const Transform3f &trafo) const
-{
-    assert(m_type == Type::Circle || m_type == Type::Convex || m_type == Type::Custom);
-    if (m_type == Type::Circle) {
-        const auto r2 = float(sqr(unscaled<double>(m_circle.radius + SceneEpsilon)));
-        const auto center = unscaled<float>(m_circle.center);
-        size_t outside = 0;
-        size_t valid   = 0;
-        float  max_z   = m_max_print_height == 0 ? std::numeric_limits<float>::max() : m_max_print_height + float(SceneEpsilon);
-        for (const Vec3f &local_v : volume_mesh.its.vertices)
-            if (const Vec3f v = trafo * local_v; v.z() >= 0) {
-                ++ valid;
-                if ((to_2d(v) - center).squaredNorm() > r2 || v.z() > max_z)
-                    ++ outside;
-            }
-        return outside == 0 ? ObjectState::Inside : outside < valid ? ObjectState::Colliding : ObjectState::Outside;
-    } else {
-        assert(m_type == Type::Convex);
-        return this->object_state(volume_mesh.its, trafo);
-    }
 }
 
 bool BuildVolume::all_paths_inside(const GCodeProcessorResult &paths, const BoundingBoxf3 &paths_bbox) const
