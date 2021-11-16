@@ -68,8 +68,8 @@ public:
         return ! (this->max(0) < other.min(0) || this->min(0) > other.max(0) ||
                   this->max(1) < other.min(1) || this->min(1) > other.max(1));
     }
-    bool operator==(const BoundingBoxBase<PointClass> &rhs) { return this->min == rhs.min && this->max == rhs.max; }
-    bool operator!=(const BoundingBoxBase<PointClass> &rhs) { return ! (*this == rhs); }
+    bool operator==(const BoundingBoxBase<PointClass> &rhs) const { return this->min == rhs.min && this->max == rhs.max; }
+    bool operator!=(const BoundingBoxBase<PointClass> &rhs) const { return ! (*this == rhs); }
 };
 
 template <class PointClass>

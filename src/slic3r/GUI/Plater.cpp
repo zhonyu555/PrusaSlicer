@@ -1946,7 +1946,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     : q(q)
     , main_frame(main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
-        "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
+        "bed_shape", "bed_custom_texture", "bed_custom_model", "bed_avoid_boundingboxes", "bed_avoid_boundingboxes_color", "bed_enable_avoid_boundingboxes",
+        "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
         "brim_width", "brim_separation", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
         "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width",
         "extruder_colour", "filament_colour", "material_colour", "max_print_height", "printer_model", "printer_technology",
@@ -6264,7 +6265,7 @@ void Plater::on_config_change(const DynamicPrintConfig &config)
             p->reset_gcode_toolpaths();
             p->view3D->get_canvas3d()->reset_sequential_print_clearance();
         }
-        else if (opt_key == "bed_shape" || opt_key == "bed_custom_texture" || opt_key == "bed_custom_model") {
+        else if (opt_key == "bed_shape" || opt_key == "bed_custom_texture" || opt_key == "bed_custom_model" || opt_key == "bed_avoid_boundingboxes" || opt_key == "bed_avoid_boundingboxes_color" || opt_key == "bed_enable_avoid_boundingboxes") {
             bed_shape_changed = true;
             update_scheduled = true;
         }

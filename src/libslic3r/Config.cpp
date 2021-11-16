@@ -215,6 +215,29 @@ std::string escape_ampersand(const std::string& str)
     return std::string(out.data(), outptr - out.data());
 }
 
+std::string serializeBoundingBox(const BoundingBox& bb)
+{
+    std::ostringstream ss;
+    ss << bb.min.x() << "x" << bb.min.y() << "," << bb.max.x() << "x" << bb.max.y();
+    return ss.str();
+}
+    
+bool deserializeBoundingBox(const std::string &str, BoundingBox* dest)
+{
+    std::istringstream is(str);
+    for (auto& target : {&(dest->min), &(dest->max)}) {
+        std::string point_str;
+        if (!std::getline(is, point_str, ',')) return false;
+        std::istringstream iss(point_str);
+        std::string coord_str;
+        if (!std::getline(iss, coord_str, 'x')) return false;
+        std::istringstream(coord_str) >> target->x();
+        if (!std::getline(iss, coord_str, 'x')) return false;
+        std::istringstream(coord_str) >> target->y();
+    }
+    return true;
+}
+
 void ConfigOptionDeleter::operator()(ConfigOption* p) {
     delete p;
 }
@@ -269,6 +292,8 @@ ConfigOption* ConfigOptionDef::create_empty_option() const
 	    case coBool:            return new ConfigOptionBool();
 	    case coBools:           return new ConfigOptionBools();
 	    case coEnum:            return new ConfigOptionEnumGeneric(this->enum_keys_map);
+	    case coBoundingBox:     return new ConfigOptionBoundingBox();
+	    case coBoundingBoxes:   return new ConfigOptionBoundingBoxes();
 	    default:                throw ConfigurationError(std::string("Unknown option type for option ") + this->label);
 	    }
 	}
@@ -1301,6 +1326,8 @@ CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionBool)
 CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionBools)
 CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionBoolsNullable)
 CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionEnumGeneric)
+CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionBoundingBox)
+CEREAL_REGISTER_TYPE(Slic3r::ConfigOptionBoundingBoxes)
 CEREAL_REGISTER_TYPE(Slic3r::ConfigBase)
 CEREAL_REGISTER_TYPE(Slic3r::DynamicConfig)
 
@@ -1337,4 +1364,6 @@ CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionSingle<bool>, Slic3r::C
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionVector<unsigned char>, Slic3r::ConfigOptionBools)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionVector<unsigned char>, Slic3r::ConfigOptionBoolsNullable)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionInt, Slic3r::ConfigOptionEnumGeneric)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionSingle<Slic3r::BoundingBox>, Slic3r::ConfigOptionBoundingBox)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigOptionVector<Slic3r::BoundingBox>, Slic3r::ConfigOptionBoundingBoxes)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(Slic3r::ConfigBase, Slic3r::DynamicConfig)

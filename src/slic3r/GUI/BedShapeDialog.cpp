@@ -14,8 +14,11 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/log/trivial.hpp>
 
 #include <algorithm>
+
+#include "nanosvg/nanosvg.h"
 
 namespace Slic3r {
 namespace GUI {
@@ -237,22 +240,22 @@ void BedShape::apply_optgroup_values(ConfigOptionsGroupShp optgroup)
         optgroup->set_value("diameter", double_to_string(m_diameter));
 }
 
-void BedShapeDialog::build_dialog(const ConfigOptionPoints& default_pt, const ConfigOptionString& custom_texture, const ConfigOptionString& custom_model)
+void BedShapeDialog::build_dialog(const ConfigOptionPoints& default_pt, const ConfigOptionString& custom_texture, const ConfigOptionString& custom_model, const ConfigOptionBoundingBoxes& avoid_boundingboxes, const ConfigOptionBool& enable_avoid_boundingboxes, const ConfigOptionString avoid_boundingboxes_color)
 {
     SetFont(wxGetApp().normal_font());
 
-	m_panel = new BedShapePanel(this);
-    m_panel->build_panel(default_pt, custom_texture, custom_model);
+    m_panel = new BedShapePanel(this);
+    m_panel->build_panel(default_pt, custom_texture, custom_model, avoid_boundingboxes, enable_avoid_boundingboxes, avoid_boundingboxes_color);
 
-	auto main_sizer = new wxBoxSizer(wxVERTICAL);
-	main_sizer->Add(m_panel, 1, wxEXPAND);
-	main_sizer->Add(CreateButtonSizer(wxOK | wxCANCEL), 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 10);
+    auto main_sizer = new wxBoxSizer(wxVERTICAL);
+    main_sizer->Add(m_panel, 1, wxEXPAND);
+    main_sizer->Add(CreateButtonSizer(wxOK | wxCANCEL), 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 10);
 
     wxGetApp().UpdateDlgDarkUI(this, true);
 
-	SetSizer(main_sizer);
-	SetMinSize(GetSize());
-	main_sizer->SetSizeHints(this);
+    SetSizer(main_sizer);
+    SetMinSize(GetSize());
+    main_sizer->SetSizeHints(this);
 
     this->Bind(wxEVT_CLOSE_WINDOW, ([this](wxCloseEvent& evt) {
         EndModal(wxID_CANCEL);
@@ -278,18 +281,21 @@ void BedShapeDialog::on_dpi_changed(const wxRect &suggested_rect)
 const std::string BedShapePanel::NONE = "None";
 const std::string BedShapePanel::EMPTY_STRING = "";
 
-void BedShapePanel::build_panel(const ConfigOptionPoints& default_pt, const ConfigOptionString& custom_texture, const ConfigOptionString& custom_model)
+void BedShapePanel::build_panel(const ConfigOptionPoints& default_pt, const ConfigOptionString& custom_texture, const ConfigOptionString& custom_model, const ConfigOptionBoundingBoxes& avoid_boundingboxes, const ConfigOptionBool& enable_avoid_boundingboxes, const ConfigOptionString avoid_boundingboxes_color)
 {
     wxGetApp().UpdateDarkUI(this);
     m_shape = default_pt.values;
     m_custom_texture = custom_texture.value.empty() ? NONE : custom_texture.value;
     m_custom_model = custom_model.value.empty() ? NONE : custom_model.value;
-
+    m_avoid_boundingboxes = avoid_boundingboxes.values;
+    m_enable_avoid_boundingboxes = enable_avoid_boundingboxes.value;
+    m_avoid_boundingboxes_color = avoid_boundingboxes_color.value;
+    
     auto sbsizer = new wxStaticBoxSizer(wxVERTICAL, this, _L("Shape"));
     sbsizer->GetStaticBox()->SetFont(wxGetApp().bold_font());
     wxGetApp().UpdateDarkUI(sbsizer->GetStaticBox());
 
-	// shape options
+    // shape options
     m_shape_options_book = new wxChoicebook(this, wxID_ANY, wxDefaultPosition, wxSize(25*wxGetApp().em_unit(), -1), wxCHB_TOP);
     wxGetApp().UpdateDarkUI(m_shape_options_book->GetChoiceCtrl());
 
@@ -414,10 +420,28 @@ wxPanel* BedShapePanel::init_texture_panel()
         wxSizer* remove_sizer = new wxBoxSizer(wxHORIZONTAL);
         remove_sizer->Add(remove_btn, 1, wxEXPAND);
 
+        wxColourPickerCtrl* avoid_color = new wxColourPickerCtrl(parent, wxID_ANY, wxColour(m_avoid_boundingboxes_color), wxDefaultPosition, wxDefaultSize, wxCLRP_DEFAULT_STYLE, wxDefaultValidator, _L("Avoid bed stroke color"));
+        avoid_color->Bind(wxEVT_COLOURPICKER_CHANGED, ([this](wxCommandEvent& e) {
+            m_avoid_boundingboxes_color = dynamic_cast<wxColourPickerCtrl*>(e.GetEventObject())->GetColour().GetAsString(wxC2S_HTML_SYNTAX).ToStdString();
+            update_shape();
+        }));
+        wxCheckBox* avoid_box = new wxCheckBox(parent, wxID_ANY, _L("Avoid bed regions"));
+        avoid_box->SetValue(m_enable_avoid_boundingboxes);
+        avoid_color->Enable(m_enable_avoid_boundingboxes);
+        avoid_box->Bind(wxEVT_CHECKBOX, ([this, avoid_color](wxCommandEvent& e) {
+            avoid_color->Enable(e.IsChecked());
+            m_enable_avoid_boundingboxes = e.IsChecked();
+            update_shape();
+        }));
+        wxSizer* avoid_sizer = new wxBoxSizer(wxHORIZONTAL);
+        avoid_sizer->Add(avoid_box, 1, wxEXPAND);
+        avoid_sizer->Add(avoid_color, 1, wxEXPAND);
+
         wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
         sizer->Add(filename_sizer, 1, wxEXPAND);
         sizer->Add(load_sizer, 1, wxEXPAND);
         sizer->Add(remove_sizer, 1, wxEXPAND | wxTOP, 2);
+        sizer->Add(avoid_sizer, 1, wxEXPAND | wxTOP);
 
         load_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) { load_texture(); }));
         remove_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent& e) {
@@ -561,7 +585,8 @@ void BedShapePanel::update_shape()
 {
 	auto page_idx = m_shape_options_book->GetSelection();
     auto opt_group = m_optgroups[page_idx];
-
+    Vec2d rect_size(Vec2d::Zero()); // Only updated to non-zero in the case of rectangular bed.
+    
 #if ENABLE_OUT_OF_BED_DETECTION_IMPROVEMENTS
     Bed3D::EShapeType page_type = static_cast<Bed3D::EShapeType>(page_idx);
 #else
@@ -573,7 +598,6 @@ void BedShapePanel::update_shape()
 #else
     if (page_type == BedShape::Type::Rectangular) {
 #endif // ENABLE_OUT_OF_BED_DETECTION_IMPROVEMENTS
-        Vec2d rect_size(Vec2d::Zero());
 		Vec2d rect_origin(Vec2d::Zero());
 
 		try { rect_size = boost::any_cast<Vec2d>(opt_group->get_value("rect_size")); }
@@ -631,6 +655,7 @@ void BedShapePanel::update_shape()
         m_shape = m_loaded_shape;
 
     update_preview();
+    if (rect_size != Vec2d::Zero()) populate_avoid_boundingboxes(rect_size);
 }
 
 // Loads an stl file, projects it to the XY plane and calculates a polygon.
@@ -698,6 +723,54 @@ void BedShapePanel::load_texture()
 
     m_custom_texture = file_name;
     update_shape();
+}
+
+void BedShapePanel::populate_avoid_boundingboxes(const Vec2d& bed_rect_size)
+{
+    m_avoid_boundingboxes.clear();
+    if (!m_enable_avoid_boundingboxes) return;
+    if (m_avoid_boundingboxes_color.empty()) return;
+    uint32_t avoid_color = wxColour(m_avoid_boundingboxes_color).GetRGBA();
+
+    if (!boost::algorithm::iends_with(m_custom_texture, ".svg")) {
+        BOOST_LOG_TRIVIAL(info) << "Non-SVG texture, not populating avoid_boundingboxes: " << m_custom_texture;
+        return;
+    }
+
+    NSVGimage *image = nsvgParseFromFile(m_custom_texture.c_str(), "px", 96.0f);
+    if (image == nullptr) {
+        BOOST_LOG_TRIVIAL(error)
+                << "bed_custom_texture failed to parse SVG from: "
+                << m_custom_texture;
+        return;
+    }
+    const double width = bed_rect_size.x();
+    const double height = bed_rect_size.y();
+    for (NSVGshape *shape = image->shapes; shape != NULL; shape = shape->next) {
+        if (shape->stroke.type != NSVG_PAINT_COLOR ||
+            shape->stroke.color != avoid_color) {
+            continue;
+        }
+        // SVG paths may come in many flavors (ellipses,
+        // bezier curves, non-convex, etc) that are poor fits
+        // for arrange()'s modeling of exclusion zones in
+        // terms of closed polygons. Work around this by
+        // excluding the entire axis-aligned bounding box of
+        // each avoidance shape. Users can work around this
+        // limitation by using smaller rects to cover any
+        // non-rectangular zones they'd like to avoid.
+        
+        // NSVGshape.bounds orders as [minx,miny,maxx,maxy],
+        // but Y axis is inverted in SVG relative to bed
+        // coordinates, hence the height- and 3/1 inversions
+        // below.
+        float minx = scaled(width*shape->bounds[0]/image->width);
+        float maxx = scaled(width*shape->bounds[2]/image->width);
+        float miny = scaled(height-(height*shape->bounds[3]/image->height));
+        float maxy = scaled(height-(height*shape->bounds[1]/image->height));
+        m_avoid_boundingboxes.push_back(BoundingBox({minx, miny}, {maxx, maxy}));
+    }
+    nsvgDelete(image);
 }
 
 void BedShapePanel::load_model()

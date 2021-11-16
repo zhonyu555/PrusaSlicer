@@ -1400,7 +1400,10 @@ PageBedShape::PageBedShape(ConfigWizard *parent)
 
     shape_panel->build_panel(*wizard_p()->custom_config->option<ConfigOptionPoints>("bed_shape"),
         *wizard_p()->custom_config->option<ConfigOptionString>("bed_custom_texture"),
-        *wizard_p()->custom_config->option<ConfigOptionString>("bed_custom_model"));
+        *wizard_p()->custom_config->option<ConfigOptionString>("bed_custom_model"),
+        *wizard_p()->custom_config->option<ConfigOptionBoundingBoxes>("bed_avoid_boundingboxes"),
+        *wizard_p()->custom_config->option<ConfigOptionBool>("bed_enable_avoid_boundingboxes"),
+        *wizard_p()->custom_config->option<ConfigOptionString>("bed_avoid_boundingboxes_color"));
 
     append(shape_panel);
 }
@@ -1410,9 +1413,15 @@ void PageBedShape::apply_custom_config(DynamicPrintConfig &config)
     const std::vector<Vec2d>& points = shape_panel->get_shape();
     const std::string& custom_texture = shape_panel->get_custom_texture();
     const std::string& custom_model = shape_panel->get_custom_model();
+    const std::vector<BoundingBox>& avoid_boundingboxes = shape_panel->get_avoid_boundingboxes();
+    const bool enable_avoid_boundingboxes = shape_panel->get_enable_avoid_boundingboxes();
+    const std::string avoid_boundingboxes_color = shape_panel->get_avoid_boundingboxes_color();
     config.set_key_value("bed_shape", new ConfigOptionPoints(points));
     config.set_key_value("bed_custom_texture", new ConfigOptionString(custom_texture));
     config.set_key_value("bed_custom_model", new ConfigOptionString(custom_model));
+    config.set_key_value("bed_avoid_boundingboxes", new ConfigOptionBoundingBoxes(avoid_boundingboxes));
+    config.set_key_value("bed_enable_avoid_boundingboxes", new ConfigOptionBool(enable_avoid_boundingboxes));
+    config.set_key_value("bed_avoid_boundingboxes_color", new ConfigOptionString(avoid_boundingboxes_color));
 }
 
 static void focus_event(wxFocusEvent& e, wxTextCtrl* ctrl, double def_value) 
@@ -2830,7 +2839,7 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
 
     p->load_vendors();
     p->custom_config.reset(DynamicPrintConfig::new_from_defaults_keys({
-        "gcode_flavor", "bed_shape", "bed_custom_texture", "bed_custom_model", "nozzle_diameter", "filament_diameter", "temperature", "bed_temperature",
+        "gcode_flavor", "bed_shape", "bed_custom_texture", "bed_custom_model", "bed_avoid_boundingboxes", "nozzle_diameter", "filament_diameter", "temperature", "bed_temperature",
     }));
 
     p->index = new ConfigWizardIndex(this);

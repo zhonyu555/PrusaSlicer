@@ -77,6 +77,7 @@ public:
 
 inline bool operator==(const Polygon &lhs, const Polygon &rhs) { return lhs.points == rhs.points; }
 inline bool operator!=(const Polygon &lhs, const Polygon &rhs) { return lhs.points != rhs.points; }
+inline bool operator<(const Polygon &l, const Polygon &r) { return l.points < r.points; }
 
 BoundingBox get_extents(const Polygon &poly);
 BoundingBox get_extents(const Polygons &polygons);

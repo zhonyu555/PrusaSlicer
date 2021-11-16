@@ -13,6 +13,7 @@
 #include <vector>
 #include "libslic3r.h"
 #include "clonable_ptr.hpp"
+#include "BoundingBox.hpp"
 #include "Exception.hpp"
 #include "Point.hpp"
 
@@ -62,6 +63,16 @@ namespace std {
             std::size_t seed = std::hash<double>{}(v.x());
             boost::hash_combine(seed, std::hash<double>{}(v.y()));
             boost::hash_combine(seed, std::hash<double>{}(v.z()));
+            return seed;
+        }
+    };
+
+    template<> struct hash<Slic3r::BoundingBox> {
+        std::size_t operator()(const Slic3r::BoundingBox& v) const noexcept {
+            std::size_t seed = std::hash<double>{}(v.min.x());
+            boost::hash_combine(seed, std::hash<double>{}(v.min.y()));
+            boost::hash_combine(seed, std::hash<double>{}(v.max.x()));
+            boost::hash_combine(seed, std::hash<double>{}(v.max.y()));
             return seed;
         }
     };
@@ -189,6 +200,9 @@ enum ConfigOptionType {
     coBools         = coBool + coVectorType,
     // a generic enum
     coEnum          = 9,
+    // a polygon
+    coBoundingBox = 10,
+    coBoundingBoxes = coBoundingBox + coVectorType,
 };
 
 enum ConfigOptionMode {
@@ -293,7 +307,7 @@ public:
 typedef ConfigOption*       ConfigOptionPtr;
 typedef const ConfigOption* ConfigOptionConstPtr;
 
-// Value of a single valued option (bool, int, float, string, point, enum)
+// Value of a single valued option (bool, int, float, string, point, enum, polygon)
 template <class T>
 class ConfigOptionSingle : public ConfigOption {
 public:
@@ -328,7 +342,7 @@ private:
 	template<class Archive> void serialize(Archive & ar) { ar(this->value); }
 };
 
-// Value of a vector valued option (bools, ints, floats, strings, points)
+// Value of a vector valued option (bools, ints, floats, strings, points, polygons)
 class ConfigOptionVectorBase : public ConfigOption {
 public:
     // Currently used only to initialize the PlaceholderParser.
@@ -1612,6 +1626,106 @@ public:
 private:
 	friend class cereal::access;
 	template<class Archive> void serialize(Archive& ar) { ar(cereal::base_class<ConfigOptionInt>(this)); }
+};
+
+std::string serializeBoundingBox(const BoundingBox& poly);
+bool deserializeBoundingBox(const std::string &str, BoundingBox* dest);
+
+inline bool boundingBoxLessThan(const BoundingBox& lhs, const BoundingBox& rhs)
+{
+    return lhs.min < rhs.min || (lhs.min == rhs.min && lhs.max < rhs.max);
+}
+
+class ConfigOptionBoundingBox : public ConfigOptionSingle<BoundingBox>
+{
+public:
+    ConfigOptionBoundingBox() : ConfigOptionSingle<BoundingBox>(BoundingBox()) {}
+    explicit ConfigOptionBoundingBox(const BoundingBox &value) : ConfigOptionSingle<BoundingBox>(value) {}
+    
+    static ConfigOptionType static_type() { return coBoundingBox; }
+    ConfigOptionType        type()  const override { return static_type(); }
+    ConfigOption*           clone() const override { return new ConfigOptionBoundingBox(*this); }
+    ConfigOptionBoundingBox&      operator=(const ConfigOption *opt) { this->set(opt); return *this; }
+    bool                    operator==(const ConfigOptionBoundingBox &rhs) const throw() { return this->value.min == rhs.value.min && this->value.max == rhs.value.max; }
+    bool                    operator< (const ConfigOptionBoundingBox &rhs) const throw() { return boundingBoxLessThan(this->value, rhs.value); }
+
+    std::string serialize() const override
+    {
+        return serializeBoundingBox(this->value);
+    }
+    
+    bool deserialize(const std::string &str, bool append = false) override
+    {
+        UNUSED(append);
+        return deserializeBoundingBox(str, &(this->value));
+    }
+
+private:
+	friend class cereal::access;
+	template<class Archive> void serialize(Archive &ar) { ar(cereal::base_class<ConfigOptionSingle<BoundingBox>>(this)); }
+};
+
+class ConfigOptionBoundingBoxes : public ConfigOptionVector<BoundingBox>
+{
+public:
+    ConfigOptionBoundingBoxes() : ConfigOptionVector<BoundingBox>() {}
+    explicit ConfigOptionBoundingBoxes(size_t n, const BoundingBox &value) : ConfigOptionVector<BoundingBox>(n, value) {}
+    explicit ConfigOptionBoundingBoxes(std::initializer_list<BoundingBox> il) : ConfigOptionVector<BoundingBox>(std::move(il)) {}
+    explicit ConfigOptionBoundingBoxes(const std::vector<BoundingBox> &values) : ConfigOptionVector<BoundingBox>(values) {}
+
+    static ConfigOptionType static_type() { return coBoundingBoxes; }
+    ConfigOptionType        type()  const override { return static_type(); }
+    ConfigOption*           clone() const override { return new ConfigOptionBoundingBoxes(*this); }
+    ConfigOptionBoundingBoxes&     operator= (const ConfigOption *opt) { this->set(opt); return *this; }
+    bool                    operator==(const ConfigOptionBoundingBoxes &rhs) const throw() { return this->values == rhs.values; }
+    bool                    operator< (const ConfigOptionBoundingBoxes &rhs) const throw() { return std::lexicographical_compare(this->values.begin(), this->values.end(), rhs.values.begin(), rhs.values.end(), [](const auto &l, const auto &r){ return boundingBoxLessThan(l, r); }); }
+    bool					is_nil(size_t) const override { return false; }
+
+    std::string serialize() const override
+    {
+        std::ostringstream ss;
+        for (const auto& it : this->values) {
+            if (ss.tellp() != 0) ss << "|";
+            ss << serializeBoundingBox(it);
+        }
+        return ss.str();
+    }
+    
+    std::vector<std::string> vserialize() const override
+    {
+        std::vector<std::string> vv;
+        for (const auto& it : this->values) {
+            vv.push_back(serializeBoundingBox(it));
+        }
+        return vv;
+    }
+    
+    bool deserialize(const std::string &str, bool append = false) override
+    {
+        if (!append) this->values.clear();
+        std::istringstream is(str);
+        std::string bb_str;
+        while (std::getline(is, bb_str, '|')) {
+            BoundingBox bb;
+            if (!deserializeBoundingBox(bb_str, &bb)) return false;
+            this->values.emplace_back(std::move(bb));
+        }
+        return true;
+    }
+
+private:
+	friend class cereal::access;
+	template<class Archive> void save(Archive& archive) const {
+		size_t cnt = this->values.size();
+		archive(cnt);
+		archive.saveBinary((const char*)this->values.data(), sizeof(BoundingBox) * cnt);
+	}
+	template<class Archive> void load(Archive& archive) {
+		size_t cnt;
+		archive(cnt);
+		this->values.assign(cnt, BoundingBox());
+		archive.loadBinary((char*)this->values.data(), sizeof(BoundingBox) * cnt);
+	}
 };
 
 // Definition of a configuration value for the purpose of GUI presentation, editing, value mapping and config file handling.

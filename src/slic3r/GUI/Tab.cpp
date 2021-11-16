@@ -3841,28 +3841,40 @@ wxSizer* TabPrinter::create_bed_shape_widget(wxWindow* parent)
             BedShapeDialog dlg(this);
             dlg.build_dialog(*m_config->option<ConfigOptionPoints>("bed_shape"),
                 *m_config->option<ConfigOptionString>("bed_custom_texture"),
-                *m_config->option<ConfigOptionString>("bed_custom_model"));
+                *m_config->option<ConfigOptionString>("bed_custom_model"),
+                *m_config->option<ConfigOptionBoundingBoxes>("bed_avoid_boundingboxes"),
+                *m_config->option<ConfigOptionBool>("bed_enable_avoid_boundingboxes"),
+                *m_config->option<ConfigOptionString>("bed_avoid_boundingboxes_color"));
             if (dlg.ShowModal() == wxID_OK) {
                 const std::vector<Vec2d>& shape = dlg.get_shape();
                 const std::string& custom_texture = dlg.get_custom_texture();
                 const std::string& custom_model = dlg.get_custom_model();
+                const std::vector<BoundingBox>& avoid_boundingboxes = dlg.get_avoid_boundingboxes();
+                const bool enable_avoid_boundingboxes = dlg.get_enable_avoid_boundingboxes();
+                const std::string& avoid_boundingboxes_color = dlg.get_avoid_boundingboxes_color();
                 if (!shape.empty())
                 {
                     load_key_value("bed_shape", shape);
                     load_key_value("bed_custom_texture", custom_texture);
                     load_key_value("bed_custom_model", custom_model);
+                    load_key_value("bed_avoid_boundingboxes", avoid_boundingboxes);
+                    load_key_value("bed_enable_avoid_boundingboxes", enable_avoid_boundingboxes);
+                    load_key_value("bed_avoid_boundingboxes_color", avoid_boundingboxes_color);
                     update_changed_ui();
                 }
             }
         }));
 
     // may be it is not a best place, but 
-    // add information about Category/Grope for "bed_custom_texture" and "bed_custom_model" as a copy from "bed_shape" option
+    // add information about Category/Group keys related to the "bed_shape" option
     {
         Search::OptionsSearcher& searcher = wxGetApp().sidebar().get_searcher();
         const Search::GroupAndCategory& gc = searcher.get_group_and_category("bed_shape");
         searcher.add_key("bed_custom_texture", m_type, gc.group, gc.category);
         searcher.add_key("bed_custom_model", m_type, gc.group, gc.category);
+        searcher.add_key("bed_avoid_boundingboxes", m_type, gc.group, gc.category);
+        searcher.add_key("bed_enable_avoid_boundingboxes", m_type, gc.group, gc.category);
+        searcher.add_key("bed_avoid_boundingboxes_color", m_type, gc.group, gc.category);
     }
 
     return sizer;
