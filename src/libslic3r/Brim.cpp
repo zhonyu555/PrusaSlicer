@@ -137,7 +137,7 @@ static Polygons top_level_outer_brim_islands(const ConstPrintObjectPtrs &top_lev
         auto     brim_separation = float(scale_(object->config().brim_separation.value));
         Polygons islands_object;
         for (const ExPolygon &ex_poly : get_print_object_bottom_layer_expolygons(*object)) {
-            Polygons contour_offset = offset(ex_poly.contour, brim_separation, ClipperLib::jtSquare);
+            Polygons contour_offset = offset(ex_poly.contour, brim_separation, ClipperLib::jtRound);
             for (Polygon &poly : contour_offset)
                 poly.douglas_peucker(scaled_resolution);
 
@@ -174,19 +174,19 @@ static ExPolygons top_level_outer_brim_area(const Print                   &print
         ExPolygons no_brim_area_object;
         for (const ExPolygon &ex_poly : bottom_layers_expolygons[print_object_idx]) {
             if ((brim_type == BrimType::btOuterOnly || brim_type == BrimType::btOuterAndInner) && is_top_outer_brim)
-                append(brim_area_object, diff_ex(offset(ex_poly.contour, brim_width + brim_separation, ClipperLib::jtSquare), offset(ex_poly.contour, brim_separation, ClipperLib::jtSquare)));
+                append(brim_area_object, diff_ex(offset(ex_poly.contour, brim_width + brim_separation, ClipperLib::jtRound), offset(ex_poly.contour, brim_separation, ClipperLib::jtRound)));
 
             // After 7ff76d07684858fd937ef2f5d863f105a10f798e offset and shrink don't work with CW polygons (holes), so let's make it CCW.
             Polygons ex_poly_holes_reversed = ex_poly.holes;
             polygons_reverse(ex_poly_holes_reversed);
             if (brim_type == BrimType::btOuterOnly || brim_type == BrimType::btNoBrim)
-                append(no_brim_area_object, shrink_ex(ex_poly_holes_reversed, no_brim_offset, ClipperLib::jtSquare));
+                append(no_brim_area_object, shrink_ex(ex_poly_holes_reversed, no_brim_offset, ClipperLib::jtRound));
 
             if (brim_type == BrimType::btInnerOnly || brim_type == BrimType::btNoBrim)
-                append(no_brim_area_object, diff_ex(offset(ex_poly.contour, no_brim_offset, ClipperLib::jtSquare), ex_poly_holes_reversed));
+                append(no_brim_area_object, diff_ex(offset(ex_poly.contour, no_brim_offset, ClipperLib::jtRound), ex_poly_holes_reversed));
 
             if (brim_type != BrimType::btNoBrim)
-                append(no_brim_area_object, offset_ex(ExPolygon(ex_poly.contour), brim_separation, ClipperLib::jtSquare));
+                append(no_brim_area_object, offset_ex(ExPolygon(ex_poly.contour), brim_separation, ClipperLib::jtRound));
 
             no_brim_area_object.emplace_back(ex_poly.contour);
         }
@@ -229,24 +229,24 @@ static ExPolygons inner_brim_area(const Print                   &print,
                 if (top_outer_brim)
                     no_brim_area_object.emplace_back(ex_poly);
                 else
-                    append(brim_area_object, diff_ex(offset(ex_poly.contour, brim_width + brim_separation, ClipperLib::jtSquare), offset(ex_poly.contour, brim_separation, ClipperLib::jtSquare)));
+                    append(brim_area_object, diff_ex(offset(ex_poly.contour, brim_width + brim_separation, ClipperLib::jtRound), offset(ex_poly.contour, brim_separation, ClipperLib::jtRound)));
             }
 
             // After 7ff76d07684858fd937ef2f5d863f105a10f798e offset and shrink don't work with CW polygons (holes), so let's make it CCW.
             Polygons ex_poly_holes_reversed = ex_poly.holes;
             polygons_reverse(ex_poly_holes_reversed);
             if (brim_type == BrimType::btInnerOnly || brim_type == BrimType::btOuterAndInner)
-                append(brim_area_object, diff_ex(shrink_ex(ex_poly_holes_reversed, brim_separation, ClipperLib::jtSquare), shrink_ex(ex_poly_holes_reversed, brim_width + brim_separation, ClipperLib::jtSquare)));
+                append(brim_area_object, diff_ex(shrink_ex(ex_poly_holes_reversed, brim_separation, ClipperLib::jtRound), shrink_ex(ex_poly_holes_reversed, brim_width + brim_separation, ClipperLib::jtSquare)));
 
             if (brim_type == BrimType::btInnerOnly || brim_type == BrimType::btNoBrim)
-                append(no_brim_area_object, diff_ex(offset(ex_poly.contour, no_brim_offset, ClipperLib::jtSquare), ex_poly_holes_reversed));
+                append(no_brim_area_object, diff_ex(offset(ex_poly.contour, no_brim_offset, ClipperLib::jtRound), ex_poly_holes_reversed));
 
             if (brim_type == BrimType::btOuterOnly || brim_type == BrimType::btNoBrim)
-                append(no_brim_area_object, diff_ex(ExPolygon(ex_poly.contour), shrink_ex(ex_poly_holes_reversed, no_brim_offset, ClipperLib::jtSquare)));
+                append(no_brim_area_object, diff_ex(ExPolygon(ex_poly.contour), shrink_ex(ex_poly_holes_reversed, no_brim_offset, ClipperLib::jtRound)));
 
             append(holes_object, ex_poly_holes_reversed);
         }
-        append(no_brim_area_object, offset_ex(bottom_layers_expolygons[print_object_idx], brim_separation, ClipperLib::jtSquare));
+        append(no_brim_area_object, offset_ex(bottom_layers_expolygons[print_object_idx], brim_separation, ClipperLib::jtRound));
 
         for (const PrintInstance &instance : object->instances()) {
             append_and_translate(brim_area, brim_area_object, instance);
@@ -363,12 +363,12 @@ static void make_inner_brim(const Print                   &print,
     Flow       flow = print.brim_flow();
     ExPolygons islands_ex = inner_brim_area(print, top_level_objects_with_brim, bottom_layers_expolygons, float(flow.scaled_spacing()));
     Polygons   loops;
-    islands_ex      = offset_ex(islands_ex, -0.5f * float(flow.scaled_spacing()), ClipperLib::jtSquare);
+    islands_ex      = offset_ex(islands_ex, -0.5f * float(flow.scaled_spacing()), ClipperLib::jtRound);
     for (size_t i = 0; !islands_ex.empty(); ++i) {
         for (ExPolygon &poly_ex : islands_ex)
             poly_ex.douglas_peucker(scaled_resolution);
         polygons_append(loops, to_polygons(islands_ex));
-        islands_ex = offset_ex(islands_ex, -float(flow.scaled_spacing()), ClipperLib::jtSquare);
+        islands_ex = offset_ex(islands_ex, -float(flow.scaled_spacing()), ClipperLib::jtRound);
     }
 
     loops = union_pt_chained_outside_in(loops);
@@ -393,7 +393,7 @@ ExtrusionEntityCollection make_brim(const Print &print, PrintTryCancel try_cance
     size_t          num_loops = size_t(floor(max_brim_width(print.objects()) / flow.spacing()));
     for (size_t i = 0; i < num_loops; ++i) {
         try_cancel();
-        islands = expand(islands, float(flow.scaled_spacing()), ClipperLib::jtSquare);
+        islands = expand(islands, float(flow.scaled_spacing()), ClipperLib::jtRound);
         for (Polygon &poly : islands) 
             poly.douglas_peucker(scaled_resolution);
         polygons_append(loops, shrink(islands, 0.5f * float(flow.scaled_spacing())));
@@ -457,17 +457,15 @@ ExtrusionEntityCollection make_brim(const Print &print, PrintTryCancel try_cance
 
     // If there is a possibility that brim intersects skirt, go through loops and split those extrusions
     // The result is either the original Polygon or a list of Polylines
-    if (draft_shield && ! print.skirt().empty() && could_brim_intersects_skirt)
+    if (draft_shield && ! print.skirt_base().empty() && could_brim_intersects_skirt)
     {
         // Find the bounding polygons of the skirt
-        const Polygons skirt_inners = offset(dynamic_cast<ExtrusionLoop*>(print.skirt().entities.back())->polygon(),
+        const Polygons skirt_inners = offset(dynamic_cast<ExtrusionLoop*>(print.skirt_base().entities.back())->polygon(),
                                               -float(scale_(print.skirt_flow().spacing()))/2.f,
-                                              ClipperLib::jtRound,
-                                              float(scale_(0.1)));
-        const Polygons skirt_outers = offset(dynamic_cast<ExtrusionLoop*>(print.skirt().entities.front())->polygon(),
+                                              ClipperLib::jtRound);
+        const Polygons skirt_outers = offset(dynamic_cast<ExtrusionLoop*>(print.skirt_base().entities.front())->polygon(),
                                               float(scale_(print.skirt_flow().spacing()))/2.f,
-                                              ClipperLib::jtRound,
-                                              float(scale_(0.1)));
+                                              ClipperLib::jtRound);
 
         // First calculate the trimming region.
 		ClipperLib_Z::Paths trimming;

@@ -154,6 +154,8 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "skirt_height"
             || opt_key == "draft_shield"
             || opt_key == "skirt_distance"
+            || opt_key == "skirt_extra_loops"
+            || opt_key == "skirt_extra_loop_layers"
             || opt_key == "min_skirt_length"
             || opt_key == "ooze_prevention"
             || opt_key == "wipe_tower_x"
@@ -200,6 +202,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "cooling_tube_length"
             || opt_key == "extra_loading_move"
             || opt_key == "travel_speed"
+            || opt_key == "skirt_speed"
             || opt_key == "travel_speed_z"
             || opt_key == "first_layer_speed"
             || opt_key == "z_offset") {
@@ -814,6 +817,7 @@ void Print::process()
         this->set_status(88, L("Generating skirt and brim"));
 
         m_skirt.clear();
+        m_skirt_base.clear();
         m_skirt_convex_hull.clear();
         m_first_layer_convex_hull.points.clear();
         const bool draft_shield = config().draft_shield != dsDisabled;
@@ -960,7 +964,42 @@ void Print::_make_skirt()
 
     // Initial offset of the brim inner edge from the object (possible with a support & raft).
     // The skirt will touch the brim if the brim is extruded.
-    auto   distance = float(scale_(m_config.skirt_distance.value) - spacing/2.);
+    auto   distance = float(scale_(m_config.skirt_distance.value));
+    
+    // Number of additional skirt loops for first layer.
+    size_t n_skirts_extra = m_config.skirt_extra_loops.value;
+
+    const auto scaled_resolution = scaled<double>(m_config.gcode_resolution.value);
+
+    // Draw extra first layer inner loops if requested.
+    if (n_skirts_extra > 0) {        
+        for (size_t i = n_skirts_extra; i > 0; --i) {
+            this->throw_if_canceled();
+            // Offset the skirt outside.
+            distance += float(scale_(spacing));
+            // Generate the skirt centerline.
+            Polygon loop;
+            {
+                Polygons loops = offset(convex_hull, distance, ClipperLib::jtRound);
+                Geometry::simplify_polygons(loops, scaled_resolution, &loops);
+                if (loops.empty())
+                    break;
+                loop = loops.front();
+            }
+            // Extrude the skirt loop.
+            ExtrusionLoop eloop(elrSkirt);
+            eloop.paths.emplace_back(ExtrusionPath(
+                ExtrusionPath(
+                    erSkirt,
+                    (float)mm3_per_mm,         // this will be overridden at G-code export time
+                    flow.width(),
+                    (float)first_layer_height  // this will be overridden at G-code export time
+                )));
+            eloop.paths.back().polyline = loop.split_at_first_point();
+            m_skirt_base.append(eloop);
+        }
+    }
+    
     // Draw outlines from outside to inside.
     // Loop while we have less skirts than required or any extruder hasn't reached the min length if any.
     std::vector<coordf_t> extruded_length(extruders.size(), 0.);
@@ -971,8 +1010,8 @@ void Print::_make_skirt()
         // Generate the skirt centerline.
         Polygon loop;
         {
-            Polygons loops = offset(convex_hull, distance, ClipperLib::jtRound, float(scale_(0.1)));
-            Geometry::simplify_polygons(loops, scale_(0.05), &loops);
+            Polygons loops = offset(convex_hull, distance, ClipperLib::jtRound);
+            Geometry::simplify_polygons(loops, scaled_resolution, &loops);
 			if (loops.empty())
 				break;
 			loop = loops.front();
@@ -988,6 +1027,7 @@ void Print::_make_skirt()
             )));
         eloop.paths.back().polyline = loop.split_at_first_point();
         m_skirt.append(eloop);
+        m_skirt_base.append(eloop);
         if (m_config.min_skirt_length.value > 0) {
             // The skirt length is limited. Sum the total amount of filament length extruded, in mm.
             extruded_length[extruder_idx] += unscale<double>(loop.length()) * extruders_e_per_mm[extruder_idx];
@@ -1006,11 +1046,42 @@ void Print::_make_skirt()
             // The skirt lenght is not limited, extrude the skirt with the 1st extruder only.
         }
     }
+
+    // Draw extra first layer outer loops
+    if (n_skirts_extra > 0) {
+        for (size_t i = n_skirts_extra; i > 0; --i) {
+            this->throw_if_canceled();
+            // Offset the skirt outside.
+            distance += float(scale_(spacing));
+            // Generate the skirt centerline.
+            Polygon loop;
+            {
+                Polygons loops = offset(convex_hull, distance, ClipperLib::jtRound);
+                Geometry::simplify_polygons(loops, scaled_resolution, &loops);
+                if (loops.empty())
+                    break;
+                loop = loops.front();
+            }
+            // Extrude the skirt loop.
+            ExtrusionLoop eloop(elrSkirt);
+            eloop.paths.emplace_back(ExtrusionPath(
+                ExtrusionPath(
+                    erSkirt,
+                    (float)mm3_per_mm,         // this will be overridden at G-code export time
+                    flow.width(),
+                    (float)first_layer_height  // this will be overridden at G-code export time
+                )));
+            eloop.paths.back().polyline = loop.split_at_first_point();
+            m_skirt_base.append(eloop);
+        }
+    }
+
     // Brims were generated inside out, reverse to print the outmost contour first.
     m_skirt.reverse();
+    m_skirt_base.reverse();
 
     // Remember the outer edge of the last skirt line extruded as m_skirt_convex_hull.
-    for (Polygon &poly : offset(convex_hull, distance + 0.5f * float(scale_(spacing)), ClipperLib::jtRound, float(scale_(0.1))))
+    for (Polygon &poly : offset(convex_hull, distance + 0.5f * float(scale_(spacing)), ClipperLib::jtRound))
         append(m_skirt_convex_hull, std::move(poly.points));
 }
 
