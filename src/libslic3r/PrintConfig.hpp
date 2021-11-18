@@ -476,12 +476,14 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionPercent,             raft_first_layer_density))
     ((ConfigOptionFloat,               raft_first_layer_expansion))
     ((ConfigOptionInt,                 raft_layers))
+    ((ConfigOptionBool,                retract_skip_support_islands))
     ((ConfigOptionEnum<SeamPosition>,  seam_position))
 //  ((ConfigOptionFloat,               seam_preferred_direction))
 //  ((ConfigOptionFloat,               seam_preferred_direction_jitter))
     ((ConfigOptionFloat,               slice_closing_radius))
     ((ConfigOptionEnum<SlicingMode>,   slicing_mode))
     ((ConfigOptionBool,                support_material))
+    ((ConfigOptionFloatOrPercent,      support_material_additional_xy_spacing))
     // Automatic supports (generated based on support_material_threshold).
     ((ConfigOptionBool,                support_material_auto))
     // Direction of the support pattern (in XY plane).`
@@ -490,6 +492,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,               support_material_contact_distance))
     ((ConfigOptionFloat,               support_material_bottom_contact_distance))
     ((ConfigOptionInt,                 support_material_enforce_layers))
+    ((ConfigOptionPercent,             support_material_expand_or_filter))
     ((ConfigOptionInt,                 support_material_extruder))
     ((ConfigOptionFloatOrPercent,      support_material_extrusion_width))
     ((ConfigOptionBool,                support_material_interface_contact_loops))
@@ -511,6 +514,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     // Overhang angle threshold.
     ((ConfigOptionInt,                 support_material_threshold))
     ((ConfigOptionBool,                support_material_with_sheath))
+    ((ConfigOptionBool,                support_material_interface_with_sheath))
     ((ConfigOptionFloatOrPercent,      support_material_xy_spacing))
     ((ConfigOptionBool,                thick_bridges))
     ((ConfigOptionFloat,               xy_size_compensation))

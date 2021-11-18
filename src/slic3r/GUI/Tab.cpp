@@ -1567,15 +1567,19 @@ void TabPrint::build()
         optgroup->append_single_option_line("support_material_spacing", category_path + "pattern-spacing-0-inf");
         optgroup->append_single_option_line("support_material_angle", category_path + "pattern-angle");
         optgroup->append_single_option_line("support_material_closing_radius", category_path + "pattern-angle");
+        optgroup->append_single_option_line("support_material_expand_or_filter");
         optgroup->append_single_option_line("support_material_interface_layers", category_path + "interface-layers");
         optgroup->append_single_option_line("support_material_bottom_interface_layers", category_path + "interface-layers");
         optgroup->append_single_option_line("support_material_interface_pattern", category_path + "interface-pattern");
+        optgroup->append_single_option_line("support_material_interface_with_sheath");
         optgroup->append_single_option_line("support_material_interface_spacing", category_path + "interface-pattern-spacing");
         optgroup->append_single_option_line("support_material_interface_contact_loops", category_path + "interface-loops");
         optgroup->append_single_option_line("support_material_buildplate_only", category_path + "support-on-build-plate-only");
         optgroup->append_single_option_line("support_material_xy_spacing", category_path + "xy-separation-between-an-object-and-its-support");
+        optgroup->append_single_option_line("support_material_additional_xy_spacing");
         optgroup->append_single_option_line("dont_support_bridges", category_path + "dont-support-bridges");
         optgroup->append_single_option_line("support_material_synchronize_layers", category_path + "synchronize-with-object-layers");
+        optgroup->append_single_option_line("retract_skip_support_islands");
 
     page = add_options_page(L("Speed"), "time");
         optgroup = page->new_optgroup(L("Speed for print moves"));

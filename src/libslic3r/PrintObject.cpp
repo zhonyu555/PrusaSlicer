@@ -570,13 +570,17 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "support_material_style"
             || opt_key == "support_material_xy_spacing"
             || opt_key == "support_material_spacing"
+            || opt_key == "support_material_additional_xy_spacing"
             || opt_key == "support_material_closing_radius"
+            || opt_key == "support_material_expand_or_filter"
             || opt_key == "support_material_synchronize_layers"
             || opt_key == "support_material_threshold"
             || opt_key == "support_material_with_sheath"
+            || opt_key == "support_material_interface_with_sheath"
             || opt_key == "raft_expansion"
             || opt_key == "raft_first_layer_density"
             || opt_key == "raft_first_layer_expansion"
+            || opt_key == "retract_skip_support_islands"
             || opt_key == "dont_support_bridges"
             || opt_key == "first_layer_extrusion_width") {
             steps.emplace_back(posSupportMaterial);
@@ -777,7 +781,7 @@ void PrintObject::detect_surfaces_type()
                     Layer       *upper_layer = (idx_layer + 1 < this->layer_count()) ? m_layers[idx_layer + 1] : nullptr;
                     Layer       *lower_layer = (idx_layer > 0) ? m_layers[idx_layer - 1] : nullptr;
                     // collapse very narrow parts (using the safety offset in the diff is not enough)
-                    float        offset = layerm->flow(frExternalPerimeter).scaled_width() / 10.f;
+                    float        offset = layerm->flow(frExternalPerimeter).scaled_width() / 1000.f;
 
                     // find top surfaces (difference between current surfaces
                     // of current layer and upper one)

@@ -2186,6 +2186,13 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats { 0. });
 
+    def = this->add("retract_skip_support_islands", coBool);
+    def->label = L("Prevent retraction within support islands");
+    def->category = L("Support material");
+    def->tooltip = L("Prevent retraction within support islands. This can lead to stringing/oozing.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(true));
+
     def = this->add("retract_speed", coFloats);
     def->label = L("Retraction Speed");
     def->full_label = L("Retraction Speed");
@@ -2499,6 +2506,20 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Enable support material generation.");
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("support_material_additional_xy_spacing", coFloatOrPercent);
+    def->label = L("Additional XY separation for base/sparse support");
+    def->category = L("Support material");
+    def->tooltip = L("Additional XY separation between an object base/sparse support. If expressed as percentage "
+        "(for example 50%), it will be calculated over external perimeter width."
+        "Only used if dense interfaces are used.");
+    def->sidetext = L("mm or %");
+    def->ratio_over = "external_perimeter_extrusion_width";
+    def->min = 0;
+    def->max_literal = 10;
+    def->mode = comAdvanced;
+    // Default is half the external perimeter width.
+    def->set_default_value(new ConfigOptionFloatOrPercent(50, true));
+
     def = this->add("support_material_auto", coBool);
     def->label = L("Auto generated supports");
     def->category = L("Support material");
@@ -2506,6 +2527,21 @@ void PrintConfigDef::init_fff_params()
                      " If unchecked, supports will be generated inside the \"Support Enforcer\" volumes only.");
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("support_material_expand_or_filter", coPercent);
+    def->label = L("Expand or filter support structures");
+    def->category = L("Support material");
+    def->tooltip = L("Expand or filter the support structures by width. Positive values expand structures, negative values reduce them. "
+        "Value of 0% ensures all requested areas are supported with minimum expansion of 1x extrusion width. "
+        "Value of +50% expands support structures further to 1.5x extrusion width. "
+        "Value of -100% reduces expansion of structures to 0, thereby filtering out support structures less than 1x extrusion width. "
+        "Value of -150% filters out structures less than 1.5x extrusion width. "
+        "Note: values below -100% filter out larger widths, without contracting the edge of structures. "
+        "-100% provides default PrusaSlicer behaviour. "
+        "Expressed as a percentage of the support material extrusion width.");
+    def->sidetext = L("% +/-");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionPercent(-100));
 
     def = this->add("support_material_xy_spacing", coFloatOrPercent);
     def->label = L("XY separation between an object and its support");
@@ -2778,6 +2814,15 @@ void PrintConfigDef::init_fff_params()
                    "the support more reliable, but also more difficult to remove.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
+
+    def = this->add("support_material_interface_with_sheath", coBool);
+    def->label = L("With sheath around the support interface");
+    def->category = L("Support material");
+    def->tooltip = L("Add a double sheath (two perimeter lines) around the support interface. "
+                     "This provides cleaner contact points when using rectilinear interface pattern, "
+                     "as an alternative to concentric interface pattern.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));    
 
     def = this->add("temperature", coInts);
     def->label = L("Other layers");

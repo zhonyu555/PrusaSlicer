@@ -132,6 +132,7 @@ public:
 	//	coordf_t	support_layer_height_max;
 
 		coordf_t	gap_xy;
+		coordf_t	gap_add_xy;
 
 	    float    				base_angle;
 	    float    				interface_angle;
@@ -144,6 +145,7 @@ public:
 	    InfillPattern           interface_fill_pattern;
 	    InfillPattern 			contact_fill_pattern;
 	    bool                    with_sheath;
+		bool					with_interface_sheath;
 	};
 
 	// Layers are allocated and owned by a deque. Once a layer is allocated, it is maintained
