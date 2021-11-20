@@ -859,7 +859,7 @@ static PrintObjectRegions* generate_print_object_regions(
                                 if (parent_bbox->intersects(*bbox))
                                     // Only create new region for a modifier, which actually modifies config of it's parent.
                                     if (PrintRegionConfig config = region_config_from_model_volume(parent_region.region->config(), nullptr, volume, num_extruders); 
-                                        config != parent_region.region->config())
+                                        config != parent_region.region->config() || parent_region.model_volume->is_model_part())
                                         layer_range.volume_regions.push_back({ &volume, parent_region_id, get_create_region(std::move(config)), bbox });
                         }
                     }
