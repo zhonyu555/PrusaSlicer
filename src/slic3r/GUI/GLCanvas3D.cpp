@@ -1451,7 +1451,7 @@ void GLCanvas3D::render()
     }
 
     camera.apply_view_matrix();
-    camera.apply_projection(_max_bounding_box(true, true));
+    camera.apply_projection(_max_bounding_box(false, true));
 
     GLfloat position_cam[4] = { 1.0f, 0.0f, 1.0f, 0.0f };
     glsafe(::glLightfv(GL_LIGHT1, GL_POSITION, position_cam));

@@ -64,6 +64,7 @@ void Camera::set_target(const Vec3d& target)
 
 void Camera::set_zoom(double zoom)
 {
+    set_distance(get_scene_box().radius() * 2.);
     // Don't allow to zoom too far outside the scene.
     const double zoom_min = min_zoom();
     if (zoom_min > 0.0)
@@ -75,20 +76,34 @@ void Camera::set_zoom(double zoom)
 
 void Camera::select_view(const std::string& direction)
 {
-    if (direction == "iso")
+    if (direction == "iso") {
+        set_distance(get_scene_box().radius() * 2.);
         set_default_orientation();
-    else if (direction == "left")
+    }
+    else if (direction == "left") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target - m_distance * Vec3d::UnitX(), m_target, Vec3d::UnitZ());
-    else if (direction == "right")
+    }
+    else if (direction == "right") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target + m_distance * Vec3d::UnitX(), m_target, Vec3d::UnitZ());
-    else if (direction == "top")
+    }
+    else if (direction == "top") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target + m_distance * Vec3d::UnitZ(), m_target, Vec3d::UnitY());
-    else if (direction == "bottom")
+    }
+    else if (direction == "bottom") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target - m_distance * Vec3d::UnitZ(), m_target, -Vec3d::UnitY());
-    else if (direction == "front")
+    }
+    else if (direction == "front") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target - m_distance * Vec3d::UnitY(), m_target, Vec3d::UnitZ());
-    else if (direction == "rear")
+    }
+    else if (direction == "rear") {
+        set_distance(get_scene_box().radius() * 2.);
         look_at(m_target + m_distance * Vec3d::UnitY(), m_target, Vec3d::UnitZ());
+    }
 }
 
 double Camera::get_fov() const
@@ -184,6 +199,7 @@ void Camera::apply_projection(const BoundingBoxf3& box, double near_z, double fa
 void Camera::zoom_to_box(const BoundingBoxf3& box, double margin_factor)
 {
     // Calculate the zoom factor needed to adjust the view around the given box.
+    set_distance(get_scene_box().radius() * 2.);
     const double zoom = calc_zoom_to_bounding_box_factor(box, margin_factor);
     if (zoom > 0.0) {
         m_zoom = zoom;
@@ -195,6 +211,7 @@ void Camera::zoom_to_box(const BoundingBoxf3& box, double margin_factor)
 void Camera::zoom_to_volumes(const GLVolumePtrs& volumes, double margin_factor)
 {
     Vec3d center;
+    set_distance(get_scene_box().radius() * 2.);
     const double zoom = calc_zoom_to_volumes_factor(volumes, center, margin_factor);
     if (zoom > 0.0) {
         m_zoom = zoom;
@@ -258,6 +275,7 @@ void Camera::debug_render() const
 
 void Camera::rotate_on_sphere(double delta_azimut_rad, double delta_zenit_rad, bool apply_limits)
 {
+    set_distance(get_scene_box().radius() * 2.);
     m_zenit += Geometry::rad2deg(delta_zenit_rad);
     if (apply_limits) {
         if (m_zenit > 90.0f) {
@@ -269,7 +287,6 @@ void Camera::rotate_on_sphere(double delta_azimut_rad, double delta_zenit_rad, b
             m_zenit = -90.0f;
         }
     }
-
     const Vec3d translation = m_view_matrix.translation() + m_view_rotation * m_target;
     const auto rot_z = Eigen::AngleAxisd(delta_azimut_rad, Vec3d::UnitZ());
     m_view_rotation *= rot_z * Eigen::AngleAxisd(delta_zenit_rad, rot_z.inverse() * get_dir_right());
@@ -280,6 +297,7 @@ void Camera::rotate_on_sphere(double delta_azimut_rad, double delta_zenit_rad, b
 // Virtual trackball, rotate around an axis, where the eucledian norm of the axis gives the rotation angle in radians.
 void Camera::rotate_local_around_target(const Vec3d& rotation_rad)
 {
+    set_distance(get_scene_box().radius() * 2.);
     const double angle = rotation_rad.norm();
     if (std::abs(angle) > EPSILON) {
         const Vec3d translation = m_view_matrix.translation() + m_view_rotation * m_target;
@@ -319,15 +337,34 @@ std::pair<double, double> Camera::calc_tight_frustrum_zs_around(const BoundingBo
         near_z += delta;
         far_z += delta;
     }
-// The following is commented out because it causes flickering of the 3D scene GUI
-// when the bounding box of the scene gets large enough
-// We need to introduce some smarter code to move the camera back and forth in such case
-//    else if (near_z > 2.0 * FrustrumMinNearZ && m_distance > DefaultDistance) {
-//        float delta = m_distance - DefaultDistance;
-//        set_distance(DefaultDistance);
-//        near_z -= delta;
-//        far_z -= delta;
-//    }
+// apply the view matrix to get new box for smooth transition
+    else if (near_z >= FrustrumMinNearZ + EPSILON && m_distance > get_scene_box().radius() * 2.) {
+        set_distance(get_scene_box().radius() * 2.);
+        apply_view_matrix();
+        // box in eye space
+        const BoundingBoxf3 eye_box = box.transformed(m_view_matrix);
+        near_z = -eye_box.max(2);
+        far_z = -eye_box.min(2);
+
+        // apply margin
+        near_z -= FrustrumZMargin;
+        far_z += FrustrumZMargin;
+
+        // ensure min size
+        if (far_z - near_z < FrustrumMinZRange) {
+            const double mid_z = 0.5 * (near_z + far_z);
+            const double half_size = 0.5 * FrustrumMinZRange;
+            near_z = mid_z - half_size;
+            far_z = mid_z + half_size;
+        }
+
+        if (near_z < FrustrumMinNearZ) {
+            const double delta = FrustrumMinNearZ - near_z;
+            set_distance(m_distance + delta);
+            near_z += delta;
+            far_z += delta;
+        }
+    }
 
     return ret;
 }
