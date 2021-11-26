@@ -3,6 +3,9 @@
 
 #include "Point.hpp"
 #include "Geometry/Circle.hpp"
+#include "Polygon.hpp"
+#include "BoundingBox.hpp"
+#include <admesh/stl.h>
 
 #include <string_view>
 
@@ -49,7 +52,7 @@ public:
     const BoundingBox&          bounding_box()      const { return m_bbox; }
     // Bounding volume of bed_shape(), max_print_height(), unscaled.
     const BoundingBoxf3&        bounding_volume()   const { return m_bboxf; }
-    BoundingBoxf                bounding_volume2d() const { return { to_2d(m_bboxf.min), to_2d(m_bboxf.max) }; };
+    BoundingBoxf                bounding_volume2d() const { return { to_2d(m_bboxf.min), to_2d(m_bboxf.max) }; }
 
     // Center of the print bed, unscaled.
     Vec2d                       bed_center()        const { return to_2d(m_bboxf.center()); }
@@ -65,7 +68,10 @@ public:
         // Colliding with the build volume boundary, thus not printable and error is shown.
         Colliding,
         // Outside of the build volume means the object is ignored: Not printed and no error is shown.
-        Outside
+        Outside,
+        // Completely below the print bed. The same as Outside, but an object with one printable part below the print bed 
+        // and at least one part above the print bed is still printable.
+        Below,
     };
 
     // 1) Tests called on the plater.
@@ -74,19 +80,19 @@ public:
     // Called by Plater to update Inside / Colliding / Outside state of ModelObjects before slicing.
     // Called from Model::update_print_volume_state() -> ModelObject::update_instances_print_volume_state()
     // Using SceneEpsilon
-    ObjectState  object_state(const indexed_triangle_set &its, const Transform3f &trafo, bool may_be_below_bed) const;
+    ObjectState  object_state(const indexed_triangle_set &its, const Transform3f &trafo, bool may_be_below_bed, bool ignore_bottom = true) const;
     // Called by GLVolumeCollection::check_outside_state() after an object is manipulated with gizmos for example.
     // Called for a rectangular bed:
-    ObjectState  volume_state_bbox(const BoundingBoxf3 &volume_bbox) const;
+    ObjectState  volume_state_bbox(const BoundingBoxf3& volume_bbox, bool ignore_bottom = true) const;
 
     // 2) Test called on G-code paths.
     // Using BedEpsilon for all tests.
     static constexpr const double BedEpsilon = 3. * EPSILON;
     // Called on final G-code paths.
     //FIXME The test does not take the thickness of the extrudates into account!
-    bool         all_paths_inside(const GCodeProcessorResult &paths, const BoundingBoxf3 &paths_bbox) const;
+    bool         all_paths_inside(const GCodeProcessorResult& paths, const BoundingBoxf3& paths_bbox, bool ignore_bottom = true) const;
     // Called on initial G-code preview on OpenGL vertex buffer interleaved normals and vertices.
-    bool         all_paths_inside_vertices_and_normals_interleaved(const std::vector<float> &paths, const Eigen::AlignedBox<float, 3> &bbox) const;
+    bool         all_paths_inside_vertices_and_normals_interleaved(const std::vector<float>& paths, const Eigen::AlignedBox<float, 3>& bbox, bool ignore_bottom = true) const;
 
 private:
     // Source definition of the print bed geometry (PrintConfig::bed_shape)
