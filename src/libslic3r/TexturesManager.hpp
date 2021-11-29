@@ -2,7 +2,7 @@
 #define slic3r_TexturesManager_hpp_
 
 #if ENABLE_TEXTURED_VOLUMES
-#define ENABLE_TEXTURES_MANAGER_DEBUG 1
+#define ENABLE_TEXTURES_MANAGER_DEBUG 0
 
 #include "TextureData.hpp"
 

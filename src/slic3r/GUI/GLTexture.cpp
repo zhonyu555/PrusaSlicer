@@ -156,17 +156,17 @@ bool GLTexture::load_from_ideamaker_texture_file(const std::string& filename, bo
         boost::property_tree::read_json(filename, root); // << FIXME for utf8 files
 
         //http://www.cochoy.fr/boost-property-tree/
-        boost::optional<std::string> id = root.get_optional<std::string>("header.texture_id");
-        boost::optional<std::string> name = root.get_optional<std::string>("header.texture_name");
+//        boost::optional<std::string> id = root.get_optional<std::string>("header.texture_id");
+//        boost::optional<std::string> name = root.get_optional<std::string>("header.texture_name");
         boost::optional<std::string> image_data = root.get_optional<std::string>("image_data");
-        boost::optional<std::string> border_color = root.get_optional<std::string>("settings.texture_border_color");
-        boost::optional<float> repeat_x = root.get_optional<float>("settings.texture_repeat_x");
-        boost::optional<float> repeat_y = root.get_optional<float>("settings.texture_repeat_y");
-        boost::optional<float> rotation_z = root.get_optional<float>("settings.texture_rotation_z");
-        boost::optional<float> translation_x = root.get_optional<float>("settings.texture_translation_x");
-        boost::optional<float> translation_y = root.get_optional<float>("settings.texture_translation_y");
-        boost::optional<std::string> wrapping = root.get_optional<std::string>("settings.texture_wrapping");
-        boost::optional<std::string> version = root.get_optional<std::string>("version");
+//        boost::optional<std::string> border_color = root.get_optional<std::string>("settings.texture_border_color");
+//        boost::optional<float> repeat_x = root.get_optional<float>("settings.texture_repeat_x");
+//        boost::optional<float> repeat_y = root.get_optional<float>("settings.texture_repeat_y");
+//        boost::optional<float> rotation_z = root.get_optional<float>("settings.texture_rotation_z");
+//        boost::optional<float> translation_x = root.get_optional<float>("settings.texture_translation_x");
+//        boost::optional<float> translation_y = root.get_optional<float>("settings.texture_translation_y");
+//        boost::optional<std::string> wrapping = root.get_optional<std::string>("settings.texture_wrapping");
+//        boost::optional<std::string> version = root.get_optional<std::string>("version");
 
         m_source = filename;
 
