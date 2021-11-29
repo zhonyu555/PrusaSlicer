@@ -3906,6 +3906,17 @@ bool GLCanvas3D::is_object_sinking(int object_idx) const
     return false;
 }
 
+#if ENABLE_TEXTURED_VOLUMES
+void GLCanvas3D::update_volumes_texture_from_objects()
+{
+    for (GLVolume* volume : m_volumes.volumes) {
+        int obj_idx = volume->object_idx();
+        volume->texture = (0 <= obj_idx && obj_idx < static_cast<int>(m_model->objects.size())) ?
+            m_model->objects[obj_idx]->texture.name : "";
+    }
+}
+#endif // ENABLE_TEXTURED_VOLUMES
+
 bool GLCanvas3D::_is_shown_on_screen() const
 {
     return (m_canvas != nullptr) ? m_canvas->IsShownOnScreen() : false;

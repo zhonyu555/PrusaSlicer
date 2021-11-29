@@ -4,6 +4,9 @@
 #include "GUI_Factories.hpp"
 #include "GUI_ObjectManipulation.hpp"
 #include "GUI_ObjectLayers.hpp"
+#if ENABLE_TEXTURED_VOLUMES
+#include "GUI_ObjectTexture.hpp"
+#endif // ENABLE_TEXTURED_VOLUMES
 #include "GUI_App.hpp"
 #include "I18N.hpp"
 #include "Plater.hpp"
@@ -1798,6 +1801,10 @@ void ObjectList::del_subobject_item(wxDataViewItem& item)
         del_layer_from_object(obj_idx, m_objects_model->GetLayerRangeByItem(item));
     else if (type & itInfo && obj_idx != -1)
         del_info_item(obj_idx, m_objects_model->GetInfoItemType(item));
+#if ENABLE_TEXTURED_VOLUMES
+    else if (type & itTexture && obj_idx != -1)
+        del_texture_from_object(obj_idx);
+#endif // ENABLE_TEXTURED_VOLUMES
     else if (idx == -1)
         return;
     else if (!del_subobject_from_object(obj_idx, idx, type))
@@ -1921,6 +1928,14 @@ void ObjectList::del_layers_from_object(const int obj_idx)
 
     changed_object(obj_idx);
 }
+
+#if ENABLE_TEXTURED_VOLUMES
+void ObjectList::del_texture_from_object(const int obj_idx)
+{
+    object(obj_idx)->texture.reset();
+    changed_object(obj_idx);
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 bool ObjectList::del_subobject_from_object(const int obj_idx, const int idx, const int type)
 {
@@ -2270,6 +2285,34 @@ void ObjectList::layers_editing()
     Expand(layers_item);
 }
 
+#if ENABLE_TEXTURED_VOLUMES
+void ObjectList::texture_editing()
+{
+    const Selection& selection = scene_selection();
+    const int obj_idx = selection.get_object_idx();
+    wxDataViewItem item = obj_idx >= 0 && GetSelectedItemsCount() > 1 && selection.is_single_full_object() ?
+        m_objects_model->GetItemById(obj_idx) :
+        GetSelection();
+
+    if (!item)
+        return;
+
+    const wxDataViewItem obj_item = m_objects_model->GetTopParent(item);
+    wxDataViewItem texture_item = m_objects_model->GetTextureItem(obj_item);
+
+    // if it doesn't exist now
+    if (!texture_item.IsOk())
+        // no texture defined, add it
+        texture_item = add_texture_item(obj_item, true);
+
+    if (!texture_item.IsOk())
+        return;
+
+    // select Texture item and expand
+    select_item(texture_item);
+}
+#endif // ENABLE_TEXTURED_VOLUMES
+
 wxDataViewItem ObjectList::add_layer_root_item(const wxDataViewItem obj_item)
 {
     const int obj_idx = m_objects_model->GetIdByItem(obj_item);
@@ -2416,6 +2459,9 @@ void ObjectList::part_selection_changed()
     bool update_and_show_manipulations = false;
     bool update_and_show_settings = false;
     bool update_and_show_layers = false;
+#if ENABLE_TEXTURED_VOLUMES
+    bool update_and_show_texture = false;
+#endif // ENABLE_TEXTURED_VOLUMES
 
     const auto item = GetSelection();
 
@@ -2502,6 +2548,12 @@ void ObjectList::part_selection_changed()
                     if (type & itLayer)
                         m_config = &get_item_config(item);
                 }
+#if ENABLE_TEXTURED_VOLUMES
+                else if (type & itTexture) {
+                    og_name = _L("Texture");
+                    update_and_show_texture = true;
+                }
+#endif // ENABLE_TEXTURED_VOLUMES
             }
         }
     }
@@ -2526,6 +2578,11 @@ void ObjectList::part_selection_changed()
     else if (update_and_show_layers)
         wxGetApp().obj_layers()->get_og()->set_name(" " + og_name + " ");
 
+#if ENABLE_TEXTURED_VOLUMES
+    if (update_and_show_texture)
+        wxGetApp().obj_texture()->get_og()->set_name(" " + og_name + " ");
+#endif // ENABLE_TEXTURED_VOLUMES
+
     update_min_height();
 
     Sidebar& panel = wxGetApp().sidebar();
@@ -2535,6 +2592,9 @@ void ObjectList::part_selection_changed()
     wxGetApp().obj_manipul() ->UpdateAndShow(update_and_show_manipulations);
     wxGetApp().obj_settings()->UpdateAndShow(update_and_show_settings);
     wxGetApp().obj_layers()  ->UpdateAndShow(update_and_show_layers);
+#if ENABLE_TEXTURED_VOLUMES
+    wxGetApp().obj_texture() ->UpdateAndShow(update_and_show_texture);
+#endif // ENABLE_TEXTURED_VOLUMES
     wxGetApp().sidebar().show_info_sizer();
 
     panel.Layout();
@@ -2578,6 +2638,34 @@ wxDataViewItem ObjectList::add_settings_item(wxDataViewItem parent_item, const D
     return ret;
 }
 
+#if ENABLE_TEXTURED_VOLUMES
+wxDataViewItem ObjectList::add_texture_item(const wxDataViewItem obj_item, bool force_creation)
+{
+    const int obj_idx = m_objects_model->GetIdByItem(obj_item);
+    if (obj_idx < 0 || printer_technology() == ptSLA || (!force_creation && object(obj_idx)->texture.name.empty()))
+        return wxDataViewItem(nullptr);
+
+    // create Texture item
+    wxDataViewItem texture_item = m_objects_model->AddTextureChild(obj_item);
+    ObjectDataViewModelNode* node = static_cast<ObjectDataViewModelNode*>(texture_item.GetID());
+    node->SetBitmap(object(obj_idx)->texture.name.empty() ? wxBitmap() : create_scaled_bitmap("edit_texture"));
+
+    return texture_item;
+}
+
+void ObjectList::del_texture_item()
+{
+    const int obj_idx = get_selected_obj_idx();
+    if (obj_idx < 0)
+        return;
+
+    wxDataViewItem selectable_item = GetSelection();
+    selectable_item = m_objects_model->GetParent(selectable_item);
+    wxDataViewItem texture_item = m_objects_model->GetItemByType(selectable_item, itTexture);
+    del_subobject_item(texture_item);
+    select_item(selectable_item);
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selections/* = nullptr*/, bool added_object/* = false*/)
 {
@@ -2694,6 +2782,11 @@ void ObjectList::add_object_to_list(size_t obj_idx, bool call_selection_changed)
 
     // Add layers if it has
     add_layer_root_item(item);
+
+#if ENABLE_TEXTURED_VOLUMES
+    // Add texture if it has
+    add_texture_item(item, false);
+#endif // ENABLE_TEXTURED_VOLUMES
 
 #ifndef __WXOSX__ 
     if (call_selection_changed)
@@ -3236,12 +3329,19 @@ void ObjectList::update_selections()
     const Selection& selection = scene_selection();
     wxDataViewItemArray sels;
 
+#if ENABLE_TEXTURED_VOLUMES
+    if ((m_selection_mode & (smSettings | smLayer | smLayerRoot | smTexture)) == 0)
+#else
     if ( ( m_selection_mode & (smSettings|smLayer|smLayerRoot) ) == 0)
+#endif // ENABLE_TEXTURED_VOLUMES
         m_selection_mode = smInstance;
 
     // We doesn't update selection if itSettings | itLayerRoot | itLayer Item for the current object/part is selected
-    if (GetSelectedItemsCount() == 1 && m_objects_model->GetItemType(GetSelection()) & (itSettings | itLayerRoot | itLayer))
-    {
+#if ENABLE_TEXTURED_VOLUMES
+    if (GetSelectedItemsCount() == 1 && m_objects_model->GetItemType(GetSelection()) & (itSettings | itLayerRoot | itLayer | itTexture)) {
+#else
+    if (GetSelectedItemsCount() == 1 && m_objects_model->GetItemType(GetSelection()) & (itSettings | itLayerRoot | itLayer)) {
+#endif // ENABLE_TEXTURED_VOLUMES
         const auto item = GetSelection();
         if (selection.is_single_full_object()) {
             if (m_objects_model->GetItemType(m_objects_model->GetParent(item)) & itObject &&
@@ -3276,8 +3376,11 @@ void ObjectList::update_selections()
     {
         const Selection::ObjectIdxsToInstanceIdxsMap& objects_content = selection.get_content();
         // it's impossible to select Settings, Layer or LayerRoot for several objects
-        if (!selection.is_multiple_full_object() && (m_selection_mode & (smSettings | smLayer | smLayerRoot)))
-        {
+#if ENABLE_TEXTURED_VOLUMES
+        if (!selection.is_multiple_full_object() && (m_selection_mode & (smSettings | smLayer | smLayerRoot | smTexture))) {
+#else
+        if (!selection.is_multiple_full_object() && (m_selection_mode & (smSettings | smLayer | smLayerRoot))) {
+#endif // ENABLE_TEXTURED_VOLUMES
             auto obj_idx = objects_content.begin()->first;
             wxDataViewItem obj_item = m_objects_model->GetItemById(obj_idx);
             if (m_selection_mode & smSettings)
@@ -3295,6 +3398,10 @@ void ObjectList::update_selections()
                 else
                     sels.Add(obj_item);
             }
+#if ENABLE_TEXTURED_VOLUMES
+            else if (m_selection_mode & smTexture)
+                sels.Add(m_objects_model->GetTextureItem(obj_item));
+#endif // ENABLE_TEXTURED_VOLUMES
         }
         else {
         for (const auto& object : objects_content) {

@@ -84,6 +84,9 @@ public:
         smLayer     = 4,
         smSettings  = 8,  // used for undo/redo
         smLayerRoot = 16, // used for undo/redo
+#if ENABLE_TEXTURED_VOLUMES
+        smTexture   = 32, // used for undo/redo
+#endif // ENABLE_TEXTURED_VOLUMES
     };
 
     struct Clipboard
@@ -263,14 +266,24 @@ public:
     void                del_instances_from_object(const int obj_idx);
     void                del_layer_from_object(const int obj_idx, const t_layer_height_range& layer_range);
     void                del_layers_from_object(const int obj_idx);
+#if ENABLE_TEXTURED_VOLUMES
+    void                del_texture_from_object(const int obj_idx);
+#endif // ENABLE_TEXTURED_VOLUMES
     bool                del_subobject_from_object(const int obj_idx, const int idx, const int type);
     void                del_info_item(const int obj_idx, InfoItemType type);
     void                split();
     void                merge(bool to_multipart_object);
     void                layers_editing();
+#if ENABLE_TEXTURED_VOLUMES
+    void                texture_editing();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     wxDataViewItem      add_layer_root_item(const wxDataViewItem obj_item);
     wxDataViewItem      add_settings_item(wxDataViewItem parent_item, const DynamicPrintConfig* config);
+#if ENABLE_TEXTURED_VOLUMES
+    wxDataViewItem      add_texture_item(const wxDataViewItem obj_item, bool force_creation);
+    void                del_texture_item();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     DynamicPrintConfig  get_default_layer_config(const int obj_idx);
     bool                get_volume_by_item(const wxDataViewItem& item, ModelVolume*& volume);

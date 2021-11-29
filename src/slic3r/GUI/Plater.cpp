@@ -55,6 +55,9 @@
 #include "GUI_ObjectList.hpp"
 #include "GUI_ObjectManipulation.hpp"
 #include "GUI_ObjectLayers.hpp"
+#if ENABLE_TEXTURED_VOLUMES
+#include "GUI_ObjectTexture.hpp"
+#endif // ENABLE_TEXTURED_VOLUMES
 #include "GUI_Utils.hpp"
 #include "GUI_Factories.hpp"
 #include "wxExtensions.hpp"
@@ -646,6 +649,9 @@ struct Sidebar::priv
     ObjectManipulation  *object_manipulation{ nullptr };
     ObjectSettings      *object_settings{ nullptr };
     ObjectLayers        *object_layers{ nullptr };
+#if ENABLE_TEXTURED_VOLUMES
+    ObjectTexture       *object_texture{ nullptr };
+#endif // ENABLE_TEXTURED_VOLUMES
     ObjectInfo *object_info;
     SlicedInfo *sliced_info;
 
@@ -676,6 +682,9 @@ Sidebar::priv::~priv()
     delete object_settings;
     delete frequently_changed_parameters;
     delete object_layers;
+#if ENABLE_TEXTURED_VOLUMES
+    delete object_texture;
+#endif // ENABLE_TEXTURED_VOLUMES
 }
 
 void Sidebar::priv::show_preset_comboboxes()
@@ -843,6 +852,13 @@ Sidebar::Sidebar(Plater *parent)
     p->object_layers = new ObjectLayers(p->scrolled);
     p->object_layers->Hide();
     p->sizer_params->Add(p->object_layers->get_sizer(), 0, wxEXPAND | wxTOP, margin_5);
+
+#if ENABLE_TEXTURED_VOLUMES
+    // Object Texture
+    p->object_texture = new ObjectTexture(p->scrolled);
+    p->object_texture->Hide();
+    p->sizer_params->Add(p->object_texture->get_sizer(), 0, wxEXPAND | wxTOP, margin_5);
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // Info boxes
     p->object_info = new ObjectInfo(p->scrolled);
@@ -1108,6 +1124,9 @@ void Sidebar::msw_rescale()
     p->object_manipulation->msw_rescale();
     p->object_settings->msw_rescale();
     p->object_layers->msw_rescale();
+#if ENABLE_TEXTURED_VOLUMES
+    p->object_texture->msw_rescale();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     p->object_info->msw_rescale();
 
@@ -1156,6 +1175,9 @@ void Sidebar::sys_color_changed()
     p->object_list->sys_color_changed();
     p->object_manipulation->sys_color_changed();
     p->object_layers->sys_color_changed();
+#if ENABLE_TEXTURED_VOLUMES
+    p->object_texture->sys_color_changed();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // btn...->msw_rescale() updates icon on button, so use it
     p->btn_send_gcode->msw_rescale();
@@ -1206,6 +1228,13 @@ ObjectLayers* Sidebar::obj_layers()
 {
     return p->object_layers;
 }
+
+#if ENABLE_TEXTURED_VOLUMES
+ObjectTexture* Sidebar::obj_texture()
+{
+    return p->object_texture;
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 wxScrolledWindow* Sidebar::scrolled_panel()
 {
@@ -2649,6 +2678,12 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
             view3D->get_canvas3d()->update_gizmos_on_off_state();
     }
         
+#if ENABLE_TEXTURED_VOLUMES
+    // update textures
+    view3D->get_canvas3d()->update_object_textures_from_model();
+    view3D->get_canvas3d()->update_volumes_texture_from_objects();
+#endif // ENABLE_TEXTURED_VOLUMES
+
     GLGizmoSimplify::add_simplify_suggestion_notification(
         obj_idxs, model.objects, *notification_manager);
 
@@ -2918,6 +2953,9 @@ void Plater::priv::remove(size_t obj_idx)
     if (view3D->is_layers_editing_enabled())
         view3D->enable_layers_editing(false);
 
+#if ENABLE_TEXTURED_VOLUMES
+    q->remove_object_texture(model.objects[obj_idx]->texture.name);
+#endif // ENABLE_TEXTURED_VOLUMES
     model.delete_object(obj_idx);
     update();
     // Delete object from Sidebar list. Do it after update, so that the GLScene selection is updated with the modified model.
@@ -2932,6 +2970,9 @@ void Plater::priv::delete_object_from_model(size_t obj_idx)
     if (! model.objects[obj_idx]->name.empty())
         snapshot_label += ": " + wxString::FromUTF8(model.objects[obj_idx]->name.c_str());
     Plater::TakeSnapshot snapshot(q, snapshot_label);
+#if ENABLE_TEXTURED_VOLUMES
+    q->remove_object_texture(model.objects[obj_idx]->texture.name);
+#endif // ENABLE_TEXTURED_VOLUMES
     model.delete_object(obj_idx);
     update();
     object_list_changed();
@@ -2981,6 +3022,9 @@ void Plater::priv::reset()
 
     // Stop and reset the Print content.
     this->background_process.reset();
+#if ENABLE_TEXTURED_VOLUMES
+    q->remove_all_object_textures();
+#endif // ENABLE_TEXTURED_VOLUMES
     model.clear_objects();
     update();
     // Delete object from Sidebar list. Do it after update, so that the GLScene selection is updated with the modified model.
@@ -4805,6 +4849,10 @@ void Plater::priv::take_snapshot(const std::string& snapshot_name, const UndoRed
     }
     else if (this->sidebar->obj_list()->is_selected(itLayerRoot))
         snapshot_data.flags |= UndoRedo::SnapshotData::SELECTED_LAYERROOT_ON_SIDEBAR;
+#if ENABLE_TEXTURED_VOLUMES
+    else if (sidebar->obj_list()->is_selected(itTexture))
+        snapshot_data.flags |= UndoRedo::SnapshotData::SELECTED_TEXTURE_ON_SIDEBAR;
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // If SLA gizmo is active, ask it if it wants to trigger support generation
     // on loading this snapshot.
@@ -4901,6 +4949,7 @@ void Plater::priv::undo_redo_to(std::vector<UndoRedo::Snapshot>::const_iterator 
     top_snapshot_data.printer_technology = this->printer_technology;
     if (this->view3D->is_layers_editing_enabled())
         top_snapshot_data.flags |= UndoRedo::SnapshotData::VARIABLE_LAYER_EDITING_ACTIVE;
+
     if (this->sidebar->obj_list()->is_selected(itSettings)) {
         top_snapshot_data.flags |= UndoRedo::SnapshotData::SELECTED_SETTINGS_ON_SIDEBAR;
         top_snapshot_data.layer_range_idx = this->sidebar->obj_list()->get_selected_layers_range_idx();
@@ -4911,10 +4960,18 @@ void Plater::priv::undo_redo_to(std::vector<UndoRedo::Snapshot>::const_iterator 
     }
     else if (this->sidebar->obj_list()->is_selected(itLayerRoot))
         top_snapshot_data.flags |= UndoRedo::SnapshotData::SELECTED_LAYERROOT_ON_SIDEBAR;
+#if ENABLE_TEXTURED_VOLUMES
+    else if (this->sidebar->obj_list()->is_selected(itTexture))
+        top_snapshot_data.flags |= UndoRedo::SnapshotData::SELECTED_TEXTURE_ON_SIDEBAR;
+#endif // ENABLE_TEXTURED_VOLUMES
+
     bool   		 new_variable_layer_editing_active = (new_flags & UndoRedo::SnapshotData::VARIABLE_LAYER_EDITING_ACTIVE) != 0;
     bool         new_selected_settings_on_sidebar  = (new_flags & UndoRedo::SnapshotData::SELECTED_SETTINGS_ON_SIDEBAR) != 0;
     bool         new_selected_layer_on_sidebar     = (new_flags & UndoRedo::SnapshotData::SELECTED_LAYER_ON_SIDEBAR) != 0;
     bool         new_selected_layerroot_on_sidebar = (new_flags & UndoRedo::SnapshotData::SELECTED_LAYERROOT_ON_SIDEBAR) != 0;
+#if ENABLE_TEXTURED_VOLUMES
+    bool         new_selected_texture_on_sidebar   = (new_flags & UndoRedo::SnapshotData::SELECTED_TEXTURE_ON_SIDEBAR) != 0;
+#endif // ENABLE_TEXTURED_VOLUMES
 
     if (this->view3D->get_canvas3d()->get_gizmos_manager().wants_reslice_supports_on_undo())
         top_snapshot_data.flags |= UndoRedo::SnapshotData::RECALCULATE_SLA_SUPPORTS;
@@ -4960,12 +5017,24 @@ void Plater::priv::undo_redo_to(std::vector<UndoRedo::Snapshot>::const_iterator 
             }
         }
         // set selection mode for ObjectList on sidebar
+#if ENABLE_TEXTURED_VOLUMES
+        sidebar->obj_list()->set_selection_mode(new_selected_settings_on_sidebar ? ObjectList::SELECTION_MODE::smSettings :
+            new_selected_layer_on_sidebar ? ObjectList::SELECTION_MODE::smLayer :
+            new_selected_layerroot_on_sidebar ? ObjectList::SELECTION_MODE::smLayerRoot :
+            new_selected_texture_on_sidebar ? ObjectList::SELECTION_MODE::smTexture :
+            ObjectList::SELECTION_MODE::smUndef);
+
+        if (new_selected_settings_on_sidebar || new_selected_layer_on_sidebar || new_selected_texture_on_sidebar)
+            sidebar->obj_list()->set_selected_layers_range_idx(layer_range_idx);
+#else
         this->sidebar->obj_list()->set_selection_mode(new_selected_settings_on_sidebar  ? ObjectList::SELECTION_MODE::smSettings :
                                                       new_selected_layer_on_sidebar     ? ObjectList::SELECTION_MODE::smLayer :
                                                       new_selected_layerroot_on_sidebar ? ObjectList::SELECTION_MODE::smLayerRoot :
                                                                                           ObjectList::SELECTION_MODE::smUndef);
+
         if (new_selected_settings_on_sidebar || new_selected_layer_on_sidebar)
             this->sidebar->obj_list()->set_selected_layers_range_idx(layer_range_idx);
+#endif // ENABLE_TEXTURED_VOLUMES
 
         this->update_after_undo_redo(snapshot_copy, temp_snapshot_was_taken);
         // Enable layer editing after the Undo / Redo jump.
@@ -4989,6 +5058,9 @@ void Plater::priv::update_after_undo_redo(const UndoRedo::Snapshot& snapshot, bo
     //YS_FIXME update obj_list from the deserialized model (maybe store ObjectIDs into the tree?) (no selections at this point of time)
     this->view3D->get_canvas3d()->get_selection().set_deserialized(GUI::Selection::EMode(this->undo_redo_stack().selection_deserialized().mode), this->undo_redo_stack().selection_deserialized().volumes_and_instances);
     this->view3D->get_canvas3d()->get_gizmos_manager().update_after_undo_redo(snapshot);
+#if ENABLE_TEXTURED_VOLUMES
+    this->view3D->get_canvas3d()->update_volumes_texture_from_objects();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     wxGetApp().obj_list()->update_after_undo_redo();
 
@@ -5516,6 +5588,10 @@ void Plater::increase_instances(size_t num)
         arrange();
 
     p->update();
+
+#if ENABLE_TEXTURED_VOLUMES
+    update_volumes_texture_from_objects();
+#endif // ENABLE_TEXTURED_VOLUMES
 
     p->get_selection().add_instance(obj_idx, (int)model_object->instances.size() - 1);
 
@@ -6936,6 +7012,37 @@ void Plater::bring_instance_forward()
 {
     p->bring_instance_forward();
 }
+
+#if ENABLE_TEXTURED_VOLUMES
+std::string Plater::add_object_texture(const std::string& filename)
+{
+    std::string ret = p->model.textures_manager.add_texture_from_file(filename);
+    canvas3D()->update_object_textures_from_model();
+    return ret;
+}
+
+void Plater::remove_object_texture(const std::string& name)
+{
+    p->model.textures_manager.remove_texture(name);
+    canvas3D()->update_object_textures_from_model();
+}
+
+void Plater::remove_all_object_textures()
+{
+    p->model.textures_manager.remove_all_textures();
+    canvas3D()->update_object_textures_from_model();
+}
+
+unsigned int Plater::get_object_texture_id(const std::string& name) const
+{
+    return canvas3D()->get_object_texture_id(name);
+}
+
+void Plater::update_volumes_texture_from_objects()
+{
+    canvas3D()->update_volumes_texture_from_objects();
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 wxMenu* Plater::object_menu()           { return p->menus.object_menu();            }
 wxMenu* Plater::part_menu()             { return p->menus.part_menu();              }

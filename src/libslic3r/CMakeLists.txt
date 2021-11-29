@@ -214,6 +214,12 @@ add_library(libslic3r STATIC
     Technologies.hpp
     Tesselate.cpp
     Tesselate.hpp
+    TextureData.cpp
+    TextureData.hpp
+    TextureMetadata.cpp
+    TextureMetadata.hpp
+    TexturesManager.cpp
+    TexturesManager.hpp
     TriangleMesh.cpp
     TriangleMesh.hpp
     TriangleMeshSlicer.cpp

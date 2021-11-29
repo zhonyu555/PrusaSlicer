@@ -49,6 +49,9 @@ class ConfigOptionsGroup;
 class ObjectManipulation;
 class ObjectSettings;
 class ObjectLayers;
+#if ENABLE_TEXTURED_VOLUMES
+class ObjectTexture;
+#endif // ENABLE_TEXTURED_VOLUMES
 class ObjectList;
 class GLCanvas3D;
 class Mouse3DController;
@@ -90,6 +93,9 @@ public:
     ObjectList*             obj_list();
     ObjectSettings*         obj_settings();
     ObjectLayers*           obj_layers();
+#if ENABLE_TEXTURED_VOLUMES
+    ObjectTexture*          obj_texture();
+#endif // ENABLE_TEXTURED_VOLUMES
     wxScrolledWindow*       scrolled_panel();
     wxPanel*                presets_panel();
 
@@ -369,7 +375,15 @@ public:
     void init_notification_manager();
 
     void bring_instance_forward();
-    
+
+#if ENABLE_TEXTURED_VOLUMES
+    std::string add_object_texture(const std::string& filename);
+    void remove_object_texture(const std::string& name);
+    void remove_all_object_textures();
+    unsigned int get_object_texture_id(const std::string& name) const;
+    void update_volumes_texture_from_objects();
+#endif // ENABLE_TEXTURED_VOLUMES
+
     // ROII wrapper for suppressing the Undo / Redo snapshot to be taken.
 	class SuppressSnapshots
 	{

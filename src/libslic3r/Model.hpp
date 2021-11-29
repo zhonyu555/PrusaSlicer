@@ -14,6 +14,10 @@
 #include "Arrange.hpp"
 #include "CustomGCode.hpp"
 #include "enum_bitmask.hpp"
+#if ENABLE_TEXTURED_VOLUMES
+#include "TexturesManager.hpp"
+#include "TextureMetadata.hpp"
+#endif // ENABLE_TEXTURED_VOLUMES
 
 #include <map>
 #include <memory>
@@ -257,6 +261,10 @@ public:
     LayerHeightProfile      layer_height_profile;
     // Whether or not this object is printable
     bool                    printable;
+#if ENABLE_TEXTURED_VOLUMES
+    // Texture data
+    TextureMetadata         texture;
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // This vector holds position of selected support points for SLA. The data are
     // saved in mesh coordinates to allow using them for several instances.
@@ -413,6 +421,9 @@ private:
     	assert(this->id() == rhs.id()); 
         assert(this->config.id() == rhs.config.id());
         assert(this->layer_height_profile.id() == rhs.layer_height_profile.id());
+#if ENABLE_TEXTURED_VOLUMES
+        assert(this->texture == rhs.texture);
+#endif // ENABLE_TEXTURED_VOLUMES
     }
     explicit ModelObject(ModelObject &&rhs) : ObjectBase(-1), config(-1), layer_height_profile(-1) { 
     	assert(this->id().invalid()); 
@@ -429,6 +440,9 @@ private:
     	assert(this->id() == rhs.id());
         assert(this->config.id() == rhs.config.id());
         assert(this->layer_height_profile.id() == rhs.layer_height_profile.id());
+#if ENABLE_TEXTURED_VOLUMES
+        assert(this->texture == rhs.texture);
+#endif // ENABLE_TEXTURED_VOLUMES
     }
     ModelObject& operator=(const ModelObject &rhs) {
     	this->assign_copy(rhs); 
@@ -441,7 +455,10 @@ private:
     	assert(this->id() == rhs.id()); 
         assert(this->config.id() == rhs.config.id());
         assert(this->layer_height_profile.id() == rhs.layer_height_profile.id());
-    	return *this;
+#if ENABLE_TEXTURED_VOLUMES
+        assert(this->texture == rhs.texture);
+#endif // ENABLE_TEXTURED_VOLUMES
+        return *this;
     }
     ModelObject& operator=(ModelObject &&rhs) {
     	this->assign_copy(std::move(rhs)); 
@@ -454,7 +471,10 @@ private:
     	assert(this->id() == rhs.id());
         assert(this->config.id() == rhs.config.id());
         assert(this->layer_height_profile.id() == rhs.layer_height_profile.id());
-    	return *this;
+#if ENABLE_TEXTURED_VOLUMES
+        assert(this->texture == rhs.texture);
+#endif // ENABLE_TEXTURED_VOLUMES
+        return *this;
     }
 	void set_new_unique_id() { 
         ObjectBase::set_new_unique_id(); 
@@ -495,10 +515,16 @@ private:
 		ar(cereal::base_class<ObjectBase>(this));
 		Internal::StaticSerializationWrapper<ModelConfigObject> config_wrapper(config);
         Internal::StaticSerializationWrapper<LayerHeightProfile> layer_heigth_profile_wrapper(layer_height_profile);
-        ar(name, input_file, instances, volumes, config_wrapper, layer_config_ranges, layer_heigth_profile_wrapper, 
+#if ENABLE_TEXTURED_VOLUMES
+        ar(name, input_file, instances, volumes, config_wrapper, layer_config_ranges, layer_heigth_profile_wrapper,
+            sla_support_points, sla_points_status, sla_drain_holes, printable, origin_translation, texture,
+            m_bounding_box, m_bounding_box_valid, m_raw_bounding_box, m_raw_bounding_box_valid, m_raw_mesh_bounding_box, m_raw_mesh_bounding_box_valid);
+#else
+        ar(name, input_file, instances, volumes, config_wrapper, layer_config_ranges, layer_heigth_profile_wrapper,
             sla_support_points, sla_points_status, sla_drain_holes, printable, origin_translation,
             m_bounding_box, m_bounding_box_valid, m_raw_bounding_box, m_raw_bounding_box_valid, m_raw_mesh_bounding_box, m_raw_mesh_bounding_box_valid);
-	}
+#endif // ENABLE_TEXTURED_VOLUMES
+    }
 
     // Called by Print::validate() from the UI thread.
     unsigned int update_instances_print_volume_state(const BuildVolume &build_volume);
@@ -1056,7 +1082,11 @@ public:
 
     // Extensions for color print
     CustomGCode::Info custom_gcode_per_print_z;
-    
+
+#if ENABLE_TEXTURED_VOLUMES
+    TexturesManager textures_manager;
+#endif // ENABLE_TEXTURED_VOLUMES
+
     // Default constructor assigns a new ID to the model.
     Model() { assert(this->id().valid()); }
     ~Model() { this->clear_objects(); this->clear_materials(); }

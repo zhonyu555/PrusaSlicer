@@ -43,6 +43,9 @@ class ObjectManipulation;
 class ObjectSettings;
 class ObjectList;
 class ObjectLayers;
+#if ENABLE_TEXTURED_VOLUMES
+class ObjectTexture;
+#endif // ENABLE_TEXTURED_VOLUMES
 class Plater;
 class NotificationManager;
 struct GUI_InitParams;
@@ -64,6 +67,9 @@ enum FileType
     FT_SVG,
 
     FT_TEX,
+#if ENABLE_TEXTURED_VOLUMES
+    FT_OBJ_TEX,
+#endif // ENABLE_TEXTURED_VOLUMES
 
     FT_SL1,
 	// Workaround for OSX file picker, for some reason it always saves with the 1st extension.
@@ -280,6 +286,9 @@ public:
     ObjectSettings*      obj_settings();
     ObjectList*          obj_list();
     ObjectLayers*        obj_layers();
+#if ENABLE_TEXTURED_VOLUMES
+    ObjectTexture*       obj_texture();
+#endif // ENABLE_TEXTURED_VOLUMES
     Plater*              plater();
     const Plater*        plater() const;
     Model&      		 model();

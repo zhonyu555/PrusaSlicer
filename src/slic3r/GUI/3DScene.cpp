@@ -612,6 +612,74 @@ void GLVolume::render_sinking_contours()
     m_sinking_contours.render();
 }
 
+#if ENABLE_TEXTURED_VOLUMES
+void GLTexturesManager::update_from_model(const Model& model)
+{
+    std::vector<std::string> names = model.textures_manager.get_texture_names();
+
+    // check for newly added textures
+    for (const std::string& name : names) {
+        auto it = std::find_if(m_textures.begin(), m_textures.end(), [&name](const TexItem& item) { return item.name == name; });
+        if (it == m_textures.end()) {
+            std::shared_ptr<GUI::GLTexture> texture = std::make_shared<GUI::GLTexture>();
+            const TextureData& data = model.textures_manager.get_texture_data(name);
+            texture->set_source(model.textures_manager.get_texture_source(name));
+            if (data.is_valid()) {
+                bool res = texture->load_from_png_buffer(data.data, true, GUI::GLTexture::ECompressionType::SingleThreaded, true);
+                if (res) {
+                    TexItem item = { name, texture };
+                    m_textures.emplace_back(item);
+                }
+            }
+        }
+    }
+
+    // check for removed textures
+    size_t i = 0;
+    while (i < m_textures.size()) {
+        TexItem& item = m_textures[i];
+
+        auto it = std::find_if(names.begin(), names.end(), [&item](const std::string& name) { return name == item.name; });
+        if (it == names.end()) {
+            m_textures.erase(m_textures.begin() + i);
+            --i;
+        }
+        ++i;
+    }
+
+#if ENABLE_GLTEXTURES_MANAGER_DEBUG
+    output_content();
+#endif // ENABLE_GLTEXTURES_MANAGER_DEBUG
+}
+
+unsigned int GLTexturesManager::get_texture_id(const std::string& name) const
+{
+    for (const TexItem& item : m_textures) {
+        if (name == item.name)
+            return item.texture->get_id();
+    }
+    return 0;
+}
+
+#if ENABLE_GLTEXTURES_MANAGER_DEBUG
+void GLTexturesManager::output_content() const
+{
+    std::cout << "\GLTexturesManager content\n";
+    std::cout << "=======================\n";
+
+    if (m_textures.empty())
+        std::cout << "empty\n";
+    else {
+        for (const TexItem& item : m_textures) {
+            std::cout << item.name << "\n";
+        }
+    }
+
+    std::cout << "=======================\n\n";
+}
+#endif // ENABLE_GLTEXTURES_MANAGER_DEBUG
+#endif // ENABLE_TEXTURED_VOLUMES
+
 std::vector<int> GLVolumeCollection::load_object(
     const ModelObject       *model_object,
     int                      obj_idx,

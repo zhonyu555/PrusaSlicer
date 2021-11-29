@@ -73,18 +73,18 @@
 #define ENABLE_FIX_SUPERSLICER_GCODE_IMPORT (1 && ENABLE_2_4_0_ALPHA3)
 
 
-//====================
+//===================
 // 2.4.0.beta1 techs
-//====================
+//===================
 #define ENABLE_2_4_0_BETA1 1
 
 // Enable rendering modifiers and similar objects always as transparent
 #define ENABLE_MODIFIERS_ALWAYS_TRANSPARENT (1 && ENABLE_2_4_0_BETA1)
 
 
-//====================
+//===================
 // 2.4.0.beta2 techs
-//====================
+//===================
 #define ENABLE_2_4_0_BETA2 1
 
 // Enable modified ImGuiWrapper::slider_float() to create a compound widget where
@@ -93,6 +93,15 @@
 #define ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT (1 && ENABLE_2_4_0_BETA2)
 // Enable fit print volume command for circular printbeds
 #define ENABLE_ENHANCED_PRINT_VOLUME_FIT (1 && ENABLE_2_4_0_BETA2)
+
+
+//====================
+// 2.5.0.alpha1 techs
+//====================
+#define ENABLE_2_5_0_ALPHA1 1
+
+// Enable application of textures to volumes
+#define ENABLE_TEXTURED_VOLUMES (1 && ENABLE_2_5_0_ALPHA1)
 
 
 #endif // _prusaslicer_technologies_h_

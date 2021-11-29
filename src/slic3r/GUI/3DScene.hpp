@@ -9,6 +9,9 @@
 #include "libslic3r/Geometry.hpp"
 
 #include "GLModel.hpp"
+#if ENABLE_TEXTURED_VOLUMES
+#include "GLTexture.hpp"
+#endif // ENABLE_TEXTURED_VOLUMES
 
 #include <functional>
 #include <optional>
@@ -38,6 +41,9 @@ class ExtrusionMultiPath;
 class ExtrusionLoop;
 class ExtrusionEntity;
 class ExtrusionEntityCollection;
+#if ENABLE_TEXTURED_VOLUMES
+class Model;
+#endif // ENABLE_TEXTURED_VOLUMES
 class ModelObject;
 class ModelVolume;
 enum ModelInstanceEPrintVolumeState : unsigned char;
@@ -381,6 +387,10 @@ public:
     std::vector<coordf_t>       print_zs;
     // Offset into qverts & tverts, or offsets into indices stored into an OpenGL name_index_buffer.
     std::vector<size_t>         offsets;
+#if ENABLE_TEXTURED_VOLUMES
+    // texture name
+    std::string                 texture;
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // Bounding box of this volume, in unscaled coordinates.
     BoundingBoxf3 bounding_box() const { 
@@ -513,6 +523,30 @@ public:
     size_t 				total_memory_used() const { return this->cpu_memory_used() + this->gpu_memory_used(); }
 };
 
+#if ENABLE_TEXTURED_VOLUMES
+#define ENABLE_GLTEXTURES_MANAGER_DEBUG 0
+class GLTexturesManager
+{
+    struct TexItem
+    {
+        std::string name;
+        std::shared_ptr<GUI::GLTexture> texture;
+    };
+
+    std::vector<TexItem> m_textures;
+
+public:
+    void update_from_model(const Model& model);
+
+    // return the gpu id of the texture
+    unsigned int get_texture_id(const std::string& name) const;
+
+#if ENABLE_GLTEXTURES_MANAGER_DEBUG
+    void output_content() const;
+#endif // ENABLE_GLTEXTURES_MANAGER_DEBUG
+};
+#endif // ENABLE_TEXTURED_VOLUMES
+
 typedef std::vector<GLVolume*> GLVolumePtrs;
 typedef std::pair<GLVolume*, std::pair<unsigned int, double>> GLVolumeWithIdAndZ;
 typedef std::vector<GLVolumeWithIdAndZ> GLVolumeWithIdAndZList;
@@ -560,6 +594,10 @@ private:
     Slope m_slope;
     bool m_show_sinking_contours = false;
 
+#if ENABLE_TEXTURED_VOLUMES
+    GLTexturesManager m_textures_manager;
+#endif // ENABLE_TEXTURED_VOLUMES
+
 public:
     GLVolumePtrs volumes;
 
@@ -597,6 +635,11 @@ public:
 
     GLVolume* new_toolpath_volume(const std::array<float, 4>& rgba, size_t reserve_vbo_floats = 0);
     GLVolume* new_nontoolpath_volume(const std::array<float, 4>& rgba, size_t reserve_vbo_floats = 0);
+
+#if ENABLE_TEXTURED_VOLUMES
+    void update_textures_from_model(const Model& model) { m_textures_manager.update_from_model(model); }
+    unsigned int get_texture_id(const std::string& name) const { return m_textures_manager.get_texture_id(name); }
+#endif // ENABLE_TEXTURED_VOLUMES
 
     // Render the volumes by OpenGL.
     void render(ERenderType type, bool disable_cullface, const Transform3d& view_matrix, std::function<bool(const GLVolume&)> filter_func = std::function<bool(const GLVolume&)>()) const;

@@ -111,7 +111,9 @@ set(SLIC3R_GUI_SOURCES
     GUI/GUI_ObjectSettings.hpp
     GUI/GUI_ObjectLayers.cpp
     GUI/GUI_ObjectLayers.hpp
-    GUI/MeshUtils.cpp
+    GUI/GUI_ObjectTexture.cpp
+    GUI/GUI_ObjectTexture.hpp
+	GUI/MeshUtils.cpp
     GUI/MeshUtils.hpp
     GUI/Tab.cpp
     GUI/Tab.hpp

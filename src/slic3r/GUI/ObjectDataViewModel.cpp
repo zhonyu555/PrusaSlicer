@@ -106,6 +106,10 @@ ObjectDataViewModelNode::ObjectDataViewModelNode(ObjectDataViewModelNode* parent
     }
     else if (type == itInfo)
         assert(false);
+#if ENABLE_TEXTURED_VOLUMES
+    else if (type == itTexture)
+        m_name = _L("Texture");
+#endif // ENABLE_TEXTURED_VOLUMES
 
     if (type & (itInstanceRoot | itLayerRoot))
         init_container();
@@ -635,6 +639,23 @@ wxDataViewItem ObjectDataViewModel::AddLayersChild(const wxDataViewItem &parent_
     return layer_item;
 }
 
+#if ENABLE_TEXTURED_VOLUMES
+wxDataViewItem ObjectDataViewModel::AddTextureChild(const wxDataViewItem& parent_item)
+{
+    ObjectDataViewModelNode* root = static_cast<ObjectDataViewModelNode*>(parent_item.GetID());
+    if (root == nullptr)
+        return wxDataViewItem(0);
+
+    const auto node = new ObjectDataViewModelNode(root, itTexture);
+
+    root->Insert(node, 0);
+    // notify control
+    const wxDataViewItem child((void*)node);
+    ItemAdded(parent_item, child);
+    return child;
+}
+#endif // ENABLE_TEXTURED_VOLUMES
+
 size_t ObjectDataViewModel::GetItemIndexForFirstVolume(ObjectDataViewModelNode* node_parent)
 {
     assert(node_parent->m_volumes_cnt > 0);
@@ -1156,7 +1177,11 @@ void ObjectDataViewModel::GetItemInfo(const wxDataViewItem& item, ItemType& type
     if (!node || 
         node->GetIdx() <-1 || 
         ( node->GetIdx() == -1 && 
-         !(node->GetType() & (itObject | itSettings | itInstanceRoot | itLayerRoot | itInfo))
+#if ENABLE_TEXTURED_VOLUMES
+            !(node->GetType() & (itObject | itSettings | itInstanceRoot | itLayerRoot | itInfo | itTexture))
+#else
+            !(node->GetType() & (itObject | itSettings | itInstanceRoot | itLayerRoot | itInfo))
+#endif // ENABLE_TEXTURED_VOLUMES
         )
        )
         return;
@@ -1592,6 +1617,13 @@ wxDataViewItem ObjectDataViewModel::GetInfoItemByType(const wxDataViewItem &pare
 
     return wxDataViewItem(0); // not found
 }
+
+#if ENABLE_TEXTURED_VOLUMES
+wxDataViewItem ObjectDataViewModel::GetTextureItem(const wxDataViewItem& item) const
+{
+    return GetItemByType(item, itTexture);
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 bool ObjectDataViewModel::IsSettingsItem(const wxDataViewItem &item) const
 {

@@ -881,6 +881,11 @@ public:
     void reset_old_size() { m_old_size = { 0, 0 }; }
 
     bool is_object_sinking(int object_idx) const;
+#if ENABLE_TEXTURED_VOLUMES
+    void update_object_textures_from_model() { if (m_model != nullptr) m_volumes.update_textures_from_model(*m_model); }
+    unsigned int get_object_texture_id(const std::string& name) const { return m_volumes.get_texture_id(name); }
+    void update_volumes_texture_from_objects();
+#endif // ENABLE_TEXTURED_VOLUMES
 
 private:
     bool _is_shown_on_screen() const;

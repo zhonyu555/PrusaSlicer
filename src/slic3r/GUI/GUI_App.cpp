@@ -487,6 +487,9 @@ wxString file_wildcards(FileType file_type, const std::string &custom_extension)
         /* FT_SVG */     "SVG files (*.svg)|*.svg;*.SVG",
 
         /* FT_TEX */     "Texture (*.png, *.svg)|*.png;*.PNG;*.svg;*.SVG",
+#if ENABLE_TEXTURED_VOLUMES
+        /* FT_OBJ_TEX */ "Texture (*.png, *.texture)|*.png;*.PNG;*.texture",
+#endif // ENABLE_TEXTURED_VOLUMES
 
         /* FT_SL1 */     "Masked SLA files (*.sl1, *.sl1s)|*.sl1;*.SL1;*.sl1s;*.SL1S",
         // Workaround for OSX file picker, for some reason it always saves with the 1st extension.
@@ -2628,6 +2631,13 @@ ObjectLayers* GUI_App::obj_layers()
 {
     return sidebar().obj_layers();
 }
+
+#if ENABLE_TEXTURED_VOLUMES
+ObjectTexture* GUI_App::obj_texture()
+{
+    return sidebar().obj_texture();
+}
+#endif // ENABLE_TEXTURED_VOLUMES
 
 Plater* GUI_App::plater()
 {
