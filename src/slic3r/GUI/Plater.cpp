@@ -443,7 +443,12 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
      */
     auto empty_widget = [this] (wxWindow* parent) {
         auto sizer = new wxBoxSizer(wxHORIZONTAL);
+#if ENABLE_TEXTURED_VOLUMES
+        // when setting tech ENABLE_TEXTURED_VOLUMES to default remove file mirroring_transparent.png from /resources/icons folder
+        auto btn = new ScalableButton(parent, wxID_ANY, "transparent.png", wxEmptyString,
+#else
         auto btn = new ScalableButton(parent, wxID_ANY, "mirroring_transparent.png", wxEmptyString,
+#endif // ENABLE_TEXTURED_VOLUMES
             wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER | wxTRANSPARENT_WINDOW);
         sizer->Add(btn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, int(0.3 * wxGetApp().em_unit()));
         m_empty_buttons.push_back(btn);
@@ -500,8 +505,13 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
             }
         }));
 
+#if ENABLE_TEXTURED_VOLUMES
+        // when setting tech ENABLE_TEXTURED_VOLUMES to default remove file mirroring_transparent.png from /resources/icons folder
+        auto btn = new ScalableButton(parent, wxID_ANY, "transparent.png", wxEmptyString,
+#else
         auto btn = new ScalableButton(parent, wxID_ANY, "mirroring_transparent.png", wxEmptyString,
-                                      wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER | wxTRANSPARENT_WINDOW);
+#endif // ENABLE_TEXTURED_VOLUMES
+                    wxDefaultSize, wxDefaultPosition, wxBU_EXACTFIT | wxNO_BORDER | wxTRANSPARENT_WINDOW);
         sizer->Add(btn , 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT,
             int(0.3 * wxGetApp().em_unit()));
         m_empty_buttons.push_back(btn);
