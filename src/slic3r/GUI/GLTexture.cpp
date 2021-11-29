@@ -151,40 +151,46 @@ bool GLTexture::load_from_ideamaker_texture_file(const std::string& filename, bo
     if (!boost::filesystem::exists(filename))
         return false;
 
-    if (boost::algorithm::iends_with(filename, ".texture")) {
-        boost::property_tree::ptree root;
-        boost::property_tree::read_json(filename, root); // << FIXME for utf8 files
+    boost::nowide::ifstream file(filename, boost::nowide::ifstream::binary);
+    if (!file.good())
+        return false;
 
-        //http://www.cochoy.fr/boost-property-tree/
-//        boost::optional<std::string> id = root.get_optional<std::string>("header.texture_id");
-//        boost::optional<std::string> name = root.get_optional<std::string>("header.texture_name");
-        boost::optional<std::string> image_data = root.get_optional<std::string>("image_data");
-//        boost::optional<std::string> border_color = root.get_optional<std::string>("settings.texture_border_color");
-//        boost::optional<float> repeat_x = root.get_optional<float>("settings.texture_repeat_x");
-//        boost::optional<float> repeat_y = root.get_optional<float>("settings.texture_repeat_y");
-//        boost::optional<float> rotation_z = root.get_optional<float>("settings.texture_rotation_z");
-//        boost::optional<float> translation_x = root.get_optional<float>("settings.texture_translation_x");
-//        boost::optional<float> translation_y = root.get_optional<float>("settings.texture_translation_y");
-//        boost::optional<std::string> wrapping = root.get_optional<std::string>("settings.texture_wrapping");
-//        boost::optional<std::string> version = root.get_optional<std::string>("version");
+    boost::property_tree::ptree root;
+    boost::property_tree::read_json(file, root);
 
-        m_source = filename;
+    file.close();
 
-        // TODO: do something with data other than image_data
 
-        if (image_data.has_value()) {
-            const std::string src = image_data.value();
-            std::string decoded;
-            decoded.resize(boost::beast::detail::base64::decoded_size(src.length()));
-            std::pair<std::size_t, std::size_t> res = boost::beast::detail::base64::decode((void*)decoded.data(), src.data(), src.length());
-            std::vector<unsigned char> src_data(decoded.length());
-            ::memcpy((void*)src_data.data(), (const void*)decoded.data(), decoded.length());
-            bool ret = load_from_png_buffer(src_data, true, GLTexture::ECompressionType::SingleThreaded, true);
-            if (!ret)
-                reset();
-            return ret;
-        }
+    // http://www.cochoy.fr/boost-property-tree/
+//    boost::optional<std::string> id = root.get_optional<std::string>("header.texture_id");
+//    boost::optional<std::string> name = root.get_optional<std::string>("header.texture_name");
+    boost::optional<std::string> image_data = root.get_optional<std::string>("image_data");
+//    boost::optional<std::string> border_color = root.get_optional<std::string>("settings.texture_border_color");
+//    boost::optional<float> repeat_x = root.get_optional<float>("settings.texture_repeat_x");
+//    boost::optional<float> repeat_y = root.get_optional<float>("settings.texture_repeat_y");
+//    boost::optional<float> rotation_z = root.get_optional<float>("settings.texture_rotation_z");
+//    boost::optional<float> translation_x = root.get_optional<float>("settings.texture_translation_x");
+//    boost::optional<float> translation_y = root.get_optional<float>("settings.texture_translation_y");
+//    boost::optional<std::string> wrapping = root.get_optional<std::string>("settings.texture_wrapping");
+//    boost::optional<std::string> version = root.get_optional<std::string>("version");
+
+    m_source = filename;
+
+    // TODO: do something with data other than image_data
+
+    if (image_data.has_value()) {
+        const std::string src = image_data.value();
+        std::string decoded;
+        decoded.resize(boost::beast::detail::base64::decoded_size(src.length()));
+        std::pair<std::size_t, std::size_t> res = boost::beast::detail::base64::decode((void*)decoded.data(), src.data(), src.length());
+        std::vector<unsigned char> src_data(decoded.length());
+        ::memcpy((void*)src_data.data(), (const void*)decoded.data(), decoded.length());
+        bool ret = load_from_png_buffer(src_data, true, GLTexture::ECompressionType::SingleThreaded, true);
+        if (!ret)
+            reset();
+        return ret;
     }
+
     return false;
 }
 
@@ -345,7 +351,7 @@ bool GLTexture::load_from_png_buffer(const std::vector<unsigned char>& png_buffe
 {
 #define DEBUG_OUTPUT 0
 #if DEBUG_OUTPUT
-    wxString out_file = m_source + ".png";
+    wxString out_file = wxString::FromUTF8(m_source + ".png");
 #endif // DEBUG_OUTPUT
 
     reset();
