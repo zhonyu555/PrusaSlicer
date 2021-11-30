@@ -484,6 +484,10 @@ void MenuFactory::append_menu_items_add_volume(wxMenu* menu)
             menu->Destroy(settings_id);
     }
 
+    // Update "Height range Modifier" item (delete old & create new)
+    if (const auto range_id = menu->FindItem(_L("Height range Modifier")); range_id != wxNOT_FOUND)
+        menu->Destroy(range_id);
+
     const ConfigOptionMode mode = wxGetApp().get_mode();
 
     if (mode == comAdvanced) {
@@ -513,6 +517,8 @@ void MenuFactory::append_menu_items_add_volume(wxMenu* menu)
         append_submenu(menu, sub_menu, wxID_ANY, _(item.first), "", item.second,
             []() { return obj_list()->is_instance_or_object_selected(); }, m_parent);
     }
+
+    append_menu_item_layers_editing(menu);
 }
 
 wxMenuItem* MenuFactory::append_menu_item_layers_editing(wxMenu* menu)
@@ -521,15 +527,6 @@ wxMenuItem* MenuFactory::append_menu_item_layers_editing(wxMenu* menu)
         [](wxCommandEvent&) { obj_list()->layers_editing(); }, "edit_layers_all", menu,
         []() { return obj_list()->is_instance_or_object_selected(); }, m_parent);
 }
-
-#if ENABLE_TEXTURED_VOLUMES
-wxMenuItem* MenuFactory::append_menu_item_texture(wxMenu* menu)
-{
-    return append_menu_item(menu, wxID_ANY, _L("Texture"), "",
-        [](wxCommandEvent&) { obj_list()->texture_editing(); }, "edit_texture", menu,
-        []() { return obj_list()->is_instance_or_object_selected(); }, m_parent);
-}
-#endif // ENABLE_TEXTURED_VOLUMES
 
 wxMenuItem* MenuFactory::append_menu_item_settings(wxMenu* menu_)
 {
@@ -953,16 +950,14 @@ void MenuFactory::create_object_menu()
         []() { return plater()->can_split(true) && wxGetApp().get_mode() > comSimple; }, m_parent);
     m_object_menu.AppendSeparator();
 
-    // Layers Editing for object
-    append_menu_item_layers_editing(&m_object_menu);
-    m_object_menu.AppendSeparator();
-
 #if ENABLE_TEXTURED_VOLUMES
-    append_menu_item_texture(&m_object_menu);
+    append_menu_item(&m_object_menu, wxID_ANY, _L("Texture"), "",
+        [](wxCommandEvent&) { obj_list()->texture_editing(); }, "edit_texture", &m_object_menu,
+        []() { return obj_list()->is_instance_or_object_selected(); }, m_parent);
     m_object_menu.AppendSeparator();
 #endif // ENABLE_TEXTURED_VOLUMES
 
-    // "Add (volumes)" popupmenu will be added later in append_menu_items_add_volume()
+    // "Height range Modifier" and "Add (volumes)" menu items will be added later in append_menu_items_add_volume()
 }
 
 void MenuFactory::create_sla_object_menu()
