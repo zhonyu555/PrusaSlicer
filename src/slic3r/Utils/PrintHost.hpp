@@ -9,6 +9,7 @@
 
 #include <wx/string.h>
 
+#include <libslic3r/enum_bitmask.hpp>
 #include "Http.hpp"
 
 class wxArrayString;
@@ -22,6 +23,8 @@ enum class PrintHostPostUploadAction {
     StartPrint,
     StartSimulation
 };
+using PrintHostPostUploadActions = enum_bitmask<PrintHostPostUploadAction>;
+ENABLE_ENUM_BITMASK_OPERATORS(PrintHostPostUploadAction);
 
 struct PrintHostUpload
 {
@@ -30,9 +33,8 @@ struct PrintHostUpload
     
     std::string group;
     
-    PrintHostPostUploadAction post_action = PrintHostPostUploadAction::None;
+    PrintHostPostUploadAction post_action { PrintHostPostUploadAction::None };
 };
-
 
 class PrintHost
 {
@@ -50,7 +52,7 @@ public:
     virtual bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn) const = 0;
     virtual bool has_auto_discovery() const = 0;
     virtual bool can_test() const = 0;
-    virtual std::set<PrintHostPostUploadAction> get_post_upload_actions() const = 0;
+    virtual PrintHostPostUploadActions get_post_upload_actions() const = 0;
     // A print host usually does not support multiple printers, with the exception of Repetier server.
     virtual bool supports_multiple_printers() const { return false; }
     virtual std::string get_host() const = 0;

@@ -11,6 +11,7 @@
 
 #include "GUI_Utils.hpp"
 #include "MsgDialog.hpp"
+#include "../Utils/PrintHost.hpp"
 
 class wxButton;
 class wxTextCtrl;
@@ -18,19 +19,14 @@ class wxChoice;
 class wxComboBox;
 class wxDataViewListCtrl;
 
-
 namespace Slic3r {
 
-struct PrintHostJob;
-enum class PrintHostPostUploadAction;
-
 namespace GUI {
-
 
 class PrintHostSendDialog : public GUI::MsgDialog
 {
 public:
-    PrintHostSendDialog(const boost::filesystem::path &path, std::set<PrintHostPostUploadAction> post_actions, const wxArrayString& groups);
+    PrintHostSendDialog(const boost::filesystem::path &path, PrintHostPostUploadActions post_actions, const wxArrayString& groups);
     boost::filesystem::path filename() const;
     PrintHostPostUploadAction post_action() const;
     std::string group() const;
@@ -40,6 +36,7 @@ private:
     wxTextCtrl *txt_filename;
     wxComboBox *combo_groups;
     PrintHostPostUploadAction post_upload_action;
+    wxString    m_valid_suffix;
 };
 
 
