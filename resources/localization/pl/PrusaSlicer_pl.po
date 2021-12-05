@@ -6113,7 +6113,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "Wyświetl okno kolejki serwera druku"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr "Porównaj zestawy ustawień"
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

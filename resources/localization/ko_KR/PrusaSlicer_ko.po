@@ -5930,7 +5930,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "인쇄 호스트 업로드 대기열 창 표시"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr ""
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

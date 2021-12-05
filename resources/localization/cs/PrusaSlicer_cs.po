@@ -6100,7 +6100,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "Zobrazit okno s frontou nahrávání do tiskového serveru"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr "Porovnání přednastavení"
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

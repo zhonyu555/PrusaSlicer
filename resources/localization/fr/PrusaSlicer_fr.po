@@ -6183,7 +6183,7 @@ msgstr ""
 "d'Impression"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr "Comparer les Préréglages"
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

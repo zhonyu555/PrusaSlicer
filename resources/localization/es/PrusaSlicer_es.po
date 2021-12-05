@@ -6138,7 +6138,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "Mostrar la ventana de la cola de carga del host de impresión"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr "Comparar justes"
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

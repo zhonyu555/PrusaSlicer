@@ -5830,7 +5830,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "Ana Bilgisayar Yükleme Sırasını Yazdır penceresini görüntüle"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr ""
 
 #: src/slic3r/GUI/MainFrame.cpp:1427

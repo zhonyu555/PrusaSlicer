@@ -6002,7 +6002,7 @@ msgid "Display the Print Host Upload Queue window"
 msgstr "Показати вікна черги завантаження хоста друку"
 
 #: src/slic3r/GUI/MainFrame.cpp:1417
-msgid "Compare presets"
+msgid "Compare Presets"
 msgstr ""
 
 #: src/slic3r/GUI/MainFrame.cpp:1427
