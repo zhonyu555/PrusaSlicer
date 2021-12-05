@@ -9274,7 +9274,7 @@ msgstr ""
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1558
 #, boost-format
-msgid "Compare %1% Presets"
+msgid "Compare Presets"
 msgstr ""
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1620

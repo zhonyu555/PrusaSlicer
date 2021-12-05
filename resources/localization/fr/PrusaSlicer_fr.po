@@ -9646,8 +9646,8 @@ msgstr "Comparer les préréglages"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1558
 #, boost-format
-msgid "Compare %1% Presets"
-msgstr "Comparer %1% Préréglages"
+msgid "Compare Presets"
+msgstr "Comparer Préréglages"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1620
 msgid "One of the presets doesn't found"
