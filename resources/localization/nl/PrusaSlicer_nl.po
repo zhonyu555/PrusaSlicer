@@ -9242,7 +9242,7 @@ msgid "Extruders count"
 msgstr "Aantal extruders"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1497
-msgid "Show all preset (including incompatible)"
+msgid "Show all presets (including incompatible)"
 msgstr ""
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1512
