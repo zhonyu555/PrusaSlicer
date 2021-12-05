@@ -1555,7 +1555,7 @@ void DiffPresetDialog::update_bundles_from_app()
 
 void DiffPresetDialog::show(Preset::Type type /* = Preset::TYPE_INVALID*/)
 {
-    this->SetTitle(type == Preset::TYPE_INVALID ? _L("Compare Presets") : format_wxstr(_L("Compare Presets"), wxGetApp().get_tab(type)->name()));
+    this->SetTitle(_L("Compare Presets"));
     m_view_type = type;
 
     update_bundles_from_app();
