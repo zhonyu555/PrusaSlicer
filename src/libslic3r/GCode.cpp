@@ -877,8 +877,8 @@ namespace DoExport {
 	    double volumetric_speed = 0.;
 	    if (! mm3_per_mm.empty()) {
 	        // In order to honor max_print_speed we need to find a target volumetric
-	        // speed that we can use throughout the print. So we define this target 
-	        // volumetric speed as the volumetric speed produced by printing the 
+	        // speed that we can use throughout the print. So we define this target
+	        // volumetric speed as the volumetric speed produced by printing the
 	        // smallest cross-section at the maximum speed: any larger cross-section
 	        // will need slower feedrates.
 	        volumetric_speed = *std::min_element(mm3_per_mm.begin(), mm3_per_mm.end()) * print.config().max_print_speed.value;
@@ -1473,6 +1473,9 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     file.write_format("; total filament cost = %.2lf\n", print.m_print_statistics.total_cost);
     if (print.m_print_statistics.total_toolchanges > 0)
     	file.write_format("; total toolchanges = %i\n", print.m_print_statistics.total_toolchanges);
+    file.write_format("; cog_x = %.4lf\n", _cog.x/_cog.mass);
+    file.write_format("; cog_y = %.4lf\n", _cog.y/_cog.mass);
+    file.write_format("; cog_z = %.4lf\n", _cog.z/_cog.mass);
     file.write_format(";%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Estimated_Printing_Time_Placeholder).c_str());
 
     // Append full config, delimited by two 'phony' configuration keys prusaslicer_config = begin and prusaslicer_config = end.
@@ -1616,7 +1619,7 @@ static bool custom_gcode_sets_temperature(const std::string &gcode, const int mc
             // Parse the M or G code value.
             char *endptr = nullptr;
             int mgcode = int(strtol(ptr, &endptr, 10));
-            if (endptr != nullptr && endptr != ptr && 
+            if (endptr != nullptr && endptr != ptr &&
                 is_gcode ?
                     // G10 found
                     mgcode == 10 :
@@ -1884,7 +1887,7 @@ namespace ProcessLayer
                     // see GH issue #6362
                     gcodegen.writer().unretract();
                 }
-	        } 
+	        }
 	        else {
 	            if (gcode_type == CustomGCode::PausePrint) // Pause print
 	            {
@@ -2336,7 +2339,7 @@ GCode::LayerResult GCode::process_layer(
             for (InstanceToPrint &instance_to_print : instances_to_print) {
                 const LayerToPrint &layer_to_print = layers[instance_to_print.layer_id];
                 // To control print speed of the 1st object layer printed over raft interface.
-                bool object_layer_over_raft = layer_to_print.object_layer && layer_to_print.object_layer->id() > 0 && 
+                bool object_layer_over_raft = layer_to_print.object_layer && layer_to_print.object_layer->id() > 0 &&
                     instance_to_print.print_object.slicing_parameters().raft_layers() == layer_to_print.object_layer->id();
                 m_config.apply(instance_to_print.print_object.config(), true);
                 m_layer = layer_to_print.layer();
@@ -2750,18 +2753,18 @@ std::string GCode::extrude_support(const ExtrusionEntityCollection &support_fill
     return gcode;
 }
 
-bool GCode::GCodeOutputStream::is_error() const 
+bool GCode::GCodeOutputStream::is_error() const
 {
     return ::ferror(this->f);
 }
 
 void GCode::GCodeOutputStream::flush()
-{ 
+{
     ::fflush(this->f);
 }
 
 void GCode::GCodeOutputStream::close()
-{ 
+{
     if (this->f) {
         ::fclose(this->f);
         this->f = nullptr;
@@ -2977,6 +2980,18 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
                 comment);
         }
     }
+
+    for (const Line &line : path.polyline.lines()) {
+        Vec2d start = unscale(line.a);
+        Vec2d stop = unscale(line.b);
+        float mass =  path.length() * path.mm3_per_mm;
+
+        _cog.x += (m_origin(0) - (start(0) + stop(0))/2) * mass;
+        _cog.y += (m_origin(0) - (start(1) + stop(1))/2) * mass;
+        _cog.z += m_last_layer_z * mass;
+        _cog.mass +=  mass;
+    }
+
     if (m_enable_cooling_markers)
         gcode += is_bridge(path.role()) ? ";_BRIDGE_FAN_END\n" : ";_EXTRUDE_END\n";
 
