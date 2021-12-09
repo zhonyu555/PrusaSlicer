@@ -425,7 +425,28 @@ bool GLGizmoPainterBase::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
                 trafo_matrices_not_translate.emplace_back(instance_trafo_not_translate * mv->get_matrix(true));
             }
 
-        std::vector<std::vector<ProjectedMousePosition>> projected_mouse_positions_by_mesh = get_projected_mouse_positions(mouse_position, 1., trafo_matrices);
+        // If SPACE is not pressed, then it contains the same values as mouse_position. But if SPACE is pressed
+        // and painting is locked to straight-line defined by m_mouse_direction, it contains mouse_position
+        // projected on m_mouse_direction.
+        Vec2d      mouse_position_modified = mouse_position;
+        const bool is_space_pressed        = ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_Space));
+
+        if (m_mouse_direction == Vec2d::Zero() && is_space_pressed) {
+            m_mouse_direction = (mouse_position_modified - m_first_mouse_click).normalized();
+        } else if (m_mouse_direction != Vec2d::Zero() && !is_space_pressed) {
+            m_mouse_direction   = Vec2d::Zero();
+            // Synchronize those values with real mouse position after SPACE was released.
+            m_first_mouse_click = mouse_position_modified;
+            m_last_mouse_click  = mouse_position_modified;
+        }
+
+        if (m_first_mouse_click != Vec2d::Zero() && m_mouse_direction != Vec2d::Zero() && is_space_pressed) {
+            // Project mouse_position on m_mouse_direction representing the direction from the first click with any brush tool and mouse_position when SPACE was pressed.
+            Vec2d mouse_position_projected = (mouse_position - m_first_mouse_click).dot(m_mouse_direction) * m_mouse_direction;
+            mouse_position_modified        = mouse_position_projected + m_first_mouse_click;
+        }
+
+        std::vector<std::vector<ProjectedMousePosition>> projected_mouse_positions_by_mesh = get_projected_mouse_positions(mouse_position_modified, 1., trafo_matrices);
         m_last_mouse_click = Vec2d::Zero(); // only actual hits should be saved
 
         for (const std::vector<ProjectedMousePosition> &projected_mouse_positions : projected_mouse_positions_by_mesh) {
@@ -472,6 +493,9 @@ bool GLGizmoPainterBase::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
             } else if (m_tool_type == ToolType::BRUSH) {
                 assert(m_cursor_type == TriangleSelector::CursorType::CIRCLE || m_cursor_type == TriangleSelector::CursorType::SPHERE);
 
+                if (m_first_mouse_click == Vec2d::Zero())
+                    m_first_mouse_click = mouse_position_modified;
+
                 if (projected_mouse_positions.size() == 1) {
                     const ProjectedMousePosition             &first_position = projected_mouse_positions.front();
                     std::unique_ptr<TriangleSelector::Cursor> cursor         = TriangleSelector::SinglePointCursor::cursor_factory(first_position.mesh_hit,
@@ -489,7 +513,7 @@ bool GLGizmoPainterBase::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
             }
 
             m_triangle_selectors[mesh_idx]->request_update_render_data();
-            m_last_mouse_click = mouse_position;
+            m_last_mouse_click = mouse_position_modified;
         }
 
         return true;
@@ -562,8 +586,10 @@ bool GLGizmoPainterBase::gizmo_event(SLAGizmoEventType action, const Vec2d& mous
         Plater::TakeSnapshot snapshot(wxGetApp().plater(), action_name, UndoRedo::SnapshotType::GizmoAction);
         update_model_object();
 
-        m_button_down = Button::None;
-        m_last_mouse_click = Vec2d::Zero();
+        m_button_down       = Button::None;
+        m_last_mouse_click  = Vec2d::Zero();
+        m_first_mouse_click = Vec2d::Zero();
+        m_mouse_direction   = Vec2d::Zero();
         return true;
     }
 

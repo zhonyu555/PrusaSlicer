@@ -208,6 +208,11 @@ private:
     bool m_schedule_update = false;
     Vec2d m_last_mouse_click = Vec2d::Zero();
 
+    // Mouse position of first click with any brush tool.
+    Vec2d m_first_mouse_click = Vec2d::Zero();
+    // Normalized direction from the first click with any brush tool and mouse_position when SPACE was pressed.
+    Vec2d m_mouse_direction = Vec2d::Zero();
+
     Button m_button_down = Button::None;
     EState m_old_state = Off; // to be able to see that the gizmo has just been closed (see on_set_state)
 
