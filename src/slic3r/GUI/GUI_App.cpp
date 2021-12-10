@@ -506,17 +506,15 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
 // an extension from the provided initial file name and substitutes it with the default extension (the first one in the template).
 wxString file_wildcards(FileType file_type, const std::string &custom_extension)
 {
-    const FileWildcards data = file_wildcards_by_type[file_type];
+    const FileWildcards& data = file_wildcards_by_type[file_type];
     std::string title;
     std::string mask;
     std::string custom_ext_lower;
 
     if (! custom_extension.empty()) {
         // Generate an extension into the title mask and into the list of extensions.
-        custom_ext_lower = custom_extension;
-        boost::to_lower(custom_ext_lower);
-        std::string custom_ext_upper = custom_extension;
-        boost::to_upper(custom_ext_upper);
+        custom_ext_lower = boost::to_lower_copy(custom_extension);
+        const std::string custom_ext_upper = boost::to_upper_copy(custom_extension);
         if (custom_ext_lower == custom_extension) {
             // Add a lower case version.
             title = std::string("*") + custom_ext_lower;
@@ -551,12 +549,10 @@ wxString file_wildcards(FileType file_type, const std::string &custom_extension)
                 mask  += ";*";
                 mask  += ext;
             }
-            mask  += ";*";
-            std::string ext_upper{ ext };
-            boost::to_upper(ext_upper);
-            mask  += ext_upper;
+            mask += ";*";
+            mask += boost::to_upper_copy(std::string(ext));
         }
-    return GUI::format("%s (%s)|%s", data.title, title, mask);
+    return GUI::format_wxstr("%s (%s)|%s", data.title, title, mask);
 }
 
 static std::string libslic3r_translate_callback(const char *s) { return wxGetTranslation(wxString(s, wxConvUTF8)).utf8_str().data(); }
@@ -786,8 +782,8 @@ void GUI_App::post_init()
                 show_send_system_info_dialog_if_needed();
             }
         #ifdef _WIN32
-            // Run external updater on Windows.
-            if (! run_updater_win())
+            // Run external updater on Windows if version check is enabled.
+            if (this->preset_updater->version_check_enabled() && ! run_updater_win())
                 // "prusaslicer-updater.exe" was not started, run our own update check.
         #endif // _WIN32
                 this->preset_updater->slic3r_update_notify();
@@ -890,6 +886,8 @@ void GUI_App::init_app_config()
                 dir = wxFileName::GetHomeDir() + wxS("/.config");
             set_data_dir((dir + "/" + GetAppName()).ToUTF8().data());
         #endif
+    } else {
+        m_datadir_redefined = true;
     }
 
 	if (!app_config)
@@ -922,6 +920,10 @@ void GUI_App::init_app_config()
 // returns true if found newer version and user agreed to use it
 bool GUI_App::check_older_app_config(Semver current_version, bool backup)
 {
+    // If the config folder is redefined - do not check
+    if (m_datadir_redefined)
+        return false;
+
     // find other version app config (alpha / beta / release)
     std::string             config_path = app_config->config_path();
     boost::filesystem::path parent_file_path(config_path);
@@ -950,25 +952,23 @@ bool GUI_App::check_older_app_config(Semver current_version, bool backup)
     BOOST_LOG_TRIVIAL(info) << "last app config file used: " << m_older_data_dir_path;
     // ask about using older data folder
     RichMessageDialog msg(nullptr, backup ? 
-        wxString::Format(_L("PrusaSlicer detected another configuration folder at %s."
-            "\nIts version is %s." 
-            "\nLast version you used in current configuration folder is %s."
-            "\nPlease note that PrusaSlicer uses different folders to save configuration of alpha, beta and full release versions."
-            "\nWould you like to copy found configuration to your current configuration folder?"
-            
-            "\n\nIf you select yes, PrusaSlicer will copy all profiles and other files from found folder to the current one. Overwriting any existing file with matching name."
-            "\nIf you select no, you will continue with current configuration.")
-            , m_older_data_dir_path, last_semver.to_string(), current_version.to_string())
-        : wxString::Format(_L("PrusaSlicer detected another configuration folder at %s."
-            "\nIts version is %s."
+        wxString::Format(_L(
+            "Current configuration folder: %s"
+            "\n\n%s found another configuration for version %s."
+            "\nIt is found at %s."
+            "\n\nDo you wish to copy and use the configuration file for version %s (overwriting any file with the same name)? A backup of your current configuration will be created."
+            "\nIf you select no, you will continue with the configuration file for version %s (may not be fully compatible).")
+            , current_version.to_string(), SLIC3R_APP_NAME, last_semver.to_string(), m_older_data_dir_path, last_semver.to_string(), current_version.to_string())
+        : wxString::Format(_L(
+            "%s found another configuration for version %s."
+            "\nIt is found at %s."
             "\nThere is no configuration file in current configuration folder."
-            "\nPlease note that PrusaSlicer uses different folders to save configuration of alpha, beta and full release versions."
-            "\nWould you like to copy found configuration to your current configuration folder?"
-
-            "\n\nIf you select yes, PrusaSlicer will copy all profiles and other files from found folder to the current one."
+            "\n\nDo you wish to copy and use the configuration file for version %s?"
             "\nIf you select no, you will start with clean installation with configuration wizard.")
-            , m_older_data_dir_path, last_semver.to_string())
-        , _L("PrusaSlicer"), /*wxICON_QUESTION | */wxYES_NO);
+            , SLIC3R_APP_NAME, last_semver.to_string(), m_older_data_dir_path, last_semver.to_string())
+        , _L("PrusaSlicer")
+        , wxYES_NO
+        , wxString::Format(_L("Load configuration from version %s?"), last_semver.to_string()));
     if (msg.ShowModal() == wxID_YES) {
         std::string snapshot_id;
         if (backup) {
@@ -1042,7 +1042,7 @@ bool GUI_App::on_init_inner()
         RichMessageDialog dlg(nullptr,
             _L("You are running a 32 bit build of PrusaSlicer on 64-bit Windows."
                 "\n32 bit build of PrusaSlicer will likely not be able to utilize all the RAM available in the system."
-                "\nPlease download and install a 64 bit build of PrusaSlice from https://www.prusa3d.cz/prusaslicer/."
+                "\nPlease download and install a 64 bit build of PrusaSlicer from https://www.prusa3d.cz/prusaslicer/."
                 "\nDo you wish to continue?"),
             "PrusaSlicer", wxICON_QUESTION | wxYES_NO);
         if (dlg.ShowModal() != wxID_YES)
@@ -1494,6 +1494,7 @@ void GUI_App::update_fonts(const MainFrame *main_frame)
     m_normal_font   = main_frame->normal_font();
     m_small_font    = m_normal_font;
     m_bold_font     = main_frame->normal_font().Bold();
+    m_link_font     = m_bold_font.Underlined();
     m_em_unit       = main_frame->em_unit();
     m_code_font.SetPointSize(m_normal_font.GetPointSize());
 }
