@@ -3072,7 +3072,7 @@ std::pair<bool, bool> GCode::needs_retraction(const Polyline &travel, ExtrusionR
     // If not then assume that a perimeters has been crossed.
     // FIXME any_internal_region_slice_contains() is potentionally very slow, it shall test for the bounding boxes first.
     bool perimeter_cross = true;
-    if ((m_config.only_retract_when_crossing_perimeters || true) && 
+    if ((m_config.only_retract_when_crossing_perimeters || m_config.only_lift_z_when_crossing_perimeters) &&
         m_layer != nullptr && m_layer->any_internal_region_slice_contains(travel))
     {
         perimeter_cross = false;
@@ -3088,7 +3088,7 @@ std::pair<bool, bool> GCode::needs_retraction(const Polyline &travel, ExtrusionR
 
     // Do the retraction but skip lifting Z if no perimeter has been crossed
     // and the option is enabled.
-    if (true && !perimeter_cross) {
+    if (m_config.only_lift_z_when_crossing_perimeters && !perimeter_cross) {
         return std::make_pair(true, false);
     }
 

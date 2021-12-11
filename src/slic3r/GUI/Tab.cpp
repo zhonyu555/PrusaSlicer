@@ -1527,6 +1527,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("solid_infill_below_area", category_path + "solid-infill-threshold-area");
         optgroup->append_single_option_line("bridge_angle");
         optgroup->append_single_option_line("only_retract_when_crossing_perimeters");
+        optgroup->append_single_option_line("only_lift_z_when_crossing_perimeters");
         optgroup->append_single_option_line("infill_first");
 
     page = add_options_page(L("Skirt and brim"), "skirt+brim");

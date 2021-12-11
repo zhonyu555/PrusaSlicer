@@ -107,6 +107,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
 #endif /* HAS_PRESSURE_EQUALIZER */
         "notes",
         "only_retract_when_crossing_perimeters",
+        "only_lift_z_when_crossing_perimeters",
         "output_filename_format",
         "perimeter_acceleration",
         "post_process",

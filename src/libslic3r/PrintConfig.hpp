@@ -733,6 +733,7 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionString,             notes))
     ((ConfigOptionFloats,             nozzle_diameter))
     ((ConfigOptionBool,               only_retract_when_crossing_perimeters))
+    ((ConfigOptionBool,               only_lift_z_when_crossing_perimeters))
     ((ConfigOptionBool,               ooze_prevention))
     ((ConfigOptionString,             output_filename_format))
     ((ConfigOptionFloat,              perimeter_acceleration))
