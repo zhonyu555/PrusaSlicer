@@ -13,9 +13,9 @@
 #include <functional>
 #include <optional>
 
-#ifndef NDEBUG
+//#ifndef NDEBUG
 #define HAS_GLSAFE
-#endif // NDEBUG
+//#endif // NDEBUG
 
 #ifdef HAS_GLSAFE
     extern void glAssertRecentCallImpl(const char *file_name, unsigned int line, const char *function_name);

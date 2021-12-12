@@ -2675,13 +2675,33 @@ void GCodeViewer::render_toolpaths()
 #if ENABLE_GCODE_VIEWER_STATISTICS
         this
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-    ](std::vector<RenderPath>::iterator it_path, std::vector<RenderPath>::iterator it_end, GLShaderProgram& shader, int uniform_color) {
+    ](std::vector<RenderPath>::iterator it_path, std::vector<RenderPath>::iterator it_end, GLShaderProgram& shader, int uniform_color, size_t icount) {
+        if (icount == 0)
+            MessageBoxA(NULL, "fuj", "fuj1", MB_OK | MB_ICONERROR);
         for (auto it = it_path; it != it_end && it_path->ibuffer_id == it->ibuffer_id; ++it) {
             const RenderPath& path = *it;
             // Some OpenGL drivers crash on empty glMultiDrawElements, see GH #7415.
-            assert(! path.sizes.empty());
-            assert(! path.offsets.empty());
+            assert(!path.sizes.empty());
+            assert(!path.offsets.empty());
             glsafe(::glUniform4fv(uniform_color, 1, static_cast<const GLfloat*>(path.color.data())));
+            if (path.sizes.size() != path.offsets.size())
+                MessageBoxA(NULL, "fuj", "fuj2", MB_OK | MB_ICONERROR);
+            for (int i = 0; i < path.sizes.size(); ++i) {
+                if ((path.sizes[i] % 2) != 0)
+                    MessageBoxA(NULL, "fuj", "fuj3", MB_OK | MB_ICONERROR);
+                if (path.sizes[i] == 0)
+                    MessageBoxA(NULL, "fuj", "fuj4", MB_OK | MB_ICONERROR);
+#if 1
+                // in bytes
+                size_t start = path.offsets[i];
+                // in bytes; sizes are in counts
+                size_t end = start + path.sizes[i] * sizeof(GLushort);
+                if (start >= icount * sizeof(GLushort))
+                    MessageBoxA(NULL, "fuj", "fuj5", MB_OK | MB_ICONERROR);
+                if (end > icount * sizeof(GLushort))
+                    MessageBoxA(NULL, "fuj", "fuj6", MB_OK | MB_ICONERROR);
+#endif
+            }
             glsafe(::glMultiDrawElements(GL_LINES, (const GLsizei*)path.sizes.data(), GL_UNSIGNED_SHORT, (const void* const*)path.offsets.data(), (GLsizei)path.sizes.size()));
 #if ENABLE_GCODE_VIEWER_STATISTICS
             ++m_statistics.gl_multi_lines_calls_count;
@@ -2693,13 +2713,33 @@ void GCodeViewer::render_toolpaths()
 #if ENABLE_GCODE_VIEWER_STATISTICS
         this
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-    ](std::vector<RenderPath>::iterator it_path, std::vector<RenderPath>::iterator it_end, GLShaderProgram& shader, int uniform_color) {
+    ](std::vector<RenderPath>::iterator it_path, std::vector<RenderPath>::iterator it_end, GLShaderProgram& shader, int uniform_color, size_t icount) {
+        if (icount == 0)
+            MessageBoxA(NULL, "fuj", "fuj7", MB_OK | MB_ICONERROR);
         for (auto it = it_path; it != it_end && it_path->ibuffer_id == it->ibuffer_id; ++it) {
             const RenderPath& path = *it;
             // Some OpenGL drivers crash on empty glMultiDrawElements, see GH #7415.
             assert(! path.sizes.empty());
             assert(! path.offsets.empty());
             glsafe(::glUniform4fv(uniform_color, 1, static_cast<const GLfloat*>(path.color.data())));
+            if (path.sizes.size() != path.offsets.size())
+                MessageBoxA(NULL, "fuj", "fuj8", MB_OK | MB_ICONERROR);
+            for (int i = 0; i < path.sizes.size(); ++i) {
+                if ((path.sizes[i] % 3) != 0)
+                    MessageBoxA(NULL, "fuj", "fuj9", MB_OK | MB_ICONERROR);
+                if (path.sizes[i] == 0)
+                    MessageBoxA(NULL, "fuj", "fuj10", MB_OK | MB_ICONERROR);
+#if 1
+                // in bytes
+                size_t start = path.offsets[i];
+                // in bytes; sizes are in counts
+                size_t end = start + path.sizes[i] * sizeof(GLushort);
+                if (start >= icount * sizeof(GLushort))
+                    MessageBoxA(NULL, "fuj", "fuj11", MB_OK | MB_ICONERROR);
+                if (end > icount * sizeof(GLushort))
+                    MessageBoxA(NULL, "fuj", "fuj12", MB_OK | MB_ICONERROR);
+#endif
+            }
             glsafe(::glMultiDrawElements(GL_TRIANGLES, (const GLsizei*)path.sizes.data(), GL_UNSIGNED_SHORT, (const void* const*)path.offsets.data(), (GLsizei)path.sizes.size()));
 #if ENABLE_GCODE_VIEWER_STATISTICS
             ++m_statistics.gl_multi_triangles_calls_count;
@@ -2851,11 +2891,11 @@ void GCodeViewer::render_toolpaths()
                     }
                     case TBuffer::ERenderPrimitiveType::Line: {
                         glsafe(::glLineWidth(static_cast<GLfloat>(line_width(zoom))));
-                        render_as_lines(it_path, buffer.render_paths.end(), *shader, uniform_color);
+                        render_as_lines(it_path, buffer.render_paths.end(), *shader, uniform_color, i_buffer.count);
                         break;
                     }
                     case TBuffer::ERenderPrimitiveType::Triangle: {
-                        render_as_triangles(it_path, buffer.render_paths.end(), *shader, uniform_color);
+                        render_as_triangles(it_path, buffer.render_paths.end(), *shader, uniform_color, i_buffer.count);
                         break;
                     }
                     default: { break; }

@@ -44,8 +44,8 @@ void glAssertRecentCallImpl(const char* file_name, unsigned int line, const char
 {
 #if defined(NDEBUG)
     // In release mode, only show OpenGL errors if sufficiently high loglevel.
-    if (Slic3r::get_logging_level() < 5)
-        return;
+//    if (Slic3r::get_logging_level() < 5)
+//        return;
 #endif // NDEBUG
 
     GLenum err = glGetError();
@@ -64,6 +64,9 @@ void glAssertRecentCallImpl(const char* file_name, unsigned int line, const char
     }
     BOOST_LOG_TRIVIAL(error) << "OpenGL error in " << file_name << ":" << line << ", function " << function_name << "() : " << (int)err << " - " << sErr;
     assert(false);
+    std::ostringstream sline;
+    sline << "OpenGL error in " << file_name << ":" << line << ", function " << function_name << "() : " << (int)err << " - " << sErr;
+    MessageBoxA(NULL, "glsafe", sline.str().c_str(), MB_OK | MB_ICONERROR);
 }
 #endif // HAS_GLSAFE
 
