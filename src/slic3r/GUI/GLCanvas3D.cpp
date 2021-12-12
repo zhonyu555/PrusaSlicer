@@ -72,10 +72,15 @@
 
 static constexpr const float TRACKBALLSIZE = 0.8f;
 
-static constexpr const float DEFAULT_BG_DARK_COLOR[3] = { 0.478f, 0.478f, 0.478f };
-static constexpr const float DEFAULT_BG_LIGHT_COLOR[3] = { 0.753f, 0.753f, 0.753f };
-static constexpr const float ERROR_BG_DARK_COLOR[3] = { 0.478f, 0.192f, 0.039f };
-static constexpr const float ERROR_BG_LIGHT_COLOR[3] = { 0.753f, 0.192f, 0.039f };
+static constexpr const float DARKMODE_BG_DARK_COLOR[3] = { 0.098f, 0.098f, 0.098f }; // 10% black
+static constexpr const float DARKMODE_BG_MED_COLOR[3] = { 0.251f, 0.251f, 0.251f }; // 25% black
+static constexpr const float DARKMODE_BG_LIGHT_COLOR[3] = { 0.749f, 0.749f, 0.749f }; // 75% white
+static constexpr const float LIGHTMODE_BG_DARK_COLOR[3] = { 0.749f, 0.749f, 0.749f }; // 75% white
+static constexpr const float LIGHTMODE_BG_MED_COLOR[3] = { 0.882f, 0.882f, 0.882f }; // 88% white
+static constexpr const float LIGHTMODE_BG_LIGHT_COLOR[3] = { 0.980f, 0.980f, 0.980f }; // 98% white
+static constexpr const float ERROR_BG_DARK_COLOR[3] = { 0.980f, 0.749f, 0.518f }; // sequential magma visual spectrum 3
+static constexpr const float ERROR_BG_MED_COLOR[3] = { 0.980f, 0.498f, 0.369f }; // sequential magma visual spectrum 5
+static constexpr const float ERROR_BG_LIGHT_COLOR[3] = { 0.871f, 0.286f, 0.408f }; // sequential magma visual spectrum 7
 //static constexpr const float AXES_COLOR[3][3] = { { 1.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } };
 
 // Number of floats
@@ -5015,6 +5020,7 @@ void GLCanvas3D::_rectangular_selection_picking_pass()
 void GLCanvas3D::_render_background() const
 {
     bool use_error_color = false;
+    bool dark_mode = wxGetApp().dark_mode();
     if (wxGetApp().is_editor()) {
         use_error_color = m_dynamic_background_enabled &&
         (current_printer_technology() != ptSLA || !m_volumes.empty());
@@ -5038,18 +5044,30 @@ void GLCanvas3D::_render_background() const
     if (use_error_color)
         ::glColor3fv(ERROR_BG_DARK_COLOR);
     else
-        ::glColor3fv(DEFAULT_BG_DARK_COLOR);
+        ::glColor3fv(dark_mode ? DARKMODE_BG_DARK_COLOR : LIGHTMODE_BG_DARK_COLOR);
 
     ::glVertex2f(-1.0f, -1.0f);
     ::glVertex2f(1.0f, -1.0f);
 
     if (use_error_color)
+        ::glColor3fv(ERROR_BG_MED_COLOR);
+    else
+        ::glColor3fv(dark_mode ? DARKMODE_BG_MED_COLOR : LIGHTMODE_BG_MED_COLOR);
+
+    ::glVertex2f(1.0f, 0.166f);
+    ::glVertex2f(-1.0f, 0.166f);
+
+    ::glVertex2f(-1.0f, 0.166f);
+    ::glVertex2f(1.0f, 0.166f);
+
+    if (use_error_color)
         ::glColor3fv(ERROR_BG_LIGHT_COLOR);
     else
-        ::glColor3fv(DEFAULT_BG_LIGHT_COLOR);
+        ::glColor3fv(dark_mode ? DARKMODE_BG_LIGHT_COLOR : LIGHTMODE_BG_LIGHT_COLOR);
 
     ::glVertex2f(1.0f, 1.0f);
     ::glVertex2f(-1.0f, 1.0f);
+
     glsafe(::glEnd());
 
     glsafe(::glEnable(GL_DEPTH_TEST));
