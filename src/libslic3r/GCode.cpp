@@ -158,9 +158,10 @@ namespace Slic3r {
     {
         std::string gcode;
 
-        /*  Reduce feedrate a bit; travel speed is often too high to move on existing material.
-            Too fast = ripping of existing material; too slow = short wipe path, thus more blob.  */
-        double wipe_speed = gcodegen.writer().config.travel_speed.value * 0.8;
+        /*  Holding hotend velocity constant while transitioning from extrusion to wipe + retraction
+            produces the best surface quality. Because surface quality is most important for external perimeters,
+            set wipe speed equal to external perimeter speed.  */
+        double wipe_speed = gcodegen.writer().config.external_perimeter_speed.value;
 
         // get the retraction length
         double length = toolchange
