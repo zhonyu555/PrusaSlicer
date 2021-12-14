@@ -3068,28 +3068,38 @@ std::pair<bool, bool> GCode::needs_retraction(const Polyline &travel, ExtrusionR
             return std::make_pair(false, false);
     }
 
-    // Check perimeter crossing if needed for any of the retraction options.
-    // If not then assume that a perimeters has been crossed.
-    // FIXME any_internal_region_slice_contains() is potentionally very slow, it shall test for the bounding boxes first.
-    bool perimeter_cross = true;
+    // Check if the travel move is contained to a closed surface of the layer
+    // needed for any of the retraction options. If not then assume that it is
+    // not. Do the check only if relevant options are enabled.
+    // FIXME any_region_slice_contains() is potentionally very slow, it shall test for the bounding boxes first.
+    bool contained = false;
+    SurfaceType surface_type = stCount;
     if ((m_config.only_retract_when_crossing_perimeters || m_config.only_lift_z_when_crossing_perimeters) &&
-        m_layer != nullptr && m_layer->any_internal_region_slice_contains(travel))
+        m_layer != nullptr)
     {
-        perimeter_cross = false;
+        auto res = m_layer->any_region_slice_contains(travel);
+        std::tie(contained, surface_type) = res;
     }
 
     // Skip retraction if travel is contained in an internal slice *and*
     // internal infill is enabled (so that stringing is entirely not visible).
     if (m_config.only_retract_when_crossing_perimeters &&
-        m_config.fill_density.value > 0 && !perimeter_cross)
+        m_config.fill_density.value > 0 && contained)
     {
-        return std::make_pair(false, false);
+        // Skip only for internal surfaces
+        if (surface_type != stTop && surface_type != stBottom) {
+            return std::make_pair(false, false);
+        }
     }
 
     // Do the retraction but skip lifting Z if no perimeter has been crossed
     // and the option is enabled.
-    if (m_config.only_lift_z_when_crossing_perimeters && !perimeter_cross) {
-        return std::make_pair(true, false);
+    if (m_config.only_lift_z_when_crossing_perimeters && contained) {
+
+        // Skip only for internal surfaces
+        if (surface_type != stTop && surface_type != stBottom) {
+            return std::make_pair(true, false);
+        }
     }
 
     // Do a full retraction with Z lift

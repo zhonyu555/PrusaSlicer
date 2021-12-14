@@ -149,6 +149,13 @@ public:
         for (const LayerRegion *layerm : m_regions) if (layerm->slices.any_bottom_contains(item)) return true;
         return false;
     }
+    template <class T> std::pair<bool, SurfaceType> any_region_slice_contains(const T& item) const {
+        for (const LayerRegion *layerm : m_regions) {
+            auto res = layerm->slices.any_contains(item);
+            if (res.first) return res;
+        }
+        return std::make_pair(false, stCount);
+    }
     void                    make_perimeters();
     // Phony version of make_fills() without parameters for Perl integration only.
     void                    make_fills() { this->make_fills(nullptr, nullptr); }
