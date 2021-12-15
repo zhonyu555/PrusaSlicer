@@ -132,39 +132,53 @@ public:
 };
 
 // Thanks Cura developers for this function.
-static void fuzzy_polygon(Polygon &poly, double fuzzy_skin_thickness, double fuzzy_skin_point_dist)
+static void fuzzy_perimeter(ExtrusionPaths &paths, double fuzzy_skin_thickness, double fuzzy_skin_point_dist)
 {
     const double min_dist_between_points = fuzzy_skin_point_dist * 3. / 4.; // hardcoded: the point distance may vary between 3/4 and 5/4 the supplied value
     const double range_random_point_dist = fuzzy_skin_point_dist / 2.;
     double dist_left_over = double(rand()) * (min_dist_between_points / 2) / double(RAND_MAX); // the distance to be traversed on the line before making the first new point
-    Point* p0 = &poly.points.back();
-    Points out;
-    out.reserve(poly.points.size());
-    for (Point &p1 : poly.points)
-    { // 'a' is the (next) new point between p0 and p1
-        Vec2d  p0p1      = (p1 - *p0).cast<double>();
-        double p0p1_size = p0p1.norm();
-        // so that p0p1_size - dist_last_point evaulates to dist_left_over - p0p1_size
-        double dist_last_point = dist_left_over + p0p1_size * 2.;
-        for (double p0pa_dist = dist_left_over; p0pa_dist < p0p1_size;
-            p0pa_dist += min_dist_between_points + double(rand()) * range_random_point_dist / double(RAND_MAX))
-        {
-            double r = double(rand()) * (fuzzy_skin_thickness * 2.) / double(RAND_MAX) - fuzzy_skin_thickness;
-            out.emplace_back(*p0 + (p0p1 * (p0pa_dist / p0p1_size) + perp(p0p1).cast<double>().normalized() * r).cast<coord_t>());
-            dist_last_point = p0pa_dist;
+    const bool is_loop = paths.size() == 1;
+    for (auto path = paths.begin(); path != paths.end(); ++path) {
+        if (path->role() == erExternalPerimeter) {
+            Points out;
+            Polyline &poly = path->polyline;
+            out.reserve(poly.points.size());
+            const Point *p0 = is_loop ? &poly.points.back() : &poly.points.front();
+            if (!is_loop)
+                out.emplace_back(*p0);
+            for (auto p1 = poly.points.begin() + (is_loop ? 0 : 1); p1 != poly.points.end(); ++p1)
+            { // 'a' is the (next) new point between p0 and p1
+                Vec2d  p0p1      = (*p1 - *p0).cast<double>();
+                double p0p1_size = p0p1.norm() - (is_loop ? 0.0 : min_dist_between_points);
+                // so that p0p1_size - dist_last_point evaulates to dist_left_over - p0p1_size
+                double dist_last_point = dist_left_over + p0p1_size * 2.;
+                for (double p0pa_dist = dist_left_over; p0pa_dist < p0p1_size;
+                    p0pa_dist += min_dist_between_points + double(rand()) * range_random_point_dist / double(RAND_MAX))
+                {
+                    double r = double(rand()) * (fuzzy_skin_thickness * 2.) / double(RAND_MAX) - fuzzy_skin_thickness;
+                    out.emplace_back(*p0 + (p0p1 * (p0pa_dist / p0p1_size) + perp(p0p1).cast<double>().normalized() * r).cast<coord_t>());
+                    dist_last_point = p0pa_dist;
+                }
+                dist_left_over = p0p1_size - dist_last_point;
+                p0 = &*p1;
+            }
+            const size_t min_length = 3U + (is_loop ? 0U : 1U);
+            while (out.size() < min_length) {
+                size_t point_idx = poly.size() - 2;
+                out.emplace_back(poly.points[point_idx]);
+                if (point_idx == 0)
+                    break;
+                -- point_idx;
+            }
+            if (out.size() >= min_length) {
+                poly.points = std::move(out);
+                if (std::next(path) != paths.end())
+                    poly.points.emplace_back(std::next(path)->first_point());
+                else
+                    poly.points.emplace_back(paths.begin()->first_point());
+            }
         }
-        dist_left_over = p0p1_size - dist_last_point;
-        p0 = &p1;
     }
-    while (out.size() < 3) {
-        size_t point_idx = poly.size() - 2;
-        out.emplace_back(poly[point_idx]);
-        if (point_idx == 0)
-            break;
-        -- point_idx;
-    }
-    if (out.size() >= 3)
-        poly.points = std::move(out);
 }
 
 using PerimeterGeneratorLoops = std::vector<PerimeterGeneratorLoop>;
@@ -192,14 +206,9 @@ static ExtrusionEntityCollection traverse_loops(const PerimeterGenerator &perime
         
         // detect overhanging/bridging perimeters
         ExtrusionPaths paths;
-        const Polygon &polygon = loop.fuzzify ? fuzzified : loop.polygon;
+        const Polygon &polygon = loop.polygon;
         Polylines polylines;
         bool needs_reorder = false;
-
-        if (loop.fuzzify) {
-            fuzzified = loop.polygon;
-            fuzzy_polygon(fuzzified, scaled<float>(perimeter_generator.config->fuzzy_skin_thickness.value), scaled<float>(perimeter_generator.config->fuzzy_skin_point_dist.value));
-        }
 
         if (perimeter_generator.config->overhangs && perimeter_generator.layer_id > perimeter_generator.object_config->raft_layers
             && !((perimeter_generator.object_config->support_material || perimeter_generator.object_config->support_material_enforce_layers > 0) &&
@@ -252,8 +261,21 @@ static ExtrusionEntityCollection traverse_loops(const PerimeterGenerator &perime
 
         // Reapply the nearest point search for starting point.
         // We allow polyline reversal because Clipper may have randomly reversed polylines during clipping.
-        if (needs_reorder)
+        if (needs_reorder) {
             chain_and_reorder_extrusion_paths(paths, &paths.front().first_point());
+            // Fix up the ends if they were cut inside of a role.
+            if (paths.size() > 1 && paths.front().role() == paths.back().role()) {
+                Points &front_points = paths.front().polyline.points;
+                Points &back_points  = paths.back().polyline.points;
+                front_points.reserve(front_points.size() + back_points.size() - 1);
+                front_points.insert(front_points.begin(), back_points.begin(), back_points.end() - 1);
+                paths.pop_back();
+            }
+        }
+
+        if (loop.fuzzify) {
+            fuzzy_perimeter(paths, scaled<float>(perimeter_generator.config->fuzzy_skin_thickness.value), scaled<float>(perimeter_generator.config->fuzzy_skin_point_dist.value));
+        }
 
         coll.append(ExtrusionLoop(std::move(paths), loop_role));
     }
