@@ -500,6 +500,7 @@ std::string GCodeWriter::set_fan(const GCodeFlavor gcode_flavor, bool gcode_comm
     if (speed == 0) {
         switch (gcode_flavor) {
         case gcfTeacup:
+	case gcfRepRapFirmware:
             gcode << "M106 S0"; break;
         case gcfMakerWare:
         case gcfSailfish:
