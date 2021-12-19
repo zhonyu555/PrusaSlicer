@@ -3074,8 +3074,9 @@ std::pair<bool, bool> GCode::needs_retraction(const Polyline &travel, ExtrusionR
     // FIXME any_region_slice_contains() is potentionally very slow, it shall test for the bounding boxes first.
     bool contained = false;
     SurfaceType surface_type = stCount;
-    if ((m_config.only_retract_when_crossing_perimeters || m_config.only_lift_z_when_crossing_perimeters) &&
-        m_layer != nullptr)
+    if ((m_config.only_retract_when_crossing_perimeters ||
+         m_config.skip_lift_z_when_not_crossing_perimeters != SkipLiftZWhenNotCrossingPerimeters::slzNever
+        ) && m_layer != nullptr)
     {
         auto res = m_layer->any_region_slice_contains(travel);
         std::tie(contained, surface_type) = res;
@@ -3094,11 +3095,23 @@ std::pair<bool, bool> GCode::needs_retraction(const Polyline &travel, ExtrusionR
 
     // Do the retraction but skip lifting Z if no perimeter has been crossed
     // and the option is enabled.
-    if (m_config.only_lift_z_when_crossing_perimeters && contained) {
-
-        // Skip only for internal surfaces
-        if (surface_type != stTop && surface_type != stBottom) {
+    if (m_config.skip_lift_z_when_not_crossing_perimeters != SkipLiftZWhenNotCrossingPerimeters::slzNever &&
+        contained)
+    {
+        switch (m_config.skip_lift_z_when_not_crossing_perimeters)
+        {
+        case SkipLiftZWhenNotCrossingPerimeters::slzInternal: // Skip only for internal surfaces
+            if (surface_type != stTop && surface_type != stBottom)
+                return std::make_pair(true, false);
+            break;
+        case SkipLiftZWhenNotCrossingPerimeters::slzInternalAndBottom: // Skip only for internal and bottom surfaces
+            if (surface_type != stTop)
+                return std::make_pair(true, false);
+            break;
+        case SkipLiftZWhenNotCrossingPerimeters::slzAlways: // Always
             return std::make_pair(true, false);
+        default:
+            break;
         }
     }
 

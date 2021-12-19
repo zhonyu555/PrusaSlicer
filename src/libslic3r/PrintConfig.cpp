@@ -195,7 +195,17 @@ static const t_config_enum_values s_keys_map_ForwardCompatibilitySubstitutionRul
     { "enable",         ForwardCompatibilitySubstitutionRule::Enable },
     { "enable_silent",  ForwardCompatibilitySubstitutionRule::EnableSilent }
 };
+
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(ForwardCompatibilitySubstitutionRule)
+
+static const t_config_enum_values s_keys_map_SkipLiftZWhenNotCrossingPerimeters = {
+    { "never",                      SkipLiftZWhenNotCrossingPerimeters::slzNever },
+    { "internal_layers",            SkipLiftZWhenNotCrossingPerimeters::slzInternal },
+    { "internal_and_bottom_layers", SkipLiftZWhenNotCrossingPerimeters::slzInternalAndBottom },
+    { "always",                     SkipLiftZWhenNotCrossingPerimeters::slzAlways }
+};
+
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SkipLiftZWhenNotCrossingPerimeters)
 
 static void assign_printer_technology_to_unknown(t_optiondef_map &options, PrinterTechnology printer_technology)
 {
@@ -1884,11 +1894,22 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
-    def = this->add("only_lift_z_when_crossing_perimeters", coBool);
-    def->label = L("Only lift Z when crossing perimeters");
-    def->tooltip = L("Disables lifting Z (if enabled) when the travel path does not exceed the upper layer's perimeters. ");
-    def->mode = comExpert;
-    def->set_default_value(new ConfigOptionBool(false));
+    def = this->add("skip_lift_z_when_not_crossing_perimeters", coEnum);
+    def->label = L("Skip lift Z when not crossing perimeters");
+    def->tooltip = L("Disables lifting Z during retractions over certain layer (surface) types."
+                     "This helps when retractions are frequent by preventing the printhead from continuously "
+                     "jumping up and down while still lifting Z not to hit any perimeter line");
+    def->enum_keys_map = &ConfigOptionEnum<SkipLiftZWhenNotCrossingPerimeters>::get_enum_values();
+    def->enum_values.push_back("never");
+    def->enum_values.push_back("internal_layers");
+    def->enum_values.push_back("internal_and_bottom_layers");
+    def->enum_values.push_back("always");
+    def->enum_labels.push_back(L("Never"));
+    def->enum_labels.push_back(L("On internal layers only"));
+    def->enum_labels.push_back(L("On internal and bottom layers only"));
+    def->enum_labels.push_back(L("Always"));
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<SkipLiftZWhenNotCrossingPerimeters>(slzNever));
 
     def = this->add("ooze_prevention", coBool);
     def->label = L("Enable");
