@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-12-14 16:21+0100\n"
-"PO-Revision-Date: 2021-12-16 18:50+0100\n"
+"POT-Creation-Date: 2021-12-20 10:09+0100\n"
+"PO-Revision-Date: 2021-12-22 21:06+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: ca\n"
@@ -212,7 +212,7 @@ msgstr ""
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:31
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:218 src/slic3r/GUI/Plater.cpp:204
-#: src/slic3r/GUI/Tab.cpp:2727
+#: src/slic3r/GUI/Tab.cpp:2726
 msgid "Size"
 msgstr "Mida"
 
@@ -309,7 +309,7 @@ msgid "Custom"
 msgstr "Personalitzat"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:104 src/slic3r/GUI/BedShapeDialog.cpp:179
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1702
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1701
 msgid "Shape"
 msgstr "Forma"
 
@@ -331,7 +331,7 @@ msgid "Load..."
 msgstr "Carregar..."
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:292 src/slic3r/GUI/BedShapeDialog.cpp:362
-#: src/slic3r/GUI/Tab.cpp:3702
+#: src/slic3r/GUI/Tab.cpp:3701
 msgid "Remove"
 msgstr "Eliminar"
 
@@ -472,7 +472,7 @@ msgstr ""
 "-Zero capes de tapa superior\n"
 "-0% densitat de farciment\n"
 "-Sense suports\n"
-"-Comproveu que el gruix de paret vertical està activat\n"
+"-Comprovar que el gruix de paret vertical està activat\n"
 "-Desactiva la detecció de parets fines"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:90
@@ -682,7 +682,7 @@ msgid "Standard"
 msgstr "Estàndard"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:331 src/slic3r/GUI/ConfigWizard.cpp:651
-#: src/slic3r/GUI/Preferences.cpp:413 src/slic3r/GUI/Tab.cpp:3784
+#: src/slic3r/GUI/Preferences.cpp:413 src/slic3r/GUI/Tab.cpp:3783
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1153
 msgid "All"
 msgstr "Tots"
@@ -957,7 +957,7 @@ msgstr "Trieu un altre fabricant compatible amb %s"
 msgid "Firmware Type"
 msgstr "Tipus de Microprogramari(Firmware)"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:1357 src/slic3r/GUI/Tab.cpp:2335
+#: src/slic3r/GUI/ConfigWizard.cpp:1357 src/slic3r/GUI/Tab.cpp:2334
 msgid "Firmware"
 msgstr "Microprogramari(Firmware)"
 
@@ -1206,7 +1206,7 @@ msgid "Filament Profiles Selection"
 msgstr "Selecció Perfils de Filament"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2910 src/slic3r/GUI/ConfigWizard.cpp:2913
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3782
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
 msgid "Type:"
 msgstr "Tipus:"
 
@@ -1260,7 +1260,7 @@ msgstr ""
 "d'escriptori de PrusaSlicer probablement s'ha pogut crear amb èxit."
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:459
-#: src/slic3r/GUI/GUI_App.cpp:2142
+#: src/slic3r/GUI/GUI_App.cpp:2161
 msgid "Desktop Integration"
 msgstr "Integració a l'escriptori"
 
@@ -1280,7 +1280,7 @@ msgid "Perform"
 msgstr "Realitzar"
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:486
-#: src/slic3r/GUI/GLCanvas3D.cpp:4705 src/slic3r/GUI/KBShortcutsDialog.cpp:97
+#: src/slic3r/GUI/GLCanvas3D.cpp:4711 src/slic3r/GUI/KBShortcutsDialog.cpp:97
 #: src/slic3r/GUI/MainFrame.cpp:1335
 msgid "Undo"
 msgstr "Desfer"
@@ -1685,8 +1685,8 @@ msgstr ""
 
 #: src/slic3r/GUI/ExtraRenderers.cpp:316 src/slic3r/GUI/GUI_ObjectList.cpp:538
 #: src/slic3r/GUI/GUI_ObjectList.cpp:550 src/slic3r/GUI/GUI_ObjectList.cpp:979
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1967
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4283
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1966
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4282
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:250
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:352
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:376
@@ -1963,8 +1963,8 @@ msgid "Add one or more custom shapes"
 msgstr "Afegir una o més formes personalitzades"
 
 #: src/slic3r/GUI/GalleryDialog.cpp:118 src/slic3r/GUI/GalleryDialog.cpp:508
-#: src/slic3r/GUI/GLCanvas3D.cpp:4496 src/slic3r/GUI/GUI_Factories.cpp:444
-#: src/slic3r/GUI/Tab.cpp:3702
+#: src/slic3r/GUI/GLCanvas3D.cpp:4502 src/slic3r/GUI/GUI_Factories.cpp:444
+#: src/slic3r/GUI/Tab.cpp:3701
 msgid "Delete"
 msgstr "Esborrar"
 
@@ -2149,8 +2149,8 @@ msgstr "Moviment"
 msgid "Extrusion"
 msgstr "Extrusió"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3600 src/slic3r/GUI/Tab.cpp:1839
-#: src/slic3r/GUI/Tab.cpp:2774
+#: src/slic3r/GUI/GCodeViewer.cpp:3600 src/slic3r/GUI/Tab.cpp:1838
+#: src/slic3r/GUI/Tab.cpp:2773
 msgid "Retraction"
 msgstr "Retracció"
 
@@ -2205,7 +2205,7 @@ msgstr "Configuració d'impressio"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3686 src/slic3r/GUI/GCodeViewer.cpp:3712
 #: src/slic3r/GUI/GUI.cpp:339 src/slic3r/GUI/Plater.cpp:818
-#: src/slic3r/GUI/Tab.cpp:1939 src/slic3r/GUI/Tab.cpp:1940
+#: src/slic3r/GUI/Tab.cpp:1938 src/slic3r/GUI/Tab.cpp:1939
 msgid "Filament"
 msgstr "Filament"
 
@@ -2239,7 +2239,7 @@ msgstr "Mostrar mode silenciós"
 msgid "Show normal mode"
 msgstr "Mostrar mode normal"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:225 src/slic3r/GUI/GLCanvas3D.cpp:4643
+#: src/slic3r/GUI/GLCanvas3D.cpp:225 src/slic3r/GUI/GLCanvas3D.cpp:4649
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:53
 msgid "Variable layer height"
 msgstr "Alçada de capa variable"
@@ -2308,7 +2308,7 @@ msgstr "Radi"
 msgid "Keep min"
 msgstr "Mantenir mínim"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:295 src/slic3r/GUI/GLCanvas3D.cpp:4072
+#: src/slic3r/GUI/GLCanvas3D.cpp:295 src/slic3r/GUI/GLCanvas3D.cpp:4078
 msgid "Reset"
 msgstr "Restablir"
 
@@ -2336,172 +2336,172 @@ msgstr "Alçada de capa variable - Suavitzar-ho tot"
 msgid "Mirror Object"
 msgstr "Reflectir objecte"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:2573
+#: src/slic3r/GUI/GLCanvas3D.cpp:2579
 #: src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:560
 msgid "Gizmo-Move"
 msgstr "Gizmo-Moure"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:2656
+#: src/slic3r/GUI/GLCanvas3D.cpp:2662
 #: src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:562
 msgid "Gizmo-Rotate"
 msgstr "Gizmo-Rotar"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3261
+#: src/slic3r/GUI/GLCanvas3D.cpp:3267
 msgid "Move Object"
 msgstr "Moure objecte"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3782 src/slic3r/GUI/GLCanvas3D.cpp:4604
+#: src/slic3r/GUI/GLCanvas3D.cpp:3788 src/slic3r/GUI/GLCanvas3D.cpp:4610
 msgid "Switch to Settings"
 msgstr "Canviar a Configuració"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3783 src/slic3r/GUI/GLCanvas3D.cpp:4604
+#: src/slic3r/GUI/GLCanvas3D.cpp:3789 src/slic3r/GUI/GLCanvas3D.cpp:4610
 msgid "Print Settings Tab"
 msgstr "Pestanya Configuració Impressió"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3784 src/slic3r/GUI/GLCanvas3D.cpp:4605
+#: src/slic3r/GUI/GLCanvas3D.cpp:3790 src/slic3r/GUI/GLCanvas3D.cpp:4611
 msgid "Filament Settings Tab"
 msgstr "Pestanya Configuració Filament"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3784 src/slic3r/GUI/GLCanvas3D.cpp:4605
+#: src/slic3r/GUI/GLCanvas3D.cpp:3790 src/slic3r/GUI/GLCanvas3D.cpp:4611
 msgid "Material Settings Tab"
 msgstr "Pestanya Configuració de Material"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3785 src/slic3r/GUI/GLCanvas3D.cpp:4606
+#: src/slic3r/GUI/GLCanvas3D.cpp:3791 src/slic3r/GUI/GLCanvas3D.cpp:4612
 msgid "Printer Settings Tab"
 msgstr "Pestanya Configuració Impressora"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3932
+#: src/slic3r/GUI/GLCanvas3D.cpp:3938
 msgid "Undo History"
 msgstr "Desfer Historial"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3932
+#: src/slic3r/GUI/GLCanvas3D.cpp:3938
 msgid "Redo History"
 msgstr "Refer Historial"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3952
+#: src/slic3r/GUI/GLCanvas3D.cpp:3958
 #, c-format, boost-format
 msgid "Undo %1$d Action"
 msgid_plural "Undo %1$d Actions"
 msgstr[0] "Desfer %1$d Acció"
 msgstr[1] "Desfer %1$d Accions"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3952
+#: src/slic3r/GUI/GLCanvas3D.cpp:3958
 #, c-format, boost-format
 msgid "Redo %1$d Action"
 msgid_plural "Redo %1$d Actions"
 msgstr[0] "Refer %1$d Acció"
 msgstr[1] "Refer %1$d Accions"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3972 src/slic3r/GUI/GLCanvas3D.cpp:4622
+#: src/slic3r/GUI/GLCanvas3D.cpp:3978 src/slic3r/GUI/GLCanvas3D.cpp:4628
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:106 src/slic3r/GUI/Search.cpp:435
 msgid "Search"
 msgstr "Cercar"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3986 src/slic3r/GUI/GLCanvas3D.cpp:3994
+#: src/slic3r/GUI/GLCanvas3D.cpp:3992 src/slic3r/GUI/GLCanvas3D.cpp:4000
 #: src/slic3r/GUI/Search.cpp:441
 msgid "Enter a search term"
 msgstr "Tecleja una paraula de cerca"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4025
+#: src/slic3r/GUI/GLCanvas3D.cpp:4031
 msgid "Arrange options"
 msgstr "Opcions d'ordenació"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4055
+#: src/slic3r/GUI/GLCanvas3D.cpp:4061
 #, boost-format
 msgid "Press %1%left mouse button to enter the exact value"
 msgstr "Premeu %1% botó esquerre del ratolí per introduir el valor exacte"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4057
+#: src/slic3r/GUI/GLCanvas3D.cpp:4063
 msgid "Spacing"
 msgstr "Espaiat"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4064
+#: src/slic3r/GUI/GLCanvas3D.cpp:4070
 msgid "Enable rotations (slow)"
 msgstr "Permetre rotacions (lent)"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4082 src/slic3r/GUI/GLCanvas3D.cpp:4514
+#: src/slic3r/GUI/GLCanvas3D.cpp:4088 src/slic3r/GUI/GLCanvas3D.cpp:4520
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:132 src/slic3r/GUI/Plater.cpp:1666
 msgid "Arrange"
 msgstr "Organitza"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4488
+#: src/slic3r/GUI/GLCanvas3D.cpp:4494
 msgid "Add..."
 msgstr "Afegir..."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4505 src/slic3r/GUI/KBShortcutsDialog.cpp:96
+#: src/slic3r/GUI/GLCanvas3D.cpp:4511 src/slic3r/GUI/KBShortcutsDialog.cpp:96
 #: src/slic3r/GUI/Plater.cpp:5413
 msgid "Delete all"
 msgstr "Eliminar tot"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4514 src/slic3r/GUI/KBShortcutsDialog.cpp:133
+#: src/slic3r/GUI/GLCanvas3D.cpp:4520 src/slic3r/GUI/KBShortcutsDialog.cpp:133
 msgid "Arrange selection"
 msgstr "Ordenar selecció"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4514
+#: src/slic3r/GUI/GLCanvas3D.cpp:4520
 msgid "Click right mouse button to show arrangement options"
 msgstr "Clic dret del ratolí per mostrar opcions d'ordenació"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4536
+#: src/slic3r/GUI/GLCanvas3D.cpp:4542
 msgid "Copy"
 msgstr "Copiar"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4545
+#: src/slic3r/GUI/GLCanvas3D.cpp:4551
 msgid "Paste"
 msgstr "Enganxar"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4557 src/slic3r/GUI/GUI_Factories.cpp:1089
+#: src/slic3r/GUI/GLCanvas3D.cpp:4563 src/slic3r/GUI/GUI_Factories.cpp:1089
 #: src/slic3r/GUI/GUI_Factories.cpp:1113 src/slic3r/GUI/GUI_Factories.cpp:1124
 msgid "Add instance"
 msgstr "Afegeix una instància"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4568 src/slic3r/GUI/GUI_Factories.cpp:1092
+#: src/slic3r/GUI/GLCanvas3D.cpp:4574 src/slic3r/GUI/GUI_Factories.cpp:1092
 msgid "Remove instance"
 msgstr "Retirar una còpia"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4581
+#: src/slic3r/GUI/GLCanvas3D.cpp:4587
 msgid "Split to objects"
 msgstr "Partir en diverses peces"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4591
+#: src/slic3r/GUI/GLCanvas3D.cpp:4597
 msgid "Split to parts"
 msgstr "Separar en peces"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4705 src/slic3r/GUI/GLCanvas3D.cpp:4744
+#: src/slic3r/GUI/GLCanvas3D.cpp:4711 src/slic3r/GUI/GLCanvas3D.cpp:4750
 msgid "Click right mouse button to open/close History"
 msgstr "Clic amb botó dret del ratolí per obrir/tancar Historial"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4728
+#: src/slic3r/GUI/GLCanvas3D.cpp:4734
 #, boost-format
 msgid "Next Undo action: %1%"
 msgstr "Següent acció de Desfer: %1%"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4744 src/slic3r/GUI/KBShortcutsDialog.cpp:98
+#: src/slic3r/GUI/GLCanvas3D.cpp:4750 src/slic3r/GUI/KBShortcutsDialog.cpp:98
 #: src/slic3r/GUI/MainFrame.cpp:1338
 msgid "Redo"
 msgstr "Refer"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4766
+#: src/slic3r/GUI/GLCanvas3D.cpp:4772
 #, boost-format
 msgid "Next Redo action: %1%"
 msgstr "Següent acció de Refer: %1%"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6383
+#: src/slic3r/GUI/GLCanvas3D.cpp:6389
 msgid "An object outside the print area was detected."
 msgstr "S'ha detectat un objecte fora de l'àrea d'impressió."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6384
+#: src/slic3r/GUI/GLCanvas3D.cpp:6390
 msgid "A toolpath outside the print area was detected."
 msgstr "S'ha detectat una trajectòria fora de l'àrea d'impressió."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6385
+#: src/slic3r/GUI/GLCanvas3D.cpp:6391
 msgid "SLA supports outside the print area were detected."
 msgstr "S'han detectat suports SLA fora de l'àrea d'impressió."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6386
+#: src/slic3r/GUI/GLCanvas3D.cpp:6392
 msgid "Some objects are not visible during editing."
 msgstr "Alguns objectes no són visibles durant l'edició."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6388
+#: src/slic3r/GUI/GLCanvas3D.cpp:6394
 msgid ""
 "An object outside the print area was detected.\n"
 "Resolve the current problem to continue slicing."
@@ -2509,11 +2509,11 @@ msgstr ""
 "S'ha detectat un objecte fora de l'àrea d'impressió.\n"
 "Resol el problema actual per continuar laminant."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6462
+#: src/slic3r/GUI/GLCanvas3D.cpp:6468
 msgid "Selection-Add from rectangle"
 msgstr "Selecció-Afegir del rectangle"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:6477
+#: src/slic3r/GUI/GLCanvas3D.cpp:6483
 msgid "Selection-Remove from rectangle"
 msgstr "Selecció-Retirar del rectangle"
 
@@ -3369,7 +3369,7 @@ msgstr "Error crític"
 msgid "Internal error: %1%"
 msgstr "Error intern: %1%"
 
-#: src/slic3r/GUI/GUI_App.cpp:901 src/slic3r/GUI/GUI_App.cpp:1001
+#: src/slic3r/GUI/GUI_App.cpp:901 src/slic3r/GUI/GUI_App.cpp:999
 msgid ""
 "Error parsing PrusaSlicer config file, it is probably corrupted. Try to "
 "manually delete the file to recover from the error. Your user profiles will "
@@ -3379,7 +3379,7 @@ msgstr ""
 "està danyat. Intenta eliminar manualment el fitxer per recuperar-se de "
 "l'error. Els vostres perfils d'usuari no es veuran afectats."
 
-#: src/slic3r/GUI/GUI_App.cpp:907 src/slic3r/GUI/GUI_App.cpp:1007
+#: src/slic3r/GUI/GUI_App.cpp:907 src/slic3r/GUI/GUI_App.cpp:1005
 msgid ""
 "Error parsing PrusaGCodeViewer config file, it is probably corrupted. Try to "
 "manually delete the file to recover from the error."
@@ -3388,12 +3388,12 @@ msgstr ""
 "probablement estigui danyat. Intenta eliminar manualment el fitxer per "
 "recuperar-se de l'error."
 
-#: src/slic3r/GUI/GUI_App.cpp:953
+#: src/slic3r/GUI/GUI_App.cpp:954
 #, boost-format
 msgid "You are opening %1% version %2%."
 msgstr "Estàs obrint %1% versió %2%."
 
-#: src/slic3r/GUI/GUI_App.cpp:956
+#: src/slic3r/GUI/GUI_App.cpp:957
 #, boost-format
 msgid ""
 "The active configuration was created by <b>%1% %2%</b>,\n"
@@ -3412,7 +3412,7 @@ msgstr ""
 "Si és així, es farà una còpia de seguretat de la configuració activa abans "
 "d'importar la nova configuració."
 
-#: src/slic3r/GUI/GUI_App.cpp:964
+#: src/slic3r/GUI/GUI_App.cpp:965
 #, boost-format
 msgid ""
 "An existing configuration was found in <b>%3%</b>\n"
@@ -3425,15 +3425,19 @@ msgstr ""
 "\n"
 "S'ha d'importar aquesta configuració?"
 
-#: src/slic3r/GUI/GUI_App.cpp:972
+#: src/slic3r/GUI/GUI_App.cpp:973
 msgid "Import"
 msgstr "Importar"
 
-#: src/slic3r/GUI/GUI_App.cpp:973
+#: src/slic3r/GUI/GUI_App.cpp:974
 msgid "Don't import"
 msgstr "No importar"
 
-#: src/slic3r/GUI/GUI_App.cpp:1050
+#: src/slic3r/GUI/GUI_App.cpp:982
+msgid "Continue and import newer configuration?"
+msgstr "Voleu continuar i instal·lar les actualitzacions de configuració?"
+
+#: src/slic3r/GUI/GUI_App.cpp:1043
 msgid ""
 "You are running a 32 bit build of PrusaSlicer on 64-bit Windows.\n"
 "32 bit build of PrusaSlicer will likely not be able to utilize all the RAM "
@@ -3449,7 +3453,7 @@ msgstr ""
 "de https://www.prusa3d.cz/prusaslicer/.\n"
 "Voleu continuar?"
 
-#: src/slic3r/GUI/GUI_App.cpp:1097
+#: src/slic3r/GUI/GUI_App.cpp:1126
 #, c-format, boost-format
 msgid ""
 "%s\n"
@@ -3458,46 +3462,46 @@ msgstr ""
 "%s\n"
 "Voleu continuar?"
 
-#: src/slic3r/GUI/GUI_App.cpp:1099 src/slic3r/GUI/GUI_App.cpp:2969
+#: src/slic3r/GUI/GUI_App.cpp:1128 src/slic3r/GUI/GUI_App.cpp:2988
 #: src/slic3r/GUI/OptionsGroup.cpp:985
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:888
 msgid "Remember my choice"
 msgstr "Recorda la meva elecció"
 
-#: src/slic3r/GUI/GUI_App.cpp:1147
+#: src/slic3r/GUI/GUI_App.cpp:1158
 msgid "Loading configuration"
 msgstr "S'està carregant la configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:1177
+#: src/slic3r/GUI/GUI_App.cpp:1191
 #, boost-format
 msgid "New release version %1% is available."
 msgstr "Hi ha disponible una nova versió %1%."
 
-#: src/slic3r/GUI/GUI_App.cpp:1178
+#: src/slic3r/GUI/GUI_App.cpp:1192
 msgid "See Download page."
 msgstr "Veure pàgina de Descàrregues."
 
-#: src/slic3r/GUI/GUI_App.cpp:1192
+#: src/slic3r/GUI/GUI_App.cpp:1206
 #, boost-format
 msgid "New prerelease version %1% is available."
 msgstr "La nova versió prellançament %1% està disponible."
 
-#: src/slic3r/GUI/GUI_App.cpp:1193
+#: src/slic3r/GUI/GUI_App.cpp:1207
 msgid "See Releases page."
 msgstr "Consulteu pàgina de llançaments."
 
-#: src/slic3r/GUI/GUI_App.cpp:1234
+#: src/slic3r/GUI/GUI_App.cpp:1244
 msgid "Preparing settings tabs"
 msgstr "Preparant pestanyes de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:1585
+#: src/slic3r/GUI/GUI_App.cpp:1595
 msgid ""
 "You have the following presets with saved options for \"Print Host upload\""
 msgstr ""
 "Teniu els paràmetres preestablerts següents amb opcions desades per a "
 "\"Pujada del host d'impressió\""
 
-#: src/slic3r/GUI/GUI_App.cpp:1589
+#: src/slic3r/GUI/GUI_App.cpp:1599
 msgid ""
 "But since this version of PrusaSlicer we don't show this information in "
 "Printer Settings anymore.\n"
@@ -3507,7 +3511,7 @@ msgstr ""
 "informació als paràmetres d'impressora.\n"
 "Els paràmetres es mostraran a la configuració d'impressora física."
 
-#: src/slic3r/GUI/GUI_App.cpp:1591
+#: src/slic3r/GUI/GUI_App.cpp:1601
 msgid ""
 "By default new Printer devices will be named as \"Printer N\" during its "
 "creation.\n"
@@ -3518,139 +3522,139 @@ msgstr ""
 "Nota: Aquest nom es pot canviar posteriorment als paràmetres d'impressora "
 "física"
 
-#: src/slic3r/GUI/GUI_App.cpp:1595 src/slic3r/GUI/PhysicalPrinterDialog.cpp:722
+#: src/slic3r/GUI/GUI_App.cpp:1605 src/slic3r/GUI/PhysicalPrinterDialog.cpp:722
 msgid "Information"
 msgstr "Informació"
 
-#: src/slic3r/GUI/GUI_App.cpp:1608 src/slic3r/GUI/GUI_App.cpp:1619
+#: src/slic3r/GUI/GUI_App.cpp:1618 src/slic3r/GUI/GUI_App.cpp:1629
 msgid "Recreating"
 msgstr "Recreant"
 
-#: src/slic3r/GUI/GUI_App.cpp:1622
+#: src/slic3r/GUI/GUI_App.cpp:1632
 msgid "Loading of current presets"
 msgstr "Carregant els paràmetres actuals"
 
-#: src/slic3r/GUI/GUI_App.cpp:1627
+#: src/slic3r/GUI/GUI_App.cpp:1637
 msgid "Loading of a mode view"
 msgstr "S'està carregant mode visualització"
 
-#: src/slic3r/GUI/GUI_App.cpp:1756
+#: src/slic3r/GUI/GUI_App.cpp:1775
 msgid "Choose one file (3MF/AMF):"
 msgstr "Trieu un fitxer (3MF/AMF):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1768
+#: src/slic3r/GUI/GUI_App.cpp:1787
 msgid "Choose one or more files (STL/OBJ/AMF/3MF/PRUSA):"
 msgstr "Trieu un o més fitxers (STL / OBJ / AMF / 3MF / PRUSA):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1780
+#: src/slic3r/GUI/GUI_App.cpp:1799
 msgid "Choose one file (GCODE/.GCO/.G/.ngc/NGC):"
 msgstr "Trieu un fitxer (GCODE/. GCO/. G/.ngc/NGC):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1791
+#: src/slic3r/GUI/GUI_App.cpp:1810
 msgid "Changing of an application language"
 msgstr "Canvi d'idioma d'una aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:1930
+#: src/slic3r/GUI/GUI_App.cpp:1949
 msgid "Select the language"
 msgstr "Seleccioneu l'idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:1930
+#: src/slic3r/GUI/GUI_App.cpp:1949
 msgid "Language"
 msgstr "Idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:2079
+#: src/slic3r/GUI/GUI_App.cpp:2098
 msgid "modified"
 msgstr "modificat"
 
-#: src/slic3r/GUI/GUI_App.cpp:2133
+#: src/slic3r/GUI/GUI_App.cpp:2152
 #, c-format, boost-format
 msgid "Run %s"
 msgstr "Executar %s"
 
-#: src/slic3r/GUI/GUI_App.cpp:2137
+#: src/slic3r/GUI/GUI_App.cpp:2156
 msgid "&Configuration Snapshots"
 msgstr "Instantànies de &Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2137
+#: src/slic3r/GUI/GUI_App.cpp:2156
 msgid "Inspect / activate configuration snapshots"
 msgstr "Inspeccionar / activar instantànies de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2138
+#: src/slic3r/GUI/GUI_App.cpp:2157
 msgid "Take Configuration &Snapshot"
 msgstr "&Prendre una Instanània de Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2138
+#: src/slic3r/GUI/GUI_App.cpp:2157
 msgid "Capture a configuration snapshot"
 msgstr "Captura una instantània de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2139
+#: src/slic3r/GUI/GUI_App.cpp:2158
 msgid "Check for Configuration Updates"
 msgstr "Comprova si hi ha actualitzacions de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2139
+#: src/slic3r/GUI/GUI_App.cpp:2158
 msgid "Check for configuration updates"
 msgstr "Comprova si hi ha actualitzacions de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2146
+#: src/slic3r/GUI/GUI_App.cpp:2165
 msgid "&Preferences"
 msgstr "&Preferències"
 
-#: src/slic3r/GUI/GUI_App.cpp:2152
+#: src/slic3r/GUI/GUI_App.cpp:2171
 msgid "Application preferences"
 msgstr "Preferències de l'aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:2157 src/slic3r/GUI/wxExtensions.cpp:707
+#: src/slic3r/GUI/GUI_App.cpp:2176 src/slic3r/GUI/wxExtensions.cpp:707
 msgid "Simple"
 msgstr "Simple"
 
-#: src/slic3r/GUI/GUI_App.cpp:2157
+#: src/slic3r/GUI/GUI_App.cpp:2176
 msgid "Simple View Mode"
 msgstr "Mode de visualització simple"
 
-#: src/slic3r/GUI/GUI_App.cpp:2159 src/slic3r/GUI/wxExtensions.cpp:709
+#: src/slic3r/GUI/GUI_App.cpp:2178 src/slic3r/GUI/wxExtensions.cpp:709
 msgctxt "Mode"
 msgid "Advanced"
 msgstr "Mode Avançat"
 
-#: src/slic3r/GUI/GUI_App.cpp:2159
+#: src/slic3r/GUI/GUI_App.cpp:2178
 msgid "Advanced View Mode"
 msgstr "Mode de visualització avançada"
 
-#: src/slic3r/GUI/GUI_App.cpp:2160 src/slic3r/GUI/wxExtensions.cpp:710
+#: src/slic3r/GUI/GUI_App.cpp:2179 src/slic3r/GUI/wxExtensions.cpp:710
 msgid "Expert"
 msgstr "Expert"
 
-#: src/slic3r/GUI/GUI_App.cpp:2160
+#: src/slic3r/GUI/GUI_App.cpp:2179
 msgid "Expert View Mode"
 msgstr "Mode de visualització expert"
 
-#: src/slic3r/GUI/GUI_App.cpp:2165
+#: src/slic3r/GUI/GUI_App.cpp:2184
 msgid "Mode"
 msgstr "Mode"
 
-#: src/slic3r/GUI/GUI_App.cpp:2165
+#: src/slic3r/GUI/GUI_App.cpp:2184
 #, c-format, boost-format
 msgid "%s View Mode"
 msgstr "%s Tipus de vista"
 
-#: src/slic3r/GUI/GUI_App.cpp:2168
+#: src/slic3r/GUI/GUI_App.cpp:2187
 msgid "&Language"
 msgstr "&Idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:2171
+#: src/slic3r/GUI/GUI_App.cpp:2190
 msgid "Flash Printer &Firmware"
 msgstr "Grava el &firmware a la impressora"
 
-#: src/slic3r/GUI/GUI_App.cpp:2171
+#: src/slic3r/GUI/GUI_App.cpp:2190
 msgid "Upload a firmware image into an Arduino based printer"
 msgstr ""
 "Carregar una imatge de microprogramari a una impressora basada en Arduino"
 
-#: src/slic3r/GUI/GUI_App.cpp:2191
+#: src/slic3r/GUI/GUI_App.cpp:2210
 msgid "Taking a configuration snapshot"
 msgstr "Prenent una instantània de la configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2192
+#: src/slic3r/GUI/GUI_App.cpp:2211
 msgid ""
 "Some presets are modified and the unsaved changes will not be captured by "
 "the configuration snapshot."
@@ -3658,32 +3662,32 @@ msgstr ""
 "Alguns paràmetres estan modificats i els canvis no desats no seran capturats "
 "per la instantània de configuració."
 
-#: src/slic3r/GUI/GUI_App.cpp:2193
+#: src/slic3r/GUI/GUI_App.cpp:2212
 msgid "Snapshot name"
 msgstr "Nom de la instantània"
 
-#: src/slic3r/GUI/GUI_App.cpp:2209
+#: src/slic3r/GUI/GUI_App.cpp:2228
 msgid "Loading a configuration snapshot"
 msgstr "S'està carregant una instantània de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2218
+#: src/slic3r/GUI/GUI_App.cpp:2237
 #, boost-format
 msgid "Continue to activate a configuration snapshot %1%?"
 msgstr "Continuar activant una instantània de configuració %1%?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2232
+#: src/slic3r/GUI/GUI_App.cpp:2251
 msgid "Failed to activate configuration snapshot."
 msgstr "No s'ha pogut activar la instantània de configuració."
 
-#: src/slic3r/GUI/GUI_App.cpp:2251
+#: src/slic3r/GUI/GUI_App.cpp:2270
 msgid "Restart application"
 msgstr "Reiniciar l'aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:2285
+#: src/slic3r/GUI/GUI_App.cpp:2304
 msgid "Language selection"
 msgstr "Selecció d'idiomes"
 
-#: src/slic3r/GUI/GUI_App.cpp:2288
+#: src/slic3r/GUI/GUI_App.cpp:2307
 msgid ""
 "Switching the language will trigger application restart.\n"
 "You will lose content of the plater."
@@ -3691,72 +3695,72 @@ msgstr ""
 "Canviar l'idioma requereix reiniciar l'aplicació.\n"
 "Perdràs tot el contingut situat a la base."
 
-#: src/slic3r/GUI/GUI_App.cpp:2290 src/slic3r/GUI/Preferences.cpp:561
+#: src/slic3r/GUI/GUI_App.cpp:2309 src/slic3r/GUI/Preferences.cpp:561
 msgid "Do you want to proceed?"
 msgstr "Voleu continuar?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2317
+#: src/slic3r/GUI/GUI_App.cpp:2336
 msgid "&Configuration"
 msgstr "&Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2434 src/slic3r/GUI/GUI_App.cpp:2495
+#: src/slic3r/GUI/GUI_App.cpp:2453 src/slic3r/GUI/GUI_App.cpp:2514
 msgid "The preset modifications are successfully saved"
 msgid_plural "The presets modifications are successfully saved"
 msgstr[0] "Les modificacions del paràmetre s'han desat correctament"
 msgstr[1] "Les modificacions dels paràmetres s'han desat correctament"
 
-#: src/slic3r/GUI/GUI_App.cpp:2498
+#: src/slic3r/GUI/GUI_App.cpp:2517
 msgid "For new project all modifications will be reseted"
 msgstr "En cas d'un nou projecte, totes les modificacions es restabliran"
 
-#: src/slic3r/GUI/GUI_App.cpp:2536
+#: src/slic3r/GUI/GUI_App.cpp:2555
 msgid "Loading a new project while the current project is modified."
 msgstr ""
 "S'està carregant un projecte nou mentre es modifica el projecte actual."
 
-#: src/slic3r/GUI/GUI_App.cpp:2539
+#: src/slic3r/GUI/GUI_App.cpp:2558
 msgid "Project is loading"
 msgstr "El projecte s'està carregant"
 
-#: src/slic3r/GUI/GUI_App.cpp:2539
+#: src/slic3r/GUI/GUI_App.cpp:2558
 msgid "Opening new project while some presets are unsaved."
 msgstr "Obre un nou projecte mentre alguns paràmetres estan sense desar."
 
-#: src/slic3r/GUI/GUI_App.cpp:2558
+#: src/slic3r/GUI/GUI_App.cpp:2577
 msgid "The uploads are still ongoing"
 msgstr "Les pujades encara estan en curs"
 
-#: src/slic3r/GUI/GUI_App.cpp:2558
+#: src/slic3r/GUI/GUI_App.cpp:2577
 msgid "Stop them and continue anyway?"
 msgstr "Aturar-les i continuar igualment?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2562
+#: src/slic3r/GUI/GUI_App.cpp:2581
 msgid "Ongoing uploads"
 msgstr "Càrregues en curs"
 
-#: src/slic3r/GUI/GUI_App.cpp:2768
+#: src/slic3r/GUI/GUI_App.cpp:2787
 msgid "It's impossible to print multi-part object(s) with SLA technology."
 msgstr "És impossible imprimir objectes de diverses peces amb tecnologia SLA."
 
-#: src/slic3r/GUI/GUI_App.cpp:2769 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224
+#: src/slic3r/GUI/GUI_App.cpp:2788 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224
 #: src/slic3r/GUI/Plater.cpp:2404
 msgid "Please check your object list before preset changing."
 msgstr ""
 "Comproveu la llista d'objectes abans de canviar els paràmetres inicials."
 
-#: src/slic3r/GUI/GUI_App.cpp:2793
+#: src/slic3r/GUI/GUI_App.cpp:2812
 msgid "Configuration is editing from ConfigWizard"
 msgstr "La configuració s'edita des de ConfigWizard"
 
-#: src/slic3r/GUI/GUI_App.cpp:2818
+#: src/slic3r/GUI/GUI_App.cpp:2837
 msgid "Select a gcode file:"
 msgstr "Seleccioneu un fitxer gcode:"
 
-#: src/slic3r/GUI/GUI_App.cpp:2968 src/slic3r/GUI/OptionsGroup.cpp:984
+#: src/slic3r/GUI/GUI_App.cpp:2987 src/slic3r/GUI/OptionsGroup.cpp:984
 msgid "Open hyperlink in default browser?"
 msgstr "Obrir l'hiperenllaç al navegador per defecte?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2968 src/slic3r/GUI/OptionsGroup.cpp:984
+#: src/slic3r/GUI/GUI_App.cpp:2987 src/slic3r/GUI/OptionsGroup.cpp:984
 msgid "PrusaSlicer: Open hyperlink"
 msgstr "PrusaSlicer: Obrir hipervincle"
 
@@ -3838,7 +3842,7 @@ msgid "Speed"
 msgstr "Velocitat"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:133 src/slic3r/GUI/Tab.cpp:1619
-#: src/slic3r/GUI/Tab.cpp:2273 src/libslic3r/PrintConfig.cpp:770
+#: src/slic3r/GUI/Tab.cpp:2272 src/libslic3r/PrintConfig.cpp:770
 #: src/libslic3r/PrintConfig.cpp:1441 src/libslic3r/PrintConfig.cpp:1941
 #: src/libslic3r/PrintConfig.cpp:2317 src/libslic3r/PrintConfig.cpp:2591
 #: src/libslic3r/PrintConfig.cpp:2619
@@ -3861,8 +3865,8 @@ msgstr "Faldilla i bassa"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:138 src/slic3r/GUI/Tab.cpp:1491
 #: src/slic3r/GUI/Tab.cpp:1524 src/slic3r/GUI/Tab.cpp:1641
-#: src/slic3r/GUI/Tab.cpp:1645 src/slic3r/GUI/Tab.cpp:2000
-#: src/slic3r/GUI/Tab.cpp:2367 src/slic3r/GUI/Tab.cpp:4391
+#: src/slic3r/GUI/Tab.cpp:1645 src/slic3r/GUI/Tab.cpp:1999
+#: src/slic3r/GUI/Tab.cpp:2366 src/slic3r/GUI/Tab.cpp:4390
 #: src/libslic3r/PrintConfig.cpp:247 src/libslic3r/PrintConfig.cpp:472
 #: src/libslic3r/PrintConfig.cpp:1390 src/libslic3r/PrintConfig.cpp:1477
 #: src/libslic3r/PrintConfig.cpp:1524 src/libslic3r/PrintConfig.cpp:2474
@@ -3872,7 +3876,7 @@ msgid "Advanced"
 msgstr "Avançat"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:140 src/slic3r/GUI/Plater.cpp:428
-#: src/slic3r/GUI/Tab.cpp:4325 src/slic3r/GUI/Tab.cpp:4326
+#: src/slic3r/GUI/Tab.cpp:4324 src/slic3r/GUI/Tab.cpp:4325
 #: src/libslic3r/PrintConfig.cpp:3412 src/libslic3r/PrintConfig.cpp:3419
 #: src/libslic3r/PrintConfig.cpp:3428 src/libslic3r/PrintConfig.cpp:3437
 #: src/libslic3r/PrintConfig.cpp:3447 src/libslic3r/PrintConfig.cpp:3457
@@ -3886,8 +3890,8 @@ msgid "Supports"
 msgstr "Suports"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:141 src/slic3r/GUI/Plater.cpp:574
-#: src/slic3r/GUI/Tab.cpp:4366 src/slic3r/GUI/Tab.cpp:4367
-#: src/slic3r/GUI/Tab.cpp:4439 src/libslic3r/PrintConfig.cpp:3600
+#: src/slic3r/GUI/Tab.cpp:4365 src/slic3r/GUI/Tab.cpp:4366
+#: src/slic3r/GUI/Tab.cpp:4438 src/libslic3r/PrintConfig.cpp:3600
 #: src/libslic3r/PrintConfig.cpp:3607 src/libslic3r/PrintConfig.cpp:3621
 #: src/libslic3r/PrintConfig.cpp:3632 src/libslic3r/PrintConfig.cpp:3642
 #: src/libslic3r/PrintConfig.cpp:3664 src/libslic3r/PrintConfig.cpp:3675
@@ -3897,8 +3901,8 @@ msgstr "Suports"
 msgid "Pad"
 msgstr "Pad"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4384
-#: src/slic3r/GUI/Tab.cpp:4385 src/libslic3r/SLA/Hollowing.cpp:72
+#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4383
+#: src/slic3r/GUI/Tab.cpp:4384 src/libslic3r/SLA/Hollowing.cpp:72
 #: src/libslic3r/SLA/Hollowing.cpp:84 src/libslic3r/SLA/Hollowing.cpp:91
 #: src/libslic3r/SLA/Hollowing.cpp:100 src/libslic3r/PrintConfig.cpp:3728
 #: src/libslic3r/PrintConfig.cpp:3735 src/libslic3r/PrintConfig.cpp:3745
@@ -4043,7 +4047,7 @@ msgstr "Converteix des de metres"
 msgid "Revert conversion from meters"
 msgstr "Reverteix la conversió des de metres"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:864 src/slic3r/GUI/GUI_ObjectList.cpp:2134
+#: src/slic3r/GUI/GUI_Factories.cpp:864 src/slic3r/GUI/GUI_ObjectList.cpp:2133
 #: src/libslic3r/PrintConfig.cpp:4365
 msgid "Merge"
 msgstr "Combinar"
@@ -4084,7 +4088,7 @@ msgstr "Reflectir"
 msgid "Mirror the selected object"
 msgstr "Duplicar l'objecte seleccionat"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:906 src/slic3r/GUI/GUI_ObjectList.cpp:1697
+#: src/slic3r/GUI/GUI_Factories.cpp:906 src/slic3r/GUI/GUI_ObjectList.cpp:1696
 msgid "Add Shape"
 msgstr "Afegir forma"
 
@@ -4257,7 +4261,7 @@ msgid "Rename Sub-object"
 msgstr "Canvia el nom del Sub-objecte"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1242
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3998
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3997
 msgid "Instances to Separated Objects"
 msgstr "Instàncies per Separar Objectes"
 
@@ -4293,165 +4297,165 @@ msgstr "Afegir Conjunt d'Ajustos per a Sub-objecte"
 msgid "Add Settings Bundle for Object"
 msgstr "Afegir Conjunt d'Ajustos per a l'Objecte"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1412
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1413
 msgid "Load Part"
 msgstr "Carregar peça"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1412
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1413
 msgid "Load Modifier"
 msgstr "Carregar Modificador"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1510 src/slic3r/GUI/Plater.cpp:2356
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1509 src/slic3r/GUI/Plater.cpp:2356
 msgid "Loading"
 msgstr "Carregant"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1541 src/slic3r/GUI/Plater.cpp:2376
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1540 src/slic3r/GUI/Plater.cpp:2376
 msgid "Loading file"
 msgstr "S'està carregant el fitxer"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1549
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1548
 msgid "Error!"
 msgstr "Error!"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1639
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1638
 msgid "Add Generic Subobject"
 msgstr "Afegir Sub-objecte Genèric"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1664
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1663
 msgid "Generic"
 msgstr "Genèric"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1728
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1727
 msgid "Add Shape from Gallery"
 msgstr "Afegeix una Forma des de la galeria"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1728
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1727
 msgid "Add Shapes from Gallery"
 msgstr "Afegeix Formes des de la galeria"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1831
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1830
 msgid "Remove paint-on supports"
 msgstr "Eliminar suports pintables"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1838
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1837
 msgid "Remove paint-on seam"
 msgstr "Eliminar pintat de costures"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1845
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1844
 msgid "Remove Multi Material painting"
 msgstr "Eliminar el pintat Multimaterial"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1851
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1850
 msgid "Shift objects to bed"
 msgstr "Desplaçar els objectes al llit"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1857
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1856
 msgid "Remove variable layer height"
 msgstr "Elimina alçada de capa variable"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1878
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1877
 msgid "Delete Settings"
 msgstr "Suprimeix Configuració"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1902
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1901
 msgid "Delete All Instances from Object"
 msgstr "Suprimeix totes les còpies de l'objecte"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1918
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1917
 msgid "Delete Height Range"
 msgstr "Eliminar Rang d'Altures"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1950
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1949
 msgid "From Object List You can't delete the last solid part from object."
 msgstr ""
 "Des de la Llista d'objectes no podeu suprimir l'última part sòlida de "
 "l'objecte."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1954
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1953
 msgid "Delete Subobject"
 msgstr "Eliminar Sub-objecte"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1977
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1976
 msgid "Last instance of an object cannot be deleted."
 msgstr "No es pot suprimir l'última instància d'un objecte."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1981
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1980
 msgid "Delete Instance"
 msgstr "Suprimeix la instància"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2005
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2004
 msgid ""
 "The selected object couldn't be split because it contains only one part."
 msgstr ""
 "No s'ha pogut dividir l'objecte seleccionat perquè només conté una part."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2009
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2008
 msgid "Split to Parts"
 msgstr "Separar en Peces"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2141
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2140
 msgid "Merged"
 msgstr "Fusionat"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2229
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2228
 msgid "Merge all parts to the one single object"
 msgstr "Fusiona totes les parts en un sol objecte"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2261
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2260
 msgid "Add Layers"
 msgstr "Afegeix Capes"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2430
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2429
 msgid "Group manipulation"
 msgstr "Manipulació de grups"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2445
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2444
 msgid "Object manipulation"
 msgstr "Manipulació d'objectes"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2478
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2477
 msgid "Object Settings to modify"
 msgstr "Configuracions d'objectes per modificar"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2482
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2481
 msgid "Part Settings to modify"
 msgstr "Configuracions de peces per modificar"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2487
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2486
 msgid "Layer range Settings to modify"
 msgstr "Ajustaments del Rang de capes a modificar"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2493
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2492
 msgid "Part manipulation"
 msgstr "Manipulació de peces"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2499
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2498
 msgid "Instance manipulation"
 msgstr "Manipulació d'instàncies"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2506
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2505
 msgid "Height ranges"
 msgstr "Intervals d'alçada"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2506
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2505
 msgid "Settings for height range"
 msgstr "Configuració de l'interval d'alçada"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2742
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2741
 msgid "Delete Selected Item"
 msgstr "Suprimeix l'element Seleccionat"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:2935
+#: src/slic3r/GUI/GUI_ObjectList.cpp:2934
 msgid "Delete Selected"
 msgstr "Eliminar Selecció"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3011
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3039
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3059
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3010
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3038
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3058
 msgid "Add Height Range"
 msgstr "Afegeix un interval d'alçada"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3105
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3104
 msgid ""
 "Cannot insert a new layer range after the current layer range.\n"
 "The next layer range is too thin to be split to two\n"
@@ -4461,7 +4465,7 @@ msgstr ""
 "El següent rang de capa és massa prim per dividir-se en dos\n"
 "sense violar l'alçada mínima de la capa."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3109
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3108
 msgid ""
 "Cannot insert a new layer range between the current and the next layer "
 "range.\n"
@@ -4473,7 +4477,7 @@ msgstr ""
 "La bretxa entre el rang de capa actual i el següent rang de capa\n"
 "és més prima que l'alçada mínima de capa permesa."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3114
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3113
 msgid ""
 "Cannot insert a new layer range after the current layer range.\n"
 "Current layer range overlaps with the next layer range."
@@ -4481,143 +4485,143 @@ msgstr ""
 "No es pot inserir un rang de capes nou després del rang de capa actual.\n"
 "El rang de capa actual se superposa amb el rang de capa següent."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3173
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3172
 msgid "Edit Height Range"
 msgstr "Edita l'interval d'alçada"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3492
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3491
 msgid "Selection-Remove from list"
 msgstr "Selecció-Retirar de la llista"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3504
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3503
 msgid "Selection-Add from list"
 msgstr "Selecció-Afegir de la llista"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3641
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3640
 msgid "Object or Instance"
 msgstr "Objecte o instància"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3642
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3641
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Part"
 msgstr "Peça"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3642
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3641
 msgid "Layer"
 msgstr "Capa"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3644
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3643
 msgid "Unsupported selection"
 msgstr "Selecció no admesa"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3645
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3644
 #, c-format, boost-format
 msgid "You started your selection with %s Item."
 msgstr "Heu començat la selecció amb %s element."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3646
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3645
 #, c-format, boost-format
 msgid "In this mode you can select only other %s Items%s"
 msgstr "En aquest mode, només podeu seleccionar altres %s elements %s"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3649
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3648
 msgid "of a current Object"
 msgstr "d'un objecte actual"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3654
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3729 src/slic3r/GUI/Plater.cpp:181
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3653
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3728 src/slic3r/GUI/Plater.cpp:181
 msgid "Info"
 msgstr "Informació"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3776
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3775
 msgid "You can't change a type of the last solid part of the object."
 msgstr "No podeu canviar un tipus de l'última part sòlida de l'objecte."
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Negative Volume"
 msgstr "Volum Negatiu"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Modifier"
 msgstr "Modificador"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Support Blocker"
 msgstr "Bloqueig de suport"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Support Enforcer"
 msgstr "Forçat de Suport"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3782
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
 msgid "Select type of part"
 msgstr "Selecciona el tipus de peça"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3787
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3786
 msgid "Change Part Type"
 msgstr "Canvia el tipus de peça"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4020
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4019
 msgid "Enter new name"
 msgstr "Introduïu un nom nou"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4020
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4019
 msgid "Renaming"
 msgstr "Reanomenar"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4083
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4082
 msgid "Repairing model"
 msgstr "Reparant model"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4112
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4111
 msgid "Fix through NetFabb"
 msgstr "Reparar mitjançant Netfabb"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4115
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4114
 msgid "Fixing through NetFabb"
 msgstr "S'està corregint a través de NetFabb"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4145
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4144
 msgid "The following model was repaired successfully"
 msgid_plural "The following models were repaired successfully"
 msgstr[0] "El model següent s'ha reparat correctament"
 msgstr[1] "Els models següents s'han reparat correctament"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4151
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4150
 msgid "Folowing model repair failed"
 msgid_plural "Folowing models repair failed"
 msgstr[0] "Ha fallat la reparació del següent model"
 msgstr[1] "Ha fallat la reparació dels següents models"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4156
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4155
 msgid "Repairing was canceled"
 msgstr "S'ha cancel·lat la reparació"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4268
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4267
 msgid "Change Extruders"
 msgstr "Canviar Extrusors"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4408
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4407
 msgid "Set Printable group"
 msgstr "Establir Grup Imprimible"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4408
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4407
 msgid "Set Unprintable group"
 msgstr "Establir Grup No Imprimible"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4410
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4409
 msgid "Set Printable"
 msgstr "Establir Imprimible"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4410
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4409
 msgid "Set Unprintable"
 msgstr "Establir No Imprimible"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4411
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4410
 msgid "Set Printable Instance"
 msgstr "Establir Instància Imprimible"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4411
+#: src/slic3r/GUI/GUI_ObjectList.cpp:4410
 msgid "Set Unprintable Instance"
 msgstr "Establir Instància No Imprimible"
 
@@ -4764,11 +4768,11 @@ msgstr "Alçada"
 msgid "Width"
 msgstr "Amplada"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:221 src/slic3r/GUI/Tab.cpp:1985
+#: src/slic3r/GUI/GUI_Preview.cpp:221 src/slic3r/GUI/Tab.cpp:1984
 msgid "Fan speed"
 msgstr "Velocitat del ventilador"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:222 src/slic3r/GUI/Tab.cpp:1960
+#: src/slic3r/GUI/GUI_Preview.cpp:222 src/slic3r/GUI/Tab.cpp:1959
 msgid "Temperature"
 msgstr "Temperatura"
 
@@ -5461,7 +5465,7 @@ msgid "Show/Hide G-code window"
 msgstr "Mostrar/Ocultar finestra de codi G"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:230 src/slic3r/GUI/Plater.cpp:4394
-#: src/slic3r/GUI/Tab.cpp:2794
+#: src/slic3r/GUI/Tab.cpp:2793
 msgid "Preview"
 msgstr "Previsualització"
 
@@ -6228,7 +6232,7 @@ msgstr "Desa el fitxer zip com a:"
 
 #: src/slic3r/GUI/MainFrame.cpp:1682 src/slic3r/GUI/Plater.cpp:3276
 #: src/slic3r/GUI/Plater.cpp:5972 src/slic3r/GUI/Tab.cpp:1662
-#: src/slic3r/GUI/Tab.cpp:4392
+#: src/slic3r/GUI/Tab.cpp:4391
 msgid "Slicing"
 msgstr "Laminant"
 
@@ -6334,32 +6338,32 @@ msgstr "Opcions:"
 msgid "Swap Y/Z axes"
 msgstr "Alternar eixos Y/Z"
 
-#: src/slic3r/GUI/MsgDialog.cpp:180
+#: src/slic3r/GUI/MsgDialog.cpp:198
 #, c-format, boost-format
 msgid "%s error"
 msgstr "%s error"
 
-#: src/slic3r/GUI/MsgDialog.cpp:181
+#: src/slic3r/GUI/MsgDialog.cpp:199
 #, c-format, boost-format
 msgid "%s has encountered an error"
 msgstr "%s hi ha hagut un error"
 
-#: src/slic3r/GUI/MsgDialog.cpp:200
+#: src/slic3r/GUI/MsgDialog.cpp:218
 #, c-format, boost-format
 msgid "%s warning"
 msgstr "%s advertència"
 
-#: src/slic3r/GUI/MsgDialog.cpp:201
+#: src/slic3r/GUI/MsgDialog.cpp:219
 #, c-format, boost-format
 msgid "%s has a warning"
 msgstr "%s té un avís"
 
-#: src/slic3r/GUI/MsgDialog.cpp:214 src/slic3r/GUI/MsgDialog.cpp:227
+#: src/slic3r/GUI/MsgDialog.cpp:232 src/slic3r/GUI/MsgDialog.cpp:245
 #, c-format, boost-format
 msgid "%s info"
 msgstr "%s informació"
 
-#: src/slic3r/GUI/MsgDialog.cpp:255
+#: src/slic3r/GUI/MsgDialog.cpp:273
 #, c-format, boost-format
 msgid "%s information"
 msgstr "%s informació"
@@ -6522,8 +6526,8 @@ msgstr "Instàncies"
 msgid "Instance %d"
 msgstr "Instància %d"
 
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4230
-#: src/slic3r/GUI/Tab.cpp:4321
+#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4229
+#: src/slic3r/GUI/Tab.cpp:4320
 msgid "Layers"
 msgstr "Capes"
 
@@ -6629,7 +6633,7 @@ msgstr "Nom descriptiu de la impressora"
 msgid "Add preset for this printer device"
 msgstr "Afegir ajustament preestablert per a aquest dispositiu d'impressió"
 
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:210 src/slic3r/GUI/Tab.cpp:2224
+#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:210 src/slic3r/GUI/Tab.cpp:2223
 msgid "Print Host upload"
 msgstr "Cua de pujada al host d'impressió"
 
@@ -7400,8 +7404,8 @@ msgstr ""
 msgid "Paste From Clipboard"
 msgstr "Enganxa des del porta-retalls"
 
-#: src/slic3r/GUI/Preferences.cpp:106 src/slic3r/GUI/Tab.cpp:2259
-#: src/slic3r/GUI/Tab.cpp:2482 src/slic3r/GUI/Tab.cpp:2588
+#: src/slic3r/GUI/Preferences.cpp:106 src/slic3r/GUI/Tab.cpp:2258
+#: src/slic3r/GUI/Tab.cpp:2481 src/slic3r/GUI/Tab.cpp:2587
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1275
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1663
 msgid "General"
@@ -7912,7 +7916,7 @@ msgid "Add/Remove presets"
 msgstr "Afegeix o suprimeix els predefinits"
 
 #: src/slic3r/GUI/PresetComboBoxes.cpp:702
-#: src/slic3r/GUI/PresetComboBoxes.cpp:742 src/slic3r/GUI/Tab.cpp:3209
+#: src/slic3r/GUI/PresetComboBoxes.cpp:742 src/slic3r/GUI/Tab.cpp:3208
 msgid "Add physical printer"
 msgstr "Afegeix una impressora física"
 
@@ -7924,7 +7928,7 @@ msgstr "Edita el predefinit"
 msgid "Change extruder color"
 msgstr "Canvia el color de l'extrusora"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:730 src/slic3r/GUI/Tab.cpp:3209
+#: src/slic3r/GUI/PresetComboBoxes.cpp:730 src/slic3r/GUI/Tab.cpp:3208
 msgid "Edit physical printer"
 msgstr "Edita la impressora física"
 
@@ -8364,12 +8368,12 @@ msgid "Just switch to \"%1%\" preset"
 msgstr "Simplement canvieu a la configuració predeterminada \"%1%\""
 
 #: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345
-#: src/slic3r/GUI/Tab.cpp:2616
+#: src/slic3r/GUI/Tab.cpp:2615
 msgid "Stealth"
 msgstr "Silenciós"
 
 #: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345
-#: src/slic3r/GUI/Tab.cpp:2610
+#: src/slic3r/GUI/Tab.cpp:2609
 msgid "Normal"
 msgstr "Normal"
 
@@ -8641,7 +8645,7 @@ msgstr "nom complet del perfil"
 msgid "symbolic profile name"
 msgstr "nom simbòlic del perfil"
 
-#: src/slic3r/GUI/Tab.cpp:1447 src/slic3r/GUI/Tab.cpp:4319
+#: src/slic3r/GUI/Tab.cpp:1447 src/slic3r/GUI/Tab.cpp:4318
 msgid "Layers and perimeters"
 msgstr "Capes i Perímetres"
 
@@ -8729,7 +8733,7 @@ msgstr "Fluxe"
 msgid "Other"
 msgstr "Altre"
 
-#: src/slic3r/GUI/Tab.cpp:1673 src/slic3r/GUI/Tab.cpp:4396
+#: src/slic3r/GUI/Tab.cpp:1673 src/slic3r/GUI/Tab.cpp:4395
 msgid "Output options"
 msgstr "Opcions de sortida"
 
@@ -8741,7 +8745,7 @@ msgstr "Impressió seqüencial"
 msgid "Extruder clearance"
 msgstr "Separació de l'extrusor"
 
-#: src/slic3r/GUI/Tab.cpp:1681 src/slic3r/GUI/Tab.cpp:4397
+#: src/slic3r/GUI/Tab.cpp:1681 src/slic3r/GUI/Tab.cpp:4396
 msgid "Output file"
 msgstr "Fitxer de sortida"
 
@@ -8750,22 +8754,22 @@ msgid "Post-processing scripts"
 msgstr "Scripts de postprocessament"
 
 #: src/slic3r/GUI/Tab.cpp:1700 src/slic3r/GUI/Tab.cpp:1701
-#: src/slic3r/GUI/Tab.cpp:2079 src/slic3r/GUI/Tab.cpp:2080
-#: src/slic3r/GUI/Tab.cpp:2463 src/slic3r/GUI/Tab.cpp:2464
-#: src/slic3r/GUI/Tab.cpp:2535 src/slic3r/GUI/Tab.cpp:2536
-#: src/slic3r/GUI/Tab.cpp:4247 src/slic3r/GUI/Tab.cpp:4248
+#: src/slic3r/GUI/Tab.cpp:2078 src/slic3r/GUI/Tab.cpp:2079
+#: src/slic3r/GUI/Tab.cpp:2462 src/slic3r/GUI/Tab.cpp:2463
+#: src/slic3r/GUI/Tab.cpp:2534 src/slic3r/GUI/Tab.cpp:2535
+#: src/slic3r/GUI/Tab.cpp:4246 src/slic3r/GUI/Tab.cpp:4247
 msgid "Notes"
 msgstr "Notes"
 
-#: src/slic3r/GUI/Tab.cpp:1707 src/slic3r/GUI/Tab.cpp:2087
-#: src/slic3r/GUI/Tab.cpp:2470 src/slic3r/GUI/Tab.cpp:2542
-#: src/slic3r/GUI/Tab.cpp:4255 src/slic3r/GUI/Tab.cpp:4402
+#: src/slic3r/GUI/Tab.cpp:1707 src/slic3r/GUI/Tab.cpp:2086
+#: src/slic3r/GUI/Tab.cpp:2469 src/slic3r/GUI/Tab.cpp:2541
+#: src/slic3r/GUI/Tab.cpp:4254 src/slic3r/GUI/Tab.cpp:4401
 msgid "Dependencies"
 msgstr "Dependències"
 
-#: src/slic3r/GUI/Tab.cpp:1708 src/slic3r/GUI/Tab.cpp:2088
-#: src/slic3r/GUI/Tab.cpp:2471 src/slic3r/GUI/Tab.cpp:2543
-#: src/slic3r/GUI/Tab.cpp:4256 src/slic3r/GUI/Tab.cpp:4403
+#: src/slic3r/GUI/Tab.cpp:1708 src/slic3r/GUI/Tab.cpp:2087
+#: src/slic3r/GUI/Tab.cpp:2470 src/slic3r/GUI/Tab.cpp:2542
+#: src/slic3r/GUI/Tab.cpp:4255 src/slic3r/GUI/Tab.cpp:4402
 msgid "Profile dependencies"
 msgstr "Dependències del perfil"
 
@@ -8774,7 +8778,7 @@ msgid "Post processing scripts shall modify G-code file in place."
 msgstr ""
 "Els scripts de postprocessament modificaran el fitxer de codi G al seu lloc."
 
-#: src/slic3r/GUI/Tab.cpp:1819
+#: src/slic3r/GUI/Tab.cpp:1818
 #, c-format, boost-format
 msgid ""
 "The following line %s contains reserved keywords.\n"
@@ -8795,82 +8799,82 @@ msgstr[1] ""
 "del codi G i\n"
 "l'estimació del temps d'impressió."
 
-#: src/slic3r/GUI/Tab.cpp:1824
+#: src/slic3r/GUI/Tab.cpp:1823
 msgid "Found reserved keywords in"
 msgstr "Trobades paraules clau reservades a"
 
-#: src/slic3r/GUI/Tab.cpp:1838
+#: src/slic3r/GUI/Tab.cpp:1837
 msgid "Filament Overrides"
 msgstr "Anul·lacions de filaments"
 
-#: src/slic3r/GUI/Tab.cpp:1961
+#: src/slic3r/GUI/Tab.cpp:1960
 msgid "Nozzle"
 msgstr "Broquet( nozzle )"
 
-#: src/slic3r/GUI/Tab.cpp:1966
+#: src/slic3r/GUI/Tab.cpp:1965
 msgid "Bed"
 msgstr "Llit"
 
-#: src/slic3r/GUI/Tab.cpp:1971
+#: src/slic3r/GUI/Tab.cpp:1970
 msgid "Cooling"
 msgstr "Refredament"
 
-#: src/slic3r/GUI/Tab.cpp:1973 src/libslic3r/PrintConfig.cpp:1888
+#: src/slic3r/GUI/Tab.cpp:1972 src/libslic3r/PrintConfig.cpp:1888
 #: src/libslic3r/PrintConfig.cpp:2938
 msgid "Enable"
 msgstr "Activar"
 
-#: src/slic3r/GUI/Tab.cpp:1984
+#: src/slic3r/GUI/Tab.cpp:1983
 msgid "Fan settings"
 msgstr "Configuració del ventilador"
 
-#: src/slic3r/GUI/Tab.cpp:1995
+#: src/slic3r/GUI/Tab.cpp:1994
 msgid "Cooling thresholds"
 msgstr "Llindars de refrigeració"
 
-#: src/slic3r/GUI/Tab.cpp:2001
+#: src/slic3r/GUI/Tab.cpp:2000
 msgid "Filament properties"
 msgstr "Propietats del filament"
 
-#: src/slic3r/GUI/Tab.cpp:2008
+#: src/slic3r/GUI/Tab.cpp:2007
 msgid "Print speed override"
 msgstr "Substitució de velocitat d'impressió"
 
-#: src/slic3r/GUI/Tab.cpp:2018
+#: src/slic3r/GUI/Tab.cpp:2017
 msgid "Wipe tower parameters"
 msgstr "Paràmetres de la torre de neteja"
 
-#: src/slic3r/GUI/Tab.cpp:2021
+#: src/slic3r/GUI/Tab.cpp:2020
 msgid "Toolchange parameters with single extruder MM printers"
 msgstr "Paràmetres del canvi d'eina per a impressores d'un únic extrusor MM"
 
-#: src/slic3r/GUI/Tab.cpp:2034
+#: src/slic3r/GUI/Tab.cpp:2033
 msgid "Ramming settings"
 msgstr "Configuració d'empenyiment"
 
-#: src/slic3r/GUI/Tab.cpp:2058 src/slic3r/GUI/Tab.cpp:2375
-#: src/slic3r/GUI/Tab.cpp:3926 src/libslic3r/GCode.cpp:733
+#: src/slic3r/GUI/Tab.cpp:2057 src/slic3r/GUI/Tab.cpp:2374
+#: src/slic3r/GUI/Tab.cpp:3925 src/libslic3r/GCode.cpp:733
 #: src/libslic3r/PrintConfig.cpp:2444
 msgid "Custom G-code"
 msgstr "Codi G personalitzat"
 
-#: src/slic3r/GUI/Tab.cpp:2059 src/slic3r/GUI/Tab.cpp:2376
+#: src/slic3r/GUI/Tab.cpp:2058 src/slic3r/GUI/Tab.cpp:2375
 #: src/libslic3r/GCode.cpp:707 src/libslic3r/PrintConfig.cpp:2394
 #: src/libslic3r/PrintConfig.cpp:2409
 msgid "Start G-code"
 msgstr "Codi G inicial"
 
-#: src/slic3r/GUI/Tab.cpp:2069 src/slic3r/GUI/Tab.cpp:2386
+#: src/slic3r/GUI/Tab.cpp:2068 src/slic3r/GUI/Tab.cpp:2385
 #: src/libslic3r/GCode.cpp:708 src/libslic3r/PrintConfig.cpp:662
 #: src/libslic3r/PrintConfig.cpp:672
 msgid "End G-code"
 msgstr "Codi G final"
 
-#: src/slic3r/GUI/Tab.cpp:2122
+#: src/slic3r/GUI/Tab.cpp:2121
 msgid "Volumetric flow hints not available"
 msgstr "Els consells de flux volumètric no estan disponibles"
 
-#: src/slic3r/GUI/Tab.cpp:2226
+#: src/slic3r/GUI/Tab.cpp:2225
 msgid ""
 "Note: All parameters from this group are moved to the Physical Printer "
 "settings (see changelog).\n"
@@ -8892,20 +8896,20 @@ msgstr ""
 "\"engranatge\" a la pestanya Configuració d'impressora. Els perfils de la "
 "impressora física s'emmagatzemen al directori PrusaSlicer/physical_printer."
 
-#: src/slic3r/GUI/Tab.cpp:2260 src/slic3r/GUI/Tab.cpp:2483
+#: src/slic3r/GUI/Tab.cpp:2259 src/slic3r/GUI/Tab.cpp:2482
 msgid "Size and coordinates"
 msgstr "Mida i coordenades"
 
-#: src/slic3r/GUI/Tab.cpp:2269 src/slic3r/GUI/UnsavedChangesDialog.cpp:1275
+#: src/slic3r/GUI/Tab.cpp:2268 src/slic3r/GUI/UnsavedChangesDialog.cpp:1275
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1663
 msgid "Capabilities"
 msgstr "Capacitats"
 
-#: src/slic3r/GUI/Tab.cpp:2274
+#: src/slic3r/GUI/Tab.cpp:2273
 msgid "Number of extruders of the printer."
 msgstr "Nombre d'extrusores de la impressora."
 
-#: src/slic3r/GUI/Tab.cpp:2303
+#: src/slic3r/GUI/Tab.cpp:2302
 msgid ""
 "Single Extruder Multi Material is selected, \n"
 "and all extruders must have the same diameter.\n"
@@ -8917,64 +8921,64 @@ msgstr ""
 "Voleu canviar el diàmetre de tots els extrusors al valor del diàmetre del "
 "nozzle del primer extrusor?"
 
-#: src/slic3r/GUI/Tab.cpp:2307 src/slic3r/GUI/Tab.cpp:2744
+#: src/slic3r/GUI/Tab.cpp:2306 src/slic3r/GUI/Tab.cpp:2743
 #: src/libslic3r/PrintConfig.cpp:1852
 msgid "Nozzle diameter"
 msgstr "Diàmetre del broquet(nozzle)"
 
-#: src/slic3r/GUI/Tab.cpp:2396 src/libslic3r/GCode.cpp:709
+#: src/slic3r/GUI/Tab.cpp:2395 src/libslic3r/GCode.cpp:709
 #: src/libslic3r/PrintConfig.cpp:402
 msgid "Before layer change G-code"
 msgstr "Codi G per abans d'un canvi de capa"
 
-#: src/slic3r/GUI/Tab.cpp:2406 src/libslic3r/GCode.cpp:710
+#: src/slic3r/GUI/Tab.cpp:2405 src/libslic3r/GCode.cpp:710
 #: src/libslic3r/PrintConfig.cpp:1578
 msgid "After layer change G-code"
 msgstr "Codi G per després d'un canvi de capa"
 
-#: src/slic3r/GUI/Tab.cpp:2416 src/libslic3r/GCode.cpp:711
+#: src/slic3r/GUI/Tab.cpp:2415 src/libslic3r/GCode.cpp:711
 #: src/libslic3r/PrintConfig.cpp:2821
 msgid "Tool change G-code"
 msgstr "Codi G de canvi d'eina"
 
-#: src/slic3r/GUI/Tab.cpp:2426 src/libslic3r/GCode.cpp:712
+#: src/slic3r/GUI/Tab.cpp:2425 src/libslic3r/GCode.cpp:712
 msgid "Between objects G-code (for sequential printing)"
 msgstr "Codi G per a entre objectes (per a impressió seqüencial)"
 
-#: src/slic3r/GUI/Tab.cpp:2436 src/libslic3r/GCode.cpp:713
+#: src/slic3r/GUI/Tab.cpp:2435 src/libslic3r/GCode.cpp:713
 msgid "Color Change G-code"
 msgstr "Codi G Canvi Color"
 
-#: src/slic3r/GUI/Tab.cpp:2445 src/libslic3r/GCode.cpp:714
+#: src/slic3r/GUI/Tab.cpp:2444 src/libslic3r/GCode.cpp:714
 #: src/libslic3r/PrintConfig.cpp:2435
 msgid "Pause Print G-code"
 msgstr "Codi G per a Pausa d'Impressió"
 
-#: src/slic3r/GUI/Tab.cpp:2454 src/libslic3r/GCode.cpp:715
+#: src/slic3r/GUI/Tab.cpp:2453 src/libslic3r/GCode.cpp:715
 msgid "Template Custom G-code"
 msgstr "Plantilla Codi G Personalitzat"
 
-#: src/slic3r/GUI/Tab.cpp:2490
+#: src/slic3r/GUI/Tab.cpp:2489
 msgid "Display"
 msgstr "Pantalla"
 
-#: src/slic3r/GUI/Tab.cpp:2505
+#: src/slic3r/GUI/Tab.cpp:2504
 msgid "Tilt"
 msgstr "Inclinació"
 
-#: src/slic3r/GUI/Tab.cpp:2506
+#: src/slic3r/GUI/Tab.cpp:2505
 msgid "Tilt time"
 msgstr "Temps d'inclinació"
 
-#: src/slic3r/GUI/Tab.cpp:2512 src/slic3r/GUI/Tab.cpp:4237
+#: src/slic3r/GUI/Tab.cpp:2511 src/slic3r/GUI/Tab.cpp:4236
 msgid "Corrections"
 msgstr "Correccions"
 
-#: src/slic3r/GUI/Tab.cpp:2525 src/slic3r/GUI/Tab.cpp:4233
+#: src/slic3r/GUI/Tab.cpp:2524 src/slic3r/GUI/Tab.cpp:4232
 msgid "Exposure"
 msgstr "Exposició"
 
-#: src/slic3r/GUI/Tab.cpp:2586 src/slic3r/GUI/Tab.cpp:2671
+#: src/slic3r/GUI/Tab.cpp:2585 src/slic3r/GUI/Tab.cpp:2670
 #: src/libslic3r/PrintConfig.cpp:1607 src/libslic3r/PrintConfig.cpp:1642
 #: src/libslic3r/PrintConfig.cpp:1659 src/libslic3r/PrintConfig.cpp:1676
 #: src/libslic3r/PrintConfig.cpp:1692 src/libslic3r/PrintConfig.cpp:1702
@@ -8983,39 +8987,39 @@ msgstr "Exposició"
 msgid "Machine limits"
 msgstr "Límits de la màquina"
 
-#: src/slic3r/GUI/Tab.cpp:2609
+#: src/slic3r/GUI/Tab.cpp:2608
 msgid "Values in this column are for Normal mode"
 msgstr "Els valors d'aquesta columna són per al mode Normal"
 
-#: src/slic3r/GUI/Tab.cpp:2615
+#: src/slic3r/GUI/Tab.cpp:2614
 msgid "Values in this column are for Stealth mode"
 msgstr "Els valors d'aquesta columna són per al mode Silenciós"
 
-#: src/slic3r/GUI/Tab.cpp:2624
+#: src/slic3r/GUI/Tab.cpp:2623
 msgid "Maximum feedrates"
 msgstr "Velocitats d'alimentació màximes"
 
-#: src/slic3r/GUI/Tab.cpp:2629
+#: src/slic3r/GUI/Tab.cpp:2628
 msgid "Maximum accelerations"
 msgstr "Acceleracions màximes"
 
-#: src/slic3r/GUI/Tab.cpp:2638
+#: src/slic3r/GUI/Tab.cpp:2637
 msgid "Jerk limits"
 msgstr "Límits de jerk"
 
-#: src/slic3r/GUI/Tab.cpp:2643
+#: src/slic3r/GUI/Tab.cpp:2642
 msgid "Minimum feedrates"
 msgstr "Velocitats d'alimentació mínimes"
 
-#: src/slic3r/GUI/Tab.cpp:2696 src/slic3r/GUI/Tab.cpp:2705
+#: src/slic3r/GUI/Tab.cpp:2695 src/slic3r/GUI/Tab.cpp:2704
 msgid "Single extruder MM setup"
 msgstr "Ajust per a MM amb un sol extrusor"
 
-#: src/slic3r/GUI/Tab.cpp:2706
+#: src/slic3r/GUI/Tab.cpp:2705
 msgid "Single extruder multimaterial parameters"
 msgstr "Paràmetres multimaterial per a un sol extrusor"
 
-#: src/slic3r/GUI/Tab.cpp:2741
+#: src/slic3r/GUI/Tab.cpp:2740
 msgid ""
 "This is a single extruder multimaterial printer, diameters of all extruders "
 "will be set to the new value. Do you want to proceed?"
@@ -9023,19 +9027,19 @@ msgstr ""
 "Aquesta és una impressora multimaterial d'extrusor únic, els diàmetres de "
 "tots els extrusors s'establiran segons el valor nou. Vols procedir-hi?"
 
-#: src/slic3r/GUI/Tab.cpp:2766
+#: src/slic3r/GUI/Tab.cpp:2765
 msgid "Layer height limits"
 msgstr "Límits d'alçada de la capa"
 
-#: src/slic3r/GUI/Tab.cpp:2771
+#: src/slic3r/GUI/Tab.cpp:2770
 msgid "Position (for multi-extruder printers)"
 msgstr "Posició (per a impressores multi-extrusora)"
 
-#: src/slic3r/GUI/Tab.cpp:2777
+#: src/slic3r/GUI/Tab.cpp:2776
 msgid "Only lift Z"
 msgstr "Només aixecar Z"
 
-#: src/slic3r/GUI/Tab.cpp:2790
+#: src/slic3r/GUI/Tab.cpp:2789
 msgid ""
 "Retraction when tool is disabled (advanced settings for multi-extruder "
 "setups)"
@@ -9043,11 +9047,11 @@ msgstr ""
 "Retracció quan l'eina està desactivada (configuracions avançades per a "
 "configuracions d'extrusors múltiples)"
 
-#: src/slic3r/GUI/Tab.cpp:2797
+#: src/slic3r/GUI/Tab.cpp:2796
 msgid "Reset to Filament Color"
 msgstr "Reinicialitza el color del filament"
 
-#: src/slic3r/GUI/Tab.cpp:2977
+#: src/slic3r/GUI/Tab.cpp:2976
 msgid ""
 "The Wipe option is not available when using the Firmware Retraction mode.\n"
 "\n"
@@ -9056,31 +9060,31 @@ msgstr ""
 "L'opció Netejar no està disponible quan utilitzeu el mode Retracció de "
 "firmware. L'inhabilito per habilitar la Retracció de firmware?"
 
-#: src/slic3r/GUI/Tab.cpp:2979
+#: src/slic3r/GUI/Tab.cpp:2978
 msgid "Firmware Retraction"
 msgstr "Retracció del microprogramari( fimware )"
 
-#: src/slic3r/GUI/Tab.cpp:3280
+#: src/slic3r/GUI/Tab.cpp:3279
 msgid "New printer preset selected"
 msgstr "S'ha seleccionat una configuració nova de la impressora"
 
-#: src/slic3r/GUI/Tab.cpp:3586
+#: src/slic3r/GUI/Tab.cpp:3585
 msgid "Detached"
 msgstr "Separat"
 
-#: src/slic3r/GUI/Tab.cpp:3653
+#: src/slic3r/GUI/Tab.cpp:3652
 msgid "remove"
 msgstr "eliminar"
 
-#: src/slic3r/GUI/Tab.cpp:3653
+#: src/slic3r/GUI/Tab.cpp:3652
 msgid "delete"
 msgstr "esborrar"
 
-#: src/slic3r/GUI/Tab.cpp:3662
+#: src/slic3r/GUI/Tab.cpp:3661
 msgid "It's a last preset for this physical printer."
 msgstr "És un últim valor per defecte per a aquesta impressora."
 
-#: src/slic3r/GUI/Tab.cpp:3667
+#: src/slic3r/GUI/Tab.cpp:3666
 #, boost-format
 msgid ""
 "Are you sure you want to delete \"%1%\" preset from the physical printer "
@@ -9089,7 +9093,7 @@ msgstr ""
 "Esteu segur que voleu suprimir la configuració preestablerta \"%1%\" de la "
 "impressora física \"%2%\"?"
 
-#: src/slic3r/GUI/Tab.cpp:3679
+#: src/slic3r/GUI/Tab.cpp:3678
 msgid ""
 "The physical printer below is based on the preset, you are going to delete."
 msgid_plural ""
@@ -9101,7 +9105,7 @@ msgstr[1] ""
 "Les impressores físiques que es mostren a continuació es basen en la "
 "configuració predefinida, la qual s'eliminarà."
 
-#: src/slic3r/GUI/Tab.cpp:3684
+#: src/slic3r/GUI/Tab.cpp:3683
 msgid "Note, that the selected preset will be deleted from this printer too."
 msgid_plural ""
 "Note, that the selected preset will be deleted from these printers too."
@@ -9112,7 +9116,7 @@ msgstr[1] ""
 "Tingueu en compte que la configuració predefinida seleccionada també "
 "s'eliminarà d'aquestes impressores."
 
-#: src/slic3r/GUI/Tab.cpp:3689
+#: src/slic3r/GUI/Tab.cpp:3688
 msgid ""
 "The physical printer below is based only on the preset, you are going to "
 "delete."
@@ -9126,7 +9130,7 @@ msgstr[1] ""
 "Les impressores físiques que es mostren a continuació es basen únicament en "
 "la configuració predefinida, la qual s'eliminarà."
 
-#: src/slic3r/GUI/Tab.cpp:3694
+#: src/slic3r/GUI/Tab.cpp:3693
 msgid ""
 "Note, that this printer will be deleted after deleting the selected preset."
 msgid_plural ""
@@ -9138,29 +9142,29 @@ msgstr[1] ""
 "Tingueu en compte que aquestes impressores s'esborraran després d'esborrar "
 "la configuració predefinida seleccionada."
 
-#: src/slic3r/GUI/Tab.cpp:3699
+#: src/slic3r/GUI/Tab.cpp:3698
 #, boost-format
 msgid "Are you sure you want to %1% the selected preset?"
 msgstr "Segur que desitges %1% el predefinit seleccionat?"
 
 #. TRN  Remove/Delete
-#: src/slic3r/GUI/Tab.cpp:3704
+#: src/slic3r/GUI/Tab.cpp:3703
 #, boost-format
 msgid "%1% Preset"
 msgstr "%1% Predefinit"
 
-#: src/slic3r/GUI/Tab.cpp:3787 src/slic3r/GUI/Tab.cpp:3860
+#: src/slic3r/GUI/Tab.cpp:3786 src/slic3r/GUI/Tab.cpp:3859
 msgid "Set"
 msgstr "Ajust"
 
-#: src/slic3r/GUI/Tab.cpp:3954
+#: src/slic3r/GUI/Tab.cpp:3953
 msgid ""
 "Machine limits will be emitted to G-code and used to estimate print time."
 msgstr ""
 "Els límits de la màquina s'incorporaran al codi G i es faran servir per "
 "calcular el temps d'impressió."
 
-#: src/slic3r/GUI/Tab.cpp:3957
+#: src/slic3r/GUI/Tab.cpp:3956
 msgid ""
 "Machine limits will NOT be emitted to G-code, however they will be used to "
 "estimate print time, which may therefore not be accurate as the printer may "
@@ -9170,7 +9174,7 @@ msgstr ""
 "estimar el temps d'impressió, que per tant pot no ser exacte ja que la "
 "impressora pot aplicar un conjunt diferent de límits de la màquina."
 
-#: src/slic3r/GUI/Tab.cpp:3961
+#: src/slic3r/GUI/Tab.cpp:3960
 msgid ""
 "Machine limits are not set, therefore the print time estimate may not be "
 "accurate."
@@ -9178,12 +9182,12 @@ msgstr ""
 "Els límits de la màquina no estan establerts, per tant, el temps d'impressió "
 "estimat pot no ser exacte."
 
-#: src/slic3r/GUI/Tab.cpp:3983
+#: src/slic3r/GUI/Tab.cpp:3982
 msgid "LOCKED LOCK"
 msgstr "PANY BLOQUEJAT"
 
 #. TRN Description for "LOCKED LOCK"
-#: src/slic3r/GUI/Tab.cpp:3985
+#: src/slic3r/GUI/Tab.cpp:3984
 msgid ""
 "indicates that the settings are the same as the system (or default) values "
 "for the current option group"
@@ -9191,12 +9195,12 @@ msgstr ""
 "indica que els paràmetres són els mateixos que els valors del sistema (o per "
 "defecte) per al grup d'opcions actual"
 
-#: src/slic3r/GUI/Tab.cpp:3987
+#: src/slic3r/GUI/Tab.cpp:3986
 msgid "UNLOCKED LOCK"
 msgstr "PANY DESBLOQUEJAT"
 
 #. TRN Description for "UNLOCKED LOCK"
-#: src/slic3r/GUI/Tab.cpp:3989
+#: src/slic3r/GUI/Tab.cpp:3988
 msgid ""
 "indicates that some settings were changed and are not equal to the system "
 "(or default) values for the current option group.\n"
@@ -9208,12 +9212,12 @@ msgstr ""
 "Feu clic a la icona PANY DESBLOQUEJAT per restablir tots els paràmetres del "
 "grup d'opcions actuals als valors del sistema (o per defecte)."
 
-#: src/slic3r/GUI/Tab.cpp:3994
+#: src/slic3r/GUI/Tab.cpp:3993
 msgid "WHITE BULLET"
 msgstr "VINYETA BLANCA"
 
 #. TRN Description for "WHITE BULLET"
-#: src/slic3r/GUI/Tab.cpp:3996
+#: src/slic3r/GUI/Tab.cpp:3995
 msgid ""
 "for the left button: indicates a non-system (or non-default) preset,\n"
 "for the right button: indicates that the settings hasn't been modified."
@@ -9222,12 +9226,12 @@ msgstr ""
 "predeterminat),\n"
 "per al botó dret: indica que la configuració no s'ha modificat."
 
-#: src/slic3r/GUI/Tab.cpp:3999
+#: src/slic3r/GUI/Tab.cpp:3998
 msgid "BACK ARROW"
 msgstr "FLETXA ENRERE"
 
 #. TRN Description for "BACK ARROW"
-#: src/slic3r/GUI/Tab.cpp:4001
+#: src/slic3r/GUI/Tab.cpp:4000
 msgid ""
 "indicates that the settings were changed and are not equal to the last saved "
 "preset for the current option group.\n"
@@ -9239,7 +9243,7 @@ msgstr ""
 "Feu clic al símbol FLETXA ENRERE per resetejar tots els paràmetres del grup "
 "d'opcions actuals als gravats anteriorment."
 
-#: src/slic3r/GUI/Tab.cpp:4011
+#: src/slic3r/GUI/Tab.cpp:4010
 msgid ""
 "LOCKED LOCK icon indicates that the settings are the same as the system (or "
 "default) values for the current option group"
@@ -9247,7 +9251,7 @@ msgstr ""
 "La icona de PANY BLOQUEJAT indica que els paràmetres són els mateixos que "
 "els valors del sistema (per defecte) per al grup d'opcions actual"
 
-#: src/slic3r/GUI/Tab.cpp:4013
+#: src/slic3r/GUI/Tab.cpp:4012
 msgid ""
 "UNLOCKED LOCK icon indicates that some settings were changed and are not "
 "equal to the system (or default) values for the current option group.\n"
@@ -9260,13 +9264,13 @@ msgstr ""
 "Feu clic per restablir totes les configuracions per al grup d'opcions "
 "actuals als valors del sistema (o per defecte)."
 
-#: src/slic3r/GUI/Tab.cpp:4016
+#: src/slic3r/GUI/Tab.cpp:4015
 msgid "WHITE BULLET icon indicates a non system (or non default) preset."
 msgstr ""
 "La icona de VINYETA BLANCA indica un predifinit no del sistema (o no per "
 "defecte)"
 
-#: src/slic3r/GUI/Tab.cpp:4019
+#: src/slic3r/GUI/Tab.cpp:4018
 msgid ""
 "WHITE BULLET icon indicates that the settings are the same as in the last "
 "saved preset for the current option group."
@@ -9275,7 +9279,7 @@ msgstr ""
 "els de la darrera vegada que heu salvat els paràmetres per al grup d'opcions "
 "actual."
 
-#: src/slic3r/GUI/Tab.cpp:4021
+#: src/slic3r/GUI/Tab.cpp:4020
 msgid ""
 "BACK ARROW icon indicates that the settings were changed and are not equal "
 "to the last saved preset for the current option group.\n"
@@ -9286,7 +9290,7 @@ msgstr ""
 "són iguals als que es van desar per al grup d'opcions actual.\n"
 "Feu clic per tornar aquests valors als darrers desats."
 
-#: src/slic3r/GUI/Tab.cpp:4027
+#: src/slic3r/GUI/Tab.cpp:4026
 msgid ""
 "LOCKED LOCK icon indicates that the value is the same as the system (or "
 "default) value."
@@ -9294,7 +9298,7 @@ msgstr ""
 "La icona de PANY BLOQUEJAT indica que el valor és el mateix que el del "
 "sistema (per defecte)"
 
-#: src/slic3r/GUI/Tab.cpp:4028
+#: src/slic3r/GUI/Tab.cpp:4027
 msgid ""
 "UNLOCKED LOCK icon indicates that the value was changed and is not equal to "
 "the system (or default) value.\n"
@@ -9304,7 +9308,7 @@ msgstr ""
 "configuracions i no són iguals als valors del sistema (o predeterminats).\n"
 "Feu clic per reiniciar el valor actual als del sistema (o predeterminats)"
 
-#: src/slic3r/GUI/Tab.cpp:4034
+#: src/slic3r/GUI/Tab.cpp:4033
 msgid ""
 "WHITE BULLET icon indicates that the value is the same as in the last saved "
 "preset."
@@ -9312,7 +9316,7 @@ msgstr ""
 "El símbol de VINYETA BLANCA indica que els valors són els mateixos que els "
 "dels paràmetres desats la darrera vegada."
 
-#: src/slic3r/GUI/Tab.cpp:4035
+#: src/slic3r/GUI/Tab.cpp:4034
 msgid ""
 "BACK ARROW icon indicates that the value was changed and is not equal to the "
 "last saved preset.\n"
@@ -9322,31 +9326,31 @@ msgstr ""
 "desat la darrera vegada.\n"
 "Feu clic per restaurar el valor al darrer paràmetre desat."
 
-#: src/slic3r/GUI/Tab.cpp:4189 src/slic3r/GUI/Tab.cpp:4191
+#: src/slic3r/GUI/Tab.cpp:4188 src/slic3r/GUI/Tab.cpp:4190
 msgid "Material"
 msgstr "Material"
 
-#: src/slic3r/GUI/Tab.cpp:4276 src/slic3r/GUI/Tab.cpp:4277
+#: src/slic3r/GUI/Tab.cpp:4275 src/slic3r/GUI/Tab.cpp:4276
 msgid "Material printing profile"
 msgstr "Perfil d'impressió de material"
 
-#: src/slic3r/GUI/Tab.cpp:4329
+#: src/slic3r/GUI/Tab.cpp:4328
 msgid "Support head"
 msgstr "Cap del suport"
 
-#: src/slic3r/GUI/Tab.cpp:4334
+#: src/slic3r/GUI/Tab.cpp:4333
 msgid "Support pillar"
 msgstr "Pilar de suport"
 
-#: src/slic3r/GUI/Tab.cpp:4357
+#: src/slic3r/GUI/Tab.cpp:4356
 msgid "Connection of the support sticks and junctions"
 msgstr "Connexió de les varetes de suport i unions"
 
-#: src/slic3r/GUI/Tab.cpp:4362
+#: src/slic3r/GUI/Tab.cpp:4361
 msgid "Automatic generation"
 msgstr "Generació automàtica"
 
-#: src/slic3r/GUI/Tab.cpp:4437
+#: src/slic3r/GUI/Tab.cpp:4436
 #, boost-format
 msgid ""
 "\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
@@ -9355,11 +9359,11 @@ msgstr ""
 "\"%1%\" està desactivat perquè \"%2%\" és a la categoria \"%3%\".\n"
 "Per activar \"%1%\", si us plau desactiva \"%2%\""
 
-#: src/slic3r/GUI/Tab.cpp:4439 src/libslic3r/PrintConfig.cpp:3572
+#: src/slic3r/GUI/Tab.cpp:4438 src/libslic3r/PrintConfig.cpp:3572
 msgid "Object elevation"
 msgstr "Elevació de l'objecte"
 
-#: src/slic3r/GUI/Tab.cpp:4439 src/libslic3r/PrintConfig.cpp:3674
+#: src/slic3r/GUI/Tab.cpp:4438 src/libslic3r/PrintConfig.cpp:3674
 msgid "Pad around object"
 msgstr "Pad al voltant de l'objecte"
 
@@ -9586,7 +9590,7 @@ msgid "Changelog & Download"
 msgstr "Registre de canvis & Descarregar"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:59 src/slic3r/GUI/UpdateDialogs.cpp:133
-#: src/slic3r/GUI/UpdateDialogs.cpp:190
+#: src/slic3r/GUI/UpdateDialogs.cpp:191
 msgid "Open changelog page"
 msgstr "Obre la pàgina del registre de canvis"
 
@@ -9602,7 +9606,7 @@ msgstr "No notifiquis més les noves versions"
 msgid "Opening Configuration Wizard"
 msgstr "Obrint Assistent de Configuració"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:94 src/slic3r/GUI/UpdateDialogs.cpp:259
+#: src/slic3r/GUI/UpdateDialogs.cpp:94 src/slic3r/GUI/UpdateDialogs.cpp:261
 msgid "Configuration update"
 msgstr "Actualització de la configuració"
 
@@ -9637,28 +9641,28 @@ msgstr ""
 "\n"
 "Paquets de configuració actualitzats:"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:121 src/slic3r/GUI/UpdateDialogs.cpp:180
+#: src/slic3r/GUI/UpdateDialogs.cpp:121 src/slic3r/GUI/UpdateDialogs.cpp:181
 msgid "Comment:"
 msgstr "Comentari:"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:141
+#: src/slic3r/GUI/UpdateDialogs.cpp:142
 msgid "Install"
 msgstr "Instal·lar"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:143
+#: src/slic3r/GUI/UpdateDialogs.cpp:144
 msgid "Don't install"
 msgstr "No instal·lar"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:156 src/slic3r/GUI/UpdateDialogs.cpp:210
+#: src/slic3r/GUI/UpdateDialogs.cpp:157 src/slic3r/GUI/UpdateDialogs.cpp:212
 #, c-format, boost-format
 msgid "%s incompatibility"
 msgstr "%s incompatibilitat"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:156
+#: src/slic3r/GUI/UpdateDialogs.cpp:157
 msgid "You must install a configuration update."
 msgstr "Heu d'instal·lar una actualització de configuració."
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:159
+#: src/slic3r/GUI/UpdateDialogs.cpp:160
 #, c-format, boost-format
 msgid ""
 "%s will now start updates. Otherwise it won't be able to start.\n"
@@ -9675,17 +9679,17 @@ msgstr ""
 "\n"
 "Configuracions actualitzades:"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:198 src/slic3r/GUI/UpdateDialogs.cpp:245
+#: src/slic3r/GUI/UpdateDialogs.cpp:200 src/slic3r/GUI/UpdateDialogs.cpp:247
 #, c-format, boost-format
 msgid "Exit %s"
 msgstr "Sortir %s"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:211
+#: src/slic3r/GUI/UpdateDialogs.cpp:213
 #, c-format, boost-format
 msgid "%s configuration is incompatible"
 msgstr "%s la configuració és incompatible"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:214
+#: src/slic3r/GUI/UpdateDialogs.cpp:216
 #, c-format, boost-format
 msgid ""
 "This version of %s is not compatible with currently installed configuration "
@@ -9706,20 +9710,20 @@ msgstr ""
 "seguretat de la configuració existent abans d'instal·lar la nova compatible "
 "amb aquesta versió de %s."
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:223
+#: src/slic3r/GUI/UpdateDialogs.cpp:225
 #, c-format, boost-format
 msgid "This %s version: %s"
 msgstr "Aquesta %s versió: %s"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:228
+#: src/slic3r/GUI/UpdateDialogs.cpp:230
 msgid "Incompatible bundles:"
 msgstr "Paquets incompatibles:"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:244
+#: src/slic3r/GUI/UpdateDialogs.cpp:246
 msgid "Re-configure"
 msgstr "Torna a configurar"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:263
+#: src/slic3r/GUI/UpdateDialogs.cpp:265
 #, c-format, boost-format
 msgid ""
 "%s now uses an updated configuration structure.\n"
@@ -9748,19 +9752,19 @@ msgstr ""
 "predefinits i per triar si voleu activar les actualitzacions automàtiques de "
 "valors predefinits."
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:280
+#: src/slic3r/GUI/UpdateDialogs.cpp:282
 msgid "For more information please visit our wiki page:"
 msgstr "Per a més informació, visiteu la pàgina de la nostra wiki:"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:297
+#: src/slic3r/GUI/UpdateDialogs.cpp:299
 msgid "Configuration updates"
 msgstr "Actualitzacions de configuració"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:297
+#: src/slic3r/GUI/UpdateDialogs.cpp:299
 msgid "No updates available"
 msgstr "No hi ha actualitzacions disponibles"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:302
+#: src/slic3r/GUI/UpdateDialogs.cpp:304
 #, c-format, boost-format
 msgid "%s has no configuration updates available."
 msgstr "%s no té actualitzacions de configuració disponibles."
