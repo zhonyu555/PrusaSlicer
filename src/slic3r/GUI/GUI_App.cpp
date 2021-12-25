@@ -1626,8 +1626,8 @@ float GUI_App::toolbar_icon_scale(const bool is_limited/* = false*/) const
     // correct value in respect to auto_toolbar_size
     int_val = std::min(atoi(auto_val.c_str()), int_val);
 
-    if (is_limited && int_val < 50)
-        int_val = 50;
+    if (is_limited && int_val < 100)
+        int_val = 100;
 
     return 0.01f * int_val * icon_sc;
 }
@@ -1640,7 +1640,7 @@ void GUI_App::set_auto_toolbar_icon_scale(float scale) const
     const float icon_sc = m_em_unit * 0.1f;
 #endif // __APPLE__
 
-    long int_val = std::min(int(std::lround(scale / icon_sc * 100)), 100);
+    long int_val = std::min(int(std::lround(scale / icon_sc * 100)), 200);
     std::string val = std::to_string(int_val);
 
     app_config->set("auto_toolbar_size", val);
@@ -1797,6 +1797,11 @@ void GUI_App::update_ui_from_settings()
         mainframe->force_color_changed();
         mainframe->diff_dialog.force_color_changed();
         mainframe->printhost_queue_dlg()->force_color_changed();
+        // to force light/dark selection/generation of icons
+        mainframe->plater()->get_view_toolbar().force_dirty_toolbar();
+        mainframe->plater()->get_collapse_toolbar().force_dirty_toolbar();
+        mainframe->plater()->canvas3D()->get_gizmos_manager().force_dirty_gizmos();
+        mainframe->plater()->canvas3D()->force_dirty_main_toolbar();
 #ifdef _MSW_DARK_MODE
         update_scrolls(mainframe);
         if (mainframe->is_dlg_layout()) {

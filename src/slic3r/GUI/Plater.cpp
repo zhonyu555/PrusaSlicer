@@ -2044,7 +2044,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
 
 #ifdef __APPLE__
     // set default view_toolbar icons size equal to GLGizmosManager::Default_Icons_Size
-    view_toolbar.set_icons_size(GLGizmosManager::Default_Icons_Size);
+    view_toolbar.set_icons_size(GLGizmosManager::Default_Icons_Size * 1.25f);
 #endif // __APPLE__
 
     panels.push_back(view3D);
@@ -4428,13 +4428,13 @@ bool Plater::priv::init_view_toolbar()
 
     view_toolbar.set_horizontal_orientation(GLToolbar::Layout::HO_Left);
     view_toolbar.set_vertical_orientation(GLToolbar::Layout::VO_Bottom);
-    view_toolbar.set_border(5.0f);
-    view_toolbar.set_gap_size(1.0f);
+    view_toolbar.set_border(0.0f);
+    view_toolbar.set_gap_size(0.0f);
 
     GLToolbarItem::Data item;
 
     item.name = "3D";
-    item.icon_filename = "editor.svg";
+    item.icon_filename = "editor_solid_6.svg";
     item.tooltip = _utf8(L("3D editor view")) + " [" + GUI::shortkey_ctrl_prefix() + "5]";
     item.sprite_id = 0;
     item.left.action_callback = [this]() { if (this->q != nullptr) wxPostEvent(this->q, SimpleEvent(EVT_GLVIEWTOOLBAR_3D)); };
@@ -4442,7 +4442,7 @@ bool Plater::priv::init_view_toolbar()
         return false;
 
     item.name = "Preview";
-    item.icon_filename = "preview.svg";
+    item.icon_filename = "preview_solid_6.svg";
     item.tooltip = _utf8(L("Preview")) + " [" + GUI::shortkey_ctrl_prefix() + "6]";
     item.sprite_id = 1;
     item.left.action_callback = [this]() { if (this->q != nullptr) wxPostEvent(this->q, SimpleEvent(EVT_GLVIEWTOOLBAR_PREVIEW)); };
@@ -4477,14 +4477,14 @@ bool Plater::priv::init_collapse_toolbar()
     collapse_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
     collapse_toolbar.set_horizontal_orientation(GLToolbar::Layout::HO_Right);
     collapse_toolbar.set_vertical_orientation(GLToolbar::Layout::VO_Top);
-    collapse_toolbar.set_border(5.0f);
-    collapse_toolbar.set_separator_size(5);
-    collapse_toolbar.set_gap_size(2);
+    collapse_toolbar.set_border(0.0f);
+    collapse_toolbar.set_separator_size(0.0f);
+    collapse_toolbar.set_gap_size(0.0f);
 
     GLToolbarItem::Data item;
 
     item.name = "collapse_sidebar";
-    item.icon_filename = "collapse.svg";
+    item.icon_filename = "collapse_solid_2.svg";
     item.sprite_id = 0;
     item.left.action_callback = []() {
         wxGetApp().plater()->collapse_sidebar(!wxGetApp().plater()->is_sidebar_collapsed());

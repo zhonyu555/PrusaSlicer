@@ -815,6 +815,7 @@ public:
     void force_main_toolbar_left_action(int item_id) { m_main_toolbar.force_left_action(item_id, *this); }
     void force_main_toolbar_right_action(int item_id) { m_main_toolbar.force_right_action(item_id, *this); }
     void update_tooltip_for_settings_item_in_main_toolbar();
+    void force_dirty_main_toolbar() { m_main_toolbar.force_dirty_toolbar(); m_undoredo_toolbar.force_dirty_toolbar(); }
 
     bool has_toolpaths_to_export() const;
     void export_toolpaths_to_obj(const char* filename) const;

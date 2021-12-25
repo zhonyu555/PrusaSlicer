@@ -78,8 +78,8 @@ private:
     {
         float scale{ 1.0f };
         float icons_size{ Default_Icons_Size };
-        float border{ 5.0f };
-        float gap_y{ 5.0f };
+        float border{ 0.0f };
+        float gap_y{ 0.0f };
 
         float stride_y() const { return icons_size + gap_y;}
 
@@ -130,6 +130,7 @@ public:
     bool init();
 
     bool init_arrow(const BackgroundTexture::Metadata& arrow_texture);
+    void force_dirty_gizmos() { m_icons_texture_dirty = true; }
 
     template<class Archive>
     void load(Archive& ar)

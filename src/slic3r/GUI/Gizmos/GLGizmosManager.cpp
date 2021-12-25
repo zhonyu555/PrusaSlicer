@@ -31,7 +31,7 @@
 namespace Slic3r {
 namespace GUI {
 
-const float GLGizmosManager::Default_Icons_Size = 64;
+const float GLGizmosManager::Default_Icons_Size = 32.0f;
 
 GLGizmosManager::GLGizmosManager(GLCanvas3D& parent)
     : m_parent(parent)
@@ -93,17 +93,17 @@ bool GLGizmosManager::init()
     }
 
     // Order of gizmos in the vector must match order in EType!
-    m_gizmos.emplace_back(new GLGizmoMove3D(m_parent, "move.svg", 0));
-    m_gizmos.emplace_back(new GLGizmoScale3D(m_parent, "scale.svg", 1));
-    m_gizmos.emplace_back(new GLGizmoRotate3D(m_parent, "rotate.svg", 2));
-    m_gizmos.emplace_back(new GLGizmoFlatten(m_parent, "place.svg", 3));
-    m_gizmos.emplace_back(new GLGizmoCut(m_parent, "cut.svg", 4));
-    m_gizmos.emplace_back(new GLGizmoHollow(m_parent, "hollow.svg", 5));
-    m_gizmos.emplace_back(new GLGizmoSlaSupports(m_parent, "sla_supports.svg", 6));
-    m_gizmos.emplace_back(new GLGizmoFdmSupports(m_parent, "fdm_supports.svg", 7));
-    m_gizmos.emplace_back(new GLGizmoSeam(m_parent, "seam.svg", 8));
-    m_gizmos.emplace_back(new GLGizmoMmuSegmentation(m_parent, "mmu_segmentation.svg", 9));
-    m_gizmos.emplace_back(new GLGizmoSimplify(m_parent, "cut.svg", 10));
+    m_gizmos.emplace_back(new GLGizmoMove3D(m_parent, "move_solid_1.svg", 0));
+    m_gizmos.emplace_back(new GLGizmoScale3D(m_parent, "scale_solid_1.svg", 1));
+    m_gizmos.emplace_back(new GLGizmoRotate3D(m_parent, "rotate_solid_2.svg", 2));
+    m_gizmos.emplace_back(new GLGizmoFlatten(m_parent, "place_solid_2.svg", 3));
+    m_gizmos.emplace_back(new GLGizmoCut(m_parent, "cut_solid_4.svg", 4));
+    m_gizmos.emplace_back(new GLGizmoHollow(m_parent, "hollow_solid_3.svg", 5));
+    m_gizmos.emplace_back(new GLGizmoSlaSupports(m_parent, "sla_supports_solid_1.svg", 6));
+    m_gizmos.emplace_back(new GLGizmoFdmSupports(m_parent, "fdm_supports_solid_1.svg", 7));
+    m_gizmos.emplace_back(new GLGizmoSeam(m_parent, "seam_solid_2.svg", 8));
+    m_gizmos.emplace_back(new GLGizmoMmuSegmentation(m_parent, "mmu_segmentation_1.svg", 9));
+    m_gizmos.emplace_back(new GLGizmoSimplify(m_parent, "simplify_solid_1.svg", 10));
 
     m_common_gizmos_data.reset(new CommonGizmosDataPool(&m_parent));
 
@@ -1162,13 +1162,13 @@ bool GLGizmosManager::generate_icons_texture() const
         }
     }
 
-    std::vector<std::pair<int, bool>> states;
-    states.push_back(std::make_pair(1, false)); // Activable
-    states.push_back(std::make_pair(0, false)); // Hovered
-    states.push_back(std::make_pair(0, true));  // Selected
-    states.push_back(std::make_pair(2, false)); // Disabled
-    states.push_back(std::make_pair(0, false)); // HighlightedShown
-    states.push_back(std::make_pair(2, false)); // HighlightedHidden
+    std::vector<std::pair<int, bool>> states; // gizmos toolbar
+    states.push_back(std::make_pair(1, wxGetApp().dark_mode() ? false : true)); // Activable
+    states.push_back(std::make_pair(0, wxGetApp().dark_mode() ? false : false)); // Hovered
+    states.push_back(std::make_pair(0, wxGetApp().dark_mode() ? false : false)); // Selected
+    states.push_back(std::make_pair(2, wxGetApp().dark_mode() ? true : false)); // Disabled
+    states.push_back(std::make_pair(0, wxGetApp().dark_mode() ? false : false)); // HighlightedShown
+    states.push_back(std::make_pair(0, wxGetApp().dark_mode() ? false : false)); // HighlightedHidden
 
     unsigned int sprite_size_px = (unsigned int)m_layout.scaled_icons_size();
 //    // force even size

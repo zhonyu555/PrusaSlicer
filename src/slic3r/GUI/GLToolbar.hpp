@@ -288,6 +288,7 @@ public:
     void set_gap_size(float size);
     void set_icons_size(float size);
     void set_scale(float scale);
+    void force_dirty_toolbar() { m_icons_texture_dirty = true; }
 
     bool is_enabled() const { return m_enabled; }
     void set_enabled(bool enable) { m_enabled = enable; }

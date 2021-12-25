@@ -701,7 +701,7 @@ void PreferencesDialog::create_icon_size_slider()
     if (!isOSX)
         style |= wxSL_LABELS | wxSL_AUTOTICKS;
 
-    auto slider = new wxSlider(parent, wxID_ANY, def_val, 30, 100, 
+    auto slider = new wxSlider(parent, wxID_ANY, def_val, 50, 200, 
                                wxDefaultPosition, wxDefaultSize, style);
 
     slider->SetTickFreq(10);
