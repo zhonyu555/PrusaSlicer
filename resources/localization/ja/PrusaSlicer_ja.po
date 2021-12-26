@@ -7857,7 +7857,7 @@ msgid ""
 "Did you know that you can quickly orient a model so that one of its faces sits on the print bed? Select the<a>Place on face</a>function or press the <b>F</b> key."
 msgstr ""
 "面に配置\n"
-"モデルの面の1つがプリントベッドにくるように、モデルの向きをすばやく設定できることをご存知ですか？ <a>面に配置</a>機能を選択するか、<b> F </ b>キーを押します。"
+"モデルの面の1つがプリントベッドにくるように、モデルの向きをすばやく設定できることをご存知ですか？ <a>面に配置</a>機能を選択するか、<b> F </b>キーを押します。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFlatten.cpp:41
 msgid "Place on face"
