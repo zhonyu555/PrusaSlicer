@@ -60,6 +60,9 @@ static const constexpr double LOGICAL_BED_GAP = 1. / 5.;
 // Stride between logical beds
 double bed_stride(const Plater *plater);
 
+// Bed shape minus the skirt region
+Points get_trimmed_bed_shape(const Plater* plater);
+
 template<class T> struct PtrWrapper
 {
     T *ptr;

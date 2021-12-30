@@ -38,7 +38,7 @@ void FillBedJob::prepare()
 
     if (m_selected.empty()) return;
 
-    m_bedpts = get_bed_shape(*m_plater->config());
+    m_bedpts = get_trimmed_bed_shape(m_plater);
 
     auto &objects = m_plater->model().objects;
     BoundingBox bedbb = get_extents(m_bedpts);

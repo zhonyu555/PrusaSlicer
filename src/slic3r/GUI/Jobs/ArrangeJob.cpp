@@ -3,6 +3,7 @@
 #include "libslic3r/BuildVolume.hpp"
 #include "libslic3r/MTUtils.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
 
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
@@ -172,7 +173,7 @@ void ArrangeJob::process(Ctl &ctl)
     arrangement::ArrangeParams params = get_arrange_params(m_plater);
 
     auto   count  = unsigned(m_selected.size() + m_unprintable.size());
-    Points bedpts = get_bed_shape(*m_plater->config());
+    Points bedpts = get_trimmed_bed_shape(m_plater);
 
     params.stopcondition = [&ctl]() { return ctl.was_canceled(); };
 
@@ -264,6 +265,22 @@ get_wipe_tower_arrangepoly(const Plater &plater)
         return get_arrange_poly(wti, &plater);
 
     return {};
+}
+
+Points get_trimmed_bed_shape(const Plater* plater) {
+    Points bedpts(get_bed_shape(*plater->config()));
+    // Try to subtract the skirt from the bed shape so we don't arrange outside of it.
+    if (plater->printer_technology() == ptFFF && plater->fff_print().has_skirt()) {
+        const auto& print = plater->fff_print();
+        const float skirt_inset = print.config().skirts.value * print.skirt_flow().width() +
+            print.config().skirt_distance.value;
+        if (skirt_inset != 0.0) {
+            auto polys = offset(Polygon(bedpts), scaled(-skirt_inset));
+            if (polys.size() == 1)
+                return polys.front().points;
+        }
+    }
+    return bedpts;
 }
 
 double bed_stride(const Plater *plater) {
