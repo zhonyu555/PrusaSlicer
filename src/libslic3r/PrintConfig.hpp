@@ -1181,6 +1181,9 @@ namespace cereal {
         archive(cnt);
         for (auto it = config.cbegin(); it != config.cend(); ++it) {
             const Slic3r::ConfigOptionDef* optdef = Slic3r::print_config_def.get(it->first);
+            if (optdef == nullptr) {
+              continue;
+            }
             assert(optdef != nullptr);
             assert(optdef->serialization_key_ordinal > 0);
             archive(optdef->serialization_key_ordinal);
