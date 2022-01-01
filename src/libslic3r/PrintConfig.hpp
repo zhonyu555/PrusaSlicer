@@ -562,6 +562,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     // Total number of perimeters.
     ((ConfigOptionInt,                  perimeters))
     ((ConfigOptionPercent,              print_extrusion_multiplier))
+    ((ConfigOptionInt,                  print_temperature))
     ((ConfigOptionFloatOrPercent,       small_perimeter_speed))
     ((ConfigOptionFloat,                solid_infill_below_area))
     ((ConfigOptionInt,                  solid_infill_extruder))

@@ -2803,6 +2803,13 @@ void PrintConfigDef::init_fff_params()
     def->max = max_temp;
     def->set_default_value(new ConfigOptionInts { 200 });
 
+    def = this->add("print_temperature", coInt);
+    def->label = L("Temperature");
+    def->category = L("Filament");
+    def->tooltip = L("Override the temperature of the extruder. Avoid making too many changes, it won't stop for cooling/heating. 0 to disable. May only work on Height range modifiers.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(0));
+
     def = this->add("thick_bridges", coBool);
     def->label = L("Thick bridges");
     def->category = L("Layers and Perimeters");
