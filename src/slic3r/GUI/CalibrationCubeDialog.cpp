@@ -1,6 +1,7 @@
 #include "CalibrationCubeDialog.hpp"
 #include "I18N.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
 #include "libslic3r/Utils.hpp"
 #include "GLCanvas3D.hpp"
 #include "GUI.hpp"
@@ -66,8 +67,8 @@ void CalibrationCubeDialog::create_geometry(std::string calibration_path) {
             (boost::filesystem::path(Slic3r::resources_dir()) / "calibration"/"cube"/ calibration_path).string()}, true, false, false);
 
     assert(objs_idx.size() == 1);
-    const DynamicPrintConfig* printConfig = this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->get_config();
-    const DynamicPrintConfig* filamentConfig = this->gui_app->get_tab(Preset::TYPE_FFF_FILAMENT)->get_config();
+    const DynamicPrintConfig* printConfig = this->gui_app->get_tab(Preset::TYPE_PRINT)->get_config();
+    const DynamicPrintConfig* filamentConfig = this->gui_app->get_tab(Preset::TYPE_FILAMENT)->get_config();
     const DynamicPrintConfig* printerConfig = this->gui_app->get_tab(Preset::TYPE_PRINTER)->get_config();
     
     /// --- scale ---

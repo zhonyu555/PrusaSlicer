@@ -1,6 +1,7 @@
 #include "CalibrationFlowDialog.hpp"
 #include "I18N.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/AppConfig.hpp"
 #include "Jobs/ArrangeJob.hpp"
@@ -58,7 +59,7 @@ void CalibrationFlowDialog::create_geometry(float start, float delta) {
 
 
     assert(objs_idx.size() == 5);
-    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->get_config();
+    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_PRINT)->get_config();
     const DynamicPrintConfig* printerConfig = this->gui_app->get_tab(Preset::TYPE_PRINTER)->get_config();
     
     /// --- scale ---
@@ -71,7 +72,6 @@ void CalibrationFlowDialog::create_geometry(float start, float delta) {
     const ConfigOptionFloatOrPercent* first_layer_height_setting = print_config->option<ConfigOptionFloatOrPercent>("first_layer_height");
     double first_layer_height = first_layer_height_setting->get_abs_value(nozzle_diameter);
     double layer_height = nozzle_diameter / 2.;
-    layer_height = check_z_step(layer_height, printerConfig->option<ConfigOptionFloat>("z_step")->value); // If z_step is not 0 the slicer will scale to the nearest multiple of z_step so account for that here
     first_layer_height = std::max(first_layer_height, nozzle_diameter / 2.);
 
     float zscale = first_layer_height + 5 * layer_height;
@@ -154,8 +154,8 @@ void CalibrationFlowDialog::create_geometry(float start, float delta) {
         model.objects[objs_idx[i]]->config.set_key_value("layer_height", new ConfigOptionFloat(layer_height));
         model.objects[objs_idx[i]]->config.set_key_value("first_layer_height", new ConfigOptionFloatOrPercent(first_layer_height, false));
         model.objects[objs_idx[i]]->config.set_key_value("external_infill_margin", new ConfigOptionFloatOrPercent(100, true));
-        model.objects[objs_idx[i]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
-        model.objects[objs_idx[i]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipSmooth));
+        model.objects[objs_idx[i]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipMonotonic));
+        model.objects[objs_idx[i]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipMonotonic));
         //disable ironing post-process
         model.objects[objs_idx[i]]->config.set_key_value("ironing", new ConfigOptionBool(false));
         //set extrusion mult: 80 90 100 110 120
@@ -164,10 +164,10 @@ void CalibrationFlowDialog::create_geometry(float start, float delta) {
 
     //update plater
     GLCanvas3D::set_warning_freeze(false);
-    this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->load_config(new_print_config);
+    this->gui_app->get_tab(Preset::TYPE_PRINT)->load_config(new_print_config);
     plat->on_config_change(new_print_config);
     plat->changed_objects(objs_idx);
-    this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->update_dirty();
+    this->gui_app->get_tab(Preset::TYPE_PRINT)->update_dirty();
     //update everything, easier to code.
     ObjectList* obj = this->gui_app->obj_list();
     obj->update_after_undo_redo();

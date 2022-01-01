@@ -1,6 +1,7 @@
 #include "CalibrationOverBridgeDialog.hpp"
 #include "I18N.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/AppConfig.hpp"
 #include "Jobs/ArrangeJob.hpp"
@@ -63,7 +64,7 @@ void CalibrationOverBridgeDialog::create_geometry(bool over_bridge) {
             (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "over-bridge_tuning" / "over-bridge_flow_ratio_test.amf").string()}, true, false, false);
 
     assert(objs_idx.size() == 6);
-    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->get_config();
+    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_PRINT)->get_config();
     const DynamicPrintConfig* printer_config = this->gui_app->get_tab(Preset::TYPE_PRINTER)->get_config();
 
     /// --- scale ---
@@ -133,13 +134,13 @@ void CalibrationOverBridgeDialog::create_geometry(bool over_bridge) {
             model.objects[objs_idx[i]]->config.set_key_value("fill_top_flow_ratio", new ConfigOptionPercent(/*print_config->option<ConfigOptionPercent>("fill_top_flow_ratio")->get_abs_value(100)*/100 + i * 5));
         model.objects[objs_idx[i]]->config.set_key_value("layer_height", new ConfigOptionFloat(nozzle_diameter / 2));
         model.objects[objs_idx[i]]->config.set_key_value("external_infill_margin", new ConfigOptionFloatOrPercent(400,true));
-        model.objects[objs_idx[i]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipSmooth));
+        model.objects[objs_idx[i]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipMonotonic));
         model.objects[objs_idx[i]]->config.set_key_value("fill_angle", new ConfigOptionFloat(45));
     }
 
     //update plater
     GLCanvas3D::set_warning_freeze(false);
-    this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->load_config(new_print_config);
+    this->gui_app->get_tab(Preset::TYPE_PRINT)->load_config(new_print_config);
     plat->on_config_change(new_print_config);
     plat->changed_objects(objs_idx);
     //update everything, easier to code.

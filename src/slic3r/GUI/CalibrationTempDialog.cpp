@@ -65,8 +65,8 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
             (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" / "Smart_compact_temperature_calibration_item.amf").string()}, true, false, false);
 
     assert(objs_idx.size() == 1);
-    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->get_config();
-    const DynamicPrintConfig* filament_config = this->gui_app->get_tab(Preset::TYPE_FFF_FILAMENT)->get_config();
+    const DynamicPrintConfig* print_config = this->gui_app->get_tab(Preset::TYPE_PRINT)->get_config();
+    const DynamicPrintConfig* filament_config = this->gui_app->get_tab(Preset::TYPE_FILAMENT)->get_config();
     const DynamicPrintConfig* printer_config = this->gui_app->get_tab(Preset::TYPE_PRINTER)->get_config();
 
     // -- get temps
@@ -163,19 +163,19 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     model.objects[objs_idx[0]]->config.set_key_value("thin_perimeters", new ConfigOptionBool(true));
     model.objects[objs_idx[0]]->config.set_key_value("layer_height", new ConfigOptionFloat(nozzle_diameter / 2));
     model.objects[objs_idx[0]]->config.set_key_value("fill_density", new ConfigOptionPercent(7));
-    model.objects[objs_idx[0]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
-    model.objects[objs_idx[0]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
+    model.objects[objs_idx[0]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinear));
+    model.objects[objs_idx[0]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinear));
     //disable ironing post-process, it only slow down things
     model.objects[objs_idx[0]]->config.set_key_value("ironing", new ConfigOptionBool(false));
 
     //update plater
     GLCanvas3D::set_warning_freeze(false);
-    this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->load_config(new_print_config);
+    this->gui_app->get_tab(Preset::TYPE_PRINT)->load_config(new_print_config);
     plat->on_config_change(new_print_config);
     //this->gui_app->get_tab(Preset::TYPE_PRINTER)->load_config(new_printer_config);
     //plat->on_config_change(new_printer_config);
     plat->changed_objects(objs_idx);
-    this->gui_app->get_tab(Preset::TYPE_FFF_PRINT)->update_dirty();
+    this->gui_app->get_tab(Preset::TYPE_PRINT)->update_dirty();
     //this->gui_app->get_tab(Preset::TYPE_PRINTER)->update_dirty();
     plat->is_preview_shown();
     //update everything, easier to code.
