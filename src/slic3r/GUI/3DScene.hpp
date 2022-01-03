@@ -11,11 +11,13 @@
 #include "GLModel.hpp"
 #if ENABLE_TEXTURED_VOLUMES
 #include "GLTexture.hpp"
+#include "OpenGLManager.hpp"
 #endif // ENABLE_TEXTURED_VOLUMES
 
 #include <functional>
 #include <optional>
 
+#if !ENABLE_TEXTURED_VOLUMES
 #ifndef NDEBUG
 #define HAS_GLSAFE
 #endif // NDEBUG
@@ -30,6 +32,7 @@
     #define glsafe(cmd) cmd
     #define glcheck()
 #endif // HAS_GLSAFE
+#endif // !ENABLE_TEXTURED_VOLUMES
 
 namespace Slic3r {
 class SLAPrintObject;
