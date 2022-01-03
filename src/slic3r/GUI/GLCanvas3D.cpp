@@ -1089,9 +1089,6 @@ bool GLCanvas3D::init()
     if (!_init_toolbars())
         return false;
 
-    if (m_selection.is_enabled() && !m_selection.init())
-        return false;
-
     m_initialized = true;
 
     return true;
@@ -5213,7 +5210,7 @@ void GLCanvas3D::_render_gcode()
     m_gcode_viewer.render();
 }
 
-void GLCanvas3D::_render_selection() const
+void GLCanvas3D::_render_selection()
 {
     float scale_factor = 1.0;
 #if ENABLE_RETINA_GL
@@ -5244,7 +5241,7 @@ void GLCanvas3D::_render_sequential_clearance()
 }
 
 #if ENABLE_RENDER_SELECTION_CENTER
-void GLCanvas3D::_render_selection_center() const
+void GLCanvas3D::_render_selection_center()
 {
     m_selection.render_center(m_gizmos.is_dragging());
 }
@@ -5637,7 +5634,7 @@ void GLCanvas3D::_render_sla_slices()
     }
 }
 
-void GLCanvas3D::_render_selection_sidebar_hints() const
+void GLCanvas3D::_render_selection_sidebar_hints()
 {
     m_selection.render_sidebar_hints(m_sidebar_field);
 }
