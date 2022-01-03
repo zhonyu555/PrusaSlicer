@@ -63,6 +63,8 @@
 //====================
 #define ENABLE_2_5_0_ALPHA1 1
 
+// Enable Color classes definition as unified point for colors manipulation
+#define ENABLE_COLOR_CLASSES (1 && ENABLE_2_5_0_ALPHA1)
 // Enable application of textures to volumes
 #define ENABLE_TEXTURED_VOLUMES (1 && ENABLE_2_5_0_ALPHA1)
 
