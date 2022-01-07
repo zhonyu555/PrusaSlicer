@@ -772,17 +772,28 @@ UnsavedChangesDialog::UnsavedChangesDialog(const wxString& caption, const wxStri
     m_app_config_key(app_config_key),
     m_buttons(act_buttons)
 {
+    BOOST_LOG_TRIVIAL(error) << "UnsavedChangesDialog::UnsavedChangesDialog 1";
+
     build(Preset::TYPE_INVALID, nullptr, "", header);
 
+    BOOST_LOG_TRIVIAL(error) << "UnsavedChangesDialog::UnsavedChangesDialog 2";
+
     const std::string& def_action = m_app_config_key.empty() ? none : wxGetApp().app_config->get(m_app_config_key);
+
+    BOOST_LOG_TRIVIAL(error) << "UnsavedChangesDialog::UnsavedChangesDialog 3";
+
     if (def_action == none)
         this->CenterOnScreen();
     else {
+        BOOST_LOG_TRIVIAL(error) << "UnsavedChangesDialog::UnsavedChangesDialog 4";
+
         m_exit_action = def_action == ActTransfer   ? Action::Transfer  :
                         def_action == ActSave       ? Action::Save      : Action::Discard;
         if (m_exit_action != Action::Discard)
             save(nullptr, m_exit_action == Action::Save);
     }
+
+    BOOST_LOG_TRIVIAL(error) << "UnsavedChangesDialog::UnsavedChangesDialog 5";
 }
 
 UnsavedChangesDialog::UnsavedChangesDialog(Preset::Type type, PresetCollection* dependent_presets, const std::string& new_selected_preset)

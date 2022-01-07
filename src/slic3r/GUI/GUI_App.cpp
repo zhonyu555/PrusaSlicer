@@ -2497,14 +2497,23 @@ void GUI_App::apply_keeped_preset_modifications()
 // Note: no_nullptr postponed_apply_of_keeped_changes indicates that thie function is called after ConfigWizard is closed
 bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, const wxString& header, int action_buttons, bool* postponed_apply_of_keeped_changes/* = nullptr*/)
 {
+    BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 1";
+
     if (has_current_preset_changes()) {
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 2";
         bool is_called_from_configwizard = postponed_apply_of_keeped_changes != nullptr;
 
         const std::string app_config_key = is_called_from_configwizard ? "" : "default_action_on_new_project";
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 3";
         UnsavedChangesDialog dlg(caption, header, app_config_key, action_buttons);
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 4";
         std::string act = app_config_key.empty() ? "none" : wxGetApp().app_config->get(app_config_key);
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 5";
         if (act == "none" && dlg.ShowModal() == wxID_CANCEL)
             return false;
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 6";
+
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 7";
 
         auto reset_modifications = [this, is_called_from_configwizard]() {
             if (is_called_from_configwizard)
@@ -2518,10 +2527,15 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
             load_current_presets(false);
         };
 
-        if (dlg.discard())
+        BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 8";
+
+        if (dlg.discard()) {
             reset_modifications();
+            BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 9";
+        }
         else  // save selected changes
         {
+            BOOST_LOG_TRIVIAL(error) << "GUI_App::check_and_keep_current_preset_changes 10";
             const auto& preset_names_and_types = dlg.get_names_and_types();
             if (dlg.save_preset()) {
                 for (const std::pair<std::string, Preset::Type>& nt : preset_names_and_types)

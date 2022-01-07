@@ -2722,11 +2722,13 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     if (!check_unsaved_preset_changes) {
         if ((check_unsaved_preset_changes = !preferred_model.empty())) {
             header = _L("A new Printer was installed and it will be activated.");
+            BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 15a";
             if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                 return false;
         }
         else if ((check_unsaved_preset_changes = enabled_vendors_old != enabled_vendors)) {
             header = _L("Some Printers were uninstalled.");
+            BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 15b";
             if (!wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
                 return false;
         }
