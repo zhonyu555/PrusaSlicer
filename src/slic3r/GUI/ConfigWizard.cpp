@@ -2520,8 +2520,12 @@ static std::string get_first_added_preset(const std::map<std::string, std::strin
 
 bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater, bool& apply_keeped_changes)
 {
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 1";
+    
     wxString header, caption = _L("Configuration is edited in ConfigWizard");
     const auto enabled_vendors = appconfig_new.vendors();
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 2";
 
     bool suppress_sla_printer = model_has_multi_part_objects(wxGetApp().model());
     PrinterTechnology preferred_pt = ptAny;
@@ -2544,6 +2548,9 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
         return pt;
     };
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 3";
+
     // Prusa printers are considered first, then 3rd party.
     if (preferred_pt = get_preferred_printer_technology("PrusaResearch", bundles.prusa_bundle());
         preferred_pt == ptAny || (preferred_pt == ptSLA && suppress_sla_printer)) {
@@ -2558,8 +2565,12 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 4";
+
     if (preferred_pt == ptSLA && !wxGetApp().may_switch_to_SLA_preset(caption))
         return false;
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 5";
 
     bool check_unsaved_preset_changes = page_welcome->reset_user_profile();
     if (check_unsaved_preset_changes)
@@ -2567,6 +2578,8 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     int act_btns = UnsavedChangesDialog::ActionButtons::KEEP;
     if (!check_unsaved_preset_changes)
         act_btns |= UnsavedChangesDialog::ActionButtons::SAVE;
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 6";
 
     // Install bundles from resources if needed:
     std::vector<std::string> install_bundles;
@@ -2591,9 +2604,14 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
             install_bundles.emplace_back(pair.first);
         }
     }
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 7";
+
     if (!check_unsaved_preset_changes)
         if ((check_unsaved_preset_changes = install_bundles.size() > 0))
             header = _L_PLURAL("A new vendor was installed and one of its printers will be activated", "New vendors were installed and one of theirs printers will be activated", install_bundles.size());
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 8";
 
 #ifdef __linux__
     // Desktop integration on Linux
@@ -2622,12 +2640,18 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
             break;
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 9";
+
     if (snapshot && ! take_config_snapshot_cancel_on_error(*app_config, snapshot_reason, "", _u8L("Do you want to continue changing the configuration?")))
         return false;
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 10";
 
     if (check_unsaved_preset_changes &&
         !wxGetApp().check_and_keep_current_preset_changes(caption, header, act_btns, &apply_keeped_changes))
         return false;
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 11";
 
     if (install_bundles.size() > 0) {
         // Install bundles from resources.
@@ -2638,10 +2662,14 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         BOOST_LOG_TRIVIAL(info) << "No bundles need to be installed from resources";
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 12";
+
     if (page_welcome->reset_user_profile()) {
         BOOST_LOG_TRIVIAL(info) << "Resetting user profiles...";
         preset_bundle->reset(true);
     }
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 13";
 
     std::string preferred_model;
     std::string preferred_variant;
@@ -2674,6 +2702,9 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
             variant.clear();
         return std::string();
     };
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 14";
+
     // Prusa printers are considered first, then 3rd party.
     if (preferred_model = get_preferred_printer_model("PrusaResearch", bundles.prusa_bundle(), preferred_variant);
         preferred_model.empty()) {
@@ -2684,6 +2715,8 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
                     break;
         }
     }
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 15";
 
     // if unsaved changes was not cheched till this moment
     if (!check_unsaved_preset_changes) {
@@ -2699,6 +2732,8 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 16";
+
     std::string first_added_filament, first_added_sla_material;
     auto get_first_added_material_preset = [this, app_config](const std::string& section_name, std::string& first_added_preset) {
         if (appconfig_new.has_section(section_name)) {
@@ -2707,8 +2742,16 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
             first_added_preset = get_first_added_preset(old_presets, appconfig_new.get_section(section_name));
         }
     };
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 17";
+
     get_first_added_material_preset(AppConfig::SECTION_FILAMENTS, first_added_filament);
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 18";
+
     get_first_added_material_preset(AppConfig::SECTION_MATERIALS, first_added_sla_material);
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 19";
 
     // if unsaved changes was not cheched till this moment
     if (!check_unsaved_preset_changes) {
@@ -2730,15 +2773,23 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 20";
+
     // apply materials in app_config
     for (const std::string& section_name : {AppConfig::SECTION_FILAMENTS, AppConfig::SECTION_MATERIALS})
         app_config->set_section(section_name, appconfig_new.get_section(section_name));
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 21";
+
     app_config->set_vendors(appconfig_new);
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 22";
 
     app_config->set("notify_release", page_update->version_check ? "all" : "none");
     app_config->set("preset_update", page_update->preset_update ? "1" : "0");
     app_config->set("export_sources_full_pathnames", page_reload_from_disk->full_pathnames ? "1" : "0");
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 23";
 
 #ifdef _WIN32
     app_config->set("associate_3mf", page_files_association->associate_3mf() ? "1" : "0");
@@ -2760,9 +2811,13 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
 
     page_mode->serialize_mode(app_config);
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 24";
+
     if (check_unsaved_preset_changes)
         preset_bundle->load_presets(*app_config, ForwardCompatibilitySubstitutionRule::EnableSilentDisableSystem, 
                                     {preferred_model, preferred_variant, first_added_filament, first_added_sla_material});
+
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 25";
 
     if (!only_sla_mode && page_custom->custom_wanted()) {
         // if unsaved changes was not cheched till this moment
@@ -2779,11 +2834,16 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         preset_bundle->load_config_from_wizard(profile_name, *custom_config);
     }
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 26";
+
     // Update the selections from the compatibilty.
     preset_bundle->export_selections(*app_config);
 
+    BOOST_LOG_TRIVIAL(error) << "ConfigWizard::priv::apply_config 27";
+
     return true;
 }
+
 void ConfigWizard::priv::update_presets_in_config(const std::string& section, const std::string& alias_key, bool add)
 {
     const PresetAliases& aliases = section == AppConfig::SECTION_FILAMENTS ? aliases_fff : aliases_sla;
