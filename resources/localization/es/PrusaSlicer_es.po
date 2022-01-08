@@ -4495,11 +4495,11 @@ msgstr "Piel difusa (experimental)"
 
 #: src/libslic3r/PrintConfig.cpp:1285
 msgid "Fuzzy skin point distance"
-msgstr "Fuzzy skin point distance"
+msgstr "Distancia del punto de piel difusa"
 
 #: src/libslic3r/PrintConfig.cpp:1275
 msgid "Fuzzy skin thickness"
-msgstr "Distancia del punto de piel difusa"
+msgstr "Espesor de piel difusa"
 
 #: src/libslic3r/PrintConfig.cpp:1262
 msgid "Fuzzy skin type."
@@ -4556,7 +4556,7 @@ msgstr "g/ml"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:471
 msgid "Gallery"
-msgstr "Tipo de piel difusa."
+msgstr "Galería"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:247 src/libslic3r/ExtrusionEntity.cpp:326
 #: src/libslic3r/ExtrusionEntity.cpp:356 src/libslic3r/PrintConfig.cpp:1302
