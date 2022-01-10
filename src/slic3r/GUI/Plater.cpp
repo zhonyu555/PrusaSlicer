@@ -6072,24 +6072,28 @@ void Plater::reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &
 
 void Plater::send_gcode()
 {
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 0";
     // if physical_printer is selected, send gcode for this printer
     DynamicPrintConfig* physical_printer_config = wxGetApp().preset_bundle->physical_printers.get_selected_printer_config();
     if (! physical_printer_config || p->model.objects.empty())
         return;
-
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 1";
     PrintHostJob upload_job(physical_printer_config);
     if (upload_job.empty())
         return;
-
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 2";
     // Obtain default output path
     fs::path default_output_file;
     try {
         // Update the background processing, so that the placeholder parser will get the correct values for the ouput file template.
         // Also if there is something wrong with the current configuration, a pop-up dialog will be shown and the export will not be performed.
         unsigned int state = this->p->update_restart_background_process(false, false);
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 3";
         if (state & priv::UPDATE_BACKGROUND_PROCESS_INVALID)
             return;
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 4";
         default_output_file = this->p->background_process.output_filepath_for_project(into_path(get_project_filename(".3mf")));
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 5 " << default_output_file;
     } catch (const Slic3r::PlaceholderParserError& ex) {
         // Show the error with monospaced font.
         show_error(this, ex.what(), true);
@@ -6098,22 +6102,25 @@ void Plater::send_gcode()
         show_error(this, ex.what(), false);
         return;
     }
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 6 " << default_output_file;
     default_output_file = fs::path(Slic3r::fold_utf8_to_ascii(default_output_file.string()));
-
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 7 " << default_output_file;
     // Repetier specific: Query the server for the list of file groups.
     wxArrayString groups;
     {
         wxBusyCursor wait;
         upload_job.printhost->get_groups(groups);
     }
-    
+    BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 7";
     PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups);
     if (dlg.ShowModal() == wxID_OK) {
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 8";
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.post_action = dlg.post_action();
         upload_job.upload_data.group       = dlg.group();
-
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 9";
         p->export_gcode(fs::path(), false, std::move(upload_job));
+        BOOST_LOG_TRIVIAL(error) << " Plater::send_gcode 10";
     }
 }
 

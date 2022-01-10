@@ -45,80 +45,103 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, PrintHostPostUplo
 #ifdef __APPLE__
     txt_filename->OSXDisableAllSmartSubstitutions();
 #endif
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 0 " << path;
     const AppConfig *app_config = wxGetApp().app_config;
 
     auto *label_dir_hint = new wxStaticText(this, wxID_ANY, _L("Use forward slashes ( / ) as a directory separator if needed."));
     label_dir_hint->Wrap(CONTENT_WIDTH * wxGetApp().em_unit());
-
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 1";
     content_sizer->Add(txt_filename, 0, wxEXPAND);
     content_sizer->Add(label_dir_hint);
     content_sizer->AddSpacer(VERT_SPACING);
-    
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 2";
     if (combo_groups != nullptr) {
         // Repetier specific: Show a selection of file groups.
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 3";
         auto *label_group = new wxStaticText(this, wxID_ANY, _L("Group"));
         content_sizer->Add(label_group);
-        content_sizer->Add(combo_groups, 0, wxBOTTOM, 2*VERT_SPACING);        
+        content_sizer->Add(combo_groups, 0, wxBOTTOM, 2*VERT_SPACING);
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 4";
         wxString recent_group = from_u8(app_config->get("recent", CONFIG_KEY_GROUP));
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 5 "<< recent_group;
         if (! recent_group.empty())
             combo_groups->SetValue(recent_group);
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 6";
     }
-
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 7";
     wxString recent_path = from_u8(app_config->get("recent", CONFIG_KEY_PATH));
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 8 " << recent_path;
     if (recent_path.Length() > 0 && recent_path[recent_path.Length() - 1] != '/') {
         recent_path += '/';
     }
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 9 " << recent_path;
     const auto recent_path_len = recent_path.Length();
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 10 " << recent_path_len;
     recent_path += path.filename().wstring();
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 11 " << recent_path;
     wxString stem(path.stem().wstring());
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 12 " << stem;
     const auto stem_len = stem.Length();
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 13 " << stem_len;
 
     txt_filename->SetValue(recent_path);
     txt_filename->SetFocus();
-    
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 14";
     m_valid_suffix = recent_path.substr(recent_path.find_last_of('.'));
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 15 " << m_valid_suffix;
     // .gcode suffix control
     auto validate_path = [this](const wxString &path) -> bool {
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog validate_path 1";
         if (! path.Lower().EndsWith(m_valid_suffix.Lower())) {
             MessageDialog msg_wingow(this, wxString::Format(_L("Upload filename doesn't end with \"%s\". Do you wish to continue?"), m_valid_suffix), wxString(SLIC3R_APP_NAME), wxYES | wxNO);
             if (msg_wingow.ShowModal() == wxID_NO)
+                BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog validate_path 2";
                 return false;
         }
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog validate_path 3";
         return true;
     };
 
     if (post_actions.has(PrintHostPostUploadAction::StartPrint)) {
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 16";
         auto* btn_print = add_button(wxID_YES, false, _L("Upload and Print"));
         btn_print->Bind(wxEVT_BUTTON, [this, validate_path](wxCommandEvent&) {
+            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 17";
             if (validate_path(txt_filename->GetValue())) {
+                BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 18";
                 post_upload_action = PrintHostPostUploadAction::StartPrint;
                 EndDialog(wxID_OK);
             }
         });
     }
-
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 19";
     if (post_actions.has(PrintHostPostUploadAction::StartSimulation)) {
         // Using wxID_MORE as a button identifier to be different from the other buttons, wxID_MORE has no other meaning here.
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 20";
         auto* btn_simulate = add_button(wxID_MORE, false, _L("Upload and Simulate"));
         btn_simulate->Bind(wxEVT_BUTTON, [this, validate_path](wxCommandEvent&) {
             if (validate_path(txt_filename->GetValue())) {
+                BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 21";
                 post_upload_action = PrintHostPostUploadAction::StartSimulation;
                 EndDialog(wxID_OK);
             }        
         });
     }
-
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 22";
     add_button(wxID_CANCEL);
 
     if (auto* btn_ok = get_button(wxID_OK); btn_ok != NULL) {
+        BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 23";
         btn_ok->SetLabel(_L("Upload"));
         btn_ok->Bind(wxEVT_BUTTON, [this, validate_path](wxCommandEvent&) {
             if (validate_path(txt_filename->GetValue())) {
+                BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 24";
                 post_upload_action = PrintHostPostUploadAction::None;
                 EndDialog(wxID_OK);
             }
         });
     }
+    BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog 25";
     finalize();
 
 #ifdef __linux__
@@ -136,7 +159,9 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, PrintHostPostUplo
         // Another similar case where the function only works with EVT_SHOW + CallAfter,
         // this time on Mac.
         CallAfter([=]() {
+            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 0 " << recent_path_len << " " << recent_path_len << " " << stem_len;
             txt_filename->SetSelection(recent_path_len, recent_path_len + stem_len);
+            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 1";
         });
     });
 }
