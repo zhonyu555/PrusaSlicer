@@ -160,8 +160,9 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, PrintHostPostUplo
         // this time on Mac.
         CallAfter([=]() {
             BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 0 " << recent_path_len << " " << recent_path_len << " " << stem_len;
+            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 1 " << txt_filename->GetValue().Length() << " " << txt_filename->GetValue().size();
             txt_filename->SetSelection(recent_path_len, recent_path_len + stem_len);
-            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 1";
+            BOOST_LOG_TRIVIAL(error) << "PrintHostSendDialog wxEVT_SHOW 2";
         });
     });
 }
