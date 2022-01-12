@@ -65,6 +65,8 @@
 
 // Enable detection of layers for spiral vase prints
 #define ENABLE_SPIRAL_VASE_LAYERS (1 && ENABLE_2_4_1_RC)
+// Enable copy of custom bed model and texture
+#define ENABLE_COPY_CUSTOM_BED_MODEL_AND_TEXTURE (1 && ENABLE_2_4_1_RC)
 
 
 #endif // _prusaslicer_technologies_h_
