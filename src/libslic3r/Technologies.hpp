@@ -43,8 +43,6 @@
 
 // Enable detection of layers for spiral vase prints
 #define ENABLE_SPIRAL_VASE_LAYERS (1 && ENABLE_2_4_1_RC)
-// Enable copy of custom bed model and texture
-#define ENABLE_COPY_CUSTOM_BED_MODEL_AND_TEXTURE (1 && ENABLE_2_4_1_RC)
 
 
 //====================
@@ -60,6 +58,8 @@
 #define ENABLE_PREVIEW_LAYER_TIME (1 && ENABLE_2_5_0_ALPHA1)
 // Enable showing time estimate for travel moves in legend
 #define ENABLE_TRAVEL_TIME (1 && ENABLE_2_5_0_ALPHA1)
+// Enable copy of custom bed model and texture
+#define ENABLE_COPY_CUSTOM_BED_MODEL_AND_TEXTURE (1 && ENABLE_2_5_0_ALPHA1)
 
 
 #endif // _prusaslicer_technologies_h_
