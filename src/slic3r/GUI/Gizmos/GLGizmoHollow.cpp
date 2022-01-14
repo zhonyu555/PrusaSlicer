@@ -116,11 +116,7 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
     glsafe(::glTranslated(0.0, 0.0, m_c->selection_info()->get_sla_shift()));
     glsafe(::glMultMatrixd(instance_matrix.data()));
 
-#if ENABLE_COLOR_CLASSES
     ColorRGBA render_color;
-#else
-    std::array<float, 4> render_color;
-#endif // ENABLE_COLOR_CLASSES
     const sla::DrainHoles& drain_holes = m_c->selection_info()->model_object()->sla_drain_holes;
     size_t cache_size = drain_holes.size();
 
@@ -132,14 +128,8 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
             continue;
 
         // First decide about the color of the point.
-        if (picking) {
-#if ENABLE_COLOR_CLASSES
+        if (picking)
             render_color = picking_color_component(i);
-#else
-            std::array<float, 4> color = picking_color_component(i);
-            render_color = color;
-#endif // ENABLE_COLOR_CLASSES
-        }
         else {
             if (size_t(m_hover_id) == i)
                 render_color = {0.0f, 1.0f, 1.0f, 1.0f};
@@ -148,16 +138,8 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
                        m_c->hollowed_mesh()->get_drainholes()[i].failed) {
                 render_color = {1.0f, 0.0f, 0.0f, 0.5f};
             }
-            else { // neither hover nor picking
-#if ENABLE_COLOR_CLASSES
+            else  // neither hover nor picking
                 render_color = point_selected ? ColorRGBA(1.0f, 0.3f, 0.3f, 0.5f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f);
-#else
-                render_color[0] = point_selected ? 1.0f : 1.f;
-                render_color[1] = point_selected ? 0.3f : 1.f;
-                render_color[2] = point_selected ? 0.3f : 1.f;
-                render_color[3] = 0.5f;
-#endif // ENABLE_COLOR_CLASSES
-            }
         }
 
         const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
@@ -560,13 +542,7 @@ RENDER_AGAIN:
     m_imgui->text(m_desc.at("offset"));
     ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
     ImGui::PushItemWidth(window_width - settings_sliders_left);
-#if ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
     m_imgui->slider_float("##offset", &offset, offset_min, offset_max, "%.1f mm", 1.0f, true, _L(opts[0].second->tooltip));
-#else
-    m_imgui->slider_float("##offset", &offset, offset_min, offset_max, "%.1f mm");
-    if (m_imgui->get_last_slider_status().hovered)
-        m_imgui->tooltip((_utf8(opts[0].second->tooltip)).c_str(), max_tooltip_width);
-#endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
 
     bool slider_clicked = m_imgui->get_last_slider_status().clicked; // someone clicked the slider
     bool slider_edited =m_imgui->get_last_slider_status().edited; // someone is dragging the slider
@@ -576,13 +552,7 @@ RENDER_AGAIN:
         ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("quality"));
         ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
-#if ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
         m_imgui->slider_float("##quality", &quality, quality_min, quality_max, "%.1f", 1.0f, true, _L(opts[1].second->tooltip));
-#else
-        m_imgui->slider_float("##quality", &quality, quality_min, quality_max, "%.1f");
-        if (m_imgui->get_last_slider_status().hovered)
-            m_imgui->tooltip((_utf8(opts[1].second->tooltip)).c_str(), max_tooltip_width);
-#endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
 
         slider_clicked |= m_imgui->get_last_slider_status().clicked;
         slider_edited |= m_imgui->get_last_slider_status().edited;
@@ -593,13 +563,7 @@ RENDER_AGAIN:
         ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("closing_distance"));
         ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
-#if ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
         m_imgui->slider_float("##closing_distance", &closing_d, closing_d_min, closing_d_max, "%.1f mm", 1.0f, true, _L(opts[2].second->tooltip));
-#else
-        m_imgui->slider_float("##closing_distance", &closing_d, closing_d_min, closing_d_max, "%.1f mm");
-        if (m_imgui->get_last_slider_status().hovered)
-            m_imgui->tooltip((_utf8(opts[2].second->tooltip)).c_str(), max_tooltip_width);
-#endif // ENABLE_ENHANCED_IMGUI_SLIDER_FLOAT
 
         slider_clicked |= m_imgui->get_last_slider_status().clicked;
         slider_edited |= m_imgui->get_last_slider_status().edited;
