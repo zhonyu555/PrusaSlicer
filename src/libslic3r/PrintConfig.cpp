@@ -245,13 +245,25 @@ void PrintConfigDef::init_common_params()
     def = this->add("elefant_foot_compensation", coFloat);
     def->label = L("Elephant foot compensation");
     def->category = L("Advanced");
-    def->tooltip = L("The first layer will be shrunk in the XY plane by the configured value "
+    def->tooltip = L("The first layers will be gradually shrunk in the XY plane by the configured value "
                      "to compensate for the 1st layer squish aka an Elephant Foot effect.");
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0.));
-
+    
+    def = this->add("elefant_foot_compensation_layers", coInt);
+    def->label = L("Elephant foot compensation layers");
+    def->category = L("Advanced");
+    def->tooltip = L("The number of layers on which the elephant foot compensation will be active. "
+                     "The first layer will be shrunk by the elephant foot compensation value, then "
+                     "the next layers will be gradually shrunk less, up to the layer indicated by this value.");
+    def->sidetext = L("layers");
+    def->min = 1;
+    def->max = 30;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInt(4));	
+	
     def = this->add("thumbnails", coPoints);
     def->label = L("G-code thumbnails");
     def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\"");
@@ -310,28 +322,6 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
-    
-    def = this->add("elefant_foot_compensation", coFloat);
-    def->label = L("Elephant foot compensation");
-    def->category = L("Advanced");
-    def->tooltip = L("The first layers will be gradually shrunk in the XY plane by the configured value "
-                     "to compensate for the 1st layer squish aka an Elephant Foot effect.");
-    def->sidetext = L("mm");
-    def->min = 0;
-    def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloat(0.));
-    
-    def = this->add("elefant_foot_compensation_layers", coInt);
-    def->label = L("Elephant foot compensation layers");
-    def->category = L("Advanced");
-    def->tooltip = L("The number of layers on which the elephant foot compensation will be active. "
-                     "The first layer will be shrunk by the elephant foot compensation value, then "
-                     "the next layers will be gradually shrunk less, up to the layer indicated by this value.");
-    def->sidetext = L("layers");
-    def->min = 1;
-    def->max = 30;
-    def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionInt(4));
 
     // Options used by physical printers
     
