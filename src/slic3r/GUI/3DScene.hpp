@@ -367,9 +367,7 @@ public:
 	    bool                is_wipe_tower : 1;
 	    // Wheter or not this volume has been generated from an extrusion path
 	    bool                is_extrusion_path : 1;
-	    // Wheter or not to always render this volume using its own alpha 
-	    bool                force_transparent : 1;
-	    // Whether or not always use the volume's own color (not using SELECTED/HOVER/DISABLED/OUTSIDE)
+        // Whether or not always use the volume's own color (not using SELECTED/HOVER/DISABLED/OUTSIDE)
 	    bool                force_native_color : 1;
         // Whether or not render this volume in neutral
         bool                force_neutral_color : 1;
@@ -410,7 +408,7 @@ public:
     void set_color(const ColorRGBA& rgba)        { color = rgba; }
     void set_render_color(const ColorRGBA& rgba) { render_color = rgba; }
     // Sets render color in dependence of current state
-    void set_render_color();
+    void set_render_color(bool force_transparent);
     // set color according to model volume
     void set_color_from_model_volume(const ModelVolume& model_volume);
 
@@ -475,8 +473,8 @@ public:
     void set_convex_hull(const TriangleMesh &convex_hull) { m_convex_hull = std::make_shared<const TriangleMesh>(convex_hull); }
     void set_convex_hull(TriangleMesh &&convex_hull) { m_convex_hull = std::make_shared<const TriangleMesh>(std::move(convex_hull)); }
 
-    int                 object_idx() const { return this->composite_id.object_id; }
-    int                 volume_idx() const { return this->composite_id.volume_id; }
+    int                 object_idx() const   { return this->composite_id.object_id; }
+    int                 volume_idx() const   { return this->composite_id.volume_id; }
     int                 instance_idx() const { return this->composite_id.instance_id; }
 
     Transform3d         world_matrix() const;
@@ -633,8 +631,13 @@ public:
         size_t                          timestamp,
         bool 			   				opengl_initialized);
 
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+    int load_wipe_tower_preview(
+        float pos_x, float pos_y, float width, float depth, float height, float rotation_angle, bool size_unknown, float brim_width, bool opengl_initialized);
+#else
     int load_wipe_tower_preview(
         int obj_idx, float pos_x, float pos_y, float width, float depth, float height, float rotation_angle, bool size_unknown, float brim_width, bool opengl_initialized);
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 
     GLVolume* new_toolpath_volume(const ColorRGBA& rgba, size_t reserve_vbo_floats = 0);
     GLVolume* new_nontoolpath_volume(const ColorRGBA& rgba, size_t reserve_vbo_floats = 0);

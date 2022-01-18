@@ -377,7 +377,6 @@ GLVolume::GLVolume(float r, float g, float b, float a)
     , is_modifier(false)
     , is_wipe_tower(false)
     , is_extrusion_path(false)
-    , force_transparent(false)
     , force_native_color(false)
     , force_neutral_color(false)
     , force_sinking_contours(false)
@@ -388,7 +387,7 @@ GLVolume::GLVolume(float r, float g, float b, float a)
     set_render_color(color);
 }
 
-void GLVolume::set_render_color()
+void GLVolume::set_render_color(bool force_transparent)
 {
     bool outside = is_outside || is_below_printbed();
 
@@ -738,9 +737,15 @@ void GLVolumeCollection::load_object_auxiliary(
     }
 }
 
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+int GLVolumeCollection::load_wipe_tower_preview(
+    float pos_x, float pos_y, float width, float depth, float height,
+    float rotation_angle, bool size_unknown, float brim_width, bool opengl_initialized)
+#else
 int GLVolumeCollection::load_wipe_tower_preview(
     int obj_idx, float pos_x, float pos_y, float width, float depth, float height,
     float rotation_angle, bool size_unknown, float brim_width, bool opengl_initialized)
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 {
     if (depth < 0.01f)
         return int(this->volumes.size() - 1);
@@ -802,7 +807,11 @@ int GLVolumeCollection::load_wipe_tower_preview(
     v.indexed_vertex_array.finalize_geometry(opengl_initialized);
     v.set_volume_offset(Vec3d(pos_x, pos_y, 0.0));
     v.set_volume_rotation(Vec3d(0., 0., (M_PI / 180.) * rotation_angle));
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+    v.composite_id = GLVolume::CompositeID(INT_MAX, 0, 0);    
+#else
     v.composite_id = GLVolume::CompositeID(obj_idx, 0, 0);
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
     v.geometry_id.first = 0;
     v.geometry_id.second = wipe_tower_instance_id().id;
     v.is_wipe_tower = true;
@@ -880,11 +889,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
         glsafe(::glDisable(GL_CULL_FACE));
 
     for (GLVolumeWithIdAndZ& volume : to_render) {
-        if (type == ERenderType::Transparent)
-            volume.first->force_transparent = true;
-        volume.first->set_render_color();
-        if (type == ERenderType::Transparent)
-            volume.first->force_transparent = false;
+        volume.first->set_render_color(true);
 
         // render sinking contours of non-hovered volumes
         if (m_show_sinking_contours)
@@ -1021,17 +1026,17 @@ void GLVolumeCollection::reset_outside_state()
 
 void GLVolumeCollection::update_colors_by_extruder(const DynamicPrintConfig* config)
 {
-    using ColorItem = std::pair<std::string, ColorRGBA>;
+    using ColorItem = std::pair<std::string, ColorRGB>;
     std::vector<ColorItem> colors;
 
     if (static_cast<PrinterTechnology>(config->opt_int("printer_technology")) == ptSLA) {
         const std::string& txt_color = config->opt_string("material_colour").empty() ? 
                                        print_config_def.get("material_colour")->get_default_value<ConfigOptionString>()->value : 
                                        config->opt_string("material_colour");
-        ColorRGBA rgba;
-        if (decode_color(txt_color, rgba))
-            colors.push_back({ txt_color, rgba });
-}
+        ColorRGB rgb;
+        if (decode_color(txt_color, rgb))
+            colors.push_back({ txt_color, rgb });
+    }
     else {
         const ConfigOptionStrings* extruders_opt = dynamic_cast<const ConfigOptionStrings*>(config->option("extruder_colour"));
         if (extruders_opt == nullptr)
@@ -1048,13 +1053,13 @@ void GLVolumeCollection::update_colors_by_extruder(const DynamicPrintConfig* con
 
         for (unsigned int i = 0; i < colors_count; ++i) {
             const std::string& ext_color = config->opt_string("extruder_colour", i);
-            ColorRGBA rgba;
-            if (decode_color(ext_color, rgba))
-                colors[i] = { ext_color, rgba };
+            ColorRGB rgb;
+            if (decode_color(ext_color, rgb))
+                colors[i] = { ext_color, rgb };
             else {
                 const std::string& fil_color = config->opt_string("filament_colour", i);
-                if (decode_color(fil_color, rgba))
-                    colors[i] = { fil_color, rgba };
+                if (decode_color(fil_color, rgb))
+                    colors[i] = { fil_color, rgb };
             }
         }
     }
@@ -1069,7 +1074,7 @@ void GLVolumeCollection::update_colors_by_extruder(const DynamicPrintConfig* con
 
         const ColorItem& color = colors[extruder_id];
         if (!color.first.empty())
-            volume->color = color.second;
+            volume->color = to_rgba(color.second, volume->color.a());
     }
 }
 

@@ -920,7 +920,11 @@ private:
     void _render_bed_for_picking(bool bottom);
     void _render_objects(GLVolumeCollection::ERenderType type);
     void _render_gcode();
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
     void _render_selection();
+#else
+    void _render_selection() const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     void _render_sequential_clearance();
 #if ENABLE_RENDER_SELECTION_CENTER
     void _render_selection_center();

@@ -58,6 +58,12 @@
 #define ENABLE_PREVIEW_LAYER_TIME (1 && ENABLE_2_5_0_ALPHA1)
 // Enable showing time estimate for travel moves in legend
 #define ENABLE_TRAVEL_TIME (1 && ENABLE_2_5_0_ALPHA1)
+// Enable not killing focus in object manipulator fields when hovering over 3D scene
+#define ENABLE_OBJECT_MANIPULATOR_FOCUS (1 && ENABLE_2_5_0_ALPHA1)
+// Enable removal of wipe tower magic object_id equal to 1000
+#define ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL (1 && ENABLE_2_5_0_ALPHA1)
+// Enable removal of old OpenGL render calls
+#define ENABLE_GLBEGIN_GLEND_REMOVAL (1 && ENABLE_2_5_0_ALPHA1)
 // Enable application of textures to volumes
 #define ENABLE_TEXTURED_VOLUMES (1 && ENABLE_2_5_0_ALPHA1)
 

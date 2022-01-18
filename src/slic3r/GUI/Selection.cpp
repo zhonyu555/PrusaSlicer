@@ -127,6 +127,18 @@ void Selection::set_volumes(GLVolumePtrs* volumes)
     update_valid();
 }
 
+// Init shall be called from the OpenGL render function, so that the OpenGL context is initialized!
+bool Selection::init()
+{
+    m_arrow.init_from(straight_arrow(10.0f, 5.0f, 5.0f, 10.0f, 1.0f));
+    m_curved_arrow.init_from(circular_arrow(16, 10.0f, 5.0f, 10.0f, 5.0f, 1.0f));
+#if ENABLE_RENDER_SELECTION_CENTER
+    m_vbo_sphere.init_from(its_make_sphere(0.75, PI / 12.0));
+#endif // ENABLE_RENDER_SELECTION_CENTER
+
+    return true;
+}
+
 void Selection::set_model(Model* model)
 {
     m_model = model;
@@ -439,12 +451,7 @@ void Selection::clear()
     for (unsigned int i : m_list) {
         GLVolume& volume = *(*m_volumes)[i];
         volume.selected = false;
-        bool is_transparent = volume.color.is_transparent();
-        if (is_transparent)
-            volume.force_transparent = true;
-        volume.set_render_color();
-        if (is_transparent)
-            volume.force_transparent = false;
+        volume.set_render_color(volume.color.is_transparent());
     }
 
     m_list.clear();
@@ -531,7 +538,11 @@ bool Selection::is_single_full_instance() const
 bool Selection::is_from_single_object() const
 {
     const int idx = get_object_idx();
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+    return 0 <= idx && idx < int(m_model->objects.size());
+#else
     return 0 <= idx && idx < 1000;
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 }
 
 bool Selection::is_sla_compliant() const
@@ -1059,9 +1070,16 @@ void Selection::translate(unsigned int object_idx, const Vec3d& displacement)
         if (done.size() == m_volumes->size())
             break;
 
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+        if ((*m_volumes)[i]->is_wipe_tower)
+            continue;
+
+        int object_idx = (*m_volumes)[i]->object_idx();
+#else
         int object_idx = (*m_volumes)[i]->object_idx();
         if (object_idx >= 1000)
             continue;
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 
         // Process unselected volumes of the object.
         for (unsigned int j = 0; j < (unsigned int)m_volumes->size(); ++j) {
@@ -1101,9 +1119,16 @@ void Selection::translate(unsigned int object_idx, unsigned int instance_idx, co
         if (done.size() == m_volumes->size())
             break;
 
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+        if ((*m_volumes)[i]->is_wipe_tower)
+            continue;
+
+        int object_idx = (*m_volumes)[i]->object_idx();
+#else
         int object_idx = (*m_volumes)[i]->object_idx();
         if (object_idx >= 1000)
             continue;
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 
         // Process unselected volumes of the object.
         for (unsigned int j = 0; j < (unsigned int)m_volumes->size(); ++j) {
@@ -1230,20 +1255,24 @@ void Selection::erase()
     }
 }
 
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
 void Selection::render(float scale_factor)
+#else
+void Selection::render(float scale_factor) const
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 {
     if (!m_valid || is_empty())
         return;
 
-    if (!m_arrow.is_initialized())
-        m_arrow.init_from(straight_arrow(10.0f, 5.0f, 5.0f, 10.0f, 1.0f));
-    if (!m_curved_arrow.is_initialized())
-        m_curved_arrow.init_from(circular_arrow(16, 10.0f, 5.0f, 10.0f, 5.0f, 1.0f));
-
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
     m_scale_factor = scale_factor;
+    render_bounding_box(get_bounding_box(), ColorRGB::WHITE());
+#else
+    *const_cast<float*>(&m_scale_factor) = scale_factor;
 
     // render cumulative bounding box of selected volumes
     render_selected_volumes();
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     render_synchronized_volumes();
 }
 
@@ -1253,19 +1282,26 @@ void Selection::render_center(bool gizmo_is_dragging)
     if (!m_valid || is_empty())
         return;
 
-#if ENABLE_RENDER_SELECTION_CENTER
-    if (!m_sphere.is_initialized())
-        m_sphere.init_from(its_make_sphere(0.75, 2 * PI / 24));
-#endif // ENABLE_RENDER_SELECTION_CENTER
-
     const Vec3d center = gizmo_is_dragging ? m_cache.dragging_center : get_bounding_box().center();
 
     glsafe(::glDisable(GL_DEPTH_TEST));
 
-    glsafe(::glColor3f(1.0f, 1.0f, 1.0f));
     glsafe(::glPushMatrix());
     glsafe(::glTranslated(center.x(), center.y(), center.z()));
-    m_sphere.render();
+
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    GLShaderProgram* shader = wxGetApp().get_shader("flat");
+    if (shader == nullptr)
+        return;
+
+    shader->start_using();
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+    m_vbo_sphere.set_color(-1, ColorRGBA::WHITE());
+    m_vbo_sphere.render();
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    shader->stop_using();
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+
     glsafe(::glPopMatrix());
 }
 #endif // ENABLE_RENDER_SELECTION_CENTER
@@ -1781,50 +1817,171 @@ void Selection::do_remove_object(unsigned int object_idx)
     }
 }
 
-void Selection::render_selected_volumes()
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
+void Selection::render_selected_volumes() const
 {
     float color[3] = { 1.0f, 1.0f, 1.0f };
     render_bounding_box(get_bounding_box(), color);
 }
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
 
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
 void Selection::render_synchronized_volumes()
+#else
+void Selection::render_synchronized_volumes() const
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 {
     if (m_mode == Instance)
         return;
 
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
     float color[3] = { 1.0f, 1.0f, 0.0f };
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
 
     for (unsigned int i : m_list) {
-        const GLVolume* volume = (*m_volumes)[i];
-        int object_idx = volume->object_idx();
-        int volume_idx = volume->volume_idx();
+        const GLVolume& volume = *(*m_volumes)[i];
+        int object_idx = volume.object_idx();
+        int volume_idx = volume.volume_idx();
         for (unsigned int j = 0; j < (unsigned int)m_volumes->size(); ++j) {
             if (i == j)
                 continue;
 
-            const GLVolume* v = (*m_volumes)[j];
-            if (v->object_idx() != object_idx || v->volume_idx() != volume_idx)
+            const GLVolume& v = *(*m_volumes)[j];
+            if (v.object_idx() != object_idx || v.volume_idx() != volume_idx)
                 continue;
 
-            render_bounding_box(v->transformed_convex_hull_bounding_box(), color);
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+            render_bounding_box(v.transformed_convex_hull_bounding_box(), ColorRGB::YELLOW());
+#else
+            render_bounding_box(v.transformed_convex_hull_bounding_box(), color);
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
         }
     }
 }
 
-void Selection::render_bounding_box(const BoundingBoxf3& box, float* color)
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+void Selection::render_bounding_box(const BoundingBoxf3& box, const ColorRGB& color)
+{
+#else
+void Selection::render_bounding_box(const BoundingBoxf3 & box, float* color) const
 {
     if (color == nullptr)
         return;
 
-    Vec3f b_min = box.min.cast<float>();
-    Vec3f b_max = box.max.cast<float>();
-    Vec3f size = 0.2f * box.size().cast<float>();
+    const Vec3f b_min = box.min.cast<float>();
+    const Vec3f b_max = box.max.cast<float>();
+    const Vec3f size = 0.2f * box.size().cast<float>();
+
+    glsafe(::glEnable(GL_DEPTH_TEST));
+    glsafe(::glColor3fv(color));
+    glsafe(::glLineWidth(2.0f * m_scale_factor));
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    auto is_approx = [](const Vec3d& v1, const Vec3d& v2) {
+        for (int i = 0; i < 3; ++i) {
+            if (std::abs(v1[i] - v2[i]) > EPSILON)
+                return false;
+        }
+        return true;
+    };
+
+    const BoundingBoxf3& curr_box = m_box.get_bounding_box();
+    if (!m_box.is_initialized() || !is_approx(box.min, curr_box.min) || !is_approx(box.max, curr_box.max)) {
+        m_box.reset();
+
+        const Vec3f b_min = box.min.cast<float>();
+        const Vec3f b_max = box.max.cast<float>();
+        const Vec3f size = 0.2f * box.size().cast<float>();
+
+        GLModel::InitializationData init_data;
+        GUI::GLModel::InitializationData::Entity entity;
+        entity.type = GUI::GLModel::PrimitiveType::Lines;
+        entity.positions.reserve(48);
+
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x() + size.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y() + size.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_min.z() + size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x() - size.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y() + size.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_min.z() + size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x() - size.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y() - size.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_min.z() + size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x() + size.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y() - size.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_min.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_min.z() + size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x() + size.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y() + size.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_min.y(), b_max.z() - size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x() - size.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y() + size.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_min.y(), b_max.z() - size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x() - size.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y() - size.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_max.x(), b_max.y(), b_max.z() - size.z()));
+
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x() + size.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y() - size.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_max.z()));
+        entity.positions.emplace_back(Vec3f(b_min.x(), b_max.y(), b_max.z() - size.z()));
+
+        entity.normals.reserve(48);
+        for (size_t i = 0; i < 48; ++i) {
+            entity.normals.emplace_back(Vec3f::UnitZ());
+        }
+
+        entity.indices.reserve(48);
+        for (size_t i = 0; i < 48; ++i) {
+            entity.indices.emplace_back(i);
+        }
+
+        init_data.entities.emplace_back(entity);
+        m_box.init_from(init_data);
+    }
 
     glsafe(::glEnable(GL_DEPTH_TEST));
 
-    glsafe(::glColor3fv(color));
     glsafe(::glLineWidth(2.0f * m_scale_factor));
 
+    GLShaderProgram* shader = wxGetApp().get_shader("flat");
+    if (shader == nullptr)
+        return;
+
+    shader->start_using();
+    m_box.set_color(-1, to_rgba(color));
+    m_box.render();
+    shader->stop_using();
+#else
     ::glBegin(GL_LINES);
 
     ::glVertex3f(b_min(0), b_min(1), b_min(2)); ::glVertex3f(b_min(0) + size(0), b_min(1), b_min(2));
@@ -1860,6 +2017,7 @@ void Selection::render_bounding_box(const BoundingBoxf3& box, float* color)
     ::glVertex3f(b_min(0), b_max(1), b_max(2)); ::glVertex3f(b_min(0), b_max(1), b_max(2) - size(2));
 
     glsafe(::glEnd());
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 }
 
 static ColorRGBA get_color(Axis axis)
@@ -1867,25 +2025,25 @@ static ColorRGBA get_color(Axis axis)
     return AXES_COLOR[axis];
 }
 
-void Selection::render_sidebar_position_hints(const std::string& sidebar_field)
+void Selection::render_sidebar_position_hints(const std::string& sidebar_field) const
 {
     if (boost::ends_with(sidebar_field, "x")) {
         glsafe(::glRotated(-90.0, 0.0, 0.0, 1.0));
-        m_arrow.set_color(-1, get_color(X));
+        const_cast<GLModel*>(&m_arrow)->set_color(-1, get_color(X));
         m_arrow.render();
     }
     else if (boost::ends_with(sidebar_field, "y")) {
-        m_arrow.set_color(-1, get_color(Y));
+        const_cast<GLModel*>(&m_arrow)->set_color(-1, get_color(Y));
         m_arrow.render();
     }
     else if (boost::ends_with(sidebar_field, "z")) {
         glsafe(::glRotated(90.0, 1.0, 0.0, 0.0));
-        m_arrow.set_color(-1, get_color(Z));
+        const_cast<GLModel*>(&m_arrow)->set_color(-1, get_color(Z));
         m_arrow.render();
     }
 }
 
-void Selection::render_sidebar_rotation_hints(const std::string& sidebar_field)
+void Selection::render_sidebar_rotation_hints(const std::string& sidebar_field) const
 {
     auto render_sidebar_rotation_hint = [this]() {
         m_curved_arrow.render();
@@ -1895,26 +2053,26 @@ void Selection::render_sidebar_rotation_hints(const std::string& sidebar_field)
 
     if (boost::ends_with(sidebar_field, "x")) {
         glsafe(::glRotated(90.0, 0.0, 1.0, 0.0));
-        m_curved_arrow.set_color(-1, get_color(X));
+        const_cast<GLModel*>(&m_curved_arrow)->set_color(-1, get_color(X));
         render_sidebar_rotation_hint();
     }
     else if (boost::ends_with(sidebar_field, "y")) {
         glsafe(::glRotated(-90.0, 1.0, 0.0, 0.0));
-        m_curved_arrow.set_color(-1, get_color(Y));
+        const_cast<GLModel*>(&m_curved_arrow)->set_color(-1, get_color(Y));
         render_sidebar_rotation_hint();
     }
     else if (boost::ends_with(sidebar_field, "z")) {
-        m_curved_arrow.set_color(-1, get_color(Z));
+        const_cast<GLModel*>(&m_curved_arrow)->set_color(-1, get_color(Z));
         render_sidebar_rotation_hint();
     }
 }
 
-void Selection::render_sidebar_scale_hints(const std::string& sidebar_field)
+void Selection::render_sidebar_scale_hints(const std::string& sidebar_field) const
 {
     bool uniform_scale = requires_uniform_scale() || wxGetApp().obj_manipul()->get_uniform_scaling();
 
     auto render_sidebar_scale_hint = [this, uniform_scale](Axis axis) {
-        m_arrow.set_color(-1, uniform_scale ? UNIFORM_SCALE_COLOR : get_color(axis));
+        const_cast<GLModel*>(&m_arrow)->set_color(-1, uniform_scale ? UNIFORM_SCALE_COLOR : get_color(axis));
         GLShaderProgram* shader = wxGetApp().get_current_shader();
         if (shader != nullptr)
             shader->set_uniform("emission_factor", 0.0f);
@@ -1948,7 +2106,7 @@ void Selection::render_sidebar_scale_hints(const std::string& sidebar_field)
     }
 }
 
-void Selection::render_sidebar_layers_hints(const std::string& sidebar_field)
+void Selection::render_sidebar_layers_hints(const std::string& sidebar_field) const
 {
     static const double Margin = 10.0;
 
@@ -2063,9 +2221,16 @@ void Selection::synchronize_unselected_instances(SyncRotationType sync_rotation_
             break;
 
         const GLVolume* volume = (*m_volumes)[i];
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+        if (volume->is_wipe_tower)
+            continue;
+
+        const int object_idx = volume->object_idx();
+#else
         const int object_idx = volume->object_idx();
         if (object_idx >= 1000)
             continue;
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 
         const int instance_idx = volume->instance_idx();
         const Vec3d& rotation = volume->get_instance_rotation();
@@ -2117,9 +2282,16 @@ void Selection::synchronize_unselected_volumes()
 {
     for (unsigned int i : m_list) {
         const GLVolume* volume = (*m_volumes)[i];
+#if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+        if (volume->is_wipe_tower)
+            continue;
+
+        const int object_idx = volume->object_idx();
+#else
         const int object_idx = volume->object_idx();
         if (object_idx >= 1000)
             continue;
+#endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 
         const int volume_idx = volume->volume_idx();
         const Vec3d& offset = volume->get_volume_offset();

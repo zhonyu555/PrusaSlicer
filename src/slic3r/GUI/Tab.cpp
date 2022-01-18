@@ -479,10 +479,9 @@ void Tab::update_label_colours()
             else
                 color = &m_modified_label_clr;
         }
-        if (opt.first == "bed_shape"            || opt.first == "filament_ramming_parameters" || 
-            opt.first == "compatible_prints"    || opt.first == "compatible_printers"           ) {
-            if (m_colored_Label_colors.find(opt.first) != m_colored_Label_colors.end())
-                m_colored_Label_colors.at(opt.first) = *color;
+        if (PresetCollection::is_independent_from_extruder_number_option(opt.first)) {
+            if (Line* line = get_line(opt.first))
+                line->set_label_colour(color);
             continue;
         }
 
@@ -519,13 +518,12 @@ void Tab::decorate()
     for (const auto& opt : m_options_list)
     {
         Field*      field = nullptr;
-        wxColour*   colored_label_clr = nullptr;
+        bool        option_without_field = false;
 
-        if (opt.first == "bed_shape" || opt.first == "filament_ramming_parameters" ||
-            opt.first == "compatible_prints" || opt.first == "compatible_printers")
-            colored_label_clr = (m_colored_Label_colors.find(opt.first) == m_colored_Label_colors.end()) ? nullptr : &m_colored_Label_colors.at(opt.first);
+        if(PresetCollection::is_independent_from_extruder_number_option(opt.first))
+            option_without_field = true;
 
-        if (!colored_label_clr) {
+        if (!option_without_field) {
             field = get_field(opt.first);
             if (!field)
                 continue;
@@ -560,8 +558,14 @@ void Tab::decorate()
             tt = &m_tt_white_bullet;
         }
 
-        if (colored_label_clr) {
-            *colored_label_clr = *color;
+        if (option_without_field) {
+            if (Line* line = get_line(opt.first)) {
+                line->set_undo_bitmap(icon);
+                line->set_undo_to_sys_bitmap(sys_icon);
+                line->set_undo_tooltip(tt);
+                line->set_undo_to_sys_tooltip(sys_tt);
+                line->set_label_colour(color);
+            }
             continue;
         }
         
@@ -806,6 +810,12 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
             if ((m_options_list["filament_ramming_parameters"] & os) == 0)
                 to_sys ? group->back_to_sys_value("filament_ramming_parameters") : group->back_to_initial_value("filament_ramming_parameters");
         }
+        if (group->title == "G-code Substitutions") {
+            if ((m_options_list["gcode_substitutions"] & os) == 0) {
+                to_sys ? group->back_to_sys_value("gcode_substitutions") : group->back_to_initial_value("gcode_substitutions");
+                load_key_value("gcode_substitutions", true/*some value*/, true);
+            }
+        }
         if (group->title == "Profile dependencies") {
             // "compatible_printers" option doesn't exists in Printer Settimgs Tab
             if (m_type != Preset::TYPE_PRINTER && (m_options_list["compatible_printers"] & os) == 0) {
@@ -835,7 +845,7 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
 
     m_postpone_update_ui = false;
 
-    // When all values are rolled, then we hane to update whole tab in respect to the reverted values
+    // When all values are rolled, then we have to update whole tab in respect to the reverted values
     update();
 
     update_changed_ui();
@@ -900,7 +910,7 @@ void Tab::update_visibility()
         page->update_visibility(m_mode, page.get() == m_active_page);
     rebuild_page_tree();
 
-    if (m_type == Preset::TYPE_SLA_PRINT)
+    if (m_type == Preset::TYPE_SLA_PRINT || m_type == Preset::TYPE_PRINT)
         update_description_lines();
 
     Layout();
@@ -986,6 +996,11 @@ void Tab::sys_color_changed()
 Field* Tab::get_field(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
 {
     return m_active_page ? m_active_page->get_field(opt_key, opt_index) : nullptr;
+}
+
+Line* Tab::get_line(const t_config_option_key& opt_key)
+{
+    return m_active_page ? m_active_page->get_line(opt_key) : nullptr;
 }
 
 std::pair<OG_CustomCtrl*, bool*> Tab::get_custom_ctrl_with_blinking_ptr(const t_config_option_key& opt_key, int opt_index/* = -1*/)
@@ -1644,6 +1659,18 @@ void TabPrint::build()
         option.opt.height = 5;//50;
         optgroup->append_single_option_line(option);
 
+        optgroup = page->new_optgroup(L("G-code Substitutions"));
+
+        create_line_with_widget(optgroup.get(), "gcode_substitutions", "", [this](wxWindow* parent) {
+            return create_manage_substitution_widget(parent);
+        });
+        line = { "", "" };
+        line.full_width = 1;
+        line.widget = [this](wxWindow* parent) {
+            return create_substitutions_widget(parent);
+        };
+        optgroup->append_line(line);
+
     page = add_options_page(L("Notes"), "note.png");
         optgroup = page->new_optgroup(L("Notes"), 0);
         option = optgroup->get_option("notes");
@@ -1688,12 +1715,20 @@ void TabPrint::update_description_lines()
             from_u8(PresetHints::top_bottom_shell_thickness_explanation(*m_preset_bundle)));
     }
 
-    if (m_active_page && m_active_page->title() == "Output options" && m_post_process_explanation) {
-        m_post_process_explanation->SetText(
-            _L("Post processing scripts shall modify G-code file in place."));
+    if (m_active_page && m_active_page->title() == "Output options") {
+        if (m_post_process_explanation) {
+            m_post_process_explanation->SetText(
+                _L("Post processing scripts shall modify G-code file in place."));
 #ifndef __linux__
-        m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
+            m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
 #endif // __linux__
+        }
+        // upadte G-code substitutions from the current configuration
+        {
+            m_subst_manager.update_from_config();
+            if (m_del_all_substitutions_btn)
+                m_del_all_substitutions_btn->Show(!m_subst_manager.is_empty_substitutions());
+        }
     }
 }
 
@@ -3727,8 +3762,12 @@ void Tab::create_line_with_widget(ConfigOptionsGroup* optgroup, const std::strin
     line.widget = widget;
     line.label_path = path;
 
-    m_colored_Label_colors[opt_key] = m_default_text_clr;
-    line.full_Label_color = &m_colored_Label_colors[opt_key];
+    // set default undo ui
+    line.set_undo_bitmap(&m_bmp_white_bullet);
+    line.set_undo_to_sys_bitmap(&m_bmp_white_bullet);
+    line.set_undo_tooltip(&m_tt_white_bullet);
+    line.set_undo_to_sys_tooltip(&m_tt_white_bullet);
+    line.set_label_colour(&m_default_text_clr);
 
     optgroup->append_line(line);
 }
@@ -3806,6 +3845,244 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
         }
     }));
 
+    return sizer;
+}
+
+// G-code substitutions
+
+void SubstitutionManager::init(DynamicPrintConfig* config, wxWindow* parent, wxFlexGridSizer* grid_sizer)
+{
+    m_config = config;
+    m_parent = parent;
+    m_grid_sizer = grid_sizer;
+    m_em = em_unit(parent);
+}
+
+void SubstitutionManager::create_legend()
+{
+    if (!m_grid_sizer->IsEmpty())
+        return;
+    // name of the first column is empty
+    m_grid_sizer->Add(new wxStaticText(m_parent, wxID_ANY, wxEmptyString));
+    // Legend for another columns
+    for (const std::string col : { L("Plain pattern"), L("Format"), L("Params") }) {
+        auto temp = new wxStaticText(m_parent, wxID_ANY, _(col), wxDefaultPosition, wxDefaultSize, wxST_ELLIPSIZE_MIDDLE);
+        //            temp->SetBackgroundStyle(wxBG_STYLE_PAINT);
+        m_grid_sizer->Add(temp);
+    }
+}
+
+// delete substitution_id from substitutions
+void SubstitutionManager::delete_substitution(int substitution_id)
+{
+    // delete substitution
+    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if ((substitutions.size() % 3) != 0)
+        throw RuntimeError("Invalid length of gcode_substitutions parameter");
+
+    if ((substitutions.size() / 3) < substitution_id)
+        throw RuntimeError("Invalid substitution_id  to delete");
+
+    substitutions.erase(std::next(substitutions.begin(), substitution_id * 3), std::next(substitutions.begin(), substitution_id * 3 + 3));
+    call_ui_update();
+
+    // update grid_sizer
+    update_from_config();
+}
+
+// Add substitution line
+void SubstitutionManager::add_substitution(int substitution_id, const std::string& plain_pattern, const std::string& format, const std::string& params)
+{
+    bool call_after_layout = false;
+    
+    if (substitution_id < 0) {
+        if (m_grid_sizer->IsEmpty()) {
+            create_legend();
+            substitution_id = 0;
+        }
+        substitution_id = m_grid_sizer->GetEffectiveRowsCount() - 1;
+
+        // create new substitution
+        // it have to be added toconfig too
+        std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+        for (size_t i = 0; i < 3; i ++)
+            substitutions.push_back(std::string());
+
+        call_after_layout = true;
+    }
+
+    auto del_btn = new ScalableButton(m_parent, wxID_ANY, "cross");
+    del_btn->Bind(wxEVT_BUTTON, [substitution_id, this](wxEvent&) {
+        delete_substitution(substitution_id);
+    });
+
+    m_grid_sizer->Add(del_btn, 0, wxRIGHT | wxLEFT, m_em);
+
+    auto add_text_editor = [substitution_id, this](const wxString& value, int opt_pos) {
+        auto editor = new wxTextCtrl(m_parent, wxID_ANY, value, wxDefaultPosition, wxSize(15 * m_em, wxDefaultCoord), wxTE_PROCESS_ENTER
+#ifdef _WIN32
+            | wxBORDER_SIMPLE
+#endif
+        );
+
+        editor->SetFont(wxGetApp().normal_font());
+        wxGetApp().UpdateDarkUI(editor);
+        m_grid_sizer->Add(editor, 0, wxALIGN_CENTER_VERTICAL);
+
+        editor->Bind(wxEVT_TEXT_ENTER, [this, editor, substitution_id, opt_pos](wxEvent& e) {
+#if !defined(__WXGTK__)
+            e.Skip();
+#endif // __WXGTK__
+            edit_substitution(substitution_id, opt_pos, into_u8(editor->GetValue()));
+        });
+
+        editor->Bind(wxEVT_KILL_FOCUS, [this, editor, substitution_id, opt_pos](wxEvent& e) {
+            e.Skip();
+            edit_substitution(substitution_id, opt_pos, into_u8(editor->GetValue()));
+        });
+    };
+
+    add_text_editor(from_u8(plain_pattern), 0);
+    add_text_editor(from_u8(format), 1);
+
+    auto params_sizer = new wxBoxSizer(wxHORIZONTAL);
+    bool regexp              = strchr(params.c_str(), 'r') != nullptr || strchr(params.c_str(), 'R') != nullptr;
+    bool case_insensitive    = strchr(params.c_str(), 'i') != nullptr || strchr(params.c_str(), 'I') != nullptr;
+    bool whole_word          = strchr(params.c_str(), 'w') != nullptr || strchr(params.c_str(), 'W') != nullptr;
+
+    auto chb_regexp = new wxCheckBox(m_parent, wxID_ANY, wxString("Regular expression"));
+    chb_regexp->SetValue(regexp);
+    params_sizer->Add(chb_regexp, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, m_em);
+
+    auto chb_case_insensitive = new wxCheckBox(m_parent, wxID_ANY, wxString("Case insensitive"));
+    chb_case_insensitive->SetValue(case_insensitive);
+    params_sizer->Add(chb_case_insensitive, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
+
+    auto chb_whole_word = new wxCheckBox(m_parent, wxID_ANY, wxString("Whole word"));
+    chb_whole_word->SetValue(whole_word);
+    params_sizer->Add(chb_whole_word, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
+
+    for (wxCheckBox* chb : std::initializer_list<wxCheckBox*>{ chb_regexp, chb_case_insensitive, chb_whole_word }) {
+        chb->SetFont(wxGetApp().normal_font());
+        chb->Bind(wxEVT_CHECKBOX, [this, substitution_id, chb_regexp, chb_case_insensitive, chb_whole_word](wxCommandEvent e) {
+            std::string value = std::string();
+            if (chb_regexp->GetValue())
+                value += "r";
+            if (chb_case_insensitive->GetValue())
+                value += "i";
+            if (chb_whole_word->GetValue())
+                value += "w";
+           edit_substitution(substitution_id, 2, value);
+        });
+    }
+
+    m_grid_sizer->Add(params_sizer);
+
+    if (call_after_layout) {
+        m_parent->GetParent()->Layout();
+        call_ui_update();
+    }
+}
+
+void SubstitutionManager::update_from_config()
+{
+    if (!m_grid_sizer->IsEmpty())
+        m_grid_sizer->Clear(true);
+
+    std::vector<std::string>& subst = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if (!subst.empty())
+        create_legend();
+
+    if ((subst.size() % 3) != 0)
+        throw RuntimeError("Invalid length of gcode_substitutions parameter");
+
+    int subst_id = 0;
+    for (size_t i = 0; i < subst.size(); i += 3)
+        add_substitution(subst_id++, subst[i], subst[i + 1], subst[i + 2]);
+
+    m_parent->GetParent()->Layout();
+}
+
+void SubstitutionManager::delete_all()
+{
+    m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.clear(); 
+    call_ui_update();
+
+    if (!m_grid_sizer->IsEmpty())
+        m_grid_sizer->Clear(true);
+
+    m_parent->GetParent()->Layout();
+}
+
+void SubstitutionManager::edit_substitution(int substitution_id, int opt_pos, const std::string& value)
+{
+    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+
+    if ((substitutions.size() % 3) != 0)
+        throw RuntimeError("Invalid length of gcode_substitutions parameter");
+
+    if ((substitutions.size() / 3) != m_grid_sizer->GetEffectiveRowsCount()-1)
+        throw RuntimeError("Invalid compatibility between UI and BE");
+
+    if ((substitutions.size() / 3) < substitution_id)
+        throw RuntimeError("Invalid substitution_id to edit");
+
+    substitutions[substitution_id * 3 + opt_pos] = value;
+
+    call_ui_update();
+}
+
+bool SubstitutionManager::is_empty_substitutions()
+{
+    return m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.empty();
+}
+
+// Return a callback to create a TabPrint widget to edit G-code substitutions
+wxSizer* TabPrint::create_manage_substitution_widget(wxWindow* parent)
+{
+    auto create_btn = [parent](ScalableButton** btn, const wxString& label, const std::string& icon_name) {
+        *btn = new ScalableButton(parent, wxID_ANY, icon_name, " " + label + " ", wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
+        (*btn)->SetFont(wxGetApp().normal_font());
+        (*btn)->SetSize((*btn)->GetBestSize());
+    };
+
+    ScalableButton* add_substitution_btn;
+    create_btn(&add_substitution_btn, _L("Add G-code substitution"), "add_copies");
+    add_substitution_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) {
+        m_subst_manager.add_substitution();
+        m_del_all_substitutions_btn->Show();
+    });
+
+    create_btn(&m_del_all_substitutions_btn, _L("Delete all G-code substitution"), "cross");
+    m_del_all_substitutions_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) {
+        m_subst_manager.delete_all();
+        m_del_all_substitutions_btn->Hide();
+    });
+
+    auto sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(add_substitution_btn,        0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, em_unit(parent));
+    sizer->Add(m_del_all_substitutions_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, em_unit(parent));
+
+    parent->GetParent()->Layout();
+    return sizer;
+}
+
+// Return a callback to create a TabPrint widget to edit G-code substitutions
+wxSizer* TabPrint::create_substitutions_widget(wxWindow* parent)
+{
+    wxFlexGridSizer* grid_sizer = new wxFlexGridSizer(4, 5, wxGetApp().em_unit()); // delete_button,  "Old val", "New val", "Params"
+    grid_sizer->SetFlexibleDirection(wxHORIZONTAL);
+
+    m_subst_manager.init(m_config, parent, grid_sizer);
+    m_subst_manager.set_cb_edited_substitution([this]() {
+        update_dirty();
+        wxGetApp().mainframe->on_config_changed(m_config); // invalidate print
+    });
+
+    auto sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(grid_sizer, 0, wxALIGN_CENTER_VERTICAL);
+
+    parent->GetParent()->Layout();
     return sizer;
 }
 
@@ -4064,6 +4341,14 @@ Field* Page::get_field(const t_config_option_key& opt_key, int opt_index /*= -1*
             return field;
     }
     return field;
+}
+
+Line* Page::get_line(const t_config_option_key& opt_key)
+{
+    for (auto opt : m_optgroups)
+        if (Line* line = opt->get_line(opt_key))
+            return line;
+    return nullptr;
 }
 
 bool Page::set_value(const t_config_option_key& opt_key, const boost::any& value) {
