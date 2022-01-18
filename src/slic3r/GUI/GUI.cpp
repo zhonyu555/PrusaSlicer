@@ -143,7 +143,7 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 			config.set_key_value(opt_key, new ConfigOptionString(boost::any_cast<std::string>(value)));
 			break;
 		case coStrings:{
-			if (opt_key == "compatible_prints" || opt_key == "compatible_printers") {
+			if (opt_key == "compatible_prints" || opt_key == "compatible_printers" || opt_key == "gcode_substitutions") {
 				config.option<ConfigOptionStrings>(opt_key)->values =
 					boost::any_cast<std::vector<std::string>>(value);
 			}
@@ -204,7 +204,7 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 	}
 	catch (const std::exception &e)
 	{
-		wxLogError(format_wxstr(_L("Internal error when changing value for %1%: %2%"), opt_key, e.what()));
+		wxLogError(format_wxstr("Internal error when changing value for %1%: %2%", opt_key, e.what()));
 	}
 }
 
@@ -352,7 +352,7 @@ void show_substitutions_info(const PresetsConfigSubstitutions& presets_config_su
 		add_config_substitutions(substitution.substitutions, changes);
 	}
 
-	InfoDialog msg(nullptr, _L("Configuration bundle was loaded, however some configuration values were not recognized."), substitution_message(changes));
+	InfoDialog msg(nullptr, _L("Configuration bundle was loaded, however some configuration values were not recognized."), substitution_message(changes), true);
 	msg.ShowModal();
 }
 
@@ -363,7 +363,7 @@ void show_substitutions_info(const ConfigSubstitutions& config_substitutions, co
 
 	InfoDialog msg(nullptr, 
 		format_wxstr(_L("Configuration file \"%1%\" was loaded, however some configuration values were not recognized."), from_u8(filename)), 
-		substitution_message(changes));
+		substitution_message(changes), true);
 	msg.ShowModal();
 }
 
@@ -383,6 +383,9 @@ void create_combochecklist(wxComboCtrl* comboCtrl, const std::string& text, cons
 
 		// the following line messes up the popup size the first time it is shown on wxWidgets 3.1.3
 //		comboCtrl->EnablePopupAnimation(false);
+#ifdef _WIN32
+		popup->SetFont(comboCtrl->GetFont());
+#endif // _WIN32
 		comboCtrl->SetPopupControl(popup);
 		wxString title = from_u8(text);
 		max_width = std::max(max_width, 60 + comboCtrl->GetTextExtent(title).x);

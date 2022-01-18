@@ -6,7 +6,8 @@
 @ECHO Performs initial build or rebuild of the app (build) and deps (build/deps).
 @ECHO Default options are determined from build directories and system state.
 @ECHO.
-@ECHO Usage: build_win [-ARCH ^<arch^>] [-CONFIG ^<config^>] [-DESTDIR ^<directory^>]
+@ECHO Usage: build_win [-ARCH ^<arch^>] [-CONFIG ^<config^>] [-VERSION ^<version^>]
+@ECHO                  [-PRODUCT ^<product^>] [-DESTDIR ^<directory^>]
 @ECHO                  [-STEPS ^<all^|all-dirty^|app^|app-dirty^|deps^|deps-dirty^>]
 @ECHO                  [-RUN ^<console^|custom^|none^|viewer^|window^>]
 @ECHO.
@@ -14,6 +15,10 @@
 @ECHO                Default: %PS_ARCH_HOST%
 @ECHO  -c -CONFIG    MSVC project config
 @ECHO                Default: %PS_CONFIG_DEFAULT%
+@ECHO  -v -VERSION   Major version number of MSVC installation to use for build
+@ECHO                Default: %PS_VERSION_SUPPORTED%
+@ECHO  -p -PRODUCT   Product ID of MSVC installation to use for build
+@ECHO                Default: %PS_PRODUCT_DEFAULT%
 @ECHO  -s -STEPS     Performs only the specified build steps:
 @ECHO                  all - clean and build deps and app
 @ECHO                  all-dirty - build deps and app without cleaning
@@ -55,6 +60,23 @@ SET PS_DEPS_PATH_FILE_NAME=.DEPS_PATH.txt
 SET PS_DEPS_PATH_FILE=%~dp0deps\build\%PS_DEPS_PATH_FILE_NAME%
 SET PS_CONFIG_LIST="Debug;MinSizeRel;Release;RelWithDebInfo"
 
+REM The officially supported toolchain version is 16 (Visual Studio 2019)
+REM TODO: Update versions after Boost gets rolled to 1.78 or later
+SET PS_VERSION_SUPPORTED=16
+SET PS_VERSION_EXCEEDED=17
+SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+IF NOT EXIST "%VSWHERE%" SET VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
+FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`"%VSWHERE%" -nologo -property productId`) DO SET PS_PRODUCT_DEFAULT=%%I
+IF "%PS_PRODUCT_DEFAULT%" EQU "" (
+    SET EXIT_STATUS=-1
+    @ECHO ERROR: No Visual Studio installation found. 1>&2
+    GOTO :HELP
+)
+REM Default to the latest supported version if multiple are available
+FOR /F "tokens=1 USEBACKQ delims=." %%I IN (
+    `^""%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo -property catalog_buildVersion^"`
+) DO SET PS_VERSION_SUPPORTED=%%I
+
 REM Probe build directories and system state for reasonable default arguments
 pushd %~dp0
 SET PS_CONFIG=RelWithDebInfo
@@ -62,9 +84,12 @@ SET PS_ARCH=%PROCESSOR_ARCHITECTURE:amd64=x64%
 CALL :TOLOWER PS_ARCH
 SET PS_RUN=none
 SET PS_DESTDIR=
+SET PS_VERSION=
+SET PS_PRODUCT=%PS_PRODUCT_DEFAULT%
 CALL :RESOLVE_DESTDIR_CACHE
 
 REM Set up parameters used by help menu
+SET EXIT_STATUS=0
 SET PS_CONFIG_DEFAULT=%PS_CONFIG%
 SET PS_ARCH_HOST=%PS_ARCH%
 (echo " -help /help -h /h -? /? ")| findstr /I /C:" %~1 ">nul && GOTO :HELP
@@ -74,7 +99,7 @@ SET EXIT_STATUS=1
 SET PS_CURRENT_STEP=arguments
 SET PARSER_STATE=
 SET PARSER_FAIL=
-FOR %%I in (%*) DO CALL :PARSE_OPTION "ARCH CONFIG DESTDIR STEPS RUN" PARSER_STATE "%%~I"
+FOR %%I in (%*) DO CALL :PARSE_OPTION "ARCH CONFIG DESTDIR STEPS RUN VERSION PRODUCT" PARSER_STATE "%%~I"
 IF "%PARSER_FAIL%" NEQ "" (
     @ECHO ERROR: Invalid switch: %PARSER_FAIL% 1>&2
     GOTO :HELP
@@ -123,6 +148,15 @@ IF "%PS_RUN%" NEQ "none" IF "%PS_STEPS:~0,4%" EQU "deps" (
     @ECHO ERROR: RUN=none is the only valid option for STEPS "deps" or "deps-dirty"
     GOTO :HELP
 )
+IF DEFINED PS_VERSION (
+    SET /A PS_VERSION_EXCEEDED=%PS_VERSION% + 1
+) ELSE SET PS_VERSION=%PS_VERSION_SUPPORTED%
+SET MSVC_FILTER=-products Microsoft.VisualStudio.Product.%PS_PRODUCT% -version "[%PS_VERSION%,%PS_VERSION_EXCEEDED%)"
+FOR /F "tokens=* USEBACKQ" %%I IN (`^""%VSWHERE%" %MSVC_FILTER% -nologo -property installationPath^"`) DO SET MSVC_DIR=%%I
+IF NOT EXIST "%MSVC_DIR%" (
+    @ECHO ERROR: Compatible Visual Studio installation not found. 1>&2
+    GOTO :HELP
+)
 REM Give the user a chance to cancel if we found something odd.
 IF "%PS_ASK_TO_CONTINUE%" EQU "" GOTO :BUILD_ENV
 @ECHO.
@@ -141,9 +175,6 @@ SET PS_CURRENT_STEP=environment
 @ECHO ** Run App:      %PS_RUN%
 @ECHO ** Deps path:    %PS_DESTDIR%
 @ECHO ** Using Microsoft Visual Studio installation found at:
-SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-IF NOT EXIST "%VSWHERE%" SET VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
-FOR /F "tokens=* USEBACKQ" %%I IN (`"%VSWHERE%" -nologo -property installationPath`) DO SET MSVC_DIR=%%I
 @ECHO **  %MSVC_DIR%
 CALL "%MSVC_DIR%\Common7\Tools\vsdevcmd.bat" -arch=%PS_ARCH% -host_arch=%PS_ARCH_HOST% -app_platform=Desktop
 IF %ERRORLEVEL% NEQ 0 GOTO :END
@@ -159,11 +190,17 @@ REM Build deps
 :BUILD_DEPS
 SET EXIT_STATUS=3
 SET PS_CURRENT_STEP=deps
-IF "%PS_STEPS_DIRTY%" EQU "" CALL :MAKE_OR_CLEAN_DIRECTORY deps\build "%PS_DEPS_PATH_FILE_NAME%"
+IF "%PS_STEPS_DIRTY%" EQU "" (
+    CALL :MAKE_OR_CLEAN_DIRECTORY deps\build "%PS_DEPS_PATH_FILE_NAME%" .vs
+    CALL :MAKE_OR_CLEAN_DIRECTORY "%PS_DESTDIR%"
+)
 cd deps\build || GOTO :END
-cmake.exe .. -DDESTDIR="%PS_DESTDIR%" || GOTO :END
+cmake.exe .. -DDESTDIR="%PS_DESTDIR%"
+IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
+    (del CMakeCache.txt && cmake.exe .. -DDESTDIR="%PS_DESTDIR%") || GOTO :END
+) ELSE GOTO :END
 (echo %PS_DESTDIR%)> "%PS_DEPS_PATH_FILE%"
-msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% || GOTO :END
+msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG%  /v:quiet || GOTO :END
 cd ..\..
 IF /I "%PS_STEPS:~0,4%" EQU "deps" GOTO :RUN_APP
 
@@ -171,7 +208,7 @@ REM Build app
 :BUILD_APP
 SET EXIT_STATUS=4
 SET PS_CURRENT_STEP=app
-IF "%PS_STEPS_DIRTY%" EQU "" CALL :MAKE_OR_CLEAN_DIRECTORY build "%PS_CUSTOM_RUN_FILE%"
+IF "%PS_STEPS_DIRTY%" EQU "" CALL :MAKE_OR_CLEAN_DIRECTORY build "%PS_CUSTOM_RUN_FILE%" .vs
 cd build || GOTO :END
 REM Make sure we have a custom batch file skeleton for the run stage
 set PS_CUSTOM_BAT=%PS_CUSTOM_RUN_FILE%
@@ -181,9 +218,12 @@ SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'
 ) do SET PS_PROJECT_IS_OPEN=%%~I
-cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% || GOTO :END
+cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%
+IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
+    (del CMakeCache.txt && cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%) || GOTO :END
+) ELSE GOTO :END
 REM Skip the build step if we're using the undocumented app-cmake to regenerate the full config from inside devenv
-IF "%PS_STEPS%" NEQ "app-cmake" msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% || GOTO :END
+IF "%PS_STEPS%" NEQ "app-cmake" msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% /v:quiet || GOTO :END
 (echo %PS_DESTDIR%)> "%PS_DEPS_PATH_FILE_FOR_CONFIG%"
 
 REM Run app
@@ -196,8 +236,8 @@ IF "%PS_CURRENT_STEP%" NEQ "arguments" (
 )
 SET EXIT_STATUS=5
 SET PS_CURRENT_STEP=run
-cd src\%PS_CONFIG% || GOTO :END
 IF "%PS_RUN%" EQU "none" GOTO :PROLOGUE
+cd src\%PS_CONFIG% || GOTO :END
 SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'
@@ -262,8 +302,11 @@ REM Functions and stubs start here.
 
 :RESOLVE_DESTDIR_CACHE
 @REM Resolves all DESTDIR cache values and sets PS_STEPS_DEFAULT
-@REM Note: This just sets global variableq, so it doesn't use setlocal.
-SET PS_DEPS_PATH_FILE_FOR_CONFIG=%~dp0build\%PS_ARCH%\%PS_CONFIG%\%PS_DEPS_PATH_FILE_NAME%
+@REM Note: This just sets global variables, so it doesn't use setlocal.
+SET PS_DEPS_PATH_FILE_FOR_CONFIG=%~dp0build\.vs\%PS_ARCH%\%PS_CONFIG%\%PS_DEPS_PATH_FILE_NAME%
+mkdir "%~dp0build\.vs\%PS_ARCH%\%PS_CONFIG%" > nul 2> nul
+REM Copy a legacy file if we don't have one in the proper location.
+echo f|xcopy /D "%~dp0build\%PS_ARCH%\%PS_CONFIG%\%PS_DEPS_PATH_FILE_NAME%" "%PS_DEPS_PATH_FILE_FOR_CONFIG%" > nul 2> nul
 CALL :CANONICALIZE_PATH PS_DEPS_PATH_FILE_FOR_CONFIG
 IF EXIST "%PS_DEPS_PATH_FILE_FOR_CONFIG%" (
     FOR /F "tokens=* USEBACKQ" %%I IN ("%PS_DEPS_PATH_FILE_FOR_CONFIG%") DO (

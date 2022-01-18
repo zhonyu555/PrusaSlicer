@@ -271,7 +271,11 @@ public:
     // Centering offset of the sliced mesh from the scaled and rotated mesh of the model.
     const Point& 			     center_offset() const  { return m_center_offset; }
 
-    bool                         has_brim() const       { return this->config().brim_type != btNoBrim && this->config().brim_width.value > 0.; }
+    bool                         has_brim() const       {
+        return this->config().brim_type != btNoBrim
+            && this->config().brim_width.value > 0.
+            && ! this->has_raft();
+    }
 
     // This is the *total* layer count (including support layers)
     // this value is not supposed to be compared with Layer::id
@@ -296,8 +300,8 @@ public:
     size_t          support_layer_count() const { return m_support_layers.size(); }
     void            clear_support_layers();
     SupportLayer*   get_support_layer(int idx) { return m_support_layers[idx]; }
-    SupportLayer*   add_support_layer(int id, coordf_t height, coordf_t print_z);
-    SupportLayerPtrs::iterator insert_support_layer(SupportLayerPtrs::iterator pos, size_t id, coordf_t height, coordf_t print_z, coordf_t slice_z);
+    SupportLayer*   add_support_layer(int id, int interface_id, coordf_t height, coordf_t print_z);
+    SupportLayerPtrs::iterator insert_support_layer(SupportLayerPtrs::iterator pos, size_t id, size_t interface_id, coordf_t height, coordf_t print_z, coordf_t slice_z);
     void            delete_support_layer(int idx);
     
     // Initialize the layer_height_profile from the model_object's layer_height_profile, from model_object's layer height table, or from slicing parameters.
@@ -321,7 +325,7 @@ public:
     bool                        has_raft()              const { return m_config.raft_layers > 0; }
     bool                        has_support_material()  const { return this->has_support() || this->has_raft(); }
     // Checks if the model object is painted using the multi-material painting gizmo.
-    bool                        is_mm_painted()         const { return this->model_object()->is_mm_painted(); };
+    bool                        is_mm_painted()         const { return this->model_object()->is_mm_painted(); }
 
     // returns 0-based indices of extruders used to print the object (without brim, support and other helper extrusions)
     std::vector<unsigned int>   object_extruders() const;
@@ -451,6 +455,10 @@ struct PrintStatistics
     double                          total_weight;
     double                          total_wipe_tower_cost;
     double                          total_wipe_tower_filament;
+    std::vector<unsigned int>       printing_extruders;
+    unsigned int                    initial_extruder_id;
+    std::string                     initial_filament_type;
+    std::string                     printing_filament_types;
     std::map<size_t, double>        filament_stats;
 
     // Config with the filled in print statistics.
@@ -468,7 +476,11 @@ struct PrintStatistics
         total_weight           = 0.;
         total_wipe_tower_cost  = 0.;
         total_wipe_tower_filament = 0.;
+        initial_extruder_id    = 0;
+        initial_filament_type.clear();
+        printing_filament_types.clear();
         filament_stats.clear();
+        printing_extruders.clear();
     }
 };
 
@@ -517,7 +529,7 @@ public:
     void                process() override;
     // Exports G-code into a file name based on the path_template, returns the file path of the generated G-code file.
     // If preview_data is not null, the preview_data is filled in for the G-code visualization (not used by the command line Slic3r).
-    std::string         export_gcode(const std::string& path_template, GCodeProcessor::Result* result, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
+    std::string         export_gcode(const std::string& path_template, GCodeProcessorResult* result, ThumbnailsGeneratorCallback thumbnail_cb = nullptr);
 
     // methods for handling state
     bool                is_step_done(PrintStep step) const { return Inherited::is_step_done(step); }

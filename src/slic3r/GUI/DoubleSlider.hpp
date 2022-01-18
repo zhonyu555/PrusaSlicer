@@ -3,6 +3,7 @@
 
 #include "libslic3r/CustomGCode.hpp"
 #include "wxExtensions.hpp"
+#include "DoubleSlider_Utils.hpp"
 
 #include <wx/window.h>
 #include <wx/control.h>
@@ -17,6 +18,8 @@ class wxMenu;
 namespace Slic3r {
 
 using namespace CustomGCode;
+class PrintObject;
+class Layer;
 
 namespace DoubleSlider {
 
@@ -24,6 +27,15 @@ namespace DoubleSlider {
  * So, let use same value as a permissible error for layer height.
  */
 constexpr double epsilon() { return 0.0011; }
+
+// return true when areas are mostly equivalent
+bool equivalent_areas(const double& bottom_area, const double& top_area);
+
+// return true if color change was detected
+bool check_color_change(PrintObject* object, size_t frst_layer_id, size_t layers_cnt, bool check_overhangs,
+                        // what to do with detected color change
+                        // and return true when detection have to be desturbed
+                        std::function<bool(Layer*)> break_condition);
 
 // custom message the slider sends to its parent to notify a tick-change:
 wxDECLARE_EVENT(wxCUSTOMEVT_TICKSCHANGED, wxEvent);
@@ -104,9 +116,10 @@ class TickCodeInfo
     bool        m_suppress_plus     = false;
     bool        m_suppress_minus    = false;
     bool        m_use_default_colors= false;
-    int         m_default_color_idx = 0;
+//    int         m_default_color_idx = 0;
 
     std::vector<std::string>* m_colors {nullptr};
+    ColorGenerator color_generator;
 
     std::string get_color_for_tick(TickCode tick, Type type, const int extruder);
 

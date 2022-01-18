@@ -36,17 +36,13 @@
 #define ENABLE_FIXED_SCREEN_SIZE_POINT_MARKERS 1
 
 
-//====================
-// 2.4.0.alpha0 techs
-//====================
-#define ENABLE_2_4_0_ALPHA0 1
+//================
+// 2.4.1.rc techs
+//================
+#define ENABLE_2_4_1_RC 1
 
-// Enable delayed rendering of transparent volumes
-#define ENABLE_DELAYED_TRANSPARENT_VOLUMES_RENDERING (1 && ENABLE_2_4_0_ALPHA0)
-// Enable the fix of importing color print view from gcode files into GCodeViewer
-#define ENABLE_FIX_IMPORTING_COLOR_PRINT_VIEW_INTO_GCODEVIEWER (1 && ENABLE_2_4_0_ALPHA0)
-// Enable drawing contours, at cut level, for sinking volumes
-#define ENABLE_SINKING_CONTOURS (1 && ENABLE_2_4_0_ALPHA0)
+// Enable detection of layers for spiral vase prints
+#define ENABLE_SPIRAL_VASE_LAYERS (1 && ENABLE_2_4_1_RC)
 
 
 #endif // _prusaslicer_technologies_h_

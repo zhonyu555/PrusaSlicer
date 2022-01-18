@@ -43,6 +43,44 @@ namespace GUI {
 class TabPresetComboBox;
 class OG_CustomCtrl;
 
+// G-code substitutions
+
+// Substitution Manager - helper for manipuation of the substitutions
+class SubstitutionManager
+{
+	DynamicPrintConfig* m_config{ nullptr };
+	wxWindow*			m_parent{ nullptr };
+	wxFlexGridSizer*	m_grid_sizer{ nullptr };
+
+	int                 m_em{10};
+	std::function<void()> m_cb_edited_substitution{ nullptr };
+
+public:
+	SubstitutionManager() {};
+	~SubstitutionManager() {};
+
+	void init(DynamicPrintConfig* config, wxWindow* parent, wxFlexGridSizer* grid_sizer);
+	void create_legend();
+	void delete_substitution(int substitution_id);
+	void add_substitution(	int substitution_id = -1,
+							const std::string& plain_pattern = std::string(),
+							const std::string& format = std::string(),
+							const std::string& params = std::string());
+	void update_from_config();
+	void delete_all();
+	void edit_substitution(int substitution_id, 
+						   int opt_pos, // option position insubstitution [0, 2]
+						   const std::string& value);
+	void set_cb_edited_substitution(std::function<void()> cb_edited_substitution) {
+		m_cb_edited_substitution = cb_edited_substitution;
+	}
+	void call_ui_update() {
+		if (m_cb_edited_substitution)
+			m_cb_edited_substitution();
+	}
+	bool is_empty_substitutions();
+};
+
 // Single Tab page containing a{ vsizer } of{ optgroups }
 // package Slic3r::GUI::Tab::Page;
 using ConfigOptionsGroupShp = std::shared_ptr<ConfigOptionsGroup>;
@@ -282,7 +320,6 @@ public:
     // Select a new preset, possibly delete the current one.
 	void		select_preset(std::string preset_name = "", bool delete_current = false, const std::string& last_selected_ph_printer_name = "");
 	bool		may_discard_current_dirty_preset(PresetCollection* presets = nullptr, const std::string& new_printer_name = "");
-    bool        may_switch_to_SLA_preset();
 
     virtual void    clear_pages();
     virtual void    update_description_lines();
@@ -352,7 +389,7 @@ public:
     bool        validate_custom_gcodes_was_shown{ false };
 
 protected:
-	void			create_line_with_widget(ConfigOptionsGroup* optgroup, const std::string& opt_key, const wxString& path, widget_t widget);
+	void			create_line_with_widget(ConfigOptionsGroup* optgroup, const std::string& opt_key, const std::string& path, widget_t widget);
 	wxSizer*		compatible_widget_create(wxWindow* parent, PresetDependencies &deps);
 	void 			compatible_widget_reload(PresetDependencies &deps);
 	void			load_key_value(const std::string& opt_key, const boost::any& value, bool saved_value = false);
@@ -384,10 +421,15 @@ public:
 	void		update() override;
 	void		clear_pages() override;
 	bool 		supports_printer_technology(const PrinterTechnology tech) const override { return tech == ptFFF; }
+	wxSizer*	create_manage_substitution_widget(wxWindow* parent);
+	wxSizer*	create_substitutions_widget(wxWindow* parent);
 
 private:
 	ogStaticText*	m_recommended_thin_wall_thickness_description_line = nullptr;
 	ogStaticText*	m_top_bottom_shell_thickness_explanation = nullptr;
+	ogStaticText*	m_post_process_explanation = nullptr;
+	ScalableButton* m_del_all_substitutions_btn{nullptr};
+	SubstitutionManager m_subst_manager;
 };
 
 class TabFilament : public Tab
@@ -421,6 +463,7 @@ private:
 	bool		m_has_single_extruder_MM_page = false;
 	bool		m_use_silent_mode = false;
     bool        m_supports_travel_acceleration = false;
+	bool        m_supports_min_feedrates = false;
 	void		append_option_line(ConfigOptionsGroupShp optgroup, const std::string opt_key);
 	bool		m_rebuild_kinematics_page = false;
 	ogStaticText* m_machine_limits_description_line {nullptr};
@@ -469,7 +512,7 @@ public:
 
 	wxSizer*	create_bed_shape_widget(wxWindow* parent);
 	void		cache_extruder_cnt();
-	void		apply_extruder_cnt_from_cache();
+	bool		apply_extruder_cnt_from_cache();
 };
 
 class TabSLAMaterial : public Tab
@@ -481,7 +524,7 @@ public:
 
 	void		build() override;
 	void		reload_config() override;
-	void		toggle_options() override {};
+	void		toggle_options() override;
 	void		update() override;
     void		init_options_list() override;
 	bool 		supports_printer_technology(const PrinterTechnology tech) const override { return tech == ptSLA; }

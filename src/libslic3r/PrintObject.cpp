@@ -6,6 +6,7 @@
 #include "Geometry.hpp"
 #include "I18N.hpp"
 #include "Layer.hpp"
+#include "MutablePolygon.hpp"
 #include "SupportMaterial.hpp"
 #include "Surface.hpp"
 #include "Slicing.hpp"
@@ -226,6 +227,17 @@ void PrintObject::prepare_infill()
 
     m_print->set_status(30, L("Preparing infill"));
 
+    if (m_typed_slices) {
+        // To improve robustness of detect_surfaces_type() when reslicing (working with typed slices), see GH issue #7442.
+        // The preceding step (perimeter generator) only modifies extra_perimeters and the extra perimeters are only used by discover_vertical_shells()
+        // with more than a single region. If this step does not use Surface::extra_perimeters or Surface::extra_perimeters is always zero, it is safe
+        // to reset to the untyped slices before re-runnning detect_surfaces_type().
+        for (Layer* layer : m_layers) {
+            layer->restore_untyped_slices_no_extra_perimeters();
+            m_print->throw_if_canceled();
+        }
+    }
+
     // This will assign a type (top/bottom/internal) to $layerm->slices.
     // Then the classifcation of $layerm->slices is transfered onto 
     // the $layerm->fill_surfaces by clipping $layerm->fill_surfaces
@@ -397,22 +409,6 @@ void PrintObject::generate_support_material()
                 if (layer->empty())
                     throw Slic3r::SlicingError("Levitating objects cannot be printed without supports.");
 #endif
-
-            // Do we have custom support data that would not be used?
-            // Notify the user in that case.
-            if (! this->has_support()) {
-                for (const ModelVolume* mv : this->model_object()->volumes) {
-                    bool has_enforcers = mv->is_support_enforcer() || 
-                        (mv->is_model_part() && mv->supported_facets.has_facets(*mv, EnforcerBlockerType::ENFORCER));
-                    if (has_enforcers) {
-                        this->active_step_add_warning(PrintStateBase::WarningLevel::CRITICAL,
-                            L("An object has custom support enforcers which will not be used "
-                              "because supports are off. Consider turning them on.") + "\n" +
-                            (L("Object name")) + ": " + this->model_object()->name);
-                        break;
-                    }
-                }
-            }
         }
         this->set_done(posSupportMaterial);
     }
@@ -477,15 +473,15 @@ void PrintObject::clear_support_layers()
     m_support_layers.clear();
 }
 
-SupportLayer* PrintObject::add_support_layer(int id, coordf_t height, coordf_t print_z)
+SupportLayer* PrintObject::add_support_layer(int id, int interface_id, coordf_t height, coordf_t print_z)
 {
-    m_support_layers.emplace_back(new SupportLayer(id, this, height, print_z, -1));
+    m_support_layers.emplace_back(new SupportLayer(id, interface_id, this, height, print_z, -1));
     return m_support_layers.back();
 }
 
-SupportLayerPtrs::iterator PrintObject::insert_support_layer(SupportLayerPtrs::iterator pos, size_t id, coordf_t height, coordf_t print_z, coordf_t slice_z)
+SupportLayerPtrs::iterator PrintObject::insert_support_layer(SupportLayerPtrs::iterator pos, size_t id, size_t interface_id, coordf_t height, coordf_t print_z, coordf_t slice_z)
 {
-    return m_support_layers.insert(pos, new SupportLayer(id, this, height, print_z, slice_z));
+    return m_support_layers.insert(pos, new SupportLayer(id, interface_id, this, height, print_z, slice_z));
 }
 
 // Called by Print::apply().
@@ -500,7 +496,7 @@ bool PrintObject::invalidate_state_by_config_options(
     bool invalidated = false;
     for (const t_config_option_key &opt_key : opt_keys) {
         if (   opt_key == "brim_width"
-            || opt_key == "brim_offset"
+            || opt_key == "brim_separation"
             || opt_key == "brim_type") {
             // Brim is printed below supports, support invalidates brim and skirt.
             steps.emplace_back(posSupportMaterial);
@@ -535,7 +531,6 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posPerimeters);
         } else if (
                opt_key == "layer_height"
-            || opt_key == "first_layer_height"
             || opt_key == "mmu_segmented_region_max_width"
             || opt_key == "raft_layers"
             || opt_key == "raft_contact_distance"
@@ -792,7 +787,7 @@ void PrintObject::detect_surfaces_type()
                         ExPolygons upper_slices = interface_shells ? 
                             diff_ex(layerm->slices.surfaces, upper_layer->m_regions[region_id]->slices.surfaces, ApplySafetyOffset::Yes) :
                             diff_ex(layerm->slices.surfaces, upper_layer->lslices, ApplySafetyOffset::Yes);
-                        surfaces_append(top, offset2_ex(upper_slices, -offset, offset), stTop);
+                        surfaces_append(top, opening_ex(upper_slices, offset), stTop);
                     } else {
                         // if no upper layer, all surfaces of this one are solid
                         // we clone surfaces because we're going to clear the slices collection
@@ -810,15 +805,15 @@ void PrintObject::detect_surfaces_type()
                             to_polygons(lower_layer->get_region(region_id)->slices.surfaces) : 
                             to_polygons(lower_layer->slices);
                         surfaces_append(bottom,
-                            offset2_ex(diff(layerm->slices.surfaces, lower_slices, true), -offset, offset),
+                            opening_ex(diff(layerm->slices.surfaces, lower_slices, true), offset),
                             surface_type_bottom_other);
 #else
                         // Any surface lying on the void is a true bottom bridge (an overhang)
                         surfaces_append(
                             bottom,
-                            offset2_ex(
+                            opening_ex(
                                 diff_ex(layerm->slices.surfaces, lower_layer->lslices, ApplySafetyOffset::Yes),
-                                -offset, offset),
+                                offset),
                             surface_type_bottom_other);
                         // if user requested internal shells, we need to identify surfaces
                         // lying on other slices not belonging to this region
@@ -827,12 +822,12 @@ void PrintObject::detect_surfaces_type()
                             // on something else, excluding those lying on our own region
                             surfaces_append(
                                 bottom,
-                                offset2_ex(
+                                opening_ex(
                                     diff_ex(
                                         intersection(layerm->slices.surfaces, lower_layer->lslices), // supported
                                         lower_layer->m_regions[region_id]->slices.surfaces,
                                         ApplySafetyOffset::Yes),
-                                    -offset, offset),
+                                    offset),
                                 stBottom);
                         }
 #endif
@@ -1106,7 +1101,7 @@ void PrintObject::discover_vertical_shells()
                     // For a multi-material print, simulate perimeter / infill split as if only a single extruder has been used for the whole print.
                     if (perimeter_offset > 0.) {
                         // The layer.lslices are forced to merge by expanding them first.
-                        polygons_append(cache.holes, offset(offset_ex(layer.lslices, 0.3f * perimeter_min_spacing), - perimeter_offset - 0.3f * perimeter_min_spacing));
+                        polygons_append(cache.holes, offset2(layer.lslices, 0.3f * perimeter_min_spacing, - perimeter_offset - 0.3f * perimeter_min_spacing));
 #ifdef SLIC3R_DEBUG_SLICE_PROCESSING
                         {
                             Slic3r::SVG svg(debug_out_path("discover_vertical_shells-extra-holes-%d.svg", debug_idx), get_extents(layer.lslices));
@@ -1343,7 +1338,7 @@ void PrintObject::discover_vertical_shells()
 #if 1
                     // Intentionally inflate a bit more than how much the region has been shrunk, 
                     // so there will be some overlap between this solid infill and the other infill regions (mainly the sparse infill).
-                    shell = offset(offset_ex(union_ex(shell), - 0.5f * min_perimeter_infill_spacing), 0.8f * min_perimeter_infill_spacing, ClipperLib::jtSquare);
+                    shell = opening(union_(shell), 0.5f * min_perimeter_infill_spacing, 0.8f * min_perimeter_infill_spacing, ClipperLib::jtSquare);
                     if (shell.empty())
                         continue;
 #else
@@ -1355,7 +1350,7 @@ void PrintObject::discover_vertical_shells()
                     // get a triangle in $too_narrow; if we grow it below then the shell
                     // would have a different shape from the external surface and we'd still
                     // have the same angle, so the next shell would be grown even more and so on.
-                    Polygons too_narrow = diff(shell, offset2(shell, -margin, margin, ClipperLib::jtMiter, 5.), true);
+                    Polygons too_narrow = diff(shell, opening(shell, margin, ClipperLib::jtMiter, 5.), true);
                     if (! too_narrow.empty()) {
                         // grow the collapsing parts and add the extra area to  the neighbor layer 
                         // as well as to our original surfaces so that we support this 
@@ -1449,7 +1444,7 @@ void PrintObject::bridge_over_infill()
                 Polygons to_bridge_pp = internal_solid;
                 
                 // iterate through lower layers spanned by bridge_flow
-                double bottom_z = layer->print_z - bridge_flow.height();
+                double bottom_z = layer->print_z - bridge_flow.height() - EPSILON;
                 for (int i = int(layer_it - m_layers.begin()) - 1; i >= 0; --i) {
                     const Layer* lower_layer = m_layers[i];
                     
@@ -1471,7 +1466,7 @@ void PrintObject::bridge_over_infill()
                 // The gaps will be filled by a separate region, which makes the infill less stable and it takes longer.
                 {
                     float min_width = float(bridge_flow.scaled_width()) * 3.f;
-                    to_bridge_pp = offset2(to_bridge_pp, -min_width, +min_width);
+                    to_bridge_pp = opening(to_bridge_pp, min_width);
                 }
                 
                 if (to_bridge_pp.empty()) continue;
@@ -1613,6 +1608,8 @@ PrintRegionConfig region_config_from_model_volume(const PrintRegionConfig &defau
         config.fill_density.value = 0;
     else 
         config.fill_density.value = std::min(config.fill_density.value, 100.);
+    if (config.fuzzy_skin.value != FuzzySkinType::None && (config.fuzzy_skin_point_dist.value < 0.01 || config.fuzzy_skin_thickness.value < 0.001))
+        config.fuzzy_skin.value = FuzzySkinType::None;
     return config;
 }
 
@@ -1687,7 +1684,7 @@ bool PrintObject::update_layer_height_profile(const ModelObject &model_object, c
         // Must not be of even length.
         ((layer_height_profile.size() & 1) != 0 ||
             // Last entry must be at the top of the object.
-            std::abs(layer_height_profile[layer_height_profile.size() - 2] - slicing_parameters.object_print_z_max) > 1e-3))
+            std::abs(layer_height_profile[layer_height_profile.size() - 2] - slicing_parameters.object_print_z_max + slicing_parameters.object_print_z_min) > 1e-3))
         layer_height_profile.clear();
 
     if (layer_height_profile.empty()) {
@@ -1727,9 +1724,6 @@ void PrintObject::clip_fill_surfaces()
         Layer *layer       = m_layers[layer_id];
         Layer *lower_layer = m_layers[layer_id - 1];
         // Detect things that we need to support.
-        // Cummulative slices.
-        Polygons slices;
-        polygons_append(slices, layer->lslices);
         // Cummulative fill surfaces.
         Polygons fill_surfaces;
         // Solid surfaces to be supported.
@@ -1754,7 +1748,7 @@ void PrintObject::clip_fill_surfaces()
         {
             // Get perimeters area as the difference between slices and fill_surfaces
             // Only consider the area that is not supported by lower perimeters
-            Polygons perimeters = intersection(diff(slices, fill_surfaces), lower_layer_fill_surfaces);
+            Polygons perimeters = intersection(diff(layer->lslices, fill_surfaces), lower_layer_fill_surfaces);
             // Only consider perimeter areas that are at least one extrusion width thick.
             //FIXME Offset2 eats out from both sides, while the perimeters are create outside in.
             //Should the pw not be half of the current value?
@@ -1762,11 +1756,17 @@ void PrintObject::clip_fill_surfaces()
             for (const LayerRegion *layerm : layer->m_regions)
                 pw = std::min(pw, (float)layerm->flow(frPerimeter).scaled_width());
             // Append such thick perimeters to the areas that need support
-            polygons_append(overhangs, offset2(perimeters, -pw, +pw));
+            polygons_append(overhangs, opening(perimeters, pw));
         }
-        // Find new internal infill.
-        polygons_append(overhangs, std::move(upper_internal));
-        upper_internal = intersection(overhangs, lower_layer_internal_surfaces);
+        // Merge the new overhangs, find new internal infill.
+        polygons_append(upper_internal, std::move(overhangs));
+        static constexpr const auto closing_radius = scaled<float>(2.f);
+        upper_internal = intersection(
+            // Regularize the overhang regions, so that the infill areas will not become excessively jagged.
+            smooth_outward(
+                closing(upper_internal, closing_radius, ClipperLib::jtSquare, 0.),
+                scaled<coord_t>(0.1)), 
+            lower_layer_internal_surfaces);
         // Apply new internal infill to regions.
         for (LayerRegion *layerm : lower_layer->m_regions) {
             if (layerm->region().config().fill_density.value == 0)
@@ -1803,7 +1803,7 @@ void PrintObject::discover_horizontal_shells()
             if (region_config.solid_infill_every_layers.value > 0 && region_config.fill_density.value > 0 &&
                 (i % region_config.solid_infill_every_layers) == 0) {
                 // Insert a solid internal layer. Mark stInternal surfaces as stInternalSolid or stInternalBridge.
-                SurfaceType type = (region_config.fill_density == 100) ? stInternalSolid : stInternalBridge;
+                SurfaceType type = (region_config.fill_density == 100 || region_config.solid_infill_every_layers == 1) ? stInternalSolid : stInternalBridge;
                 for (Surface &surface : layerm->fill_surfaces.surfaces)
                     if (surface.surface_type == stInternal)
                         surface.surface_type = type;
@@ -1902,7 +1902,7 @@ void PrintObject::discover_horizontal_shells()
                         float margin = float(neighbor_layerm->flow(frExternalPerimeter).scaled_width());
                         Polygons too_narrow = diff(
                             new_internal_solid, 
-                            offset2(new_internal_solid, -margin, +margin + ClipperSafetyOffset, jtMiter, 5));
+                            opening(new_internal_solid, margin, margin + ClipperSafetyOffset, jtMiter, 5));
                         // Trim the regularized region by the original region.
                         if (! too_narrow.empty())
                             new_internal_solid = solid = diff(new_internal_solid, too_narrow);
@@ -1921,7 +1921,7 @@ void PrintObject::discover_horizontal_shells()
                         // have the same angle, so the next shell would be grown even more and so on.
                         Polygons too_narrow = diff(
                             new_internal_solid,
-                            offset2(new_internal_solid, -margin, +margin + ClipperSafetyOffset, ClipperLib::jtMiter, 5));
+                            opening(new_internal_solid, margin, margin + ClipperSafetyOffset, ClipperLib::jtMiter, 5));
                         if (! too_narrow.empty()) {
                             // grow the collapsing parts and add the extra area to  the neighbor layer 
                             // as well as to our original surfaces so that we support this 
@@ -1933,7 +1933,7 @@ void PrintObject::discover_horizontal_shells()
                                     polygons_append(internal, to_polygons(surface.expolygon));
                             polygons_append(new_internal_solid, 
                                 intersection(
-                                    offset(too_narrow, +margin),
+                                    expand(too_narrow, +margin),
                                     // Discard bridges as they are grown for anchoring and we can't
                                     // remove such anchors. (This may happen when a bridge is being 
                                     // anchored onto a wall where little space remains after the bridge
@@ -2295,10 +2295,25 @@ void PrintObject::project_and_append_custom_facets(
             const indexed_triangle_set custom_facets = seam
                     ? mv->seam_facets.get_facets_strict(*mv, type)
                     : mv->supported_facets.get_facets_strict(*mv, type);
-            if (! custom_facets.indices.empty())
-                project_triangles_to_slabs(this->layers(), custom_facets, 
-                    (this->trafo_centered() * mv->get_matrix()).cast<float>(),
-                    seam, out);
+            if (! custom_facets.indices.empty()) {
+                if (seam)
+                    project_triangles_to_slabs(this->layers(), custom_facets,
+                        (this->trafo_centered() * mv->get_matrix()).cast<float>(),
+                        seam, out);
+                else {
+                    std::vector<Polygons> projected;
+                    // Support blockers or enforcers. Project downward facing painted areas upwards to their respective slicing plane.
+                    slice_mesh_slabs(custom_facets, zs_from_layers(this->layers()), this->trafo_centered() * mv->get_matrix(), nullptr, &projected, [](){});
+                    // Merge these projections with the output, layer by layer.
+                    assert(! projected.empty());
+                    assert(out.empty() || out.size() == projected.size());
+                    if (out.empty())
+                        out = std::move(projected);
+                    else
+                        for (size_t i = 0; i < out.size(); ++ i)
+                            append(out[i], std::move(projected[i]));
+                }
+            }
         }
 }
 

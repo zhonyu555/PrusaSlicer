@@ -58,6 +58,11 @@ void set_data_dir(const std::string &path);
 // Return a full path to the GUI resource files.
 const std::string& data_dir();
 
+// Format an output path for debugging purposes.
+// Writes out the output path prefix to the console for the first time the function is called,
+// so the user knows where to search for the debugging output.
+std::string debug_out_path(const char *name, ...);
+
 // A special type for strings encoded in the local Windows 8-bit code page.
 // This type is only needed for Perl bindings to relay to Perl that the string is raw, not UTF-8 encoded.
 typedef std::string local_encoded_string;
@@ -68,6 +73,10 @@ typedef std::string local_encoded_string;
 extern local_encoded_string encode_path(const char *src);
 extern std::string decode_path(const char *src);
 extern std::string normalize_utf8_nfc(const char *src);
+
+// Returns next utf8 sequence length. =number of bytes in string, that creates together one utf-8 character. 
+// Starting at pos. ASCII characters returns 1. Works also if pos is in the middle of the sequence.
+extern size_t get_utf8_sequence_length(const std::string& text, size_t pos = 0);
 
 // Safely rename a file even if the target exists.
 // On Windows, the file explorer (or anti-virus or whatever else) often locks the file
@@ -250,6 +259,19 @@ template<typename T> struct IsTriviallyCopyable { static constexpr bool value = 
 template<typename T> struct IsTriviallyCopyable : public std::is_trivially_copyable<T> {};
 #endif
 
+// A very lightweight ROII wrapper around C FILE.
+// The old C file API is much faster than C++ streams, thus they are recommended for processing large / huge files.
+struct FilePtr {
+    FilePtr(FILE *f) : f(f) {}
+    ~FilePtr() { this->close(); }
+    void close() { 
+        if (this->f) {
+            ::fclose(this->f);
+            this->f = nullptr;
+        }
+    }
+    FILE* f = nullptr;
+};
 
 class ScopeGuard
 {
