@@ -40,6 +40,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     option(DEP_WX_GTK3 "Build wxWidgets against GTK3" OFF)
 endif()
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    option(DEP_MSAN                 "Enable MemorySanitizer on Clang for Linux" OFF)
+    option(DEP_MSAN_RECOVERY        "Enable recovery from an error after an initialized value is found" ON) # It is enabled by default until all reports are investigated.
+    option(DEP_MSAN_ORIGIN_TRACKING "Enable tracking origins of uninitialized values" OFF) # It causes another slows down of program execution by a factor of 1.5x-2x.
+endif()
+
 # On developer machines, it can be enabled to speed up compilation and suppress warnings coming from IGL. 
 # FIXME:
 # Enabling this option is not safe. IGL will compile itself with its own version of Eigen while
@@ -141,18 +147,64 @@ else()
     include("deps-linux.cmake")
 endif()
 
+if (DEP_MSAN)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+        message(FATAL_ERROR "MemorySanitizer is available only in Clang.")
+    endif ()
+
+    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 12)
+        message(WARNING "MemorySanitizer builds are tested only with CLANG 12, other versions are untested but could be working.")
+    endif()
+
+    file(MAKE_DIRECTORY ${DESTDIR}/usr/lib)
+
+    include(MSan_Deps/Libcxx/Libcxx.cmake)
+    include(MSan_Deps/Chromium_prebuilt_libraries/Chromium.cmake)
+    include(MSan_Deps/LLVM/LLVM.cmake)
+    include(MSan_Deps/Mesa3D/Mesa3D.cmake)
+    include(MSan_Deps/fontconfig/fontconfig.cmake)
+
+    set(_msan_linker_flags "-fsanitize=memory")
+    if (DEP_MSAN_RECOVERY)
+        set(_msan_linker_flags "${_msan_linker_flags} -fsanitize-recover=memory")
+    endif ()
+    if (DEP_MSAN_ORIGIN_TRACKING)
+        set(_msan_linker_flags "${_msan_linker_flags} -fsanitize-memory-track-origins=2")
+    endif ()
+    set(_msan_common_flags   "${_msan_linker_flags} -fno-omit-frame-pointer")
+    set(_msan_only_cxx_flags "-nostdinc++ -stdlib=libc++ -isystem ${DESTDIR}/usr/local/include -isystem ${DESTDIR}/usr/local/include/c++/v1")
+    set(_msan_only_ld_flags  "-nostdinc++ -stdlib=libc++ -L${DESTDIR}/usr/local/lib -Wl,--rpath=${DESTDIR}/usr/local/lib")
+
+    # For dependencies that are configure using CFLAGS, CXXFLAGS and LDFLAGS instead of CMAKE_*_FLAGS.
+    set(MSAN_CMAKE_C_FLAGS   "${_msan_common_flags}")
+    set(MSAN_CMAKE_CXX_FLAGS "${_msan_common_flags} ${_msan_only_cxx_flags}")
+    set(MSAN_CMAKE_LD_FLAGS  "${_msan_common_flags} ${_msan_only_ld_flags}")
+
+    set(_msan_all_flags  "${_msan_common_flags} ${_msan_only_cxx_flags} ${_msan_only_ld_flags}")
+    set(MSAN_CMAKE_ARGS ${_MSAN_CMAKE_ARGS}
+            -DCMAKE_C_FLAGS:STRING=${MSAN_CMAKE_C_FLAGS}
+            -DCMAKE_CXX_FLAGS:STRING=${_msan_all_flags})
+
+    set(LIBCXX_PKG dep_Libcxx)
+    set(FONTCONFIG_PKG dep_fontconfig)
+else ()
+    set(MSAN_CMAKE_ARGS "")
+    set(LIBCXX_PKG "")
+    set(FONTCONFIG_PKG "")
+endif ()
+
 set(ZLIB_PKG "")
-if (NOT ZLIB_FOUND) 
+if (NOT ZLIB_FOUND OR DEP_MSAN)
     include(ZLIB/ZLIB.cmake)
     set(ZLIB_PKG dep_ZLIB)
 endif ()
 set(PNG_PKG "")
-if (NOT PNG_FOUND) 
+if (NOT PNG_FOUND OR DEP_MSAN)
     include(PNG/PNG.cmake)
     set(PNG_PKG dep_PNG)
 endif ()
 set(EXPAT_PKG "")
-if (NOT EXPAT_FOUND) 
+if (NOT EXPAT_FOUND OR DEP_MSAN)
     include(EXPAT/EXPAT.cmake)
     set(EXPAT_PKG dep_EXPAT)
 endif ()
@@ -208,6 +260,10 @@ else()
     # Not working, static build has different Eigen
     #list(APPEND _dep_list "dep_libigl")
 endif()
+
+if (DEP_MSAN)
+    list(APPEND _dep_list "dep_LLVM;dep_Mesa3D;dep_fontconfig;dep_Chromium_Libs")
+endif ()
 
 add_custom_target(deps ALL DEPENDS ${_dep_list})
 
