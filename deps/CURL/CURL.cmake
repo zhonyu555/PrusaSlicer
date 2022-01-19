@@ -59,7 +59,7 @@ prusaslicer_add_cmake_project(CURL
   # GIT_TAG             curl-7_75_0
   URL                 https://github.com/curl/curl/archive/refs/tags/curl-7_75_0.zip
   URL_HASH            SHA256=a63ae025bb0a14f119e73250f2c923f4bf89aa93b8d4fafa4a9f5353a96a765a
-  DEPENDS             ${ZLIB_PKG}
+  DEPENDS             ${LIBCXX_PKG} ${ZLIB_PKG}
   # PATCH_COMMAND       ${GIT_EXECUTABLE} checkout -f -- . && git clean -df && 
   #                     ${GIT_EXECUTABLE} apply --whitespace=fix ${CMAKE_CURRENT_LIST_DIR}/curl-mods.patch
   CMAKE_ARGS
@@ -67,6 +67,7 @@ prusaslicer_add_cmake_project(CURL
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DCURL_STATICLIB=${_curl_static}
     ${_curl_platform_flags}
+    ${MSAN_CMAKE_ARGS}
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

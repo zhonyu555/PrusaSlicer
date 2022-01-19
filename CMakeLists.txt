@@ -33,6 +33,9 @@ option(SLIC3R_MSVC_COMPILE_PARALLEL "Compile on Visual Studio in parallel" 1)
 option(SLIC3R_MSVC_PDB          "Generate PDB files on MSVC in Release mode" 1)
 option(SLIC3R_PERL_XS           "Compile XS Perl module and enable Perl unit and integration tests" 0)
 option(SLIC3R_ASAN              "Enable ASan on Clang and GCC" 0)
+option(SLIC3R_MSAN              "Enable MemorySanitizer on Clang for Linux" 0)
+option(SLIC3R_MSAN_RECOVERY     "Enable recovery from an error after an initialized value is found" 1) # It is enabled by default until all reports are investigated.
+option(SLIC3R_MSAN_ORIGIN_TRACKING "Enable tracking origins of uninitialized values" 0) # It causes another slows down of program execution by a factor of 1.5x-2x.
 # If SLIC3R_FHS is 1 -> SLIC3R_DESKTOP_INTEGRATION is always 0, othrewise variable.
 CMAKE_DEPENDENT_OPTION(SLIC3R_DESKTOP_INTEGRATION "Allow perfoming desktop integration during runtime" 1 "NOT SLIC3R_FHS" 0)
 
@@ -248,6 +251,44 @@ if (NOT MSVC AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMP
     endif()
 
 endif()
+
+if (SLIC3R_MSAN)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL Clang)
+        message(FATAL_ERROR "MemorySanitizer is available only in Clang.")
+    endif ()
+
+    if (SLIC3R_ASAN)
+        message(FATAL_ERROR "MemorySanitizer cannot be used at the same time as AddressSanitizer.")
+    endif ()
+
+    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_EQUAL 12)
+        message(WARNING "MemorySanitizer builds are tested only with CLANG 12, other versions are untested but could be working.")
+    endif()
+
+    add_compile_options(-nostdinc++)
+    add_compile_options(-stdlib=libc++)
+    add_compile_options(-fsanitize=memory)
+    add_compile_options(-fno-omit-frame-pointer)
+
+    include_directories(${CMAKE_PREFIX_PATH}/include)
+    include_directories(${CMAKE_PREFIX_PATH}/include/c++/v1)
+    link_directories(${CMAKE_PREFIX_PATH}/lib)
+
+    # Some libraries aren't correctly found without -Wl,--disable-new-dtags. https://stackoverflow.com/a/47243544
+    set(_msan_linker_flags "-fsanitize=memory -stdlib=libc++ -L${CMAKE_PREFIX_PATH}/lib -Wl,--disable-new-dtags -Wl,--rpath='$ORIGIN/../lib'")
+    if (SLIC3R_MSAN_RECOVERY)
+        add_compile_options(-fsanitize-recover=memory)
+        set(_msan_linker_flags "${_msan_linker_flags} -fsanitize-recover=memory")
+    endif ()
+    if (SLIC3R_MSAN_ORIGIN_TRACKING)
+        add_compile_options(-fsanitize-memory-track-origins=2)
+        set(_msan_linker_flags "${_msan_linker_flags} -fsanitize-memory-track-origins=2")
+    endif ()
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_msan_linker_flags}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_msan_linker_flags}")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_msan_linker_flags}")
+endif ()
 
 if (SLIC3R_ASAN)
     # ASAN should be available on MSVC starting with Visual Studio 2019 16.9
@@ -630,6 +671,14 @@ else ()
     install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
     install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
     install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${CMAKE_INSTALL_PREFIX}/resources")
+
+    if (SLIC3R_MSAN)
+        install(CODE "set(_MSAN_COPY_FROM \"${CMAKE_PREFIX_PATH}/../lib\")")
+        install(CODE "set(_MSAN_COPY_TO \"${CMAKE_INSTALL_PREFIX}/lib\")")
+        install(SCRIPT deps/MSan_Deps/Chromium_prebuilt_libraries/copy_chromium_prebuilt_libraries.cmake)
+        install(CODE "set(_MSAN_COPY_FROM \"${CMAKE_PREFIX_PATH}/lib\")")
+        install(SCRIPT deps/MSan_Deps/install_msan_shared_libraries.cmake)
+    endif ()
 endif ()
 
 configure_file(${LIBDIR}/platform/unix/fhs.hpp.in ${LIBDIR_BIN}/platform/unix/fhs.hpp)

@@ -35,7 +35,13 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if (WIN32)
         set(_boost_toolset "clang-win")
     else()
-        set(_boost_toolset "clang")
+        if (DEP_MSAN)
+            configure_file(${CMAKE_CURRENT_LIST_DIR}/msan-user-config.jam boost-user-config.jam)
+            set(_boost_toolset clang)
+            set(_patch_command ${_patch_command} && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/boost-user-config.jam ./tools/build/src/tools/user-config.jam)
+        else ()
+            set(_boost_toolset "clang")
+        endif()
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     set(_boost_toolset "intel")
@@ -68,8 +74,15 @@ ProcessorCount(NPROC)
 file(TO_NATIVE_PATH ${DESTDIR}/usr/local/ _prefix)
 
 set(_boost_flags "")
-if (UNIX) 
-    set(_boost_flags "cflags=-fPIC;cxxflags=-fPIC")
+if (UNIX)
+    if (DEP_MSAN)
+        set(_boost_flags
+                "cflags=-fPIC ${MSAN_CMAKE_C_FLAGS};"
+                "cxxflags=-fPIC ${MSAN_CMAKE_CXX_FLAGS};"
+                "linkflags=-fPIC ${MSAN_CMAKE_LD_FLAGS}")
+    else()
+        set(_boost_flags "cflags=-fPIC;cxxflags=-fPIC")
+    endif()
 elseif(APPLE)
     set(_boost_flags 
         "cflags=-fPIC -mmacosx-version-min=${DEP_OSX_TARGET};"
@@ -121,6 +134,7 @@ ExternalProject_Add(
     dep_Boost
     URL "https://boostorg.jfrog.io/artifactory/main/release/1.75.0/source/boost_1_75_0.tar.gz"
     URL_HASH SHA256=aeb26f80e80945e82ee93e5939baebdca47b9dee80a07d3144be1e1a6a66dd6a
+    DEPENDS ${LIBCXX_PKG}
     DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/Boost
     CONFIGURE_COMMAND "${_bootstrap_cmd}"
     PATCH_COMMAND ${_patch_command}
