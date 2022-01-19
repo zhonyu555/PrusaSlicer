@@ -251,9 +251,15 @@ else ()
         set(BIN_RESOURCES_DIR "${CMAKE_CURRENT_BINARY_DIR}/../resources")
     endif ()
     add_custom_command(TARGET PrusaSlicer POST_BUILD
-        COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
-        COMMENT "Symlinking the resources directory into the build tree"
-        VERBATIM)
+            COMMAND ln -sfn "${SLIC3R_RESOURCES_DIR}" "${BIN_RESOURCES_DIR}"
+            COMMENT "Symlinking the resources directory into the build tree"
+            VERBATIM)
+    if (SLIC3R_MSAN)
+        add_custom_command(TARGET PrusaSlicer POST_BUILD
+                COMMAND ln -sfn "${CMAKE_PREFIX_PATH}/../lib" "${CMAKE_CURRENT_BINARY_DIR}/../lib"
+                COMMENT "Symlinking the instrument library directory into the build tree"
+                VERBATIM)
+    endif ()
 endif ()
 
 # Slic3r binary install target
