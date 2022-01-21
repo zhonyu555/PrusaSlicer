@@ -53,3 +53,6 @@ fun:emit_vertex
 fun:cull_tri
 fun:clip_line
 fun:do_clip_line
+fun:stipple_line
+fun:emit_segment
+fun:lines

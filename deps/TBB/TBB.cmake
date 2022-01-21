@@ -1,3 +1,8 @@
+set(_tbb_msan_cmake_args ${MSAN_CMAKE_ARGS})
+if (DEP_MSAN)
+    list(TRANSFORM _tbb_msan_cmake_args APPEND " -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/msan_ignorelist.txt")
+endif()
+
 prusaslicer_add_cmake_project(
     TBB
     URL "https://github.com/wjakob/tbb/archive/a0dc9bf76d0120f917b641ed095360448cabc85b.tar.gz"
@@ -9,7 +14,7 @@ prusaslicer_add_cmake_project(
         -DTBB_BUILD_TESTS=OFF
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON
         -DCMAKE_DEBUG_POSTFIX=_debug
-        ${MSAN_CMAKE_ARGS}
+        ${_tbb_msan_cmake_args}
 )
 
 if (MSVC)

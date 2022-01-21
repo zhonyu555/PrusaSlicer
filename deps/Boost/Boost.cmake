@@ -77,9 +77,9 @@ set(_boost_flags "")
 if (UNIX)
     if (DEP_MSAN)
         set(_boost_flags
-                "cflags=-fPIC ${MSAN_CMAKE_C_FLAGS};"
-                "cxxflags=-fPIC ${MSAN_CMAKE_CXX_FLAGS};"
-                "linkflags=-fPIC ${MSAN_CMAKE_LD_FLAGS}")
+                "cflags=-fPIC ${MSAN_CMAKE_C_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/msan_ignorelist.txt;"
+                "cxxflags=-fPIC ${MSAN_CMAKE_CXX_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/msan_ignorelist.txt;"
+                "linkflags=-fPIC ${MSAN_CMAKE_LD_FLAGS} -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/msan_ignorelist.txt")
     else()
         set(_boost_flags "cflags=-fPIC;cxxflags=-fPIC")
     endif()
