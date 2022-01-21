@@ -196,8 +196,8 @@ class GLCanvas3D
         };
 
         static const float THICKNESS_BAR_WIDTH;
-    private:
 
+    private:
         bool                        m_enabled{ false };
         unsigned int                m_z_texture_id{ 0 };
         // Not owned by LayersEditing.
@@ -240,6 +240,16 @@ class GLCanvas3D
         int last_object_id{ -1 };
         float last_z{ 0.0f };
         LayerHeightEditActionType last_action{ LAYER_HEIGHT_EDIT_ACTION_INCREASE };
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+        struct Profile
+        {
+            GLModel baseline;
+            GLModel profile;
+            Rect old_bar_rect;
+            std::vector<double> old_layer_height_profile;
+        };
+        Profile m_profile;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
         LayersEditing() = default;
         ~LayersEditing();
@@ -254,7 +264,11 @@ class GLCanvas3D
         bool is_enabled() const;
         void set_enabled(bool enabled);
 
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+        void render_overlay(const GLCanvas3D& canvas);
+#else
         void render_overlay(const GLCanvas3D& canvas) const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
         void render_volumes(const GLCanvas3D& canvas, const GLVolumeCollection& volumes);
 
 		void adjust_layer_height_profile();
@@ -277,11 +291,14 @@ class GLCanvas3D
         bool is_initialized() const;
         void generate_layer_height_texture();
         void render_active_object_annotations(const GLCanvas3D& canvas, const Rect& bar_rect) const;
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+        void render_profile(const Rect& bar_rect);
+#else
         void render_profile(const Rect& bar_rect) const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
         void update_slicing_parameters();
 
-        static float thickness_bar_width(const GLCanvas3D &canvas);
-        
+        static float thickness_bar_width(const GLCanvas3D &canvas);        
     };
 
     struct Mouse
@@ -601,6 +618,18 @@ private:
     }
     m_gizmo_highlighter;
 
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+#if ENABLE_SHOW_CAMERA_TARGET
+    struct CameraTarget
+    {
+        std::array<GLModel, 3> axis;
+        Vec3d target{ Vec3d::Zero() };
+    };
+
+    CameraTarget m_camera_target;
+#endif // ENABLE_SHOW_CAMERA_TARGET
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+
 public:
     explicit GLCanvas3D(wxGLCanvas* canvas, Bed3D &bed);
     ~GLCanvas3D();
@@ -915,10 +944,14 @@ private:
     void _render_bed_for_picking(bool bottom);
     void _render_objects(GLVolumeCollection::ERenderType type);
     void _render_gcode();
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    void _render_selection();
+#else
     void _render_selection() const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     void _render_sequential_clearance();
 #if ENABLE_RENDER_SELECTION_CENTER
-    void _render_selection_center() const;
+    void _render_selection_center();
 #endif // ENABLE_RENDER_SELECTION_CENTER
     void _check_and_update_toolbar_icon_scale();
     void _render_overlays();
@@ -930,10 +963,18 @@ private:
     void _render_collapse_toolbar() const;
     void _render_view_toolbar() const;
 #if ENABLE_SHOW_CAMERA_TARGET
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    void _render_camera_target();
+#else
     void _render_camera_target() const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 #endif // ENABLE_SHOW_CAMERA_TARGET
     void _render_sla_slices();
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    void _render_selection_sidebar_hints();
+#else
     void _render_selection_sidebar_hints() const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     bool _render_undo_redo_stack(const bool is_undo, float pos_x);
     bool _render_search_list(float pos_x);
     bool _render_arrange_menu(float pos_x);
