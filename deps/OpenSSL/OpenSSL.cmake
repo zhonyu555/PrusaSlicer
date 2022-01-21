@@ -30,6 +30,8 @@ ExternalProject_Add(dep_OpenSSL
         no-ssl3-method
         no-dynamic-engine
         -Wa,--noexecstack
+        "${MSAN_CMAKE_C_FLAGS}"
+        "${MSAN_CMAKE_LD_FLAGS}"
     BUILD_COMMAND make depend && make "-j${NPROC}"
     INSTALL_COMMAND make install_sw
 )

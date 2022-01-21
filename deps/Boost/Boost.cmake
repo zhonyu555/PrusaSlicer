@@ -11,8 +11,8 @@ endif()
 set(_patch_command ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_LIST_DIR}/common.jam ./tools/build/src/tools/common.jam)
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    configure_file(${CMAKE_CURRENT_LIST_DIR}/user-config.jam boost-user-config.jam)
     set(_boost_toolset gcc)
+    configure_file(${CMAKE_CURRENT_LIST_DIR}/user-config.jam boost-user-config.jam)
     set(_patch_command ${_patch_command} && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/boost-user-config.jam ./tools/build/src/tools/user-config.jam)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     # https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
@@ -38,7 +38,9 @@ elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     if (WIN32)
         set(_boost_toolset "clang-win")
     else()
-        set(_boost_toolset "clang")
+        set(_boost_toolset clang)
+        configure_file(${CMAKE_CURRENT_LIST_DIR}/user-config.jam boost-user-config.jam)
+        set(_patch_command ${_patch_command} && ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_BINARY_DIR}/boost-user-config.jam ./tools/build/src/tools/user-config.jam)
     endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     set(_boost_toolset "intel")
@@ -71,8 +73,15 @@ ProcessorCount(NPROC)
 file(TO_NATIVE_PATH ${DESTDIR}/usr/local/ _prefix)
 
 set(_boost_flags "")
-if (UNIX) 
-    set(_boost_flags "cflags=-fPIC;cxxflags=-fPIC")
+if (UNIX)
+    if (DEP_MSAN)
+        set(_boost_flags
+                "cflags=-fPIC ${MSAN_CMAKE_C_FLAGS};"
+                "cxxflags=-fPIC ${MSAN_CMAKE_CXX_FLAGS};"
+                "linkflags=-fPIC ${MSAN_CMAKE_LD_FLAGS}")
+    else()
+        set(_boost_flags "cflags=-fPIC;cxxflags=-fPIC")
+    endif()
 elseif(APPLE)
     set(_boost_flags 
         "cflags=-fPIC -mmacosx-version-min=${DEP_OSX_TARGET};"

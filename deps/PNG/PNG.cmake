@@ -10,6 +10,10 @@ if (APPLE)
     set(_patch_step PATCH_COMMAND ${PATCH_CMD} ${CMAKE_CURRENT_LIST_DIR}/PNG.patch)
 endif ()
 
+if (NOT DEP_MSAN)
+    set(_png_prefix -DPNG_PREFIX=prusaslicer_)
+endif ()
+
 prusaslicer_add_cmake_project(PNG 
     # GIT_REPOSITORY https://github.com/glennrp/libpng.git 
     # GIT_TAG v1.6.35
@@ -20,7 +24,7 @@ prusaslicer_add_cmake_project(PNG
     CMAKE_ARGS
         -DPNG_SHARED=OFF
         -DPNG_STATIC=ON
-        -DPNG_PREFIX=prusaslicer_
+        ${_png_prefix}
         -DPNG_TESTS=OFF
         -DDISABLE_DEPENDENCY_TRACKING=OFF
         ${_disable_neon_extension}
