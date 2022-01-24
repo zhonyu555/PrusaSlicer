@@ -9,15 +9,27 @@
 #include <unordered_map>
 #include <boost/filesystem/path.hpp>
 
+
 namespace Slic3r {
 
 // Bundle of Print + Filament + Printer presets.
 class PresetBundle
 {
+    struct CommonBundleInfo
+    {
+        std::string                 name;
+        Semver                      version;
+        //boost::property_tree::ptree tree;
+        std::string                 path;
+        CommonBundleInfo(const std::string& n, const Semver& v, /*boost::property_tree::ptree t,*/ const std::string& p) : name(n), version(v),/* tree(t),*/ path(p) {}
+    };
+
 public:
     PresetBundle();
     PresetBundle(const PresetBundle &rhs);
     PresetBundle& operator=(const PresetBundle &rhs);
+
+    PresetBundle(const std::vector<CommonBundleInfo> &ctr);
 
     // Remove all the presets but the "-- default --".
     // Optionally remove all the files referenced by the presets from the user profile directory.
@@ -174,6 +186,11 @@ private:
 
     DynamicPrintConfig          full_fff_config() const;
     DynamicPrintConfig          full_sla_config() const;
+
+
+    
+    // common profiles bundles
+    std::vector<CommonBundleInfo> common_bundles;
 };
 
 ENABLE_ENUM_BITMASK_OPERATORS(PresetBundle::LoadConfigBundleAttribute)

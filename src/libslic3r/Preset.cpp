@@ -127,12 +127,58 @@ VendorProfile VendorProfile::from_ini(const ptree &tree, const boost::filesystem
     const auto &vendor_section = get_or_throw(tree, "vendor")->second;
     res.name = get_or_throw(vendor_section, "name")->second.data();
 
+    // Load config version
     auto config_version_str = get_or_throw(vendor_section, "config_version")->second.data();
     auto config_version = Semver::parse(config_version_str);
     if (! config_version) {
         throw Slic3r::RuntimeError((boost::format("Vendor Config Bundle `%1%` is not valid: Cannot parse config_version: `%2%`.") % id % config_version_str).str());
     } else {
         res.config_version = std::move(*config_version);
+    }
+
+    // Load common profile version
+    try {
+        auto common_version_str = get_or_throw(vendor_section, "common_version")->second.data();
+        auto common_version = Semver::parse(common_version_str);
+        if (!common_version) {
+            BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common profile.") % id;
+        }
+        else {
+            res.using_common_base_profile = true; 
+            res.common_base_version = std::move(*common_version);
+        }
+    } catch (const std::runtime_error &err){
+        BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common profile. (exception thrown)") % id;
+    }
+    // Load common filaments profile version
+    try {
+        auto common_version_str = get_or_throw(vendor_section, "common_filaments_version")->second.data();
+        auto common_version = Semver::parse(common_version_str);
+        if (!common_version) {
+            BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common filaments profile.") % id;
+        }
+        else {
+            res.using_common_filaments_profile = true;
+            res.common_filaments_version = std::move(*common_version);
+        }
+    }
+    catch (const std::runtime_error& err) {
+        BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common filaments profile. (exception thrown)") % id;
+    }
+    // Load common materials profile version
+    try {
+        auto common_version_str = get_or_throw(vendor_section, "common_materials_version")->second.data();
+        auto common_version = Semver::parse(common_version_str);
+        if (!common_version) {
+            BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common materials profile.") % id;
+        }
+        else {
+            res.using_common_materials_profile = true;
+            res.common_materials_version = std::move(*common_version);
+        }
+    }
+    catch (const std::runtime_error& err) {
+        BOOST_LOG_TRIVIAL(info) << boost::format("Vendor bundle: `%1%`: Does not uses common materials profile. (exception thrown)") % id;
     }
 
     // Load URLs

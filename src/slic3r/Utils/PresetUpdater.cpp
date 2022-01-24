@@ -133,6 +133,9 @@ struct Updates
 {
 	std::vector<Incompat> incompats;
 	std::vector<Update> updates;
+	std::vector<Semver> common_base_versions;
+	std::vector<Semver> common_filaments_versions;
+	std::vector<Semver> common_materials_versions;
 };
 
 
@@ -157,6 +160,8 @@ struct PresetUpdater::priv
 	bool has_waiting_updates { false };
 	Updates waiting_updates;
 
+	const std::vector<std::string> common_profile_names = { "common", "common_filaments", "common_materials" };
+
 	priv();
 
 	void set_download_prefs(AppConfig *app_config);
@@ -165,11 +170,15 @@ struct PresetUpdater::priv
 	void sync_version() const;
 	void parse_version_string(const std::string& body) const;
 	void sync_config(const VendorMap vendors);
+	void sync_common_config(const VendorMap vendors, CommonProfileType type);
+	void update_common_index(const VendorProfile& vendor, Index& index);
 
 	void check_install_indices() const;
 	Updates get_config_updates(const Semver& old_slic3r_version) const;
 	bool perform_updates(Updates &&updates, bool snapshot = true) const;
 	void set_waiting_updates(Updates u);
+	void check_common_profiles(const std::vector<Semver>& versions, CommonProfileType type) const;
+	void delete_obsolete_common_profiles(CommonProfileType type) const;
 };
 
 PresetUpdater::priv::priv()
@@ -423,7 +432,124 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors)
 		if (! get_file(bundle_url, bundle_path)) { continue; }
 		if (cancel) { return; }
 	}
+
+	sync_common_config(vendors, CommonProfileType::Base);
+	sync_common_config(vendors, CommonProfileType::Filaments);
+	sync_common_config(vendors, CommonProfileType::Materials);
 }
+
+// Download common index and ini files
+void PresetUpdater::priv::sync_common_config(const VendorMap vendors, CommonProfileType type)
+{
+	// Get common index
+	auto index_it = std::find_if(index_db.begin(), index_db.end(), [this, type](const Index& i) { return i.vendor() == common_profile_names[type]; });
+	if (index_it == index_db.end())
+		return;
+	Index& index = *index_it;
+
+	// Get all versions of common profiles that are in vendor profiles in cache.
+	std::vector<Semver> common_versions;
+	for (const auto idx : index_db) {
+		auto bundle_path = vendor_path / (idx.vendor() + ".ini");
+		if (!fs::exists(bundle_path))
+			continue;
+		const auto vp = VendorProfile::from_ini(bundle_path, false);
+		if (type == Base && vp.using_common_base_profile && std::find(common_versions.begin(), common_versions.end(), vp.common_base_version) == common_versions.end())
+			common_versions.push_back(vp.common_base_version);
+		else if (type == Filaments && vp.using_common_filaments_profile && std::find(common_versions.begin(), common_versions.end(), vp.common_filaments_version) == common_versions.end())
+			common_versions.push_back(vp.common_filaments_version);
+		else if (type == Materials && vp.using_common_materials_profile && std::find(common_versions.begin(), common_versions.end(), vp.common_materials_version) == common_versions.end())
+			common_versions.push_back(vp.common_materials_version);
+	}
+
+	// Get any common profil from vendors
+	auto it = vendors.begin();
+	for (; it != vendors.end(); ++it) {
+		if (it->second.name == common_profile_names[type])
+			break;
+	}
+	if (it == vendors.end())
+		return;
+
+	// To download index, any common profile is suitable 
+	const VendorProfile& vendor = it->second;
+	// Update index if needed
+	update_common_index(vendor, index);
+	
+	// Download all common_versions that are not in cache folder and are supported according to index
+	for (const auto version : common_versions) {
+		auto index_with_version = index.find(version);
+		// Skip unsupported profiles- will backfire later though
+		if(!(*index_with_version).is_current_slic3r_supported()) {
+			BOOST_LOG_TRIVIAL(error) << format("Version of common profile %1%, not supproted by this version of Slicer yet required by some vendor profile.");
+			continue;
+		}
+		// Skip profiles already present in vendor path
+		/*const auto vendor_path = rsrc_path / (vendor.name + "." + version.to_string() + ".ini");
+		if (fs::exists(vendor_path))
+			continue;
+		*/
+		const auto bundle_url = format("%1%/%2%.ini", vendor.config_update_url, version.to_string());
+		const auto bundle_path = cache_path / (vendor.name + "." + version.to_string() + ".ini");
+		
+		
+		BOOST_LOG_TRIVIAL(info) << "Downloading new bundle for common config version: " << version;
+
+		// FIXME: try or if?
+		try {
+			if(!get_file(bundle_url, bundle_path))
+				BOOST_LOG_TRIVIAL(error) << format("Could not download common ini from %1%", bundle_url);
+		} catch (const std::exception& /* err */) {
+			
+		}
+	}
+	
+
+}
+
+void PresetUpdater::priv::update_common_index(const VendorProfile& vendor, Index& index)
+{
+	// Download a fresh index
+	BOOST_LOG_TRIVIAL(info) << "Downloading index for common profiles";
+	const auto idx_url = vendor.config_update_url + "/" + INDEX_FILENAME;
+	const std::string idx_path = (cache_path / (vendor.name + ".idx")).string();
+	const std::string idx_path_temp = idx_path + "-update";
+	//check if idx_url is leading to our site 
+	if (!boost::starts_with(idx_url, "http://files.prusa3d.com/wp-content/uploads/repository/")) {
+		BOOST_LOG_TRIVIAL(warning) << "unsafe url path for vendor \"" << vendor.name << "\" rejected: " << idx_url;
+		return;
+	}
+	if (!get_file(idx_url, idx_path_temp)) {
+		BOOST_LOG_TRIVIAL(error) << format("Could not download index for common profiles from %1%", idx_url);
+		return;
+	}
+	if (cancel)
+		return;
+	// Load the fresh index up
+	{
+		Index new_index;
+		try {
+			new_index.load(idx_path_temp);
+		}
+		catch (const std::exception& /* err */) {
+			BOOST_LOG_TRIVIAL(error) << format("Could not load downloaded index %1% for common profiles: invalid index?", idx_path_temp);
+			return;
+		}
+		if (new_index.version() < index.version()) {
+			BOOST_LOG_TRIVIAL(warning) << format("The downloaded index %1% for common profiles is older than the active one. Ignoring the downloaded index.", idx_path_temp, vendor.name);
+			return;
+		}
+		Slic3r::rename_file(idx_path_temp, idx_path);
+		try {
+			index.load(idx_path);
+		}
+		catch (const std::exception& /* err */) {
+			BOOST_LOG_TRIVIAL(error) << format("Could not load downloaded index %1% for common profiles: invalid index?", idx_path, vendor.name);
+			return;
+		}
+	}
+}
+
 
 // Install indicies from resources. Only installs those that are either missing or older than in resources.
 void PresetUpdater::priv::check_install_indices() const
@@ -464,6 +590,7 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
     for (const Index& idx : index_db) {
 		auto bundle_path = vendor_path / (idx.vendor() + ".ini");
 		auto bundle_path_idx = vendor_path / idx.path().filename();
+
 
 		if (! fs::exists(bundle_path)) {
 			BOOST_LOG_TRIVIAL(info) << format("Confing bundle not installed for vendor %1%, skipping: ", idx.vendor());
@@ -518,6 +645,13 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 
 		if (recommended->config_version == vp.config_version) {
 			// The recommended config bundle is already installed.
+			// Add common config version
+			if (vp.using_common_base_profile && std::find(updates.common_base_versions.begin(), updates.common_base_versions.end(), vp.common_base_version) == updates.common_base_versions.end())
+				updates.common_base_versions.push_back(vp.common_base_version);
+			if (vp.using_common_filaments_profile && std::find(updates.common_filaments_versions.begin(), updates.common_filaments_versions.end(), vp.common_filaments_version) == updates.common_filaments_versions.end())
+				updates.common_filaments_versions.push_back(vp.common_filaments_version);
+			if (vp.using_common_materials_profile && std::find(updates.common_materials_versions.begin(), updates.common_materials_versions.end(), vp.common_materials_version) == updates.common_materials_versions.end())
+				updates.common_materials_versions.push_back(vp.common_materials_version);
 			continue;
 		}
 
@@ -533,8 +667,12 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 
 		// Config bundle inside the cache directory.
 		fs::path path_in_cache 		= cache_path / (idx.vendor() + ".ini");
+		if (idx.vendor() == common_profile_names[CommonProfileType::Filaments] || idx.vendor() == common_profile_names[CommonProfileType::Materials])
+			path_in_cache           = cache_path / (idx.vendor() + "." + (*idx.recommended()).config_version.to_string() + ".ini");
 		// Config bundle inside the resources directory.
 		fs::path path_in_rsrc 		= rsrc_path  / (idx.vendor() + ".ini");
+		if (idx.vendor() == common_profile_names[CommonProfileType::Filaments] || idx.vendor() == common_profile_names[CommonProfileType::Materials])
+			path_in_rsrc            = rsrc_path / (idx.vendor() + "." + (*idx.recommended()).config_version.to_string() + ".ini");
 		// Config index inside the resources directory.
 		fs::path path_idx_in_rsrc 	= rsrc_path  / (idx.vendor() + ".idx");
 
@@ -551,6 +689,13 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 					new_update = Update(std::move(path_in_cache), std::move(bundle_path), *recommended, vp.name, vp.changelog_url, current_not_supported);
 					// and install the config index from the cache into vendor's directory.
 					bundle_path_idx_to_install = idx.path();
+					// store common config version needed for current profile (until update is performed)
+					if (vp.using_common_base_profile && std::find(updates.common_base_versions.begin(), updates.common_base_versions.end(), vp.common_base_version) == updates.common_base_versions.end())
+						updates.common_base_versions.push_back(vp.common_base_version);
+					if (vp.using_common_filaments_profile && std::find(updates.common_filaments_versions.begin(), updates.common_filaments_versions.end(), vp.common_filaments_version) == updates.common_filaments_versions.end())
+						updates.common_filaments_versions.push_back(vp.common_filaments_version);
+					if (vp.using_common_materials_profile && std::find(updates.common_materials_versions.begin(), updates.common_materials_versions.end(), vp.common_materials_version) == updates.common_materials_versions.end())
+						updates.common_materials_versions.push_back(vp.common_materials_version);
 					found = true;
 				}
 			} catch (const std::exception &ex) {
@@ -579,7 +724,14 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 				recommended = rsrc_idx.recommended();
 				if (recommended != rsrc_idx.end() && recommended->config_version == rsrc_vp.config_version && recommended->config_version > vp.config_version) {
 					new_update = Update(std::move(path_in_rsrc), std::move(bundle_path), *recommended, vp.name, vp.changelog_url, current_not_supported);
-					bundle_path_idx_to_install = path_idx_in_rsrc;
+					bundle_path_idx_to_install = path_idx_in_rsrc;		
+					// store common config version needed for current profile (until update is performed)
+					if (vp.using_common_base_profile && std::find(updates.common_base_versions.begin(), updates.common_base_versions.end(), vp.common_base_version) == updates.common_base_versions.end())
+						updates.common_base_versions.push_back(vp.common_base_version);
+					if (vp.using_common_filaments_profile && std::find(updates.common_filaments_versions.begin(), updates.common_filaments_versions.end(), vp.common_filaments_version) == updates.common_filaments_versions.end())
+						updates.common_filaments_versions.push_back(vp.common_filaments_version);
+					if (vp.using_common_materials_profile && std::find(updates.common_materials_versions.begin(), updates.common_materials_versions.end(), vp.common_materials_version) == updates.common_materials_versions.end())
+						updates.common_materials_versions.push_back(vp.common_materials_version);
 					found = true;
 				} else {
 					BOOST_LOG_TRIVIAL(warning) << format("The recommended config version for vendor `%1%` in resources does not match the recommended\n"
@@ -674,6 +826,17 @@ bool PresetUpdater::priv::perform_updates(Updates &&updates, bool snapshot) cons
 			// Throw when parsing invalid configuration. Only valid configuration is supposed to be provided over the air.
 			bundle.load_configbundle(update.source.string(), PresetBundle::LoadConfigBundleAttribute::LoadSystem, ForwardCompatibilitySubstitutionRule::Disable);
 
+            // Add version of common profile to common versions
+			if(!bundle.vendors.empty() && (*bundle.vendors.begin()).second.using_common_base_profile &&
+			   std::find(updates.common_base_versions.begin(), updates.common_base_versions.end(), (*bundle.vendors.begin()).second.common_base_version) == updates.common_base_versions.end())
+				updates.common_base_versions.push_back((*bundle.vendors.begin()).second.common_base_version);
+			if (!bundle.vendors.empty() && (*bundle.vendors.begin()).second.using_common_filaments_profile &&
+				std::find(updates.common_filaments_versions.begin(), updates.common_filaments_versions.end(), (*bundle.vendors.begin()).second.common_filaments_version) == updates.common_filaments_versions.end())
+				updates.common_filaments_versions.push_back((*bundle.vendors.begin()).second.common_filaments_version);
+			if (!bundle.vendors.empty() && (*bundle.vendors.begin()).second.using_common_materials_profile &&
+				std::find(updates.common_materials_versions.begin(), updates.common_materials_versions.end(), (*bundle.vendors.begin()).second.common_materials_version) == updates.common_materials_versions.end())
+				updates.common_materials_versions.push_back((*bundle.vendors.begin()).second.common_materials_version);
+
 			BOOST_LOG_TRIVIAL(info) << format("Deleting %1% conflicting presets", bundle.prints.size() + bundle.filaments.size() + bundle.printers.size());
 
 			auto preset_remover = [](const Preset &preset) {
@@ -708,10 +871,111 @@ bool PresetUpdater::priv::perform_updates(Updates &&updates, bool snapshot) cons
 	return true;
 }
 
-void PresetUpdater::priv::set_waiting_updates(Updates u)
+void PresetUpdater::priv::set_waiting_updates(Updates u) 
 {
 	waiting_updates = u;
 	has_waiting_updates = true;
+}
+
+void PresetUpdater::priv::check_common_profiles(const std::vector<Semver>& versions, CommonProfileType type) const
+{
+	if (versions.empty())
+		return;
+
+	Index common_idx;
+	//find idx
+	bool idx_found = false;
+	for (const auto idx : index_db) {
+		if (idx.vendor() == common_profile_names[type])
+		{
+			idx_found = true;
+			common_idx = idx;
+			break;
+		}
+	}
+
+	if (!idx_found) {
+		BOOST_LOG_TRIVIAL(error) << "Common idx not found!";
+		return;
+	}
+
+	for (const auto& version : versions) {
+		BOOST_LOG_TRIVIAL(error) << "Version of common profile needed: " << version;
+		auto index_with_version = common_idx.find(version);
+		// check if compatible with slicer version
+		// FIXME: How do we want to have this signaled??
+		assert((*index_with_version).is_current_slic3r_supported());
+		/*
+		if (!(*index_with_version).is_current_slic3r_supported())
+		{
+			// if not compatible with slicer version -> logic error -> explode
+			BOOST_LOG_TRIVIAL(error) << "aszdglkjinbsdrflgijkbnaserljkihgnbseuriojhngblseurt";
+		}
+		*/
+		// find if version is present at vendor folder
+		const fs::path path_in_vendor = vendor_path / (common_profile_names[type]+ "." + version.to_string() + ".ini");
+		if (!fs::exists(path_in_vendor)) {
+			// if not at vendor folder - find it
+			BOOST_LOG_TRIVIAL(error) << "Common profile not present: " << version;
+			
+			// Update from rsrc
+			fs::path path_in_rsrc = rsrc_path   / (common_profile_names[type] + "." + version.to_string() + ".ini");
+			fs::path path_target  = vendor_path / (common_profile_names[type] + "." + version.to_string() + ".ini");
+			//assert(fs::exists(path_in_rsrc));
+			if(!fs::exists(path_in_rsrc)){
+				continue;
+			}
+			Update update(std::move(path_in_rsrc), std::move(path_target), *index_with_version, common_profile_names[type], "", true);
+			// install
+			update.install();
+			PresetBundle bundle;
+			bundle.load_configbundle(update.source.string(), PresetBundle::LOAD_CFGBNDLE_SYSTEM);
+			
+			
+		}
+	}
+	delete_obsolete_common_profiles(type);
+}
+
+void PresetUpdater::priv::delete_obsolete_common_profiles(CommonProfileType type) const
+{
+	// Get all versions needed by ini files in vendor folder
+	// There might be no need for this cycle if we are sure we get all versions from Updates
+	std::vector<Semver> current_versions;
+	for (const auto idx : index_db) {
+		auto bundle_path = vendor_path / (idx.vendor() + ".ini");
+		if (!fs::exists(bundle_path))
+			continue;
+		auto vp = VendorProfile::from_ini(bundle_path, false);
+		// If idx is common profile - keep current version
+		if (idx.vendor() == common_profile_names[type] && std::find(current_versions.begin(), current_versions.end(), vp.config_version) == current_versions.end())
+			current_versions.push_back(vp.config_version);
+		// Else find if common profile is needed
+		else if (type == CommonProfileType::Base && vp.using_common_base_profile && std::find(current_versions.begin(), current_versions.end(), vp.common_base_version) == current_versions.end())
+			current_versions.push_back(vp.common_base_version);
+		else if (type == CommonProfileType::Filaments && vp.using_common_filaments_profile && std::find(current_versions.begin(), current_versions.end(), vp.common_filaments_version) == current_versions.end())
+			current_versions.push_back(vp.common_filaments_version);
+		else if (type == CommonProfileType::Materials && vp.using_common_materials_profile && std::find(current_versions.begin(), current_versions.end(), vp.common_materials_version) == current_versions.end())
+			current_versions.push_back(vp.common_materials_version);
+	}
+	// List all common profiles of type and delete those with wrong version
+	std::string errors_cummulative;
+	for (auto& dir_entry : boost::filesystem::directory_iterator(vendor_path)) {
+		// Filter .ini files of type
+		std::string filename = dir_entry.path().filename().string();
+		if (filename.compare(filename.size() - 4, 4, ".ini") != 0)
+			continue;
+		if (filename.compare(0,common_profile_names[type].size() + 1, common_profile_names[type] + ".") != 0)
+			continue;
+		
+		auto vp = VendorProfile::from_ini(dir_entry, false);
+		if (std::find(current_versions.begin(), current_versions.end(), vp.config_version) == current_versions.end())
+		{
+			fs::remove(dir_entry);
+		}
+	}
+		
+
 }
 
 PresetUpdater::PresetUpdater() :
@@ -908,7 +1172,9 @@ PresetUpdater::UpdateResult PresetUpdater::config_update(const Semver& old_slic3
 	} else {
 		BOOST_LOG_TRIVIAL(info) << "No configuration updates available.";
 	}
-
+	p->check_common_profiles(updates.common_base_versions, CommonProfileType::Base);
+	p->check_common_profiles(updates.common_filaments_versions, CommonProfileType::Filaments);
+	p->check_common_profiles(updates.common_materials_versions, CommonProfileType::Materials);
 	return R_NOOP;
 }
 
@@ -919,9 +1185,18 @@ bool PresetUpdater::install_bundles_rsrc(std::vector<std::string> bundles, bool 
 	BOOST_LOG_TRIVIAL(info) << format("Installing %1% bundles from resources ...", bundles.size());
 
 	for (const auto &bundle : bundles) {
-		auto path_in_rsrc = (p->rsrc_path / bundle).replace_extension(".ini");
-		auto path_in_vendors = (p->vendor_path / bundle).replace_extension(".ini");
-		updates.updates.emplace_back(std::move(path_in_rsrc), std::move(path_in_vendors), Version(), "", "");
+		if(bundle.compare(0, p->common_profile_names[CommonProfileType::Filaments].length(), p->common_profile_names[CommonProfileType::Filaments]) == 0||
+		   bundle.compare(0, p->common_profile_names[CommonProfileType::Materials].length(), p->common_profile_names[CommonProfileType::Materials]) == 0) {
+			auto path_in_rsrc = p->rsrc_path / (bundle + ".ini");
+			// without version offset
+			auto path_in_vendors = p->vendor_path / (bundle.substr(0,bundle.find_first_of('.')) + ".ini");
+			updates.updates.emplace_back(std::move(path_in_rsrc), std::move(path_in_vendors), Version(), "", "");
+		} else {
+			auto path_in_rsrc = (p->rsrc_path / bundle).replace_extension(".ini");
+			auto path_in_vendors = (p->vendor_path / bundle).replace_extension(".ini");
+			updates.updates.emplace_back(std::move(path_in_rsrc), std::move(path_in_vendors), Version(), "", "");
+		}
+		
 	}
 
 	return p->perform_updates(std::move(updates), snapshot);
@@ -958,5 +1233,7 @@ bool PresetUpdater::version_check_enabled() const
 {
 	return p->enabled_version_check;
 }
+
+
 
 }
