@@ -138,6 +138,11 @@ struct Updates
 	std::vector<Semver> common_materials_versions;
 };
 
+enum CommonProfileType : int {
+	Base = 0,
+	Filaments,
+	Materials
+};
 
 wxDEFINE_EVENT(EVT_SLIC3R_VERSION_ONLINE, wxCommandEvent);
 wxDEFINE_EVENT(EVT_SLIC3R_EXPERIMENTAL_VERSION_ONLINE, wxCommandEvent);
@@ -929,7 +934,7 @@ void PresetUpdater::priv::check_common_profiles(const std::vector<Semver>& versi
 			// install
 			update.install();
 			PresetBundle bundle;
-			bundle.load_configbundle(update.source.string(), PresetBundle::LOAD_CFGBNDLE_SYSTEM);
+			bundle.load_configbundle(update.source.string(), PresetBundle::LoadConfigBundleAttribute::LoadSystem, ForwardCompatibilitySubstitutionRule::Disable);
 			
 			
 		}

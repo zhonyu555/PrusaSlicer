@@ -1327,7 +1327,7 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_configbundle(
         }
         return false;
     };
-    if (flags & LOAD_CFGBNDLE_SYSTEM)
+    if (flags & LoadSystem)
     {
         if (vendor_profile->using_common_base_profile) {
             if(!branch_common(branches_to_remove, tree)) {

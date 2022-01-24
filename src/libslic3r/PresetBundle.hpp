@@ -119,7 +119,7 @@ public:
         ResetUserProfile,
         // Load a system config bundle.
         LoadSystem,
-        LoadVendorOnly,
+        LoadVendorOnly
     };
     using LoadConfigBundleAttributes = enum_bitmask<LoadConfigBundleAttribute>;
     // Load the config bundle based on the flags.
@@ -159,6 +159,11 @@ public:
     // Save current preset of a provided type under a new name. If the name is different from the old one,
     // Unselected option would be reverted to the beginning values
     void                        save_changes_for_preset(const std::string& new_name, Preset::Type type, const std::vector<std::string>& unselected_options);
+
+    void                        create_common_bundles_info(boost::filesystem::path dir);
+    size_t                      PresetBundle::load_common_configbundle(const std::string& path);
+
+
 
     static const char *PRUSA_BUNDLE;
 private:
