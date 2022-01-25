@@ -26,11 +26,14 @@
 #include <wx/filefn.h>
 #include <wx/wupdlock.h>
 #include <wx/debug.h>
+#include <filesystem>
+#include <vector>
 
 #ifdef _MSW_DARK_MODE
 #include <wx/msw/dark_mode.h>
 #endif // _MSW_DARK_MODE
 
+#include "libslic3r/AppConfig.hpp"
 #include "libslic3r/Platform.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Config.hpp"
@@ -44,6 +47,7 @@
 #include "DesktopIntegrationDialog.hpp"
 #include "slic3r/Config/Snapshot.hpp"
 #include "slic3r/Utils/PresetUpdater.hpp"
+#include "Tab.hpp"
 #include "format.hpp"
 #include "MsgDialog.hpp"
 #include "UnsavedChangesDialog.hpp"
@@ -60,6 +64,7 @@ namespace GUI {
 
 using Config::Snapshot;
 using Config::SnapshotDB;
+
 
 
 // Configuration data structures extensions needed for the wizard
@@ -1168,7 +1173,6 @@ void PageMaterials::on_activate()
     first_paint = true;
 }
 
-
 const char *PageCustom::default_profile_name = "My Settings";
 
 PageCustom::PageCustom(ConfigWizard *parent)
@@ -1177,9 +1181,23 @@ PageCustom::PageCustom(ConfigWizard *parent)
     cb_custom = new wxCheckBox(this, wxID_ANY, _L("Define a custom printer profile"));
     tc_profile_name = new wxTextCtrl(this, wxID_ANY, default_profile_name);
     auto *label = new wxStaticText(this, wxID_ANY, _L("Custom profile name:"));
+    auto *label2 = new wxStaticText(this, wxID_ANY, _L("Manage User Print Profiles: "));
+
+    const auto printer_dir = fs::path(Slic3r::data_dir()) / "printer";
+    std::vector<wxString> tempBuff;
+
+    for(const auto & file : fs::directory_iterator(printer_dir))
+        tempBuff.push_back(file.path().filename().string().substr(0,file.path().filename().string().length()-4));
+
+    int tsize = tempBuff.size();
+    wxString* plistNames = new wxString[tsize];
+    std::copy(tempBuff.begin(),tempBuff.end(), plistNames);
+    plistSelect = new wxCheckListBox( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, tsize, plistNames, 0);
+    auto delBtn = new wxButton(this, wxID_ANY, "Delete");
+
+
 
     wxGetApp().UpdateDarkUI(tc_profile_name);
-
     tc_profile_name->Enable(false);
     tc_profile_name->Bind(wxEVT_KILL_FOCUS, [this](wxFocusEvent &evt) {
         if (tc_profile_name->GetValue().IsEmpty()) {
@@ -1197,9 +1215,49 @@ PageCustom::PageCustom(ConfigWizard *parent)
 		
     });
 
+
+    delBtn->Bind(wxEVT_BUTTON, [this, tsize, printer_dir, plistNames, tempBuff](wxCommandEvent& event) 
+    {    
+        bool check = false;
+        for(int j = 0; j < tsize; j++)
+        {
+            if(plistSelect->IsChecked(j))
+            {
+                check = true;
+                break;
+            } 
+        }  
+        if(check == false){}
+        else
+        {
+            wxMessageDialog msg(this, _L("In order for the requested changes to be made, you must relaunch the program. All unsaved changes will be lost. Do you want to quit?"), _L("Close to save changes?"), wxYES_NO);
+            
+            if(5104 == msg.ShowModal()){}
+            else
+            {
+                for(int i = 0; i < tsize; i++)
+                {
+                    if(plistSelect->IsChecked(i))
+                    {
+                        std::string temp = printer_dir.string() +"\\"+std::string(plistNames[i].mb_str(wxConvUTF8))+".ini";
+                        fs::path path_temp = temp;
+                        std::cout<<temp<<std::endl;
+                        std::cout<<fs::remove(path_temp)<<std::endl;
+                        std::cout<<tempBuff[i]<<std::endl;
+                    }
+                    
+                }
+                exit(0);
+            }
+        }
+    });
+
     append(cb_custom);
     append(label);
     append(tc_profile_name);
+    append(label2);
+    append(plistSelect);
+    append(delBtn);
 }
 
 PageUpdate::PageUpdate(ConfigWizard *parent)

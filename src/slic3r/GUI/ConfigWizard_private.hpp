@@ -380,6 +380,7 @@ private:
     wxCheckBox *cb_custom;
     wxTextCtrl *tc_profile_name;
     wxString profile_name_prev;
+    wxCheckListBox *plistSelect;
 
 };
 
