@@ -342,6 +342,9 @@ void HintDatabase::load_hints_from_file(const boost::filesystem::path& path)
 			//unescape text1
 			unescape_string_cstyle(dict["text"], fulltext);
 			fulltext = _utf8(fulltext);
+#ifdef __apple__
+			fulltext = std::regex_replace(fulltext, std::regex("Ctrl"), "Cmd");
+#endif //__apple__
 			// replace <b> and </b> for imgui markers
 			std::string marker_s(1, ImGui::ColorMarkerStart);
 			std::string marker_e(1, ImGui::ColorMarkerEnd);
