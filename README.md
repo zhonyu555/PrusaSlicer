@@ -1,3 +1,4 @@
+ADDED USER PRESET MANAGER TO THE CONFIGURATION WIZARD
 
 ![PrusaSlicer logo](/resources/icons/PrusaSlicer.png?raw=true)
 
