@@ -29,12 +29,14 @@ function(copy_chromium_prebuilt_libraries path_from path_to)
             libharfbuzz-gobject
             libharfbuzz-icu
             libjasper
+            libjpeg
             libpango-1.0
             libpangocairo-1.0
             libpangoft2-1.0
             libpangoxft-1.0
             libpixman-1
             libpng12
+            libexpat
             libsecret-1
             libudev
             libX11

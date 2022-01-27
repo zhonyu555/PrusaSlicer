@@ -20,10 +20,4 @@ ExternalProject_Add(dep_Libcxx
         SOURCE_SUBDIR llvm
         BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Release --target cxx cxxabi -- ${_build_j}
         INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config Release --target install-cxx install-cxxabi
-            COMMAND     ln -sfn "../local/lib/libc++.so" "${DESTDIR}/usr/lib/libc++.so"
-            COMMAND     ln -sfn "../local/lib/libc++.so.1" "${DESTDIR}/usr/lib/libc++.so.1"
-            COMMAND     ln -sfn "../local/lib/libc++.so.1.0" "${DESTDIR}/usr/lib/libc++.so.1.0"
-            COMMAND     ln -sfn "../local/lib/libc++abi.so" "${DESTDIR}/usr/lib/libc++abi.so"
-            COMMAND     ln -sfn "../local/lib/libc++abi.so.1" "${DESTDIR}/usr/lib/libc++abi.so.1"
-            COMMAND     ln -sfn "../local/lib/libc++abi.so.1.0" "${DESTDIR}/usr/lib/libc++abi.so.1.0"
 )

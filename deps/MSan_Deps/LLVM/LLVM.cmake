@@ -1,10 +1,7 @@
 set(projectname LLVM)
 
-set(_llvm_cmake_c_flags             "-fPIC")
-set(_llvm_cmake_cxx_flags           "-nostdinc++ -isystem ${DESTDIR}/usr/local/include -isystem ${DESTDIR}/usr/local/include/c++/v1 -fPIC")
-set(_llvm_cmake_exe_linker_flags    "-stdlib=libc++ -Wl,--rpath=${DESTDIR}/usr/local/lib -L${DESTDIR}/usr/local/lib -fsanitize=memory -fPIC")
-set(_llvm_cmake_shared_linker_flags "-stdlib=libc++ -Wl,--rpath=${DESTDIR}/usr/local/lib -L${DESTDIR}/usr/local/lib -fsanitize=memory -fPIC")
-set(_llvm_cmake_module_linker_flags "-stdlib=libc++ -Wl,--rpath=${DESTDIR}/usr/local/lib -L${DESTDIR}/usr/local/lib -fsanitize=memory -fPIC")
+set(_llvm_cmake_c_flags             "-isystem ${DESTDIR}/usr/local/include -fsanitize=memory")
+set(_llvm_cmake_cxx_flags           "-nostdinc++ -isystem ${DESTDIR}/usr/local/include -isystem ${DESTDIR}/usr/local/include/c++/v1 -fsanitize=memory")
 
 # TODO: Build LLVM statically and link with Mesa 3D.
 
@@ -24,11 +21,12 @@ ExternalProject_Add(dep_LLVM
             -DCMAKE_CXX_COMPILER:STRING=${CMAKE_CXX_COMPILER}
             -DCMAKE_TOOLCHAIN_FILE:STRING=${CMAKE_TOOLCHAIN_FILE}
 
+        -DCMAKE_BUILD_RPATH=${DESTDIR}/usr/local/lib
         -DCMAKE_BUILD_TYPE=Release
         -DLLVM_USE_SANITIZER=MemoryWithOrigins
         #        -DLLVM_ENABLE_PROJECTS=clang|lld|llvm-config
         -DLLVM_ENABLE_PROJECTS=LLVM|llvm-config
-        -DLLVM_ENABLE_LIBCXX=ON
+        #-DLLVM_ENABLE_LIBCXX=ON
 
          # This forces to make shared library.
         -DLLVM_BUILD_LLVM_DYLIB=ON
@@ -41,14 +39,10 @@ ExternalProject_Add(dep_LLVM
 
         -DCMAKE_C_FLAGS:STRING=${_llvm_cmake_c_flags}
         -DCMAKE_CXX_FLAGS:STRING=${_llvm_cmake_cxx_flags}
-        -DCMAKE_EXE_LINKER_FLAGS:STRING=${_llvm_cmake_exe_linker_flags}
-        -DCMAKE_SHARED_LINKER_FLAGS:STRING=${_llvm_cmake_shared_linker_flags}
-        -DCMAKE_MODULE_LINKER_FLAGS:STRING=${_llvm_cmake_module_linker_flags}
+        -DCMAKE_EXE_LINKER_FLAGS:STRING="-Wl,-L${DESTDIR}/usr/local/lib,-lc++"
+        -DCMAKE_SHARED_LINKER_FLAGS:STRING="-Wl,-L${DESTDIR}/usr/local/lib,-lc++"
 
         SOURCE_SUBDIR llvm
-        BUILD_COMMAND ${CMAKE_COMMAND} --build . --config Release --target LLVM llvm-config -- ${_build_j}
-        INSTALL_COMMAND ${CMAKE_COMMAND} --build . --config Release --target install-LLVM install-llvm-config install-llvm-headers
-            COMMAND ln -sfn "../local/lib/libLLVM.so" "${DESTDIR}/usr/lib/libLLVM.so"
-            COMMAND ln -sfn "../local/lib/libLLVM-12.so" "${DESTDIR}/usr/lib/libLLVM-12.so"
-            COMMAND ln -sfn "../local/lib/libLLVM-12.0.1.so" "${DESTDIR}/usr/lib/libLLVM-12.0.1.so"
+        BUILD_COMMAND ${CMAKE_COMMAND} --build . --target LLVM llvm-config -- ${_build_j}
+        INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install-LLVM install-llvm-config install-llvm-headers
         )

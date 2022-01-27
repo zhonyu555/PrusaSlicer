@@ -13,5 +13,5 @@ ExternalProject_Add(dep_Chromium_Libs
         BUILD_IN_SOURCE ON
         CONFIGURE_COMMAND ""
         BUILD_COMMAND ""
-        INSTALL_COMMAND ${CMAKE_COMMAND} "-D_MSAN_COPY_FROM=./instrumented_libraries_prebuilt/msan/lib" "-D_MSAN_COPY_TO=${DESTDIR}/usr/lib" -P ${CMAKE_CURRENT_LIST_DIR}/copy_chromium_prebuilt_libraries.cmake
+        INSTALL_COMMAND ${CMAKE_COMMAND} "-D_MSAN_COPY_FROM=./instrumented_libraries_prebuilt/msan/lib" "-D_MSAN_COPY_TO=${DESTDIR}/usr/local/lib" -P ${CMAKE_CURRENT_LIST_DIR}/copy_chromium_prebuilt_libraries.cmake
         )
