@@ -18,7 +18,6 @@
 #include "Event.hpp"
 #include "UnsavedChangesDialog.hpp"
 
-class wxNotebook;
 class wxBookCtrlBase;
 class wxProgressDialog;
 
@@ -33,6 +32,7 @@ class Tab;
 class PrintHostQueueDialog;
 class Plater;
 class MainFrame;
+class PreferencesDialog;
 
 enum QuickSlice
 {
@@ -92,9 +92,6 @@ class MainFrame : public DPIFrame
     void on_value_changed(wxCommandEvent&);
 
     bool can_start_new_project() const;
-#if !ENABLE_PROJECT_DIRTY_STATE
-    bool can_save() const;
-#endif // !ENABLE_PROJECT_DIRTY_STATE
     bool can_export_model() const;
     bool can_export_toolpaths() const;
     bool can_export_supports() const;
@@ -154,7 +151,7 @@ public:
 
     void        init_tabpanel();
     void        create_preset_tabs();
-    void        add_created_tab(Tab* panel);
+    void        add_created_tab(Tab* panel, const std::string& bmp_name = "");
     bool        is_active_and_shown_tab(Tab* tab);
     // Register Win32 RawInput callbacks (3DConnexion) and removable media insert / remove callbacks.
     // Called from wxEVT_ACTIVATE, as wxEVT_CREATE was not reliable (bug in wxWidgets?).
@@ -162,6 +159,8 @@ public:
     void        init_menubar_as_editor();
     void        init_menubar_as_gcodeviewer();
     void        update_menubar();
+    // Open item in menu by menu and item name (in actual language)
+    void        open_menubar_item(const wxString& menu_name,const wxString& item_name);
 #ifdef _WIN32
     void        show_tabs_menu(bool show);
 #endif
@@ -170,7 +169,7 @@ public:
     bool        is_last_input_file() const  { return !m_qs_last_input_file.IsEmpty(); }
     bool        is_dlg_layout() const { return m_layout == ESettingsLayout::Dlg; }
 
-    void        quick_slice(const int qs = qsUndef);
+//    void        quick_slice(const int qs = qsUndef);
     void        reslice_now();
     void        repair_stl();
     void        export_config();
@@ -189,12 +188,10 @@ public:
     // Propagate changed configuration from the Tab to the Plater and save changes to the AppConfig
     void        on_config_changed(DynamicPrintConfig* cfg) const ;
 
-#if ENABLE_PROJECT_DIRTY_STATE
     bool can_save() const;
     bool can_save_as() const;
     void save_project();
-    void save_project_as(const wxString& filename = wxString());
-#endif // ENABLE_PROJECT_DIRTY_STATE
+    bool save_project_as(const wxString& filename = wxString());
 
     void        add_to_recent_projects(const wxString& filename);
     void        technology_changed();
@@ -206,9 +203,10 @@ public:
     SettingsDialog        m_settings_dialog;
     DiffPresetDialog      diff_dialog;
     wxWindow*             m_plater_page{ nullptr };
-    wxProgressDialog*     m_progress_dialog { nullptr };
+//    wxProgressDialog*     m_progress_dialog { nullptr };
+    PreferencesDialog*    preferences_dialog { nullptr };
     PrintHostQueueDialog* m_printhost_queue_dlg;
-    std::shared_ptr<ProgressStatusBar>  m_statusbar;
+//    std::shared_ptr<ProgressStatusBar>  m_statusbar;
 
 #ifdef __APPLE__
     std::unique_ptr<wxTaskBarIcon> m_taskbar_icon;

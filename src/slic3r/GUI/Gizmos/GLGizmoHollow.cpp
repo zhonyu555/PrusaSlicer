@@ -20,7 +20,6 @@ namespace GUI {
 GLGizmoHollow::GLGizmoHollow(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id)
     : GLGizmoBase(parent, icon_filename, sprite_id)
 {
-    m_vbo_cylinder.init_from(make_cylinder(1., 1.));
 }
 
 
@@ -61,8 +60,11 @@ void GLGizmoHollow::set_sla_support_data(ModelObject*, const Selection&)
 
 
 
-void GLGizmoHollow::on_render() const
+void GLGizmoHollow::on_render()
 {
+    if (!m_cylinder.is_initialized())
+        m_cylinder.init_from(its_make_cylinder(1.0, 1.0));
+
     const Selection& selection = m_parent.get_selection();
     const CommonGizmosDataObjects::SelectionInfo* sel_info = m_c->selection_info();
 
@@ -88,12 +90,12 @@ void GLGizmoHollow::on_render() const
 }
 
 
-void GLGizmoHollow::on_render_for_picking() const
+void GLGizmoHollow::on_render_for_picking()
 {
     const Selection& selection = m_parent.get_selection();
-#if ENABLE_RENDER_PICKING_PASS
-    m_z_shift = selection.get_volume(*selection.get_volume_idxs().begin())->get_sla_shift_z();
-#endif
+//#if ENABLE_RENDER_PICKING_PASS
+//    m_z_shift = selection.get_volume(*selection.get_volume_idxs().begin())->get_sla_shift_z();
+//#endif
 
     glsafe(::glEnable(GL_DEPTH_TEST));
     render_points(selection, true);
@@ -114,12 +116,11 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
     glsafe(::glTranslated(0.0, 0.0, m_c->selection_info()->get_sla_shift()));
     glsafe(::glMultMatrixd(instance_matrix.data()));
 
-    std::array<float, 4> render_color;
+    ColorRGBA render_color;
     const sla::DrainHoles& drain_holes = m_c->selection_info()->model_object()->sla_drain_holes;
     size_t cache_size = drain_holes.size();
 
-    for (size_t i = 0; i < cache_size; ++i)
-    {
+    for (size_t i = 0; i < cache_size; ++i) {
         const sla::DrainHole& drain_hole = drain_holes[i];
         const bool& point_selected = m_selected[i];
 
@@ -127,40 +128,25 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
             continue;
 
         // First decide about the color of the point.
-        if (picking) {
-            std::array<float, 4> color = picking_color_component(i);
-
-            render_color = color;
-        }
+        if (picking)
+            render_color = picking_color_component(i);
         else {
-            if (size_t(m_hover_id) == i) {
-                render_color = {0.f, 1.f, 1.f, 1.f};
-            } else if (m_c->hollowed_mesh() &&
+            if (size_t(m_hover_id) == i)
+                render_color = {0.0f, 1.0f, 1.0f, 1.0f};
+            else if (m_c->hollowed_mesh() &&
                        i < m_c->hollowed_mesh()->get_drainholes().size() &&
                        m_c->hollowed_mesh()->get_drainholes()[i].failed) {
-                render_color = {1.f, 0.f, 0.f, .5f};
+                render_color = {1.0f, 0.0f, 0.0f, 0.5f};
             }
-            else { // neigher hover nor picking
-
-                render_color[0] = point_selected ? 1.0f : 1.f;
-                render_color[1] = point_selected ? 0.3f : 1.f;
-                render_color[2] = point_selected ? 0.3f : 1.f;
-                render_color[3] = 0.5f;
-            }
+            else  // neither hover nor picking
+                render_color = point_selected ? ColorRGBA(1.0f, 0.3f, 0.3f, 0.5f) : ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f);
         }
 
-        if (shader && ! picking)
-#if ENABLE_SEQUENTIAL_LIMITS
-            const_cast<GLModel*>(&m_vbo_cylinder)->set_color(-1 , render_color);
-#else
-            shader->set_uniform("uniform_color", render_color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
-        else // picking
-            glsafe(::glColor4fv(render_color.data()));
+        const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
 
         // Inverse matrix of the instance scaling is applied so that the mark does not scale with the object.
         glsafe(::glPushMatrix());
-        glsafe(::glTranslatef(drain_hole.pos(0), drain_hole.pos(1), drain_hole.pos(2)));
+        glsafe(::glTranslatef(drain_hole.pos.x(), drain_hole.pos.y(), drain_hole.pos.z()));
         glsafe(::glMultMatrixd(instance_scaling_matrix_inverse.data()));
 
         if (vol->is_left_handed())
@@ -174,7 +160,7 @@ void GLGizmoHollow::render_points(const Selection& selection, bool picking) cons
         glsafe(::glPushMatrix());
         glsafe(::glTranslated(0., 0., -drain_hole.height));
         glsafe(::glScaled(drain_hole.radius, drain_hole.radius, drain_hole.height + sla::HoleStickOutLength));
-        m_vbo_cylinder.render();
+        m_cylinder.render();
         glsafe(::glPopMatrix());
 
         if (vol->is_left_handed())
@@ -513,23 +499,26 @@ RENDER_AGAIN:
     y = std::min(y, bottom_limit - approx_height);
     m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
 
-    m_imgui->begin(on_get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
+    m_imgui->begin(get_name(), ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoCollapse);
 
     // First calculate width of all the texts that are could possibly be shown. We will decide set the dialog width based on that:
-    const float settings_sliders_left =
-      std::max({m_imgui->calc_text_size(m_desc.at("offset")).x,
-               m_imgui->calc_text_size(m_desc.at("quality")).x,
-               m_imgui->calc_text_size(m_desc.at("closing_distance")).x,
-               m_imgui->calc_text_size(m_desc.at("hole_diameter")).x,
-               m_imgui->calc_text_size(m_desc.at("hole_depth")).x})
-           + m_imgui->scaled(1.f);
+    const float clipping_slider_left = std::max(m_imgui->calc_text_size(m_desc.at("clipping_of_view")).x,
+                                                m_imgui->calc_text_size(m_desc.at("reset_direction")).x) + m_imgui->scaled(0.5f);
 
-    const float clipping_slider_left = std::max(m_imgui->calc_text_size(m_desc.at("clipping_of_view")).x, m_imgui->calc_text_size(m_desc.at("reset_direction")).x) + m_imgui->scaled(1.5f);
+    const float settings_sliders_left =
+        std::max(std::max({m_imgui->calc_text_size(m_desc.at("offset")).x,
+                           m_imgui->calc_text_size(m_desc.at("quality")).x,
+                           m_imgui->calc_text_size(m_desc.at("closing_distance")).x,
+                           m_imgui->calc_text_size(m_desc.at("hole_diameter")).x,
+                           m_imgui->calc_text_size(m_desc.at("hole_depth")).x}) + m_imgui->scaled(0.5f), clipping_slider_left);
+
     const float diameter_slider_left = settings_sliders_left; //m_imgui->calc_text_size(m_desc.at("hole_diameter")).x + m_imgui->scaled(1.f);
     const float minimal_slider_width = m_imgui->scaled(4.f);
 
+    const float button_preview_width = m_imgui->calc_button_size(m_desc.at("preview")).x;
+
     float window_width = minimal_slider_width + std::max({settings_sliders_left, clipping_slider_left, diameter_slider_left});
-    window_width = std::max(window_width, m_imgui->calc_text_size(m_desc.at("preview")).x);
+    window_width = std::max(window_width, button_preview_width);
 
     if (m_imgui->button(m_desc["preview"]))
         hollow_mesh();
@@ -549,52 +538,36 @@ RENDER_AGAIN:
     }
 
     m_imgui->disabled_begin(! m_enable_hollowing);
-    float max_tooltip_width = ImGui::GetFontSize() * 20.0f;
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc.at("offset"));
-    ImGui::SameLine(settings_sliders_left);
+    ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
     ImGui::PushItemWidth(window_width - settings_sliders_left);
-    ImGui::SliderFloat("   ", &offset, offset_min, offset_max, "%.1f mm");
-    if (ImGui::IsItemHovered()) {
-        ImGui::BeginTooltip();
-        ImGui::PushTextWrapPos(max_tooltip_width);
-        ImGui::TextUnformatted((_utf8(opts[0].second->tooltip)).c_str());
-        ImGui::PopTextWrapPos();
-        ImGui::EndTooltip();
-    }
-    bool slider_clicked = ImGui::IsItemClicked(); // someone clicked the slider
-    bool slider_edited = ImGui::IsItemEdited(); // someone is dragging the slider
-    bool slider_released = ImGui::IsItemDeactivatedAfterEdit(); // someone has just released the slider
+    m_imgui->slider_float("##offset", &offset, offset_min, offset_max, "%.1f mm", 1.0f, true, _L(opts[0].second->tooltip));
+
+    bool slider_clicked = m_imgui->get_last_slider_status().clicked; // someone clicked the slider
+    bool slider_edited =m_imgui->get_last_slider_status().edited; // someone is dragging the slider
+    bool slider_released =m_imgui->get_last_slider_status().deactivated_after_edit; // someone has just released the slider
 
     if (current_mode >= quality_mode) {
+        ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("quality"));
-        ImGui::SameLine(settings_sliders_left);
-        ImGui::SliderFloat("    ", &quality, quality_min, quality_max, "%.1f");
-        if (ImGui::IsItemHovered()) {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(max_tooltip_width);
-            ImGui::TextUnformatted((_utf8(opts[1].second->tooltip)).c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
-        slider_clicked |= ImGui::IsItemClicked();
-        slider_edited |= ImGui::IsItemEdited();
-        slider_released |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
+        m_imgui->slider_float("##quality", &quality, quality_min, quality_max, "%.1f", 1.0f, true, _L(opts[1].second->tooltip));
+
+        slider_clicked |= m_imgui->get_last_slider_status().clicked;
+        slider_edited |= m_imgui->get_last_slider_status().edited;
+        slider_released |= m_imgui->get_last_slider_status().deactivated_after_edit;
     }
 
     if (current_mode >= closing_d_mode) {
+        ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("closing_distance"));
-        ImGui::SameLine(settings_sliders_left);
-        ImGui::SliderFloat("      ", &closing_d, closing_d_min, closing_d_max, "%.1f mm");
-        if (ImGui::IsItemHovered()) {
-            ImGui::BeginTooltip();
-            ImGui::PushTextWrapPos(max_tooltip_width);
-            ImGui::TextUnformatted((_utf8(opts[2].second->tooltip)).c_str());
-            ImGui::PopTextWrapPos();
-            ImGui::EndTooltip();
-        }
-        slider_clicked |= ImGui::IsItemClicked();
-        slider_edited |= ImGui::IsItemEdited();
-        slider_released |= ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
+        m_imgui->slider_float("##closing_distance", &closing_d, closing_d_min, closing_d_max, "%.1f mm", 1.0f, true, _L(opts[2].second->tooltip));
+
+        slider_clicked |= m_imgui->get_last_slider_status().clicked;
+        slider_edited |= m_imgui->get_last_slider_status().edited;
+        slider_released |= m_imgui->get_last_slider_status().deactivated_after_edit;
     }
 
     if (slider_clicked) {
@@ -626,27 +599,35 @@ RENDER_AGAIN:
 
     ImGui::Separator();
 
-    float diameter_upper_cap = 15.;
-    if (m_new_hole_radius > diameter_upper_cap)
-        m_new_hole_radius = diameter_upper_cap;
+    float diameter_upper_cap = 60.;
+    if (m_new_hole_radius * 2.f > diameter_upper_cap)
+        m_new_hole_radius = diameter_upper_cap / 2.f;
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc.at("hole_diameter"));
-    ImGui::SameLine(diameter_slider_left);
+    ImGui::SameLine(diameter_slider_left, m_imgui->get_item_spacing().x);
     ImGui::PushItemWidth(window_width - diameter_slider_left);
 
     float diam = 2.f * m_new_hole_radius;
-    ImGui::SliderFloat("", &diam, 1.f, diameter_upper_cap, "%.1f mm");
+    m_imgui->slider_float("##hole_diameter", &diam, 1.f, 25.f, "%.1f mm", 1.f, false);
+    // Let's clamp the value (which could have been entered by keyboard) to a larger range
+    // than the slider. This allows entering off-scale values and still protects against
+    //complete non-sense.
+    diam = std::clamp(diam, 0.1f, diameter_upper_cap);
     m_new_hole_radius = diam / 2.f;
-    bool clicked = ImGui::IsItemClicked();
-    bool edited = ImGui::IsItemEdited();
-    bool deactivated = ImGui::IsItemDeactivatedAfterEdit();
+    bool clicked = m_imgui->get_last_slider_status().clicked;
+    bool edited = m_imgui->get_last_slider_status().edited;
+    bool deactivated = m_imgui->get_last_slider_status().deactivated_after_edit;
 
+    ImGui::AlignTextToFramePadding();
     m_imgui->text(m_desc["hole_depth"]);
-    ImGui::SameLine(diameter_slider_left);
-    ImGui::SliderFloat("  ", &m_new_hole_height, 0.f, 10.f, "%.1f mm");
+    ImGui::SameLine(diameter_slider_left, m_imgui->get_item_spacing().x);
+    m_imgui->slider_float("##hole_depth", &m_new_hole_height, 0.f, 10.f, "%.1f mm", 1.f, false);
+    // Same as above:
+    m_new_hole_height = std::clamp(m_new_hole_height, 0.f, 100.f);
 
-    clicked |= ImGui::IsItemClicked();
-    edited |= ImGui::IsItemEdited();
-    deactivated |= ImGui::IsItemDeactivatedAfterEdit();
+    clicked |= m_imgui->get_last_slider_status().clicked;
+    edited |= m_imgui->get_last_slider_status().edited;
+    deactivated |= m_imgui->get_last_slider_status().deactivated_after_edit;;
 
     // Following is a nasty way to:
     //  - save the initial value of the slider before one starts messing with it
@@ -694,8 +675,10 @@ RENDER_AGAIN:
     // Following is rendered in both editing and non-editing mode:
    // m_imgui->text("");
     ImGui::Separator();
-    if (m_c->object_clipper()->get_position() == 0.f)
+    if (m_c->object_clipper()->get_position() == 0.f) {
+        ImGui::AlignTextToFramePadding();
         m_imgui->text(m_desc.at("clipping_of_view"));
+    }
     else {
         if (m_imgui->button(m_desc.at("reset_direction"))) {
             wxGetApp().CallAfter([this](){
@@ -704,10 +687,10 @@ RENDER_AGAIN:
         }
     }
 
-    ImGui::SameLine(clipping_slider_left);
-    ImGui::PushItemWidth(window_width - clipping_slider_left);
+    ImGui::SameLine(settings_sliders_left, m_imgui->get_item_spacing().x);
+    ImGui::PushItemWidth(window_width - settings_sliders_left);
     float clp_dist = m_c->object_clipper()->get_position();
-    if (ImGui::SliderFloat("     ", &clp_dist, 0.f, 1.f, "%.2f"))
+    if (m_imgui->slider_float("##clp_dist", &clp_dist, 0.f, 1.f, "%.2f"))
         m_c->object_clipper()->set_position(clp_dist, true);
 
     // make sure supports are shown/hidden as appropriate
@@ -739,7 +722,7 @@ RENDER_AGAIN:
 
     if (force_refresh)
         m_parent.set_as_dirty();
-    
+
     if (config_changed)
         m_parent.post_event(SimpleEvent(EVT_GLCANVAS_FORCE_UPDATE));
 }
@@ -768,7 +751,7 @@ bool GLGizmoHollow::on_is_selectable() const
 
 std::string GLGizmoHollow::on_get_name() const
 {
-    return (_(L("Hollow and drill")) + " [H]").ToUTF8().data();
+    return _u8L("Hollow and drill");
 }
 
 

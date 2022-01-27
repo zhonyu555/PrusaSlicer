@@ -16,7 +16,6 @@ class ScalableButton;
 class wxBoxSizer;
 class wxComboBox;
 class wxStaticBitmap;
-class wxRadioBox;
 
 namespace Slic3r {
 
@@ -123,7 +122,7 @@ protected:
 
     wxBitmap* get_bmp(  std::string bitmap_key, bool wide_icons, const std::string& main_icon_name, 
                         bool is_compatible = true, bool is_system = false, bool is_single_bar = false,
-                        std::string filament_rgb = "", std::string extruder_rgb = "");
+                        const std::string& filament_rgb = "", const std::string& extruder_rgb = "", const std::string& material_rgb = "");
 
     wxBitmap* get_bmp(  std::string bitmap_key, const std::string& main_icon_name, const std::string& next_icon_name,
                         bool is_enabled = true, bool is_compatible = true, bool is_system = false);
@@ -148,7 +147,8 @@ public:
     void set_extruder_idx(const int extr_idx)   { m_extruder_idx = extr_idx; }
     int  get_extruder_idx() const               { return m_extruder_idx; }
 
-    bool switch_to_tab();
+    void switch_to_tab();
+    void change_extruder_color();
     void show_add_menu();
     void show_edit_menu();
 

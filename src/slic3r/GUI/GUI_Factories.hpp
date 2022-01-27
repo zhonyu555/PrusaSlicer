@@ -40,9 +40,13 @@ public:
     ~MenuFactory() = default;
 
     void    init(wxWindow* parent);
+    void    update();
     void    update_object_menu();
+    void    update_default_menu();
     void    msw_rescale();
     void    sys_color_changed();
+
+    static void sys_color_changed(wxMenuBar* menu_bar);
 
     wxMenu* default_menu();
     wxMenu* object_menu();
@@ -88,6 +92,7 @@ private:
     wxMenuItem* append_menu_item_printable(wxMenu* menu);
     void        append_menu_items_osx(wxMenu* menu);
     wxMenuItem* append_menu_item_fix_through_netfabb(wxMenu* menu);
+    wxMenuItem* append_menu_item_simplify(wxMenu* menu);
     void        append_menu_item_export_stl(wxMenu* menu);
     void        append_menu_item_reload_from_disk(wxMenu* menu);
     void        append_menu_item_replace_with_stl(wxMenu* menu);

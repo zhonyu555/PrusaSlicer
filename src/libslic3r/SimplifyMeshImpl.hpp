@@ -34,7 +34,7 @@ using Bary = std::array<double, 3>;
 using Index3 = std::array<size_t, 3>;
 
 template<class Vertex> struct vertex_traits {
-    using coord_type = typename Vertex::coord_type;
+    using coord_type = float;
     using compute_type = coord_type;
     
     static coord_type x(const Vertex &v);
@@ -48,7 +48,7 @@ template<class Vertex> struct vertex_traits {
 };
 
 template<class Mesh> struct mesh_traits {
-    using vertex_t = typename Mesh::vertex_t;
+    using vertex_t = typename stl_vertex;
     
     static size_t   face_count(const Mesh &m);
     static size_t   vertex_count(const Mesh &m);

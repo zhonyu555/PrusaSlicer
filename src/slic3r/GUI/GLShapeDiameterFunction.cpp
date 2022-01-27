@@ -25,6 +25,7 @@ void GLShapeDiameterFunction::draw() const
     GLint normal_id   = shader->get_attrib_location("v_normal");
     GLint width_id    = shader->get_attrib_location("v_width");
 
+    glsafe(::glEnable(GL_DEPTH_TEST));
     glsafe(::glBindBuffer(GL_ARRAY_BUFFER, m_vbo_id));
     if (position_id != -1) {
         glsafe(::glEnableVertexAttribArray(position_id));
@@ -44,14 +45,14 @@ void GLShapeDiameterFunction::draw() const
 
     glsafe(::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,m_vbo_indices_id));
     glsafe(::glDrawElements(GL_TRIANGLES, (GLsizei)indices_count, GL_UNSIGNED_INT, nullptr));
-    glsafe(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+    glsafe(::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 
     // clear 
     if (position_id != -1) glsafe(::glDisableVertexAttribArray(position_id));
     if (normal_id != -1) glsafe(::glDisableVertexAttribArray(normal_id));
     if (width_id != -1) glsafe(::glDisableVertexAttribArray(width_id));
     glsafe(::glBindBuffer(GL_ARRAY_BUFFER, 0));
-
+    glsafe(::glDisable(GL_DEPTH_TEST));
     shader->stop_using();   
     if (allow_render_normals) render_normals();
     else if (allow_render_points) render_points();
@@ -181,9 +182,8 @@ GLModel create_arrow(float width, float length) {
         Vec3crd(0, 2, 4),
         Vec3crd(0, 4, 1)
     };
-    TriangleMesh tm(its);
     GLModel model;
-    model.init_from(tm);
+    model.init_from(its);
     return model;
 }
 
@@ -233,9 +233,8 @@ GLModel create_tetrahedron(float size) {
         Vec3crd(0, 3, 1),
         Vec3crd(3, 2, 1)
     };
-    TriangleMesh tm(its);
-    GLModel      model;
-    model.init_from(tm);
+    GLModel model;
+    model.init_from(its);
     return model;
 }
 
@@ -243,8 +242,7 @@ void GLShapeDiameterFunction::render_points() const
 {
     double radius = 1.0;
     indexed_triangle_set its = its_make_sphere(radius, 0.2);
-    TriangleMesh tm(its);
-    GLModel m; m.init_from(tm);
+    GLModel m; m.init_from(its);
     //GLModel m = create_tetrahedron(1.f);
     GLShaderProgram *shader = wxGetApp().get_shader("gouraud_light");
     if (shader == nullptr) return;

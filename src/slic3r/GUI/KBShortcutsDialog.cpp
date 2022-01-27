@@ -3,13 +3,13 @@
 #include "I18N.hpp"
 #include "libslic3r/Utils.hpp"
 #include "GUI.hpp"
+#include "Notebook.hpp"
 #include <wx/scrolwin.h>
 #include <wx/display.h>
 #include "GUI_App.hpp"
 #include "wxExtensions.hpp"
 #include "MainFrame.hpp"
 #include <wx/notebook.h>
-#include <wx/listbook.h>
 
 namespace Slic3r {
 namespace GUI {
@@ -18,8 +18,6 @@ KBShortcutsDialog::KBShortcutsDialog()
     : DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY, wxString(wxGetApp().is_editor() ? SLIC3R_APP_NAME : GCODEVIEWER_APP_NAME) + " - " + _L("Keyboard Shortcuts"),
     wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
-//    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
-
     // fonts
     const wxFont& font = wxGetApp().normal_font();
     const wxFont& bold_font = wxGetApp().bold_font();
@@ -31,13 +29,10 @@ KBShortcutsDialog::KBShortcutsDialog()
 
 #ifdef _MSW_DARK_MODE
     wxBookCtrlBase* book;
-    if (wxGetApp().dark_mode()) {
-        book = new wxListbook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
-        wxGetApp().UpdateDarkUI(book);
-        wxGetApp().UpdateDarkUI(dynamic_cast<wxListbook*>(book)->GetListView());
-    }
-    else
-        book = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+//    if (wxGetApp().dark_mode()) 
+        book = new Notebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
+/*    else
+        book = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);*/
 #else
     wxNotebook* book = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxNB_TOP);
 #endif
@@ -156,6 +151,9 @@ void KBShortcutsDialog::fill_shortcuts()
             { "F", L("Gizmo Place face on bed") },
             { "H", L("Gizmo SLA hollow") },
             { "L", L("Gizmo SLA support points") },
+            { "L", L("Gizmo FDM paint-on supports") },
+            { "P", L("Gizmo FDM paint-on seam") },
+            { "N", L("Gizmo Multi Material painting") },
             { "Esc", L("Unselect gizmo or clear selection") },
             { "K", L("Change camera type (perspective, orthographic)") },
             { "B", L("Zoom to Bed") },
@@ -195,7 +193,7 @@ void KBShortcutsDialog::fill_shortcuts()
         m_full_shortcuts.push_back({ { _L("Gizmos"), _L("The following shortcuts are applicable when the specified gizmo is active") }, gizmos_shortcuts });
 
         Shortcuts object_list_shortcuts = {
-            { "P", L("Set selected items as Ptrintable/Unprintable") },
+            { "P", L("Set selected items as Printable/Unprintable") },
             { "0", L("Set default extruder for the selected items") },
             { "1-9", L("Set extruder number for the selected items") },
         };
@@ -225,10 +223,8 @@ void KBShortcutsDialog::fill_shortcuts()
         { "A", L("Horizontal slider - Move active thumb Left") },
         { "D", L("Horizontal slider - Move active thumb Right") },
         { "X", L("On/Off one layer mode of the vertical slider") },
-        { "L", L("Show/Hide Legend and Estimated printing time") },
-#if ENABLE_GCODE_WINDOW
+        { "L", L("Show/Hide legend") },
         { "C", L("Show/Hide G-code window") },
-#endif // ENABLE_GCODE_WINDOW
     };
 
     m_full_shortcuts.push_back({ { _L("Preview"), "" }, preview_shortcuts });
@@ -274,7 +270,7 @@ wxPanel* KBShortcutsDialog::create_header(wxWindow* parent, const wxFont& bold_f
     sizer->AddStretchSpacer();
 
     // logo
-    m_logo_bmp = ScalableBitmap(this, wxGetApp().is_editor() ? "PrusaSlicer_32px.png" : "PrusaSlicer-gcodeviewer_32px.png", 32);
+    m_logo_bmp = ScalableBitmap(this, wxGetApp().logo_name(), 32);
     m_header_bitmap = new wxStaticBitmap(panel, wxID_ANY, m_logo_bmp.bmp());
     sizer->Add(m_header_bitmap, 0, wxEXPAND | wxLEFT | wxRIGHT, 10);
 

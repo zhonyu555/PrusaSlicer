@@ -47,7 +47,7 @@ inline indexed_triangle_set straight_walls(const Polygon &plate,
                                            double         lo_z,
                                            double         hi_z)
 {
-    return walls(plate, plate, lo_z, hi_z);
+    return wall_strip(plate, hi_z, lo_z); //walls(plate, plate, lo_z, hi_z);
 }
 
 // Function to cut tiny connector cavities for a given polygon. The input poly
@@ -370,7 +370,7 @@ bool add_cavity(indexed_triangle_set &pad,
 
     if (inner_base.empty() || middle_base.empty()) { logerr(); return false; }
 
-    ExPolygons pdiff = diff_ex((Polygons)top_poly, (Polygons)middle_base.contour);
+    ExPolygons pdiff = diff_ex(top_poly, middle_base.contour);
 
     if (pdiff.size() != 1) { logerr(); return false; }
 

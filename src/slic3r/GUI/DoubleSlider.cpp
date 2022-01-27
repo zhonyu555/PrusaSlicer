@@ -11,6 +11,7 @@
 #include "GUI_Utils.hpp"
 #include "MsgDialog.hpp"
 #include "Tab.hpp"
+#include "GUI_ObjectList.hpp"
 
 #include <wx/button.h>
 #include <wx/dialog.h>
@@ -24,7 +25,7 @@
 
 #include <cmath>
 #include <boost/algorithm/string/replace.hpp>
-#include <random>
+#include <boost/algorithm/string/split.hpp>
 #include "Field.hpp"
 #include "format.hpp"
 #include "NotificationManager.hpp"
@@ -36,6 +37,14 @@ using GUI::into_u8;
 using GUI::format_wxstr;
 
 namespace DoubleSlider {
+
+constexpr double min_delta_area = scale_(scale_(25));  // equal to 25 mm2
+constexpr double miscalculation = scale_(scale_(1));   // equal to 1 mm2
+
+bool equivalent_areas(const double& bottom_area, const double& top_area)
+{
+    return fabs(bottom_area - top_area) <= miscalculation;
+}
 
 wxDEFINE_EVENT(wxCUSTOMEVT_TICKSCHANGED, wxEvent);
 
@@ -383,7 +392,11 @@ void Control::SetTicksValues(const Info& custom_gcode_per_print_z)
         // Switch to the "Feature type"/"Tool" from the very beginning of a new object slicing after deleting of the old one
         post_ticks_changed_event();
 
-    if (custom_gcode_per_print_z.mode)
+    // init extruder sequence in respect to the extruders count 
+    if (m_ticks.empty())
+        m_extruders_sequence.init(m_extruder_colors.size());
+
+    if (custom_gcode_per_print_z.mode && !custom_gcode_per_print_z.gcodes.empty())
         m_ticks.mode = custom_gcode_per_print_z.mode;
 
     Refresh();
@@ -438,7 +451,7 @@ void Control::SetModeAndOnlyExtruder(const bool is_one_extruder_printed_model, c
     m_mode = !is_one_extruder_printed_model ? MultiExtruder :
              only_extruder < 0              ? SingleExtruder :
                                               MultiAsSingle;
-    if (!m_ticks.mode)
+    if (!m_ticks.mode || (m_ticks.empty() && m_ticks.mode != m_mode))
         m_ticks.mode = m_mode;
     m_only_extruder = only_extruder;
 
@@ -545,7 +558,8 @@ bool Control::is_wipe_tower_layer(int tick) const
         return false;
     if (tick == 0 || (tick == (int)m_values.size() - 1 && m_values[tick] > m_values[tick - 1]))
         return false;
-    if (m_values[tick - 1] == m_values[tick + 1] && m_values[tick] < m_values[tick + 1])
+    if ((m_values[tick - 1] == m_values[tick + 1] && m_values[tick] < m_values[tick + 1]) ||
+        (tick > 0 && m_values[tick] < m_values[tick - 1]) ) // if there is just one wiping on the layer 
         return true;
 
     return false;
@@ -739,16 +753,8 @@ wxString Control::get_label(int tick, LabelType label_type/* = ltHeightWithLayer
         return size_t(it - m_layers_values.begin());
     };
 
-#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
-    if (m_draw_mode == dmSequentialGCodeView) {
-        return (Slic3r::GUI::get_app_config()->get("seq_top_gcode_indices") == "1") ?
-            wxString::Format("%lu", static_cast<unsigned long>(m_alternate_values[value])) :
-            wxString::Format("%lu", static_cast<unsigned long>(m_values[value]));
-    }
-#else
     if (m_draw_mode == dmSequentialGCodeView)
-        return wxString::Format("%lu", static_cast<unsigned long>(m_values[value]));
-#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
+        return wxString::Format("%lu", static_cast<unsigned long>(m_alternate_values[value]));
     else {
         if (label_type == ltEstimatedTime) {
             if (m_is_wipe_tower) {
@@ -1085,7 +1091,9 @@ void Control::draw_ruler(wxDC& dc)
 {
     if (m_values.empty())
         return;
-    m_ruler.update(this->GetParent(), m_values, get_scroll_step());
+    // When "No sparce layer" is enabled, use m_layers_values for ruler update. 
+    // Because of m_values has duplicate values in this case.
+    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 
     int height, width;
     get_size(&width, &height);
@@ -1397,8 +1405,8 @@ wxString Control::get_tooltip(int tick/*=-1*/)
     if (tick_code_it == m_ticks.ticks.end() && m_focus == fiActionIcon)    // tick doesn't exist
     {
         if (m_draw_mode == dmSequentialFffPrint)
-            return   _L("The sequential print is on.\n"
-                        "It's impossible to apply any custom G-code for objects printing sequentually.\n");
+            return  (_L("The sequential print is on.\n"
+                        "It's impossible to apply any custom G-code for objects printing sequentually.") + "\n");
 
         // Show mode as a first string of tooltop
         tooltip = "    " + _L("Print mode") + ": ";
@@ -1437,6 +1445,18 @@ wxString Control::get_tooltip(int tick/*=-1*/)
         std::string space = "   ";
         tooltip = space;
         auto format_gcode = [space](std::string gcode) {
+            // when the tooltip is too long, it starts to flicker, see: https://github.com/prusa3d/PrusaSlicer/issues/7368
+            // so we limit the number of lines shown
+            std::vector<std::string> lines;
+            boost::split(lines, gcode, boost::is_any_of("\n"), boost::token_compress_off);
+            static const size_t MAX_LINES = 10;
+            if (lines.size() > MAX_LINES) {
+                gcode = lines.front() + '\n';
+                for (size_t i = 1; i < MAX_LINES; ++i) {
+                    gcode += lines[i] + '\n';
+                }
+                gcode += "[" + into_u8(_L("continue")) + "]\n";
+            }
             boost::replace_all(gcode, "\n", "\n" + space);
             return gcode;
         };
@@ -1556,7 +1576,8 @@ void Control::OnMotion(wxMouseEvent& event)
     event.Skip();
 
     // Set tooltips with information for each icon
-    this->SetToolTip(get_tooltip(tick));
+    if (GUI::wxGetApp().is_editor())
+        this->SetToolTip(get_tooltip(tick));
 
     if (action) {
         wxCommandEvent e(wxEVT_SCROLL_CHANGED);
@@ -1593,7 +1614,7 @@ void Control::append_change_extruder_menu_item(wxMenu* menu, bool switch_current
 
         append_submenu(menu, change_extruder_menu, wxID_ANY, change_extruder_menu_name, _L("Use another extruder"),
             active_extruders[1] > 0 ? "edit_uni" : "change_extruder",
-            [this]() {return m_mode == MultiAsSingle; }, GUI::wxGetApp().plater());
+            [this]() {return m_mode == MultiAsSingle && !GUI::wxGetApp().obj_list()->has_paint_on_segmentation(); }, GUI::wxGetApp().plater());
     }
 }
 
@@ -1818,7 +1839,8 @@ void Control::OnChar(wxKeyEvent& event)
 
 void Control::OnRightDown(wxMouseEvent& event)
 {
-    if (HasCapture()) return;
+    if (HasCapture() || m_is_left_down)
+        return;
     this->CaptureMouse();
 
     const wxPoint pos = event.GetLogicalPosition(wxClientDC(this));
@@ -2010,11 +2032,11 @@ void Control::show_cog_icon_context_menu()
             []() { return true; }, [this]() { return m_extra_style == 0; }, GUI::wxGetApp().plater());
 
         append_menu_check_item(ruler_mode_menu, wxID_ANY, _L("Show object height"), _L("Show object height on the ruler"),
-            [this](wxCommandEvent&) { m_extra_style & wxSL_AUTOTICKS ? m_extra_style &= wxSL_AUTOTICKS : m_extra_style |= wxSL_AUTOTICKS; }, ruler_mode_menu,
+            [this](wxCommandEvent&) { m_extra_style & wxSL_AUTOTICKS ? m_extra_style ^= wxSL_AUTOTICKS : m_extra_style |= wxSL_AUTOTICKS; }, ruler_mode_menu,
             []() { return true; }, [this]() { return m_extra_style & wxSL_AUTOTICKS; }, GUI::wxGetApp().plater());
 
         append_menu_check_item(ruler_mode_menu, wxID_ANY, _L("Show estimated print time"), _L("Show estimated print time on the ruler"),
-            [this](wxCommandEvent&) { m_extra_style & wxSL_VALUE_LABEL ? m_extra_style &= wxSL_VALUE_LABEL : m_extra_style |= wxSL_VALUE_LABEL; }, ruler_mode_menu,
+            [this](wxCommandEvent&) { m_extra_style & wxSL_VALUE_LABEL ? m_extra_style ^= wxSL_VALUE_LABEL : m_extra_style |= wxSL_VALUE_LABEL; }, ruler_mode_menu,
             []() { return true; }, [this]() { return m_extra_style & wxSL_VALUE_LABEL; }, GUI::wxGetApp().plater());
 
         append_submenu(&menu, ruler_mode_menu, wxID_ANY, _L("Ruler mode"), _L("Set ruler mode"), "",
@@ -2025,11 +2047,37 @@ void Control::show_cog_icon_context_menu()
         append_menu_item(&menu, wxID_ANY, _L("Set extruder sequence for the entire print"), "",
             [this](wxCommandEvent&) { edit_extruder_sequence(); }, "", &menu);
 
-    if (m_mode != MultiExtruder && m_draw_mode == dmRegular)
+    if (GUI::wxGetApp().is_editor() && m_mode != MultiExtruder && m_draw_mode == dmRegular)
         append_menu_item(&menu, wxID_ANY, _L("Set auto color changes"), "",
             [this](wxCommandEvent&) { auto_color_change(); }, "", &menu);
 
     GUI::wxGetApp().plater()->PopupMenu(&menu);
+}
+
+bool check_color_change(PrintObject* object, size_t frst_layer_id, size_t layers_cnt, bool check_overhangs, std::function<bool(Layer*)> break_condition)
+{
+    double prev_area = area(object->get_layer(frst_layer_id)->lslices);
+
+    bool detected = false;
+    for (size_t i = frst_layer_id+1; i < layers_cnt; i++) {
+        Layer* layer = object->get_layer(i);
+        double cur_area = area(layer->lslices);
+
+        // check for overhangs
+        if (check_overhangs && cur_area > prev_area && !equivalent_areas(prev_area, cur_area))
+            break;
+
+        // Check percent of the area decrease.
+        // This value have to be more than min_delta_area and more then 10%
+        if ((prev_area - cur_area > min_delta_area) && (cur_area / prev_area < 0.9)) {
+            detected = true;
+            if (break_condition(layer))
+                break;
+        }
+
+        prev_area = cur_area;
+    }
+    return detected;
 }
 
 void Control::auto_color_change()
@@ -2044,44 +2092,36 @@ void Control::auto_color_change()
     }
 
     int extruders_cnt = GUI::wxGetApp().extruders_edited_cnt();
-    int extruder = 2;
+//    int extruder = 2;
 
     const Print& print = GUI::wxGetApp().plater()->fff_print();  
-    double delta_area = scale_(scale_(25)); // equal to 25 mm2
-
     for (auto object : print.objects()) {
         if (object->layer_count() == 0)
             continue;
-        double prev_area = area(object->get_layer(0)->lslices);
 
-        for (size_t i = 1; i < object->layers().size(); i++) {
-            Layer* layer = object->get_layer(i);
-            double cur_area = area(layer->lslices);
-
-            if (cur_area > prev_area && prev_area - cur_area > scale_(scale_(1)))
-                break;
-
-            if (prev_area - cur_area > delta_area) {
-                int tick = get_tick_from_value(layer->print_z);
-                if (tick >= 0 && !m_ticks.has_tick(tick)) {
-                    if (m_mode == SingleExtruder) {
-                        m_ticks.set_default_colors(true);
-                        m_ticks.add_tick(tick, ColorChange, 1, layer->print_z);
-                    }
-                    else {
-                        m_ticks.add_tick(tick, ToolChange, extruder, layer->print_z);
-                        if (++extruder > extruders_cnt)
+        check_color_change(object, 1, object->layers().size(), false, [this, extruders_cnt](Layer* layer)
+        {
+            int tick = get_tick_from_value(layer->print_z);
+            if (tick >= 0 && !m_ticks.has_tick(tick)) {
+                if (m_mode == SingleExtruder) {
+                    m_ticks.set_default_colors(true);
+                    m_ticks.add_tick(tick, ColorChange, 1, layer->print_z);
+                }
+                else {
+                    int extruder = 2;
+                    if (!m_ticks.empty()) {
+                        auto it = m_ticks.ticks.end();
+                        it--;
+                        extruder = it->extruder + 1;
+                        if (extruder > extruders_cnt)
                             extruder = 1;
                     }
+                    m_ticks.add_tick(tick, ToolChange, extruder, layer->print_z);
                 }
-
-                // allow max 3 auto color changes
-                if (m_ticks.ticks.size() == 3)
-                    break;
             }
-
-            prev_area = cur_area;
-        }
+            // allow max 3 auto color changes
+            return m_ticks.ticks.size() > 2;
+        });
     }
 
     if (m_ticks.empty())
@@ -2092,7 +2132,7 @@ void Control::auto_color_change()
 
 void Control::OnRightUp(wxMouseEvent& event)
 {
-    if (!HasCapture())
+    if (!HasCapture() || m_is_left_down)
         return;
     this->ReleaseMouse();
     m_is_right_down = m_is_one_layer = false;
@@ -2180,7 +2220,6 @@ static std::string get_custom_code(const std::string& code_in, double height)
         wxTextEntryDialogStyle | wxTE_MULTILINE);
     upgrade_text_entry_dialog(&dlg);
 
-#if ENABLE_VALIDATE_CUSTOM_GCODE
     bool valid = true;
     std::string value;
     do {
@@ -2191,12 +2230,6 @@ static std::string get_custom_code(const std::string& code_in, double height)
         valid = GUI::Tab::validate_custom_gcode("Custom G-code", value);
     } while (!valid);
     return value;
-#else
-    if (dlg.ShowModal() != wxID_OK)
-        return "";
-
-    return into_u8(dlg.GetValue());
-#endif // ENABLE_VALIDATE_CUSTOM_GCODE
 }
 
 static std::string get_pause_print_msg(const std::string& msg_in, double height)
@@ -2524,13 +2557,83 @@ bool Control::check_ticks_changed_event(Type type)
 
 std::string TickCodeInfo::get_color_for_tick(TickCode tick, Type type, const int extruder)
 {
+    auto opposite_one_color = [](const std::string& color) {
+        ColorRGB rgb;
+        decode_color(color, rgb);
+        return encode_color(opposite(rgb));
+    };
+    auto opposite_two_colors = [](const std::string& a, const std::string& b) {
+        ColorRGB rgb1; decode_color(a, rgb1);
+        ColorRGB rgb2; decode_color(b, rgb2);
+        return encode_color(opposite(rgb1, rgb2));
+    };
+
     if (mode == SingleExtruder && type == ColorChange && m_use_default_colors) {
+#if 1
+        if (ticks.empty())
+            return opposite_one_color((*m_colors)[0]);
+
+        auto before_tick_it = std::lower_bound(ticks.begin(), ticks.end(), tick);
+        if (before_tick_it == ticks.end()) {
+            while (before_tick_it != ticks.begin())
+                if (--before_tick_it; before_tick_it->type == ColorChange)
+                    break;
+            if (before_tick_it->type == ColorChange)
+                return opposite_one_color(before_tick_it->color);
+
+            return opposite_one_color((*m_colors)[0]);
+        }
+
+        if (before_tick_it == ticks.begin()) {
+            const std::string& frst_color = (*m_colors)[0];
+            if (before_tick_it->type == ColorChange)
+                return opposite_two_colors(frst_color, before_tick_it->color);
+
+            auto next_tick_it = before_tick_it;
+            while (next_tick_it != ticks.end())
+                if (++next_tick_it; next_tick_it->type == ColorChange)
+                    break;
+            if (next_tick_it->type == ColorChange)
+                return opposite_two_colors(frst_color, next_tick_it->color);
+
+            return opposite_one_color(frst_color);
+        }
+
+        std::string frst_color = "";
+        if (before_tick_it->type == ColorChange)
+            frst_color = before_tick_it->color;
+        else {
+            auto next_tick_it = before_tick_it;
+            while (next_tick_it != ticks.end())
+                if (++next_tick_it; next_tick_it->type == ColorChange) {
+                    frst_color = next_tick_it->color;
+                    break;
+                }
+        }
+
+        while (before_tick_it != ticks.begin())
+            if (--before_tick_it; before_tick_it->type == ColorChange)
+                break;
+
+        if (before_tick_it->type == ColorChange) {
+            if (frst_color.empty())
+                return opposite_one_color(before_tick_it->color);
+
+            return opposite_two_colors(before_tick_it->color, frst_color);
+        }
+
+        if (frst_color.empty())
+            return opposite_one_color((*m_colors)[0]);
+
+        return opposite_two_colors((*m_colors)[0], frst_color);
+#else
         const std::vector<std::string>& colors = ColorPrintColors::get();
         if (ticks.empty())
             return colors[0];
         m_default_color_idx++;
 
         return colors[m_default_color_idx % colors.size()];
+#endif
     }
 
     std::string color = (*m_colors)[extruder - 1];

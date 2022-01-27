@@ -175,8 +175,8 @@ public:
     const wxFont& normal_font() const   { return m_normal_font; }
     void enable_force_rescale()         { m_force_rescale = true; }
 
-#if 0 //#ifdef _WIN32  // #ysDarkMSW - Use to force dark colors for SystemLightMode
-    void force_sys_color_changed()
+#ifdef _WIN32
+    void force_color_changed()
     {
         update_dark_ui(this);
         on_sys_color_changed();
@@ -405,14 +405,6 @@ public:
 };
 
 std::ostream& operator<<(std::ostream &os, const WindowMetrics& metrics);
-
-inline int hex_digit_to_int(const char c)
-{
-    return
-        (c >= '0' && c <= '9') ? int(c - '0') :
-        (c >= 'A' && c <= 'F') ? int(c - 'A') + 10 :
-        (c >= 'a' && c <= 'f') ? int(c - 'a') + 10 : -1;
-}
 
 class TaskTimer
 {

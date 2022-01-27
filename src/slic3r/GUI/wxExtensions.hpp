@@ -51,7 +51,9 @@ int     mode_icon_px_size();
 wxBitmap create_menu_bitmap(const std::string& bmp_name);
 
 wxBitmap create_scaled_bitmap(const std::string& bmp_name, wxWindow *win = nullptr, 
-    const int px_cnt = 16, const bool grayscale = false, const bool menu_bitmap = false);
+    const int px_cnt = 16, const bool grayscale = false,
+    const std::string& new_color = std::string(), // color witch will used instead of orange
+    const bool menu_bitmap = false);
 
 std::vector<wxBitmap*> get_extruder_color_icons(bool thin_icon = false);
 
@@ -231,6 +233,7 @@ public:
     ~ScalableButton() {}
 
     void SetBitmap_(const ScalableBitmap& bmp);
+    bool SetBitmap_(const std::string& bmp_name);
     void SetBitmapDisabled_(const ScalableBitmap &bmp);
     int  GetBitmapHeight();
     void UseDefaultBitmapDisabled();
@@ -282,6 +285,7 @@ public:
     void    OnLeaveBtn(wxMouseEvent& event) { focus_button(m_is_selected); event.Skip(); }
 
     void    SetState(const bool state);
+    bool    is_selected() { return m_is_selected; }
 
 protected:
     void    focus_button(const bool focus);
@@ -311,9 +315,12 @@ public:
     void set_items_border(int border);
 
     void msw_rescale();
+    const std::vector<ModeButton*>& get_btns() { return m_mode_btns; }
 
 private:
     std::vector<ModeButton*> m_mode_btns;
+    wxWindow*                m_parent {nullptr};
+    double                   m_hgap_unscaled;
 };
 
 
@@ -367,6 +374,67 @@ private:
     bool            show {false};
 };
 
+// ----------------------------------------------------------------------------
+// Highlighter
+// ----------------------------------------------------------------------------
 
+namespace Slic3r {
+namespace GUI {
+
+class OG_CustomCtrl;
+
+// Highlighter is used as an instrument to put attention to some UI control
+
+class Highlighter
+{
+    int             m_blink_counter     { 0 };
+    wxTimer         m_timer;
+
+public:
+    Highlighter() {}
+    ~Highlighter() {}
+
+    void set_timer_owner(wxWindow* owner, int timerid = wxID_ANY);
+    virtual void bind_timer(wxWindow* owner) = 0;
+
+    bool init(bool input_failed);
+    void blink();
+    void invalidate();
+};
+
+class HighlighterForWx : public Highlighter
+{
+// There are 2 possible cases to use HighlighterForWx:
+// - using a BlinkingBitmap. Change state of this bitmap
+    BlinkingBitmap* m_blinking_bitmap   { nullptr };
+// - using OG_CustomCtrl where arrow will be rendered and flag indicated "show/hide" state of this arrow
+    OG_CustomCtrl*  m_custom_ctrl       { nullptr };
+    bool*           m_show_blink_ptr    { nullptr };
+
+public:
+    HighlighterForWx() {}
+    ~HighlighterForWx() {}
+
+    void bind_timer(wxWindow* owner) override;
+    void init(BlinkingBitmap* blinking_bitmap);
+    void init(std::pair<OG_CustomCtrl*, bool*>);
+    void blink();
+    void invalidate();
+};
+/*
+class HighlighterForImGUI : public Highlighter
+{
+
+public:
+    HighlighterForImGUI() {}
+    ~HighlighterForImGUI() {}
+
+    void init();
+    void blink();
+    void invalidate();
+};
+*/
+} // GUI
+} // Slic3r
 
 #endif // slic3r_GUI_wxExtensions_hpp_

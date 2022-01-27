@@ -137,6 +137,8 @@ public:
     //FIXME Review whether not to simplify the code by keeping the raw_slices all the time.
     void                    backup_untyped_slices();
     void                    restore_untyped_slices();
+    // To improve robustness of detect_surfaces_type() when reslicing (working with typed slices), see GH issue #7442.
+    void                    restore_untyped_slices_no_extra_perimeters();
     // Slices merged into islands, to be used by the elephant foot compensation to trim the individual surfaces with the shrunk merged slices.
     ExPolygons              merged(float offset) const;
     template <class T> bool any_internal_region_slice_contains(const T &item) const {
@@ -148,7 +150,8 @@ public:
         return false;
     }
     void                    make_perimeters();
-    void                    make_fills() { this->make_fills(nullptr, nullptr); };
+    // Phony version of make_fills() without parameters for Perl integration only.
+    void                    make_fills() { this->make_fills(nullptr, nullptr); }
     void                    make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree);
     void 					make_ironing();
 
@@ -188,18 +191,37 @@ public:
     // Extrusion paths for the support base and for the support interface and contacts.
     ExtrusionEntityCollection   support_fills;
 
+
     // Is there any valid extrusion assigned to this LayerRegion?
     virtual bool                has_extrusions() const { return ! support_fills.empty(); }
+
+    // Zero based index of an interface layer, used for alternating direction of interface / contact layers.
+    size_t                      interface_id() const { return m_interface_id; }
 
 protected:
     friend class PrintObject;
 
     // The constructor has been made public to be able to insert additional support layers for the skirt or a wipe tower
     // between the raft and the object first layer.
-    SupportLayer(size_t id, PrintObject *object, coordf_t height, coordf_t print_z, coordf_t slice_z) :
-        Layer(id, object, height, print_z, slice_z) {}
+    SupportLayer(size_t id, size_t interface_id, PrintObject *object, coordf_t height, coordf_t print_z, coordf_t slice_z) :
+        Layer(id, object, height, print_z, slice_z), m_interface_id(interface_id) {}
     virtual ~SupportLayer() = default;
+
+    size_t m_interface_id;
 };
+
+template<typename LayerContainer>
+inline std::vector<float> zs_from_layers(const LayerContainer &layers)
+{
+    std::vector<float> zs;
+    zs.reserve(layers.size());
+    for (const Layer *l : layers)
+        zs.emplace_back((float)l->slice_z);
+    return zs;
+}
+
+extern BoundingBox get_extents(const LayerRegion &layer_region);
+extern BoundingBox get_extents(const LayerRegionPtrs &layer_regions);
 
 }
 

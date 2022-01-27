@@ -65,6 +65,8 @@ enum {
 	USB_PID_MMU_APP  = 4,
 	USB_PID_CW1_BOOT = 7,
 	USB_PID_CW1_APP  = 8,
+	USB_PID_CW1S_BOOT = 14,
+	USB_PID_CW1S_APP  = 15,
 };
 
 // This enum discriminates the kind of information in EVT_AVRDUDE,
@@ -268,13 +270,12 @@ void FirmwareDialog::priv::flashing_start(unsigned tasks)
 
 void FirmwareDialog::priv::flashing_done(AvrDudeComplete complete)
 {
-	auto text_color = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 	port_picker->Enable();
 	btn_rescan->Enable();
 	hex_picker->Enable();
 	btn_close->Enable();
 	btn_flash->SetLabel(btn_flash_label_ready);
-	txt_status->SetForegroundColour(text_color);
+	txt_status->SetForegroundColour(GUI::wxGetApp().get_label_clr_default());
 	timer_pulse.Stop();
 	progressbar->SetValue(progressbar->GetRange());
 
@@ -308,7 +309,7 @@ void FirmwareDialog::priv::update_flash_enabled()
 void FirmwareDialog::priv::load_hex_file(const wxString &path)
 {
 	hex_file = HexFile(path.wx_str());
-	const bool autodetect = hex_file.device == HexFile::DEV_MM_CONTROL || hex_file.device == HexFile::DEV_CW1;
+	const bool autodetect = hex_file.device == HexFile::DEV_MM_CONTROL || hex_file.device == HexFile::DEV_CW1 || hex_file.device == HexFile::DEV_CW1S;
 	set_autodetect(autodetect);
 }
 
@@ -636,6 +637,10 @@ void FirmwareDialog::priv::perform_upload()
 					this->prepare_avr109(Avr109Pid(USB_PID_CW1_BOOT, USB_PID_CW1_APP));
 					break;
 
+				case HexFile::DEV_CW1S:
+					this->prepare_avr109(Avr109Pid(USB_PID_CW1S_BOOT, USB_PID_CW1S_APP));
+					break;
+
 				default:
 					this->prepare_mk2();
 					break;
@@ -767,11 +772,10 @@ const char* FirmwareDialog::priv::avr109_dev_name(Avr109Pid usb_pid) {
 	switch (usb_pid.boot) {
 		case USB_PID_MMU_BOOT:
 			return "Original Prusa MMU 2.0 Control";
-		break;
 		case USB_PID_CW1_BOOT:
 			return "Original Prusa CW1";
-		break;
-
+		case USB_PID_CW1S_BOOT:
+			return "Original Prusa CW1S";
 		default: throw Slic3r::RuntimeError((boost::format("Invalid avr109 device USB PID: %1%") % usb_pid.boot).str());
 	}
 }
@@ -806,7 +810,7 @@ FirmwareDialog::FirmwareDialog(wxWindow *parent) :
 	panel->SetSizer(vsizer);
 
 	auto *label_hex_picker = new wxStaticText(panel, wxID_ANY, _(L("Firmware image:")));
-	p->hex_picker = new wxFilePickerCtrl(panel, wxID_ANY, wxEmptyString, wxFileSelectorPromptStr,
+	p->hex_picker = new wxFilePickerCtrl(panel, wxID_ANY, wxEmptyString, /*wxFileSelectorPromptStr*/_L("Select a file"),
 		"Hex files (*.hex)|*.hex|All files|*.*");
 	p->hex_picker->GetPickerCtrl()->SetLabelText(_(L("Browse")));
 

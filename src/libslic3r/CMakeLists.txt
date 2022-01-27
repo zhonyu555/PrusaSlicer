@@ -1,5 +1,5 @@
-project(libslic3r)
 cmake_minimum_required(VERSION 3.13)
+project(libslic3r)
 
 include(PrecompiledHeader)
 
@@ -14,7 +14,7 @@ if (TARGET OpenVDB::openvdb)
     set(OpenVDBUtils_SOURCES OpenVDBUtils.cpp OpenVDBUtils.hpp)
 endif()
 
-add_library(libslic3r STATIC
+set(SLIC3R_SOURCES
     pchheader.cpp
     pchheader.hpp
     BoundingBox.cpp
@@ -23,16 +23,21 @@ add_library(libslic3r STATIC
     BridgeDetector.hpp
     Brim.cpp
     Brim.hpp
+    BuildVolume.cpp
+    BuildVolume.hpp
     clipper.cpp
     clipper.hpp
     ClipperUtils.cpp
     ClipperUtils.hpp
+    Color.cpp
+    Color.hpp
     Config.cpp
     Config.hpp
     EdgeGrid.cpp
     EdgeGrid.hpp
     ElephantFootCompensation.cpp
     ElephantFootCompensation.hpp
+    enum_bitmask.hpp
     ExPolygon.cpp
     ExPolygon.hpp
     ExPolygonCollection.cpp
@@ -64,6 +69,16 @@ add_library(libslic3r STATIC
     Fill/FillPlanePath.hpp
     Fill/FillLine.cpp
     Fill/FillLine.hpp
+    Fill/FillLightning.cpp
+    Fill/FillLightning.hpp
+    Fill/Lightning/DistanceField.cpp
+    Fill/Lightning/DistanceField.hpp
+    Fill/Lightning/Generator.cpp
+    Fill/Lightning/Generator.hpp
+    Fill/Lightning/Layer.cpp
+    Fill/Lightning/Layer.hpp
+    Fill/Lightning/TreeNode.cpp
+    Fill/Lightning/TreeNode.hpp
     Fill/FillRectilinear.cpp
     Fill/FillRectilinear.hpp
     Flow.cpp
@@ -77,8 +92,6 @@ add_library(libslic3r STATIC
     Format/OBJ.hpp
     Format/objparser.cpp
     Format/objparser.hpp
-    Format/PRUS.cpp
-    Format/PRUS.hpp
     Format/STL.cpp
     Format/STL.hpp
     Format/SL1.hpp
@@ -87,6 +100,8 @@ add_library(libslic3r STATIC
     GCode/ThumbnailData.hpp
     GCode/CoolingBuffer.cpp
     GCode/CoolingBuffer.hpp
+    GCode/FindReplace.cpp
+    GCode/FindReplace.hpp
     GCode/PostProcessor.cpp
     GCode/PostProcessor.hpp
 #    GCode/PressureEqualizer.cpp
@@ -115,6 +130,16 @@ add_library(libslic3r STATIC
     GCodeWriter.hpp
     Geometry.cpp
     Geometry.hpp
+    Geometry/Circle.cpp
+    Geometry/Circle.hpp
+    Geometry/ConvexHull.cpp
+    Geometry/ConvexHull.hpp
+    Geometry/MedialAxis.cpp
+    Geometry/MedialAxis.hpp
+    Geometry/Voronoi.hpp
+    Geometry/VoronoiOffset.cpp
+    Geometry/VoronoiOffset.hpp
+    Geometry/VoronoiVisualUtils.hpp
     Int128.hpp
     KDTreeIndirect.hpp
     Layer.cpp
@@ -124,8 +149,8 @@ add_library(libslic3r STATIC
     "${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h"
     Line.cpp
     Line.hpp
-    LibraryCheck.cpp
-    LibraryCheck.hpp
+    BlacklistedLibraryCheck.cpp
+    BlacklistedLibraryCheck.hpp
     LocalesUtils.cpp
     LocalesUtils.hpp
     Model.cpp
@@ -225,18 +250,12 @@ add_library(libslic3r STATIC
     TriangleSelector.cpp
     TriangleSelector.hpp
     MTUtils.hpp
-    VoronoiOffset.cpp
-    VoronoiOffset.hpp
-    VoronoiVisualUtils.hpp
     Zipper.hpp
     Zipper.cpp
     MinAreaBoundingBox.hpp
     MinAreaBoundingBox.cpp
     miniz_extension.hpp
     miniz_extension.cpp
-    SimplifyMesh.hpp
-    SimplifyMeshImpl.hpp
-    SimplifyMesh.cpp
     MarchingSquares.hpp
     Execution/Execution.hpp
     Execution/ExecutionSeq.hpp
@@ -281,6 +300,14 @@ add_library(libslic3r STATIC
     SLA/Clustering.cpp
     SLA/ReprojectPointsOnMesh.hpp
 )
+
+add_library(libslic3r STATIC ${SLIC3R_SOURCES})
+
+foreach(_source IN ITEMS ${SLIC3R_SOURCES})
+    get_filename_component(_source_path "${_source}" PATH)
+    string(REPLACE "/" "\\" _group_path "${_source_path}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
 
 if (SLIC3R_STATIC)
     set(CGAL_Boost_USE_STATIC_LIBS ON CACHE BOOL "" FORCE)

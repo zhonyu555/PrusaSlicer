@@ -17,6 +17,8 @@ class wxMenu;
 namespace Slic3r {
 
 using namespace CustomGCode;
+class PrintObject;
+class Layer;
 
 namespace DoubleSlider {
 
@@ -24,6 +26,15 @@ namespace DoubleSlider {
  * So, let use same value as a permissible error for layer height.
  */
 constexpr double epsilon() { return 0.0011; }
+
+// return true when areas are mostly equivalent
+bool equivalent_areas(const double& bottom_area, const double& top_area);
+
+// return true if color change was detected
+bool check_color_change(PrintObject* object, size_t frst_layer_id, size_t layers_cnt, bool check_overhangs,
+                        // what to do with detected color change
+                        // and return true when detection have to be desturbed
+                        std::function<bool(Layer*)> break_condition);
 
 // custom message the slider sends to its parent to notify a tick-change:
 wxDECLARE_EVENT(wxCUSTOMEVT_TICKSCHANGED, wxEvent);
@@ -104,7 +115,7 @@ class TickCodeInfo
     bool        m_suppress_plus     = false;
     bool        m_suppress_minus    = false;
     bool        m_use_default_colors= false;
-    int         m_default_color_idx = 0;
+//    int         m_default_color_idx = 0;
 
     std::vector<std::string>* m_colors {nullptr};
 
@@ -180,6 +191,13 @@ struct ExtrudersSequence
             return;// last item can't be deleted
         extruders.erase(extruders.begin() + pos);
     }
+
+    void init(size_t extruders_count) 
+    {
+        extruders.clear();
+        for (size_t extruder = 0; extruder < extruders_count; extruder++)
+            extruders.push_back(extruder);
+    }
 };
 
 class Control : public wxControl
@@ -223,9 +241,7 @@ public:
     void    SetKoefForLabels(const double koef)                { m_label_koef = koef; }
     void    SetSliderValues(const std::vector<double>& values);
     void    ChangeOneLayerLock();
-#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
     void    SetSliderAlternateValues(const std::vector<double>& values) { m_alternate_values = values; }
-#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
     Info    GetTicksValues() const;
     void    SetTicksValues(const Info &custom_gcode_per_print_z);
@@ -409,9 +425,7 @@ private:
     std::vector<std::string>    m_extruder_colors;
     std::string         m_print_obj_idxs;
 
-#if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
     std::vector<double> m_alternate_values;
-#endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
 
 // control's view variables
     wxCoord SLIDER_MARGIN; // margin around slider

@@ -110,12 +110,6 @@ bool ObjectSettings::update_settings_list()
                     update_settings_list(); 
                     m_parent->Layout(); 
                 });
-
-                /* Check overriden options list after deleting.
-                 * Some options couldn't be deleted because of another one.
-                 * Like, we couldn't delete fill pattern, if fill density is set to 100%
-                 */
-                update_config_values(config);
 			});
 			return btn;
 		};
@@ -181,17 +175,16 @@ bool ObjectSettings::update_settings_list()
 
 bool ObjectSettings::add_missed_options(ModelConfig* config_to, const DynamicPrintConfig& config_from)
 {
+    const DynamicPrintConfig& print_config = wxGetApp().plater()->printer_technology() == ptFFF ?
+                                             wxGetApp().preset_bundle->prints.get_edited_preset().config :
+                                             wxGetApp().preset_bundle->sla_prints.get_edited_preset().config;
     bool is_added = false;
-    if (wxGetApp().plater()->printer_technology() == ptFFF)
-    {
-        if (config_to->has("fill_density") && !config_to->has("fill_pattern"))
-        {
-            if (config_from.option<ConfigOptionPercent>("fill_density")->value == 100) {
-                config_to->set_key_value("fill_pattern", config_from.option("fill_pattern")->clone());
-                is_added = true;
-            }
+
+    for (auto opt_key : config_from.diff(print_config))
+        if (!config_to->has(opt_key)) {
+            config_to->set_key_value(opt_key, config_from.option(opt_key)->clone());
+            is_added = true;
         }
-    }
 
     return is_added;
 }
@@ -228,11 +221,12 @@ void ObjectSettings::update_config_values(ModelConfig* config)
         update_config_values(config);
 
         if (is_added) {
-            wxTheApp->CallAfter([this]() {
+// #ysFIXME - Delete after testing! Very likely this CallAfret is no needed
+//            wxTheApp->CallAfter([this]() {
                 wxWindowUpdateLocker noUpdates(m_parent);
                 update_settings_list();
                 m_parent->Layout();
-            });
+//            });
         }
     };
 
@@ -254,9 +248,9 @@ void ObjectSettings::update_config_values(ModelConfig* config)
     {
         const int obj_idx = objects_model->GetObjectIdByItem(item);
         assert(obj_idx >= 0);
+        // for object's part first of all update konfiguration from object 
         main_config.apply(wxGetApp().model().objects[obj_idx]->config.get(), true);
-        printer_technology == ptFFF  ?  config_manipulation.update_print_fff_config(&main_config) :
-                                        config_manipulation.update_print_sla_config(&main_config) ;
+        // and then from its own config
     }
 
     main_config.apply(config->get(), true);

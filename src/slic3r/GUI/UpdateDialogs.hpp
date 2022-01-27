@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <wx/hyperlink.h>
 
 #include "libslic3r/Semver.hpp"
 #include "MsgDialog.hpp"
@@ -30,6 +31,7 @@ public:
 	// Tells whether the user checked the "don't bother me again" checkbox
 	bool disable_version_check() const;
 
+	void on_hyperlink(wxHyperlinkEvent& evt);
 private:
 	wxCheckBox *cbox;
 };
@@ -54,7 +56,8 @@ public:
 		{}
 	};
 
-	MsgUpdateConfig(const std::vector<Update> &updates);
+	// force_before_wizard - indicates that check of updated is forced before ConfigWizard opening
+	MsgUpdateConfig(const std::vector<Update> &updates, bool force_before_wizard = false);
 	MsgUpdateConfig(MsgUpdateConfig &&) = delete;
 	MsgUpdateConfig(const MsgUpdateConfig &) = delete;
 	MsgUpdateConfig &operator=(MsgUpdateConfig &&) = delete;

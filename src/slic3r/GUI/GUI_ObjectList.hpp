@@ -36,6 +36,9 @@ typedef double                                      coordf_t;
 typedef std::pair<coordf_t, coordf_t>               t_layer_height_range;
 typedef std::map<t_layer_height_range, ModelConfig> t_layer_config_ranges;
 
+// Manifold mesh may contain self-intersections, so we want to always allow fixing the mesh.
+#define FIX_THROUGH_NETFABB_ALWAYS 1
+
 namespace GUI {
 
 wxDECLARE_EVENT(EVT_OBJ_LIST_OBJECT_SELECT, SimpleEvent);
@@ -62,6 +65,12 @@ struct ItemForDelete
             return (obj_idx < r.obj_idx);
         return (sub_obj_idx < r.sub_obj_idx);
     }
+};
+
+struct MeshErrorsInfo 
+{
+    wxString    tooltip;
+    std::string warning_icon_name;
 };
 
 class ObjectList : public wxDataViewCtrl
@@ -202,19 +211,20 @@ public:
     void                update_extruder_in_config(const wxDataViewItem& item);
     // update changed name in the object model
     void                update_name_in_model(const wxDataViewItem& item) const;
+    void                update_name_in_list(int obj_idx, int vol_idx) const;
     void                update_extruder_values_for_items(const size_t max_extruder);
 
     // Get obj_idx and vol_idx values for the selected (by default) or an adjusted item
     void                get_selected_item_indexes(int& obj_idx, int& vol_idx, const wxDataViewItem& item = wxDataViewItem(0));
     void                get_selection_indexes(std::vector<int>& obj_idxs, std::vector<int>& vol_idxs);
     // Get count of errors in the mesh
-    int                 get_mesh_errors_count(const int obj_idx, const int vol_idx = -1) const;
-    /* Get list of errors in the mesh. Return value is a string, used for the tooltip
-     * Function without parameters is for a call from Manipulation panel, 
-     * when we don't know parameters of selected item 
-     */
-    wxString            get_mesh_errors_list(const int obj_idx, const int vol_idx = -1) const;
-    wxString            get_mesh_errors_list();
+    int                 get_repaired_errors_count(const int obj_idx, const int vol_idx = -1) const;
+    // Get list of errors in the mesh and name of the warning icon 
+    // Return value is a pair <Tooltip, warning_icon_name>, used for the tooltip and related warning icon
+    // Function without parameters is for a call from Manipulation panel, 
+    // when we don't know parameters of selected item 
+    MeshErrorsInfo      get_mesh_errors_info(const int obj_idx, const int vol_idx = -1, wxString* sidebar_info = nullptr) const;
+    MeshErrorsInfo      get_mesh_errors_info(wxString* sidebar_info = nullptr);
     void                set_tooltip_for_item(const wxPoint& pt);
 
     void                selection_changed();
@@ -238,10 +248,14 @@ public:
     void                show_settings(const wxDataViewItem settings_item);
     bool                is_instance_or_object_selected();
 
-    void                load_subobject(ModelVolumeType type);
-    void                load_part(ModelObject* model_object, std::vector<ModelVolume*> &added_volumes, ModelVolumeType type);
-	void                load_generic_subobject(const std::string& type_name, const ModelVolumeType type);
+    void                load_subobject(ModelVolumeType type, bool from_galery = false);
+    // ! ysFIXME - delete commented code after testing and rename "load_modifier" to something common
+    //void                load_part(ModelObject& model_object, std::vector<ModelVolume*>& added_volumes, ModelVolumeType type, bool from_galery = false);
+    void                load_modifier(const wxArrayString& input_files, ModelObject& model_object, std::vector<ModelVolume*>& added_volumes, ModelVolumeType type, bool from_galery = false);
+    void                load_generic_subobject(const std::string& type_name, const ModelVolumeType type);
     void                load_shape_object(const std::string &type_name);
+    void                load_shape_object_from_gallery();
+    void                load_shape_object_from_gallery(const wxArrayString& input_files);
     void                load_mesh_object(const TriangleMesh &mesh, const wxString &name, bool center = true);
     void                del_object(const int obj_idx);
     void                del_subobject_item(wxDataViewItem& item);
@@ -250,6 +264,7 @@ public:
     void                del_layer_from_object(const int obj_idx, const t_layer_height_range& layer_range);
     void                del_layers_from_object(const int obj_idx);
     bool                del_subobject_from_object(const int obj_idx, const int idx, const int type);
+    void                del_info_item(const int obj_idx, InfoItemType type);
     void                split();
     void                merge(bool to_multipart_object);
     void                layers_editing();
@@ -346,13 +361,14 @@ public:
     void update_and_show_object_settings_item();
     void update_settings_item_and_selection(wxDataViewItem item, wxDataViewItemArray& selections);
     void update_object_list_by_printer_technology();
-    void update_info_items(size_t obj_idx);
+    void update_info_items(size_t obj_idx, wxDataViewItemArray* selections = nullptr, bool added_object = false);
 
     void instances_to_separated_object(const int obj_idx, const std::set<int>& inst_idx);
     void instances_to_separated_objects(const int obj_idx);
     void split_instances();
     void rename_item();
     void fix_through_netfabb();
+    void simplify();
     void update_item_error_icon(const int obj_idx, int vol_idx) const ;
 
     void copy_layers_to_clipboard();
@@ -374,6 +390,7 @@ public:
     void set_extruder_for_selected_items(const int extruder) const ;
     wxDataViewItemArray reorder_volumes_and_get_selection(int obj_idx, std::function<bool(const ModelVolume*)> add_to_selection = nullptr);
     void apply_volumes_order();
+    bool has_paint_on_segmentation();
 
 private:
 #ifdef __WXOSX__

@@ -5,13 +5,12 @@
 #include "libslic3r/Polygon.hpp"
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/BoundingBox.hpp"
-#include "libslic3r/Geometry.hpp"
+#include "libslic3r/Geometry/Circle.hpp"
 #include "libslic3r/Tesselate.hpp"
+#include "libslic3r/PresetBundle.hpp"
 
 #include "GUI_App.hpp"
-#include "libslic3r/PresetBundle.hpp"
 #include "GLCanvas3D.hpp"
-#include "3DScene.hpp"
 
 #include <GL/glew.h>
 
@@ -20,6 +19,10 @@
 #include <boost/log/trivial.hpp>
 
 static const float GROUND_Z = -0.02f;
+static const Slic3r::ColorRGBA DEFAULT_MODEL_COLOR             = Slic3r::ColorRGBA::DARK_GRAY();
+static const Slic3r::ColorRGBA PICKING_MODEL_COLOR             = Slic3r::ColorRGBA::BLACK();
+static const Slic3r::ColorRGBA DEFAULT_SOLID_GRID_COLOR        = { 0.9f, 0.9f, 0.9f, 1.0f };
+static const Slic3r::ColorRGBA DEFAULT_TRANSPARENT_GRID_COLOR  = { 0.9f, 0.9f, 0.9f, 0.6f };
 
 namespace Slic3r {
 namespace GUI {
@@ -107,9 +110,7 @@ void Bed3D::Axes::render() const
         glsafe(::glPopMatrix());
     };
 
-#if ENABLE_SEQUENTIAL_LIMITS
     if (!m_arrow.is_initialized())
-#endif // ENABLE_SEQUENTIAL_LIMITS
         const_cast<GLModel*>(&m_arrow)->init_from(stilized_arrow(16, DefaultTipRadius, DefaultTipLength, DefaultStemRadius, m_stem_length));
 
     GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
@@ -119,33 +120,18 @@ void Bed3D::Axes::render() const
     glsafe(::glEnable(GL_DEPTH_TEST));
 
     shader->start_using();
-    shader->set_uniform("emission_factor", 0.0);
+    shader->set_uniform("emission_factor", 0.0f);
 
     // x axis
-#if ENABLE_SEQUENTIAL_LIMITS
-    const_cast<GLModel*>(&m_arrow)->set_color(-1, { 0.75f, 0.0f, 0.0f, 1.0f });
-#else
-    std::array<float, 4> color = { 0.75f, 0.0f, 0.0f, 1.0f };
-    shader->set_uniform("uniform_color", color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
+    const_cast<GLModel*>(&m_arrow)->set_color(-1, ColorRGBA::X());
     render_axis(Geometry::assemble_transform(m_origin, { 0.0, 0.5 * M_PI, 0.0 }).cast<float>());
 
     // y axis
-#if ENABLE_SEQUENTIAL_LIMITS
-    const_cast<GLModel*>(&m_arrow)->set_color(-1, { 0.0f, 0.75f, 0.0f, 1.0f });
-#else
-    color = { 0.0f, 0.75f, 0.0f, 1.0f };
-    shader->set_uniform("uniform_color", color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
+    const_cast<GLModel*>(&m_arrow)->set_color(-1, ColorRGBA::Y());
     render_axis(Geometry::assemble_transform(m_origin, { -0.5 * M_PI, 0.0, 0.0 }).cast<float>());
 
     // z axis
-#if ENABLE_SEQUENTIAL_LIMITS
-    const_cast<GLModel*>(&m_arrow)->set_color(-1, { 0.0f, 0.0f, 0.75f, 1.0f });
-#else
-    color = { 0.0f, 0.0f, 0.75f, 1.0f };
-    shader->set_uniform("uniform_color", color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
+    const_cast<GLModel*>(&m_arrow)->set_color(-1, ColorRGBA::Z());
     render_axis(Geometry::assemble_transform(m_origin).cast<float>());
 
     shader->stop_using();
@@ -153,51 +139,54 @@ void Bed3D::Axes::render() const
     glsafe(::glDisable(GL_DEPTH_TEST));
 }
 
-bool Bed3D::set_shape(const Pointfs& shape, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom)
+bool Bed3D::set_shape(const Pointfs& bed_shape, const double max_print_height, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom)
 {
     auto check_texture = [](const std::string& texture) {
-        return !texture.empty() && (boost::algorithm::iends_with(texture, ".png") || boost::algorithm::iends_with(texture, ".svg")) && boost::filesystem::exists(texture);
+        boost::system::error_code ec; // so the exists call does not throw (e.g. after a permission problem)
+        return !texture.empty() && (boost::algorithm::iends_with(texture, ".png") || boost::algorithm::iends_with(texture, ".svg")) && boost::filesystem::exists(texture, ec);
     };
 
     auto check_model = [](const std::string& model) {
-        return !model.empty() && boost::algorithm::iends_with(model, ".stl") && boost::filesystem::exists(model);
+        boost::system::error_code ec;
+        return !model.empty() && boost::algorithm::iends_with(model, ".stl") && boost::filesystem::exists(model, ec);
     };
 
-    EType type;
+    Type type;
     std::string model;
     std::string texture;
     if (force_as_custom)
-        type = Custom;
+        type = Type::Custom;
     else {
-        auto [new_type, system_model, system_texture] = detect_type(shape);
+        auto [new_type, system_model, system_texture] = detect_type(bed_shape);
         type = new_type;
         model = system_model;
         texture = system_texture;
     }
 
     std::string texture_filename = custom_texture.empty() ? texture : custom_texture;
-    if (!check_texture(texture_filename))
+    if (! texture_filename.empty() && ! check_texture(texture_filename)) {
+        BOOST_LOG_TRIVIAL(error) << "Unable to load bed texture: " << texture_filename;
         texture_filename.clear();
+    }
 
     std::string model_filename = custom_model.empty() ? model : custom_model;
-    if (!check_model(model_filename))
+    if (! model_filename.empty() && ! check_model(model_filename)) {
+        BOOST_LOG_TRIVIAL(error) << "Unable to load bed model: " << model_filename;
         model_filename.clear();
+    }
 
-    if (m_shape == shape && m_type == type && m_texture_filename == texture_filename && m_model_filename == model_filename)
+    
+    if (m_build_volume.bed_shape() == bed_shape && m_build_volume.max_print_height() == max_print_height && m_type == type && m_texture_filename == texture_filename && m_model_filename == model_filename)
         // No change, no need to update the UI.
         return false;
 
-    m_shape = shape;
+    m_type = type;
+    m_build_volume = BuildVolume { bed_shape, max_print_height };
     m_texture_filename = texture_filename;
     m_model_filename = model_filename;
-    m_type = type;
+    m_extended_bounding_box = this->calc_extended_bounding_box();
 
-    calc_bounding_boxes();
-
-    ExPolygon poly;
-    for (const Vec2d& p : m_shape) {
-        poly.contour.append({ scale_(p(0)), scale_(p(1)) });
-    }
+    ExPolygon poly{ Polygon::new_scale(bed_shape) };
 
     calc_triangles(poly);
 
@@ -206,13 +195,13 @@ bool Bed3D::set_shape(const Pointfs& shape, const std::string& custom_texture, c
 
     m_polygon = offset(poly.contour, (float)bed_bbox.radius() * 1.7f, jtRound, scale_(0.5))[0];
 
-    reset();
+    this->release_VBOs();
     m_texture.reset();
     m_model.reset();
 
     // Set the origin and size for rendering the coordinate system axes.
     m_axes.set_origin({ 0.0, 0.0, static_cast<double>(GROUND_Z) });
-    m_axes.set_stem_length(0.1f * static_cast<float>(m_bounding_box.max_size()));
+    m_axes.set_stem_length(0.1f * static_cast<float>(m_build_volume.bounding_volume().max_size()));
 
     // Let the calee to update the UI.
     return true;
@@ -228,8 +217,18 @@ Point Bed3D::point_projection(const Point& point) const
     return m_polygon.point_projection(point);
 }
 
-void Bed3D::render(GLCanvas3D& canvas, bool bottom, float scale_factor,
-                   bool show_axes, bool show_texture) const
+void Bed3D::render(GLCanvas3D& canvas, bool bottom, float scale_factor, bool show_axes, bool show_texture)
+{
+    render_internal(canvas, bottom, scale_factor, show_axes, show_texture, false);
+}
+
+void Bed3D::render_for_picking(GLCanvas3D& canvas, bool bottom, float scale_factor)
+{
+    render_internal(canvas, bottom, scale_factor, false, false, true);
+}
+
+void Bed3D::render_internal(GLCanvas3D& canvas, bool bottom, float scale_factor,
+    bool show_axes, bool show_texture, bool picking)
 {
     float* factor = const_cast<float*>(&m_scale_factor);
     *factor = scale_factor;
@@ -239,37 +238,39 @@ void Bed3D::render(GLCanvas3D& canvas, bool bottom, float scale_factor,
 
     glsafe(::glEnable(GL_DEPTH_TEST));
 
+    m_model.set_color(-1, picking ? PICKING_MODEL_COLOR : DEFAULT_MODEL_COLOR);
+
     switch (m_type)
     {
-    case System: { render_system(canvas, bottom, show_texture); break; }
+    case Type::System: { render_system(canvas, bottom, show_texture); break; }
     default:
-    case Custom: { render_custom(canvas, bottom, show_texture); break; }
+    case Type::Custom: { render_custom(canvas, bottom, show_texture, picking); break; }
     }
 
     glsafe(::glDisable(GL_DEPTH_TEST));
 }
 
-void Bed3D::calc_bounding_boxes() const
+// Calculate an extended bounding box from axes and current model for visualization purposes.
+BoundingBoxf3 Bed3D::calc_extended_bounding_box() const
 {
-    BoundingBoxf3* bounding_box = const_cast<BoundingBoxf3*>(&m_bounding_box);
-    *bounding_box = BoundingBoxf3();
-    for (const Vec2d& p : m_shape) {
-        bounding_box->merge({ p(0), p(1), 0.0 });
-    }
-
-    BoundingBoxf3* extended_bounding_box = const_cast<BoundingBoxf3*>(&m_extended_bounding_box);
-    *extended_bounding_box = m_bounding_box;
-
+    BoundingBoxf3 out { m_build_volume.bounding_volume() };
+    const Vec3d size = out.size();
+    // ensures that the bounding box is set as defined or the following calls to merge() will not work as intented
+    if (size.x() > 0.0 && size.y() > 0.0 && !out.defined)
+        out.defined = true;
+    // Reset the build volume Z, we don't want to zoom to the top of the build volume if it is empty.
+    out.min.z() = 0.0;
+    out.max.z() = 0.0;
     // extend to contain axes
-    extended_bounding_box->merge(m_axes.get_origin() + m_axes.get_total_length() * Vec3d::Ones());
-    extended_bounding_box->merge(extended_bounding_box->min + Vec3d(-Axes::DefaultTipRadius, -Axes::DefaultTipRadius, extended_bounding_box->max(2)));
-
+    out.merge(m_axes.get_origin() + m_axes.get_total_length() * Vec3d::Ones());
+    out.merge(out.min + Vec3d(-Axes::DefaultTipRadius, -Axes::DefaultTipRadius, out.max.z()));
     // extend to contain model, if any
     BoundingBoxf3 model_bb = m_model.get_bounding_box();
     if (model_bb.defined) {
         model_bb.translate(m_model_offset);
-        extended_bounding_box->merge(model_bb);
+        out.merge(model_bb);
     }
+    return out;
 }
 
 void Bed3D::calc_triangles(const ExPolygon& poly)
@@ -281,16 +282,16 @@ void Bed3D::calc_triangles(const ExPolygon& poly)
 void Bed3D::calc_gridlines(const ExPolygon& poly, const BoundingBox& bed_bbox)
 {
     Polylines axes_lines;
-    for (coord_t x = bed_bbox.min(0); x <= bed_bbox.max(0); x += scale_(10.0)) {
+    for (coord_t x = bed_bbox.min.x(); x <= bed_bbox.max.x(); x += scale_(10.0)) {
         Polyline line;
-        line.append(Point(x, bed_bbox.min(1)));
-        line.append(Point(x, bed_bbox.max(1)));
+        line.append(Point(x, bed_bbox.min.y()));
+        line.append(Point(x, bed_bbox.max.y()));
         axes_lines.push_back(line);
     }
-    for (coord_t y = bed_bbox.min(1); y <= bed_bbox.max(1); y += scale_(10.0)) {
+    for (coord_t y = bed_bbox.min.y(); y <= bed_bbox.max.y(); y += scale_(10.0)) {
         Polyline line;
-        line.append(Point(bed_bbox.min(0), y));
-        line.append(Point(bed_bbox.max(0), y));
+        line.append(Point(bed_bbox.min.x(), y));
+        line.append(Point(bed_bbox.max.x(), y));
         axes_lines.push_back(line);
     }
 
@@ -305,8 +306,9 @@ void Bed3D::calc_gridlines(const ExPolygon& poly, const BoundingBox& bed_bbox)
         BOOST_LOG_TRIVIAL(error) << "Unable to create bed grid lines\n";
 }
 
-
-std::tuple<Bed3D::EType, std::string, std::string> Bed3D::detect_type(const Pointfs& shape) const
+// Try to match the print bed shape with the shape of an active profile. If such a match exists,
+// return the print bed model.
+std::tuple<Bed3D::Type, std::string, std::string> Bed3D::detect_type(const Pointfs& shape)
 {
     auto bundle = wxGetApp().preset_bundle;
     if (bundle != nullptr) {
@@ -317,7 +319,7 @@ std::tuple<Bed3D::EType, std::string, std::string> Bed3D::detect_type(const Poin
                     std::string model_filename = PresetUtils::system_printer_bed_model(*curr);
                     std::string texture_filename = PresetUtils::system_printer_bed_texture(*curr);
                     if (!model_filename.empty() && !texture_filename.empty())
-                        return { System, model_filename, texture_filename };
+                        return { Type::System, model_filename, texture_filename };
                 }
             }
 
@@ -325,12 +327,12 @@ std::tuple<Bed3D::EType, std::string, std::string> Bed3D::detect_type(const Poin
         }
     }
 
-    return { Custom, "", "" };
+    return { Type::Custom, {}, {} };
 }
 
 void Bed3D::render_axes() const
 {
-    if (!m_shape.empty())
+    if (m_build_volume.valid())
         m_axes.render();
 }
 
@@ -350,7 +352,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
 
     if (m_texture_filename.empty()) {
         texture->reset();
-        render_default(bottom);
+        render_default(bottom, false);
         return;
     }
 
@@ -363,7 +365,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
             if (temp_texture->get_id() == 0 || temp_texture->get_source() != m_texture_filename) {
                 // generate a temporary lower resolution texture to show while no main texture levels have been compressed
                 if (!temp_texture->load_from_svg_file(m_texture_filename, false, false, false, max_tex_size / 8)) {
-                    render_default(bottom);
+                    render_default(bottom, false);
                     return;
                 }
                 canvas.request_extra_frame();
@@ -371,7 +373,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
 
             // starts generating the main texture, compression will run asynchronously
             if (!texture->load_from_svg_file(m_texture_filename, true, true, true, max_tex_size)) {
-                render_default(bottom);
+                render_default(bottom, false);
                 return;
             }
         } 
@@ -379,7 +381,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
             // generate a temporary lower resolution texture to show while no main texture levels have been compressed
             if (temp_texture->get_id() == 0 || temp_texture->get_source() != m_texture_filename) {
                 if (!temp_texture->load_from_file(m_texture_filename, false, GLTexture::None, false)) {
-                    render_default(bottom);
+                    render_default(bottom, false);
                     return;
                 }
                 canvas.request_extra_frame();
@@ -387,12 +389,12 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
 
             // starts generating the main texture, compression will run asynchronously
             if (!texture->load_from_file(m_texture_filename, true, GLTexture::MultiThreaded, true)) {
-                render_default(bottom);
+                render_default(bottom, false);
                 return;
             }
         }
         else {
-            render_default(bottom);
+            render_default(bottom, false);
             return;
         }
     }
@@ -405,7 +407,6 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
             temp_texture->reset();
 
         canvas.request_extra_frame();
-
     }
 
     if (m_triangles.get_vertices_count() > 0) {
@@ -425,9 +426,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
             }
 
             glsafe(::glEnable(GL_DEPTH_TEST));
-#if ENABLE_SEQUENTIAL_LIMITS
             if (bottom)
-#endif // ENABLE_SEQUENTIAL_LIMITS
                 glsafe(::glDepthMask(GL_FALSE));
 
             glsafe(::glEnable(GL_BLEND));
@@ -473,9 +472,7 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas) const
                 glsafe(::glFrontFace(GL_CCW));
 
             glsafe(::glDisable(GL_BLEND));
-#if ENABLE_SEQUENTIAL_LIMITS
             if (bottom)
-#endif // ENABLE_SEQUENTIAL_LIMITS
                 glsafe(::glDepthMask(GL_TRUE));
 
             shader->stop_using();
@@ -491,40 +488,33 @@ void Bed3D::render_model() const
     GLModel* model = const_cast<GLModel*>(&m_model);
 
     if (model->get_filename() != m_model_filename && model->init_from_file(m_model_filename)) {
-#if ENABLE_SEQUENTIAL_LIMITS
-        model->set_color(-1, m_model_color);
-#endif // ENABLE_SEQUENTIAL_LIMITS
+        model->set_color(-1, DEFAULT_MODEL_COLOR);
 
         // move the model so that its origin (0.0, 0.0, 0.0) goes into the bed shape center and a bit down to avoid z-fighting with the texture quad
-        Vec3d shift = m_bounding_box.center();
-        shift(2) = -0.03;
-        *const_cast<Vec3d*>(&m_model_offset) = shift;
+        *const_cast<Vec3d*>(&m_model_offset) = to_3d(m_build_volume.bounding_volume2d().center(), -0.03);
 
         // update extended bounding box
-        calc_bounding_boxes();
+        const_cast<BoundingBoxf3&>(m_extended_bounding_box) = this->calc_extended_bounding_box();
     }
 
     if (!model->get_filename().empty()) {
         GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
         if (shader != nullptr) {
             shader->start_using();
-#if !ENABLE_SEQUENTIAL_LIMITS
-            shader->set_uniform("uniform_color", m_model_color);
-#endif // !ENABLE_SEQUENTIAL_LIMITS
-            shader->set_uniform("emission_factor", 0.0);
-            ::glPushMatrix();
-            ::glTranslated(m_model_offset.x(), m_model_offset.y(), m_model_offset.z());
+            shader->set_uniform("emission_factor", 0.0f);
+            glsafe(::glPushMatrix());
+            glsafe(::glTranslated(m_model_offset.x(), m_model_offset.y(), m_model_offset.z()));
             model->render();
-            ::glPopMatrix();
+            glsafe(::glPopMatrix());
             shader->stop_using();
         }
     }
 }
 
-void Bed3D::render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture) const
+void Bed3D::render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture, bool picking) const
 {
     if (m_texture_filename.empty() && m_model_filename.empty()) {
-        render_default(bottom);
+        render_default(bottom, picking);
         return;
     }
 
@@ -535,7 +525,7 @@ void Bed3D::render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture) co
         render_texture(bottom, canvas);
 }
 
-void Bed3D::render_default(bool bottom) const
+void Bed3D::render_default(bool bottom, bool picking) const
 {
     const_cast<GLTexture*>(&m_texture)->reset();
 
@@ -552,21 +542,20 @@ void Bed3D::render_default(bool bottom) const
         if (!has_model && !bottom) {
             // draw background
             glsafe(::glDepthMask(GL_FALSE));
-            glsafe(::glColor4fv(m_model_color.data()));
+            glsafe(::glColor4fv(picking ? PICKING_MODEL_COLOR.data() : DEFAULT_MODEL_COLOR.data()));
             glsafe(::glNormal3d(0.0f, 0.0f, 1.0f));
             glsafe(::glVertexPointer(3, GL_FLOAT, m_triangles.get_vertex_data_size(), (GLvoid*)m_triangles.get_vertices_data()));
             glsafe(::glDrawArrays(GL_TRIANGLES, 0, (GLsizei)triangles_vcount));
             glsafe(::glDepthMask(GL_TRUE));
         }
 
-        // draw grid
-        glsafe(::glLineWidth(1.5f * m_scale_factor));
-        if (has_model && !bottom)
-            glsafe(::glColor4f(0.9f, 0.9f, 0.9f, 1.0f));
-        else
-            glsafe(::glColor4f(0.9f, 0.9f, 0.9f, 0.6f));
-        glsafe(::glVertexPointer(3, GL_FLOAT, m_triangles.get_vertex_data_size(), (GLvoid*)m_gridlines.get_vertices_data()));
-        glsafe(::glDrawArrays(GL_LINES, 0, (GLsizei)m_gridlines.get_vertices_count()));
+        if (!picking) {
+            // draw grid
+            glsafe(::glLineWidth(1.5f * m_scale_factor));
+            glsafe(::glColor4fv(has_model && !bottom ? DEFAULT_SOLID_GRID_COLOR.data() : DEFAULT_TRANSPARENT_GRID_COLOR.data()));
+            glsafe(::glVertexPointer(3, GL_FLOAT, m_triangles.get_vertex_data_size(), (GLvoid*)m_gridlines.get_vertices_data()));
+            glsafe(::glDrawArrays(GL_LINES, 0, (GLsizei)m_gridlines.get_vertices_count()));
+        }
 
         glsafe(::glDisableClientState(GL_VERTEX_ARRAY));
 
@@ -574,7 +563,7 @@ void Bed3D::render_default(bool bottom) const
     }
 }
 
-void Bed3D::reset()
+void Bed3D::release_VBOs()
 {
     if (m_vbo_id > 0) {
         glsafe(::glDeleteBuffers(1, &m_vbo_id));

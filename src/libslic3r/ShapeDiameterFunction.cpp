@@ -1,7 +1,6 @@
 #include "ShapeDiameterFunction.hpp"
 #include <tbb/parallel_for.h>
 #include "TriangleMesh.hpp"
-#include "SimplifyMesh.hpp" // reduction by edge size
 
 using namespace Slic3r;
 
@@ -498,9 +497,63 @@ indexed_triangle_set ShapeDiameterFunction::subdivide(
     return result;
 }
 
+// TODO: use Quadric edge collapse instead of simplify
+#include "libslic3r/SimplifyMeshImpl.hpp"
+namespace SimplifyMesh {
+template<> struct vertex_traits<stl_vertex> {
+    using coord_type = float;
+    using compute_type = double;
+    
+    static inline float x(const stl_vertex &v) { return v.x(); }
+    static inline float& x(stl_vertex &v) { return v.x(); }
+    
+    static inline float y(const stl_vertex &v) { return v.y(); }
+    static inline float& y(stl_vertex &v) { return v.y(); }
+    
+    static inline float z(const stl_vertex &v) { return v.z(); }
+    static inline float& z(stl_vertex &v) { return v.z(); }
+};
+template<> struct mesh_traits<indexed_triangle_set> {
+    using vertex_t = stl_vertex;
+    static size_t face_count(const indexed_triangle_set &m)
+    {
+        return m.indices.size();
+    }
+    static size_t vertex_count(const indexed_triangle_set &m)
+    {
+        return m.vertices.size();
+    }
+    static vertex_t vertex(const indexed_triangle_set &m, size_t idx)
+    {
+        return m.vertices[idx];
+    }
+    static void vertex(indexed_triangle_set &m, size_t idx, const vertex_t &v)
+    {
+        m.vertices[idx] = v;
+    }
+    static Index3 triangle(const indexed_triangle_set &m, size_t idx)
+    {
+        std::array<size_t, 3> t;
+        for (size_t i = 0; i < 3; ++i) t[i] = size_t(m.indices[idx](int(i)));
+        return t;
+    }
+    static void triangle(indexed_triangle_set &m, size_t fidx, const Index3 &t)
+    {
+        auto &face = m.indices[fidx];
+        face(0) = int(t[0]); face(1) = int(t[1]); face(2) = int(t[2]);
+    }
+    static void update(indexed_triangle_set &m, size_t vc, size_t fc)
+    {
+        m.vertices.resize(vc);
+        m.indices.resize(fc);
+    }
+};
+} // namespace SimplifyMesh
+
 void ShapeDiameterFunction::connect_small_triangles(indexed_triangle_set &its, float min_length, float max_error)
 {
-    return remove_small_edges(its, min_length, max_error);
+    SimplifyMesh::implementation::SimplifiableMesh sm{&its};
+    sm.remove_small_edges(min_length, max_error);
 }
 
 float ShapeDiameterFunction::min_triangle_side_length(
@@ -555,27 +608,25 @@ float ShapeDiameterFunction::area(const indexed_triangle_set &its)
 }
 
 bool ShapeDiameterFunction::store(const Directions &unit_z_rays)
-{
-    TriangleMesh tm;
-    stl_file &   stl = tm.stl;
-    stl.facet_start.reserve(2 * unit_z_rays.size());
+{    
+    indexed_triangle_set its;
+    its.indices.reserve(2 * unit_z_rays.size());
+    its.vertices.reserve(5 * unit_z_rays.size());
+
     float triangle_size   = 1e-1f;
     float triangle_length = 1.f + 2.f;
+    size_t index = 0;
     for (const auto &dir : unit_z_rays) {
         Vec3f     ray = dir.dir;
-        stl_facet facet;
-        facet.normal    = Vec3f(0.f, 1.f, 0.f);
-        facet.vertex[0] = ray * triangle_length;
-        facet.vertex[1] = ray + Vec3f(triangle_size / 2.f, 0.f, 0.f);
-        facet.vertex[2] = ray + Vec3f(-triangle_size / 2.f, 0.f, 0.f);
-        stl.facet_start.push_back(facet);
-        stl_facet facet2;
-        facet2.normal    = Vec3f(1.f, 0.f, 0.f);
-        facet2.vertex[0] = facet.vertex[0];
-        facet2.vertex[1] = ray + Vec3f(0.f, triangle_size / 2.f, 0.f);
-        facet2.vertex[2] = ray + Vec3f(0.f, -triangle_size / 2.f, 0.f);
-        stl.facet_start.push_back(facet2);
+        its.vertices.emplace_back(ray * triangle_length);
+        its.vertices.emplace_back(ray + Vec3f(triangle_size / 2.f, 0.f, 0.f));
+        its.vertices.emplace_back(ray + Vec3f(-triangle_size / 2.f, 0.f, 0.f));
+        its.indices.emplace_back(index, index+1, index+2);
+
+        its.vertices.emplace_back(ray + Vec3f(0.f, triangle_size / 2.f, 0.f));
+        its.vertices.emplace_back(ray + Vec3f(0.f, -triangle_size / 2.f, 0.f));
+        its.indices.emplace_back(index, index + 3, index + 4);
+        index += 5;
     }
-    stl.stats.number_of_facets = stl.facet_start.size();
-    return tm.write_ascii("unit_z_rays.stl");
+    return its_write_stl_ascii("unit_z_rays.stl", "unit_z_rays", its);
 }

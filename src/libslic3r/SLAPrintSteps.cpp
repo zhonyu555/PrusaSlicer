@@ -391,11 +391,10 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
         holept.normal += Vec3f{dist(m_rng), dist(m_rng), dist(m_rng)};
         holept.normal.normalize();
         holept.pos += Vec3f{dist(m_rng), dist(m_rng), dist(m_rng)};
-        TriangleMesh m{holept.to_mesh()};
-        m.require_shared_vertices();
+        indexed_triangle_set m = holept.to_mesh();
 
         part_to_drill.indices.clear();
-        auto bb = m.bounding_box();
+        auto bb = bounding_box(m);
         Eigen::AlignedBox<float, 3> ebb{bb.min.cast<float>(),
                                         bb.max.cast<float>()};
 
@@ -429,19 +428,23 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
     auto hollowed_mesh_cgal = MeshBoolean::cgal::triangle_mesh_to_cgal(hollowed_mesh);
 
     if (!MeshBoolean::cgal::does_bound_a_volume(*hollowed_mesh_cgal)) {
-        po.active_step_add_warning(PrintStateBase::WarningLevel::NON_CRITICAL,
+        po.active_step_add_warning(
+            PrintStateBase::WarningLevel::NON_CRITICAL,
             L("Mesh to be hollowed is not suitable for hollowing (does not "
               "bound a volume)."));
     }
 
-    if (!MeshBoolean::cgal::does_bound_a_volume(*holes_mesh_cgal)) {
-        po.active_step_add_warning(PrintStateBase::WarningLevel::NON_CRITICAL,
+    if (!MeshBoolean::cgal::empty(*holes_mesh_cgal)
+        && !MeshBoolean::cgal::does_bound_a_volume(*holes_mesh_cgal)) {
+        po.active_step_add_warning(
+            PrintStateBase::WarningLevel::NON_CRITICAL,
             L("Unable to drill the current configuration of holes into the "
               "model."));
     }
 
     try {
-        MeshBoolean::cgal::minus(*hollowed_mesh_cgal, *holes_mesh_cgal);
+        if (!MeshBoolean::cgal::empty(*holes_mesh_cgal))
+            MeshBoolean::cgal::minus(*hollowed_mesh_cgal, *holes_mesh_cgal);
 
         hollowed_mesh = MeshBoolean::cgal::cgal_to_triangle_mesh(*hollowed_mesh_cgal);
         mesh_view = hollowed_mesh;
@@ -523,7 +526,6 @@ void SLAPrint::Steps::slice_model(SLAPrintObject &po)
     }
     auto  thr        = [this]() { m_print->throw_if_canceled(); };
     auto &slice_grid = po.m_model_height_levels;
-    assert(mesh.has_shared_vertices());
     po.m_model_slices = slice_mesh_ex(mesh.its, slice_grid, params, thr);
 
     sla::Interior *interior = po.m_hollowing_data ?
@@ -557,7 +559,7 @@ void SLAPrint::Steps::slice_model(SLAPrintObject &po)
 
     if(po.m_config.supports_enable.getBool() || po.m_config.pad_enable.getBool())
     {
-        po.m_supportdata.reset(new SLAPrintObject::SupportData(mesh));
+        po.m_supportdata.reset(new SLAPrintObject::SupportData(po.get_mesh_to_print()));
     }
 }
 
@@ -568,10 +570,8 @@ void SLAPrint::Steps::support_points(SLAPrintObject &po)
     // If supports are disabled, we can skip the model scan.
     if(!po.m_config.supports_enable.getBool()) return;
 
-    const TriangleMesh &mesh = po.get_mesh_to_slice();
-
     if (!po.m_supportdata)
-        po.m_supportdata.reset(new SLAPrintObject::SupportData(mesh));
+        po.m_supportdata.reset(new SLAPrintObject::SupportData(po.get_mesh_to_print()));
 
     const ModelObject& mo = *po.m_model_object;
 

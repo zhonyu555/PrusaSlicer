@@ -46,11 +46,28 @@ struct MeshSlicingParamsEx : public MeshSlicingParams
     double        resolution { 0 };
 };
 
+// All the following slicing functions shall produce consistent results with the same mesh, same transformation matrix and slicing parameters.
+// Namely, slice_mesh_slabs() shall produce consistent results with slice_mesh() and slice_mesh_ex() in the sense, that projections made by 
+// slice_mesh_slabs() shall fall onto slicing planes produced by slice_mesh().
+//
+// If a slicing plane slices a horizontal face of a mesh exactly,
+// an upward facing horizontal face is is considered on slicing plane,
+// while a downward facing horizontal face is considered not on slicing plane.
+// 
+// slice_mesh_slabs() thus projects an upward facing horizontal slice to the slicing plane,
+// while slice_mesh_slabs() projects a downward facing horizontal slice to the slicing plane above if it exists.
+
 std::vector<Polygons>           slice_mesh(
     const indexed_triangle_set       &mesh,
     const std::vector<float>         &zs,
     const MeshSlicingParams          &params,
     std::function<void()>             throw_on_cancel = []{});
+
+// Specialized version for a single slicing plane only, running on a single thread.
+Polygons                        slice_mesh(
+    const indexed_triangle_set       &mesh,
+    const float                       plane_z,
+    const MeshSlicingParams          &params);
 
 std::vector<ExPolygons>         slice_mesh_ex(
     const indexed_triangle_set       &mesh,
@@ -77,7 +94,36 @@ inline std::vector<ExPolygons>  slice_mesh_ex(
     return slice_mesh_ex(mesh, zs, params, throw_on_cancel);
 }
 
-void                            cut_mesh(
+// Slice a triangle set with a set of Z slabs (thick layers).
+// The effect is similar to producing the usual top / bottom layers from a sliced mesh by 
+// subtracting layer[i] from layer[i - 1] for the top surfaces resp.
+// subtracting layer[i] from layer[i + 1] for the bottom surfaces,
+// with the exception that the triangle set this function processes may not cover the whole top resp. bottom surface.
+// top resp. bottom surfaces are calculated only if out_top resp. out_bottom is not null.
+void slice_mesh_slabs(
+    const indexed_triangle_set       &mesh,
+    // Unscaled Zs
+    const std::vector<float>         &zs,
+    const Transform3d                &trafo,
+    std::vector<Polygons>            *out_top,
+    std::vector<Polygons>            *out_bottom,
+    std::function<void()>             throw_on_cancel);
+
+// Project mesh upwards pointing surfaces / downwards pointing surfaces into 2D polygons.
+void project_mesh(
+    const indexed_triangle_set       &mesh,
+    const Transform3d                &trafo,
+    Polygons                         *out_top,
+    Polygons                         *out_bottom,
+    std::function<void()>             throw_on_cancel);
+
+// Project mesh into 2D polygons.
+Polygons project_mesh(
+    const indexed_triangle_set       &mesh,
+    const Transform3d                &trafo,
+    std::function<void()>             throw_on_cancel);
+
+void cut_mesh(
     const indexed_triangle_set      &mesh,
     float                            z,
     indexed_triangle_set            *upper,

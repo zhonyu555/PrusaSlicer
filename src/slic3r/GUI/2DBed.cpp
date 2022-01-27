@@ -14,9 +14,10 @@ namespace GUI {
 Bed_2D::Bed_2D(wxWindow* parent) : 
 wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(25 * wxGetApp().em_unit(), -1), wxTAB_TRAVERSAL)
 {
-    SetBackgroundStyle(wxBG_STYLE_PAINT); // to avoid assert message after wxAutoBufferedPaintDC 
 #ifdef __APPLE__
     m_user_drawn_background = false;
+#else
+    SetBackgroundStyle(wxBG_STYLE_PAINT); // to avoid assert message after wxAutoBufferedPaintDC 
 #endif /*__APPLE__*/
 }
 
@@ -91,7 +92,7 @@ void Bed_2D::repaint(const std::vector<Vec2d>& shape)
 	for (auto y = bb.min(1) - fmod(bb.min(1), step) + step; y < bb.max(1); y += step) {
 		polylines.push_back(Polyline::new_scale({ Vec2d(bb.min(0), y), Vec2d(bb.max(0), y) }));
 	}
-	polylines = intersection_pl(polylines, (Polygons)bed_polygon);
+	polylines = intersection_pl(polylines, bed_polygon);
 
     dc.SetPen(wxPen(wxColour(230, 230, 230), 1, wxPENSTYLE_SOLID));
 	for (auto pl : polylines)

@@ -67,11 +67,15 @@ public:
     bool has_backend_supports() const;
     void reslice_SLA_supports(bool postpone_error_messages = false) const;
 
+    bool wants_enter_leave_snapshots() const override { return true; }
+    std::string get_gizmo_entering_text() const override { return _u8L("Entering SLA support points"); }
+    std::string get_gizmo_leaving_text() const override { return _u8L("Leaving SLA support points"); }
+
 private:
     bool on_init() override;
     void on_update(const UpdateData& data) override;
-    void on_render() const override;
-    void on_render_for_picking() const override;
+    void on_render() override;
+    void on_render_for_picking() override;
 
     void render_points(const Selection& selection, bool picking = false) const;
     bool unsaved_changes() const;
@@ -86,6 +90,10 @@ private:
     mutable std::vector<CacheEntry> m_editing_cache; // a support point and whether it is currently selected
     std::vector<sla::SupportPoint> m_normal_cache; // to restore after discarding changes or undo/redo
     ObjectID m_old_mo_id;
+
+    GLModel m_cone;
+    GLModel m_cylinder;
+    GLModel m_sphere;
 
     // This map holds all translated description texts, so they can be easily referenced during layout calculations
     // etc. When language changes, GUI is recreated and this class constructed again, so the change takes effect.
@@ -117,6 +125,7 @@ private:
     void auto_generate();
     void switch_to_editing_mode();
     void disable_editing_mode();
+    void ask_about_changes_call_after(std::function<void()> on_yes, std::function<void()> on_no);
 
 protected:
     void on_set_state() override;

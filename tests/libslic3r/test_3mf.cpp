@@ -14,7 +14,8 @@ SCENARIO("Reading 3mf file", "[3mf]") {
         WHEN("3mf model is read") {
         	std::string path = std::string(TEST_DATA_DIR) + "/test_3mf/Geräte/Büchse.3mf";
         	DynamicPrintConfig config;
-            bool ret = load_3mf(path.c_str(), &config, &model, false);
+            ConfigSubstitutionContext ctxt{ ForwardCompatibilitySubstitutionRule::Disable };
+            bool ret = load_3mf(path.c_str(), config, ctxt, &model, false);
             THEN("load should succeed") {
                 REQUIRE(ret);
             }
@@ -56,15 +57,15 @@ SCENARIO("Export+Import geometry to/from 3mf file cycle", "[3mf]") {
             // load back the model from the 3mf file
             Model dst_model;
             DynamicPrintConfig dst_config;
-            load_3mf(test_file.c_str(), &dst_config, &dst_model, false);
+            {
+                ConfigSubstitutionContext ctxt{ ForwardCompatibilitySubstitutionRule::Disable };
+                load_3mf(test_file.c_str(), dst_config, ctxt, &dst_model, false);
+            }
             boost::filesystem::remove(test_file);
 
             // compare meshes
             TriangleMesh src_mesh = src_model.mesh();
-            src_mesh.repair();
-
             TriangleMesh dst_mesh = dst_model.mesh();
-            dst_mesh.repair();
 
             bool res = src_mesh.its.vertices.size() == dst_mesh.its.vertices.size();
             if (res) {
@@ -111,7 +112,17 @@ SCENARIO("2D convex hull of sinking object", "[3mf]") {
                 { -91501496, 4243 }
             };
 
-            bool res = hull_2d.points == result;
+            // Allow 1um error due to floating point rounding.
+            bool res = hull_2d.points.size() == result.size();
+            if (res)
+                for (size_t i = 0; i < result.size(); ++ i) {
+                    const Point &p1 = result[i];
+                    const Point &p2 = hull_2d.points[i];
+                    if (std::abs(p1.x() - p2.x()) > 1 || std::abs(p1.y() - p2.y()) > 1) {
+                        res = false;
+                        break;
+                    }
+                }
 
             THEN("2D convex hull should match with reference") {
                 REQUIRE(res);

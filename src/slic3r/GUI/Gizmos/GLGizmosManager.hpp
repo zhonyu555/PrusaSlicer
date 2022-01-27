@@ -25,15 +25,25 @@ class CommonGizmosDataPool;
 
 class Rect
 {
-    float m_left;
-    float m_top;
-    float m_right;
-    float m_bottom;
+    float m_left{ 0.0f };
+    float m_top{ 0.0f };
+    float m_right{ 0.0f };
+    float m_bottom{ 0.0f };
 
 public:
-    Rect() : m_left(0.0f) , m_top(0.0f) , m_right(0.0f) , m_bottom(0.0f) {}
-
+    Rect() = default;
     Rect(float left, float top, float right, float bottom) : m_left(left) , m_top(top) , m_right(right) , m_bottom(bottom) {}
+
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    bool operator == (const Rect& other) {
+        if (std::abs(m_left - other.m_left) > EPSILON) return false;
+        if (std::abs(m_top - other.m_top) > EPSILON) return false;
+        if (std::abs(m_right - other.m_right) > EPSILON) return false;
+        if (std::abs(m_bottom - other.m_bottom) > EPSILON) return false;
+        return true;
+    }
+    bool operator != (const Rect& other) { return !operator==(other); }
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
     float get_left() const { return m_left; }
     void set_left(float left) { m_left = left; }
@@ -69,6 +79,7 @@ public:
         FdmSupports,
         Seam,
         MmuSegmentation,
+        Simplify,
         Undefined
     };
 
@@ -94,15 +105,16 @@ private:
     mutable GLTexture m_icons_texture;
     mutable bool m_icons_texture_dirty;
     BackgroundTexture m_background_texture;
+    BackgroundTexture m_arrow_texture;
     Layout m_layout;
     EType m_current;
     EType m_hover;
+    std::pair<EType, bool> m_highlight; // bool true = higlightedShown, false = highlightedHidden
 
     std::vector<size_t> get_selectable_idxs() const;
-    std::vector<size_t> get_activable_idxs() const;
     size_t get_gizmo_idx_from_mouse(const Vec2d& mouse_pos) const;
 
-    void activate_gizmo(EType type);
+    bool activate_gizmo(EType type);
 
     struct MouseCapture
     {
@@ -120,13 +132,14 @@ private:
     MouseCapture m_mouse_capture;
     std::string m_tooltip;
     bool m_serializing;
-    //std::unique_ptr<CommonGizmosData> m_common_gizmos_data;
     std::unique_ptr<CommonGizmosDataPool> m_common_gizmos_data;
 
 public:
     explicit GLGizmosManager(GLCanvas3D& parent);
 
     bool init();
+
+    bool init_arrow(const BackgroundTexture::Metadata& arrow_texture);
 
     template<class Archive>
     void load(Archive& ar)
@@ -173,6 +186,7 @@ public:
     void reset_all_states();
     bool is_serializing() const { return m_serializing; }
     bool open_gizmo(EType type);
+    bool check_gizmos_closed_except(EType) const;
 
     void set_hover_id(int id);
     void enable_grabber(EType type, unsigned int id, bool enable);
@@ -182,6 +196,7 @@ public:
 
     EType get_current_type() const { return m_current; }
     GLGizmoBase* get_current() const;
+    EType get_gizmo_from_name(const std::string& gizmo_name) const;
 
     bool is_running() const;
     bool handle_shortcut(int key);
@@ -213,12 +228,19 @@ public:
     bool wants_reslice_supports_on_undo() const;
 
     bool is_in_editing_mode(bool error_notification = false) const;
+    bool is_hiding_instances() const;
 
     void render_current_gizmo() const;
     void render_current_gizmo_for_picking_pass() const;
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    void render_painter_gizmo();
+#else
     void render_painter_gizmo() const;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
     void render_overlay() const;
+
+    void render_arrow(const GLCanvas3D& parent, EType highlighted_type) const;
 
     std::string get_tooltip() const;
 
@@ -232,8 +254,13 @@ public:
     int get_selectable_icons_cnt() const { return get_selectable_idxs().size(); }
     int get_shortcut_key(GLGizmosManager::EType) const;
 
+    // To end highlight set gizmo = undefined
+    void set_highlight(EType gizmo, bool highlight_shown) { m_highlight = std::pair<EType, bool>(gizmo, highlight_shown); }
+    bool get_highlight_state() const { return m_highlight.second; }
+
 private:
     void render_background(float left, float top, float right, float bottom, float border) const;
+    
     void do_render_overlay() const;
 
     float get_scaled_total_height() const;

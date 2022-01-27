@@ -166,8 +166,13 @@ int BitmapComboBox::Append(const wxString& item)
     //2. But then set width to 0 value for no using of bitmap left and right spacing
     //3. Set this empty bitmap to the at list one item and BitmapCombobox will be recreated correct
 
-    wxBitmap bitmap(1, this->GetFont().GetPixelSize().y + 2);
-    bitmap.SetWidth(0);
+    wxBitmap bitmap(1, int(1.6 * wxGetApp().em_unit() + 1));
+    {
+        // bitmap.SetWidth(0); is depricated now
+        // so, use next code 
+        bitmap.UnShare();// AllocExclusive(); 
+        bitmap.GetGDIImageData()->m_width = 0;
+    }
 
     OnAddBitmap(bitmap);
     const int n = wxComboBox::Append(item);
@@ -249,8 +254,8 @@ void BitmapComboBox::DrawBackground_(wxDC& dc, const wxRect& rect, int WXUNUSED(
         dc.SetTextForeground(flags & ODCB_PAINTING_DISABLED ? wxColour(108,108,108) : wxGetApp().get_label_clr_default());
 
         wxColour selCol = flags & ODCB_PAINTING_DISABLED ? 
-#ifdef _MSW_DAEK_MODE
-            wxRGBToColour(NppDarkMode::InvertLightnessSofter(NppDarkMode::GetBackgroundColor())) : 
+#ifdef _MSW_DARK_MODE
+            wxRGBToColour(NppDarkMode::GetSofterBackgroundColor()) :
 #else
             wxGetApp().get_highlight_default_clr() :
 #endif
@@ -259,6 +264,21 @@ void BitmapComboBox::DrawBackground_(wxDC& dc, const wxRect& rect, int WXUNUSED(
         dc.SetBrush(selCol);
         dc.DrawRectangle(rect);
     }
+}
+
+void BitmapComboBox::Rescale()
+{
+    // Next workaround: To correct scaling of a BitmapCombobox
+    // we need to refill control with new bitmaps
+    const wxString selection = this->GetValue();
+    std::vector<wxString> items;
+    for (size_t i = 0; i < GetCount(); i++)
+        items.push_back(GetString(i));
+
+    this->Clear();
+    for (const wxString& item : items)
+        Append(item);
+    this->SetValue(selection);
 }
 #endif
 
