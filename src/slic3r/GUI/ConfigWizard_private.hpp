@@ -136,7 +136,7 @@ struct Materials
 		for (auto preset : presets) {
 			const Preset& prst = *(preset);
 			const Preset& prntr = *printer;
-		      if ((printer == nullptr || is_compatible_with_printer(PresetWithVendorProfile(prst, prst.vendor), PresetWithVendorProfile(prntr, prntr.vendor))) &&
+		    if ((printer == nullptr || is_compatible_with_printer(PresetWithVendorProfile(prst, prst.vendor), PresetWithVendorProfile(prntr, prntr.vendor))) &&
 			    (type.empty() || get_type(preset) == type) &&
 				(vendor.empty() || get_vendor(preset) == vendor)) {
 

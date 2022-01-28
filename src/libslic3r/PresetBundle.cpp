@@ -1263,10 +1263,10 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_configbundle(
     const VendorProfile *vendor_profile = nullptr;
     if (flags.has(LoadConfigBundleAttribute::LoadSystem) || flags.has(LoadConfigBundleAttribute::LoadVendorOnly)) {
         auto vp = VendorProfile::from_ini(tree, path);
-        if (vp.models.size() == 0) {
+        if (vp.models.size() == 0 && !vp.common_profile) {
             BOOST_LOG_TRIVIAL(error) << boost::format("Vendor bundle: `%1%`: No printer model defined.") % path;
             return std::make_pair(PresetsConfigSubstitutions{}, 0);
-        } else if (vp.num_variants() == 0) {
+        } else if (vp.num_variants() == 0 && !vp.common_profile) {
             BOOST_LOG_TRIVIAL(error) << boost::format("Vendor bundle: `%1%`: No printer variant defined") % path;
             return std::make_pair(PresetsConfigSubstitutions{}, 0);
         }

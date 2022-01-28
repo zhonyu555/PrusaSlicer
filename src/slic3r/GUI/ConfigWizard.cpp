@@ -2140,7 +2140,17 @@ void ConfigWizard::priv::update_materials(Technology technology)
 						filaments.add_printer(&printer);
                     }
 				}
-				
+                // common filament bundle has no printers - filament would be never added
+                if(pair.second.preset_bundle->printers.begin() == pair.second.preset_bundle->printers.end())
+                {
+                    if (!filaments.containts(&filament)) {
+                        filaments.push(&filament);
+                        if (!filament.alias.empty())
+                            aliases_fff[filament.alias].insert(filament.name);
+                    }
+                    
+                }
+                
             }
         }
         // count compatible printers
@@ -2420,6 +2430,21 @@ bool ConfigWizard::priv::check_and_install_missing_materials(Technology technolo
 				                	has_material = true;
 				                    break;
 				                }
+                                
+                                // find if preset.first is part of the common profile (up is searching if preset.first is part of printer vendor preset)
+                                for (const auto& bp : bundles) {
+                                    if (!bp.second.preset_bundle->vendors.empty() && bp.second.preset_bundle->vendors.begin()->second.common_profile) {
+                                        const PresetCollection& common_materials = bp.second.preset_bundle->materials(technology);
+                                        const Preset* common_material = common_materials.find_preset(preset.first, false);
+                                        if(common_material) {
+                                            has_material = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (has_material)
+                                    break;
+
 			                }
 			            }
 			            if (! has_material)

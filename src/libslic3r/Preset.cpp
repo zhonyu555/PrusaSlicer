@@ -146,6 +146,11 @@ VendorProfile VendorProfile::from_ini(const ptree &tree, const boost::filesystem
         res.changelog_url = changelog_url->second.data();
     }
 
+    const auto common_profile = vendor_section.find("common_profile");
+    if (common_profile != vendor_section.not_found()) {
+        res.common_profile = common_profile->second.data() == "1";
+    }
+
     if (! load_all) {
         return res;
     }
@@ -336,6 +341,10 @@ std::string Preset::label() const
 
 bool is_compatible_with_print(const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_print, const PresetWithVendorProfile &active_printer)
 {
+    // custom filament profiles are aviable for all prints
+    if (preset.preset.type == Preset::Type::TYPE_FILAMENT && preset.vendor != nullptr && preset.vendor != active_printer.vendor && preset.vendor->common_profile)
+        return true;
+
 	if (preset.vendor != nullptr && preset.vendor != active_printer.vendor)
 		// The current profile has a vendor assigned and it is different from the active print's vendor.
 		return false;
@@ -358,6 +367,10 @@ bool is_compatible_with_print(const PresetWithVendorProfile &preset, const Prese
 
 bool is_compatible_with_printer(const PresetWithVendorProfile &preset, const PresetWithVendorProfile &active_printer, const DynamicPrintConfig *extra_config)
 {
+    // custom filament profiles are aviable for all printers
+    if (preset.preset.type == Preset::Type::TYPE_FILAMENT && preset.vendor != nullptr && preset.vendor != active_printer.vendor && preset.vendor->common_profile)
+        return true;
+
 	if (preset.vendor != nullptr && preset.vendor != active_printer.vendor)
 		// The current profile has a vendor assigned and it is different from the active print's vendor.
 		return false;
