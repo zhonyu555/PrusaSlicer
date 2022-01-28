@@ -136,6 +136,7 @@ PrintHostSendDialog::PrintHostSendDialog(const fs::path &path, PrintHostPostUplo
         // Another similar case where the function only works with EVT_SHOW + CallAfter,
         // this time on Mac.
         CallAfter([=]() {
+            txt_filename->SetInsertionPoint(0);
             txt_filename->SetSelection(recent_path_len, recent_path_len + stem_len);
         });
     });
