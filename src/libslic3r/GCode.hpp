@@ -340,8 +340,8 @@ private:
     std::string     extrude_support(const ExtrusionEntityCollection &support_fills);
 
     std::string     travel_to(const Point &point, ExtrusionRole role, std::string comment);
-    bool            needs_retraction(const Polyline &travel, ExtrusionRole role = erNone);
-    std::string     retract(bool toolchange = false);
+    std::pair<bool, bool> needs_retraction(const Polyline &travel, ExtrusionRole role = erNone);
+    std::string     retract(bool toolchange = false, bool lift_z = false);
     std::string     unretract() { return m_writer.unlift() + m_writer.unretract(); }
     std::string     set_extruder(unsigned int extruder_id, double print_z);
 
