@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-01-20 11:08+0100\n"
+"POT-Creation-Date: 2022-01-25 17:28+0100\n"
 "PO-Revision-Date: 2021-12-16 18:50+0100\n"
 "Last-Translator: \n"
 "Language-Team: \n"
@@ -244,8 +244,8 @@ msgstr ""
 #: src/slic3r/GUI/BedShapeDialog.cpp:64 src/slic3r/GUI/ConfigWizard.cpp:262
 #: src/slic3r/GUI/ConfigWizard.cpp:1476 src/slic3r/GUI/ConfigWizard.cpp:1490
 #: src/slic3r/GUI/ExtruderSequenceDialog.cpp:100
-#: src/slic3r/GUI/GCodeViewer.cpp:3176 src/slic3r/GUI/GCodeViewer.cpp:3182
-#: src/slic3r/GUI/GCodeViewer.cpp:3190 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188
+#: src/slic3r/GUI/GCodeViewer.cpp:3181 src/slic3r/GUI/GCodeViewer.cpp:3187
+#: src/slic3r/GUI/GCodeViewer.cpp:3195 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188
 #: src/slic3r/GUI/GUI_ObjectLayers.cpp:145
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:320
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:409
@@ -322,7 +322,7 @@ msgstr "Forma"
 msgid "Load shape from STL..."
 msgstr "Carregar forma des de l'STL..."
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:249 src/slic3r/GUI/GCodeViewer.cpp:3705
+#: src/slic3r/GUI/BedShapeDialog.cpp:249 src/slic3r/GUI/GCodeViewer.cpp:3710
 #: src/slic3r/GUI/MainFrame.cpp:2140
 msgid "Settings"
 msgstr "Configuració"
@@ -611,7 +611,7 @@ msgstr "Actiu"
 msgid "PrusaSlicer version"
 msgstr "Versió de PrusaSlicer"
 
-#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:64 src/libslic3r/Preset.cpp:1337
+#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:64 src/libslic3r/Preset.cpp:1338
 msgid "print"
 msgstr "imprimir"
 
@@ -619,17 +619,17 @@ msgstr "imprimir"
 msgid "filaments"
 msgstr "filaments"
 
-#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:68 src/libslic3r/Preset.cpp:1339
+#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:68 src/libslic3r/Preset.cpp:1340
 msgid "SLA print"
 msgstr "Impressió SLA"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:69
 #: src/slic3r/GUI/ConfigWizard.cpp:755 src/slic3r/GUI/GUI.cpp:340
-#: src/slic3r/GUI/Plater.cpp:820 src/libslic3r/Preset.cpp:1340
+#: src/slic3r/GUI/Plater.cpp:820 src/libslic3r/Preset.cpp:1341
 msgid "SLA material"
 msgstr "Material SLA"
 
-#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:71 src/libslic3r/Preset.cpp:1341
+#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:71 src/libslic3r/Preset.cpp:1342
 msgid "printer"
 msgstr "impressora"
 
@@ -780,7 +780,7 @@ msgid "All installed printers are compatible with the selected %1%."
 msgstr ""
 "Totes les impressores instal·lades són compatibles amb el %1% seleccionat."
 
-#: src/slic3r/GUI/ConfigWizard.cpp:755 src/libslic3r/Preset.cpp:1338
+#: src/slic3r/GUI/ConfigWizard.cpp:755 src/libslic3r/Preset.cpp:1339
 msgid "filament"
 msgstr "filament"
 
@@ -981,7 +981,7 @@ msgid "Set the shape of your printer's bed."
 msgstr "Defineix la forma de la base d'impressió de la vostra impressora."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1433 src/slic3r/GUI/Field.cpp:255
-#: src/slic3r/GUI/Field.cpp:324 src/slic3r/GUI/Field.cpp:1563
+#: src/slic3r/GUI/Field.cpp:324 src/slic3r/GUI/Field.cpp:1562
 #: src/slic3r/GUI/GUI_ObjectLayers.cpp:429
 msgid "Invalid numeric input."
 msgstr "Entrada numèrica no vàlida."
@@ -1265,7 +1265,7 @@ msgstr ""
 "d'escriptori de PrusaSlicer probablement s'ha pogut crear amb èxit."
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:459
-#: src/slic3r/GUI/GUI_App.cpp:2222
+#: src/slic3r/GUI/GUI_App.cpp:2223
 msgid "Desktop Integration"
 msgstr "Integració a l'escriptori"
 
@@ -1778,7 +1778,7 @@ msgid "Parameter validation"
 msgstr "Validació de paràmetres"
 
 #: src/slic3r/GUI/Field.cpp:282 src/slic3r/GUI/Field.cpp:390
-#: src/slic3r/GUI/Field.cpp:1575
+#: src/slic3r/GUI/Field.cpp:1574
 msgid "Input value is out of range"
 msgstr "El valor introduït és fora de rang"
 
@@ -1963,7 +1963,7 @@ msgstr "Afegir a la base"
 msgid "Add selected shape(s) to the bed"
 msgstr "Afegir la(es) forma(es) seleccionada(es) a la base"
 
-#: src/slic3r/GUI/GalleryDialog.cpp:117 src/slic3r/GUI/Tab.cpp:4088
+#: src/slic3r/GUI/GalleryDialog.cpp:117 src/slic3r/GUI/Tab.cpp:4100
 msgid "Add"
 msgstr "Afegir"
 
@@ -2025,226 +2025,226 @@ msgstr "Generant trajectòries"
 msgid "Generating vertex buffer"
 msgstr "Generant buffer de vèrtex"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:1852
+#: src/slic3r/GUI/GCodeViewer.cpp:1857
 msgid "Generating index buffers"
 msgstr "Generant buffers d'índex"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3047
+#: src/slic3r/GUI/GCodeViewer.cpp:3052
 msgid "Click to hide"
 msgstr "Clic per amagar"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3047
+#: src/slic3r/GUI/GCodeViewer.cpp:3052
 msgid "Click to show"
 msgstr "Clic per mostrar"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3176
+#: src/slic3r/GUI/GCodeViewer.cpp:3181
 msgid "up to"
 msgstr "fins a"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3182
+#: src/slic3r/GUI/GCodeViewer.cpp:3187
 msgid "above"
 msgstr "sobre"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3190
+#: src/slic3r/GUI/GCodeViewer.cpp:3195
 msgid "from"
 msgstr "desde"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3190
+#: src/slic3r/GUI/GCodeViewer.cpp:3195
 msgid "to"
 msgstr "a"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3240 src/slic3r/GUI/GCodeViewer.cpp:3241
-#: src/slic3r/GUI/GCodeViewer.cpp:3290
+#: src/slic3r/GUI/GCodeViewer.cpp:3245 src/slic3r/GUI/GCodeViewer.cpp:3246
+#: src/slic3r/GUI/GCodeViewer.cpp:3295
 msgid "Percentage"
 msgstr "Percentatge"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3251 src/slic3r/GUI/GCodeViewer.cpp:3290
+#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295
 #: src/slic3r/GUI/GUI_Preview.cpp:217 src/slic3r/GUI/GUI_Preview.cpp:958
 msgid "Feature type"
 msgstr "Tipus de funció"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3251 src/slic3r/GUI/GCodeViewer.cpp:3290
+#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295
 #: src/slic3r/GUI/RammingChart.cpp:90
 msgid "Time"
 msgstr "Temps"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3290 src/slic3r/GUI/GCodeViewer.cpp:3301
-#: src/slic3r/GUI/GCodeViewer.cpp:3562
+#: src/slic3r/GUI/GCodeViewer.cpp:3295 src/slic3r/GUI/GCodeViewer.cpp:3306
+#: src/slic3r/GUI/GCodeViewer.cpp:3567
 msgid "Used filament"
 msgstr "Filament usat"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3293
+#: src/slic3r/GUI/GCodeViewer.cpp:3298
 msgid "Height (mm)"
 msgstr "Alçada (mm)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3294
+#: src/slic3r/GUI/GCodeViewer.cpp:3299
 msgid "Width (mm)"
 msgstr "Amplada (mm)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3295
+#: src/slic3r/GUI/GCodeViewer.cpp:3300
 msgid "Speed (mm/s)"
 msgstr "Velocitat (mm/s)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3296
+#: src/slic3r/GUI/GCodeViewer.cpp:3301
 msgid "Fan Speed (%)"
 msgstr "Velocitat Ventilador (%)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3297
+#: src/slic3r/GUI/GCodeViewer.cpp:3302
 msgid "Temperature (°C)"
 msgstr "Temperatura (°C)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3298
+#: src/slic3r/GUI/GCodeViewer.cpp:3303
 msgid "Volumetric flow rate (mm³/s)"
 msgstr "Taxa de flux volumètric (mm³/seg)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3301 src/slic3r/GUI/GUI_Preview.cpp:224
+#: src/slic3r/GUI/GCodeViewer.cpp:3306 src/slic3r/GUI/GUI_Preview.cpp:224
 #: src/slic3r/GUI/GUI_Preview.cpp:958
 msgid "Tool"
 msgstr "Eina"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3304 src/slic3r/GUI/GUI_Preview.cpp:225
+#: src/slic3r/GUI/GCodeViewer.cpp:3309 src/slic3r/GUI/GUI_Preview.cpp:225
 #: src/slic3r/GUI/GUI_Preview.cpp:957
 msgid "Color Print"
 msgstr "Color Print"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3342 src/slic3r/GUI/GCodeViewer.cpp:3388
-#: src/slic3r/GUI/GCodeViewer.cpp:3393 src/slic3r/GUI/GUI_ObjectList.cpp:312
+#: src/slic3r/GUI/GCodeViewer.cpp:3347 src/slic3r/GUI/GCodeViewer.cpp:3393
+#: src/slic3r/GUI/GCodeViewer.cpp:3398 src/slic3r/GUI/GUI_ObjectList.cpp:312
 #: src/slic3r/GUI/wxExtensions.cpp:536 src/libslic3r/PrintConfig.cpp:769
 msgid "Extruder"
 msgstr "Extrusor"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3365
+#: src/slic3r/GUI/GCodeViewer.cpp:3370
 msgid "Default color"
 msgstr "Color predeterminado"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3388
+#: src/slic3r/GUI/GCodeViewer.cpp:3393
 msgid "default color"
 msgstr "color predeterminado"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3487 src/slic3r/GUI/GCodeViewer.cpp:3543
+#: src/slic3r/GUI/GCodeViewer.cpp:3492 src/slic3r/GUI/GCodeViewer.cpp:3548
 msgid "Color change"
 msgstr "Canvi de color"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3506 src/slic3r/GUI/GCodeViewer.cpp:3541
+#: src/slic3r/GUI/GCodeViewer.cpp:3511 src/slic3r/GUI/GCodeViewer.cpp:3546
 msgid "Print"
 msgstr "Imprimir"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3542 src/slic3r/GUI/GCodeViewer.cpp:3576
+#: src/slic3r/GUI/GCodeViewer.cpp:3547 src/slic3r/GUI/GCodeViewer.cpp:3581
 msgid "Pause"
 msgstr "Pausa"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3559 src/slic3r/GUI/GCodeViewer.cpp:3562
+#: src/slic3r/GUI/GCodeViewer.cpp:3564 src/slic3r/GUI/GCodeViewer.cpp:3567
 msgid "Event"
 msgstr "Esdeveniment"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3559 src/slic3r/GUI/GCodeViewer.cpp:3562
+#: src/slic3r/GUI/GCodeViewer.cpp:3564 src/slic3r/GUI/GCodeViewer.cpp:3567
 msgid "Remaining time"
 msgstr "Temps restant"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3559 src/slic3r/GUI/GCodeViewer.cpp:3562
+#: src/slic3r/GUI/GCodeViewer.cpp:3564 src/slic3r/GUI/GCodeViewer.cpp:3567
 msgid "Duration"
 msgstr "Duració"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3605 src/slic3r/GUI/GUI_Preview.cpp:1049
+#: src/slic3r/GUI/GCodeViewer.cpp:3610 src/slic3r/GUI/GUI_Preview.cpp:1049
 #: src/libslic3r/PrintConfig.cpp:2887
 msgid "Travel"
 msgstr "Recorregut"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3608
+#: src/slic3r/GUI/GCodeViewer.cpp:3613
 msgid "Movement"
 msgstr "Moviment"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3609
+#: src/slic3r/GUI/GCodeViewer.cpp:3614
 msgid "Extrusion"
 msgstr "Extrusió"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3610 src/slic3r/GUI/Tab.cpp:1862
+#: src/slic3r/GUI/GCodeViewer.cpp:3615 src/slic3r/GUI/Tab.cpp:1862
 #: src/slic3r/GUI/Tab.cpp:2802
 msgid "Retraction"
 msgstr "Retracció"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3627 src/slic3r/GUI/GCodeViewer.cpp:3630
+#: src/slic3r/GUI/GCodeViewer.cpp:3632 src/slic3r/GUI/GCodeViewer.cpp:3635
 #: src/slic3r/GUI/GUI_Preview.cpp:1050
 msgid "Wipe"
 msgstr "Netejar"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3662 src/slic3r/GUI/GUI_Preview.cpp:257
+#: src/slic3r/GUI/GCodeViewer.cpp:3667 src/slic3r/GUI/GUI_Preview.cpp:257
 #: src/slic3r/GUI/GUI_Preview.cpp:272 src/slic3r/GUI/Tab.cpp:3906
 msgid "Options"
 msgstr "Opcions"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3665 src/slic3r/GUI/GUI_Preview.cpp:1051
+#: src/slic3r/GUI/GCodeViewer.cpp:3670 src/slic3r/GUI/GUI_Preview.cpp:1051
 msgid "Retractions"
 msgstr "Retraccions"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3666 src/slic3r/GUI/GUI_Preview.cpp:1052
+#: src/slic3r/GUI/GCodeViewer.cpp:3671 src/slic3r/GUI/GUI_Preview.cpp:1052
 msgid "Deretractions"
 msgstr "Derretraccions"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3667 src/slic3r/GUI/GUI_Preview.cpp:1053
+#: src/slic3r/GUI/GCodeViewer.cpp:3672 src/slic3r/GUI/GUI_Preview.cpp:1053
 msgid "Seams"
 msgstr "Costures"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3668 src/slic3r/GUI/GUI_Preview.cpp:1054
+#: src/slic3r/GUI/GCodeViewer.cpp:3673 src/slic3r/GUI/GUI_Preview.cpp:1054
 msgid "Tool changes"
 msgstr "Canvis d'eina"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3669 src/slic3r/GUI/GUI_Preview.cpp:1055
+#: src/slic3r/GUI/GCodeViewer.cpp:3674 src/slic3r/GUI/GUI_Preview.cpp:1055
 msgid "Color changes"
 msgstr "Canvis de color"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3670 src/slic3r/GUI/GUI_Preview.cpp:1056
+#: src/slic3r/GUI/GCodeViewer.cpp:3675 src/slic3r/GUI/GUI_Preview.cpp:1056
 msgid "Print pauses"
 msgstr "Pauses d'impressió"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3671 src/slic3r/GUI/GUI_Preview.cpp:1057
+#: src/slic3r/GUI/GCodeViewer.cpp:3676 src/slic3r/GUI/GUI_Preview.cpp:1057
 msgid "Custom G-codes"
 msgstr "Codis G personalitzats"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3691 src/slic3r/GUI/GCodeViewer.cpp:3710
+#: src/slic3r/GUI/GCodeViewer.cpp:3696 src/slic3r/GUI/GCodeViewer.cpp:3715
 #: src/slic3r/GUI/GUI.cpp:341 src/slic3r/GUI/Plater.cpp:821
 #: src/libslic3r/PrintConfig.cpp:299
 msgid "Printer"
 msgstr "Impressora"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3693 src/slic3r/GUI/GCodeViewer.cpp:3715
+#: src/slic3r/GUI/GCodeViewer.cpp:3698 src/slic3r/GUI/GCodeViewer.cpp:3720
 #: src/slic3r/GUI/GUI.cpp:337 src/slic3r/GUI/Plater.cpp:817
 msgid "Print settings"
 msgstr "Configuració d'impressio"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3696 src/slic3r/GUI/GCodeViewer.cpp:3722
+#: src/slic3r/GUI/GCodeViewer.cpp:3701 src/slic3r/GUI/GCodeViewer.cpp:3727
 #: src/slic3r/GUI/GUI.cpp:339 src/slic3r/GUI/Plater.cpp:818
 #: src/slic3r/GUI/Tab.cpp:1962 src/slic3r/GUI/Tab.cpp:1963
 msgid "Filament"
 msgstr "Filament"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3735
+#: src/slic3r/GUI/GCodeViewer.cpp:3740
 msgid "Estimated printing times"
 msgstr "Temps estimats d'impressió"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3754
+#: src/slic3r/GUI/GCodeViewer.cpp:3759
 msgid "Normal mode"
 msgstr "Mode Normal"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3755
+#: src/slic3r/GUI/GCodeViewer.cpp:3760
 msgid "Stealth mode"
 msgstr "Mode Silenciós"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3762 src/libslic3r/PrintConfig.cpp:1166
+#: src/slic3r/GUI/GCodeViewer.cpp:3767 src/libslic3r/PrintConfig.cpp:1166
 #: src/libslic3r/PrintConfig.cpp:1184 src/libslic3r/PrintConfig.cpp:1194
 #: src/libslic3r/PrintConfig.cpp:1239
 msgid "First layer"
 msgstr "Primera capa"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3763
+#: src/slic3r/GUI/GCodeViewer.cpp:3768
 msgid "Total"
 msgstr "Total"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3792
+#: src/slic3r/GUI/GCodeViewer.cpp:3797
 msgid "Show stealth mode"
 msgstr "Mostrar mode silenciós"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3796
+#: src/slic3r/GUI/GCodeViewer.cpp:3801
 msgid "Show normal mode"
 msgstr "Mostrar mode normal"
 
@@ -2438,7 +2438,7 @@ msgid "Add..."
 msgstr "Afegir..."
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4489 src/slic3r/GUI/KBShortcutsDialog.cpp:96
-#: src/slic3r/GUI/Plater.cpp:5463 src/slic3r/GUI/Tab.cpp:4094
+#: src/slic3r/GUI/Plater.cpp:5463 src/slic3r/GUI/Tab.cpp:4106
 msgid "Delete all"
 msgstr "Eliminar tot"
 
@@ -3435,7 +3435,7 @@ msgstr "No importar"
 
 #: src/slic3r/GUI/GUI_App.cpp:982
 msgid "Continue and import newer configuration?"
-msgstr ""
+msgstr "Voleu continuar i instal·lar les actualitzacions de configuració?"
 
 #: src/slic3r/GUI/GUI_App.cpp:1043
 msgid ""
@@ -3462,7 +3462,7 @@ msgstr ""
 "%s\n"
 "Voleu continuar?"
 
-#: src/slic3r/GUI/GUI_App.cpp:1128 src/slic3r/GUI/GUI_App.cpp:3068
+#: src/slic3r/GUI/GUI_App.cpp:1128 src/slic3r/GUI/GUI_App.cpp:3070
 #: src/slic3r/GUI/Plater.cpp:1728 src/slic3r/GUI/UnsavedChangesDialog.cpp:888
 msgid "Remember my choice"
 msgstr "Recorda la meva elecció"
@@ -3524,14 +3524,14 @@ msgstr ""
 msgid "Leave \"%1%\" enabled"
 msgstr ""
 
-#: src/slic3r/GUI/GUI_App.cpp:1656
+#: src/slic3r/GUI/GUI_App.cpp:1657
 msgid ""
 "You have the following presets with saved options for \"Print Host upload\""
 msgstr ""
 "Teniu els paràmetres preestablerts següents amb opcions desades per a "
 "\"Pujada del host d'impressió\""
 
-#: src/slic3r/GUI/GUI_App.cpp:1660
+#: src/slic3r/GUI/GUI_App.cpp:1661
 msgid ""
 "But since this version of PrusaSlicer we don't show this information in "
 "Printer Settings anymore.\n"
@@ -3541,7 +3541,7 @@ msgstr ""
 "informació als paràmetres d'impressora.\n"
 "Els paràmetres es mostraran a la configuració d'impressora física."
 
-#: src/slic3r/GUI/GUI_App.cpp:1662
+#: src/slic3r/GUI/GUI_App.cpp:1663
 msgid ""
 "By default new Printer devices will be named as \"Printer N\" during its "
 "creation.\n"
@@ -3552,139 +3552,139 @@ msgstr ""
 "Nota: Aquest nom es pot canviar posteriorment als paràmetres d'impressora "
 "física"
 
-#: src/slic3r/GUI/GUI_App.cpp:1666 src/slic3r/GUI/PhysicalPrinterDialog.cpp:722
+#: src/slic3r/GUI/GUI_App.cpp:1667 src/slic3r/GUI/PhysicalPrinterDialog.cpp:722
 msgid "Information"
 msgstr "Informació"
 
-#: src/slic3r/GUI/GUI_App.cpp:1679 src/slic3r/GUI/GUI_App.cpp:1690
+#: src/slic3r/GUI/GUI_App.cpp:1680 src/slic3r/GUI/GUI_App.cpp:1691
 msgid "Recreating"
 msgstr "Recreant"
 
-#: src/slic3r/GUI/GUI_App.cpp:1693
+#: src/slic3r/GUI/GUI_App.cpp:1694
 msgid "Loading of current presets"
 msgstr "Carregant els paràmetres actuals"
 
-#: src/slic3r/GUI/GUI_App.cpp:1698
+#: src/slic3r/GUI/GUI_App.cpp:1699
 msgid "Loading of a mode view"
 msgstr "S'està carregant mode visualització"
 
-#: src/slic3r/GUI/GUI_App.cpp:1836
+#: src/slic3r/GUI/GUI_App.cpp:1837
 msgid "Choose one file (3MF/AMF):"
 msgstr "Trieu un fitxer (3MF/AMF):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1848
+#: src/slic3r/GUI/GUI_App.cpp:1849
 msgid "Choose one or more files (STL/OBJ/AMF/3MF/PRUSA):"
 msgstr "Trieu un o més fitxers (STL / OBJ / AMF / 3MF / PRUSA):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1860
+#: src/slic3r/GUI/GUI_App.cpp:1861
 msgid "Choose one file (GCODE/.GCO/.G/.ngc/NGC):"
 msgstr "Trieu un fitxer (GCODE/. GCO/. G/.ngc/NGC):"
 
-#: src/slic3r/GUI/GUI_App.cpp:1871
+#: src/slic3r/GUI/GUI_App.cpp:1872
 msgid "Changing of an application language"
 msgstr "Canvi d'idioma d'una aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:2010
+#: src/slic3r/GUI/GUI_App.cpp:2011
 msgid "Select the language"
 msgstr "Seleccioneu l'idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:2010
+#: src/slic3r/GUI/GUI_App.cpp:2011
 msgid "Language"
 msgstr "Idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:2159
+#: src/slic3r/GUI/GUI_App.cpp:2160
 msgid "modified"
 msgstr "modificat"
 
-#: src/slic3r/GUI/GUI_App.cpp:2213
+#: src/slic3r/GUI/GUI_App.cpp:2214
 #, c-format, boost-format
 msgid "Run %s"
 msgstr "Executar %s"
 
-#: src/slic3r/GUI/GUI_App.cpp:2217
+#: src/slic3r/GUI/GUI_App.cpp:2218
 msgid "&Configuration Snapshots"
 msgstr "Instantànies de &Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2217
+#: src/slic3r/GUI/GUI_App.cpp:2218
 msgid "Inspect / activate configuration snapshots"
 msgstr "Inspeccionar / activar instantànies de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2218
+#: src/slic3r/GUI/GUI_App.cpp:2219
 msgid "Take Configuration &Snapshot"
 msgstr "&Prendre una Instanània de Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2218
+#: src/slic3r/GUI/GUI_App.cpp:2219
 msgid "Capture a configuration snapshot"
 msgstr "Captura una instantània de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2219
+#: src/slic3r/GUI/GUI_App.cpp:2220
 msgid "Check for Configuration Updates"
 msgstr "Comprova si hi ha actualitzacions de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2219
+#: src/slic3r/GUI/GUI_App.cpp:2220
 msgid "Check for configuration updates"
 msgstr "Comprova si hi ha actualitzacions de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2226
+#: src/slic3r/GUI/GUI_App.cpp:2227
 msgid "&Preferences"
 msgstr "&Preferències"
 
-#: src/slic3r/GUI/GUI_App.cpp:2232
+#: src/slic3r/GUI/GUI_App.cpp:2233
 msgid "Application preferences"
 msgstr "Preferències de l'aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:2237 src/slic3r/GUI/wxExtensions.cpp:707
+#: src/slic3r/GUI/GUI_App.cpp:2238 src/slic3r/GUI/wxExtensions.cpp:708
 msgid "Simple"
 msgstr "Simple"
 
-#: src/slic3r/GUI/GUI_App.cpp:2237
+#: src/slic3r/GUI/GUI_App.cpp:2238
 msgid "Simple View Mode"
 msgstr "Mode de visualització simple"
 
-#: src/slic3r/GUI/GUI_App.cpp:2239 src/slic3r/GUI/wxExtensions.cpp:709
+#: src/slic3r/GUI/GUI_App.cpp:2240 src/slic3r/GUI/wxExtensions.cpp:710
 msgctxt "Mode"
 msgid "Advanced"
 msgstr "Mode Avançat"
 
-#: src/slic3r/GUI/GUI_App.cpp:2239
+#: src/slic3r/GUI/GUI_App.cpp:2240
 msgid "Advanced View Mode"
 msgstr "Mode de visualització avançada"
 
-#: src/slic3r/GUI/GUI_App.cpp:2240 src/slic3r/GUI/wxExtensions.cpp:710
+#: src/slic3r/GUI/GUI_App.cpp:2241 src/slic3r/GUI/wxExtensions.cpp:711
 msgid "Expert"
 msgstr "Expert"
 
-#: src/slic3r/GUI/GUI_App.cpp:2240
+#: src/slic3r/GUI/GUI_App.cpp:2241
 msgid "Expert View Mode"
 msgstr "Mode de visualització expert"
 
-#: src/slic3r/GUI/GUI_App.cpp:2245
+#: src/slic3r/GUI/GUI_App.cpp:2246
 msgid "Mode"
 msgstr "Mode"
 
-#: src/slic3r/GUI/GUI_App.cpp:2245
+#: src/slic3r/GUI/GUI_App.cpp:2246
 #, c-format, boost-format
 msgid "%s View Mode"
 msgstr "%s Tipus de vista"
 
-#: src/slic3r/GUI/GUI_App.cpp:2248
+#: src/slic3r/GUI/GUI_App.cpp:2249
 msgid "&Language"
 msgstr "&Idioma"
 
-#: src/slic3r/GUI/GUI_App.cpp:2251
+#: src/slic3r/GUI/GUI_App.cpp:2252
 msgid "Flash Printer &Firmware"
 msgstr "Grava el &firmware a la impressora"
 
-#: src/slic3r/GUI/GUI_App.cpp:2251
+#: src/slic3r/GUI/GUI_App.cpp:2252
 msgid "Upload a firmware image into an Arduino based printer"
 msgstr ""
 "Carregar una imatge de microprogramari a una impressora basada en Arduino"
 
-#: src/slic3r/GUI/GUI_App.cpp:2271
+#: src/slic3r/GUI/GUI_App.cpp:2272
 msgid "Taking a configuration snapshot"
 msgstr "Prenent una instantània de la configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2272
+#: src/slic3r/GUI/GUI_App.cpp:2273
 msgid ""
 "Some presets are modified and the unsaved changes will not be captured by "
 "the configuration snapshot."
@@ -3692,32 +3692,32 @@ msgstr ""
 "Alguns paràmetres estan modificats i els canvis no desats no seran capturats "
 "per la instantània de configuració."
 
-#: src/slic3r/GUI/GUI_App.cpp:2273
+#: src/slic3r/GUI/GUI_App.cpp:2274
 msgid "Snapshot name"
 msgstr "Nom de la instantània"
 
-#: src/slic3r/GUI/GUI_App.cpp:2289
+#: src/slic3r/GUI/GUI_App.cpp:2290
 msgid "Loading a configuration snapshot"
 msgstr "S'està carregant una instantània de configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2298
+#: src/slic3r/GUI/GUI_App.cpp:2299
 #, boost-format
 msgid "Continue to activate a configuration snapshot %1%?"
 msgstr "Continuar activant una instantània de configuració %1%?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2312
+#: src/slic3r/GUI/GUI_App.cpp:2313
 msgid "Failed to activate configuration snapshot."
 msgstr "No s'ha pogut activar la instantània de configuració."
 
-#: src/slic3r/GUI/GUI_App.cpp:2331
+#: src/slic3r/GUI/GUI_App.cpp:2332
 msgid "Restart application"
 msgstr "Reiniciar l'aplicació"
 
-#: src/slic3r/GUI/GUI_App.cpp:2365
+#: src/slic3r/GUI/GUI_App.cpp:2366
 msgid "Language selection"
 msgstr "Selecció d'idiomes"
 
-#: src/slic3r/GUI/GUI_App.cpp:2368
+#: src/slic3r/GUI/GUI_App.cpp:2369
 msgid ""
 "Switching the language will trigger application restart.\n"
 "You will lose content of the plater."
@@ -3725,88 +3725,88 @@ msgstr ""
 "Canviar l'idioma requereix reiniciar l'aplicació.\n"
 "Perdràs tot el contingut situat a la base."
 
-#: src/slic3r/GUI/GUI_App.cpp:2370 src/slic3r/GUI/Preferences.cpp:582
+#: src/slic3r/GUI/GUI_App.cpp:2371 src/slic3r/GUI/Preferences.cpp:582
 msgid "Do you want to proceed?"
 msgstr "Voleu continuar?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2397
+#: src/slic3r/GUI/GUI_App.cpp:2398
 msgid "&Configuration"
 msgstr "&Configuració"
 
-#: src/slic3r/GUI/GUI_App.cpp:2514 src/slic3r/GUI/GUI_App.cpp:2575
+#: src/slic3r/GUI/GUI_App.cpp:2515 src/slic3r/GUI/GUI_App.cpp:2576
 msgid "The preset modifications are successfully saved"
 msgid_plural "The presets modifications are successfully saved"
 msgstr[0] "Les modificacions del paràmetre s'han desat correctament"
 msgstr[1] "Les modificacions dels paràmetres s'han desat correctament"
 
-#: src/slic3r/GUI/GUI_App.cpp:2578
+#: src/slic3r/GUI/GUI_App.cpp:2579
 msgid "For new project all modifications will be reseted"
 msgstr "En cas d'un nou projecte, totes les modificacions es restabliran"
 
-#: src/slic3r/GUI/GUI_App.cpp:2616
+#: src/slic3r/GUI/GUI_App.cpp:2617
 msgid "Loading a new project while the current project is modified."
 msgstr ""
 "S'està carregant un projecte nou mentre es modifica el projecte actual."
 
-#: src/slic3r/GUI/GUI_App.cpp:2619
+#: src/slic3r/GUI/GUI_App.cpp:2620
 msgid "Project is loading"
 msgstr "El projecte s'està carregant"
 
-#: src/slic3r/GUI/GUI_App.cpp:2619
+#: src/slic3r/GUI/GUI_App.cpp:2620
 msgid "Opening new project while some presets are unsaved."
 msgstr "Obre un nou projecte mentre alguns paràmetres estan sense desar."
 
-#: src/slic3r/GUI/GUI_App.cpp:2638
+#: src/slic3r/GUI/GUI_App.cpp:2639
 msgid "The uploads are still ongoing"
 msgstr "Les pujades encara estan en curs"
 
-#: src/slic3r/GUI/GUI_App.cpp:2638
+#: src/slic3r/GUI/GUI_App.cpp:2639
 msgid "Stop them and continue anyway?"
 msgstr "Aturar-les i continuar igualment?"
 
-#: src/slic3r/GUI/GUI_App.cpp:2642
+#: src/slic3r/GUI/GUI_App.cpp:2643
 msgid "Ongoing uploads"
 msgstr "Càrregues en curs"
 
-#: src/slic3r/GUI/GUI_App.cpp:2848
+#: src/slic3r/GUI/GUI_App.cpp:2849
 msgid "It's impossible to print multi-part object(s) with SLA technology."
 msgstr "És impossible imprimir objectes de diverses peces amb tecnologia SLA."
 
-#: src/slic3r/GUI/GUI_App.cpp:2849 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224
+#: src/slic3r/GUI/GUI_App.cpp:2850 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224
 #: src/slic3r/GUI/Plater.cpp:2427
 msgid "Please check your object list before preset changing."
 msgstr ""
 "Comproveu la llista d'objectes abans de canviar els paràmetres inicials."
 
-#: src/slic3r/GUI/GUI_App.cpp:2873
+#: src/slic3r/GUI/GUI_App.cpp:2874
 msgid "Configuration is editing from ConfigWizard"
 msgstr "La configuració s'edita des de ConfigWizard"
 
-#: src/slic3r/GUI/GUI_App.cpp:2898
+#: src/slic3r/GUI/GUI_App.cpp:2899
 msgid "Select a gcode file:"
 msgstr "Seleccioneu un fitxer gcode:"
 
-#: src/slic3r/GUI/GUI_App.cpp:3067 src/slic3r/GUI/GUI_App.cpp:3090
+#: src/slic3r/GUI/GUI_App.cpp:3069 src/slic3r/GUI/GUI_App.cpp:3092
 msgid "Open hyperlink in default browser?"
 msgstr "Obrir l'hiperenllaç al navegador per defecte?"
 
-#: src/slic3r/GUI/GUI_App.cpp:3067 src/slic3r/GUI/GUI_App.cpp:3090
+#: src/slic3r/GUI/GUI_App.cpp:3069 src/slic3r/GUI/GUI_App.cpp:3092
 msgid "PrusaSlicer: Open hyperlink"
 msgstr "PrusaSlicer: Obrir hipervincle"
 
-#: src/slic3r/GUI/GUI_App.cpp:3072 src/slic3r/GUI/Preferences.cpp:382
+#: src/slic3r/GUI/GUI_App.cpp:3074 src/slic3r/GUI/Preferences.cpp:382
 msgid "Suppress to open hyperlink in browser"
 msgstr "Suprimir per obrir hiperenllaç al navegador"
 
-#: src/slic3r/GUI/GUI_App.cpp:3074 src/slic3r/GUI/Plater.cpp:1734
+#: src/slic3r/GUI/GUI_App.cpp:3076 src/slic3r/GUI/Plater.cpp:1734
 msgid "PrusaSlicer will remember your choice."
 msgstr "PrusaSlicer recordarà la vostra elecció."
 
-#: src/slic3r/GUI/GUI_App.cpp:3075
+#: src/slic3r/GUI/GUI_App.cpp:3077
 msgid "You will not be asked about it again on hyperlinks hovering."
 msgstr ""
 
-#: src/slic3r/GUI/GUI_App.cpp:3076 src/slic3r/GUI/Plater.cpp:1738
+#: src/slic3r/GUI/GUI_App.cpp:3078 src/slic3r/GUI/Plater.cpp:1738
 #, boost-format
 msgid ""
 "Visit \"Preferences\" and check \"%1%\"\n"
@@ -3815,7 +3815,7 @@ msgstr ""
 "Visiteu \"Preferències\" i comproveu \"%1%\"\n"
 "per canviar la teva elecció."
 
-#: src/slic3r/GUI/GUI_App.cpp:3078 src/slic3r/GUI/Plater.cpp:1740
+#: src/slic3r/GUI/GUI_App.cpp:3080 src/slic3r/GUI/Plater.cpp:1740
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:905
 msgid "PrusaSlicer: Don't ask me again"
 msgstr "PrusaSlicer: No em tornis a preguntar"
@@ -3922,7 +3922,7 @@ msgstr "Faldilla i bassa"
 #: src/slic3r/GUI/GUI_Factories.cpp:138 src/slic3r/GUI/Tab.cpp:1495
 #: src/slic3r/GUI/Tab.cpp:1528 src/slic3r/GUI/Tab.cpp:1645
 #: src/slic3r/GUI/Tab.cpp:1649 src/slic3r/GUI/Tab.cpp:2023
-#: src/slic3r/GUI/Tab.cpp:2393 src/slic3r/GUI/Tab.cpp:4661
+#: src/slic3r/GUI/Tab.cpp:2393 src/slic3r/GUI/Tab.cpp:4673
 #: src/libslic3r/PrintConfig.cpp:247 src/libslic3r/PrintConfig.cpp:472
 #: src/libslic3r/PrintConfig.cpp:1396 src/libslic3r/PrintConfig.cpp:1483
 #: src/libslic3r/PrintConfig.cpp:1530 src/libslic3r/PrintConfig.cpp:2480
@@ -3932,7 +3932,7 @@ msgid "Advanced"
 msgstr "Avançat"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:140 src/slic3r/GUI/Plater.cpp:428
-#: src/slic3r/GUI/Tab.cpp:4595 src/slic3r/GUI/Tab.cpp:4596
+#: src/slic3r/GUI/Tab.cpp:4607 src/slic3r/GUI/Tab.cpp:4608
 #: src/libslic3r/PrintConfig.cpp:3418 src/libslic3r/PrintConfig.cpp:3425
 #: src/libslic3r/PrintConfig.cpp:3434 src/libslic3r/PrintConfig.cpp:3443
 #: src/libslic3r/PrintConfig.cpp:3453 src/libslic3r/PrintConfig.cpp:3463
@@ -3946,8 +3946,8 @@ msgid "Supports"
 msgstr "Suports"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:141 src/slic3r/GUI/Plater.cpp:574
-#: src/slic3r/GUI/Tab.cpp:4636 src/slic3r/GUI/Tab.cpp:4637
-#: src/slic3r/GUI/Tab.cpp:4709 src/libslic3r/PrintConfig.cpp:3606
+#: src/slic3r/GUI/Tab.cpp:4648 src/slic3r/GUI/Tab.cpp:4649
+#: src/slic3r/GUI/Tab.cpp:4721 src/libslic3r/PrintConfig.cpp:3606
 #: src/libslic3r/PrintConfig.cpp:3613 src/libslic3r/PrintConfig.cpp:3627
 #: src/libslic3r/PrintConfig.cpp:3638 src/libslic3r/PrintConfig.cpp:3648
 #: src/libslic3r/PrintConfig.cpp:3670 src/libslic3r/PrintConfig.cpp:3681
@@ -3957,8 +3957,8 @@ msgstr "Suports"
 msgid "Pad"
 msgstr "Pad"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4654
-#: src/slic3r/GUI/Tab.cpp:4655 src/libslic3r/SLA/Hollowing.cpp:72
+#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4666
+#: src/slic3r/GUI/Tab.cpp:4667 src/libslic3r/SLA/Hollowing.cpp:72
 #: src/libslic3r/SLA/Hollowing.cpp:84 src/libslic3r/SLA/Hollowing.cpp:91
 #: src/libslic3r/SLA/Hollowing.cpp:100 src/libslic3r/PrintConfig.cpp:3734
 #: src/libslic3r/PrintConfig.cpp:3741 src/libslic3r/PrintConfig.cpp:3751
@@ -6316,7 +6316,7 @@ msgstr "Desa el fitxer zip com a:"
 
 #: src/slic3r/GUI/MainFrame.cpp:1682 src/slic3r/GUI/Plater.cpp:3295
 #: src/slic3r/GUI/Plater.cpp:6011 src/slic3r/GUI/Tab.cpp:1666
-#: src/slic3r/GUI/Tab.cpp:4662
+#: src/slic3r/GUI/Tab.cpp:4674
 msgid "Slicing"
 msgstr "Laminant"
 
@@ -6610,8 +6610,8 @@ msgstr "Instàncies"
 msgid "Instance %d"
 msgstr "Instància %d"
 
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4500
-#: src/slic3r/GUI/Tab.cpp:4591
+#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4512
+#: src/slic3r/GUI/Tab.cpp:4603
 msgid "Layers"
 msgstr "Capes"
 
@@ -8709,7 +8709,7 @@ msgstr "nom complet del perfil"
 msgid "symbolic profile name"
 msgstr "nom simbòlic del perfil"
 
-#: src/slic3r/GUI/Tab.cpp:1451 src/slic3r/GUI/Tab.cpp:4589
+#: src/slic3r/GUI/Tab.cpp:1451 src/slic3r/GUI/Tab.cpp:4601
 msgid "Layers and perimeters"
 msgstr "Capes i Perímetres"
 
@@ -8797,7 +8797,7 @@ msgstr "Fluxe"
 msgid "Other"
 msgstr "Altre"
 
-#: src/slic3r/GUI/Tab.cpp:1677 src/slic3r/GUI/Tab.cpp:4666
+#: src/slic3r/GUI/Tab.cpp:1677 src/slic3r/GUI/Tab.cpp:4678
 msgid "Output options"
 msgstr "Opcions de sortida"
 
@@ -8809,7 +8809,7 @@ msgstr "Impressió seqüencial"
 msgid "Extruder clearance"
 msgstr "Separació de l'extrusor"
 
-#: src/slic3r/GUI/Tab.cpp:1685 src/slic3r/GUI/Tab.cpp:4667
+#: src/slic3r/GUI/Tab.cpp:1685 src/slic3r/GUI/Tab.cpp:4679
 msgid "Output file"
 msgstr "Fitxer de sortida"
 
@@ -8821,19 +8821,19 @@ msgstr "Scripts de postprocessament"
 #: src/slic3r/GUI/Tab.cpp:2102 src/slic3r/GUI/Tab.cpp:2103
 #: src/slic3r/GUI/Tab.cpp:2489 src/slic3r/GUI/Tab.cpp:2490
 #: src/slic3r/GUI/Tab.cpp:2561 src/slic3r/GUI/Tab.cpp:2562
-#: src/slic3r/GUI/Tab.cpp:4517 src/slic3r/GUI/Tab.cpp:4518
+#: src/slic3r/GUI/Tab.cpp:4529 src/slic3r/GUI/Tab.cpp:4530
 msgid "Notes"
 msgstr "Notes"
 
 #: src/slic3r/GUI/Tab.cpp:1723 src/slic3r/GUI/Tab.cpp:2110
 #: src/slic3r/GUI/Tab.cpp:2496 src/slic3r/GUI/Tab.cpp:2568
-#: src/slic3r/GUI/Tab.cpp:4525 src/slic3r/GUI/Tab.cpp:4672
+#: src/slic3r/GUI/Tab.cpp:4537 src/slic3r/GUI/Tab.cpp:4684
 msgid "Dependencies"
 msgstr "Dependències"
 
 #: src/slic3r/GUI/Tab.cpp:1724 src/slic3r/GUI/Tab.cpp:2111
 #: src/slic3r/GUI/Tab.cpp:2497 src/slic3r/GUI/Tab.cpp:2569
-#: src/slic3r/GUI/Tab.cpp:4526 src/slic3r/GUI/Tab.cpp:4673
+#: src/slic3r/GUI/Tab.cpp:4538 src/slic3r/GUI/Tab.cpp:4685
 msgid "Profile dependencies"
 msgstr "Dependències del perfil"
 
@@ -8917,7 +8917,7 @@ msgid "Ramming settings"
 msgstr "Configuració d'empenyiment"
 
 #: src/slic3r/GUI/Tab.cpp:2081 src/slic3r/GUI/Tab.cpp:2401
-#: src/slic3r/GUI/Tab.cpp:4196 src/libslic3r/GCode.cpp:733
+#: src/slic3r/GUI/Tab.cpp:4208 src/libslic3r/GCode.cpp:733
 #: src/libslic3r/PrintConfig.cpp:2450
 msgid "Custom G-code"
 msgstr "Codi G personalitzat"
@@ -9034,11 +9034,11 @@ msgstr "Inclinació"
 msgid "Tilt time"
 msgstr "Temps d'inclinació"
 
-#: src/slic3r/GUI/Tab.cpp:2538 src/slic3r/GUI/Tab.cpp:4507
+#: src/slic3r/GUI/Tab.cpp:2538 src/slic3r/GUI/Tab.cpp:4519
 msgid "Corrections"
 msgstr "Correccions"
 
-#: src/slic3r/GUI/Tab.cpp:2551 src/slic3r/GUI/Tab.cpp:4503
+#: src/slic3r/GUI/Tab.cpp:2551 src/slic3r/GUI/Tab.cpp:4515
 msgid "Exposure"
 msgstr "Exposició"
 
@@ -9217,11 +9217,11 @@ msgstr "Segur que desitges %1% el predefinit seleccionat?"
 msgid "%1% Preset"
 msgstr "%1% Predefinit"
 
-#: src/slic3r/GUI/Tab.cpp:3819 src/slic3r/GUI/Tab.cpp:4130
+#: src/slic3r/GUI/Tab.cpp:3819 src/slic3r/GUI/Tab.cpp:4142
 msgid "Set"
 msgstr "Ajust"
 
-#: ../src/common/stockitem.cpp:158 ../src/html/helpwnd.cpp:490
+#: src/slic3r/GUI/Tab.cpp:3906
 msgid "Find"
 msgstr "Cerca"
 
@@ -9229,14 +9229,30 @@ msgstr "Cerca"
 msgid "Replace with"
 msgstr ""
 
-#: src/slic3r/GUI/Tab.cpp:4224
+#: src/slic3r/GUI/Tab.cpp:3992
+msgid "Regular expression"
+msgstr ""
+
+#: src/slic3r/GUI/Tab.cpp:3996
+msgid "Case insensitive"
+msgstr ""
+
+#: src/slic3r/GUI/Tab.cpp:4000
+msgid "Whole word"
+msgstr "Paraula sencera"
+
+#: src/slic3r/GUI/Tab.cpp:4004
+msgid "Match single line"
+msgstr ""
+
+#: src/slic3r/GUI/Tab.cpp:4236
 msgid ""
 "Machine limits will be emitted to G-code and used to estimate print time."
 msgstr ""
 "Els límits de la màquina s'incorporaran al codi G i es faran servir per "
 "calcular el temps d'impressió."
 
-#: src/slic3r/GUI/Tab.cpp:4227
+#: src/slic3r/GUI/Tab.cpp:4239
 msgid ""
 "Machine limits will NOT be emitted to G-code, however they will be used to "
 "estimate print time, which may therefore not be accurate as the printer may "
@@ -9246,7 +9262,7 @@ msgstr ""
 "estimar el temps d'impressió, que per tant pot no ser exacte ja que la "
 "impressora pot aplicar un conjunt diferent de límits de la màquina."
 
-#: src/slic3r/GUI/Tab.cpp:4231
+#: src/slic3r/GUI/Tab.cpp:4243
 msgid ""
 "Machine limits are not set, therefore the print time estimate may not be "
 "accurate."
@@ -9254,12 +9270,12 @@ msgstr ""
 "Els límits de la màquina no estan establerts, per tant, el temps d'impressió "
 "estimat pot no ser exacte."
 
-#: src/slic3r/GUI/Tab.cpp:4253
+#: src/slic3r/GUI/Tab.cpp:4265
 msgid "LOCKED LOCK"
 msgstr "PANY BLOQUEJAT"
 
 #. TRN Description for "LOCKED LOCK"
-#: src/slic3r/GUI/Tab.cpp:4255
+#: src/slic3r/GUI/Tab.cpp:4267
 msgid ""
 "indicates that the settings are the same as the system (or default) values "
 "for the current option group"
@@ -9267,12 +9283,12 @@ msgstr ""
 "indica que els paràmetres són els mateixos que els valors del sistema (o per "
 "defecte) per al grup d'opcions actual"
 
-#: src/slic3r/GUI/Tab.cpp:4257
+#: src/slic3r/GUI/Tab.cpp:4269
 msgid "UNLOCKED LOCK"
 msgstr "PANY DESBLOQUEJAT"
 
 #. TRN Description for "UNLOCKED LOCK"
-#: src/slic3r/GUI/Tab.cpp:4259
+#: src/slic3r/GUI/Tab.cpp:4271
 msgid ""
 "indicates that some settings were changed and are not equal to the system "
 "(or default) values for the current option group.\n"
@@ -9284,12 +9300,12 @@ msgstr ""
 "Feu clic a la icona PANY DESBLOQUEJAT per restablir tots els paràmetres del "
 "grup d'opcions actuals als valors del sistema (o per defecte)."
 
-#: src/slic3r/GUI/Tab.cpp:4264
+#: src/slic3r/GUI/Tab.cpp:4276
 msgid "WHITE BULLET"
 msgstr "VINYETA BLANCA"
 
 #. TRN Description for "WHITE BULLET"
-#: src/slic3r/GUI/Tab.cpp:4266
+#: src/slic3r/GUI/Tab.cpp:4278
 msgid ""
 "for the left button: indicates a non-system (or non-default) preset,\n"
 "for the right button: indicates that the settings hasn't been modified."
@@ -9298,12 +9314,12 @@ msgstr ""
 "predeterminat),\n"
 "per al botó dret: indica que la configuració no s'ha modificat."
 
-#: src/slic3r/GUI/Tab.cpp:4269
+#: src/slic3r/GUI/Tab.cpp:4281
 msgid "BACK ARROW"
 msgstr "FLETXA ENRERE"
 
 #. TRN Description for "BACK ARROW"
-#: src/slic3r/GUI/Tab.cpp:4271
+#: src/slic3r/GUI/Tab.cpp:4283
 msgid ""
 "indicates that the settings were changed and are not equal to the last saved "
 "preset for the current option group.\n"
@@ -9315,7 +9331,7 @@ msgstr ""
 "Feu clic al símbol FLETXA ENRERE per resetejar tots els paràmetres del grup "
 "d'opcions actuals als gravats anteriorment."
 
-#: src/slic3r/GUI/Tab.cpp:4281
+#: src/slic3r/GUI/Tab.cpp:4293
 msgid ""
 "LOCKED LOCK icon indicates that the settings are the same as the system (or "
 "default) values for the current option group"
@@ -9323,7 +9339,7 @@ msgstr ""
 "La icona de PANY BLOQUEJAT indica que els paràmetres són els mateixos que "
 "els valors del sistema (per defecte) per al grup d'opcions actual"
 
-#: src/slic3r/GUI/Tab.cpp:4283
+#: src/slic3r/GUI/Tab.cpp:4295
 msgid ""
 "UNLOCKED LOCK icon indicates that some settings were changed and are not "
 "equal to the system (or default) values for the current option group.\n"
@@ -9336,13 +9352,13 @@ msgstr ""
 "Feu clic per restablir totes les configuracions per al grup d'opcions "
 "actuals als valors del sistema (o per defecte)."
 
-#: src/slic3r/GUI/Tab.cpp:4286
+#: src/slic3r/GUI/Tab.cpp:4298
 msgid "WHITE BULLET icon indicates a non system (or non default) preset."
 msgstr ""
 "La icona de VINYETA BLANCA indica un predifinit no del sistema (o no per "
 "defecte)"
 
-#: src/slic3r/GUI/Tab.cpp:4289
+#: src/slic3r/GUI/Tab.cpp:4301
 msgid ""
 "WHITE BULLET icon indicates that the settings are the same as in the last "
 "saved preset for the current option group."
@@ -9351,7 +9367,7 @@ msgstr ""
 "els de la darrera vegada que heu salvat els paràmetres per al grup d'opcions "
 "actual."
 
-#: src/slic3r/GUI/Tab.cpp:4291
+#: src/slic3r/GUI/Tab.cpp:4303
 msgid ""
 "BACK ARROW icon indicates that the settings were changed and are not equal "
 "to the last saved preset for the current option group.\n"
@@ -9362,7 +9378,7 @@ msgstr ""
 "són iguals als que es van desar per al grup d'opcions actual.\n"
 "Feu clic per tornar aquests valors als darrers desats."
 
-#: src/slic3r/GUI/Tab.cpp:4297
+#: src/slic3r/GUI/Tab.cpp:4309
 msgid ""
 "LOCKED LOCK icon indicates that the value is the same as the system (or "
 "default) value."
@@ -9370,7 +9386,7 @@ msgstr ""
 "La icona de PANY BLOQUEJAT indica que el valor és el mateix que el del "
 "sistema (per defecte)"
 
-#: src/slic3r/GUI/Tab.cpp:4298
+#: src/slic3r/GUI/Tab.cpp:4310
 msgid ""
 "UNLOCKED LOCK icon indicates that the value was changed and is not equal to "
 "the system (or default) value.\n"
@@ -9380,7 +9396,7 @@ msgstr ""
 "configuracions i no són iguals als valors del sistema (o predeterminats).\n"
 "Feu clic per reiniciar el valor actual als del sistema (o predeterminats)"
 
-#: src/slic3r/GUI/Tab.cpp:4304
+#: src/slic3r/GUI/Tab.cpp:4316
 msgid ""
 "WHITE BULLET icon indicates that the value is the same as in the last saved "
 "preset."
@@ -9388,7 +9404,7 @@ msgstr ""
 "El símbol de VINYETA BLANCA indica que els valors són els mateixos que els "
 "dels paràmetres desats la darrera vegada."
 
-#: src/slic3r/GUI/Tab.cpp:4305
+#: src/slic3r/GUI/Tab.cpp:4317
 msgid ""
 "BACK ARROW icon indicates that the value was changed and is not equal to the "
 "last saved preset.\n"
@@ -9398,31 +9414,31 @@ msgstr ""
 "desat la darrera vegada.\n"
 "Feu clic per restaurar el valor al darrer paràmetre desat."
 
-#: src/slic3r/GUI/Tab.cpp:4459 src/slic3r/GUI/Tab.cpp:4461
+#: src/slic3r/GUI/Tab.cpp:4471 src/slic3r/GUI/Tab.cpp:4473
 msgid "Material"
 msgstr "Material"
 
-#: src/slic3r/GUI/Tab.cpp:4546 src/slic3r/GUI/Tab.cpp:4547
+#: src/slic3r/GUI/Tab.cpp:4558 src/slic3r/GUI/Tab.cpp:4559
 msgid "Material printing profile"
 msgstr "Perfil d'impressió de material"
 
-#: src/slic3r/GUI/Tab.cpp:4599
+#: src/slic3r/GUI/Tab.cpp:4611
 msgid "Support head"
 msgstr "Cap del suport"
 
-#: src/slic3r/GUI/Tab.cpp:4604
+#: src/slic3r/GUI/Tab.cpp:4616
 msgid "Support pillar"
 msgstr "Pilar de suport"
 
-#: src/slic3r/GUI/Tab.cpp:4627
+#: src/slic3r/GUI/Tab.cpp:4639
 msgid "Connection of the support sticks and junctions"
 msgstr "Connexió de les varetes de suport i unions"
 
-#: src/slic3r/GUI/Tab.cpp:4632
+#: src/slic3r/GUI/Tab.cpp:4644
 msgid "Automatic generation"
 msgstr "Generació automàtica"
 
-#: src/slic3r/GUI/Tab.cpp:4707
+#: src/slic3r/GUI/Tab.cpp:4719
 #, boost-format
 msgid ""
 "\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
@@ -9431,11 +9447,11 @@ msgstr ""
 "\"%1%\" està desactivat perquè \"%2%\" és a la categoria \"%3%\".\n"
 "Per activar \"%1%\", si us plau desactiva \"%2%\""
 
-#: src/slic3r/GUI/Tab.cpp:4709 src/libslic3r/PrintConfig.cpp:3578
+#: src/slic3r/GUI/Tab.cpp:4721 src/libslic3r/PrintConfig.cpp:3578
 msgid "Object elevation"
 msgstr "Elevació de l'objecte"
 
-#: src/slic3r/GUI/Tab.cpp:4709 src/libslic3r/PrintConfig.cpp:3680
+#: src/slic3r/GUI/Tab.cpp:4721 src/libslic3r/PrintConfig.cpp:3680
 msgid "Pad around object"
 msgstr "Pad al voltant de l'objecte"
 
@@ -9946,12 +9962,12 @@ msgstr "Mostra els paràmetres simplificats"
 msgid "Show advanced settings"
 msgstr "Mostra ajustaments avançats"
 
-#: src/slic3r/GUI/wxExtensions.cpp:643
+#: src/slic3r/GUI/wxExtensions.cpp:644
 #, c-format, boost-format
 msgid "Switch to the %s mode"
 msgstr "Canvia al mode %s"
 
-#: src/slic3r/GUI/wxExtensions.cpp:644
+#: src/slic3r/GUI/wxExtensions.cpp:645
 #, c-format, boost-format
 msgid "Current mode is %s"
 msgstr "El mode actual és %s"
@@ -10499,26 +10515,26 @@ msgstr "ha fallat la validació"
 msgid "write calledback failed"
 msgstr "ha fallat write calledback"
 
-#: src/libslic3r/Print.cpp:447
+#: src/libslic3r/Print.cpp:449
 msgid "All objects are outside of the print volume."
 msgstr "Tots els objectes són fora del volum d'impressió."
 
-#: src/libslic3r/Print.cpp:450
+#: src/libslic3r/Print.cpp:452
 msgid "The supplied settings will cause an empty print."
 msgstr "La configuració subministrada provocarà una impressió buida."
 
-#: src/libslic3r/Print.cpp:454
+#: src/libslic3r/Print.cpp:456
 msgid "Some objects are too close; your extruder will collide with them."
 msgstr "Alguns objectes estan massa a prop; L'extrusor xocarà amb ells."
 
-#: src/libslic3r/Print.cpp:456
+#: src/libslic3r/Print.cpp:458
 msgid ""
 "Some objects are too tall and cannot be printed without extruder collisions."
 msgstr ""
 "Alguns objectes són massa alts i no es poden imprimir sense col·lisions "
 "d'extrusora."
 
-#: src/libslic3r/Print.cpp:465
+#: src/libslic3r/Print.cpp:467
 msgid ""
 "Only a single object may be printed at a time in Spiral Vase mode. Either "
 "remove all but the last object, or enable sequential mode by "
@@ -10528,7 +10544,7 @@ msgstr ""
 "tots menys l'últim objecte o habiliteu el mode seqüencial per "
 "\"complete_objects\"."
 
-#: src/libslic3r/Print.cpp:469
+#: src/libslic3r/Print.cpp:471
 msgid ""
 "The Spiral Vase option can only be used when printing single material "
 "objects."
@@ -10536,7 +10552,7 @@ msgstr ""
 "L'opció gaso en espiral sols pot ser usada per imprimir objectes d'un sol "
 "material."
 
-#: src/libslic3r/Print.cpp:482
+#: src/libslic3r/Print.cpp:484
 msgid ""
 "The wipe tower is only supported if all extruders have the same nozzle "
 "diameter and use filaments of the same diameter."
@@ -10544,7 +10560,7 @@ msgstr ""
 "La torre de neteja només és compatible si tots els extrusors tenen el mateix "
 "diàmetre de nozzle i usen filament del mateix diàmetre."
 
-#: src/libslic3r/Print.cpp:488
+#: src/libslic3r/Print.cpp:490
 msgid ""
 "The Wipe Tower is currently only supported for the Marlin, RepRap/Sprinter, "
 "RepRapFirmware and Repetier G-code flavors."
@@ -10552,7 +10568,7 @@ msgstr ""
 "La Torre de Neteja només és compatible amb les variants de codi G usades per "
 "Marlin, RepRap/Sprinter, RepRapFirmware i Repetier."
 
-#: src/libslic3r/Print.cpp:490
+#: src/libslic3r/Print.cpp:492
 msgid ""
 "The Wipe Tower is currently only supported with the relative extruder "
 "addressing (use_relative_e_distances=1)."
@@ -10560,20 +10576,20 @@ msgstr ""
 "Actualment,Torre de Neteja només és compatible amb l'encaminament relatiu de "
 "l'extrusor (use_relative_e_distances=1)."
 
-#: src/libslic3r/Print.cpp:492
+#: src/libslic3r/Print.cpp:494
 msgid "Ooze prevention is currently not supported with the wipe tower enabled."
 msgstr ""
 "La prevenció de degoteig actualment no és compatible amb la torre de neteja "
 "activa."
 
-#: src/libslic3r/Print.cpp:494
+#: src/libslic3r/Print.cpp:496
 msgid ""
 "The Wipe Tower currently does not support volumetric E (use_volumetric_e=0)."
 msgstr ""
 "La Torre de Neteja actualment no és compatible amb E volumètric "
 "(use_volumetric_e=0)."
 
-#: src/libslic3r/Print.cpp:496
+#: src/libslic3r/Print.cpp:498
 msgid ""
 "The Wipe Tower is currently not supported for multimaterial sequential "
 "prints."
@@ -10581,7 +10597,7 @@ msgstr ""
 "La Torre de Neteja no es permet ara per a impressions seqüencials "
 "multimaterial."
 
-#: src/libslic3r/Print.cpp:517
+#: src/libslic3r/Print.cpp:519
 msgid ""
 "The Wipe Tower is only supported for multiple objects if they have equal "
 "layer heights"
@@ -10589,7 +10605,7 @@ msgstr ""
 "La torre de neteja només és compatible amb diversos objectes si tenen "
 "alçades de capes iguals"
 
-#: src/libslic3r/Print.cpp:519
+#: src/libslic3r/Print.cpp:521
 msgid ""
 "The Wipe Tower is only supported for multiple objects if they are printed "
 "over an equal number of raft layers"
@@ -10597,7 +10613,7 @@ msgstr ""
 "La torre de neteja només es permet per a diversos objectes si s'imprimeixen "
 "sobre un nombre igual de capes de bassa"
 
-#: src/libslic3r/Print.cpp:522
+#: src/libslic3r/Print.cpp:524
 msgid ""
 "The Wipe Tower is only supported for multiple objects if they are printed "
 "with the same support_material_contact_distance"
@@ -10605,7 +10621,7 @@ msgstr ""
 "La torre de neteja només és compatible amb diversos objectes si "
 "s'imprimeixen amb la mateixa support_material_contact_distance"
 
-#: src/libslic3r/Print.cpp:524
+#: src/libslic3r/Print.cpp:526
 msgid ""
 "The Wipe Tower is only supported for multiple objects if they are sliced "
 "equally."
@@ -10613,7 +10629,7 @@ msgstr ""
 "La torre de neteja només és compatible amb diversos objectes si es tallen "
 "igual."
 
-#: src/libslic3r/Print.cpp:537
+#: src/libslic3r/Print.cpp:539
 msgid ""
 "The Wipe tower is only supported if all objects have the same variable layer "
 "height"
@@ -10621,23 +10637,23 @@ msgstr ""
 "La Torre de Neteja només és compatible si tots els objectes tenen la mateixa "
 "alçada de capa variable"
 
-#: src/libslic3r/Print.cpp:559
+#: src/libslic3r/Print.cpp:561
 msgid ""
 "One or more object were assigned an extruder that the printer does not have."
 msgstr "Un o més objectes han estat assignats a un extrusor inexistent."
 
-#: src/libslic3r/Print.cpp:572
+#: src/libslic3r/Print.cpp:574
 #, boost-format
 msgid "%1%=%2% mm is too low to be printable at a layer height %3% mm"
 msgstr "%1%=%2% mm és massa baix per ser imprès a una alçada de capa de %3% mm"
 
-#: src/libslic3r/Print.cpp:575
+#: src/libslic3r/Print.cpp:577
 #, boost-format
 msgid "Excessive %1%=%2% mm to be printable with a nozzle diameter %3% mm"
 msgstr ""
 "%1%=%2% mm excessius per ser imprimible amb un nozzle de diàmetre de %3% mm"
 
-#: src/libslic3r/Print.cpp:586
+#: src/libslic3r/Print.cpp:588
 msgid ""
 "Printing with multiple extruders of differing nozzle diameters. If support "
 "is to be printed with the current extruder (support_material_extruder == 0 "
@@ -10649,7 +10665,7 @@ msgstr ""
 "o support_material_interface_extruder == 0), tots els nozzles han de ser del "
 "mateix diàmetre."
 
-#: src/libslic3r/Print.cpp:594
+#: src/libslic3r/Print.cpp:596
 msgid ""
 "For the Wipe Tower to work with the soluble supports, the support layers "
 "need to be synchronized with the object layers."
@@ -10657,7 +10673,7 @@ msgstr ""
 "Perquè la torre de neteja funcioni amb suports solubles, les capes de "
 "suports necessiten estar sincronitzades amb les capes de l'objecte."
 
-#: src/libslic3r/Print.cpp:598
+#: src/libslic3r/Print.cpp:600
 msgid ""
 "The Wipe Tower currently supports the non-soluble supports only if they are "
 "printed with the current extruder without triggering a tool change. (both "
@@ -10669,28 +10685,28 @@ msgstr ""
 "support_material_extruder com support_material_interface_extruder s'han de "
 "configurar a 0)."
 
-#: src/libslic3r/Print.cpp:634
+#: src/libslic3r/Print.cpp:636
 msgid "First layer height can't be greater than nozzle diameter"
 msgstr ""
 "L'alçada de primera capa no pot ser més gran que el diàmetre del nozzle"
 
-#: src/libslic3r/Print.cpp:639
+#: src/libslic3r/Print.cpp:641
 msgid "Layer height can't be greater than nozzle diameter"
 msgstr "L'alçada de la capa no pot ser més gran que diàmetre del nozzle"
 
-#: src/libslic3r/Print.cpp:793
+#: src/libslic3r/Print.cpp:795
 msgid "Infilling layers"
 msgstr "Omplint capes"
 
-#: src/libslic3r/Print.cpp:815
+#: src/libslic3r/Print.cpp:817
 msgid "Generating skirt and brim"
 msgstr "Generant faldilla i bassa"
 
-#: src/libslic3r/Print.cpp:863
+#: src/libslic3r/Print.cpp:865
 msgid "Exporting G-code"
 msgstr "S'està exportant el codi G"
 
-#: src/libslic3r/Print.cpp:867
+#: src/libslic3r/Print.cpp:869
 msgid "Generating G-code"
 msgstr "S'està generant el codi G"
 
@@ -23222,10 +23238,6 @@ msgstr "Si el tipus de lletra està subratllada."
 msgid "White"
 msgstr "Blanc"
 
-#: ../src/generic/fdrepdlg.cpp:144
-msgid "Whole word"
-msgstr "Paraula sencera"
-
 #: ../src/html/helpwnd.cpp:534
 msgid "Whole words only"
 msgstr "Només paraules senceres"
@@ -24325,958 +24337,3 @@ msgstr "s'ha produït un error de zlib %d"
 #: ../src/richtext/richtextbulletspage.cpp:288
 msgid "~"
 msgstr "~"
-
-#~ msgid "You will not be asked about it again on label hovering."
-#~ msgstr ""
-#~ "No se us tornarà a preguntar al respecte quan passis per sobre de "
-#~ "l'etiqueta."
-
-#~ msgid ""
-#~ "Ask to save unsaved changes when closing the application or when loading "
-#~ "a new project"
-#~ msgstr ""
-#~ "Demanar que es guardin els canvis no desats en tancar l'aplicació o en "
-#~ "carregar un nou projecte"
-
-#~ msgid ""
-#~ "Always ask for unsaved changes, when: \n"
-#~ "- Closing PrusaSlicer while some presets are modified,\n"
-#~ "- Loading a new project while some presets are modified"
-#~ msgstr ""
-#~ "Preguntar sempre pels canvis no guardats, quan:\n"
-#~ "- En tancar PrusaSlicer mentre es modifiquen alguns ajustaments,\n"
-#~ "- Carregar un nou projecte mentre es modifiquen alguns ajustaments"
-
-#~ msgid "Ask for unsaved changes when selecting new preset"
-#~ msgstr ""
-#~ "Preguntar pels canvis no desats en seleccionar un nou ajustament "
-#~ "preestablert"
-
-#~ msgid ""
-#~ "Always ask for unsaved changes when selecting new preset or resetting a "
-#~ "preset"
-#~ msgstr ""
-#~ "Preguntar sempre pels canvis no guardats en seleccionar un nou ajustament "
-#~ "o en restablir un ajustament"
-
-#~ msgid "Ask for unsaved changes when creating new project"
-#~ msgstr "Preguntar pels canvis no desats en crear un nou projecte"
-
-#~ msgid "Always ask for unsaved changes when creating new project"
-#~ msgstr "Preguntar sempre pels canvis no guardats en crear un nou projecte"
-
-#~ msgid ""
-#~ "If enabled, the descriptions of configuration parameters in settings tabs "
-#~ "wouldn't work as hyperlinks. If disabled, the descriptions of "
-#~ "configuration parameters in settings tabs will work as hyperlinks."
-#~ msgstr ""
-#~ "Si està habilitat, les descripcions dels paràmetres de configuració a les "
-#~ "pestanyes de configuració no funcionaran com a hiperenllaços. Si està "
-#~ "deshabilitat, les descripcions dels paràmetres de configuració a les "
-#~ "pestanyes de configuració funcionaran com a hiperenllaços."
-
-#~ msgid ""
-#~ "You will not be asked about the unsaved changes the next time you create "
-#~ "new project"
-#~ msgstr ""
-#~ "No et preguntarà pels canvis no guardats la propera vegada que creis un "
-#~ "nou projecte"
-
-#~ msgid ""
-#~ "You will not be asked about the unsaved changes the next time you switch "
-#~ "a preset"
-#~ msgstr ""
-#~ "No et preguntarà pels canvis no guardats la propera vegada que canvíis "
-#~ "d'ajust"
-
-#~ msgid ""
-#~ "You will not be asked about the unsaved changes the next time you: \n"
-#~ "- Closing PrusaSlicer while some presets are modified,\n"
-#~ "- Loading a new project while some presets are modified"
-#~ msgstr ""
-#~ "Preguntar sempre pels canvis no guardats, quan:\n"
-#~ "- En tancar PrusaSlicer mentre es modifiquen alguns ajustaments,\n"
-#~ "- Carregar un nou projecte mentre es modifiquen alguns ajustaments"
-
-#~ msgid ""
-#~ "Configuration snapshots\n"
-#~ "Did you know that roll back to a complete backup of all system and user "
-#~ "profiles? You can view and move back and forth between snapshots using "
-#~ "the Configuration - <a>Configuration snapshots menu</a>."
-#~ msgstr ""
-#~ "Instantànies de la configuració\n"
-#~ "Sabies que es pot retrocedir a una còpia de seguretat completa de tots "
-#~ "els perfils del sistema i dels usuaris? Podeu veure i avançar entre les "
-#~ "instantànies utilitzant el menú Configuració - <a>Instantànies de la "
-#~ "configuració</a>."
-
-#, c-format, boost-format
-#~ msgid ""
-#~ "PrusaSlicer detected another configuration folder at %s.\n"
-#~ "Its version is %s.\n"
-#~ "Last version you used in current configuration folder is %s.\n"
-#~ "Please note that PrusaSlicer uses different folders to save configuration "
-#~ "of alpha, beta and full release versions.\n"
-#~ "Would you like to copy found configuration to your current configuration "
-#~ "folder?\n"
-#~ "\n"
-#~ "If you select yes, PrusaSlicer will copy all profiles and other files "
-#~ "from found folder to the current one. Overwriting any existing file with "
-#~ "matching name.\n"
-#~ "If you select no, you will continue with current configuration."
-#~ msgstr ""
-#~ "PrusaSlicer ha detectat una altra carpeta de configuració a %s.\n"
-#~ "La vostra versió és %s.\n"
-#~ "La darrera versió que heu utilitzat a la carpeta de configuració actual "
-#~ "és %s.\n"
-#~ "Si us plau, tingueu en compte que PrusaSlicer utilitza diferents carpetes "
-#~ "per desar la configuració de les versions alfa, beta i final.\n"
-#~ "Voleu copiar la configuració trobada a la vostra carpeta de configuració "
-#~ "actual?\n"
-#~ "\n"
-#~ "Si seleccioneu sí, PrusaSlicer copiarà tots els perfils i altres fitxers "
-#~ "de la carpeta trobada a l'actual, sobreescrivint qualsevol fitxer "
-#~ "existent amb el mateix nom.\n"
-#~ "Si seleccioneu no, continuareu amb la configuració actual."
-
-#, c-format, boost-format
-#~ msgid ""
-#~ "PrusaSlicer detected another configuration folder at %s.\n"
-#~ "Its version is %s.\n"
-#~ "There is no configuration file in current configuration folder.\n"
-#~ "Please note that PrusaSlicer uses different folders to save configuration "
-#~ "of alpha, beta and full release versions.\n"
-#~ "Would you like to copy found configuration to your current configuration "
-#~ "folder?\n"
-#~ "\n"
-#~ "If you select yes, PrusaSlicer will copy all profiles and other files "
-#~ "from found folder to the current one.\n"
-#~ "If you select no, you will start with clean installation with "
-#~ "configuration wizard."
-#~ msgstr ""
-#~ "PrusaSlicer ha detectat una altra carpeta de configuració a %s.\n"
-#~ "La vostra versió és %s.\n"
-#~ "No hi ha cap fitxer de configuració a la carpeta de configuració actual.\n"
-#~ "Si us plau, tingueu en compte que PrusaSlicer utilitza diferents carpetes "
-#~ "per desar la configuració de les versions alfa, beta i final.\n"
-#~ "Voleu copiar la configuració trobada a la vostra carpeta de configuració "
-#~ "actual?\n"
-#~ "\n"
-#~ "Si seleccioneu sí, PrusaSlicer copiarà tots els perfils i altres fitxers "
-#~ "de la carpeta trobada a l'actual.\n"
-#~ "Si seleccioneu no, començareu amb una instal·lació neta amb l'assistent "
-#~ "de configuració."
-
-#~ msgid "PrusaSlicer"
-#~ msgstr "PrusaSlicer"
-
-#~ msgid "&Delete selected"
-#~ msgstr "&Eliminar Selecció"
-
-#~ msgid "Ask for unsaved changes when ??closing application??"
-#~ msgstr "Demanar canvis no desats quan tanqueu l'aplicació??"
-
-#~ msgid ""
-#~ "You will not be asked about the unsaved changes the next time you: \n"
-#~ "- close the application,\n"
-#~ "- load project,\n"
-#~ "- process Undo / Redo with a change of print technology,\n"
-#~ "- take/load snapshot,\n"
-#~ "- load config file/bundle,\n"
-#~ "- export config_bundle"
-#~ msgstr ""
-#~ "No et preguntarà pels canvis no guardats la propera vegada que\n"
-#~ "- tanquis l'aplicació,\n"
-#~ "- carreguis el projecte,\n"
-#~ "- procés de Desfer / Refer amb un canvi de tecnologia d'impressió,\n"
-#~ "- faci/carregui una instantánea,\n"
-#~ "- carregui arxiu de configuració/paquete,\n"
-#~ "- exporti config_bundle"
-
-#, boost-format
-#~ msgid "Compare %1% Presets"
-#~ msgstr "Compara %1% predefinits"
-
-#~ msgid "0.1"
-#~ msgstr "0.1"
-
-#~ msgid "0.2"
-#~ msgstr "0.2"
-
-#, fuzzy
-#~ msgid "Column could not be added."
-#~ msgstr "No s'ha pogut carregar el fitxer."
-
-#, fuzzy
-#~ msgid "Column index not found."
-#~ msgstr "no s'ha trobat el fitxer de catàleg per al domini '%s'"
-
-#~ msgid "Confirm registry update"
-#~ msgstr "Confirmeu l'actualització del registre"
-
-#, fuzzy
-#~ msgid "Could not determine column index."
-#~ msgstr "No s'ha pogut iniciar la previsualització del document."
-
-#, fuzzy
-#~ msgid "Could not determine number of columns."
-#~ msgstr "No es pot trobar el fitxer d'inclusió de recursos %s."
-
-#, fuzzy
-#~ msgid "Could not determine number of items"
-#~ msgstr "No es pot trobar el fitxer d'inclusió de recursos %s."
-
-#, fuzzy
-#~ msgid "Could not get header description."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#, fuzzy
-#~ msgid "Could not get items."
-#~ msgstr "No es pot obrir el fitxer '%s'."
-
-#, fuzzy
-#~ msgid "Could not get property flags."
-#~ msgstr "no es pot extreure el fitxer temporal '%s'"
-
-#, fuzzy
-#~ msgid "Could not get selected items."
-#~ msgstr "No es pot obrir el fitxer '%s'."
-
-#, fuzzy
-#~ msgid "Could not remove column."
-#~ msgstr "No s'ha pogut crear un cursor."
-
-#, fuzzy
-#~ msgid "Could not retrieve number of items"
-#~ msgstr "no es pot extreure el fitxer temporal '%s'"
-
-#, fuzzy
-#~ msgid "Could not set column width."
-#~ msgstr "No s'ha pogut iniciar la previsualització del document."
-
-#, fuzzy
-#~ msgid "Could not set header description."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#, fuzzy
-#~ msgid "Could not set icon."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#, fuzzy
-#~ msgid "Could not set maximum width."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#, fuzzy
-#~ msgid "Could not set minimum width."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#, fuzzy
-#~ msgid "Could not set property flags."
-#~ msgstr "No s'ha pogut iniciar la impressió"
-
-#~ msgid ""
-#~ "Do you want to overwrite the command used to %s files with extension \"%s"
-#~ "\" ?\n"
-#~ "Current value is \n"
-#~ "%s, \n"
-#~ "New value is \n"
-#~ "%s %1"
-#~ msgstr ""
-#~ "Desitgeu sobrescriure l'ordre utilitzada per als fitxer %s amb l'extensió "
-#~ "\"%s\" ?\n"
-#~ "el valor actual és \n"
-#~ "%s, \n"
-#~ "El nou valor és \n"
-#~ "%s %1"
-
-#~ msgid "Failed to retrieve data from the clipboard."
-#~ msgstr "No s'ha pogut recuperar les dades del porta-retalls."
-
-#~ msgid "GIF: Invalid gif index."
-#~ msgstr "GIF: Índex invàlid de gif."
-
-#~ msgid "GIF: unknown error!!!"
-#~ msgstr "GIF: error desconegut!!!"
-
-#, fuzzy
-#~ msgid "New directory"
-#~ msgstr "Crea directori"
-
-#, fuzzy
-#~ msgid "Next"
-#~ msgstr "&Següent"
-
-#, fuzzy
-#~ msgid "Number of columns could not be determined."
-#~ msgstr "No s'ha pogut carregar el fitxer."
-
-#~ msgid ""
-#~ "Please install a newer version of comctl32.dll\n"
-#~ "(at least version 4.70 is required but you have %d.%02d)\n"
-#~ "or this program won't operate correctly."
-#~ msgstr ""
-#~ "Cal que instal·leu una versió més nova de comctl32.dll\n"
-#~ "(com a mínim cal la versió 4.70 però teniu la %d.%02d)\n"
-#~ "o aquest programa no operarà correctament."
-
-#, fuzzy
-#~ msgid "Rendering failed."
-#~ msgstr "No s'ha pogut crear la canonada."
-
-#~ msgid "Show hidden directories"
-#~ msgstr "Mostra directoris ocults."
-
-#, fuzzy
-#~ msgid "Unable to initialize Hildon program"
-#~ msgstr "No s'ha pogut inicialitzar l'OpenGL"
-
-#, fuzzy
-#~ msgid "Unknown data format"
-#~ msgstr "IFF: error en format d'imatge IFF."
-
-#~ msgid "Win32s on Windows 3.1"
-#~ msgstr "Win32s en Windows 3.1"
-
-#, fuzzy
-#~ msgid "Windows 10"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 2000"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 7"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 8"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 8.1"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 95"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 95 OSR2"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 98"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 98 SE"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows 9x (%d.%d)"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows CE (%d.%d)"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows ME"
-#~ msgstr "Windows 3.1"
-
-#, fuzzy
-#~ msgid "Windows NT %lu.%lu"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows Server 10"
-#~ msgstr "Windows Grec (CP 1253)"
-
-#, fuzzy
-#~ msgid "Windows Server 2003"
-#~ msgstr "Windows Grec (CP 1253)"
-
-#, fuzzy
-#~ msgid "Windows Server 2008"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows Server 2008 R2"
-#~ msgstr "Windows Hebreu (CP 1255)"
-
-#, fuzzy
-#~ msgid "Windows Server 2012"
-#~ msgstr "Windows Grec (CP 1253)"
-
-#, fuzzy
-#~ msgid "Windows Server 2012 R2"
-#~ msgstr "Windows Hebreu (CP 1255)"
-
-#, fuzzy
-#~ msgid "Windows Vista"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "Windows XP"
-#~ msgstr "Windows 9%c"
-
-#, fuzzy
-#~ msgid "can't execute '%s'"
-#~ msgstr "No s'ha pogut executar '%s'\n"
-
-#~ msgid "error opening '%s'"
-#~ msgstr "Error en llegir '%s'"
-
-#~ msgid "unknown seek origin"
-#~ msgstr "origen de recerca desconegut"
-
-#, fuzzy
-#~ msgid "wxWidget's control not initialized."
-#~ msgstr "No es pot començar a mostrar."
-
-#, fuzzy
-#~ msgid "Cannot create mutex."
-#~ msgstr "No es pot crear un fil"
-
-#, fuzzy
-#~ msgid "Cannot resume thread %lu"
-#~ msgstr "No es pot enumerar els fitxers en el directori '%s'"
-
-#, fuzzy
-#~ msgid "Cannot suspend thread %lu"
-#~ msgstr "No es pot suspendre en fil %x"
-
-#, fuzzy
-#~ msgid "Couldn't acquire a mutex lock"
-#~ msgstr "No s'ha pogut crear un temporitzador"
-
-#, fuzzy
-#~ msgid "Couldn't release a mutex"
-#~ msgstr "No s'ha pogut crear un temporitzador"
-
-#, fuzzy
-#~ msgid "DIVIDE"
-#~ msgstr "<DIR>"
-
-#, fuzzy
-#~ msgid "Execution of command '%s' failed with error: %ul"
-#~ msgstr "L'execució de l'ordre '%s' ha fallit."
-
-#~ msgid ""
-#~ "File '%s' already exists.\n"
-#~ "Do you want to replace it?"
-#~ msgstr ""
-#~ "El fitxer '%s' ja existeix,\n"
-#~ "Desitgeu substituir-lo?"
-
-#, fuzzy
-#~ msgid "Timer creation failed."
-#~ msgstr "No s'ha pogut crear la canonada."
-
-#, fuzzy
-#~ msgid "Print preview"
-#~ msgstr "Imprimeix previsualització"
-
-#, fuzzy
-#~ msgid "&Preview..."
-#~ msgstr " Previsualitza"
-
-#, fuzzy
-#~ msgid "Preview..."
-#~ msgstr " Previsualitza"
-
-#~ msgid "&Save..."
-#~ msgstr "&Desa..."
-
-#, fuzzy
-#~ msgid "All files (*.*)|*"
-#~ msgstr "Tots els fitxers (*.*) *.*  "
-
-#~ msgid "Cannot initialize SciTech MGL!"
-#~ msgstr "No es pot inicialitzar SciTech MGL!"
-
-#~ msgid "Cannot initialize display."
-#~ msgstr "No es pot començar a mostrar."
-
-#~ msgid "Cannot start thread: error writing TLS"
-#~ msgstr "No es pot iniciar el fil: s'ha comès un error en escriure TLS"
-
-#~ msgid "Close\tAlt-F4"
-#~ msgstr "Tanca\tAlt-F4"
-
-#~ msgid "Couldn't create cursor."
-#~ msgstr "No s'ha pogut crear un cursor."
-
-#~ msgid "Directory '%s' doesn't exist!"
-#~ msgstr "El directori '%s' no existeix!"
-
-#~ msgid "File %s does not exist."
-#~ msgstr "El fitxer %s no existeix"
-
-#~ msgid "Mode %ix%i-%i not available."
-#~ msgstr "Mode %ix%i-%i no disponible."
-
-#~ msgid "Paper Size"
-#~ msgstr "Mida del paper"
-
-#~ msgid "Can't check image format of file '%s': file does not exist."
-#~ msgstr ""
-#~ "No es pot revisar el format d'imatge del fitxer '%s': el fitxer no "
-#~ "existeix."
-
-#~ msgid "Can't load image from file '%s': file does not exist."
-#~ msgstr ""
-#~ "No es pot carregar una imatge del fitxer '%s': el fitxer no existeix."
-
-#~ msgid "Cannot convert dialog units: dialog unknown."
-#~ msgstr "No es pot convertir el diàleg d'unitats: diàleg desconegut"
-
-#, fuzzy
-#~ msgid "Cannot convert from the charset '%s'!"
-#~ msgstr "No es pot convertir des de la codificació '%s'!"
-
-#~ msgid "Cannot find container for unknown control '%s'."
-#~ msgstr "No es pot trobar el contenidor del control desconegut '%s'."
-
-#~ msgid "Cannot find font node '%s'."
-#~ msgstr "No es pot trobar el node  '%s' de font."
-
-#~ msgid "Cannot open file '%s'."
-#~ msgstr "No es pot obrir el fitxer '%s'."
-
-#~ msgid "Cannot parse coordinates from '%s'."
-#~ msgstr "No es pot analitzar les coordenades des de '%s'."
-
-#~ msgid "Cannot parse dimension from '%s'."
-#~ msgstr "No es pot analitzar les dimensions des de '%s'."
-
-#, fuzzy
-#~ msgid "Cant create the thread event queue"
-#~ msgstr "No es pot crear un fil"
-
-#, fuzzy
-#~ msgid "Click to cancel this window."
-#~ msgstr "Tanca aquesta finestra"
-
-#, fuzzy
-#~ msgid "Could not unlock mutex"
-#~ msgstr "No s'ha pogut crear un temporitzador"
-
-#, fuzzy
-#~ msgid "Failed to connect to session manager: %s"
-#~ msgstr "No s'ha pogut %s a la connexió de marcatge directe: %s"
-
-#~ msgid "Failed to create a status bar."
-#~ msgstr "No s'ha pogut crear una barra d'estat."
-
-#, fuzzy
-#~ msgid "Failed to register OpenGL window class."
-#~ msgstr "No s'ha pogut inicialitzar l'OpenGL"
-
-#~ msgid "Fatal error: "
-#~ msgstr "Error fatal:"
-
-#~ msgid "Goto Page"
-#~ msgstr "Vés a la pàgina"
-
-#, fuzzy
-#~ msgid "Help : %s"
-#~ msgstr "Ajuda: %s"
-
-#~ msgid "Invalid XRC resource '%s': doesn't have root node 'resource'."
-#~ msgstr "Recurs XRC '%s' invàlid: no té una arrel del node de 'recurs'."
-
-#~ msgid "No handler found for XML node '%s', class '%s'!"
-#~ msgstr "No s'ha trobat cap manegador per als nodes XML '%s', classe '%s'!"
-
-#, fuzzy
-#~ msgid "No image handler for type %ld defined."
-#~ msgstr "No hi ha definit cap manegador per al tipus d'imatge %d."
-
-#, fuzzy
-#~ msgid "Owner not initialized."
-#~ msgstr "No es pot començar a mostrar."
-
-#, fuzzy
-#~ msgid "Passed item is invalid."
-#~ msgstr "'%s' és invàlid"
-
-#~ msgid "Program aborted."
-#~ msgstr "Programa avortat."
-
-#~ msgid "Referenced object node with ref=\"%s\" not found!"
-#~ msgstr "Objecte de node referenciat amb ref=\"%s\"\" no s'ha trobat!"
-
-#~ msgid "Resource files must have same version number!"
-#~ msgstr "Els fitxers de recursos han de tenir el mateix número de versió!"
-
-#, fuzzy
-#~ msgid "Search!"
-#~ msgstr "Cerca"
-
-#~ msgid "Sorry, could not open this file for saving."
-#~ msgstr "No es pot obrir aquest fitxer per desar."
-
-#~ msgid "Sorry, could not save this file."
-#~ msgstr "No s'ha pogut desar aquest fitxer."
-
-#~ msgid "Status: "
-#~ msgstr "Estat:"
-
-#~ msgid "Subclass '%s' not found for resource '%s', not subclassing!"
-#~ msgstr "Subclasse '%s' no trobada per recursos '%s', no subclassificant!"
-
-#, fuzzy
-#~ msgid ""
-#~ "The file '%s' couldn't be opened.\n"
-#~ "It has been removed from the most recently used files list."
-#~ msgstr ""
-#~ "El fitxer '%s' no existeix i per tant no pot ser obert.\n"
-#~ "Ha estat extret des de llistat de fitxers utilitzats més recentment."
-
-#~ msgid "The path '%s' contains too many \"..\"!"
-#~ msgstr "La ruta '%s' conté massa \"..\"!"
-
-#~ msgid "Trying to solve a NULL hostname: giving up"
-#~ msgstr "S'està intetant solucionar un nom d'hostetjador buit: no es pot."
-
-#~ msgid "Unknown style flag "
-#~ msgstr "Estil de bandera desconegut"
-
-#~ msgid "XRC resource '%s' (class '%s') not found!"
-#~ msgstr "recurs XRC: '%s' (tipus '%s') no trobada!"
-
-#, fuzzy
-#~ msgid "XRC resource: Cannot create animation from '%s'."
-#~ msgstr "recurs XRC: No es pot crear mapa de bits des de '%s'."
-
-#~ msgid "XRC resource: Cannot create bitmap from '%s'."
-#~ msgstr "recurs XRC: No es pot crear mapa de bits des de '%s'."
-
-#, fuzzy
-#~ msgid ""
-#~ "XRC resource: Incorrect colour specification '%s' for attribute '%s'."
-#~ msgstr ""
-#~ "recurs XRC: Color d'especificació incorrecte '%s'  per a la propietat "
-#~ "'%s'."
-
-#~ msgid "[EMPTY]"
-#~ msgstr "[BUIT]"
-
-#~ msgid "catalog file for domain '%s' not found."
-#~ msgstr "no s'ha trobat el fitxer de catàleg per al domini '%s'"
-
-#, fuzzy
-#~ msgid "encoding %i"
-#~ msgstr "Codificació (%d) desconeguda"
-
-#~ msgid "looking for catalog '%s' in path '%s'."
-#~ msgstr "s'està cercant el catàleg '%s' a la ruta '%s'."
-
-#~ msgid "wxSocket: invalid signature in ReadMsg."
-#~ msgstr "wxSocket: signatura invàlida en ReadMsg."
-
-#~ msgid "wxSocket: unknown event!."
-#~ msgstr "wxSocket: incidència desconeguda!."
-
-#, fuzzy
-#~ msgid " Couldn't create the UnicodeConverter"
-#~ msgstr "No s'ha pogut crear un temporitzador"
-
-#~ msgid "#define %s must be an integer."
-#~ msgstr "#define %s ha de ser un número sencer."
-
-#~ msgid "%s not a bitmap resource specification."
-#~ msgstr "%s no és una especificació de recursos de mapa de bits."
-
-#~ msgid "%s not an icon resource specification."
-#~ msgstr "%s no és una especificació de recursos d'icona"
-
-#, fuzzy
-#~ msgid "%s: ill-formed resource file syntax."
-#~ msgstr "hi ha hagut un error intern en el DDEML"
-
-#, fuzzy
-#~ msgid "&Open"
-#~ msgstr "&Desa..."
-
-#, fuzzy
-#~ msgid "&Print"
-#~ msgstr "Imprimeix"
-
-#, fuzzy
-#~ msgid ""
-#~ ", expected static, #include or #define\n"
-#~ "while parsing resource."
-#~ msgstr ""
-#~ ", les estadítiques esperades #include o #define\n"
-#~ "mentre s'està analitzant el recurs."
-
-#~ msgid "Bitmap resource specification %s not found."
-#~ msgstr "No s'ha trobat l'especificació %s de recursos de mapa de bits."
-
-#~ msgid ""
-#~ "Could not resolve control class or id '%s'. Use (non-zero) integer "
-#~ "instead\n"
-#~ " or provide #define (see manual for caveats)"
-#~ msgstr ""
-#~ "No es pot resoldre la classe de control o l'id '%s'. Utilitzeu un número "
-#~ "sencer diferent de zero\n"
-#~ " o proporcioneu el #define (vegeu els consells del manual)"
-
-#~ msgid ""
-#~ "Could not resolve menu id '%s'. Use (non-zero) integer instead\n"
-#~ "or provide #define (see manual for caveats)"
-#~ msgstr ""
-#~ "No es pot resoldre l'id del menú '%s'. Utilitza un sencer diferent de "
-#~ "zero\n"
-#~ " o proporciona el #define (vegeu els consells del manual)"
-
-#, fuzzy
-#~ msgid "Couldn't end the context on the overlay window"
-#~ msgstr "No es pot obtenir l'actual cadena de punter"
-
-#, fuzzy
-#~ msgid "Expected '*' while parsing resource."
-#~ msgstr "S'esperava '*' en analitzar el recurs."
-
-#, fuzzy
-#~ msgid "Expected '=' while parsing resource."
-#~ msgstr "S'esperava '=' en analitzar el recurs."
-
-#, fuzzy
-#~ msgid "Expected 'char' while parsing resource."
-#~ msgstr "S'esperava 'char' en analitzar el recurs."
-
-#~ msgid ""
-#~ "Failed to find XBM resource %s.\n"
-#~ "Forgot to use wxResourceLoadBitmapData?"
-#~ msgstr ""
-#~ "No s'ha pogut trobar el recurs XBM %s.\n"
-#~ "No us recordat d'utilitzar  wxResourceLoadBitmapData?"
-
-#~ msgid ""
-#~ "Failed to find XBM resource %s.\n"
-#~ "Forgot to use wxResourceLoadIconData?"
-#~ msgstr ""
-#~ "No s'ha pogut trobar el recurs XBM %s.\n"
-#~ "No us heu recordat d'utilitzar  wxResourceLoadIconData?"
-
-#~ msgid ""
-#~ "Failed to find XPM resource %s.\n"
-#~ "Forgot to use wxResourceLoadBitmapData?"
-#~ msgstr ""
-#~ "No s'ha pogut trobar el recurs XMP %s. \n"
-#~ "No us recordat d'utilitzar wxResourceLoadBitmapData?"
-
-#~ msgid "Failed to get clipboard data."
-#~ msgstr "No s'han pogut obtenir les dades del porta-retalls"
-
-#~ msgid "Failed to load shared library '%s' Error '%s'"
-#~ msgstr "No s'ha pogut carregar la llibreria compartida '%s' Error '%s'"
-
-#~ msgid "Found "
-#~ msgstr "Trobat"
-
-#~ msgid "Icon resource specification %s not found."
-#~ msgstr "No s'ha trobat l'especificació %s de recursos d'icones"
-
-#~ msgid "Ill-formed resource file syntax."
-#~ msgstr "Sintaxi incorrecta del codi font."
-
-#~ msgid "No XPM icon facility available!"
-#~ msgstr "No hi ha cap icona XPM disponible!"
-
-#~ msgid "Option '%s' requires a value, '=' expected."
-#~ msgstr "L'opció '%s' requereix un valor, '=' esperat."
-
-#, fuzzy
-#~ msgid "Select all"
-#~ msgstr "Selecciona-ho &tot"
-
-#, fuzzy
-#~ msgid "Unexpected end of file while parsing resource."
-#~ msgstr "Fi de fitxer inesperat en analitzar el recurs."
-
-#, fuzzy
-#~ msgid "Unrecognized style %s while parsing resource."
-#~ msgstr "Estil desconegut %s en analitzar el recurs."
-
-#~ msgid "Warning: attempt to remove HTML tag handler from empty stack."
-#~ msgstr "Atenció: intent d'extreure una etiqueta HTML d'una pila buida."
-
-#~ msgid "establish"
-#~ msgstr "estableix"
-
-#~ msgid "initiate"
-#~ msgstr "inicia"
-
-#~ msgid "invalid eof() return value."
-#~ msgstr "valor eof() de retorn invàlid."
-
-#~ msgid "unknown line terminator"
-#~ msgstr "acabament de línia desconegut"
-
-#~ msgid "writing"
-#~ msgstr "s'està escrivint"
-
-#~ msgid "."
-#~ msgstr "."
-
-#~ msgid "Cannot open URL '%s'"
-#~ msgstr "No es pot obrir l'URL '%s'."
-
-#~ msgid "Error "
-#~ msgstr "Error "
-
-#~ msgid "Failed to create directory %s/.gnome."
-#~ msgstr "No s'ha pogut crear un directori %s/.gnome."
-
-#~ msgid "Failed to create directory %s/mime-info."
-#~ msgstr "No s'ha pogut crear el directori %s/mime-info."
-
-#~ msgid "Mailcap file %s, line %d: incomplete entry ignored."
-#~ msgstr "Fitxer mailcap %s, línia %d: entrada incompleta ignorada."
-
-#~ msgid "Mime.types file %s, line %d: unterminated quoted string."
-#~ msgstr ""
-#~ "Mime. Tipus de fitxer %s, línia %d: cadena entre cometes no acabada."
-
-#~ msgid "Unknown field in file %s, line %d: '%s'."
-#~ msgstr "Camp desconegut en el fitxer %s, línia %d: '%s'."
-
-#~ msgid "bold "
-#~ msgstr "negreta"
-
-#~ msgid "light "
-#~ msgstr "il·luminació"
-
-#~ msgid "underlined "
-#~ msgstr "subratllat"
-
-#, fuzzy
-#~ msgid "unsupported zip archive"
-#~ msgstr "Format no suportat de porta-retalls"
-
-#, fuzzy
-#~ msgid ""
-#~ "Failed to get stack backtrace:\n"
-#~ "%s"
-#~ msgstr "No s'han pogut obtenir els noms ISP: %s"
-
-#~ msgid "Loading Grey Ascii PNM image is not yet implemented."
-#~ msgstr ""
-#~ "Carregar un fitxer Ascii PNM d'escala de grisos encara no està "
-#~ "implementat."
-
-#~ msgid "Loading Grey Raw PNM image is not yet implemented."
-#~ msgstr ""
-#~ "Carregar un fitxer d'imatge Raw PNM d'escala de grisos encara no està "
-#~ "implementat."
-
-#, fuzzy
-#~ msgid "Cannot wait on thread to exit."
-#~ msgstr "No es pot esperar per a l'acabament de cadena"
-
-#~ msgid "Could not load Rich Edit DLL '%s'"
-#~ msgstr "No es pot carregar el DLL d'edició rica '%s'"
-
-#~ msgid "ZIP handler currently supports only local files!"
-#~ msgstr "El manegador ZIP generalment només permet l'ús de fitxers locals!"
-
-#, fuzzy
-#~ msgid ""
-#~ "can't seek on file descriptor %d, large files support is not enabled."
-#~ msgstr "no és pot cercar el fitxer descriptor de %d"
-
-#~ msgid "More..."
-#~ msgstr "Més..."
-
-#~ msgid "Setup"
-#~ msgstr "Configuració"
-
-#~ msgid "GetUnusedColour:: No Unused Color in image "
-#~ msgstr "GetUnusedColour:: No s'ha utilitzat cap color a la imatge"
-
-#~ msgid ""
-#~ "Can't create list control window, check that comctl32.dll is installed."
-#~ msgstr ""
-#~ "No es pot crear un llistat de control de finestra, mireu si el comctl32."
-#~ "dll es troba instal·lat."
-
-#~ msgid "Can't delete value of key '%s'"
-#~ msgstr "No es pot eliminar la clau de registre '%s'"
-
-#~ msgid "gmtime() failed"
-#~ msgstr "gmtime() ha fallat"
-
-#~ msgid "mktime() failed"
-#~ msgstr "mktime() ha fallat"
-
-#~ msgid "%d...%d"
-#~ msgstr "%d...%d"
-
-#~ msgid ""
-#~ "<html><body><table><tr><td>Normal face<br>(and <u>underlined</u>. "
-#~ "<i>Italic face.</i> <b>Bold face.</b> <b><i>Bold italic face.</i></"
-#~ "b><br><font size=-2>font size -2</font><br><font size=-1>font size -1</"
-#~ "font><br><font size=+0>font size +0</font><br><font size=+1>font size +1</"
-#~ "font><br><font size=+2>font size +2</font><br><font size=+3>font size +3</"
-#~ "font><br><font size=+4>font size +4</font><br><td><p><tt>Fixed size face."
-#~ "<br> <b>bold</b> <i>italic</i> <b><i>bold italic <u>underlined</u></i></"
-#~ "b><br><font size=-2>font size -2</font><br><font size=-1>font size -1</"
-#~ "font><br><font size=+0>font size +0</font><br><font size=+1>font size +1</"
-#~ "font><br><font size=+2>font size +2</font><br><font size=+3>font size +3</"
-#~ "font><br><font size=+4>font size +4</font></tt></table></body></html>"
-#~ msgstr ""
-#~ "<html><body><table><tr><td>Normal face<br>(and <u>underlined</u>. "
-#~ "<i>Italic face.</i> <b>Bold face.</b> <b><i>Bold italic face.</i></"
-#~ "b><br><font size=-2>font size -2</font><br><font size=-1>font size -1</"
-#~ "font><br><font size=+0>font size +0</font><br><font size=+1>font size +1</"
-#~ "font><br><font size=+2>font size +2</font><br><font size=+3>font size +3</"
-#~ "font><br><font size=+4>font size +4</font><br><td><p><tt>Fixed size face."
-#~ "<br> <b>bold</b> <i>italic</i> <b><i>bold italic <u>underlined</u></i></"
-#~ "b><br><font size=-2>font size -2</font><br><font size=-1>font size -1</"
-#~ "font><br><font size=+0>font size +0</font><br><font size=+1>font size +1</"
-#~ "font><br><font size=+2>font size +2</font><br><font size=+3>font size +3</"
-#~ "font><br><font size=+4>font size +4</font></tt></table></body></html>"
-
-#~ msgid "Can't create dialog using memory template"
-#~ msgstr "No es pot crear un diàleg utilitzant plantilla de memòria."
-
-#~ msgid "Can't create dialog using template '%ul'"
-#~ msgstr "No es pot crear un diàleg utilitzant la plantilla '%ul'"
-
-#~ msgid "Did you forget to include wx/os2/wx.rc in your resources?"
-#~ msgstr "Us n'heu oblidat d'incloure wx/os2/wx.rc en els recursos?"
-
-#~ msgid "Failed to create dialog. Incorrect DLGTEMPLATE?"
-#~ msgstr "No s'ha pogut crear el diàleg. És el DLGTEMPLATE incorrecte?"
-
-#~ msgid "Fatal error: exiting"
-#~ msgstr "Error fatal: sortint"
-
-#~ msgid ""
-#~ "HTML files (*.htm)|*.htm|HTML files (*.html)|*.html|Help books (*.htb)|*."
-#~ "htb|Help books (*.zip)|*.zip|HTML Help Project (*.hhp)|*.hhp|All files (*."
-#~ "*)|*"
-#~ msgstr ""
-#~ "arxius HTML (*.htm)|*.htm|arxius HTML(*.html)|*.html|Llibres d'ajuda (*."
-#~ "htb)|*.htb|Llibres d'ajuda  (*.zip)|*.zip|Projectes d'ajuda HTML (*.hhp)|"
-#~ "*.hhp|Tots el arxius (*.*)|*"
-
-#~ msgid "Load file"
-#~ msgstr "Carrega fitxer"
-
-#~ msgid "Save file"
-#~ msgstr "Desa fitxer"
-
-#~ msgid "illegal scrollbar selector %d"
-#~ msgstr "seleccionador de lliscador il·legal %d"
-
-#~ msgid "wxDllLoader failed to GetSymbol '%s'"
-#~ msgstr "wxDllLoader ha fallat a GetSymbol '%s'"
-
-#~ msgid "wxDynamicLibrary failed to GetSymbol '%s'"
-#~ msgstr "wxDynamicLibrary ha fallat a GetSymbol '%s'"
