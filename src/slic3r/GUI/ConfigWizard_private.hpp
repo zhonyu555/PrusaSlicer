@@ -141,7 +141,9 @@ struct Materials
 				(vendor.empty() || get_vendor(preset) == vendor)) {
 
 				cb(preset);
-			} else if (prst.vendor->common_profile) {
+			} else if (prst.vendor->common_profile &&
+                (type.empty() || get_type(preset) == type) &&
+                (vendor.empty() || get_vendor(preset) == vendor)) {
                 cb(preset);
             }
 		}
