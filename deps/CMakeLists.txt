@@ -179,7 +179,7 @@ if (DEP_MSAN)
     # For dependencies that are configure using CFLAGS, CXXFLAGS and LDFLAGS instead of CMAKE_*_FLAGS.
     set(MSAN_CMAKE_C_FLAGS   "${_msan_common_flags}")
     set(MSAN_CMAKE_CXX_FLAGS "${_msan_common_flags} ${_msan_only_cxx_flags}")
-    set(MSAN_CMAKE_LD_FLAGS  "${_msan_only_ld_flags}")
+    set(MSAN_CMAKE_LD_FLAGS  "${_msan_common_flags} ${_msan_only_ld_flags}")
 
     set(_msan_all_flags  "${_msan_common_flags} ${_msan_only_cxx_flags} ${_msan_only_ld_flags}")
     
