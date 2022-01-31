@@ -164,6 +164,7 @@ if (DEP_MSAN)
     include(MSan_Deps/LLVM/LLVM.cmake)
     include(MSan_Deps/Mesa3D/Mesa3D.cmake)
     include(MSan_Deps/fontconfig/fontconfig.cmake)
+    include(MSan_Deps/iconv/iconv.cmake)
 
     set(_msan_linker_flags "-fsanitize=memory")
     if (DEP_MSAN_RECOVERY)
@@ -266,7 +267,7 @@ set(_dep_list
 # endif()
 
 if (DEP_MSAN)
-    list(APPEND _dep_list "dep_LLVM;dep_Mesa3D;dep_fontconfig;dep_Chromium_Libs")
+    list(APPEND _dep_list "dep_LLVM;dep_Mesa3D;dep_fontconfig;dep_Chromium_Libs;dep_iconv")
 endif ()
 
 add_custom_target(deps ALL DEPENDS ${_dep_list})

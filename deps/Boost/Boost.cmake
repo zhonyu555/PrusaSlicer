@@ -123,6 +123,8 @@ set(_build_cmd ${_build_cmd}
                link=${_link}
                threading=multi
                boost.locale.icu=off
+               boost.locale.iconv=on
+               "-sICONV_PATH=${DESTDIR}/usr/local/"
                --disable-icu
                ${_boost_variants}
                stage)
