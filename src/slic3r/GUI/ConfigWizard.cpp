@@ -915,51 +915,54 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
                     sel_printers_count = list_printer->GetSelections(sel_printers);
                 }
             }
-			if (sel_printers[0] != 0 && sel_printers[0] != 1) {
-                for (int i = 0; i < sel_printers_count; i++) {
-					const std::string& printer_name = list_printer->get_data(sel_printers[i]);
-					const Preset* printer = nullptr;
-					for (const Preset* it : materials->printers) {
-						if (it->name == printer_name) {
-							printer = it;
-							break;
-						}
-					}
-					materials->filter_presets(printer, printer_name, EMPTY, EMPTY, [this](const Preset* p) {
-						const std::string& type = this->materials->get_type(p);
-						if (list_type->find(type) == wxNOT_FOUND) {
-							list_type->append(type, &type);
-						}
-						});
-				}
-			} else if(last_selected_printer == 0){
-                //clear selection except "ALL"
-                list_printer->SetSelection(wxNOT_FOUND);
-                list_printer->SetSelection(0);
-                sel_printers_count = list_printer->GetSelections(sel_printers);
-
-				materials->filter_presets(nullptr, EMPTY, EMPTY, EMPTY, [this](const Preset* p) {
-					const std::string& type = this->materials->get_type(p);
-					if (list_type->find(type) == wxNOT_FOUND) {
-						list_type->append(type, &type);
-					}
-					});
-			} else if (last_selected_printer == 1) {
-                //clear selection except "CUSTOM"
-                list_printer->SetSelection(wxNOT_FOUND);
-                list_printer->SetSelection(1);
-                sel_printers_count = list_printer->GetSelections(sel_printers);
-                
-                materials->filter_presets(nullptr, CUSTOM, CUSTOM, CUSTOM, [this](const Preset* p) {
+        }
+        if (sel_printers_count > 0 && sel_printers[0] != 0 && sel_printers[0] != 1) {
+            for (int i = 0; i < sel_printers_count; i++) {
+                const std::string& printer_name = list_printer->get_data(sel_printers[i]);
+                const Preset* printer = nullptr;
+                for (const Preset* it : materials->printers) {
+                    if (it->name == printer_name) {
+                        printer = it;
+                        break;
+                    }
+                }
+                materials->filter_presets(printer, printer_name, EMPTY, EMPTY, [this](const Preset* p) {
                     const std::string& type = this->materials->get_type(p);
                     if (list_type->find(type) == wxNOT_FOUND) {
                         list_type->append(type, &type);
                     }
                     });
-                
             }
-            sort_list_data(list_type, true, true);
-		}
+        }
+        else if (sel_printers_count > 0 && last_selected_printer == 0) {
+            //clear selection except "ALL"
+            list_printer->SetSelection(wxNOT_FOUND);
+            list_printer->SetSelection(0);
+            sel_printers_count = list_printer->GetSelections(sel_printers);
+
+            materials->filter_presets(nullptr, EMPTY, EMPTY, EMPTY, [this](const Preset* p) {
+                const std::string& type = this->materials->get_type(p);
+                if (list_type->find(type) == wxNOT_FOUND) {
+                    list_type->append(type, &type);
+                }
+                });
+        }
+        else if (sel_printers_count > 0 && last_selected_printer == 1) {
+            //clear selection except "CUSTOM"
+            list_printer->SetSelection(wxNOT_FOUND);
+            list_printer->SetSelection(1);
+            sel_printers_count = list_printer->GetSelections(sel_printers);
+
+            materials->filter_presets(nullptr, CUSTOM, EMPTY, EMPTY, [this](const Preset* p) {
+                const std::string& type = this->materials->get_type(p);
+                if (list_type->find(type) == wxNOT_FOUND) {
+                    list_type->append(type, &type);
+                }
+                });
+
+        }
+        sort_list_data(list_type, true, true);
+
 		sel_printers_prev = sel_printers;
 		sel_type = 0;
 		sel_type_prev = wxNOT_FOUND;
