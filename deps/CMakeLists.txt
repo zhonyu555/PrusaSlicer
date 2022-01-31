@@ -237,7 +237,7 @@ include(NLopt/NLopt.cmake)
 include(OpenSSL/OpenSSL.cmake)
 include(CURL/CURL.cmake)
 
-if(NOT JPEG_FOUND AND NOT DEP_MSAN)
+if(NOT JPEG_FOUND AND DEP_MSAN)
    include(JPEG/JPEG.cmake)
    set(JPEG_PKG dep_JPEG)
 endif ()
