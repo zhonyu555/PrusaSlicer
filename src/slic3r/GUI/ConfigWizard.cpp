@@ -611,6 +611,7 @@ void PagePrinters::set_run_reason(ConfigWizard::RunReason run_reason)
 
 
 const std::string PageMaterials::EMPTY;
+const std::string PageMaterials::CUSTOM = "custom";
 
 PageMaterials::PageMaterials(ConfigWizard *parent, Materials *materials, wxString title, wxString shortname, wxString list1name)
     : ConfigWizardPage(parent, std::move(title), std::move(shortname))
@@ -718,6 +719,7 @@ void PageMaterials::reload_presets()
     clear();
 
 	list_printer->append(_L("(All)"), &EMPTY);
+    list_printer->append(_L("(Custom)"), &CUSTOM);
     //list_printer->SetLabelMarkup("<b>bald</b>");
 	for (const Preset* printer : materials->printers) {
 		list_printer->append(printer->name, &printer->name);
@@ -890,9 +892,10 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
         // Refresh type list
 		list_type->Clear();
 		list_type->append(_L("(All)"), &EMPTY);
-		if (sel_printers_count > 0) {
+		if (sel_printers_count > 1) {
             // If all is selected with other printers
             // unselect "all" or all printers depending on last value
+            // same with "custom" 
             if (sel_printers[0] == 0 && sel_printers_count > 1) {
                 if (last_selected_printer == 0) {
                     list_printer->SetSelection(wxNOT_FOUND);
@@ -902,7 +905,17 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
                     sel_printers_count = list_printer->GetSelections(sel_printers);
                 }
             }
-			if (sel_printers[0] != 0) {
+            if ((sel_printers[0] == 1 || sel_printers[1] == 1)&& sel_printers_count > 1) {
+                if (last_selected_printer == 1) {
+                    list_printer->SetSelection(wxNOT_FOUND);
+                    list_printer->SetSelection(1);
+                }
+                else  if (last_selected_printer != 0) {
+                    list_printer->SetSelection(1, false);
+                    sel_printers_count = list_printer->GetSelections(sel_printers);
+                }
+            }
+			if (sel_printers[0] != 0 && sel_printers[0] != 1) {
                 for (int i = 0; i < sel_printers_count; i++) {
 					const std::string& printer_name = list_printer->get_data(sel_printers[i]);
 					const Preset* printer = nullptr;
@@ -912,29 +925,41 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
 							break;
 						}
 					}
-					materials->filter_presets(printer, EMPTY, EMPTY, [this](const Preset* p) {
+					materials->filter_presets(printer, printer_name, EMPTY, EMPTY, [this](const Preset* p) {
 						const std::string& type = this->materials->get_type(p);
 						if (list_type->find(type) == wxNOT_FOUND) {
 							list_type->append(type, &type);
 						}
 						});
 				}
-			} else {
+			} else if(last_selected_printer == 0){
                 //clear selection except "ALL"
                 list_printer->SetSelection(wxNOT_FOUND);
                 list_printer->SetSelection(0);
                 sel_printers_count = list_printer->GetSelections(sel_printers);
 
-				materials->filter_presets(nullptr, EMPTY, EMPTY, [this](const Preset* p) {
+				materials->filter_presets(nullptr, EMPTY, EMPTY, EMPTY, [this](const Preset* p) {
 					const std::string& type = this->materials->get_type(p);
 					if (list_type->find(type) == wxNOT_FOUND) {
 						list_type->append(type, &type);
 					}
 					});
-			}
+			} else if (last_selected_printer == 1) {
+                //clear selection except "CUSTOM"
+                list_printer->SetSelection(wxNOT_FOUND);
+                list_printer->SetSelection(1);
+                sel_printers_count = list_printer->GetSelections(sel_printers);
+                
+                materials->filter_presets(nullptr, CUSTOM, CUSTOM, CUSTOM, [this](const Preset* p) {
+                    const std::string& type = this->materials->get_type(p);
+                    if (list_type->find(type) == wxNOT_FOUND) {
+                        list_type->append(type, &type);
+                    }
+                    });
+                
+            }
             sort_list_data(list_type, true, true);
 		}
-
 		sel_printers_prev = sel_printers;
 		sel_type = 0;
 		sel_type_prev = wxNOT_FOUND;
@@ -962,7 +987,7 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
 						break;
 					}
 				}
-				materials->filter_presets(printer, type, EMPTY, [this](const Preset* p) {
+				materials->filter_presets(printer, printer_name, type, EMPTY, [this](const Preset* p) {
 					const std::string& vendor = this->materials->get_vendor(p);
 					if (list_vendor->find(vendor) == wxNOT_FOUND) {
 						list_vendor->append(vendor, &vendor);
@@ -999,7 +1024,7 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
 					}
 				}
 
-				materials->filter_presets(printer, type, vendor, [this, &to_list](const Preset* p) {
+				materials->filter_presets(printer, printer_name, type, vendor, [this, &to_list](const Preset* p) {
 					const std::string& section = materials->appconfig_section();
                     bool checked = wizard_p()->appconfig_new.has(section, p->name);
                     bool was_checked = false;
@@ -1044,10 +1069,15 @@ void PageMaterials::sort_list_data(StringList* list, bool add_All_item, bool mat
     
     std::vector<std::reference_wrapper<const std::string>> prusa_profiles;
     std::vector<std::reference_wrapper<const std::string>> other_profiles;
+    bool add_CUSTOM_item = false;
     for (int i = 0 ; i < list->size(); ++i) {
         const std::string& data = list->get_data(i);
-        if (data == EMPTY) // do not sort <all> item
+        if (data == EMPTY) // do not sort <all> item 
             continue;
+        if (data == CUSTOM) {// do not sort <custom> item
+            add_CUSTOM_item = true;
+            continue;
+        }
         if (!material_type_ordering && data.find("Prusa") != std::string::npos)
             prusa_profiles.push_back(data);
         else 
@@ -1086,10 +1116,13 @@ void PageMaterials::sort_list_data(StringList* list, bool add_All_item, bool mat
     list->Clear();
     if (add_All_item)
         list->append(_L("(All)"), &EMPTY);
+    if (add_CUSTOM_item)
+        list->append(_L("(Custom)"), &CUSTOM);
     for (const auto& item : prusa_profiles)
         list->append(item, &const_cast<std::string&>(item.get()));
     for (const auto& item : other_profiles)
         list->append(item, &const_cast<std::string&>(item.get()));
+    
 }     
 
 void PageMaterials::sort_list_data(PresetList* list, const std::vector<ProfilePrintData>& data)

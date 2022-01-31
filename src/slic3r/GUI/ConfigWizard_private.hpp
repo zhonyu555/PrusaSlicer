@@ -132,16 +132,18 @@ struct Materials
     const std::string& get_type(const Preset *preset) const;
     const std::string& get_vendor(const Preset *preset) const;
 	
-	template<class F> void filter_presets(const Preset* printer, const std::string& type, const std::string& vendor, F cb) {
+	template<class F> void filter_presets(const Preset* printer, const std::string& printer_name, const std::string& type, const std::string& vendor, F cb) {
 		for (auto preset : presets) {
 			const Preset& prst = *(preset);
 			const Preset& prntr = *printer;
-		    if ((printer == nullptr || is_compatible_with_printer(PresetWithVendorProfile(prst, prst.vendor), PresetWithVendorProfile(prntr, prntr.vendor))) &&
+		    if (((printer == nullptr && printer_name == PageMaterials::EMPTY) || (printer != nullptr && is_compatible_with_printer(PresetWithVendorProfile(prst, prst.vendor), PresetWithVendorProfile(prntr, prntr.vendor)))) &&
 			    (type.empty() || get_type(preset) == type) &&
 				(vendor.empty() || get_vendor(preset) == vendor)) {
 
 				cb(preset);
-			}
+			} else if (prst.vendor->common_profile) {
+                cb(preset);
+            }
 		}
 	}
 
@@ -343,6 +345,7 @@ struct PageMaterials: ConfigWizardPage
     std::string empty_printers_label;
     bool first_paint = { false };
     static const std::string EMPTY;
+    static const std::string CUSTOM;
     int last_hovered_item = { -1 } ;
 
     PageMaterials(ConfigWizard *parent, Materials *materials, wxString title, wxString shortname, wxString list1name);
