@@ -174,14 +174,15 @@ if (DEP_MSAN)
     endif ()
     set(_msan_common_flags   "${_msan_linker_flags} -fno-omit-frame-pointer")
     set(_msan_only_cxx_flags "-nostdinc++ -isystem ${DESTDIR}/usr/local/include -isystem ${DESTDIR}/usr/local/include/c++/v1")
-    set(_msan_only_ld_flags  "-Wl,-L${DESTDIR}/usr/local/lib,-lc++ -undefined dynamic_lookup")
+    set(_msan_only_ld_flags  "-Wl,-L${DESTDIR}/usr/local/lib,-lc++")
 
     # For dependencies that are configure using CFLAGS, CXXFLAGS and LDFLAGS instead of CMAKE_*_FLAGS.
     set(MSAN_CMAKE_C_FLAGS   "${_msan_common_flags}")
     set(MSAN_CMAKE_CXX_FLAGS "${_msan_common_flags} ${_msan_only_cxx_flags}")
-    set(MSAN_CMAKE_LD_FLAGS  "${_msan_common_flags} ${_msan_only_ld_flags}")
+    set(MSAN_CMAKE_LD_FLAGS  "${_msan_only_ld_flags}")
 
     set(_msan_all_flags  "${_msan_common_flags} ${_msan_only_cxx_flags} ${_msan_only_ld_flags}")
+    
     set(MSAN_CMAKE_ARGS ${_MSAN_CMAKE_ARGS} -DCMAKE_C_FLAGS:STRING=${MSAN_CMAKE_C_FLAGS} -DCMAKE_CXX_FLAGS:STRING=${MSAN_CMAKE_CXX_FLAGS} -DCMAKE_EXE_LINKER_FLAGS=${_msan_only_ld_flags} -DCMAKE_SHARED_LINKER_FLAGS=${_msan_only_ld_flags} -DCMAKE_BUILD_RPATH:STRING=${DESTDIR}/usr/local/lib)
 
     set(DEP_CMAKE_OPTS ${DEP_CMAKE_OPTS} ${MSAN_CMAKE_ARGS})

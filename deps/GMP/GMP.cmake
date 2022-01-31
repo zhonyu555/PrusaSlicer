@@ -23,7 +23,7 @@ else ()
 
     if (DEP_MSAN)
         set(_gmp_ccflags  "${_gmp_ccflags} ${MSAN_CMAKE_C_FLAGS}")
-        set(_gmp_cxxflags "${_gmp_cxxflags} ${MSAN_CMAKE_CXX_FLAGS} ${MSAN_CMAKE_LD_FLAGS} ${MSAN_CMAKE_RPATH}")
+        set(_gmp_cxxflags "${_gmp_cxxflags} ${MSAN_CMAKE_CXX_FLAGS} ${MSAN_CMAKE_LD_FLAGS} -Wl,--rpath=${DESTDIR}/usr/local/lib")
     endif ()
 
     if (APPLE)
@@ -51,6 +51,7 @@ else ()
     ExternalProject_Add(dep_GMP
         URL https://gmplib.org/download/gmp/gmp-6.2.1.tar.bz2
         URL_HASH SHA256=eae9326beb4158c386e39a356818031bd28f3124cf915f8c5b1dc4c7a36b4d7c
+        DEPENDS  ${RUNTIME_LIBS}
         DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/GMP
         BUILD_IN_SOURCE ON
         CONFIGURE_COMMAND env "CFLAGS=${_gmp_ccflags}" "CXXFLAGS=${_gmp_cxxflags}" ./configure ${_cross_compile_arg} --enable-shared=no --enable-cxx=yes --enable-static=yes "--prefix=${DESTDIR}/usr/local" ${_gmp_build_tgt}

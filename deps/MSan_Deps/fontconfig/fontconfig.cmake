@@ -1,6 +1,6 @@
 set(_fontconfig_cflags "-fsanitize=memory -fsanitize-recover=memory -I${DESTDIR}/usr/local/include -I${DESTDIR}/usr/local/include/c++/v1")
 set(_fontconfig_cxxflags "-fsanitize=memory -nostdinc++ -fsanitize-recover=memory -I${DESTDIR}/usr/local/include -I${DESTDIR}/usr/local/include/c++/v1")
-set(_fontconfig_ldflags "-fsanitize=memory -fsanitize-recover=memory -L${DESTDIR}/usr/local/lib -Wl,-rpath,${DESTDIR}/usr/local/lib,-L${DESTDIR}/usr/local/lib,-lc++")
+set(_fontconfig_ldflags "-fsanitize=memory -fsanitize-recover=memory -Wl,-rpath,${DESTDIR}/usr/local/lib,-L${DESTDIR}/usr/local/lib,-lc++")
 
 ExternalProject_Add(dep_fontconfig
         URL https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.13.1.tar.gz
