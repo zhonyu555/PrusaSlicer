@@ -22,6 +22,7 @@
 #include <boost/filesystem/path.hpp>
 #include <boost/format.hpp>
 #include <boost/log/trivial.hpp>
+#include <boost/regex.hpp>
 
 // Mark string for localization and translate.
 #define L(s) Slic3r::I18N::translate(s)
@@ -110,6 +111,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "output_filename_format",
         "perimeter_acceleration",
         "post_process",
+        "gcode_substitutions",
         "printer_notes",
         "retract_before_travel",
         "retract_before_wipe",
@@ -348,7 +350,9 @@ bool Print::has_infinite_skirt() const
 
 bool Print::has_skirt() const
 {
-    return (m_config.skirt_height > 0 && m_config.skirts > 0) || m_config.draft_shield != dsDisabled;
+    return (m_config.skirt_height > 0 && m_config.skirts > 0) || has_infinite_skirt();
+    // case dsLimited should only be taken into account when skirt_height and skirts are positive,
+    // so it is covered by the first condition.
 }
 
 bool Print::has_brim() const
@@ -435,7 +439,8 @@ static inline bool sequential_print_vertical_clearance_valid(const Print &print)
     return it == print_instances_ordered.end() || (*it)->print_object->height() <= scale_(print.config().extruder_clearance_height.value);
 }
 
-
+// Matches "G92 E0" with various forms of writing the zero and with an optional comment.
+boost::regex regex_g92e0 { "^[ \\t]*[gG]92[ \\t]*[eE](0(\\.0*)?|\\.0+)[ \\t]*(;.*)?$" };
 
 // Precondition: Print::validate() requires the Print::apply() to be called its invocation.
 std::string Print::validate(std::string* warning) const
@@ -648,6 +653,18 @@ std::string Print::validate(std::string* warning) const
             		if (! validate_extrusion_width(region.config(), opt_key, layer_height, err_msg))
 		            	return err_msg;
         }
+    }
+    {
+        bool before_layer_gcode_resets_extruder = boost::regex_search(m_config.before_layer_gcode.value, regex_g92e0);
+        bool layer_gcode_resets_extruder        = boost::regex_search(m_config.layer_gcode.value, regex_g92e0);
+        if (m_config.use_relative_e_distances) {
+            // See GH issues #6336 #5073
+            if (! before_layer_gcode_resets_extruder && ! layer_gcode_resets_extruder)
+                return L("Relative extruder addressing requires resetting the extruder position at each layer to prevent loss of floating point accuracy. Add \"G92 E0\" to layer_gcode.");
+        } else if (before_layer_gcode_resets_extruder)
+            return L("\"G92 E0\" was found in before_layer_gcode, which is incompatible with absolute extruder addressing.");
+        else if (layer_gcode_resets_extruder)
+                return L("\"G92 E0\" was found in layer_gcode, which is incompatible with absolute extruder addressing.");
     }
 
     return std::string();
