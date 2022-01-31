@@ -1450,6 +1450,28 @@ static bool is_default(wxWindow* win)
         
     return win == tlw->GetDefaultItem();
 }
+
+static bool is_focused_another_button(wxButton* btn)
+{
+    HWND hFocusedWnd = ::GetFocus();
+    if (hFocusedWnd == btn->GetHWND())
+        return false;
+
+    TCHAR className[1000];
+    ::GetClassName(::GetFocus(), className, 1000);
+    std::wstring classNameString(className);
+    return classNameString == L"Button";
+}
+
+static void send_leave_event_for_buttons(wxWindow* window)
+{
+    if (wxButton* btn = dynamic_cast<wxButton*>(window))
+        wxPostEvent(btn, wxMouseEvent(wxEVT_LEAVE_WINDOW));
+    else if (auto children = window->GetChildren(); children.GetCount() > 1)
+        for (auto child : children)
+            send_leave_event_for_buttons(child);
+}
+
 #endif
 
 void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool just_font/* = false*/)
@@ -1468,7 +1490,7 @@ void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool ju
                 if (btn->GetLabel().IsEmpty())
                     btn->SetBackgroundColour(mark ? m_color_selected_btn_bg   : highlited ? m_color_highlight_default : m_color_window_default);
                 else
-                    btn->SetForegroundColour(mark ? m_color_hovered_btn_label : (is_default(btn) ? m_color_default_btn_label : m_color_label_default));
+                    btn->SetForegroundColour(mark ? m_color_hovered_btn_label : ((is_default(btn) && !is_focused_another_button(btn)) ? m_color_default_btn_label : m_color_label_default));
                 btn->Refresh();
                 btn->Update();
             };
@@ -1502,6 +1524,14 @@ void GUI_App::UpdateDarkUI(wxWindow* window, bool highlited/* = false*/, bool ju
     }
     else if (dynamic_cast<wxListBox*>(window))
         window->SetWindowStyle(window->GetWindowStyle() | wxBORDER_SIMPLE);
+
+    // #ysFIXME after redraw buttons in wxWidgets - Temporary workaround to indicate default button when some "non-button" control receive a focus
+    window->Bind(wxEVT_SET_FOCUS, [window](wxFocusEvent& event) {
+        auto children = find_toplevel_parent(window)->GetChildren();
+        for (auto child : children)
+            send_leave_event_for_buttons(child);
+        event.Skip();
+    });
 
     if (!just_font)
         window->SetBackgroundColour(highlited ? m_color_highlight_default : m_color_window_default);
