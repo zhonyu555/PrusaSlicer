@@ -2177,7 +2177,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
                     }
 				}
                 // common filament bundle has no printers - filament would be never added
-                if(pair.second.preset_bundle->printers.begin() == pair.second.preset_bundle->printers.end())
+                if(pair.second.vendor_profile->common_profile && pair.second.preset_bundle->printers.begin() == pair.second.preset_bundle->printers.end())
                 {
                     if (!filaments.containts(&filament)) {
                         filaments.push(&filament);
