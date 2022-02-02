@@ -54,11 +54,6 @@ else()
   set(_curl_static ON)
 endif()
 
-set(_curl_msan_cmake_args ${MSAN_CMAKE_ARGS})
-if (DEP_MSAN)
-  list(TRANSFORM _curl_msan_cmake_args APPEND " -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/msan_ignorelist.txt")
-endif()
-
 prusaslicer_add_cmake_project(CURL
   # GIT_REPOSITORY      https://github.com/curl/curl.git
   # GIT_TAG             curl-7_75_0
@@ -72,7 +67,7 @@ prusaslicer_add_cmake_project(CURL
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON
     -DCURL_STATICLIB=${_curl_static}
     ${_curl_platform_flags}
-    ${_curl_msan_cmake_args}
+    ${MSAN_CMAKE_ARGS}
 )
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")

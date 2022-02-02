@@ -56,3 +56,4 @@ fun:do_clip_line
 fun:stipple_line
 fun:emit_segment
 fun:lines
+fun:cso_find_state_template

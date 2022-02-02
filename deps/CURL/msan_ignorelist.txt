@@ -1,5 +1,0 @@
-# False positive in https://github.com/curl/curl/blob/2f33be817cbce6ad7a36f27dd7ada9219f13584c/lib/select.c#L433 because FD_ZERO doesn't count as initialization https://github.com/google/sanitizers/issues/192.
-# Another solution is unpoison affected variables, but it needs to apply a patch to CURL.
-# https://stackoverflow.com/questions/20617788/using-memory-sanitizer-with-libstdc
-# https://stackoverflow.com/questions/35665226/how-to-determine-when-fsanitize-memory-is-in-use
-fun:Curl_poll

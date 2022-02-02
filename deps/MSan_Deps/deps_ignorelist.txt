@@ -1,0 +1,44 @@
+# Boost 1.75
+fun:_ZN5boost10filesystem6detail6statusERKNS0_4pathEPNS_6system10error_codeE
+fun:_ZN5boost10filesystem6detail14symlink_statusERKNS0_4pathEPNS_6system10error_codeE
+fun:_ZN5boost10filesystem6detail9file_sizeERKNS0_4pathEPNS_6system10error_codeE
+
+# Curl 7.75
+# False positive in https://github.com/curl/curl/blob/2f33be817cbce6ad7a36f27dd7ada9219f13584c/lib/select.c#L433 because FD_ZERO doesn't count as initialization https://github.com/google/sanitizers/issues/192.
+# Another solution is unpoison affected variables, but it needs to apply a patch to CURL.
+# https://stackoverflow.com/questions/20617788/using-memory-sanitizer-with-libstdc
+# https://stackoverflow.com/questions/35665226/how-to-determine-when-fsanitize-memory-is-in-use
+fun:Curl_poll
+
+# TBB 2017 Update 7
+# Those functions really use uninitialized variables.
+# So we put them on ignore list until we updated TBB to a newer version.
+fun:_ZN3tbb8internal16custom_schedulerINS0_20IntelSchedulerTraitsEE18local_wait_for_allERNS_4taskEPS4_
+fun:_ZN3tbb8internal18cpu_ctl_env_helper7set_envEPKNS_18task_group_contextE
+fun:_ZN3tbb18task_group_context16copy_fp_settingsERKS0_
+
+# CGAL - 5.0
+fun:_ZN4CGAL4Mpzf4aorsERKS0_S2_i
+fun:_ZN4CGAL11Mpzf_abscmpERKNS_4MpzfES2_
+fun:_ZN4CGAL4Mpzf5clearEv
+fun:_ZN4CGALmlERKNS_4MpzfES2_
+
+# GMP 6.2.1
+fun:__gmpn_add
+fun:__gmpn_cmp
+fun:__gmpn_divexact
+fun:__gmpn_gcd
+fun:__gmpn_gcd_1
+fun:__gmpn_sub
+fun:__gmpq_aors
+fun:__gmpq_clear
+fun:__gmpq_mul
+fun:__gmpz_add
+fun:__gmpz_divexact
+fun:__gmpz_divexact_gcd
+fun:__gmpz_gcd
+fun:__gmpz_mul
+fun:__gmpz_realloc
+fun:__gmpz_set
+fun:__gmpz_sub
+fun:__gmpz_tdiv_q_2exp

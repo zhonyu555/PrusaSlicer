@@ -164,7 +164,7 @@ if (DEP_MSAN)
     include(MSan_Deps/Mesa3D/Mesa3D.cmake)
     include(MSan_Deps/fontconfig/fontconfig.cmake)
 
-    set(_msan_linker_flags "-fsanitize=memory")
+    set(_msan_linker_flags "-fsanitize=memory -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/MSan_Deps/deps_ignorelist.txt")
     if (DEP_MSAN_RECOVERY)
         set(_msan_linker_flags "${_msan_linker_flags} -fsanitize-recover=memory")
     endif ()
