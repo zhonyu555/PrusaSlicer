@@ -1308,6 +1308,9 @@ std::pair<PresetsConfigSubstitutions, size_t> PresetBundle::load_configbundle(
         } else if (boost::starts_with(section.first, "filament:")) {
             presets = &this->filaments;
             preset_name = section.first.substr(9);
+            if (vendor_profile->common_profile) {
+                preset_name += " @Common";
+            }
         } else if (boost::starts_with(section.first, "sla_print:")) {
             presets = &this->sla_prints;
             preset_name = section.first.substr(10);
