@@ -17,7 +17,6 @@ function(copy_chromium_prebuilt_libraries path_from path_to)
             libdbusmenu-gtk3
             libdbusmenu-jsonloader
             libffi
-            libfreetype
             libgdk-3
             libgdk_pixbuf-2.0
             libgdk_pixbuf_xlib-2.0

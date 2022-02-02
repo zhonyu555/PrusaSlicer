@@ -7,6 +7,7 @@ function(install_msan_shared_libraries path_from path_to)
             libc++
             libc++abi
             libfontconfig
+            libfreetype
             libGL
             libLLVM)
 

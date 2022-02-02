@@ -162,6 +162,7 @@ if (DEP_MSAN)
     include(MSan_Deps/Chromium_prebuilt_libraries/Chromium.cmake)
     include(MSan_Deps/LLVM/LLVM.cmake)
     include(MSan_Deps/Mesa3D/Mesa3D.cmake)
+    include(MSan_Deps/freetype/freetype.cmake)
     include(MSan_Deps/fontconfig/fontconfig.cmake)
 
     set(_msan_linker_flags "-fsanitize=memory -fsanitize-blacklist=${CMAKE_CURRENT_LIST_DIR}/MSan_Deps/deps_ignorelist.txt")
