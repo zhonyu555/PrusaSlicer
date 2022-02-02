@@ -34,3 +34,13 @@ add_subdirectory(fff_print)
 add_subdirectory(sla_print)
 add_subdirectory(cpp17 EXCLUDE_FROM_ALL)    # does not have to be built all the time
 # add_subdirectory(example)
+
+if (SLIC3R_MSAN)
+    # Symlink the msan runtime into the test's build directory from where they are executed 
+	add_custom_target(msan_copy_libs
+		COMMAND [ -d ${CMAKE_PREFIX_PATH}/../lib ] && ln -s ${CMAKE_PREFIX_PATH}/../lib ${CMAKE_CURRENT_BINARY_DIR}/lib
+		COMMENT "Copy gmp runtime to build tree"
+		VERBATIM
+	)
+	add_dependencies(test_common msan_copy_libs)
+endif()
