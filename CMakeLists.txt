@@ -274,6 +274,7 @@ if (SLIC3R_MSAN)
     add_compile_options(-nostdinc++)
     add_compile_options(-stdlib=libc++)
     add_compile_options(-fsanitize=memory)
+    add_compile_options(-fsanitize-blacklist=${PROJECT_SOURCE_DIR}/deps/MSan_Deps/deps_ignorelist.txt)
     add_compile_options(-fno-omit-frame-pointer)
 
     include_directories(${CMAKE_PREFIX_PATH}/include)
