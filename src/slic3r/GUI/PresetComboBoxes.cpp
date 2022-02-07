@@ -785,6 +785,7 @@ void PlaterPresetComboBox::update()
     bool wide_icons = selected_preset && !selected_preset->is_compatible;
 
     std::map<wxString, wxBitmap*> nonsys_presets;
+    std::map<wxString, wxBitmap*> common_presets;
 
     wxString selected_user_preset;
     wxString tooltip;
@@ -832,10 +833,18 @@ void PlaterPresetComboBox::update()
 
         const std::string name = preset.alias.empty() ? preset.name : preset.alias;
         if (preset.is_default || preset.is_system) {
-            Append(get_preset_name(preset), *bmp);
-            validate_selection(is_selected);
-            if (is_selected)
-                tooltip = from_u8(preset.name);
+            if (preset.vendor && preset.vendor->common_profile) {
+                common_presets.emplace(get_preset_name(preset), bmp);
+                if (is_selected) {
+                    selected_user_preset = get_preset_name(preset);
+                    tooltip = from_u8(preset.name);
+                }
+            } else {
+                Append(get_preset_name(preset), *bmp);
+                validate_selection(is_selected);
+                if (is_selected)
+                    tooltip = from_u8(preset.name);
+            }
         }
         else
         {
@@ -847,6 +856,14 @@ void PlaterPresetComboBox::update()
         }
         if (i + 1 == m_collection->num_default_presets())
             set_label_marker(Append(separator(L("System presets")), wxNullBitmap));
+    }
+    if (!common_presets.empty())
+    {
+        set_label_marker(Append(separator(L("Common presets")), wxNullBitmap));
+        for (std::map<wxString, wxBitmap*>::iterator it = common_presets.begin(); it != common_presets.end(); ++it) {
+            Append(it->first, *it->second);
+            validate_selection(it->first == selected_user_preset);
+        }
     }
     if (!nonsys_presets.empty())
     {

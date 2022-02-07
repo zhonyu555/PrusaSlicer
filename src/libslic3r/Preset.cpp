@@ -1113,14 +1113,14 @@ size_t PresetCollection::update_compatible_internal(const PresetWithVendorProfil
             m_idx_selected = size_t(-1);
         if (selected)
             preset_selected.is_compatible = preset_edited.is_compatible;
-        if (preset_edited.vendor->common_profile) {
+        if (preset_edited.vendor && preset_edited.vendor->common_profile) {
             indexes_of_common_presets.push_back(idx_preset);
         }
     }
     // filter out common generic profiles where profile with same alias and compability exists
     if (!indexes_of_common_presets.empty()) {
         for (size_t idx_preset = m_num_default_presets; idx_preset < m_presets.size(); ++idx_preset) {
-            if (!m_presets[idx_preset].vendor->common_profile && m_presets[idx_preset].is_compatible) {
+            if (m_presets[idx_preset].vendor && !m_presets[idx_preset].vendor->common_profile && m_presets[idx_preset].is_compatible) {
                 std::string preset_alias = m_presets[idx_preset].alias;
                 for (size_t idx_idx = 0; idx_idx < indexes_of_common_presets.size(); ++idx_idx) {
                     size_t idx_common = indexes_of_common_presets[idx_idx];
