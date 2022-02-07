@@ -1125,7 +1125,12 @@ size_t PresetCollection::update_compatible_internal(const PresetWithVendorProfil
                 for (size_t idx_idx = 0; idx_idx < indexes_of_common_presets.size(); ++idx_idx) {
                     size_t idx_common = indexes_of_common_presets[idx_idx];
                     if (m_presets[idx_common].alias == preset_alias) {
+                        // unselect selected common filament if there is non-common alias compatible
+                        if (idx_common == m_idx_selected && (unselect_if_incompatible == PresetSelectCompatibleType::Always || unselect_if_incompatible == PresetSelectCompatibleType::OnlyIfWasCompatible)) {
+                            m_idx_selected = size_t(-1);
+                        }
                         m_presets[idx_common].is_compatible = false;
+                        break;
                     }
                 }
             }
