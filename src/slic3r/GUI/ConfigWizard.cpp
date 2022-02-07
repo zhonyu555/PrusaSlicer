@@ -751,69 +751,74 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
     const auto bgr_clr_str = wxString::Format(wxT("#%02X%02X%02X"), bgr_clr.Red(), bgr_clr.Green(), bgr_clr.Blue());
     const auto text_clr = wxGetApp().get_label_clr_default();
     const auto text_clr_str = wxString::Format(wxT("#%02X%02X%02X"), text_clr.Red(), text_clr.Green(), text_clr.Blue());
-    wxString common_line = format_wxstr(_L("%1% visible for (%2%) printer are universal profiles available for all printers. These might not be calibrated for your printer."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"), _L("Custom"));
-    wxString first_line = format_wxstr(_L("%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
-    first_line = wxString::Format("%s<br /><br />%s", common_line, first_line);
     wxString text;
-    if (all_printers) {
-        wxString second_line = format_wxstr(_L("All installed printers are compatible with the selected %1%."), materials->technology == T_FFF ? _L("filament") : _L("SLA material"));
-        text = wxString::Format(
-            "<html>"
-            "<style>"
-            "table{border-spacing: 1px;}"
-            "</style>"
-            "<body bgcolor= %s>"
-            "<font color=%s>"
-            "<font size=\"3\">"
-            "%s<br />%s"
-            "</font>"
-            "</font>"
-            "</body>"
-            "</html>"
-            , bgr_clr_str
-            , text_clr_str
-            , first_line
-            , second_line
-            );
+    if (custom_shown) {
+        text = format_wxstr(_L("%1% visible for <b>(%2%)</b> printer are universal profiles available for all printers. These might not be compatible with your printer."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"), _L("Custom"));
     } else {
-        wxString second_line;
-        if (!printer_names.empty())
-            second_line = (materials->technology == T_FFF ?
-                          _L("Only the following installed printers are compatible with the selected filaments") :
-                          _L("Only the following installed printers are compatible with the selected SLA materials")) + ":";
-        text = wxString::Format(
-            "<html>"
-            "<style>"
-            "table{border-spacing: 1px;}"
-            "</style>"
-            "<body bgcolor= %s>"
-            "<font color=%s>"
-            "<font size=\"3\">"
-            "%s<br />%s"
-            "<table>"
-            "<tr>"
-            , bgr_clr_str
-            , text_clr_str
-            , first_line
-            , second_line);
-        for (size_t i = 0; i < printer_names.size(); ++i)
-        {
-            text += wxString::Format("<td>%s</td>", boost::nowide::widen(printer_names[i]));
-            if (i % 3 == 2) {
-                text += wxString::Format(
-                    "</tr>"
-                    "<tr>");
-            }
+        wxString first_line = format_wxstr(_L("%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
+
+        if (all_printers) {
+            wxString second_line = format_wxstr(_L("All installed printers are compatible with the selected %1%."), materials->technology == T_FFF ? _L("filament") : _L("SLA material"));
+            text = wxString::Format(
+                "<html>"
+                "<style>"
+                "table{border-spacing: 1px;}"
+                "</style>"
+                "<body bgcolor= %s>"
+                "<font color=%s>"
+                "<font size=\"3\">"
+                "%s<br /><br />%s"
+                "</font>"
+                "</font>"
+                "</body>"
+                "</html>"
+                , bgr_clr_str
+                , text_clr_str
+                , first_line
+                , second_line
+            );
         }
-        text += wxString::Format(
-            "</tr>"
-            "</table>"
-            "</font>"
-            "</font>"
-            "</body>"
-            "</html>"
-        );
+        else {
+            wxString second_line;
+            if (!printer_names.empty())
+                second_line = (materials->technology == T_FFF ?
+                    _L("Only the following installed printers are compatible with the selected filaments") :
+                    _L("Only the following installed printers are compatible with the selected SLA materials")) + ":";
+            text = wxString::Format(
+                "<html>"
+                "<style>"
+                "table{border-spacing: 1px;}"
+                "</style>"
+                "<body bgcolor= %s>"
+                "<font color=%s>"
+                "<font size=\"3\">"
+                "%s<br /><br />%s"
+                "<table>"
+                "<tr>"
+                , bgr_clr_str
+                , text_clr_str
+                , first_line
+                , second_line);
+            for (size_t i = 0; i < printer_names.size(); ++i)
+            {
+                text += wxString::Format("<td>%s</td>", boost::nowide::widen(printer_names[i]));
+                if (i % 3 == 2) {
+                    text += wxString::Format(
+                        "</tr>"
+                        "<tr>");
+                }
+            }
+            text += wxString::Format(
+                "</tr>"
+                "</table>"
+                "</font>"
+                "</font>"
+                "</body>"
+                "</html>"
+            );
+        }
     }
+       
    
     wxFont font = get_default_font_for_dpi(this, get_dpi_for_window(this));
     const int fs = font.GetPointSize();
@@ -890,7 +895,7 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
     };
     if (!are_equal(sel_printers, sel_printers_prev)) {
 #endif
-
+        custom_shown = false;
         // Refresh type list
 		list_type->Clear();
 		list_type->append(_L("(All)"), &EMPTY);
@@ -954,7 +959,7 @@ void PageMaterials::update_lists(int sel_type, int sel_vendor, int last_selected
             list_printer->SetSelection(wxNOT_FOUND);
             list_printer->SetSelection(1);
             sel_printers_count = list_printer->GetSelections(sel_printers);
-
+            custom_shown = true;
             materials->filter_presets(nullptr, CUSTOM, EMPTY, EMPTY, [this](const Preset* p) {
                 const std::string& type = this->materials->get_type(p);
                 if (list_type->find(type) == wxNOT_FOUND) {
@@ -1168,6 +1173,15 @@ void PageMaterials::select_material(int i)
     const bool checked = list_profile->IsChecked(i);
 
     const std::string& alias_key = list_profile->get_data(i);
+    if (checked && custom_shown && !notification_shown) {
+        notification_shown = true;
+        wxString message = _L("You have selelected universal filament. Please note that these filaments are available for all printers but are NOT certain to be compatible with your printer. Do you still wish to have this filament selected?\n(This message won't be displayed again.)");
+        MessageDialog msg(this, message, _L("Notice"), wxYES_NO);
+        if (msg.ShowModal() == wxID_NO) {
+            list_profile->Check(i, false);
+            return;
+        }
+    }
     wizard_p()->update_presets_in_config(materials->appconfig_section(), alias_key, checked);
 }
 

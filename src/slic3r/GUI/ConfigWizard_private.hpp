@@ -349,6 +349,9 @@ struct PageMaterials: ConfigWizardPage
     bool first_paint = { false };
     static const std::string EMPTY;
     static const std::string CUSTOM;
+    // notify user first time they choose common profile
+    bool custom_shown = { false }; 
+    bool notification_shown = { false };
     int last_hovered_item = { -1 } ;
 
     PageMaterials(ConfigWizard *parent, Materials *materials, wxString title, wxString shortname, wxString list1name);
