@@ -751,7 +751,9 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
     const auto bgr_clr_str = wxString::Format(wxT("#%02X%02X%02X"), bgr_clr.Red(), bgr_clr.Green(), bgr_clr.Blue());
     const auto text_clr = wxGetApp().get_label_clr_default();
     const auto text_clr_str = wxString::Format(wxT("#%02X%02X%02X"), text_clr.Red(), text_clr.Green(), text_clr.Blue());
+    wxString common_line = format_wxstr(_L("%1% visible for (%2%) printer are universal profiles available for all printers. These might not be calibrated for your printer."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"), _L("Custom"));
     wxString first_line = format_wxstr(_L("%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
+    first_line = wxString::Format("%s<br /><br />%s", common_line, first_line);
     wxString text;
     if (all_printers) {
         wxString second_line = format_wxstr(_L("All installed printers are compatible with the selected %1%."), materials->technology == T_FFF ? _L("filament") : _L("SLA material"));
@@ -763,7 +765,7 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
             "<body bgcolor= %s>"
             "<font color=%s>"
             "<font size=\"3\">"
-            "%s<br /><br />%s"
+            "%s<br />%s"
             "</font>"
             "</font>"
             "</body>"
@@ -787,7 +789,7 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
             "<body bgcolor= %s>"
             "<font color=%s>"
             "<font size=\"3\">"
-            "%s<br /><br />%s"
+            "%s<br />%s"
             "<table>"
             "<tr>"
             , bgr_clr_str
