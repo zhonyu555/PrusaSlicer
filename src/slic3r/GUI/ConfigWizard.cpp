@@ -719,7 +719,11 @@ void PageMaterials::reload_presets()
     clear();
 
 	list_printer->append(_L("(All)"), &EMPTY);
-    list_printer->append(_L("(Custom)"), &CUSTOM);
+
+    const AppConfig* app_config = wxGetApp().app_config;
+    if (app_config->get("no_common") == "0")
+        list_printer->append(_L("(Custom)"), &CUSTOM);
+
     //list_printer->SetLabelMarkup("<b>bald</b>");
 	for (const Preset* printer : materials->printers) {
 		list_printer->append(printer->name, &printer->name);

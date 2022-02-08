@@ -857,7 +857,9 @@ void PlaterPresetComboBox::update()
         if (i + 1 == m_collection->num_default_presets())
             set_label_marker(Append(separator(L("System presets")), wxNullBitmap));
     }
-    if (!common_presets.empty())
+
+    const AppConfig* app_config = wxGetApp().app_config;
+    if (!common_presets.empty() && app_config->get("no_common") == "0")
     {
         set_label_marker(Append(separator(L("Common presets")), wxNullBitmap));
         for (std::map<wxString, wxBitmap*>::iterator it = common_presets.begin(); it != common_presets.end(); ++it) {
