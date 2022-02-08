@@ -1985,8 +1985,13 @@ void ConfigWizard::priv::load_pages()
             index->add_page(page_temps);
         }
    
-    // Filaments & Materials
+        // Filaments & Materials
         if (any_fff_selected) { index->add_page(page_filaments); }
+        // Filaments page if only custom printer is selected 
+        const AppConfig* app_config = wxGetApp().app_config;
+        if (!any_fff_selected && custom_printer_selected && (app_config->get("no_common") == "0")) {
+            index->add_page(page_filaments);
+        }
     }
     if (any_sla_selected) { index->add_page(page_sla_materials); }
 
