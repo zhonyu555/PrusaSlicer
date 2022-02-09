@@ -123,6 +123,11 @@ TagCheckResult tag_check_tech(const std::string& tag)
 	std::vector<std::string> allowed_tags = { "FFF", "MMU", "SLA" };
 	if (std::find(allowed_tags.begin(), allowed_tags.end(), tag) != allowed_tags.end()) {
 		const PrinterTechnology tech = wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology();
+		BOOST_LOG_TRIVIAL(error) << "Technology: " << (int)tech;
+		if (tech == ptUnknown)
+			BOOST_LOG_TRIVIAL(error) << "Hint notifications tag_check_tech gets UNKNOWN Printer technology.";
+		if (tech == ptAny)
+			BOOST_LOG_TRIVIAL(error) << "Hint notifications tag_check_tech gets ANY Printer technology.";
 		if (tech == ptFFF) {
 			// MMU / FFF
 			bool is_mmu = wxGetApp().extruders_edited_cnt() > 1;
