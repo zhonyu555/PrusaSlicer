@@ -560,7 +560,8 @@ struct ConfigWizard::priv
     std::unique_ptr<DynamicPrintConfig> custom_config;           // Backing for custom printer definition
     bool any_fff_selected;        // Used to decide whether to display Filaments page
     bool any_sla_selected;        // Used to decide whether to display SLA Materials page
-    bool custom_printer_selected { false }; 
+    bool custom_printer_selected { false }; // New custom printer is requested
+    bool custom_printer_in_bundle { false }; // Older custom printer already exists when wizard starts
     // Set to true if there are none FFF printers on the main FFF page. If true, only SLA printers are shown (not even custum printers)
     bool only_sla_mode { false };
 

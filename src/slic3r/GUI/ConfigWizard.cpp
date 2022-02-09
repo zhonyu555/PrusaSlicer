@@ -1989,14 +1989,15 @@ void ConfigWizard::priv::load_pages()
         if (any_fff_selected) { index->add_page(page_filaments); }
         // Filaments page if only custom printer is selected 
         const AppConfig* app_config = wxGetApp().app_config;
-        if (!any_fff_selected && custom_printer_selected && (app_config->get("no_common") == "0")) {
+        if (!any_fff_selected && (custom_printer_selected || custom_printer_in_bundle) && (app_config->get("no_common") == "0")) {
+            update_materials(T_ANY);
             index->add_page(page_filaments);
         }
     }
     if (any_sla_selected) { index->add_page(page_sla_materials); }
 
     // there should to be selected at least one printer
-    btn_finish->Enable(any_fff_selected || any_sla_selected || custom_printer_selected);
+    btn_finish->Enable(any_fff_selected || any_sla_selected || custom_printer_selected || custom_printer_in_bundle);
 
     index->add_page(page_update);
     index->add_page(page_reload_from_disk);
@@ -2055,6 +2056,13 @@ void ConfigWizard::priv::load_vendors()
                 const auto &variant = needle->second.second;
                 appconfig_new.set_variant("PrusaResearch", model, variant, true);
             }
+    }
+
+    for (const auto& printer : wxGetApp().preset_bundle->printers) {
+        if (!printer.is_default && !printer.is_system && printer.is_visible) {
+            custom_printer_in_bundle = true;
+            break;
+        }
     }
 
     // Initialize the is_visible flag in printer Presets
@@ -2178,7 +2186,7 @@ void ConfigWizard::priv::set_run_reason(RunReason run_reason)
 
 void ConfigWizard::priv::update_materials(Technology technology)
 {
-    if (any_fff_selected && (technology & T_FFF)) {
+    if ((any_fff_selected || custom_printer_in_bundle || custom_printer_selected) && (technology & T_FFF)) {
         filaments.clear();
         aliases_fff.clear();
         // Iterate filaments in all bundles
