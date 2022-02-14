@@ -477,6 +477,7 @@ private:
 
 public:
 	ScalableButton*	m_reset_to_filament_color = nullptr;
+    ScalableButton* m_get_machine_limits_btn  = nullptr;
 
 	size_t		m_extruders_count;
 	size_t		m_extruders_count_old = 0;
