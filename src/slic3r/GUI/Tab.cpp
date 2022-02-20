@@ -2641,7 +2641,8 @@ PageShp TabPrinter::build_kinematics_page()
 
             return sizer;
         };
-        line.append_widget(get_machine_limits_btn);
+        if (m_supports_get_machine_limits)
+            line.append_widget(get_machine_limits_btn);
         optgroup->append_line(line);
 
         line = { "", "" };
@@ -3092,10 +3093,17 @@ void TabPrinter::update_fff()
     bool supports_min_feedrates         = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
     bool use_silent_mode                = m_config->opt_bool("silent_mode") && supports_min_feedrates;
     bool supports_retract_acceleration  = flavor != gcfRepRapFirmware;
+    bool supports_get_machine_limits = m_preset_bundle->physical_printers.has_selection() 
+        && PrintHost::get_print_host(m_preset_bundle->physical_printers.get_selected_printer_config())->get_name() == "Duet";
 
     if (m_use_silent_mode != use_silent_mode)	{
         m_rebuild_kinematics_page = true;
         m_use_silent_mode = use_silent_mode;
+    }
+
+    if (m_supports_get_machine_limits != supports_get_machine_limits) {
+        m_rebuild_kinematics_page = true;
+        m_supports_get_machine_limits = supports_get_machine_limits;;
     }
         
     if (m_supports_travel_acceleration != supports_travel_acceleration 
@@ -4325,6 +4333,13 @@ void TabPrinter::update_machine_limits_description(const MachineLimitsUsage usag
 		break;
 	default: assert(false);
 	}
+    
+    const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+    if (flavor == gcfRepRapFirmware)
+        text += _L("\n\nYou can retrieve machine limits from Duet printer hosts using the \"Get Machine Limits from "
+                   "Host\" button above. (RepRapFirmware 3.0+ required)\n\nIf no button is visible, you must first "
+                   "configure, then select, a compatible physical printer. See the cog button at the top of this page.");
+
     m_machine_limits_description_line->SetText(text);
 }
 
