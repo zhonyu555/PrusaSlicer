@@ -524,7 +524,7 @@ bool PresetComboBox::selection_is_changed_according_to_physical_printers()
     std::string preset_name = physical_printers.get_selected_printer_preset_name();
 
     // if new preset wasn't selected, there is no need to call update preset selection
-    if (old_printer_preset == preset_name) {
+    /*if (old_printer_preset == preset_name) {
         // we need just to update according Plater<->Tab PresetComboBox 
         if (dynamic_cast<PlaterPresetComboBox*>(this)!=nullptr) {
             wxGetApp().get_tab(m_type)->update_preset_choice();
@@ -536,7 +536,7 @@ bool PresetComboBox::selection_is_changed_according_to_physical_printers()
 
         this->update();
         return true;
-    }
+    }*/
 
     Tab* tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
     if (tab)
