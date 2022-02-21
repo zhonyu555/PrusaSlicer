@@ -2333,10 +2333,13 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
                 if (opt_key == "silent_mode") {
+                    const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+                    bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
                     bool val = boost::any_cast<bool>(value);
-                    if (m_use_silent_mode != val) {
+                    bool use_silent_mode = val && is_marlin_flavor;
+                    if (m_use_silent_mode != use_silent_mode) {
                         m_rebuild_kinematics_page = true;
-                        m_use_silent_mode = val;
+                        m_use_silent_mode = use_silent_mode;
                     }
                 }
                 if (opt_key == "gcode_flavor") {
@@ -2344,6 +2347,7 @@ void TabPrinter::build_fff()
                     bool supports_travel_acceleration = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfRepRapFirmware));
                     bool supports_min_feedrates       = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfMarlinLegacy));
                     bool supports_retract_acceleration = flavor != int(gcfRepRapFirmware);
+                    bool use_silent_mode = m_config->opt_bool("silent_mode") && supports_min_feedrates;
                     if (supports_travel_acceleration != m_supports_travel_acceleration 
                         || supports_min_feedrates != m_supports_min_feedrates
                         || supports_retract_acceleration != m_supports_retract_acceleration) {
@@ -2351,6 +2355,10 @@ void TabPrinter::build_fff()
                         m_supports_travel_acceleration = supports_travel_acceleration;
                         m_supports_min_feedrates = supports_min_feedrates;
                         m_supports_retract_acceleration = supports_retract_acceleration;
+                    }
+                    if (m_use_silent_mode != use_silent_mode) {
+                        m_rebuild_kinematics_page = true;
+                        m_use_silent_mode = use_silent_mode;
                     }
                 }
                 build_unregular_pages();
@@ -2927,12 +2935,12 @@ void TabPrinter::toggle_options()
 
     const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
     bool have_multiple_extruders = m_extruders_count > 1;
+    bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
     if (m_active_page->title() == "Custom G-code")
         toggle_option("toolchange_gcode", have_multiple_extruders);
     if (m_active_page->title() == "General") {
         toggle_option("single_extruder_multi_material", have_multiple_extruders);
 
-        bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
         // Disable silent mode for non-marlin firmwares.
         toggle_option("silent_mode", is_marlin_flavor);
     }
@@ -3006,7 +3014,7 @@ void TabPrinter::toggle_options()
             || flavor == gcfRepRapFirmware);
 		const auto *machine_limits_usage = m_config->option<ConfigOptionEnum<MachineLimitsUsage>>("machine_limits_usage");
 		bool enabled = machine_limits_usage->value != MachineLimitsUsage::Ignore;
-        bool silent_mode = m_config->opt_bool("silent_mode");
+        bool silent_mode = m_config->opt_bool("silent_mode") && is_marlin_flavor;
         int  max_field = silent_mode ? 2 : 1;
     	for (const std::string &opt : Preset::machine_limits_options())
             for (int i = 0; i < max_field; ++ i)
@@ -3030,15 +3038,17 @@ void TabPrinter::update()
 
 void TabPrinter::update_fff()
 {
-    if (m_use_silent_mode != m_config->opt_bool("silent_mode"))	{
-        m_rebuild_kinematics_page = true;
-        m_use_silent_mode = m_config->opt_bool("silent_mode");
-    }
-
     const auto flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
-    bool supports_travel_acceleration = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
-    bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
-    bool supports_retract_acceleration = flavor != gcfRepRapFirmware;
+    bool supports_travel_acceleration   = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
+    bool supports_min_feedrates         = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
+    bool use_silent_mode                = m_config->opt_bool("silent_mode") && supports_min_feedrates;
+    bool supports_retract_acceleration  = flavor != gcfRepRapFirmware;
+
+    if (m_use_silent_mode != use_silent_mode)	{
+        m_rebuild_kinematics_page = true;
+        m_use_silent_mode = use_silent_mode;
+    }
+        
     if (m_supports_travel_acceleration != supports_travel_acceleration 
         || m_supports_min_feedrates != supports_min_feedrates
         || m_supports_retract_acceleration != supports_retract_acceleration) {
