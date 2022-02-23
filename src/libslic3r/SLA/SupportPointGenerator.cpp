@@ -18,7 +18,7 @@
 #include "libnest2d/utils/rotcalipers.hpp"
 
 #include "libslic3r/EdgeGrid.hpp"
-#include "libslic3r/VoronoiOffset.hpp"
+#include "libslic3r/Geometry/VoronoiOffset.hpp"
 
 #include "libslic3r/SLA/SupportIslands/VoronoiGraphUtils.hpp"
 #include "libslic3r/SLA/SupportIslands/SampleIslandUtils.hpp"

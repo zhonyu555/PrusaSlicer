@@ -301,35 +301,35 @@ set(SLIC3R_SOURCES
     SLA/Clustering.hpp
     SLA/Clustering.cpp
     SLA/ReprojectPointsOnMesh.hpp
-    SLA/SupportIslands/EvaluateNeighbor.cpp"
-"SLA/SupportIslands/EvaluateNeighbor.hpp"
-"SLA/SupportIslands/ExpandNeighbor.cpp"
-"SLA/SupportIslands/ExpandNeighbor.hpp"
-"SLA/SupportIslands/IStackFunction.hpp"
-"SLA/SupportIslands/LineUtils.cpp"
-"SLA/SupportIslands/LineUtils.hpp"
-"SLA/SupportIslands/NodeDataWithResult.hpp"
-"SLA/SupportIslands/Parabola.hpp"
-"SLA/SupportIslands/ParabolaUtils.cpp"
-"SLA/SupportIslands/ParabolaUtils.hpp"
-"SLA/SupportIslands/PointUtils.cpp"
-"SLA/SupportIslands/PointUtils.hpp"
-"SLA/SupportIslands/PolygonUtils.cpp"
-"SLA/SupportIslands/PolygonUtils.hpp"
-"SLA/SupportIslands/PostProcessNeighbor.cpp"
-"SLA/SupportIslands/PostProcessNeighbor.hpp"
-"SLA/SupportIslands/PostProcessNeighbors.cpp"
-"SLA/SupportIslands/PostProcessNeighbors.hpp"
-"SLA/SupportIslands/SampleConfig.hpp"
-"SLA/SupportIslands/SampleConfigFactory.hpp"
-"SLA/SupportIslands/SampleIslandUtils.cpp"
-"SLA/SupportIslands/SampleIslandUtils.hpp"
-"SLA/SupportIslands/SupportIslandPoint.cpp"
-"SLA/SupportIslands/SupportIslandPoint.hpp"
-"SLA/SupportIslands/VectorUtils.hpp"
-"SLA/SupportIslands/VoronoiGraph.hpp"
-"SLA/SupportIslands/VoronoiGraphUtils.cpp"
-"SLA/SupportIslands/VoronoiGraphUtils.hpp"
+    SLA/SupportIslands/EvaluateNeighbor.cpp
+    SLA/SupportIslands/EvaluateNeighbor.hpp
+    SLA/SupportIslands/ExpandNeighbor.cpp
+    SLA/SupportIslands/ExpandNeighbor.hpp
+    SLA/SupportIslands/IStackFunction.hpp
+    SLA/SupportIslands/LineUtils.cpp
+    SLA/SupportIslands/LineUtils.hpp
+    SLA/SupportIslands/NodeDataWithResult.hpp
+    SLA/SupportIslands/Parabola.hpp
+    SLA/SupportIslands/ParabolaUtils.cpp
+    SLA/SupportIslands/ParabolaUtils.hpp
+    SLA/SupportIslands/PointUtils.cpp
+    SLA/SupportIslands/PointUtils.hpp
+    SLA/SupportIslands/PolygonUtils.cpp
+    SLA/SupportIslands/PolygonUtils.hpp
+    SLA/SupportIslands/PostProcessNeighbor.cpp
+    SLA/SupportIslands/PostProcessNeighbor.hpp
+    SLA/SupportIslands/PostProcessNeighbors.cpp
+    SLA/SupportIslands/PostProcessNeighbors.hpp
+    SLA/SupportIslands/SampleConfig.hpp
+    SLA/SupportIslands/SampleConfigFactory.hpp
+    SLA/SupportIslands/SampleIslandUtils.cpp
+    SLA/SupportIslands/SampleIslandUtils.hpp
+    SLA/SupportIslands/SupportIslandPoint.cpp
+    SLA/SupportIslands/SupportIslandPoint.hpp
+    SLA/SupportIslands/VectorUtils.hpp
+    SLA/SupportIslands/VoronoiGraph.hpp
+    SLA/SupportIslands/VoronoiGraphUtils.cpp
+    SLA/SupportIslands/VoronoiGraphUtils.hpp
 )
 
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})
