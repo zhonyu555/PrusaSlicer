@@ -116,7 +116,7 @@ void GLGizmoSlaSupports::on_render_for_picking()
     render_points(selection, true);
 }
 
-void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking) const
+void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
 {
     size_t cache_size = m_editing_mode ? m_editing_cache.size() : m_normal_cache.size();
 
@@ -127,6 +127,14 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
     if (! has_points && ! has_holes)
         return;
 
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    GLShaderProgram* shader = wxGetApp().get_shader(picking ? "flat" : "gouraud_light");
+    if (shader == nullptr)
+        return;
+
+    shader->start_using();
+    ScopeGuard guard([shader]() { shader->stop_using(); });
+#else
     GLShaderProgram* shader = picking ? nullptr : wxGetApp().get_shader("gouraud_light");
     if (shader != nullptr)
         shader->start_using();
@@ -134,6 +142,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
         if (shader != nullptr)
             shader->stop_using();
     });
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
     const GLVolume* vol = selection.get_volume(*selection.get_volume_idxs().begin());
     const Transform3d& instance_scaling_matrix_inverse = vol->get_instance_transformation().get_matrix(true, true, false, true).inverse();
@@ -174,9 +183,15 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
             }
         }
 
-        const_cast<GLModel*>(&m_cone)->set_color(-1, render_color);
-        const_cast<GLModel*>(&m_sphere)->set_color(-1, render_color);
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+        m_cone.set_color(render_color);
+        m_sphere.set_color(render_color);
+        if (!picking)
+#else
+        m_cone.set_color(-1, render_color);
+        m_sphere.set_color(-1, render_color);
         if (shader && !picking)
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
             shader->set_uniform("emission_factor", 0.5f);
 
         // Inverse matrix of the instance scaling is applied so that the mark does not scale with the object.
@@ -227,9 +242,13 @@ void GLGizmoSlaSupports::render_points(const Selection& selection, bool picking)
     // Now render the drain holes:
     if (has_holes && ! picking) {
         render_color = { 0.7f, 0.7f, 0.7f, 0.7f };
-        const_cast<GLModel*>(&m_cylinder)->set_color(-1, render_color);
-        if (shader)
-            shader->set_uniform("emission_factor", 0.5f);
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+        m_cylinder.set_color(render_color);
+#else
+        m_cylinder.set_color(-1, render_color);
+        if (shader != nu)
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+        shader->set_uniform("emission_factor", 0.5f);
         for (const sla::DrainHole& drain_hole : m_c->selection_info()->model_object()->sla_drain_holes) {
             if (is_mesh_point_clipped(drain_hole.pos.cast<double>()))
                 continue;

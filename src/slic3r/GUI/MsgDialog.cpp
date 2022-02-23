@@ -95,9 +95,9 @@ wxButton* MsgDialog::get_button(wxWindowID btn_id){
 void MsgDialog::apply_style(long style)
 {
     if (style & wxOK)       add_button(wxID_OK, true);
-    if (style & wxYES)      add_button(wxID_YES, true);
-    if (style & wxNO)       add_button(wxID_NO);
-    if (style & wxCANCEL)   add_button(wxID_CANCEL);
+    if (style & wxYES)      add_button(wxID_YES,   !(style & wxNO_DEFAULT));
+    if (style & wxNO)       add_button(wxID_NO,     (style & wxNO_DEFAULT));
+    if (style & wxCANCEL)   add_button(wxID_CANCEL, (style & wxCANCEL_DEFAULT));
 
     logo->SetBitmap( create_scaled_bitmap(style & wxICON_WARNING        ? "exclamation" :
                                           style & wxICON_INFORMATION    ? "info"        :
@@ -292,42 +292,52 @@ InfoDialog::InfoDialog(wxWindow* parent, const wxString &title, const wxString& 
     finalize();
 }
 
-wxString get_wraped_wxString(const wxString& text_in, size_t line_len /*=80*/)
+wxString get_wraped_wxString(const wxString& in, size_t line_len /*=80*/)
 {
-#ifdef __WXMSW__
-    char slash = '\\';
-#else
-    char slash = '/';
-#endif
-    char space = ' ';
-    char new_line = '\n';
+    wxString out;
 
-    wxString text = text_in;
-
-    int idx = -1;
-    size_t cur_len = 0;
-    size_t text_len = text.Len();
-
-    for (size_t i = 0; i < text_len; i++) {
-        cur_len++;
-        if (text[i] == space || text[i] == slash)
-            idx = i;
-        if (text[i] == new_line) {
-            idx = -1;
-            cur_len = 0;
-            continue;
-        }
-        if (cur_len >= line_len && idx >= 0) {
-            if (text[idx] == slash) {
-                text.insert(static_cast<size_t>(idx) + 1, 1, new_line);
-                text_len++;
+    for (size_t i = 0; i < in.size();) {
+        // Overwrite the character (space or newline) starting at ibreak?
+        bool   overwrite = false;
+        // UTF8 representation of wxString.
+        // Where to break the line, index of character at the start of a UTF-8 sequence.
+        size_t ibreak    = size_t(-1);
+        // Overwrite the character at ibreak (it is a whitespace) or not?
+        size_t j = i;
+        for (size_t cnt = 0; j < in.size();) {
+            if (bool newline = in[j] == '\n'; in[j] == ' ' || in[j] == '\t' || newline) {
+                // Overwrite the whitespace.
+                ibreak    = j ++;
+                overwrite = true;
+                if (newline)
+                    break;
+            } else if (in[j] == '/') {
+                // Insert after the slash.
+                ibreak    = ++ j;
+                overwrite = false;
+            } else
+                j += get_utf8_sequence_length(in.c_str() + j, in.size() - j);
+            if (++ cnt == line_len) {
+                if (ibreak == size_t(-1)) {
+                    ibreak    = j;
+                    overwrite = false;
+                }
+                break;
             }
-            else // space
-                text[idx] = new_line;
-            cur_len = i - static_cast<size_t>(idx);
         }
+        if (j == in.size()) {
+            out.append(in.begin() + i, in.end());
+            break;
+        }
+        assert(ibreak != size_t(-1));
+        out.append(in.begin() + i, in.begin() + ibreak);
+        out.append('\n');
+        i = ibreak;
+        if (overwrite)
+            ++ i;
     }
-    return text;
+
+    return out;
 }
 
 }

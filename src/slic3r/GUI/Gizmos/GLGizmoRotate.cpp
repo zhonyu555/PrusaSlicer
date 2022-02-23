@@ -134,15 +134,14 @@ void GLGizmoRotate::on_render()
     if (shader != nullptr) {
         shader->start_using();
 
-        const float radius = Offset + m_parent.get_selection().get_bounding_box().radius();
-        const bool radius_changed = std::abs(m_old_radius - radius) > EPSILON;
-        m_old_radius = radius;
+        const bool radius_changed = std::abs(m_old_radius - m_radius) > EPSILON;
+        m_old_radius = m_radius;
 
         ColorRGBA color((m_hover_id != -1) ? m_drag_color : m_highlight_color);
         render_circle(color, radius_changed);
         if (m_hover_id != -1) {
-            const bool hover_radius_changed = std::abs(m_old_hover_radius - radius) > EPSILON;
-            m_old_hover_radius = radius;
+            const bool hover_radius_changed = std::abs(m_old_hover_radius - m_radius) > EPSILON;
+            m_old_hover_radius = m_radius;
 
             render_scale(color, hover_radius_changed);
             render_snap_radii(color, hover_radius_changed);
@@ -233,24 +232,22 @@ void GLGizmoRotate::render_circle() const
     if (!m_circle.is_initialized() || radius_changed) {
         m_circle.reset();
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::LineLoop;
-        entity.positions.reserve(ScaleStepsCount);
-        entity.normals.reserve(ScaleStepsCount);
-        entity.indices.reserve(ScaleStepsCount);
-        for (unsigned int i = 0; i < ScaleStepsCount; ++i) {
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(ScaleStepsCount);
+        init_data.reserve_indices(ScaleStepsCount);
+
+        // vertices + indices
+        for (unsigned short i = 0; i < ScaleStepsCount; ++i) {
             const float angle = float(i * ScaleStepRad);
-            entity.positions.emplace_back(::cos(angle) * m_radius, ::sin(angle) * m_radius, 0.0f);
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.indices.emplace_back(i);
+            init_data.add_vertex(Vec3f(::cos(angle) * m_radius, ::sin(angle) * m_radius, 0.0f));
+            init_data.add_ushort_index(i);
         }
 
-        init_data.entities.emplace_back(entity);
-        m_circle.init_from(init_data);
+        m_circle.init_from(std::move(init_data));
     }
 
-    m_circle.set_color(-1, color);
+    m_circle.set_color(color);
     m_circle.render();
 #else
     ::glBegin(GL_LINE_LOOP);
@@ -278,13 +275,13 @@ void GLGizmoRotate::render_scale() const
     if (!m_scale.is_initialized() || radius_changed) {
         m_scale.reset();
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::Lines;
-        entity.positions.reserve(2 * ScaleStepsCount);
-        entity.normals.reserve(2 * ScaleStepsCount);
-        entity.indices.reserve(2 * ScaleStepsCount);
-        for (unsigned int i = 0; i < ScaleStepsCount; ++i) {
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(2 * ScaleStepsCount);
+        init_data.reserve_indices(2 * ScaleStepsCount);
+
+        // vertices + indices
+        for (unsigned short i = 0; i < ScaleStepsCount; ++i) {
             const float angle = float(i * ScaleStepRad);
             const float cosa = ::cos(angle);
             const float sina = ::sin(angle);
@@ -293,19 +290,16 @@ void GLGizmoRotate::render_scale() const
             const float out_x = (i % ScaleLongEvery == 0) ? cosa * out_radius_long : cosa * out_radius_short;
             const float out_y = (i % ScaleLongEvery == 0) ? sina * out_radius_long : sina * out_radius_short;
 
-            entity.positions.emplace_back(in_x, in_y, 0.0f);
-            entity.positions.emplace_back(out_x, out_y, 0.0f);
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.indices.emplace_back(i * 2 + 0);
-            entity.indices.emplace_back(i * 2 + 1);
+            init_data.add_vertex(Vec3f(in_x, in_y, 0.0f));
+            init_data.add_vertex(Vec3f(out_x, out_y, 0.0f));
+            init_data.add_ushort_index(i * 2);
+            init_data.add_ushort_index(i * 2 + 1);
         }
 
-        init_data.entities.emplace_back(entity);
-        m_scale.init_from(init_data);
-}
+        m_scale.init_from(std::move(init_data));
+    }
 
-    m_scale.set_color(-1, color);
+    m_scale.set_color(color);
     m_scale.render();
 #else
     ::glBegin(GL_LINES);
@@ -340,13 +334,13 @@ void GLGizmoRotate::render_snap_radii() const
     if (!m_snap_radii.is_initialized() || radius_changed) {
         m_snap_radii.reset();
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::Lines;
-        entity.positions.reserve(2 * ScaleStepsCount);
-        entity.normals.reserve(2 * ScaleStepsCount);
-        entity.indices.reserve(2 * ScaleStepsCount);
-        for (unsigned int i = 0; i < ScaleStepsCount; ++i) {
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(2 * ScaleStepsCount);
+        init_data.reserve_indices(2 * ScaleStepsCount);
+
+        // vertices + indices
+        for (unsigned short i = 0; i < ScaleStepsCount; ++i) {
             const float angle = float(i * step);
             const float cosa = ::cos(angle);
             const float sina = ::sin(angle);
@@ -355,19 +349,16 @@ void GLGizmoRotate::render_snap_radii() const
             const float out_x = cosa * out_radius;
             const float out_y = sina * out_radius;
 
-            entity.positions.emplace_back(in_x, in_y, 0.0f);
-            entity.positions.emplace_back(out_x, out_y, 0.0f);
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.indices.emplace_back(i * 2 + 0);
-            entity.indices.emplace_back(i * 2 + 1);
+            init_data.add_vertex(Vec3f(in_x, in_y, 0.0f));
+            init_data.add_vertex(Vec3f(out_x, out_y, 0.0f));
+            init_data.add_ushort_index(i * 2);
+            init_data.add_ushort_index(i * 2 + 1);
         }
 
-        init_data.entities.emplace_back(entity);
-        m_snap_radii.init_from(init_data);
+        m_snap_radii.init_from(std::move(init_data));
     }
 
-    m_snap_radii.set_color(-1, color);
+    m_snap_radii.set_color(color);
     m_snap_radii.render();
 #else
     ::glBegin(GL_LINES);
@@ -394,24 +385,22 @@ void GLGizmoRotate::render_reference_radius(const ColorRGBA& color, bool radius_
     if (!m_reference_radius.is_initialized() || radius_changed) {
         m_reference_radius.reset();
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::Lines;
-        entity.positions.reserve(2);
-        entity.positions.emplace_back(0.0f, 0.0f, 0.0f);
-        entity.positions.emplace_back(m_radius * (1.0f + GrabberOffset), 0.0f, 0.0f);
-        entity.normals.reserve(2);
-        entity.normals.emplace_back(Vec3f::UnitZ());
-        entity.normals.emplace_back(Vec3f::UnitZ());
-        entity.indices.reserve(2);
-        entity.indices.emplace_back(0);
-        entity.indices.emplace_back(1);
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(2);
+        init_data.reserve_indices(2);
 
-        init_data.entities.emplace_back(entity);
-        m_reference_radius.init_from(init_data);
+        // vertices
+        init_data.add_vertex(Vec3f(0.0f, 0.0f, 0.0f));
+        init_data.add_vertex(Vec3f(m_radius * (1.0f + GrabberOffset), 0.0f, 0.0f));
+
+        // indices
+        init_data.add_ushort_line(0, 1);
+
+        m_reference_radius.init_from(std::move(init_data));
     }
 
-    m_reference_radius.set_color(-1, color);
+    m_reference_radius.set_color(color);
     m_reference_radius.render();
 }
 #else
@@ -437,24 +426,22 @@ void GLGizmoRotate::render_angle() const
     if (!m_angle_arc.is_initialized() || radius_changed) {
         m_angle_arc.reset();
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::LineStrip;
-        entity.positions.reserve(1 + AngleResolution);
-        entity.normals.reserve(1 + AngleResolution);
-        entity.indices.reserve(1 + AngleResolution);
-        for (unsigned int i = 0; i <= AngleResolution; ++i) {
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::LineStrip, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(1 + AngleResolution);
+        init_data.reserve_indices(1 + AngleResolution);
+
+        // vertices + indices
+        for (unsigned short i = 0; i <= AngleResolution; ++i) {
             const float angle = float(i) * step_angle;
-            entity.positions.emplace_back(::cos(angle) * ex_radius, ::sin(angle) * ex_radius, 0.0f);
-            entity.normals.emplace_back(Vec3f::UnitZ());
-            entity.indices.emplace_back(i);
+            init_data.add_vertex(Vec3f(::cos(angle) * ex_radius, ::sin(angle) * ex_radius, 0.0f));
+            init_data.add_ushort_index(i);
         }
 
-        init_data.entities.emplace_back(entity);
-        m_angle_arc.init_from(init_data);
+        m_angle_arc.init_from(std::move(init_data));
     }
 
-    m_angle_arc.set_color(-1, color);
+    m_angle_arc.set_color(color);
     m_angle_arc.render();
 #else
     ::glBegin(GL_LINE_STRIP);
@@ -476,32 +463,30 @@ void GLGizmoRotate::render_grabber_connection(const ColorRGBA& color, bool radiu
         m_grabber_connection.model.reset();
         m_grabber_connection.old_center = m_grabbers.front().center;
 
-        GLModel::InitializationData init_data;
-        GLModel::InitializationData::Entity entity;
-        entity.type = GLModel::PrimitiveType::Lines;
-        entity.positions.reserve(2);
-        entity.positions.emplace_back(0.0f, 0.0f, 0.0f);
-        entity.positions.emplace_back(m_grabbers.front().center.cast<float>());
-        entity.normals.reserve(2);
-        entity.normals.emplace_back(Vec3f::UnitZ());
-        entity.normals.emplace_back(Vec3f::UnitZ());
-        entity.indices.reserve(2);
-        entity.indices.emplace_back(0);
-        entity.indices.emplace_back(1);
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P3, GLModel::Geometry::EIndexType::USHORT };
+        init_data.reserve_vertices(2);
+        init_data.reserve_indices(2);
 
-        init_data.entities.emplace_back(entity);
-        m_grabber_connection.model.init_from(init_data);
+        // vertices
+        init_data.add_vertex(Vec3f(0.0f, 0.0f, 0.0f));
+        init_data.add_vertex((Vec3f)m_grabbers.front().center.cast<float>());
+
+        // indices
+        init_data.add_ushort_line(0, 1);
+
+        m_grabber_connection.model.init_from(std::move(init_data));
     }
 
-    m_grabber_connection.model.set_color(-1, color);
+    m_grabber_connection.model.set_color(color);
     m_grabber_connection.model.render();
 }
 #endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
-void GLGizmoRotate::render_grabber(const BoundingBoxf3& box) const
+void GLGizmoRotate::render_grabber(const BoundingBoxf3& box)
 {
 #if !ENABLE_GLBEGIN_GLEND_REMOVAL
-    const double grabber_radius = (double)m_radius * (1.0 + (double)GrabberOffset);
+    const double grabber_radius = double(m_radius) * (1.0 + double(GrabberOffset));
     m_grabbers[0].center = Vec3d(::cos(m_angle) * grabber_radius, ::sin(m_angle) * grabber_radius, 0.0);
     m_grabbers[0].angles.z() = m_angle;
 
@@ -522,19 +507,26 @@ void GLGizmoRotate::render_grabber_extension(const BoundingBoxf3& box, bool pick
     const float mean_size = float((box.size().x() + box.size().y() + box.size().z()) / 3.0);
     const double size = m_dragging ? double(m_grabbers.front().get_dragging_half_size(mean_size)) : double(m_grabbers.front().get_half_size(mean_size));
 
-    ColorRGBA color = m_grabbers.front().color;
-    if (!picking && m_hover_id != -1)
-        color = complementary(color);
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    GLShaderProgram* shader = wxGetApp().get_shader(picking ? "flat" : "gouraud_light");
+    if (shader == nullptr)
+        return;
 
+    m_cone.set_color((!picking && m_hover_id != -1) ? complementary(m_grabbers.front().color) : m_grabbers.front().color);
+
+    shader->start_using();
+    shader->set_uniform("emission_factor", 0.1f);
+#else
     GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
     if (shader == nullptr)
         return;
 
-    m_cone.set_color(-1, color);
+    m_cone.set_color(-1, (!picking && m_hover_id != -1) ? complementary(m_grabbers.front().color) : m_grabbers.front().color);
     if (!picking) {
         shader->start_using();
         shader->set_uniform("emission_factor", 0.1f);
     }
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
     const Vec3d& center = m_grabbers.front().center;
 
@@ -555,13 +547,15 @@ void GLGizmoRotate::render_grabber_extension(const BoundingBoxf3& box, bool pick
     m_cone.render();
     glsafe(::glPopMatrix());
 
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
     if (! picking)
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
         shader->stop_using();
 }
 
 void GLGizmoRotate::transform_to_local(const Selection& selection) const
 {
-    glsafe(::glTranslated(m_center(0), m_center(1), m_center(2)));
+    glsafe(::glTranslated(m_center.x(), m_center.y(), m_center.z()));
 
     if (selection.is_single_volume() || selection.is_single_modifier() || selection.requires_local_axes()) {
         const Transform3d orient_matrix = selection.get_volume(*selection.get_volume_idxs().begin())->get_instance_transformation().get_matrix(true, false, true, true);

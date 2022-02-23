@@ -1188,6 +1188,7 @@ void GCodeProcessor::reset()
 
     m_start_position = { 0.0f, 0.0f, 0.0f, 0.0f };
     m_end_position = { 0.0f, 0.0f, 0.0f, 0.0f };
+    m_saved_position = { 0.0f, 0.0f, 0.0f, 0.0f };
     m_origin = { 0.0f, 0.0f, 0.0f, 0.0f };
     m_cached_position.reset();
     m_wiping = false;
@@ -1195,6 +1196,7 @@ void GCodeProcessor::reset()
     m_line_id = 0;
     m_last_line_id = 0;
     m_feedrate = 0.0f;
+    m_feed_multiply.reset();
     m_width = 0.0f;
     m_height = 0.0f;
     m_forced_width = 0.0f;
@@ -1616,6 +1618,13 @@ void GCodeProcessor::process_gcode_line(const GCodeReader::GCodeLine& line, bool
                     default: break;
                     }
                     break;
+                case '6':
+                    switch (cmd[2]) {
+                    case '0': { process_G60(line); break; } // Save Current Position
+                    case '1': { process_G61(line); break; } // Return to Saved Position
+                    default: break;
+                    }
+                    break;
                 case '9':
                     switch (cmd[2]) {
                     case '0': { process_G90(line); break; } // Set to Absolute Positioning
@@ -1690,6 +1699,7 @@ void GCodeProcessor::process_gcode_line(const GCodeReader::GCodeLine& line, bool
                         break;
                     case '2':
                         switch (cmd[3]) {
+                        case '0': { process_M220(line); break; } // Set Feedrate Percentage
                         case '1': { process_M221(line); break; } // Set extrude factor override percentage
                         default: break;
                         }
@@ -1947,7 +1957,7 @@ void GCodeProcessor::process_tags(const std::string_view comment, bool producers
             if (!m_result.spiral_vase_layers.empty() && m_end_position[Z] == m_result.spiral_vase_layers.back().first)
                 m_result.spiral_vase_layers.back().second.second = move_id;
             else
-                m_result.spiral_vase_layers.push_back({ m_end_position[Z], { move_id, move_id } });
+                m_result.spiral_vase_layers.push_back({ static_cast<float>(m_end_position[Z]), { move_id, move_id } });
         }
 #endif // ENABLE_SPIRAL_VASE_LAYERS
         return;
@@ -2490,14 +2500,14 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
 
     // updates feedrate from line, if present
     if (line.has_f())
-        m_feedrate = line.f() * MMMIN_TO_MMSEC;
+        m_feedrate = m_feed_multiply.current * line.f() * MMMIN_TO_MMSEC;
 
     // calculates movement deltas
     float max_abs_delta = 0.0f;
     AxisCoords delta_pos;
     for (unsigned char a = X; a <= E; ++a) {
         delta_pos[a] = m_end_position[a] - m_start_position[a];
-        max_abs_delta = std::max(max_abs_delta, std::abs(delta_pos[a]));
+        max_abs_delta = std::max<float>(max_abs_delta, std::abs(delta_pos[a]));
     }
 
     // no displacement, return
@@ -2607,7 +2617,7 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
             if (curr.abs_axis_feedrate[a] != 0.0f) {
                 float axis_max_feedrate = get_axis_max_feedrate(static_cast<PrintEstimatedStatistics::ETimeMode>(i), static_cast<Axis>(a));
                 if (axis_max_feedrate != 0.0f)
-                    min_feedrate_factor = std::min(min_feedrate_factor, axis_max_feedrate / curr.abs_axis_feedrate[a]);
+                    min_feedrate_factor = std::min<float>(min_feedrate_factor, axis_max_feedrate / curr.abs_axis_feedrate[a]);
             }
         }
 
@@ -2826,6 +2836,43 @@ void GCodeProcessor::process_G28(const GCodeReader::GCodeLine& line)
     GCodeReader reader;
     reader.parse_line(new_line_raw, [&](GCodeReader& reader, const GCodeReader::GCodeLine& gline) { new_gline = gline; });
     process_G1(new_gline);
+}
+
+void GCodeProcessor::process_G60(const GCodeReader::GCodeLine& line)
+{
+    if (m_flavor == gcfMarlinLegacy || m_flavor == gcfMarlinFirmware)
+        m_saved_position = m_end_position;
+}
+
+void GCodeProcessor::process_G61(const GCodeReader::GCodeLine& line)
+{
+    if (m_flavor == gcfMarlinLegacy || m_flavor == gcfMarlinFirmware) {
+        bool modified = false;
+        if (line.has_x()) {
+            m_end_position[X] = m_saved_position[X];
+            modified = true;
+        }
+        if (line.has_y()) {
+            m_end_position[Y] = m_saved_position[Y];
+            modified = true;
+        }
+        if (line.has_z()) {
+            m_end_position[Z] = m_saved_position[Z];
+            modified = true;
+        }
+        if (line.has_e()) {
+            m_end_position[E] = m_saved_position[E];
+            modified = true;
+        }
+        if (line.has_f())
+            m_feedrate = m_feed_multiply.current * line.f();
+
+        if (!modified)
+            m_end_position = m_saved_position;
+
+
+        store_move_vertex(EMoveType::Travel);
+    }
 }
 
 void GCodeProcessor::process_G90(const GCodeReader::GCodeLine& line)
@@ -3091,6 +3138,20 @@ void GCodeProcessor::process_M205(const GCodeReader::GCodeLine& line)
     }
 }
 
+void GCodeProcessor::process_M220(const GCodeReader::GCodeLine& line)
+{
+    if (m_flavor != gcfMarlinLegacy && m_flavor != gcfMarlinFirmware)
+        return;
+
+    if (line.has('B'))
+        m_feed_multiply.saved = m_feed_multiply.current;
+    float value;
+    if (line.has_value('S', value))
+        m_feed_multiply.current = value * 0.01f;
+    if (line.has('R'))
+        m_feed_multiply.current = m_feed_multiply.saved;
+}
+
 void GCodeProcessor::process_M221(const GCodeReader::GCodeLine& line)
 {
     float value_s;
@@ -3234,7 +3295,7 @@ void GCodeProcessor::store_move_vertex(EMoveType type)
 #else
         Vec3f(m_end_position[X], m_end_position[Y], m_processing_start_custom_gcode ? m_first_layer_height : m_end_position[Z]) + m_extruder_offsets[m_extruder_id],
 #endif // ENABLE_Z_OFFSET_CORRECTION
-        m_end_position[E] - m_start_position[E],
+        static_cast<float>(m_end_position[E] - m_start_position[E]),
         m_feedrate,
         m_width,
         m_height,

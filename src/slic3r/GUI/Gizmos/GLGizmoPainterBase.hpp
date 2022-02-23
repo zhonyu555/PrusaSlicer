@@ -3,7 +3,11 @@
 
 #include "GLGizmoBase.hpp"
 
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+#include "slic3r/GUI/GLModel.hpp"
+#else
 #include "slic3r/GUI/3DScene.hpp"
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 
 #include "libslic3r/ObjectID.hpp"
 #include "libslic3r/TriangleSelector.hpp"
@@ -28,6 +32,7 @@ enum class PainterGizmoType {
     MMU_SEGMENTATION
 };
 
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
 class GLPaintContour
 {
 public:
@@ -63,6 +68,7 @@ public:
     GLuint m_contour_VBO_id{0};
     GLuint m_contour_EBO_id{0};
 };
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
 
 class TriangleSelectorGUI : public TriangleSelector {
 public:
@@ -75,13 +81,13 @@ public:
     virtual void render(ImGuiWrapper *imgui);
     void         render() { this->render(nullptr); }
 
-    void request_update_render_data() { m_update_render_data = true; };
+    void request_update_render_data() { m_update_render_data = true; }
 
 #ifdef PRUSASLICER_TRIANGLE_SELECTOR_DEBUG
     void render_debug(ImGuiWrapper* imgui);
     bool m_show_triangles{false};
     bool m_show_invalid{false};
-#endif
+#endif // PRUSASLICER_TRIANGLE_SELECTOR_DEBUG
 
 protected:
     bool m_update_render_data = false;
@@ -91,13 +97,29 @@ protected:
 private:
     void update_render_data();
 
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    GLModel                m_iva_enforcers;
+    GLModel                m_iva_blockers;
+    std::array<GLModel, 3> m_iva_seed_fills;
+#ifdef PRUSASLICER_TRIANGLE_SELECTOR_DEBUG
+    std::array<GLModel, 3> m_varrays;
+#endif // PRUSASLICER_TRIANGLE_SELECTOR_DEBUG
+#else
     GLIndexedVertexArray                m_iva_enforcers;
     GLIndexedVertexArray                m_iva_blockers;
     std::array<GLIndexedVertexArray, 3> m_iva_seed_fills;
     std::array<GLIndexedVertexArray, 3> m_varrays;
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 
 protected:
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    GLModel                      m_paint_contour;
+
+    void update_paint_contour();
+    void render_paint_contour();
+#else
     GLPaintContour                      m_paint_contour;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 };
 
 
@@ -121,11 +143,7 @@ public:
     // from usual on_render method allows to render them before transparent
     // objects, so they can be seen inside them. The usual on_render is called
     // after all volumes (including transparent ones) are rendered.
-#if ENABLE_GLBEGIN_GLEND_REMOVAL
     virtual void render_painter_gizmo() = 0;
-#else
-    virtual void render_painter_gizmo() const = 0;
-#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
     virtual const float get_cursor_radius_min() const { return CursorRadiusMin; }
     virtual const float get_cursor_radius_max() const { return CursorRadiusMax; }
@@ -133,13 +151,8 @@ public:
 
 protected:
     virtual void render_triangles(const Selection& selection) const;
-#if ENABLE_GLBEGIN_GLEND_REMOVAL
     void render_cursor();
     void render_cursor_circle();
-#else
-    void render_cursor() const;
-    void render_cursor_circle() const;
-#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     void render_cursor_sphere(const Transform3d& trafo) const;
     virtual void update_model_object() const = 0;
     virtual void update_from_model_object() = 0;
@@ -218,7 +231,11 @@ private:
                               const Camera& camera,
                               const std::vector<Transform3d>& trafo_matrices) const;
 
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    static std::shared_ptr<GLModel> s_sphere;
+#else
     static std::shared_ptr<GLIndexedVertexArray> s_sphere;
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 
     bool m_internal_stack_active = false;
     bool m_schedule_update = false;
