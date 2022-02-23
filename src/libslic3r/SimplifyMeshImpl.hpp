@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <algorithm>
 #include <cmath>
+#include <admesh/stl.h>
 
 #ifndef NDEBUG
 #include <ostream>
