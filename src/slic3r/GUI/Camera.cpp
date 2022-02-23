@@ -25,19 +25,19 @@ std::string Camera::get_type_as_string() const
 {
     switch (m_type)
     {
-    case Unknown:     return "unknown";
-    case Perspective: return "perspective";
+    case EType::Unknown:     return "unknown";
+    case EType::Perspective: return "perspective";
     default:
-    case Ortho:       return "orthographic";
+    case EType::Ortho:       return "orthographic";
     };
 }
 
 void Camera::set_type(EType type)
 {
-    if (m_type != type) {
+    if (m_type != type && (type == EType::Ortho || type == EType::Perspective)) {
         m_type = type;
         if (m_update_config_on_type_change_enabled) {
-            wxGetApp().app_config->set("use_perspective_camera", (m_type == Perspective) ? "1" : "0");
+            wxGetApp().app_config->set("use_perspective_camera", (m_type == EType::Perspective) ? "1" : "0");
             wxGetApp().app_config->save();
         }
     }
@@ -46,7 +46,7 @@ void Camera::set_type(EType type)
 void Camera::select_next_type()
 {
     unsigned char next = (unsigned char)m_type + 1;
-    if (next == (unsigned char)Num_types)
+    if (next == (unsigned char)EType::Num_types)
         next = 1;
 
     set_type((EType)next);
@@ -95,44 +95,43 @@ double Camera::get_fov() const
 {
     switch (m_type)
     {
-    case Perspective:
+    case EType::Perspective:
         return 2.0 * Geometry::rad2deg(std::atan(1.0 / m_projection_matrix.matrix()(1, 1)));
     default:
-    case Ortho:
+    case EType::Ortho:
         return 0.0;
     };
 }
 
-void Camera::apply_viewport(int x, int y, unsigned int w, unsigned int h) const
+void Camera::apply_viewport(int x, int y, unsigned int w, unsigned int h)
 {
     glsafe(::glViewport(0, 0, w, h));
-    glsafe(::glGetIntegerv(GL_VIEWPORT, const_cast<std::array<int, 4>*>(&m_viewport)->data()));
+    glsafe(::glGetIntegerv(GL_VIEWPORT, m_viewport.data()));
 }
 
-void Camera::apply_view_matrix() const
+void Camera::apply_view_matrix()
 {
     glsafe(::glMatrixMode(GL_MODELVIEW));
     glsafe(::glLoadIdentity());
     glsafe(::glMultMatrixd(m_view_matrix.data()));
 }
 
-void Camera::apply_projection(const BoundingBoxf3& box, double near_z, double far_z) const
+void Camera::apply_projection(const BoundingBoxf3& box, double near_z, double far_z)
 {
     double w = 0.0;
     double h = 0.0;
 
     const double old_distance = m_distance;
-    std::pair<double, double>* frustrum_zs = const_cast<std::pair<double, double>*>(&m_frustrum_zs);
-    *frustrum_zs = calc_tight_frustrum_zs_around(box);
+    m_frustrum_zs = calc_tight_frustrum_zs_around(box);
     if (m_distance != old_distance)
         // the camera has been moved re-apply view matrix
         apply_view_matrix();
 
     if (near_z > 0.0)
-        frustrum_zs->first = std::max(std::min(frustrum_zs->first, near_z), FrustrumMinNearZ);
+        m_frustrum_zs.first = std::max(std::min(m_frustrum_zs.first, near_z), FrustrumMinNearZ);
 
     if (far_z > 0.0)
-        frustrum_zs->second = std::max(frustrum_zs->second, far_z);
+        m_frustrum_zs.second = std::max(m_frustrum_zs.second, far_z);
 
     w = 0.5 * (double)m_viewport[2];
     h = 0.5 * (double)m_viewport[3];
@@ -144,18 +143,18 @@ void Camera::apply_projection(const BoundingBoxf3& box, double near_z, double fa
     switch (m_type)
     {
     default:
-    case Ortho:
+    case EType::Ortho:
     {
-        *const_cast<double*>(&m_gui_scale) = 1.0;
+        m_gui_scale = 1.0;
         break;
     }
-    case Perspective:
+    case EType::Perspective:
     {
         // scale near plane to keep w and h constant on the plane at z = m_distance
-        const double scale = frustrum_zs->first / m_distance;
+        const double scale = m_frustrum_zs.first / m_distance;
         w *= scale;
         h *= scale;
-        *const_cast<double*>(&m_gui_scale) = scale;
+        m_gui_scale = scale;
         break;
     }
     }
@@ -166,19 +165,19 @@ void Camera::apply_projection(const BoundingBoxf3& box, double near_z, double fa
     switch (m_type)
     {
     default:
-    case Ortho:
+    case EType::Ortho:
     {
-        glsafe(::glOrtho(-w, w, -h, h, frustrum_zs->first, frustrum_zs->second));
+        glsafe(::glOrtho(-w, w, -h, h, m_frustrum_zs.first, m_frustrum_zs.second));
         break;
     }
-    case Perspective:
+    case EType::Perspective:
     {
-        glsafe(::glFrustum(-w, w, -h, h, frustrum_zs->first, frustrum_zs->second));
+        glsafe(::glFrustum(-w, w, -h, h, m_frustrum_zs.first, m_frustrum_zs.second));
         break;
     }
     }
 
-    glsafe(::glGetDoublev(GL_PROJECTION_MATRIX, const_cast<Transform3d*>(&m_projection_matrix)->data()));
+    glsafe(::glGetDoublev(GL_PROJECTION_MATRIX, m_projection_matrix.data()));
     glsafe(::glMatrixMode(GL_MODELVIEW));
 }
 
@@ -292,7 +291,7 @@ void Camera::rotate_local_around_target(const Vec3d& rotation_rad)
 	}
 }
 
-std::pair<double, double> Camera::calc_tight_frustrum_zs_around(const BoundingBoxf3& box) const
+std::pair<double, double> Camera::calc_tight_frustrum_zs_around(const BoundingBoxf3& box)
 {
     std::pair<double, double> ret;
     auto& [near_z, far_z] = ret;
@@ -448,11 +447,11 @@ double Camera::calc_zoom_to_volumes_factor(const GLVolumePtrs& volumes, Vec3d& c
     return std::min((double)m_viewport[2] / dx, (double)m_viewport[3] / dy);
 }
 
-void Camera::set_distance(double distance) const
+void Camera::set_distance(double distance)
 {
     if (m_distance != distance) {
-        const_cast<Transform3d*>(&m_view_matrix)->translate((distance - m_distance) * get_dir_forward());
-        *const_cast<double*>(&m_distance) = distance;
+        m_view_matrix.translate((distance - m_distance) * get_dir_forward());
+        m_distance = distance;
     }
 }
 
@@ -502,7 +501,7 @@ void Camera::set_default_orientation()
     const Vec3d camera_pos = m_target + m_distance * Vec3d(sin_theta * ::sin(phi_rad), sin_theta * ::cos(phi_rad), ::cos(theta_rad));
     m_view_rotation = Eigen::AngleAxisd(theta_rad, Vec3d::UnitX()) * Eigen::AngleAxisd(phi_rad, Vec3d::UnitZ());
     m_view_rotation.normalize();
-    m_view_matrix.fromPositionOrientationScale(m_view_rotation * (- camera_pos), m_view_rotation, Vec3d(1., 1., 1.));
+    m_view_matrix.fromPositionOrientationScale(m_view_rotation * (-camera_pos), m_view_rotation, Vec3d::Ones());
 }
 
 Vec3d Camera::validate_target(const Vec3d& target) const

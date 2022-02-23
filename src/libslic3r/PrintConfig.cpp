@@ -43,14 +43,14 @@ static t_config_enum_values s_keys_map_PrinterTechnology {
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(PrinterTechnology)
 
-static t_config_enum_values s_keys_map_GCodeFlavor {
+static const t_config_enum_values s_keys_map_GCodeFlavor {
     { "reprap",         gcfRepRapSprinter },
     { "reprapfirmware", gcfRepRapFirmware },
     { "repetier",       gcfRepetier },
     { "teacup",         gcfTeacup },
     { "makerware",      gcfMakerWare },
     { "marlin",         gcfMarlinLegacy },
-    { "marlinfirmware", gcfMarlinFirmware },
+    { "marlin2",        gcfMarlinFirmware },
     { "sailfish",       gcfSailfish },
     { "smoothie",       gcfSmoothie },
     { "mach3",          gcfMach3 },
@@ -59,36 +59,38 @@ static t_config_enum_values s_keys_map_GCodeFlavor {
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(GCodeFlavor)
 
-static t_config_enum_values s_keys_map_MachineLimitsUsage {
+static const t_config_enum_values s_keys_map_MachineLimitsUsage {
     { "emit_to_gcode",      int(MachineLimitsUsage::EmitToGCode) },
     { "time_estimate_only", int(MachineLimitsUsage::TimeEstimateOnly) },
     { "ignore",             int(MachineLimitsUsage::Ignore) }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(MachineLimitsUsage)
 
-static t_config_enum_values s_keys_map_PrintHostType {
+static const t_config_enum_values s_keys_map_PrintHostType {
+    { "prusalink",      htPrusaLink },
     { "octoprint",      htOctoPrint },
     { "duet",           htDuet },
     { "flashair",       htFlashAir },
     { "astrobox",       htAstroBox },
-    { "repetier",       htRepetier }
+    { "repetier",       htRepetier },
+    { "mks",            htMKS }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(PrintHostType)
 
-static t_config_enum_values s_keys_map_AuthorizationType {
+static const t_config_enum_values s_keys_map_AuthorizationType {
     { "key",            atKeyPassword },
     { "user",           atUserPassword }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(AuthorizationType)
 
-static t_config_enum_values s_keys_map_FuzzySkinType {
+static const t_config_enum_values s_keys_map_FuzzySkinType {
     { "none",           int(FuzzySkinType::None) },
     { "external",       int(FuzzySkinType::External) },
     { "all",            int(FuzzySkinType::All) }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(FuzzySkinType)
 
-static t_config_enum_values s_keys_map_InfillPattern {
+static const t_config_enum_values s_keys_map_InfillPattern {
     { "rectilinear",        ipRectilinear },
     { "monotonic",          ipMonotonic },
     { "alignedrectilinear", ipAlignedRectilinear },
@@ -105,38 +107,48 @@ static t_config_enum_values s_keys_map_InfillPattern {
     { "archimedeanchords",  ipArchimedeanChords },
     { "octagramspiral",     ipOctagramSpiral },
     { "adaptivecubic",      ipAdaptiveCubic },
-    { "supportcubic",       ipSupportCubic }
+    { "supportcubic",       ipSupportCubic },
+#if HAS_LIGHTNING_INFILL
+    { "lightning",          ipLightning }
+#endif // HAS_LIGHTNING_INFILL
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(InfillPattern)
 
-static t_config_enum_values s_keys_map_IroningType {
+static const t_config_enum_values s_keys_map_IroningType {
     { "top",            int(IroningType::TopSurfaces) },
     { "topmost",        int(IroningType::TopmostOnly) },
     { "solid",          int(IroningType::AllSolid) }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(IroningType)
 
-static t_config_enum_values s_keys_map_SupportMaterialPattern {
+static const t_config_enum_values s_keys_map_SlicingMode {
+    { "regular",        int(SlicingMode::Regular) },
+    { "even_odd",       int(SlicingMode::EvenOdd) },
+    { "close_holes",    int(SlicingMode::CloseHoles) }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SlicingMode)
+
+static const t_config_enum_values s_keys_map_SupportMaterialPattern {
     { "rectilinear",        smpRectilinear },
     { "rectilinear-grid",   smpRectilinearGrid },
     { "honeycomb",          smpHoneycomb }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SupportMaterialPattern)
 
-static t_config_enum_values s_keys_map_SupportMaterialStyle {
+static const t_config_enum_values s_keys_map_SupportMaterialStyle {
     { "grid",           smsGrid },
     { "snug",           smsSnug }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SupportMaterialStyle)
 
-static t_config_enum_values s_keys_map_SupportMaterialInterfacePattern {
+static const t_config_enum_values s_keys_map_SupportMaterialInterfacePattern {
     { "auto",           smipAuto },
     { "rectilinear",    smipRectilinear },
     { "concentric",     smipConcentric }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SupportMaterialInterfacePattern)
 
-static t_config_enum_values s_keys_map_SeamPosition {
+static const t_config_enum_values s_keys_map_SeamPosition {
     { "random",         spRandom },
     { "nearest",        spNearest },
     { "aligned",        spAligned },
@@ -157,6 +169,12 @@ static const t_config_enum_values s_keys_map_SLAPillarConnectionMode = {
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SLAPillarConnectionMode)
 
+static const t_config_enum_values s_keys_map_SLAMaterialSpeed = {
+    {"slow", slamsSlow},
+    {"fast", slamsFast}
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(SLAMaterialSpeed);
+
 static const t_config_enum_values s_keys_map_BrimType = {
     {"no_brim",         btNoBrim},
     {"outer_only",      btOuterOnly},
@@ -164,6 +182,27 @@ static const t_config_enum_values s_keys_map_BrimType = {
     {"outer_and_inner", btOuterAndInner}
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(BrimType)
+
+static const t_config_enum_values s_keys_map_DraftShield = {
+    { "disabled", dsDisabled },
+    { "limited",  dsLimited  },
+    { "enabled",  dsEnabled  }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(DraftShield)
+
+static const t_config_enum_values s_keys_map_GCodeThumbnailsFormat = {
+    { "PNG", int(GCodeThumbnailsFormat::PNG) },
+    { "JPG", int(GCodeThumbnailsFormat::JPG) },
+    { "QOI", int(GCodeThumbnailsFormat::QOI) }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(GCodeThumbnailsFormat)
+
+static const t_config_enum_values s_keys_map_ForwardCompatibilitySubstitutionRule = {
+    { "disable",        ForwardCompatibilitySubstitutionRule::Disable },
+    { "enable",         ForwardCompatibilitySubstitutionRule::Enable },
+    { "enable_silent",  ForwardCompatibilitySubstitutionRule::EnableSilent }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(ForwardCompatibilitySubstitutionRule)
 
 static void assign_printer_technology_to_unknown(t_optiondef_map &options, PrinterTechnology printer_technology)
 {
@@ -210,12 +249,32 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionString(""));
 
+    def = this->add("elefant_foot_compensation", coFloat);
+    def->label = L("Elephant foot compensation");
+    def->category = L("Advanced");
+    def->tooltip = L("The first layer will be shrunk in the XY plane by the configured value "
+                     "to compensate for the 1st layer squish aka an Elephant Foot effect.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.));
+
     def = this->add("thumbnails", coPoints);
     def->label = L("G-code thumbnails");
-    def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 files, in the following format: \"XxY, XxY, ...\"");
+    def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY, XxY, ...\"");
     def->mode = comExpert;
     def->gui_type = ConfigOptionDef::GUIType::one_string;
     def->set_default_value(new ConfigOptionPoints());
+
+    def = this->add("thumbnails_format", coEnum);
+    def->label = L("Format of G-code thumbnails");
+    def->tooltip = L("Format of G-code thumbnails: PNG for best quality, JPG for smallest size, QOI for low memory firmware");
+    def->mode = comExpert;
+    def->enum_keys_map = &ConfigOptionEnum<GCodeThumbnailsFormat>::get_enum_values();
+    def->enum_values.push_back("PNG");
+    def->enum_values.push_back("JPG");
+    def->enum_values.push_back("QOI");
+    def->set_default_value(new ConfigOptionEnum<GCodeThumbnailsFormat>(GCodeThumbnailsFormat::PNG));
 
     def = this->add("layer_height", coFloat);
     def->label = L("Layer height");
@@ -235,16 +294,6 @@ void PrintConfigDef::init_common_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(200.0));
 
-    def = this->add("slice_closing_radius", coFloat);
-    def->label = L("Slice gap closing radius");
-    def->category = L("Advanced");
-    def->tooltip = L("Cracks smaller than 2x gap closing radius are being filled during the triangle mesh slicing. "
-                     "The gap closing operation may reduce the final print resolution, therefore it is advisable to keep the value reasonably low.");
-    def->sidetext = L("mm");
-    def->min = 0;
-    def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloat(0.049));
-
     def = this->add("print_host", coString);
     def->label = L("Hostname, IP or URL");
     def->tooltip = L("Slic3r can upload G-code files to a printer host. This field should contain "
@@ -252,6 +301,7 @@ void PrintConfigDef::init_common_params()
                    "Print host behind HAProxy with basic auth enabled can be accessed by putting the user name and password into the URL "
                    "in the following format: https://username:password@your-octopi-address/");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
 
     def = this->add("printhost_apikey", coString);
@@ -259,6 +309,7 @@ void PrintConfigDef::init_common_params()
     def->tooltip = L("Slic3r can upload G-code files to a printer host. This field should contain "
                    "the API Key or the password required for authentication.");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
     
     def = this->add("printhost_port", coString);
@@ -266,6 +317,7 @@ void PrintConfigDef::init_common_params()
     def->tooltip = L("Name of the printer");
     def->gui_type = ConfigOptionDef::GUIType::select_open;
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
     
     def = this->add("printhost_cafile", coString);
@@ -273,31 +325,33 @@ void PrintConfigDef::init_common_params()
     def->tooltip = L("Custom CA certificate file can be specified for HTTPS OctoPrint connections, in crt/pem format. "
                    "If left blank, the default OS CA certificate repository is used.");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
     
-    def = this->add("elefant_foot_compensation", coFloat);
-    def->label = L("Elephant foot compensation");
-    def->category = L("Advanced");
-    def->tooltip = L("The first layer will be shrunk in the XY plane by the configured value "
-                     "to compensate for the 1st layer squish aka an Elephant Foot effect.");
-    def->sidetext = L("mm");
-    def->min = 0;
-    def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionFloat(0.2));
-
     // Options used by physical printers
     
     def = this->add("printhost_user", coString);
     def->label = L("User");
 //    def->tooltip = L("");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
     
     def = this->add("printhost_password", coString);
     def->label = L("Password");
 //    def->tooltip = L("");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
+
+    // Only available on Windows.
+    def = this->add("printhost_ssl_ignore_revoke", coBool);
+    def->label = L("Ignore HTTPS certificate revocation checks");
+    def->tooltip = L("Ignore HTTPS certificate revocation checks in case of missing or offline distribution points. "
+                     "One may want to enable this option for self signed certificates if connection fails.");
+    def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
+    def->set_default_value(new ConfigOptionBool(false));
     
     def = this->add("preset_names", coStrings);
     def->label = L("Printer preset names");
@@ -314,7 +368,14 @@ void PrintConfigDef::init_common_params()
     def->enum_labels.push_back(L("API key"));
     def->enum_labels.push_back(L("HTTP digest"));
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionEnum<AuthorizationType>(atKeyPassword));
+
+    // temporary workaround for compatibility with older Slicer
+    {
+        def = this->add("preset_name", coString);
+        def->set_default_value(new ConfigOptionString());
+    }
 }
 
 void PrintConfigDef::init_fff_params()
@@ -340,6 +401,7 @@ void PrintConfigDef::init_fff_params()
                      "Detour length could be specified either as an absolute value or as percentage (for example 50%) of a direct travel path.");
     def->sidetext = L("mm or % (zero to disable)");
     def->min = 0;
+    def->max_literal = 1000;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloatOrPercent(0., false));
 
@@ -447,9 +509,11 @@ void PrintConfigDef::init_fff_params()
     def = this->add("brim_width", coFloat);
     def->label = L("Brim width");
     def->category = L("Skirt and brim");
-    def->tooltip = L("Horizontal width of the brim that will be printed around each object on the first layer.");
+    def->tooltip = L("The horizontal width of the brim that will be printed around each object on the first layer. "
+                     "When raft is used, no brim is generated (use raft_first_layer_expansion).");
     def->sidetext = L("mm");
     def->min = 0;
+    def->max = 200;
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionFloat(0));
 
@@ -469,13 +533,14 @@ void PrintConfigDef::init_fff_params()
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionEnum<BrimType>(btOuterOnly));
 
-    def = this->add("brim_offset", coFloat);
-    def->label = L("Brim offset");
+    def = this->add("brim_separation", coFloat);
+    def->label = L("Brim separation gap");
     def->category = L("Skirt and brim");
-    def->tooltip = L("The offset of the brim from the printed object.");
+    def->tooltip = L("Offset of brim from the printed object. The offset is applied after the elephant foot compensation.");
     def->sidetext = L("mm");
-    def->mode = comSimple;
-    def->set_default_value(new ConfigOptionFloat(0));
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.f));
 
     def = this->add("clip_multipart_objects", coBool);
     def->label = L("Clip multi-part objects");
@@ -683,6 +748,7 @@ void PrintConfigDef::init_fff_params()
                    "If expressed as percentage (for example 200%), it will be computed over layer height.");
     def->sidetext = L("mm or %");
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -794,6 +860,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm or %");
     def->min = 0;
     def->max = 1000;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -1088,6 +1155,9 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("octagramspiral");
     def->enum_values.push_back("adaptivecubic");
     def->enum_values.push_back("supportcubic");
+#if HAS_LIGHTNING_INFILL
+    def->enum_values.push_back("lightning");
+#endif // HAS_LIGHTNING_INFILL
     def->enum_labels.push_back(L("Rectilinear"));
     def->enum_labels.push_back(L("Aligned Rectilinear"));
     def->enum_labels.push_back(L("Grid"));
@@ -1104,12 +1174,24 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back(L("Octagram Spiral"));
     def->enum_labels.push_back(L("Adaptive Cubic"));
     def->enum_labels.push_back(L("Support Cubic"));
+#if HAS_LIGHTNING_INFILL
+    def->enum_labels.push_back(L("Lightning"));
+#endif // HAS_LIGHTNING_INFILL
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipStars));
 
     def = this->add("first_layer_acceleration", coFloat);
     def->label = L("First layer");
     def->tooltip = L("This is the acceleration your printer will use for first layer. Set zero "
                    "to disable acceleration control for first layer.");
+    def->sidetext = L("mm/s²");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("first_layer_acceleration_over_raft", coFloat);
+    def->label = L("First object layer over raft interface");
+    def->tooltip = L("This is the acceleration your printer will use for first layer of object above raft interface. Set zero "
+                   "to disable acceleration control for first layer of object above raft interface.");
     def->sidetext = L("mm/s²");
     def->min = 0;
     def->mode = comExpert;
@@ -1135,6 +1217,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm or %");
     def->ratio_over = "first_layer_height";
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(200, true));
 
@@ -1144,6 +1227,7 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("When printing with very low layer heights, you might still want to print a thicker "
                    "bottom layer to improve adhesion and tolerance for non perfect build plates.");
     def->sidetext = L("mm");
+    def->min = 0;
     def->ratio_over = "layer_height";
     def->set_default_value(new ConfigOptionFloatOrPercent(0.35, false));
 
@@ -1151,6 +1235,17 @@ void PrintConfigDef::init_fff_params()
     def->label = L("First layer speed");
     def->tooltip = L("If expressed as absolute value in mm/s, this speed will be applied to all the print moves "
                    "of the first layer, regardless of their type. If expressed as a percentage "
+                   "(for example: 40%) it will scale the default speeds.");
+    def->sidetext = L("mm/s or %");
+    def->min = 0;
+    def->max_literal = 20;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloatOrPercent(30, false));
+
+    def = this->add("first_layer_speed_over_raft", coFloatOrPercent);
+    def->label = L("Speed of object first layer over raft interface");
+    def->tooltip = L("If expressed as absolute value in mm/s, this speed will be applied to all the print moves "
+                   "of the first object layer above raft interface, regardless of their type. If expressed as a percentage "
                    "(for example: 40%) it will scale the default speeds.");
     def->sidetext = L("mm/s or %");
     def->min = 0;
@@ -1188,15 +1283,16 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("external");
     def->enum_values.push_back("all");
     def->enum_labels.push_back(L("None"));
-    def->enum_labels.push_back(L("External perimeters"));
-    def->enum_labels.push_back(L("All perimeters"));
+    def->enum_labels.push_back(L("Outside walls"));
+    def->enum_labels.push_back(L("All walls"));
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionEnum<FuzzySkinType>(FuzzySkinType::None));
 
     def = this->add("fuzzy_skin_thickness", coFloat);
     def->label = L("Fuzzy skin thickness");
     def->category = L("Fuzzy Skin");
-    def->tooltip = "";
+    def->tooltip = L("The maximum distance that each skin point can be offset (both ways), "
+                     "measured perpendicular to the perimeter wall.");
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
@@ -1205,7 +1301,8 @@ void PrintConfigDef::init_fff_params()
     def = this->add("fuzzy_skin_point_dist", coFloat);
     def->label = L("Fuzzy skin point distance");
     def->category = L("Fuzzy Skin");
-    def->tooltip = "";
+    def->tooltip = L("Perimeters will be split into multiple segments by inserting Fuzzy skin points. "
+                     "Lowering the Fuzzy skin point distance will increase the number of randomly offset points on the perimeter wall.");
     def->sidetext = L("mm");
     def->min = 0;
     def->mode = comAdvanced;
@@ -1248,7 +1345,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("teacup");
     def->enum_values.push_back("makerware");
     def->enum_values.push_back("marlin");
-    def->enum_values.push_back("marlinfirmware");
+    def->enum_values.push_back("marlin2");
     def->enum_values.push_back("sailfish");
     def->enum_values.push_back("mach3");
     def->enum_values.push_back("machinekit");
@@ -1260,7 +1357,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back("Teacup");
     def->enum_labels.push_back("MakerWare (MakerBot)");
     def->enum_labels.push_back("Marlin (legacy)");
-    def->enum_labels.push_back("Marlin Firmware");
+    def->enum_labels.push_back("Marlin 2");
     def->enum_labels.push_back("Sailfish (MakerBot)");
     def->enum_labels.push_back("Mach3/LinuxCNC");
     def->enum_labels.push_back("Machinekit");
@@ -1276,6 +1373,12 @@ void PrintConfigDef::init_fff_params()
                    "Single Extruder Multi Material setup and Wipe into Object / Wipe into Infill.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(0));
+
+    def = this->add("gcode_substitutions", coStrings);
+    def->label = L("G-code substitutions");
+    def->tooltip = L("Find / replace patterns in G-code lines and substitute them.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionStrings());
 
     def = this->add("high_current_on_filament_swap", coBool);
     def->label = L("High extruder current on filament swap");
@@ -1316,6 +1419,7 @@ void PrintConfigDef::init_fff_params()
                      "Set this parameter to zero to disable anchoring perimeters connected to a single infill line.");
     def->sidetext = L("mm or %");
     def->ratio_over = "infill_extrusion_width";
+    def->max_literal = 1000;
     def->gui_type = ConfigOptionDef::GUIType::f_enum_open;
     def->enum_values.push_back("0");
     def->enum_values.push_back("1");
@@ -1324,10 +1428,10 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("10");
     def->enum_values.push_back("1000");
     def->enum_labels.push_back(L("0 (no open anchors)"));
-    def->enum_labels.push_back("1 mm");
-    def->enum_labels.push_back("2 mm");
-    def->enum_labels.push_back("5 mm");
-    def->enum_labels.push_back("10 mm");
+    def->enum_labels.push_back(L("1 mm"));
+    def->enum_labels.push_back(L("2 mm"));
+    def->enum_labels.push_back(L("5 mm"));
+    def->enum_labels.push_back(L("10 mm"));
     def->enum_labels.push_back(L("1000 (unlimited)"));
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(600, true));
@@ -1343,13 +1447,14 @@ void PrintConfigDef::init_fff_params()
                      "Set this parameter to zero to disable anchoring.");
     def->sidetext    = def_infill_anchor_min->sidetext;
     def->ratio_over  = def_infill_anchor_min->ratio_over;
+    def->max_literal = def_infill_anchor_min->max_literal;
     def->gui_type    = def_infill_anchor_min->gui_type;
     def->enum_values = def_infill_anchor_min->enum_values;
     def->enum_labels.push_back(L("0 (not anchored)"));
-    def->enum_labels.push_back("1 mm");
-    def->enum_labels.push_back("2 mm");
-    def->enum_labels.push_back("5 mm");
-    def->enum_labels.push_back("10 mm");
+    def->enum_labels.push_back(L("1 mm"));
+    def->enum_labels.push_back(L("2 mm"));
+    def->enum_labels.push_back(L("5 mm"));
+    def->enum_labels.push_back(L("10 mm"));
     def->enum_labels.push_back(L("1000 (unlimited)"));
     def->mode        = def_infill_anchor_min->mode;
     def->set_default_value(new ConfigOptionFloatOrPercent(50, false));
@@ -1371,6 +1476,7 @@ void PrintConfigDef::init_fff_params()
                    "If expressed as percentage (for example 90%) it will be computed over layer height.");
     def->sidetext = L("mm or %");
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -1432,6 +1538,15 @@ void PrintConfigDef::init_fff_params()
     def->category = L("Layers and Perimeters");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("mmu_segmented_region_max_width", coFloat);
+    def->label = L("Maximum width of a segmented region");
+    def->tooltip = L("Maximum width of a segmented region. Zero disables this feature.");
+    def->sidetext = L("mm (zero to disable)");
+    def->min = 0;
+    def->category = L("Advanced");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0.f));
 
     def = this->add("ironing", coBool);
     def->label = L("Enable ironing");
@@ -1522,7 +1637,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back(L("Use for time estimate"));
     def->enum_labels.push_back(L("Ignore"));
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionEnum<MachineLimitsUsage>(MachineLimitsUsage::EmitToGCode));
+    def->set_default_value(new ConfigOptionEnum<MachineLimitsUsage>(MachineLimitsUsage::TimeEstimateOnly));
 
     {
         struct AxisDefault {
@@ -1767,17 +1882,22 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Slic3r can upload G-code files to a printer host. This field must contain "
                    "the kind of the host.");
     def->enum_keys_map = &ConfigOptionEnum<PrintHostType>::get_enum_values();
+    def->enum_values.push_back("prusalink");
     def->enum_values.push_back("octoprint");
     def->enum_values.push_back("duet");
     def->enum_values.push_back("flashair");
     def->enum_values.push_back("astrobox");
     def->enum_values.push_back("repetier");
+    def->enum_values.push_back("mks");
+    def->enum_labels.push_back("PrusaLink");
     def->enum_labels.push_back("OctoPrint");
     def->enum_labels.push_back("Duet");
     def->enum_labels.push_back("FlashAir");
     def->enum_labels.push_back("AstroBox");
     def->enum_labels.push_back("Repetier");
+    def->enum_labels.push_back("MKS");
     def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionEnum<PrintHostType>(htOctoPrint));
 
     def = this->add("only_retract_when_crossing_perimeters", coBool);
@@ -1785,7 +1905,7 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("Disables retraction when the travel path does not exceed the upper layer's perimeters "
                    "(and thus any ooze will be probably invisible).");
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionBool(true));
+    def->set_default_value(new ConfigOptionBool(false));
 
     def = this->add("ooze_prevention", coBool);
     def->label = L("Enable");
@@ -1858,6 +1978,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm or %");
     def->aliases = { "perimeters_extrusion_width" };
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -1984,7 +2105,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionInt(0));
 
     def = this->add("resolution", coFloat);
-    def->label = L("Resolution");
+    def->label = L("Slice resolution");
     def->tooltip = L("Minimum detail resolution, used to simplify the input file for speeding up "
                    "the slicing job and reducing memory usage. High-resolution models often carry "
                    "more detail than printers can render. Set to zero to disable any simplification "
@@ -1993,6 +2114,18 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("gcode_resolution", coFloat);
+    def->label = L("G-code resolution");
+    def->tooltip = L("Maximum deviation of exported G-code paths from their full resolution counterparts. "
+                     "Very high resolution G-code requires huge amount of RAM to slice and preview, "
+                     "also a 3D printer may stutter not being able to process a high resolution G-code in a timely manner. "
+                     "On the other hand, a low resolution G-code will produce a low poly effect and because "
+                     "the G-code reduction is performed at each layer independently, visible artifacts may be produced.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0.0125));
 
     def = this->add("retract_before_travel", coFloats);
     def->label = L("Minimum travel after retraction");
@@ -2132,27 +2265,34 @@ void PrintConfigDef::init_fff_params()
 #endif
 
     def = this->add("skirt_distance", coFloat);
-    def->label = L("Distance from object");
-    def->tooltip = L("Distance between skirt and object(s). Set this to zero to attach the skirt "
-                   "to the object(s) and get a brim for better adhesion.");
+    def->label = L("Distance from brim/object");
+    def->tooltip = L("Distance between skirt and brim (when draft shield is not used) or objects.");
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(6));
 
     def = this->add("skirt_height", coInt);
     def->label = L("Skirt height");
-    def->tooltip = L("Height of skirt expressed in layers. Set this to a tall value to use skirt "
-                   "as a shield against drafts.");
+    def->tooltip = L("Height of skirt expressed in layers.");
     def->sidetext = L("layers");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(1));
 
-    def = this->add("draft_shield", coBool);
+    def = this->add("draft_shield", coEnum);
     def->label = L("Draft shield");
-    def->tooltip = L("If enabled, the skirt will be as tall as a highest printed object. "
+    def->tooltip = L("With draft shield active, the skirt will be printed skirt_distance from the object, possibly intersecting brim.\n"
+                     "Enabled = skirt is as tall as the highest printed object.\n"
+                     "Limited = skirt is as tall as specified by skirt_height.\n"
     				 "This is useful to protect an ABS or ASA print from warping and detaching from print bed due to wind draft.");
+    def->enum_keys_map = &ConfigOptionEnum<DraftShield>::get_enum_values();
+    def->enum_values.push_back("disabled");
+    def->enum_values.push_back("limited");
+    def->enum_values.push_back("enabled");
+    def->enum_labels.push_back(L("Disabled"));
+    def->enum_labels.push_back(L("Limited"));
+    def->enum_labels.push_back(L("Enabled"));
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionBool(false));
+    def->set_default_value(new ConfigOptionEnum<DraftShield>(dsDisabled));
 
     def = this->add("skirts", coInt);
     def->label = L("Loops (minimum)");
@@ -2223,6 +2363,7 @@ void PrintConfigDef::init_fff_params()
                    "If expressed as percentage (for example 90%) it will be computed over layer height.");
     def->sidetext = L("mm or %");
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -2351,6 +2492,30 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("slice_closing_radius", coFloat);
+    def->label = L("Slice gap closing radius");
+    def->category = L("Advanced");
+    def->tooltip = L("Cracks smaller than 2x gap closing radius are being filled during the triangle mesh slicing. "
+                     "The gap closing operation may reduce the final print resolution, therefore it is advisable to keep the value reasonably low.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.049));
+
+    def = this->add("slicing_mode", coEnum);
+    def->label = L("Slicing Mode");
+    def->category = L("Advanced");
+    def->tooltip = L("Use \"Even-odd\" for 3DLabPrint airplane models. Use \"Close holes\" to close all holes in the model.");
+    def->enum_keys_map = &ConfigOptionEnum<SlicingMode>::get_enum_values();
+    def->enum_values.push_back("regular");
+    def->enum_values.push_back("even_odd");
+    def->enum_values.push_back("close_holes");
+    def->enum_labels.push_back(L("Regular"));
+    def->enum_labels.push_back(L("Even-odd"));
+    def->enum_labels.push_back(L("Close holes"));
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<SlicingMode>(SlicingMode::Regular));
+
     def = this->add("support_material", coBool);
     def->label = L("Generate support material");
     def->category = L("Support material");
@@ -2373,6 +2538,7 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm or %");
     def->ratio_over = "external_perimeter_extrusion_width";
     def->min = 0;
+    def->max_literal = 10;
     def->mode = comAdvanced;
     // Default is half the external perimeter width.
     def->set_default_value(new ConfigOptionFloatOrPercent(50, true));
@@ -2423,9 +2589,10 @@ void PrintConfigDef::init_fff_params()
     def->enum_values.push_back("0");
     def->enum_values.push_back("0.1");
     def->enum_values.push_back("0.2");
-    def->enum_labels.push_back(L("same as top"));
-    def->enum_labels.push_back(L("0.1"));
-    def->enum_labels.push_back(L("0.2"));
+    //TRN To be shown in Print Settings "Bottom contact Z distance". Have to be as short as possible
+    def->enum_labels.push_back(L("Same as top"));
+    def->enum_labels.push_back("0.1");
+    def->enum_labels.push_back("0.2");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(0));
 
@@ -2459,6 +2626,7 @@ void PrintConfigDef::init_fff_params()
                    "If expressed as percentage (for example 90%) it will be computed over layer height.");
     def->sidetext = L("mm or %");
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -2506,7 +2674,8 @@ void PrintConfigDef::init_fff_params()
     def->min = -1;
     def->enum_values.push_back("-1");
     append(def->enum_values, support_material_interface_layers->enum_values);
-    def->enum_labels.push_back(L("same as top"));
+    //TRN To be shown in Print Settings "Bottom interface layers". Have to be as short as possible
+    def->enum_labels.push_back(L("Same as top"));
     append(def->enum_labels, support_material_interface_layers->enum_labels);
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(-1));
@@ -2569,7 +2738,7 @@ void PrintConfigDef::init_fff_params()
     def->enum_labels.push_back(L("Rectilinear"));
     def->enum_labels.push_back(L("Concentric"));
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionEnum<SupportMaterialPattern>(smpRectilinear));
+    def->set_default_value(new ConfigOptionEnum<SupportMaterialInterfacePattern>(smipRectilinear));
 
     def = this->add("support_material_spacing", coFloat);
     def->label = L("Pattern spacing");
@@ -2607,7 +2776,8 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Synchronize with object layers");
     def->category = L("Support material");
     def->tooltip = L("Synchronize support layers with the object print layers. This is useful "
-                   "with multi-material printers, where the extruder switch is expensive.");
+                   "with multi-material printers, where the extruder switch is expensive. "
+                   "This option is only available when top contact Z distance is set to zero.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
@@ -2646,7 +2816,8 @@ void PrintConfigDef::init_fff_params()
     def = this->add("thick_bridges", coBool);
     def->label = L("Thick bridges");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Print bridges with round extrusions.");
+    def->tooltip = L("If enabled, bridges are more reliable, can bridge longer distances, but may look worse. "
+                     "If disabled, bridges look better but are reliable just for shorter bridged distances.");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
 
@@ -2691,6 +2862,7 @@ void PrintConfigDef::init_fff_params()
                    "If expressed as percentage (for example 90%) it will be computed over layer height.");
     def->sidetext = L("mm or %");
     def->min = 0;
+    def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
@@ -2737,6 +2909,15 @@ void PrintConfigDef::init_fff_params()
     def->min = 1;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(130));
+
+    def = this->add("travel_speed_z", coFloat);
+    def->label = L("Z travel");
+    def->tooltip = L("Speed for movements along the Z axis.\nWhen set to zero, the value "
+                     "is ignored and regular travel speed is used instead.");
+    def->sidetext = L("mm/s");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0.));
 
     def = this->add("use_firmware_retraction", coBool);
     def->label = L("Use firmware retraction");
@@ -3022,7 +3203,31 @@ void PrintConfigDef::init_sla_params()
     def->tooltip  = L("Printer scaling correction");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionFloats( { 1., 1. } ));
+    def->set_default_value(new ConfigOptionFloats( { 1., 1.} ));
+
+    def = this->add("relative_correction_x", coFloat);
+    def->label = L("Printer scaling correction in X axis");
+    def->full_label = L("Printer scaling X axis correction");
+    def->tooltip  = L("Printer scaling correction in X axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
+
+    def = this->add("relative_correction_y", coFloat);
+    def->label = L("Printer scaling correction in Y axis");
+    def->full_label = L("Printer scaling Y axis correction");
+    def->tooltip  = L("Printer scaling correction in Y axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
+
+    def = this->add("relative_correction_z", coFloat);
+    def->label = L("Printer scaling correction in Z axis");
+    def->full_label = L("Printer scaling Z axis correction");
+    def->tooltip  = L("Printer scaling correction in Z axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
 
     def = this->add("absolute_correction", coFloat);
     def->label = L("Printer absolute correction");
@@ -3055,6 +3260,13 @@ void PrintConfigDef::init_sla_params()
 
 
     // SLA Material settings.
+
+    def = this->add("material_colour", coString);
+    def->label = L("Color");
+    def->tooltip = L("This is only used in the Slic3r interface as a visual help.");
+    def->gui_type = ConfigOptionDef::GUIType::color;
+    def->set_default_value(new ConfigOptionString("#29B2B2"));
+
     def = this->add("material_type", coString);
     def->label = L("SLA material type");
     def->tooltip = L("SLA material type");
@@ -3161,7 +3373,28 @@ void PrintConfigDef::init_sla_params()
     def->tooltip  = L("Correction for expansion");
     def->min = 0;
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionFloats( { 1. , 1. } ));
+    def->set_default_value(new ConfigOptionFloats( { 1., 1., 1. } ));
+
+    def = this->add("material_correction_x", coFloat);
+    def->full_label = L("Correction for expansion in X axis");
+    def->tooltip  = L("Correction for expansion in X axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
+
+    def = this->add("material_correction_y", coFloat);
+    def->full_label = L("Correction for expansion in Y axis");
+    def->tooltip  = L("Correction for expansion in Y axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
+
+    def = this->add("material_correction_z", coFloat);
+    def->full_label = L("Correction for expansion in Z axis");
+    def->tooltip  = L("Correction for expansion in Z axis");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(1.));
 
     def = this->add("material_notes", coString);
     def->label = L("SLA print material notes");
@@ -3554,6 +3787,32 @@ void PrintConfigDef::init_sla_params()
     def->max = 10;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(2.0));
+
+    def = this->add("material_print_speed", coEnum);
+    def->label = L("Print speed");
+    def->tooltip = L(
+        "A slower printing profile might be necessary when using materials with higher viscosity "
+        "or with some hollowed parts. It slows down the tilt movement and adds a delay before exposure.");
+    def->enum_keys_map = &ConfigOptionEnum<SLAMaterialSpeed>::get_enum_values();
+    def->enum_values.push_back("slow");
+    def->enum_values.push_back("fast");
+    def->enum_labels.push_back(L("Slow"));
+    def->enum_labels.push_back(L("Fast"));
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionEnum<SLAMaterialSpeed>(slamsFast));
+
+    def = this->add("sla_archive_format", coString);
+    def->label = L("Format of the output SLA archive");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionString("SL1"));
+
+    def = this->add("sla_output_precision", coFloat);
+    def->label = L("SLA output precision");
+    def->tooltip = L("Minimum resolution in nanometers");
+    def->sidetext = L("mm");
+    def->min = SCALING_FACTOR;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0.001));
 }
 
 void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &value)
@@ -3570,8 +3829,12 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         } catch (boost::bad_lexical_cast &) {
             value = "0";
         }
-    } else if (opt_key == "gcode_flavor" && value == "makerbot") {
-        value = "makerware";
+    } else if (opt_key == "gcode_flavor") {
+        if (value == "makerbot")
+            value = "makerware";
+        else if (value == "marlinfirmware")
+            // the "new" marlin firmware flavor used to be called "marlinfirmware" for some time during PrusaSlicer 2.4.0-alpha development.
+            value = "marlin2";
     } else if (opt_key == "fill_density" && value.find("%") == std::string::npos) {
         try {
             // fill_density was turned into a percent value
@@ -3584,7 +3847,7 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
     } else if (opt_key == "bed_size" && !value.empty()) {
         opt_key = "bed_shape";
         ConfigOptionPoint p;
-        p.deserialize(value);
+        p.deserialize(value, ForwardCompatibilitySubstitutionRule::Disable);
         std::ostringstream oss;
         oss << "0x0," << p.value(0) << "x0," << p.value(0) << "x" << p.value(1) << ",0x" << p.value(1);
         value = oss.str();
@@ -3600,9 +3863,12 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         value = "rectilinear";
     } else if (opt_key == "skirt_height" && value == "-1") {
     	// PrusaSlicer no more accepts skirt_height == -1 to print a draft shield to the top of the highest object.
-    	// A new "draft_shield" boolean config value is used instead.
+        // A new "draft_shield" enum config value is used instead.
     	opt_key = "draft_shield";
-    	value = "1";
+        value = "enabled";
+    } else if (opt_key == "draft_shield" && (value == "1" || value == "0")) {
+        // draft_shield used to be a bool, it was turned into an enum in PrusaSlicer 2.4.0.
+        value = value == "1" ? "enabled" : "disabled";
     } else if (opt_key == "octoprint_host") {
         opt_key = "print_host";
     } else if (opt_key == "octoprint_cafile") {
@@ -3611,7 +3877,16 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         opt_key = "printhost_apikey";
     } else if (opt_key == "preset_name") {
         opt_key = "preset_names";
-    }
+    } /*else if (opt_key == "material_correction" || opt_key == "relative_correction") {
+        ConfigOptionFloats p;
+        p.deserialize(value);
+
+        if (p.values.size() < 3) {
+            double firstval = p.values.front();
+            p.values.emplace(p.values.begin(), firstval);
+            value = p.serialize();
+        }
+    }*/
 
     // Ignore the following obsolete configuration keys:
     static std::set<std::string> ignore = {
@@ -3724,6 +3999,32 @@ void DynamicPrintConfig::normalize_fdm()
             this->opt<ConfigOptionInt>("perimeters", true)->value       = 1;
             this->opt<ConfigOptionInt>("top_solid_layers", true)->value = 0;
             this->opt<ConfigOptionPercent>("fill_density", true)->value = 0;
+        }
+    }
+
+    if (auto *opt_gcode_resolution = this->opt<ConfigOptionFloat>("gcode_resolution", false); opt_gcode_resolution)
+        // Resolution will be above 1um.
+        opt_gcode_resolution->value = std::max(opt_gcode_resolution->value, 0.001);
+}
+
+void  handle_legacy_sla(DynamicPrintConfig &config)
+{
+    for (std::string corr : {"relative_correction", "material_correction"}) {
+        if (config.has(corr)) {
+            if (std::string corr_x = corr + "_x"; !config.has(corr_x)) {
+                auto* opt = config.opt<ConfigOptionFloat>(corr_x, true);
+                opt->value = config.opt<ConfigOptionFloats>(corr)->values[0];
+            }
+
+            if (std::string corr_y = corr + "_y"; !config.has(corr_y)) {
+                auto* opt = config.opt<ConfigOptionFloat>(corr_y, true);
+                opt->value = config.opt<ConfigOptionFloats>(corr)->values[0];
+            }
+
+            if (std::string corr_z = corr + "_z"; !config.has(corr_z)) {
+                auto* opt = config.opt<ConfigOptionFloat>(corr_z, true);
+                opt->value = config.opt<ConfigOptionFloats>(corr)->values[1];
+            }
         }
     }
 }
@@ -3855,10 +4156,16 @@ std::string validate(const FullPrintConfig &cfg)
         if (em <= 0)
             return "Invalid value for --extrusion-multiplier";
 
+    // The following test was commented out after 482841b, see also https://github.com/prusa3d/PrusaSlicer/pull/6743.
+    // The backend should now handle this case correctly. I.e., zero default_acceleration behaves as if all others
+    // were zero too. This is now consistent with what the UI said would happen.
+    // The UI already grays the fields out, there is no more reason to reject it here. This function validates the
+    // config before exporting, leaving this check in would mean that config would be rejected before export
+    // (although both the UI and the backend handle it).
     // --default-acceleration
-    if ((cfg.perimeter_acceleration != 0. || cfg.infill_acceleration != 0. || cfg.bridge_acceleration != 0. || cfg.first_layer_acceleration != 0.) &&
-        cfg.default_acceleration == 0.)
-        return "Invalid zero value for --default-acceleration when using other acceleration settings";
+    //if ((cfg.perimeter_acceleration != 0. || cfg.infill_acceleration != 0. || cfg.bridge_acceleration != 0. || cfg.first_layer_acceleration != 0.) &&
+    //    cfg.default_acceleration == 0.)
+    //    return "Invalid zero value for --default-acceleration when using other acceleration settings";
 
     // --spiral-vase
     if (cfg.spiral_vase) {
@@ -4077,6 +4384,11 @@ CLITransformConfigDef::CLITransformConfigDef()
     def->label = L("Don't arrange");
     def->tooltip = L("Do not rearrange the given models before merging and keep their original XY coordinates.");
 
+    def = this->add("ensure_on_bed", coBool);
+    def->label = L("Ensure on bed");
+    def->tooltip = L("Lift the object above the bed when it is partially below. Enabled by default, use --no-ensure-on-bed to disable.");
+    def->set_default_value(new ConfigOptionBool(true));
+
     def = this->add("duplicate", coInt);
     def->label = L("Duplicate");
     def->tooltip =L("Multiply copies by this factor.");
@@ -4132,6 +4444,20 @@ CLIMiscConfigDef::CLIMiscConfigDef()
     def = this->add("ignore_nonexistent_config", coBool);
     def->label = L("Ignore non-existent config files");
     def->tooltip = L("Do not fail if a file supplied to --load does not exist.");
+
+    def = this->add("config_compatibility", coEnum);
+    def->label = L("Forward-compatibility rule when loading configurations from config files and project files (3MF, AMF).");
+    def->tooltip = L("This version of PrusaSlicer may not understand configurations produced by the newest PrusaSlicer versions. "
+                     "For example, newer PrusaSlicer may extend the list of supported firmware flavors. One may decide to "
+                     "bail out or to substitute an unknown value with a default silently or verbosely.");
+    def->enum_keys_map = &ConfigOptionEnum<ForwardCompatibilitySubstitutionRule>::get_enum_values();
+    def->enum_values.push_back("disable");
+    def->enum_values.push_back("enable");
+    def->enum_values.push_back("enable_silent");
+    def->enum_labels.push_back(L("Bail out on unknown configuration values"));
+    def->enum_labels.push_back(L("Enable reading unknown configuration values by verbosely substituting them with defaults."));
+    def->enum_labels.push_back(L("Enable reading unknown configuration values by silently substituting them with defaults."));
+    def->set_default_value(new ConfigOptionEnum<ForwardCompatibilitySubstitutionRule>(ForwardCompatibilitySubstitutionRule::Enable));
 
     def = this->add("load", coStrings);
     def->label = L("Load config file");

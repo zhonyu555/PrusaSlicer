@@ -16,7 +16,8 @@ typedef std::vector<ThickPolyline> ThickPolylines;
 
 class Polyline : public MultiPoint {
 public:
-    Polyline() {};
+    Polyline() = default;
+    ~Polyline() override = default;
     Polyline(const Polyline &other) : MultiPoint(other.points) {}
     Polyline(Polyline &&other) : MultiPoint(std::move(other.points)) {}
     Polyline(std::initializer_list<Point> list) : MultiPoint(list) {}
@@ -59,20 +60,18 @@ public:
             src.points.clear();
         }
     }
-
-    explicit operator Polylines() const;
-    explicit operator Line() const;
+  
     const Point& last_point() const override { return this->points.back(); }
-
     const Point& leftmost_point() const;
     Lines lines() const override;
+
     void clip_end(double distance);
     void clip_start(double distance);
     void extend_end(double distance);
     void extend_start(double distance);
     Points equally_spaced_points(double distance) const;
     void simplify(double tolerance);
-    template <class T> void simplify_by_visibility(const T &area);
+//    template <class T> void simplify_by_visibility(const T &area);
     void split_at(const Point &point, Polyline* p1, Polyline* p2) const;
     bool is_straight() const;
     bool is_closed() const { return this->points.front() == this->points.back(); }

@@ -10,7 +10,7 @@ SCENARIO("lift() is not ignored after unlift() at normal values of Z", "[GCodeWr
     GIVEN("A config from a file and a single extruder.") {
         GCodeWriter writer;
         GCodeConfig &config = writer.config;
-        config.load(std::string(TEST_DATA_DIR) + "/fff_print_tests/test_gcodewriter/config_lift_unlift.ini");
+        config.load(std::string(TEST_DATA_DIR) + "/fff_print_tests/test_gcodewriter/config_lift_unlift.ini", ForwardCompatibilitySubstitutionRule::Disable);
 
         std::vector<unsigned int> extruder_ids {0};
         writer.set_extruders(extruder_ids);
@@ -78,13 +78,13 @@ SCENARIO("set_speed emits values with fixed-point output.", "[GCodeWriter]") {
             }
         }
         WHEN("set_speed is called to set speed to 1") {
-            THEN("Output string is G1 F1.000") {
-                REQUIRE_THAT(writer.set_speed(1.0), Catch::Equals("G1 F1.000\n"));
+            THEN("Output string is G1 F1") {
+                REQUIRE_THAT(writer.set_speed(1.0), Catch::Equals("G1 F1\n"));
             }
         }
         WHEN("set_speed is called to set speed to 203.200022") {
-            THEN("Output string is G1 F203.200") {
-                REQUIRE_THAT(writer.set_speed(203.200022), Catch::Equals("G1 F203.200\n"));
+            THEN("Output string is G1 F203.2") {
+                REQUIRE_THAT(writer.set_speed(203.200022), Catch::Equals("G1 F203.2\n"));
             }
         }
         WHEN("set_speed is called to set speed to 203.200522") {

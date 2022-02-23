@@ -1,27 +1,40 @@
 #ifndef SLAIMPORTJOB_HPP
 #define SLAIMPORTJOB_HPP
 
-#include "PlaterJob.hpp"
+#include "Job.hpp"
+
+#include "libslic3r/Point.hpp"
 
 namespace Slic3r { namespace GUI {
 
-class SLAImportJob : public PlaterJob {
-    class priv;
-    
-    std::unique_ptr<priv> p;
-    
+class SLAImportJobView {
 public:
-    SLAImportJob(std::shared_ptr<ProgressIndicator> pri, Plater *plater);
+    enum Sel { modelAndProfile, profileOnly, modelOnly};
+
+    virtual ~SLAImportJobView() = default;
+
+    virtual Sel get_selection() const = 0;
+    virtual Vec2i get_marchsq_windowsize() const = 0;
+    virtual std::string get_path() const = 0;
+};
+
+class Plater;
+
+class SLAImportJob : public Job {
+    class priv;
+
+    std::unique_ptr<priv> p;
+    using Sel = SLAImportJobView::Sel;
+
+public:
+    void prepare();
+    void process(Ctl &ctl) override;
+    void finalize(bool canceled, std::exception_ptr &) override;
+
+    SLAImportJob(const SLAImportJobView *);
     ~SLAImportJob();
 
-    void process() override;
-    
     void reset();
-    
-protected:
-    void prepare() override;
-    
-    void finalize() override;
 };
 
 }}     // namespace Slic3r::GUI

@@ -1,8 +1,12 @@
 // Include GLGizmoBase.hpp before I18N.hpp as it includes some libigl code, which overrides our localization "L" macro.
 #include "GLGizmoFlatten.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+#include "slic3r/GUI/GUI_App.hpp"
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 #include "slic3r/GUI/Gizmos/GLGizmosCommon.hpp"
 
+#include "libslic3r/Geometry/ConvexHull.hpp"
 #include "libslic3r/Model.hpp"
 
 #include <numeric>
@@ -12,12 +16,57 @@
 namespace Slic3r {
 namespace GUI {
 
+static const Slic3r::ColorRGBA DEFAULT_PLANE_COLOR       = { 0.9f, 0.9f, 0.9f, 0.5f };
+static const Slic3r::ColorRGBA DEFAULT_HOVER_PLANE_COLOR = { 0.9f, 0.9f, 0.9f, 0.75f };
 
 GLGizmoFlatten::GLGizmoFlatten(GLCanvas3D& parent, const std::string& icon_filename, unsigned int sprite_id)
     : GLGizmoBase(parent, icon_filename, sprite_id)
-    , m_normal(Vec3d::Zero())
-    , m_starting_center(Vec3d::Zero())
+{}
+
+bool GLGizmoFlatten::on_mouse(const wxMouseEvent &mouse_event)
 {
+    if (mouse_event.Moving()) {
+        // only for sure 
+        m_mouse_left_down = false;
+        return false;
+    }
+    if (mouse_event.LeftDown()) {
+        if (m_hover_id != -1) {
+            m_mouse_left_down = true;
+            Selection &selection = m_parent.get_selection();
+            if (selection.is_single_full_instance()) {
+                // Rotate the object so the normal points downward:
+                selection.flattening_rotate(m_planes[m_hover_id].normal);
+                m_parent.do_rotate(L("Gizmo-Place on Face"));
+            }
+            return true;
+        }
+
+        // fix: prevent restart gizmo when reselect object
+        // take responsibility for left up
+        if (m_parent.get_first_hover_volume_idx() >= 0) m_mouse_left_down = true;
+        
+    } else if (mouse_event.LeftUp()) {
+        if (m_mouse_left_down) {
+            // responsible for mouse left up after selecting plane
+            m_mouse_left_down = false;
+            return true;
+        }
+    } else if (mouse_event.Leaving()) {
+        m_mouse_left_down = false;
+    }
+    return false;
+}
+
+void GLGizmoFlatten::data_changed()
+{
+    const Selection &  selection    = m_parent.get_selection();
+    const ModelObject *model_object = nullptr;
+    if (selection.is_single_full_instance() ||
+        selection.is_from_single_object() ) {        
+        model_object = selection.get_model()->objects[selection.get_object_idx()];
+    }    
+    set_flattening_data(model_object);
 }
 
 bool GLGizmoFlatten::on_init()
@@ -37,26 +86,27 @@ CommonGizmosDataID GLGizmoFlatten::on_get_requirements() const
 
 std::string GLGizmoFlatten::on_get_name() const
 {
-    return (_L("Place on face") + " [F]").ToUTF8().data();
+    return _u8L("Place on face");
 }
 
 bool GLGizmoFlatten::on_is_activable() const
 {
+    // This is assumed in GLCanvas3D::do_rotate, do not change this
+    // without updating that function too.
     return m_parent.get_selection().is_single_full_instance();
 }
 
-void GLGizmoFlatten::on_start_dragging()
-{
-    if (m_hover_id != -1) {
-        assert(m_planes_valid);
-        m_normal = m_planes[m_hover_id].normal;
-        m_starting_center = m_parent.get_selection().get_bounding_box().center();
-    }
-}
-
-void GLGizmoFlatten::on_render() const
+void GLGizmoFlatten::on_render()
 {
     const Selection& selection = m_parent.get_selection();
+
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    GLShaderProgram* shader = wxGetApp().get_shader("flat");
+    if (shader == nullptr)
+        return;
+    
+    shader->start_using();
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 
     glsafe(::glClear(GL_DEPTH_BUFFER_BIT));
 
@@ -69,26 +119,39 @@ void GLGizmoFlatten::on_render() const
         glsafe(::glTranslatef(0.f, 0.f, selection.get_volume(*selection.get_volume_idxs().begin())->get_sla_shift_z()));
         glsafe(::glMultMatrixd(m.data()));
         if (this->is_plane_update_necessary())
-			const_cast<GLGizmoFlatten*>(this)->update_planes();
+            update_planes();
         for (int i = 0; i < (int)m_planes.size(); ++i) {
-            if (i == m_hover_id)
-                glsafe(::glColor4f(0.9f, 0.9f, 0.9f, 0.75f));
-            else
-                glsafe(::glColor4f(0.9f, 0.9f, 0.9f, 0.5f));
-
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+            m_planes[i].vbo.set_color(i == m_hover_id ? DEFAULT_HOVER_PLANE_COLOR : DEFAULT_PLANE_COLOR);
+            m_planes[i].vbo.render();
+#else
+            glsafe(::glColor4fv(i == m_hover_id ? DEFAULT_HOVER_PLANE_COLOR.data() : DEFAULT_PLANE_COLOR.data()));
             if (m_planes[i].vbo.has_VBOs())
                 m_planes[i].vbo.render();
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
         }
         glsafe(::glPopMatrix());
     }
 
     glsafe(::glEnable(GL_CULL_FACE));
     glsafe(::glDisable(GL_BLEND));
+
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    shader->stop_using();
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 }
 
-void GLGizmoFlatten::on_render_for_picking() const
+void GLGizmoFlatten::on_render_for_picking()
 {
     const Selection& selection = m_parent.get_selection();
+
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    GLShaderProgram* shader = wxGetApp().get_shader("flat");
+    if (shader == nullptr)
+        return;
+
+    shader->start_using();
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 
     glsafe(::glDisable(GL_DEPTH_TEST));
     glsafe(::glDisable(GL_BLEND));
@@ -99,20 +162,27 @@ void GLGizmoFlatten::on_render_for_picking() const
         glsafe(::glTranslatef(0.f, 0.f, selection.get_volume(*selection.get_volume_idxs().begin())->get_sla_shift_z()));
         glsafe(::glMultMatrixd(m.data()));
         if (this->is_plane_update_necessary())
-			const_cast<GLGizmoFlatten*>(this)->update_planes();
+            update_planes();
         for (int i = 0; i < (int)m_planes.size(); ++i) {
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+            m_planes[i].vbo.set_color(picking_color_component(i));
+#else
             glsafe(::glColor4fv(picking_color_component(i).data()));
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
             m_planes[i].vbo.render();
         }
         glsafe(::glPopMatrix());
     }
 
     glsafe(::glEnable(GL_CULL_FACE));
+
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+    shader->stop_using();
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
 }
 
 void GLGizmoFlatten::set_flattening_data(const ModelObject* model_object)
 {
-    m_starting_center = Vec3d::Zero();
     if (model_object != m_old_model_object) {
         m_planes.clear();
         m_planes_valid = false;
@@ -140,19 +210,21 @@ void GLGizmoFlatten::update_planes()
 
     // Now we'll go through all the facets and append Points of facets sharing the same normal.
     // This part is still performed in mesh coordinate system.
-    const int num_of_facets = ch.stl.stats.number_of_facets;
-    std::vector<int>  facet_queue(num_of_facets, 0);
-    std::vector<bool> facet_visited(num_of_facets, false);
-    int               facet_queue_cnt = 0;
-    const stl_normal* normal_ptr = nullptr;
+    const int                num_of_facets  = ch.facets_count();
+    const std::vector<Vec3f> face_normals   = its_face_normals(ch.its);
+    const std::vector<Vec3i> face_neighbors = its_face_neighbors(ch.its);
+    std::vector<int>         facet_queue(num_of_facets, 0);
+    std::vector<bool>        facet_visited(num_of_facets, false);
+    int                      facet_queue_cnt = 0;
+    const stl_normal*        normal_ptr      = nullptr;
+    int facet_idx = 0;
     while (1) {
         // Find next unvisited triangle:
-        int facet_idx = 0;
         for (; facet_idx < num_of_facets; ++ facet_idx)
             if (!facet_visited[facet_idx]) {
                 facet_queue[facet_queue_cnt ++] = facet_idx;
                 facet_visited[facet_idx] = true;
-                normal_ptr = &ch.stl.facet_start[facet_idx].normal;
+                normal_ptr = &face_normals[facet_idx];
                 m_planes.emplace_back();
                 break;
             }
@@ -161,18 +233,16 @@ void GLGizmoFlatten::update_planes()
 
         while (facet_queue_cnt > 0) {
             int facet_idx = facet_queue[-- facet_queue_cnt];
-            const stl_normal& this_normal = ch.stl.facet_start[facet_idx].normal;
+            const stl_normal& this_normal = face_normals[facet_idx];
             if (std::abs(this_normal(0) - (*normal_ptr)(0)) < 0.001 && std::abs(this_normal(1) - (*normal_ptr)(1)) < 0.001 && std::abs(this_normal(2) - (*normal_ptr)(2)) < 0.001) {
-                stl_vertex* first_vertex = ch.stl.facet_start[facet_idx].vertex;
+                const Vec3i face = ch.its.indices[facet_idx];
                 for (int j=0; j<3; ++j)
-                    m_planes.back().vertices.emplace_back(first_vertex[j].cast<double>());
+                    m_planes.back().vertices.emplace_back(ch.its.vertices[face[j]].cast<double>());
 
                 facet_visited[facet_idx] = true;
-                for (int j = 0; j < 3; ++ j) {
-                    int neighbor_idx = ch.stl.neighbors_start[facet_idx].neighbor[j];
-                    if (! facet_visited[neighbor_idx])
+                for (int j = 0; j < 3; ++ j)
+                    if (int neighbor_idx = face_neighbors[facet_idx][j]; neighbor_idx >= 0 && ! facet_visited[neighbor_idx])
                         facet_queue[facet_queue_cnt ++] = neighbor_idx;
-                }
             }
         }
         m_planes.back().normal = normal_ptr->cast<double>();
@@ -246,7 +316,8 @@ void GLGizmoFlatten::update_planes()
         }
 
         if (discard) {
-            m_planes.erase(m_planes.begin() + (polygon_id--));
+            m_planes[polygon_id--] = std::move(m_planes.back());
+            m_planes.pop_back();
             continue;
         }
 
@@ -322,12 +393,28 @@ void GLGizmoFlatten::update_planes()
     // And finally create respective VBOs. The polygon is convex with
     // the vertices in order, so triangulation is trivial.
     for (auto& plane : m_planes) {
+#if ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
+        GLModel::Geometry init_data;
+        init_data.format = { GLModel::Geometry::EPrimitiveType::TriangleFan, GLModel::Geometry::EVertexLayout::P3N3, GLModel::Geometry::index_type(plane.vertices.size()) };
+        init_data.reserve_vertices(plane.vertices.size());
+        init_data.reserve_indices(plane.vertices.size());
+        // vertices + indices
+        for (size_t i = 0; i < plane.vertices.size(); ++i) {
+            init_data.add_vertex((Vec3f)plane.vertices[i].cast<float>(), (Vec3f)plane.normal.cast<float>());
+            if (init_data.format.index_type == GLModel::Geometry::EIndexType::USHORT)
+                init_data.add_ushort_index((unsigned short)i);
+            else
+                init_data.add_uint_index((unsigned int)i);
+        }
+        plane.vbo.init_from(std::move(init_data));
+#else
         plane.vbo.reserve(plane.vertices.size());
         for (const auto& vert : plane.vertices)
             plane.vbo.push_geometry(vert, plane.normal);
         for (size_t i=1; i<plane.vertices.size()-1; ++i)
             plane.vbo.push_triangle(0, i, i+1); // triangle fan
         plane.vbo.finalize_geometry(true);
+#endif // ENABLE_GLINDEXEDVERTEXARRAY_REMOVAL
         // FIXME: vertices should really be local, they need not
         // persist now when we use VBOs
         plane.vertices.clear();
@@ -359,14 +446,6 @@ bool GLGizmoFlatten::is_plane_update_necessary() const
             return true;
 
     return false;
-}
-
-Vec3d GLGizmoFlatten::get_flattening_normal() const
-{
-    Vec3d out = m_normal;
-    m_normal = Vec3d::Zero();
-    m_starting_center = Vec3d::Zero();
-    return out;
 }
 
 } // namespace GUI

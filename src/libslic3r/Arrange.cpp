@@ -1,5 +1,4 @@
 #include "Arrange.hpp"
-#include "SVG.hpp"
 
 #include "BoundingBox.hpp"
 
@@ -380,7 +379,7 @@ public:
         });
 
         if (stopcond) m_pck.stopCondition(stopcond);
-        
+
         m_pck.configure(m_pconf);
     }
      
@@ -473,6 +472,12 @@ template<class S> Radians min_area_boundingbox_rotation(const S &sh)
         .angleToX();
 }
 
+template<class S>
+Radians fit_into_box_rotation(const S &sh, const _Box<TPoint<S>> &box)
+{
+    return fitIntoBoxRotation<S, TCompute<S>, boost::rational<LargeInt>>(sh, box);
+}
+
 template<class BinT> // Arrange for arbitrary bin type
 void _arrange(
         std::vector<Item> &           shapes,
@@ -510,9 +515,18 @@ void _arrange(
     // Use the minimum bounding box rotation as a starting point.
     // TODO: This only works for convex hull. If we ever switch to concave
     // polygon nesting, a convex hull needs to be calculated.
-    if (params.allow_rotations)
-        for (auto &itm : shapes)
+    if (params.allow_rotations) {
+        for (auto &itm : shapes) {
             itm.rotation(min_area_boundingbox_rotation(itm.rawShape()));
+
+            // If the item is too big, try to find a rotation that makes it fit
+            if constexpr (std::is_same_v<BinT, Box>) {
+                auto bb = itm.boundingBox();
+                if (bb.width() >= bin.width() || bb.height() >= bin.height())
+                    itm.rotate(fit_into_box_rotation(itm.transformedShape(), bin));
+            }
+        }
+    }
 
     arranger(inp.begin(), inp.end());
     for (Item &itm : inp) itm.inflate(-infl);

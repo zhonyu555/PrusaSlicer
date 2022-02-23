@@ -13,10 +13,18 @@
 #include <wx/colordlg.h>
 #include <wx/wupdlock.h>
 #include <wx/menu.h>
+#include <wx/odcombo.h>
+#include <wx/listbook.h>
+
+#ifdef _WIN32
+#include <wx/msw/dcclient.h>
+#include <wx/msw/private.h>
+#endif
 
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/Color.hpp"
 
 #include "GUI.hpp"
 #include "GUI_App.hpp"
@@ -31,6 +39,7 @@
 #include "BitmapCache.hpp"
 #include "PhysicalPrinterDialog.hpp"
 #include "SavePresetDialog.hpp"
+#include "MsgDialog.hpp"
 
 // A workaround for a set of issues related to text fitting into gtk widgets:
 // See e.g.: https://github.com/prusa3d/PrusaSlicer/issues/4584
@@ -63,19 +72,12 @@ namespace GUI {
  **/
 
 PresetComboBox::PresetComboBox(wxWindow* parent, Preset::Type preset_type, const wxSize& size, PresetBundle* preset_bundle/* = nullptr*/) :
-    wxBitmapComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, size, 0, nullptr, wxCB_READONLY),
+    BitmapComboBox(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, size, 0, nullptr, wxCB_READONLY),
     m_type(preset_type),
     m_last_selected(wxNOT_FOUND),
     m_em_unit(em_unit(this)),
     m_preset_bundle(preset_bundle ? preset_bundle : wxGetApp().preset_bundle)
 {
-    SetFont(wxGetApp().normal_font());
-#ifdef _WIN32
-    // Workaround for ignoring CBN_EDITCHANGE events, which are processed after the content of the combo box changes, so that
-    // the index of the item inside CBN_EDITCHANGE may no more be valid.
-    EnableTextChangedEvents(false);
-#endif /* _WIN32 */
-
     switch (m_type)
     {
     case Preset::TYPE_PRINT: {
@@ -335,7 +337,8 @@ bool PresetComboBox::del_physical_printer(const wxString& note_string/* = wxEmpt
         msg += note_string + "\n";
     msg += format_wxstr(_L("Are you sure you want to delete \"%1%\" printer?"), printer_name);
 
-    if (wxMessageDialog(this, msg, _L("Delete Physical Printer"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal() != wxID_YES)
+    //if (wxMessageDialog(this, msg, _L("Delete Physical Printer"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal() != wxID_YES)
+    if (MessageDialog(this, msg, _L("Delete Physical Printer"), wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal() != wxID_YES)
         return false;
 
     m_preset_bundle->physical_printers.delete_selected_printer();
@@ -383,6 +386,12 @@ void PresetComboBox::msw_rescale()
     update();
 }
 
+void PresetComboBox::sys_color_changed()
+{
+    wxGetApp().UpdateDarkUI(this);
+    msw_rescale();
+}
+
 void PresetComboBox::fill_width_height()
 {
     // To avoid asserts, each added bitmap to wxBitmapCombobox should be the same size, so
@@ -411,7 +420,7 @@ wxString PresetComboBox::separator(const std::string& label)
 
 wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, const std::string& main_icon_name, 
                                     bool is_compatible/* = true*/, bool is_system/* = false*/, bool is_single_bar/* = false*/,
-                                    std::string filament_rgb/* = ""*/, std::string extruder_rgb/* = ""*/)
+                                    const std::string& filament_rgb/* = ""*/, const std::string& extruder_rgb/* = ""*/, const std::string& material_rgb/* = ""*/)
 {
     // If the filament preset is not compatible and there is a "red flag" icon loaded, show it left
     // to the filament color image.
@@ -423,6 +432,7 @@ wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, con
     bool dark_mode = wxGetApp().dark_mode();
     if (dark_mode)
         bitmap_key += ",dark";
+    bitmap_key += material_rgb;
 
     wxBitmap* bmp = bitmap_cache().find(bitmap_key);
     if (bmp == nullptr) {
@@ -432,15 +442,14 @@ wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, con
             // Paint a red flag for incompatible presets.
             bmps.emplace_back(is_compatible ? bitmap_cache().mkclear(norm_icon_width, icon_height) : m_bitmapIncompatible.bmp());
 
-        if (m_type == Preset::TYPE_FILAMENT && !filament_rgb.empty())
-        {
-            unsigned char rgb[3];
+        if (m_type == Preset::TYPE_FILAMENT && !filament_rgb.empty()) {
             // Paint the color bars.
-            bitmap_cache().parse_color(filament_rgb, rgb);
-            bmps.emplace_back(bitmap_cache().mksolid(is_single_bar ? wide_icon_width : norm_icon_width, icon_height, rgb, false, 1, dark_mode));
+            ColorRGB color;
+            decode_color(filament_rgb, color);
+            bmps.emplace_back(bitmap_cache().mksolid(is_single_bar ? wide_icon_width : norm_icon_width, icon_height, color, false, 1, dark_mode));
             if (!is_single_bar) {
-                bitmap_cache().parse_color(extruder_rgb, rgb);
-                bmps.emplace_back(bitmap_cache().mksolid(thin_icon_width, icon_height, rgb, false, 1, dark_mode));
+                decode_color(extruder_rgb, color);
+                bmps.emplace_back(bitmap_cache().mksolid(thin_icon_width, icon_height, color, false, 1, dark_mode));
             }
             // Paint a lock at the system presets.
             bmps.emplace_back(bitmap_cache().mkclear(space_icon_width, icon_height));
@@ -449,7 +458,10 @@ wxBitmap* PresetComboBox::get_bmp(  std::string bitmap_key, bool wide_icons, con
         {
             // Paint the color bars.
             bmps.emplace_back(bitmap_cache().mkclear(thin_space_icon_width, icon_height));
-            bmps.emplace_back(create_scaled_bitmap(main_icon_name));
+            if (m_type == Preset::TYPE_SLA_MATERIAL)
+                bmps.emplace_back(create_scaled_bitmap(main_icon_name, this, 16, false, material_rgb));
+            else
+                bmps.emplace_back(create_scaled_bitmap(main_icon_name));
             // Paint a lock at the system presets.
             bmps.emplace_back(bitmap_cache().mkclear(wide_space_icon_width, icon_height));
         }
@@ -532,72 +544,6 @@ bool PresetComboBox::selection_is_changed_according_to_physical_printers()
     return true;
 }
 
-#ifdef __APPLE__
-bool PresetComboBox::OnAddBitmap(const wxBitmap& bitmap)
-{
-    if (bitmap.IsOk())
-    {
-        // we should use scaled! size values of bitmap
-        int width = (int)bitmap.GetScaledWidth();
-        int height = (int)bitmap.GetScaledHeight();
-
-        if (m_usedImgSize.x < 0)
-        {
-            // If size not yet determined, get it from this image.
-            m_usedImgSize.x = width;
-            m_usedImgSize.y = height;
-
-            // Adjust control size to vertically fit the bitmap
-            wxWindow* ctrl = GetControl();
-            ctrl->InvalidateBestSize();
-            wxSize newSz = ctrl->GetBestSize();
-            wxSize sz = ctrl->GetSize();
-            if (newSz.y > sz.y)
-                ctrl->SetSize(sz.x, newSz.y);
-            else
-                DetermineIndent();
-        }
-
-        wxCHECK_MSG(width == m_usedImgSize.x && height == m_usedImgSize.y,
-            false,
-            "you can only add images of same size");
-
-        return true;
-    }
-
-    return false;
-}
-
-void PresetComboBox::OnDrawItem(wxDC& dc,
-    const wxRect& rect,
-    int item,
-    int flags) const
-{
-    const wxBitmap& bmp = *(static_cast<wxBitmap*>(m_bitmaps[item]));
-    if (bmp.IsOk())
-    {
-        // we should use scaled! size values of bitmap
-        wxCoord w = bmp.GetScaledWidth();
-        wxCoord h = bmp.GetScaledHeight();
-
-        const int imgSpacingLeft = 4;
-
-        // Draw the image centered
-        dc.DrawBitmap(bmp,
-            rect.x + (m_usedImgSize.x - w) / 2 + imgSpacingLeft,
-            rect.y + (rect.height - h) / 2,
-            true);
-    }
-
-    wxString text = GetString(item);
-    if (!text.empty())
-        dc.DrawText(text,
-            rect.x + m_imgAreaWidth + 1,
-            rect.y + (rect.height - dc.GetCharHeight()) / 2);
-}
-#endif
-
-
 // ---------------------------------
 // ***  PlaterPresetComboBox  ***
 // ---------------------------------
@@ -627,31 +573,7 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
             }
 
             // Swallow the mouse click and open the color picker.
-
-            // get current color
-            DynamicPrintConfig* cfg = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_config();
-            auto colors = static_cast<ConfigOptionStrings*>(cfg->option("extruder_colour")->clone());
-            wxColour clr(colors->values[m_extruder_idx]);
-            if (!clr.IsOk())
-                clr = wxColour(0,0,0); // Don't set alfa to transparence
-
-            auto data = new wxColourData();
-            data->SetChooseFull(1);
-            data->SetColour(clr);
-
-            wxColourDialog dialog(this, data);
-            dialog.CenterOnParent();
-            if (dialog.ShowModal() == wxID_OK)
-            {
-                colors->values[m_extruder_idx] = dialog.GetColourData().GetColour().GetAsString(wxC2S_HTML_SYNTAX).ToStdString();
-
-                DynamicPrintConfig cfg_new = *cfg;
-                cfg_new.set_key_value("extruder_colour", colors);
-
-                wxGetApp().get_tab(Preset::TYPE_PRINTER)->load_config(cfg_new);
-                this->update();
-                wxGetApp().plater()->on_config_change(cfg_new);
-            }
+            change_extruder_color();
         });
     }
 
@@ -661,28 +583,15 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
     edit_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent)
     {
         // In a case of a physical printer, for its editing open PhysicalPrinterDialog
-        if (m_type == Preset::TYPE_PRINTER/* && this->is_selected_physical_printer()*/) {
-            this->show_edit_menu();
-            return;
-        }
-
-        if (!switch_to_tab())
-            return;
-
-        /* In a case of a multi-material printing, for editing another Filament Preset
-         * it's needed to select this preset for the "Filament settings" Tab
-         */
-        if (m_type == Preset::TYPE_FILAMENT && wxGetApp().extruders_edited_cnt() > 1)
-        {
-            const std::string& selected_preset = GetString(GetSelection()).ToUTF8().data();
-
-            // Call select_preset() only if there is new preset and not just modified
-            if ( !boost::algorithm::ends_with(selected_preset, Preset::suffix_modified()) )
-            {
-                const std::string& preset_name = wxGetApp().preset_bundle->filaments.get_preset_name_by_alias(selected_preset);
-                wxGetApp().get_tab(m_type)->select_preset(preset_name);
-            }
-        }
+        if (m_type == Preset::TYPE_PRINTER
+#ifdef __linux__
+            // To edit extruder color from the sidebar
+            || m_type == Preset::TYPE_FILAMENT
+#endif //__linux__
+            )
+            show_edit_menu();
+        else
+            switch_to_tab();
     });
 }
 
@@ -690,6 +599,11 @@ PlaterPresetComboBox::~PlaterPresetComboBox()
 {
     if (edit_btn)
         edit_btn->Destroy();
+}
+
+static void run_wizard(ConfigWizard::StartPage sp)
+{
+    wxGetApp().run_wizard(ConfigWizard::RR_USER, sp);
 }
 
 void PlaterPresetComboBox::OnSelect(wxCommandEvent &evt)
@@ -711,7 +625,7 @@ void PlaterPresetComboBox::OnSelect(wxCommandEvent &evt)
             case LABEL_ITEM_WIZARD_MATERIALS: sp = ConfigWizard::SP_MATERIALS; break;
             default: break;
             }
-            wxTheApp->CallAfter([sp]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, sp); });
+            wxTheApp->CallAfter([sp]() { run_wizard(sp); });
         }
         return;
     }
@@ -721,20 +635,59 @@ void PlaterPresetComboBox::OnSelect(wxCommandEvent &evt)
     evt.Skip();
 }
 
-bool PlaterPresetComboBox::switch_to_tab()
+void PlaterPresetComboBox::switch_to_tab()
 {
     Tab* tab = wxGetApp().get_tab(m_type);
     if (!tab)
-        return false;
+        return;
 
-    int page_id = wxGetApp().tab_panel()->FindPage(tab);
-    if (page_id == wxNOT_FOUND)
-        return false;
+    if (int page_id = wxGetApp().tab_panel()->FindPage(tab); page_id != wxNOT_FOUND)
+    {
+        wxGetApp().tab_panel()->SetSelection(page_id);
+        // Switch to Settings NotePad
+        wxGetApp().mainframe->select_tab();
 
-    wxGetApp().tab_panel()->SetSelection(page_id);
-    // Switch to Settings NotePad
-    wxGetApp().mainframe->select_tab();
-    return true;
+        //In a case of a multi-material printing, for editing another Filament Preset
+        //it's needed to select this preset for the "Filament settings" Tab
+        if (m_type == Preset::TYPE_FILAMENT && wxGetApp().extruders_edited_cnt() > 1)
+        {
+            const std::string& selected_preset = GetString(GetSelection()).ToUTF8().data();
+            // Call select_preset() only if there is new preset and not just modified
+            if (!boost::algorithm::ends_with(selected_preset, Preset::suffix_modified()))
+            {
+                const std::string& preset_name = wxGetApp().preset_bundle->filaments.get_preset_name_by_alias(selected_preset);
+                wxGetApp().get_tab(m_type)->select_preset(preset_name);
+            }
+        }
+    }
+}
+
+void PlaterPresetComboBox::change_extruder_color()
+{
+    // get current color
+    DynamicPrintConfig* cfg = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_config();
+    auto colors = static_cast<ConfigOptionStrings*>(cfg->option("extruder_colour")->clone());
+    wxColour clr(colors->values[m_extruder_idx]);
+    if (!clr.IsOk())
+        clr = wxColour(0, 0, 0); // Don't set alfa to transparence
+
+    auto data = new wxColourData();
+    data->SetChooseFull(1);
+    data->SetColour(clr);
+
+    wxColourDialog dialog(this, data);
+    dialog.CenterOnParent();
+    if (dialog.ShowModal() == wxID_OK)
+    {
+        colors->values[m_extruder_idx] = dialog.GetColourData().GetColour().GetAsString(wxC2S_HTML_SYNTAX).ToStdString();
+
+        DynamicPrintConfig cfg_new = *cfg;
+        cfg_new.set_key_value("extruder_colour", colors);
+
+        wxGetApp().get_tab(Preset::TYPE_PRINTER)->load_config(cfg_new);
+        this->update();
+        wxGetApp().plater()->on_config_change(cfg_new);
+    }
 }
 
 void PlaterPresetComboBox::show_add_menu()
@@ -743,7 +696,7 @@ void PlaterPresetComboBox::show_add_menu()
 
     append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
         [](wxCommandEvent&) {
-            wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
+            wxTheApp->CallAfter([]() { run_wizard(ConfigWizard::SP_PRINTERS); });
         }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
     append_menu_item(menu, wxID_ANY, _L("Add physical printer"), "",
@@ -763,6 +716,16 @@ void PlaterPresetComboBox::show_edit_menu()
     append_menu_item(menu, wxID_ANY, _L("Edit preset"), "",
         [this](wxCommandEvent&) { this->switch_to_tab(); }, "cog", menu, []() { return true; }, wxGetApp().plater());
 
+#ifdef __linux__
+    // To edit extruder color from the sidebar
+    if (m_type == Preset::TYPE_FILAMENT) {
+        append_menu_item(menu, wxID_ANY, _L("Change extruder color"), "",
+            [this](wxCommandEvent&) { this->change_extruder_color(); }, "funnel", menu, []() { return true; }, wxGetApp().plater());
+        wxGetApp().plater()->PopupMenu(menu);
+        return;
+    }
+#endif //__linux__
+
     if (this->is_selected_physical_printer()) {
         append_menu_item(menu, wxID_ANY, _L("Edit physical printer"), "",
             [this](wxCommandEvent&) { this->edit_physical_printer(); }, "cog", menu, []() { return true; }, wxGetApp().plater());
@@ -773,7 +736,7 @@ void PlaterPresetComboBox::show_edit_menu()
     else
         append_menu_item(menu, wxID_ANY, _L("Add/Remove presets"), "",
             [](wxCommandEvent&) {
-                wxTheApp->CallAfter([]() { wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS); });
+                wxTheApp->CallAfter([]() { run_wizard(ConfigWizard::SP_PRINTERS); });
             }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
     append_menu_item(menu, wxID_ANY, _L("Add physical printer"), "",
@@ -804,11 +767,9 @@ void PlaterPresetComboBox::update()
 
     const Preset* selected_filament_preset = nullptr;
     std::string extruder_color;
-    if (m_type == Preset::TYPE_FILAMENT)
-    {
-        unsigned char rgb[3];
+    if (m_type == Preset::TYPE_FILAMENT) {
         extruder_color = m_preset_bundle->printers.get_edited_preset().config.opt_string("extruder_colour", (unsigned int)m_extruder_idx);
-        if (!bitmap_cache().parse_color(extruder_color, rgb))
+        if (!can_decode_color(extruder_color))
             // Extruder color is not defined.
             extruder_color.clear();
         selected_filament_preset = m_collection->find_preset(m_preset_bundle->filament_presets[m_extruder_idx]);
@@ -823,8 +784,8 @@ void PlaterPresetComboBox::update()
 
     std::map<wxString, wxBitmap*> nonsys_presets;
 
-    wxString selected_user_preset = "";
-    wxString tooltip = "";
+    wxString selected_user_preset;
+    wxString tooltip;
     const std::deque<Preset>& presets = m_collection->get_presets();
 
     if (!presets.front().is_visible)
@@ -842,7 +803,7 @@ void PlaterPresetComboBox::update()
         if (!preset.is_visible || (!preset.is_compatible && !is_selected))
             continue;
 
-        std::string bitmap_key, filament_rgb, extruder_rgb;
+        std::string bitmap_key, filament_rgb, extruder_rgb, material_rgb;
         std::string bitmap_type_name = bitmap_key = m_type == Preset::TYPE_PRINTER && preset.printer_technology() == ptSLA ? "sla_printer" : m_main_bitmap_name;
 
         bool single_bar = false;
@@ -856,10 +817,15 @@ void PlaterPresetComboBox::update()
 
             bitmap_key += single_bar ? filament_rgb : filament_rgb + extruder_rgb;
         }
+        else if (m_type == Preset::TYPE_SLA_MATERIAL) {
+            material_rgb = is_selected ? m_preset_bundle->sla_materials.get_edited_preset().config.opt_string("material_colour") : preset.config.opt_string("material_colour");
+            if (material_rgb.empty())
+                material_rgb = print_config_def.get("material_colour")->get_default_value<ConfigOptionString>()->value;
+        }
 
         wxBitmap* bmp = get_bmp(bitmap_key, wide_icons, bitmap_type_name, 
                                 preset.is_compatible, preset.is_system || preset.is_default, 
-                                single_bar, filament_rgb, extruder_rgb);
+                                single_bar, filament_rgb, extruder_rgb, material_rgb);
         assert(bmp);
 
         const std::string name = preset.alias.empty() ? preset.name : preset.alias;
@@ -976,7 +942,7 @@ void TabPresetComboBox::OnSelect(wxCommandEvent &evt)
         this->SetSelection(m_last_selected);
         if (marker == LABEL_ITEM_WIZARD_PRINTERS)
             wxTheApp->CallAfter([this]() {
-            wxGetApp().run_wizard(ConfigWizard::RR_USER, ConfigWizard::SP_PRINTERS);
+            run_wizard(ConfigWizard::SP_PRINTERS);
 
             // update combobox if its parent is a PhysicalPrinterDialog
             PhysicalPrinterDialog* parent = dynamic_cast<PhysicalPrinterDialog*>(this->GetParent());

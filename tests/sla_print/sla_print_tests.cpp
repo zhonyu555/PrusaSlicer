@@ -6,6 +6,7 @@
 
 #include "sla_test_utils.hpp"
 
+#include <libslic3r/TriangleMeshSlicer.hpp>
 #include <libslic3r/SLA/SupportTreeMesher.hpp>
 #include <libslic3r/SLA/Concurrency.hpp>
 
@@ -48,9 +49,7 @@ TEST_CASE("Support point generator should be deterministic if seeded",
     sla::SupportPointGenerator::Config autogencfg;
     autogencfg.head_diameter = float(2 * supportcfg.head_front_radius_mm);
     sla::SupportPointGenerator point_gen{emesh, autogencfg, [] {}, [](int) {}};
-    
-    TriangleMeshSlicer slicer{&mesh};
-    
+        
     auto   bb      = mesh.bounding_box();
     double zmin    = bb.min.z();
     double zmax    = bb.max.z();
@@ -58,9 +57,7 @@ TEST_CASE("Support point generator should be deterministic if seeded",
     auto   layer_h = 0.1f;
     
     auto slicegrid = grid(float(gnd), float(zmax), layer_h);
-    std::vector<ExPolygons> slices;
-    float                   closing_radius = 0.05f; //CLOSING_RADIUS
-    slicer.slice(slicegrid, SlicingMode::Regular, closing_radius, &slices, []{});
+    std::vector<ExPolygons> slices = slice_mesh_ex(mesh.its, slicegrid, CLOSING_RADIUS);
     
     point_gen.seed(0);
     point_gen.execute(slices, slicegrid);
@@ -162,8 +159,8 @@ TEST_CASE("FloorSupportsDoNotPierceModel", "[SLASupportGeneration]") {
 
 TEST_CASE("InitializedRasterShouldBeNONEmpty", "[SLARasterOutput]") {
     // Default Prusa SL1 display parameters
-    sla::RasterBase::Resolution res{2560, 1440};
-    sla::RasterBase::PixelDim   pixdim{120. / res.width_px, 68. / res.height_px};
+    sla::Resolution res{2560, 1440};
+    sla::PixelDim   pixdim{120. / res.width_px, 68. / res.height_px};
     
     sla::RasterGrayscaleAAGammaPower raster(res, pixdim, {}, 1.);
     REQUIRE(raster.resolution().width_px == res.width_px);
@@ -189,8 +186,8 @@ TEST_CASE("MirroringShouldBeCorrect", "[SLARasterOutput]") {
 
 TEST_CASE("RasterizedPolygonAreaShouldMatch", "[SLARasterOutput]") {
     double disp_w = 120., disp_h = 68.;
-    sla::RasterBase::Resolution res{2560, 1440};
-    sla::RasterBase::PixelDim pixdim{disp_w / res.width_px, disp_h / res.height_px};
+    sla::Resolution res{2560, 1440};
+    sla::PixelDim pixdim{disp_w / res.width_px, disp_h / res.height_px};
     
     double gamma = 1.;
     sla::RasterGrayscaleAAGammaPower raster(res, pixdim, {}, gamma);
@@ -225,23 +222,14 @@ TEST_CASE("RasterizedPolygonAreaShouldMatch", "[SLARasterOutput]") {
     REQUIRE(raster_pxsum(raster0) == 0);
 }
 
-TEST_CASE("Triangle mesh conversions should be correct", "[SLAConversions]")
-{
-    sla::Contour3D cntr;
-    
-    {
-        std::fstream infile{"extruder_idler_quads.obj", std::ios::in};
-        cntr.from_obj(infile);
-    }
-}
 
 TEST_CASE("halfcone test", "[halfcone]") {
     sla::DiffBridge br{Vec3d{1., 1., 1.}, Vec3d{10., 10., 10.}, 0.25, 0.5};
 
-    TriangleMesh m = sla::to_triangle_mesh(sla::get_mesh(br, 45));
+    indexed_triangle_set m = sla::get_mesh(br, 45);
 
-    m.require_shared_vertices();
-    m.WriteOBJFile("Halfcone.obj");
+    its_merge_vertices(m);
+    its_write_obj(m, "Halfcone.obj");
 }
 
 TEST_CASE("Test concurrency")

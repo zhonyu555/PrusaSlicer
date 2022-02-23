@@ -1,11 +1,13 @@
 #include <functional>
+#include <optional>
 
 #include <libslic3r/OpenVDBUtils.hpp>
 #include <libslic3r/TriangleMesh.hpp>
+#include <libslic3r/TriangleMeshSlicer.hpp>
 #include <libslic3r/SLA/Hollowing.hpp>
 #include <libslic3r/SLA/IndexedMesh.hpp>
 #include <libslic3r/ClipperUtils.hpp>
-#include <libslic3r/SimplifyMesh.hpp>
+#include <libslic3r/QuadricEdgeCollapse.hpp>
 #include <libslic3r/SLA/SupportTreeMesher.hpp>
 
 #include <boost/log/trivial.hpp>
@@ -20,14 +22,8 @@
 namespace Slic3r {
 namespace sla {
 
-template<class S, class = FloatingOnly<S>>
-inline void _scale(S s, TriangleMesh &m) { m.scale(float(s)); }
-
-template<class S, class = FloatingOnly<S>>
-inline void _scale(S s, Contour3D &m) { for (auto &p : m.points) p *= s; }
-
 struct Interior {
-    TriangleMesh mesh;
+    indexed_triangle_set mesh;
     openvdb::FloatGrid::Ptr gridptr;
     mutable std::optional<openvdb::FloatGrid::ConstAccessor> accessor;
 
@@ -51,12 +47,12 @@ void InteriorDeleter::operator()(Interior *p)
     delete p;
 }
 
-TriangleMesh &get_mesh(Interior &interior)
+indexed_triangle_set &get_mesh(Interior &interior)
 {
     return interior.mesh;
 }
 
-const TriangleMesh &get_mesh(const Interior &interior)
+const indexed_triangle_set &get_mesh(const Interior &interior)
 {
     return interior.mesh;
 }
@@ -75,7 +71,7 @@ static InteriorPtr generate_interior_verbose(const TriangleMesh & mesh,
     if (ctl.stopcondition()) return {};
     else ctl.statuscb(0, L("Hollowing"));
 
-    auto gridptr = mesh_to_grid(mesh, {}, voxel_scale, out_range, in_range);
+    auto gridptr = mesh_to_grid(mesh.its, {}, voxel_scale, out_range, in_range);
 
     assert(gridptr);
 
@@ -116,7 +112,7 @@ InteriorPtr generate_interior(const TriangleMesh &   mesh,
                               const HollowingConfig &hc,
                               const JobController &  ctl)
 {
-    static const double MIN_OVERSAMPL = 3.;
+    static const double MIN_OVERSAMPL = 3.5;
     static const double MAX_OVERSAMPL = 8.;
 
     // I can't figure out how to increase the grid resolution through openvdb
@@ -134,32 +130,31 @@ InteriorPtr generate_interior(const TriangleMesh &   mesh,
 
     if (interior && !interior->mesh.empty()) {
 
-        // This flips the normals to be outward facing...
-        interior->mesh.require_shared_vertices();
-        indexed_triangle_set its = std::move(interior->mesh.its);
+        // flip normals back...
+        swap_normals(interior->mesh);
 
-        Slic3r::simplify_mesh(its);
+        // simplify mesh lossless
+        float loss_less_max_error = 2*std::numeric_limits<float>::epsilon();
+        its_quadric_edge_collapse(interior->mesh, 0U, &loss_less_max_error);
+
+        its_compactify_vertices(interior->mesh);
+        its_merge_vertices(interior->mesh);
 
         // flip normals back...
-        for (stl_triangle_vertex_indices &ind : its.indices)
-            std::swap(ind(0), ind(2));
-
-        interior->mesh = Slic3r::TriangleMesh{its};
-        interior->mesh.repaired = true;
-        interior->mesh.require_shared_vertices();
+        swap_normals(interior->mesh);
     }
 
     return interior;
 }
 
-Contour3D DrainHole::to_mesh() const
+indexed_triangle_set DrainHole::to_mesh() const
 {
     auto r = double(radius);
     auto h = double(height);
-    sla::Contour3D hole = sla::cylinder(r, h, steps);
-    Eigen::Quaterniond q;
-    q.setFromTwoVectors(Vec3d{0., 0., 1.}, normal.cast<double>());
-    for(auto& p : hole.points) p = q * p + pos.cast<double>();
+    indexed_triangle_set hole = sla::cylinder(r, h, steps);
+    Eigen::Quaternionf q;
+    q.setFromTwoVectors(Vec3f{0.f, 0.f, 1.f}, normal);
+    for(auto& p : hole.vertices) p = q * p + pos;
     
     return hole;
 }
@@ -290,16 +285,11 @@ void cut_drainholes(std::vector<ExPolygons> & obj_slices,
 {
     TriangleMesh mesh;
     for (const sla::DrainHole &holept : holes)
-        mesh.merge(sla::to_triangle_mesh(holept.to_mesh()));
+        mesh.merge(TriangleMesh{holept.to_mesh()});
     
     if (mesh.empty()) return;
     
-    mesh.require_shared_vertices();
-    
-    TriangleMeshSlicer slicer(&mesh);
-    
-    std::vector<ExPolygons> hole_slices;
-    slicer.slice(slicegrid, SlicingMode::Regular, closing_radius, &hole_slices, thr);
+    std::vector<ExPolygons> hole_slices = slice_mesh_ex(mesh.its, slicegrid, closing_radius, thr);
     
     if (obj_slices.size() != hole_slices.size())
         BOOST_LOG_TRIVIAL(warning)
@@ -326,8 +316,7 @@ void hollow_mesh(TriangleMesh &mesh, const Interior &interior, int flags)
     if (flags & hfRemoveInsideTriangles && interior.gridptr)
         remove_inside_triangles(mesh, interior);
 
-    mesh.merge(interior.mesh);
-    mesh.require_shared_vertices();
+    mesh.merge(TriangleMesh{interior.mesh});
 }
 
 // Get the distance of p to the interior's zero iso_surface. Interior should
@@ -568,8 +557,7 @@ void remove_inside_triangles(TriangleMesh &mesh, const Interior &interior,
     new_faces = {};
 
     mesh = TriangleMesh{mesh.its};
-    mesh.repaired = true;
-    mesh.require_shared_vertices();
+    //FIXME do we want to repair the mesh? Are there duplicate vertices or flipped triangles?
 }
 
 }} // namespace Slic3r::sla

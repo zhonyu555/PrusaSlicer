@@ -3,6 +3,7 @@
 #include <libslic3r/Exception.hpp>
 #include <libslic3r/SLAPrintSteps.hpp>
 #include <libslic3r/MeshBoolean.hpp>
+#include <libslic3r/TriangleMeshSlicer.hpp>
 
 // Need the cylinder method for the the drainholes in hollowing step
 #include <libslic3r/SLA/SupportTreeBuilder.hpp>
@@ -144,12 +145,45 @@ void SLAPrint::Steps::hollow_model(SLAPrintObject &po)
 
 struct FaceHash {
 
+    // A 64 bit number's max hex digits
+    static constexpr size_t MAX_NUM_CHARS = 16;
+
     // A hash is created for each triangle to be identifiable. The hash uses
     // only the triangle's geometric traits, not the index in a particular mesh.
     std::unordered_set<std::string> facehash;
 
-    static std::string facekey(const Vec3i &face,
-                               const std::vector<Vec3f> &vertices)
+    // Returns the string in reverse, but that is ok for hashing
+    static std::array<char, MAX_NUM_CHARS + 1> to_chars(int64_t val)
+    {
+        std::array<char, MAX_NUM_CHARS + 1> ret;
+
+        static const constexpr char * Conv = "0123456789abcdef";
+
+        auto ptr = ret.begin();
+        auto uval = static_cast<uint64_t>(std::abs(val));
+        while (uval) {
+            *ptr = Conv[uval & 0xf];
+            ++ptr;
+            uval = uval >> 4;
+        }
+        if (val < 0) { *ptr = '-'; ++ptr; }
+        *ptr = '\0'; // C style string ending
+
+        return ret;
+    }
+
+    static std::string hash(const Vec<3, int64_t> &v)
+    {
+        std::string ret;
+        ret.reserve(3 * MAX_NUM_CHARS);
+
+        for (auto val : v)
+            ret += to_chars(val).data();
+
+        return ret;
+    }
+
+    static std::string facekey(const Vec3i &face, const std::vector<Vec3f> &vertices)
     {
         // Scale to integer to avoid floating points
         std::array<Vec<3, int64_t>, 3> pts = {
@@ -165,15 +199,13 @@ struct FaceHash {
         Vec<3, int64_t> c = a.cross(b) + (pts[0] + pts[1] + pts[2]) / 3;
 
         // Return a concatenated string representation of the coordinates
-        return std::to_string(c(0)) + std::to_string(c(1)) + std::to_string(c(2));
-    };
+        return hash(c);
+    }
 
-    FaceHash(const indexed_triangle_set &its)
+    FaceHash (const indexed_triangle_set &its): facehash(its.indices.size())
     {
-        for (const Vec3i &face : its.indices) {
-            std::string keystr = facekey(face, its.vertices);
-            facehash.insert(keystr);
-        }
+        for (const Vec3i &face : its.indices)
+            facehash.insert(facekey(face, its.vertices));
     }
 
     bool find(const std::string &key)
@@ -193,18 +225,18 @@ static std::vector<bool> create_exclude_mask(
         const sla::Interior &interior,
         const std::vector<sla::DrainHole> &holes)
 {
-    FaceHash interior_hash{sla::get_mesh(interior).its};
+    FaceHash interior_hash{sla::get_mesh(interior)};
 
     std::vector<bool> exclude_mask(its.indices.size(), false);
 
-    std::vector< std::vector<size_t> > neighbor_index =
-            create_neighbor_index(its);
+    VertexFaceIndex neighbor_index{its};
 
     auto exclude_neighbors = [&neighbor_index, &exclude_mask](const Vec3i &face)
     {
         for (int i = 0; i < 3; ++i) {
-            const std::vector<size_t> &neighbors = neighbor_index[face(i)];
-            for (size_t fi_n : neighbors) exclude_mask[fi_n] = true;
+            const auto &neighbors_range = neighbor_index[face(i)];
+            for (size_t fi_n : neighbors_range)
+                exclude_mask[fi_n] = true;
         }
     };
 
@@ -359,11 +391,10 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
         holept.normal += Vec3f{dist(m_rng), dist(m_rng), dist(m_rng)};
         holept.normal.normalize();
         holept.pos += Vec3f{dist(m_rng), dist(m_rng), dist(m_rng)};
-        TriangleMesh m = sla::to_triangle_mesh(holept.to_mesh());
-        m.require_shared_vertices();
+        indexed_triangle_set m = holept.to_mesh();
 
         part_to_drill.indices.clear();
-        auto bb = m.bounding_box();
+        auto bb = bounding_box(m);
         Eigen::AlignedBox<float, 3> ebb{bb.min.cast<float>(),
                                         bb.max.cast<float>()};
 
@@ -396,8 +427,24 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
 
     auto hollowed_mesh_cgal = MeshBoolean::cgal::triangle_mesh_to_cgal(hollowed_mesh);
 
+    if (!MeshBoolean::cgal::does_bound_a_volume(*hollowed_mesh_cgal)) {
+        po.active_step_add_warning(
+            PrintStateBase::WarningLevel::NON_CRITICAL,
+            L("Mesh to be hollowed is not suitable for hollowing (does not "
+              "bound a volume)."));
+    }
+
+    if (!MeshBoolean::cgal::empty(*holes_mesh_cgal)
+        && !MeshBoolean::cgal::does_bound_a_volume(*holes_mesh_cgal)) {
+        po.active_step_add_warning(
+            PrintStateBase::WarningLevel::NON_CRITICAL,
+            L("Unable to drill the current configuration of holes into the "
+              "model."));
+    }
+
     try {
-        MeshBoolean::cgal::minus(*hollowed_mesh_cgal, *holes_mesh_cgal);
+        if (!MeshBoolean::cgal::empty(*holes_mesh_cgal))
+            MeshBoolean::cgal::minus(*hollowed_mesh_cgal, *holes_mesh_cgal);
 
         hollowed_mesh = MeshBoolean::cgal::cgal_to_triangle_mesh(*hollowed_mesh_cgal);
         mesh_view = hollowed_mesh;
@@ -409,8 +456,7 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
 
             sla::remove_inside_triangles(mesh_view, interior, exclude_mask);
         }
-
-    } catch (const std::runtime_error &) {
+    } catch (const Slic3r::RuntimeError &) {
         throw Slic3r::SlicingError(L(
             "Drilling holes into the mesh failed. "
             "This is usually caused by broken model. Try to fix it first."));
@@ -470,25 +516,28 @@ void SLAPrint::Steps::slice_model(SLAPrintObject &po)
     for(auto it = slindex_it; it != po.m_slice_index.end(); ++it)
         po.m_model_height_levels.emplace_back(it->slice_level());
 
-    TriangleMeshSlicer slicer(&mesh);
-
     po.m_model_slices.clear();
-    float closing_r  = float(po.config().slice_closing_radius.value);
+    MeshSlicingParamsEx params;
+    params.closing_radius = float(po.config().slice_closing_radius.value);
+    switch (po.config().slicing_mode.value) {
+    case SlicingMode::Regular:    params.mode = MeshSlicingParams::SlicingMode::Regular; break;
+    case SlicingMode::EvenOdd:    params.mode = MeshSlicingParams::SlicingMode::EvenOdd; break;
+    case SlicingMode::CloseHoles: params.mode = MeshSlicingParams::SlicingMode::Positive; break;
+    }
     auto  thr        = [this]() { m_print->throw_if_canceled(); };
     auto &slice_grid = po.m_model_height_levels;
-    slicer.slice(slice_grid, SlicingMode::Regular, closing_r, &po.m_model_slices, thr);
+    po.m_model_slices = slice_mesh_ex(mesh.its, slice_grid, params, thr);
 
     sla::Interior *interior = po.m_hollowing_data ?
                                   po.m_hollowing_data->interior.get() :
                                   nullptr;
 
     if (interior && ! sla::get_mesh(*interior).empty()) {
-        TriangleMesh interiormesh = sla::get_mesh(*interior);
-        interiormesh.repaired = false;
-        interiormesh.repair(true);
-        TriangleMeshSlicer interior_slicer(&interiormesh);
-        std::vector<ExPolygons> interior_slices;
-        interior_slicer.slice(slice_grid, SlicingMode::Regular, closing_r, &interior_slices, thr);
+        indexed_triangle_set interiormesh = sla::get_mesh(*interior);
+        sla::swap_normals(interiormesh);
+        params.mode = MeshSlicingParams::SlicingMode::Regular;
+
+        std::vector<ExPolygons> interior_slices = slice_mesh_ex(interiormesh, slice_grid, params, thr);
 
         sla::ccr::for_each(size_t(0), interior_slices.size(),
                            [&po, &interior_slices] (size_t i) {
@@ -510,7 +559,7 @@ void SLAPrint::Steps::slice_model(SLAPrintObject &po)
 
     if(po.m_config.supports_enable.getBool() || po.m_config.pad_enable.getBool())
     {
-        po.m_supportdata.reset(new SLAPrintObject::SupportData(mesh));
+        po.m_supportdata.reset(new SLAPrintObject::SupportData(po.get_mesh_to_print()));
     }
 }
 
@@ -521,10 +570,8 @@ void SLAPrint::Steps::support_points(SLAPrintObject &po)
     // If supports are disabled, we can skip the model scan.
     if(!po.m_config.supports_enable.getBool()) return;
 
-    const TriangleMesh &mesh = po.get_mesh_to_slice();
-
     if (!po.m_supportdata)
-        po.m_supportdata.reset(new SLAPrintObject::SupportData(mesh));
+        po.m_supportdata.reset(new SLAPrintObject::SupportData(po.get_mesh_to_print()));
 
     const ModelObject& mo = *po.m_model_object;
 
@@ -662,15 +709,14 @@ void SLAPrint::Steps::generate_pad(SLAPrintObject &po) {
             // we sometimes call it "builtin pad" is enabled so we will
             // get a sample from the bottom of the mesh and use it for pad
             // creation.
-            sla::pad_blueprint(trmesh, bp, float(pad_h),
+            sla::pad_blueprint(trmesh.its, bp, float(pad_h),
                                float(po.m_config.layer_height.getFloat()),
                                [this](){ throw_if_canceled(); });
         }
 
-        po.m_supportdata->support_tree_ptr->add_pad(bp, pcfg);
-        auto &pad_mesh = po.m_supportdata->support_tree_ptr->retrieve_mesh(sla::MeshType::Pad);
+        po.m_supportdata->create_pad(bp, pcfg);
 
-        if (!validate_pad(pad_mesh, pcfg))
+        if (!validate_pad(po.m_supportdata->support_tree_ptr->retrieve_mesh(sla::MeshType::Pad), pcfg))
             throw Slic3r::SlicingError(
                     L("No pad can be generated for this model with the "
                       "current configuration"));
@@ -713,43 +759,6 @@ void SLAPrint::Steps::slice_supports(SLAPrintObject &po) {
     // status to the 3D preview to load the SLA slices.
     report_status(-2, "", SlicingStatus::RELOAD_SLA_PREVIEW);
 }
-
-//static ClipperPolygons polyunion(const ClipperPolygons &subjects)
-//{
-//    ClipperLib::Clipper clipper;
-
-//    bool closed = true;
-
-//    for(auto& path : subjects) {
-//        clipper.AddPath(path.Contour, ClipperLib::ptSubject, closed);
-//        clipper.AddPaths(path.Holes, ClipperLib::ptSubject, closed);
-//    }
-
-//    auto mode = ClipperLib::pftPositive;
-
-//    return libnest2d::clipper_execute(clipper, ClipperLib::ctUnion, mode, mode);
-//}
-
-//static ClipperPolygons polydiff(const ClipperPolygons &subjects, const ClipperPolygons& clips)
-//{
-//    ClipperLib::Clipper clipper;
-
-//    bool closed = true;
-
-//    for(auto& path : subjects) {
-//        clipper.AddPath(path.Contour, ClipperLib::ptSubject, closed);
-//        clipper.AddPaths(path.Holes, ClipperLib::ptSubject, closed);
-//    }
-
-//    for(auto& path : clips) {
-//        clipper.AddPath(path.Contour, ClipperLib::ptClip, closed);
-//        clipper.AddPaths(path.Holes, ClipperLib::ptClip, closed);
-//    }
-
-//    auto mode = ClipperLib::pftPositive;
-
-//    return libnest2d::clipper_execute(clipper, ClipperLib::ctDifference, mode, mode);
-//}
 
 // get polygons for all instances in the object
 static ExPolygons get_all_polygons(const SliceRecord& record, SliceOrigin o)
@@ -1035,7 +1044,7 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
 // Rasterizing the model objects, and their supports
 void SLAPrint::Steps::rasterize()
 {
-    if(canceled() || !m_print->m_printer) return;
+    if(canceled() || !m_print->m_archiver) return;
 
     // coefficient to map the rasterization state (0-99) to the allocated
     // portion (slot) of the process state
@@ -1080,7 +1089,7 @@ void SLAPrint::Steps::rasterize()
     if(canceled()) return;
 
     // Print all the layers in parallel
-    m_print->m_printer->draw_layers(m_print->m_printer_input.size(), lvlfn,
+    m_print->m_archiver->draw_layers(m_print->m_printer_input.size(), lvlfn,
                                     [this]() { return canceled(); }, ex_tbb);
 }
 

@@ -5,6 +5,11 @@
 #include "3DScene.hpp"
 #include "GLModel.hpp"
 
+#include "libslic3r/BuildVolume.hpp"
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+#include "libslic3r/ExPolygon.hpp"
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+
 #include <tuple>
 #include <array>
 
@@ -13,12 +18,13 @@ namespace GUI {
 
 class GLCanvas3D;
 
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
 class GeometryBuffer
 {
     struct Vertex
     {
-        Vec3f position = Vec3f::Zero();
-        Vec2f tex_coords = Vec2f::Zero();
+        Vec3f position{ Vec3f::Zero() };
+        Vec2f tex_coords{ Vec2f::Zero() };
     };
 
     std::vector<Vertex> m_vertices;
@@ -34,6 +40,7 @@ public:
     size_t get_tex_coords_offset() const { return (size_t)(3 * sizeof(float)); }
     unsigned int get_vertices_count() const { return (unsigned int)m_vertices.size(); }
 };
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
 
 class Bed3D
 {
@@ -53,74 +60,110 @@ class Bed3D
     public:
         const Vec3d& get_origin() const { return m_origin; }
         void set_origin(const Vec3d& origin) { m_origin = origin; }
-        void set_stem_length(float length);
+        void set_stem_length(float length) {
+            m_stem_length = length;
+            m_arrow.reset();
+        }
         float get_total_length() const { return m_stem_length + DefaultTipLength; }
-        void render() const;
+        void render();
     };
 
 public:
-    enum EType : unsigned char
+    enum class Type : unsigned char
     {
+        // The print bed model and texture are available from some printer preset.
         System,
-        Custom,
-        Num_Types
+        // The print bed model is unknown, thus it is rendered procedurally.
+        Custom
     };
 
 private:
-    EType m_type{ Custom };
-    Pointfs m_shape;
+    BuildVolume m_build_volume;
+    Type m_type{ Type::Custom };
     std::string m_texture_filename;
     std::string m_model_filename;
-    BoundingBoxf3 m_bounding_box;
+    // Print volume bounding box exteded with axes and model.
     BoundingBoxf3 m_extended_bounding_box;
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    // Print bed polygon
+    ExPolygon m_contour;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+    // Slightly expanded print bed polygon, for collision detection.
     Polygon m_polygon;
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    GLModel m_triangles;
+    GLModel m_gridlines;
+#else
     GeometryBuffer m_triangles;
     GeometryBuffer m_gridlines;
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
     GLTexture m_texture;
     // temporary texture shown until the main texture has still no levels compressed
     GLTexture m_temp_texture;
     GLModel m_model;
     Vec3d m_model_offset{ Vec3d::Zero() };
-    std::array<float, 4> m_model_color{ 0.235f, 0.235f, 0.235f, 1.0f };
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
     unsigned int m_vbo_id{ 0 };
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
     Axes m_axes;
 
     float m_scale_factor{ 1.0f };
 
 public:
     Bed3D() = default;
-    ~Bed3D() { reset(); }
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    ~Bed3D() = default;
+#else
+    ~Bed3D() { release_VBOs(); }
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
 
-    EType get_type() const { return m_type; }
-
-    bool is_custom() const { return m_type == Custom; }
-
-    const Pointfs& get_shape() const { return m_shape; }
+    // Update print bed model from configuration.
     // Return true if the bed shape changed, so the calee will update the UI.
-    bool set_shape(const Pointfs& shape, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom = false);
+    //FIXME if the build volume max print height is updated, this function still returns zero
+    // as this class does not use it, thus there is no need to update the UI.
+    bool set_shape(const Pointfs& bed_shape, const double max_print_height, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom = false);
 
-    const BoundingBoxf3& get_bounding_box(bool extended) const {
-        return extended ? m_extended_bounding_box : m_bounding_box;
-    }
+    // Build volume geometry for various collision detection tasks.
+    const BuildVolume& build_volume() const { return m_build_volume; }
 
+    // Was the model provided, or was it generated procedurally?
+    Type get_type() const { return m_type; }
+    // Was the model generated procedurally?
+    bool is_custom() const { return m_type == Type::Custom; }
+
+    // Bounding box around the print bed, axes and model, for rendering.
+    const BoundingBoxf3& extended_bounding_box() const { return m_extended_bounding_box; }
+
+    // Check against an expanded 2d bounding box.
+    //FIXME shall one check against the real build volume?
     bool contains(const Point& point) const;
     Point point_projection(const Point& point) const;
 
-    void render(GLCanvas3D& canvas, bool bottom, float scale_factor,
-                bool show_axes, bool show_texture) const;
+    void render(GLCanvas3D& canvas, bool bottom, float scale_factor, bool show_axes, bool show_texture);
+    void render_for_picking(GLCanvas3D& canvas, bool bottom, float scale_factor);
 
 private:
-    void calc_bounding_boxes() const;
+    // Calculate an extended bounding box from axes and current model for visualization purposes.
+    BoundingBoxf3 calc_extended_bounding_box() const;
+#if ENABLE_GLBEGIN_GLEND_REMOVAL
+    void init_triangles();
+    void init_gridlines();
+#else
     void calc_triangles(const ExPolygon& poly);
     void calc_gridlines(const ExPolygon& poly, const BoundingBox& bed_bbox);
-    std::tuple<EType, std::string, std::string> detect_type(const Pointfs& shape) const;
-    void render_axes() const;
-    void render_system(GLCanvas3D& canvas, bool bottom, bool show_texture) const;
-    void render_texture(bool bottom, GLCanvas3D& canvas) const;
-    void render_model() const;
-    void render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture) const;
-    void render_default(bool bottom) const;
-    void reset();
+#endif // ENABLE_GLBEGIN_GLEND_REMOVAL
+    static std::tuple<Type, std::string, std::string> detect_type(const Pointfs& shape);
+    void render_internal(GLCanvas3D& canvas, bool bottom, float scale_factor,
+        bool show_axes, bool show_texture, bool picking);
+    void render_axes();
+    void render_system(GLCanvas3D& canvas, bool bottom, bool show_texture);
+    void render_texture(bool bottom, GLCanvas3D& canvas);
+    void render_model();
+    void render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture, bool picking);
+    void render_default(bool bottom, bool picking);
+#if !ENABLE_GLBEGIN_GLEND_REMOVAL
+    void release_VBOs();
+#endif // !ENABLE_GLBEGIN_GLEND_REMOVAL
 };
 
 } // GUI

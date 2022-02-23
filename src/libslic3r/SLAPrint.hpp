@@ -9,6 +9,10 @@
 #include "Point.hpp"
 #include "MTUtils.hpp"
 #include "Zipper.hpp"
+#include "Format/SLAArchive.hpp"
+#include "GCode/ThumbnailData.hpp"
+
+#include "libslic3r/Execution/ExecutionTBB.hpp"
 
 namespace Slic3r {
 
@@ -79,8 +83,8 @@ public:
     const TriangleMesh&     pad_mesh() const;
     
     // Ready after this->is_step_done(slaposDrillHoles) is true
-    const TriangleMesh&     hollowed_interior_mesh() const;
-    
+    const indexed_triangle_set &hollowed_interior_mesh() const;
+
     // Get the mesh that is going to be printed with all the modifications
     // like hollowing and drilled holes.
     const TriangleMesh & get_mesh_to_print() const {
@@ -313,15 +317,26 @@ private:
     public:
         sla::SupportTree::UPtr  support_tree_ptr; // the supports
         std::vector<ExPolygons> support_slices;   // sliced supports
+        TriangleMesh tree_mesh, pad_mesh, full_mesh;
         
         inline SupportData(const TriangleMesh &t)
-            : sla::SupportableMesh{t, {}, {}}
+            : sla::SupportableMesh{t.its, {}, {}}
         {}
         
         sla::SupportTree::UPtr &create_support_tree(const sla::JobController &ctl)
         {
             support_tree_ptr = sla::SupportTree::create(*this, ctl);
+            tree_mesh = TriangleMesh{support_tree_ptr->retrieve_mesh(sla::MeshType::Support)};
             return support_tree_ptr;
+        }
+
+        void create_pad(const ExPolygons &blueprint, const sla::PadConfig &pcfg)
+        {
+            if (!support_tree_ptr)
+                return;
+
+            support_tree_ptr->add_pad(blueprint, pcfg);
+            pad_mesh = TriangleMesh{support_tree_ptr->retrieve_mesh(sla::MeshType::Pad)};
         }
     };
     
@@ -373,41 +388,6 @@ struct SLAPrintStatistics
         total_cost = 0.;
         total_weight = 0.;
         layers_times.clear();
-    }
-};
-
-class SLAPrinter {
-protected:
-    std::vector<sla::EncodedRaster> m_layers;
-    
-    virtual uqptr<sla::RasterBase> create_raster() const = 0;
-    virtual sla::RasterEncoder get_encoder() const = 0;
-    
-public:
-    virtual ~SLAPrinter() = default;
-    
-    virtual void apply(const SLAPrinterConfig &cfg) = 0;
-    
-    // Fn have to be thread safe: void(sla::RasterBase& raster, size_t lyrid);
-    template<class Fn, class CancelFn, class EP = ExecutionTBB>
-    void draw_layers(
-        size_t     layer_num,
-        Fn &&      drawfn,
-        CancelFn cancelfn = []() { return false; },
-        const EP & ep       = {})
-    {
-        m_layers.resize(layer_num);
-        execution::for_each(
-            ep, size_t(0), m_layers.size(),
-            [this, &drawfn, &cancelfn](size_t idx) {
-                if (cancelfn()) return;
-
-                sla::EncodedRaster &enc = m_layers[idx];
-                auto                rst = create_raster();
-                drawfn(*rst, idx);
-                enc = rst->encode(get_encoder());
-            },
-            execution::max_concurrency(ep));
     }
 };
 
@@ -514,8 +494,19 @@ public:
     // The aggregated and leveled print records from various objects.
     // TODO: use this structure for the preview in the future.
     const std::vector<PrintLayer>& print_layers() const { return m_printer_input; }
-    
-    void set_printer(SLAPrinter *archiver);
+
+    void export_print(const std::string &fname, const std::string &projectname = "")
+    {
+        ThumbnailsList thumbnails; //empty thumbnail list
+        export_print(fname, thumbnails, projectname);
+    }
+
+    void export_print(const std::string    &fname,
+                      const ThumbnailsList &thumbnails,
+                      const std::string    &projectname = "")
+    {
+        m_archiver->export_print(fname, *this, thumbnails, projectname);
+    }
     
 private:
     
@@ -537,7 +528,7 @@ private:
     std::vector<PrintLayer>         m_printer_input;
     
     // The archive object which collects the raster images after slicing
-    SLAPrinter                     *m_printer = nullptr;
+    std::unique_ptr<SLAArchive>     m_archiver;
     
     // Estimated print time, material consumed.
     SLAPrintStatistics              m_print_statistics;
@@ -569,7 +560,7 @@ sla::PadConfig::EmbedObject builtin_pad_cfg(const SLAPrintObjectConfig& c);
 
 sla::PadConfig make_pad_cfg(const SLAPrintObjectConfig& c);
 
-bool validate_pad(const TriangleMesh &pad, const sla::PadConfig &pcfg);
+bool validate_pad(const indexed_triangle_set &pad, const sla::PadConfig &pcfg);
 
 
 } // namespace Slic3r

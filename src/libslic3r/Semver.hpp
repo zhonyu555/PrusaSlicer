@@ -25,8 +25,17 @@ public:
 	Semver() : ver(semver_zero()) {}
 
 	Semver(int major, int minor, int patch,
-		boost::optional<const std::string&> metadata = boost::none,
-		boost::optional<const std::string&> prerelease = boost::none)
+		boost::optional<const std::string&> metadata, boost::optional<const std::string&> prerelease)
+		: ver(semver_zero())
+	{
+		ver.major = major;
+		ver.minor = minor;
+		ver.patch = patch;
+		set_metadata(metadata);
+		set_prerelease(prerelease);
+	}
+
+	Semver(int major, int minor, int patch, const char *metadata = nullptr, const char *prerelease = nullptr)
 		: ver(semver_zero())
 	{
 		ver.major = major;
@@ -101,8 +110,30 @@ public:
 	void set_maj(int maj) { ver.major = maj; }
 	void set_min(int min) { ver.minor = min; }
 	void set_patch(int patch) { ver.patch = patch; }
-	void set_metadata(boost::optional<const std::string&> meta) { ver.metadata = meta ? strdup(*meta) : nullptr; }
-	void set_prerelease(boost::optional<const std::string&> pre) { ver.prerelease = pre ? strdup(*pre) : nullptr; }
+    void set_metadata(boost::optional<const std::string &> meta)
+    {
+        if (ver.metadata)
+            free(ver.metadata);
+        ver.metadata = meta ? strdup(*meta) : nullptr;
+    }
+    void set_metadata(const char *meta)
+    {
+        if (ver.metadata)
+            free(ver.metadata);
+        ver.metadata = meta ? strdup(meta) : nullptr;
+    }
+    void set_prerelease(boost::optional<const std::string &> pre)
+    {
+        if (ver.prerelease)
+            free(ver.prerelease);
+        ver.prerelease = pre ? strdup(*pre) : nullptr;
+    }
+    void set_prerelease(const char *pre)
+    {
+        if (ver.prerelease)
+            free(ver.prerelease);
+        ver.prerelease = pre ? strdup(pre) : nullptr;
+    }
 
 	// Comparison
 	bool operator<(const Semver &b)  const { return ::semver_compare(ver, b.ver) == -1; }

@@ -18,7 +18,7 @@ struct Camera
     static double FrustrumZMargin;
     static double MaxFovDeg;
 
-    enum EType : unsigned char
+    enum class EType : unsigned char
     {
         Unknown,
         Ortho,
@@ -29,7 +29,7 @@ struct Camera
     bool requires_zoom_to_bed{ false };
 
 private:
-    EType m_type{ Perspective };
+    EType m_type{ EType::Perspective };
     bool m_update_config_on_type_change_enabled{ false };
     Vec3d m_target{ Vec3d::Zero() };
     float m_zenit{ 45.0f };
@@ -54,7 +54,7 @@ public:
     std::string get_type_as_string() const;
     void set_type(EType type);
     // valid values for type: "0" -> ortho, "1" -> perspective
-    void set_type(const std::string& type) { set_type((type == "1") ? Perspective : Ortho); }
+    void set_type(const std::string& type) { set_type((type == "1") ? EType::Perspective : EType::Ortho); }
     void select_next_type();
 
     void enable_update_config_on_type_change(bool enable) { m_update_config_on_type_change_enabled = enable; }
@@ -91,11 +91,11 @@ public:
 
     double get_fov() const;
 
-    void apply_viewport(int x, int y, unsigned int w, unsigned int h) const;
-    void apply_view_matrix() const;
+    void apply_viewport(int x, int y, unsigned int w, unsigned int h);
+    void apply_view_matrix();
     // Calculates and applies the projection matrix tighting the frustrum z range around the given box.
     // If larger z span is needed, pass the desired values of near and far z (negative values are ignored)
-    void apply_projection(const BoundingBoxf3& box, double near_z = -1.0, double far_z = -1.0) const;
+    void apply_projection(const BoundingBoxf3& box, double near_z = -1.0, double far_z = -1.0);
 
     void zoom_to_box(const BoundingBoxf3& box, double margin_factor = DefaultZoomToBoxMarginFactor);
     void zoom_to_volumes(const GLVolumePtrs& volumes, double margin_factor = DefaultZoomToVolumesMarginFactor);
@@ -105,7 +105,7 @@ public:
 #endif // ENABLE_CAMERA_STATISTICS
 
     // translate the camera in world space
-    void translate_world(const Vec3d& displacement) { this->set_target(m_target + displacement); }
+    void translate_world(const Vec3d& displacement) { set_target(m_target + displacement); }
 
     // rotate the camera on a sphere having center == m_target and radius == m_distance
     // using the given variations of spherical coordinates
@@ -132,10 +132,10 @@ public:
 private:
     // returns tight values for nearZ and farZ plane around the given bounding box
     // the camera MUST be outside of the bounding box in eye coordinate of the given box
-    std::pair<double, double> calc_tight_frustrum_zs_around(const BoundingBoxf3& box) const;
+    std::pair<double, double> calc_tight_frustrum_zs_around(const BoundingBoxf3& box);
     double calc_zoom_to_bounding_box_factor(const BoundingBoxf3& box, double margin_factor = DefaultZoomToBoxMarginFactor) const;
     double calc_zoom_to_volumes_factor(const GLVolumePtrs& volumes, Vec3d& center, double margin_factor = DefaultZoomToVolumesMarginFactor) const;
-    void set_distance(double distance) const;
+    void set_distance(double distance);
 
     void set_default_orientation();
     Vec3d validate_target(const Vec3d& target) const;

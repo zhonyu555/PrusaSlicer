@@ -3,6 +3,7 @@ project(PrusaSlicer)
 
 include("version.inc")
 include(GNUInstallDirs)
+include(CMakeDependentOption)
 
 set(SLIC3R_RESOURCES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/resources")
 file(TO_NATIVE_PATH "${SLIC3R_RESOURCES_DIR}" SLIC3R_RESOURCES_DIR_WIN)
@@ -32,6 +33,11 @@ option(SLIC3R_MSVC_COMPILE_PARALLEL "Compile on Visual Studio in parallel" 1)
 option(SLIC3R_MSVC_PDB          "Generate PDB files on MSVC in Release mode" 1)
 option(SLIC3R_PERL_XS           "Compile XS Perl module and enable Perl unit and integration tests" 0)
 option(SLIC3R_ASAN              "Enable ASan on Clang and GCC" 0)
+option(SLIC3R_UBSAN             "Enable UBSan on Clang and GCC" 0)
+# If SLIC3R_FHS is 1 -> SLIC3R_DESKTOP_INTEGRATION is always 0, othrewise variable.
+CMAKE_DEPENDENT_OPTION(SLIC3R_DESKTOP_INTEGRATION "Allow perfoming desktop integration during runtime" 1 "NOT SLIC3R_FHS" 0)
+
+set(OPENVDB_FIND_MODULE_PATH "" CACHE PATH "Path to OpenVDB installation's find modules.")
 
 set(SLIC3R_GTK "2" CACHE STRING "GTK version to use with wxWidgets on Linux")
 
@@ -67,6 +73,10 @@ endforeach()
 
 if (SLIC3R_GUI)
     add_definitions(-DSLIC3R_GUI)
+endif ()
+
+if(SLIC3R_DESKTOP_INTEGRATION)
+    add_definitions(-DSLIC3R_DESKTOP_INTEGRATION)
 endif ()
 
 if (MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL Clang)
@@ -230,6 +240,11 @@ if (NOT MSVC AND ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR "${CMAKE_CXX_COMP
         add_compile_options(-Wno-deprecated-declarations)
     endif()
 
+    # Clang reports misleading indentation for some IF blocks because of mixing tabs with spaces.
+    if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+        add_compile_options(-Wno-misleading-indentation)
+    endif()
+
     #GCC generates loads of -Wunknown-pragmas when compiling igl. The fix is not easy due to a bug in gcc, see
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=66943 or
     # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=53431
@@ -243,9 +258,10 @@ endif()
 if (SLIC3R_ASAN)
     # ASAN should be available on MSVC starting with Visual Studio 2019 16.9
     # https://devblogs.microsoft.com/cppblog/address-sanitizer-for-msvc-now-generally-available/
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+    add_compile_options(-fsanitize=address)
 
     if (NOT MSVC)
+        add_compile_options(-fno-omit-frame-pointer)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
         set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
         set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} -fsanitize=address")
@@ -253,6 +269,32 @@ if (SLIC3R_ASAN)
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lasan")
+    endif ()
+endif ()
+
+if (SLIC3R_UBSAN)
+    # Stacktrace for every report is enabled by default. It can be disabled by running PrusaSlicer with "UBSAN_OPTIONS=print_stacktrace=0".
+
+    # Define macro SLIC3R_UBSAN to allow detection in the source code if this sanitizer is enabled.
+    add_compile_definitions(SLIC3R_UBSAN)
+
+    # Clang supports much more useful checks than GCC, so when Clang is detected, another checks will be enabled.
+    # List of what GCC is checking: https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html
+    # List of what Clang is checking: https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        set(_ubsan_flags "-fsanitize=undefined,integer")
+    else ()
+        set(_ubsan_flags "-fsanitize=undefined")
+    endif ()
+
+    add_compile_options(${_ubsan_flags} -fno-omit-frame-pointer)
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${_ubsan_flags}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${_ubsan_flags}")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} ${_ubsan_flags}")
+
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lubsan")
     endif ()
 endif ()
 
@@ -386,13 +428,16 @@ find_package(CURL REQUIRED)
 add_library(libcurl INTERFACE)
 target_link_libraries(libcurl INTERFACE CURL::libcurl)
 
+# Fixing curl's cmake config script bugs
 if (NOT WIN32)
     # Required by libcurl
     find_package(ZLIB REQUIRED)
     target_link_libraries(libcurl INTERFACE ZLIB::ZLIB)
+else()
+    target_link_libraries(libcurl INTERFACE crypt32)
 endif()
 
-if (SLIC3R_STATIC)
+if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_CURL)
     if (NOT APPLE)
         # libcurl is always linked dynamically to the system libcurl on OSX.
         # On other systems, libcurl is linked statically if SLIC3R_STATIC is set.
@@ -443,13 +488,13 @@ set(OpenGL_GL_PREFERENCE "LEGACY")
 find_package(OpenGL REQUIRED)
 
 # Find glew or use bundled version
-if (SLIC3R_STATIC)
+if (SLIC3R_STATIC AND NOT SLIC3R_STATIC_EXCLUDE_GLEW)
     set(GLEW_USE_STATIC_LIBS ON)
     set(GLEW_VERBOSE ON)
 endif()
 
 find_package(GLEW)
-if (NOT GLEW_FOUND)
+if (NOT TARGET GLEW::GLEW)
     message(STATUS "GLEW not found, using bundled version.")
     add_library(glew STATIC ${LIBDIR}/glew/src/glew.c)
     set(GLEW_FOUND TRUE)
@@ -461,19 +506,63 @@ endif ()
 
 # Find the Cereal serialization library
 find_package(cereal REQUIRED)
+add_library(libcereal INTERFACE)
+if (NOT TARGET cereal::cereal)
+    target_link_libraries(libcereal INTERFACE cereal)
+else()
+    target_link_libraries(libcereal INTERFACE cereal::cereal)
+endif()
 
 # l10n
 set(L10N_DIR "${SLIC3R_RESOURCES_DIR}/localization")
 add_custom_target(gettext_make_pot
-    COMMAND xgettext --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --debug
+    COMMAND xgettext --keyword=L --keyword=_L --keyword=_u8L --keyword=L_CONTEXT:1,2c --keyword=_L_PLURAL:1,2 --add-comments=TRN --from-code=UTF-8 --debug --boost
         -f "${L10N_DIR}/list.txt"
         -o "${L10N_DIR}/PrusaSlicer.pot"
+    COMMAND hintsToPot ${SLIC3R_RESOURCES_DIR} ${L10N_DIR}
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     COMMENT "Generate pot file from strings in the source tree"
 )
+add_custom_target(gettext_merge_po_with_pot
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMENT "Merge localization po with new generted pot file"
+)
+file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
+foreach(po_file ${L10N_PO_FILES})
+    #GET_FILENAME_COMPONENT(po_dir "${po_file}" DIRECTORY)
+    #SET(po_new_file "${po_dir}/PrusaSlicer_.po")
+    add_custom_command(
+        TARGET gettext_merge_po_with_pot PRE_BUILD
+        COMMAND msgmerge -N -o ${po_file} ${po_file} "${L10N_DIR}/PrusaSlicer.pot"
+        # delete obsolete lines from resulting PO to avoid conflicts after a merging of it with wxWidgets.po
+        COMMAND msgattrib --no-obsolete -o ${po_file} ${po_file}
+        DEPENDS ${po_file}
+    )
+endforeach()
+
+add_custom_target(gettext_concat_wx_po_with_po
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMENT "Concatenate and merge wxWidgets localization po with PrusaSlicer po file"
+)
+file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
+file(GLOB L10N_WX_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
+foreach(po_file ${L10N_PO_FILES})
+    GET_FILENAME_COMPONENT(po_dir "${po_file}" DIRECTORY)
+    GET_FILENAME_COMPONENT(po_dir_name "${po_dir}" NAME)
+    SET(wx_po_file "${L10N_DIR}/wx_locale/${po_dir_name}.po")
+    #SET(po_new_file "${po_dir}/PrusaSlicer_.po")
+    add_custom_command(
+        TARGET gettext_concat_wx_po_with_po PRE_BUILD
+        COMMAND msgcat --use-first -o ${po_file} ${po_file} ${wx_po_file}
+        # delete obsolete lines from resulting PO
+        COMMAND msgattrib --no-obsolete -o ${po_file} ${po_file}
+        DEPENDS ${po_file}
+    )
+endforeach()
+
 add_custom_target(gettext_po_to_mo
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    COMMENT "Generate localization po files (binary) from mo files (texts)"
+    COMMENT "Generate localization mo files (binary) from po files (texts)"
 )
 file(GLOB L10N_PO_FILES "${L10N_DIR}/*/PrusaSlicer*.po")
 foreach(po_file ${L10N_PO_FILES})
@@ -481,7 +570,8 @@ foreach(po_file ${L10N_PO_FILES})
     SET(mo_file "${po_dir}/PrusaSlicer.mo")
     add_custom_command(
         TARGET gettext_po_to_mo PRE_BUILD
-        COMMAND msgfmt ARGS -o ${mo_file} ${po_file}
+        COMMAND msgfmt ARGS --check-format -o ${mo_file} ${po_file}
+        #COMMAND msgfmt ARGS --check-compatibility -o ${mo_file} ${po_file}
         DEPENDS ${po_file}
     )
 endforeach()
@@ -491,13 +581,17 @@ find_package(NLopt 1.4 REQUIRED)
 if(SLIC3R_STATIC)
     set(OPENVDB_USE_STATIC_LIBS ON)
     set(USE_BLOSC TRUE)
-endif()
+endif ()
 
-find_package(OpenVDB 5.0 REQUIRED COMPONENTS openvdb)
+find_package(OpenVDB 5.0 COMPONENTS openvdb)
 if(OpenVDB_FOUND)
     slic3r_remap_configs(IlmBase::Half RelWithDebInfo Release)
     slic3r_remap_configs(Blosc::blosc RelWithDebInfo Release)
-endif()
+else ()
+    message(FATAL_ERROR "OpenVDB could not be found with the bundled find module. "
+                   "You can try to specify the find module location of your "
+                   "OpenVDB installation with the OPENVDB_FIND_MODULE_PATH cache variable.")
+endif ()
 
 set(TOP_LEVEL_PROJECT_DIR ${PROJECT_SOURCE_DIR})
 function(prusaslicer_copy_dlls target)
@@ -536,6 +630,8 @@ endfunction()
 add_subdirectory(src)
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT PrusaSlicer_app_console)
 
+add_dependencies(gettext_make_pot hintsToPot)
+
 # Perl bindings, currently only used for the unit / integration tests of libslic3r.
 # Also runs the unit / integration tests.
 #FIXME Port the tests into C++ to finally get rid of the Perl!
@@ -558,9 +654,20 @@ if (WIN32)
 elseif (SLIC3R_FHS)
     # CMAKE_INSTALL_FULL_DATAROOTDIR: read-only architecture-independent data root (share)
     set(SLIC3R_FHS_RESOURCES "${CMAKE_INSTALL_FULL_DATAROOTDIR}/PrusaSlicer")
-    install(DIRECTORY "${SLIC3R_RESOURCES_DIR}/" DESTINATION "${SLIC3R_FHS_RESOURCES}")
-    install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${SLIC3R_FHS_RESOURCES}/applications)
-    install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${SLIC3R_FHS_RESOURCES}/applications)
+    install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/ DESTINATION ${SLIC3R_FHS_RESOURCES}
+        PATTERN "*/udev" EXCLUDE
+    )
+    install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
+    foreach(SIZE 32 128 192)
+        install(FILES ${SLIC3R_RESOURCES_DIR}/icons/PrusaSlicer_${SIZE}px.png
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${SIZE}x${SIZE}/apps RENAME PrusaSlicer.png
+        )
+        install(FILES ${SLIC3R_RESOURCES_DIR}/icons/PrusaSlicer-gcodeviewer_${SIZE}px.png
+            DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${SIZE}x${SIZE}/apps RENAME PrusaSlicer-gcodeviewer.png
+        )
+    endforeach()
+    install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/udev/ DESTINATION lib/udev/rules.d)
 else ()
     install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
     install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)

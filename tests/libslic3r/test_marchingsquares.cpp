@@ -13,24 +13,24 @@
 #include <libslic3r/SVG.hpp>
 #include <libslic3r/ClipperUtils.hpp>
 
+#include <libslic3r/TriangleMeshSlicer.hpp>
 #include <libslic3r/TriangulateWall.hpp>
 #include <libslic3r/Tesselate.hpp>
 #include <libslic3r/SlicesToTriangleMesh.hpp>
-#include <libslic3r/SLA/Contour3D.hpp>
 
 using namespace Slic3r;
 
-static double area(const sla::RasterBase::PixelDim &pxd)
+static double area(const sla::PixelDim &pxd)
 {
     return pxd.w_mm * pxd.h_mm;
 }
 
 static Slic3r::sla::RasterGrayscaleAA create_raster(
-    const sla::RasterBase::Resolution &res,
+    const sla::Resolution &res,
     double                             disp_w = 100.,
     double                             disp_h = 100.)
 {
-    sla::RasterBase::PixelDim pixdim{disp_w / res.width_px, disp_h / res.height_px};
+    sla::PixelDim pixdim{disp_w / res.width_px, disp_h / res.height_px};
     
     auto bb = BoundingBox({0, 0}, {scaled(disp_w), scaled(disp_h)});
     sla::RasterBase::Trafo trafo;
@@ -107,7 +107,7 @@ static void test_expolys(Rst &&             rst,
     svg.Close();
     
     double max_rel_err = 0.1;
-    sla::RasterBase::PixelDim pxd = rst.pixel_dimensions();
+    sla::PixelDim pxd = rst.pixel_dimensions();
     double max_abs_err = area(pxd) * scaled(1.) * scaled(1.);
     
     BoundingBox ref_bb;
@@ -175,7 +175,7 @@ TEST_CASE("Fully covered raster should result in a rectangle", "[MarchingSquares
 
 TEST_CASE("4x4 raster with one ring", "[MarchingSquares]") {
     
-    sla::RasterBase::PixelDim pixdim{1, 1};
+    sla::PixelDim pixdim{1, 1};
     
     // We need one additional row and column to detect edges
     sla::RasterGrayscaleAA rst{{4, 4}, pixdim, {}, agg::gamma_threshold(.5)};
@@ -205,7 +205,7 @@ TEST_CASE("4x4 raster with one ring", "[MarchingSquares]") {
 
 TEST_CASE("4x4 raster with two rings", "[MarchingSquares]") {
     
-    sla::RasterBase::PixelDim pixdim{1, 1};
+    sla::PixelDim pixdim{1, 1};
     
     // We need one additional row and column to detect edges
     sla::RasterGrayscaleAA rst{{5, 5}, pixdim, {}, agg::gamma_threshold(.5)};
@@ -319,10 +319,9 @@ static void recreate_object_from_rasters(const std::string &objname, float lh) {
     mesh.translate(tr.x(), tr.y(), tr.z());
     bb = mesh.bounding_box();
     
-    std::vector<ExPolygons> layers;
-    slice_mesh(mesh, grid(float(bb.min.z()) + lh, float(bb.max.z()), lh), layers, 0.f, []{});
+    std::vector<ExPolygons> layers = slice_mesh_ex(mesh.its, grid(float(bb.min.z()) + lh, float(bb.max.z()), lh));
     
-    sla::RasterBase::Resolution res{2560, 1440};
+    sla::Resolution res{2560, 1440};
     double                      disp_w = 120.96;
     double                      disp_h = 68.04;
 
@@ -367,10 +366,9 @@ static void recreate_object_from_rasters(const std::string &objname, float lh) {
         layer = std::move(layer_);
     }
     
-    TriangleMesh out = slices_to_triangle_mesh(layers, bb.min.z(), double(lh), double(lh));
-    
-    out.require_shared_vertices();
-    out.WriteOBJFile("out_from_rasters.obj");
+    indexed_triangle_set out = slices_to_mesh(layers, bb.min.z(), double(lh), double(lh));
+
+    its_write_obj(out, "out_from_rasters.obj");
 }
 
 TEST_CASE("Recreate object from rasters", "[SL1Import]") {

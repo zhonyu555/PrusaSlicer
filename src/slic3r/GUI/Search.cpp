@@ -24,6 +24,8 @@ using boost::optional;
 
 namespace Slic3r {
 
+wxDEFINE_EVENT(wxCUSTOMEVT_JUMP_TO_OPTION, wxCommandEvent);
+
 using GUI::from_u8;
 using GUI::into_u8;
 
@@ -41,6 +43,8 @@ static char marker_by_type(Preset::Type type, PrinterTechnology pt)
         return ImGui::MaterialIconMarker;
     case Preset::TYPE_PRINTER:
         return pt == ptSLA ? ImGui::PrinterSlaIconMarker : ImGui::PrinterIconMarker;
+    case Preset::TYPE_PREFERENCES:
+        return ImGui::PreferencesButton;
     default:
         return ' ';
 	}
@@ -289,13 +293,10 @@ bool OptionsSearcher::search(const std::string& search, bool force/* = false*/)
 
 OptionsSearcher::OptionsSearcher()
 {
-    search_dialog = new SearchDialog(this);
 }
 
 OptionsSearcher::~OptionsSearcher()
 {
-    if (search_dialog)
-        search_dialog->Destroy();
 }
 
 void OptionsSearcher::init(std::vector<InputInfo> input_values)
@@ -303,6 +304,9 @@ void OptionsSearcher::init(std::vector<InputInfo> input_values)
     options.clear();
     for (auto i : input_values)
         append_options(i.config, i.type, i.mode);
+
+    options.insert(options.end(), preferences_options.begin(), preferences_options.end());
+
     sort_options();
 
     search(search_line, true);
@@ -322,6 +326,47 @@ void OptionsSearcher::apply(DynamicPrintConfig* config, Preset::Type type, Confi
     sort_options();
 
     search(search_line, true);
+}
+
+void OptionsSearcher::append_preferences_option(const GUI::Line& opt_line)
+{
+    Preset::Type type = Preset::TYPE_PREFERENCES;
+    wxString label = opt_line.label;
+    if (label.IsEmpty())
+        return;
+
+    std::string key = get_key(opt_line.get_options().front().opt_id, type);
+    const GroupAndCategory& gc = groups_and_categories[key];
+    if (gc.group.IsEmpty() || gc.category.IsEmpty())
+        return;        
+        
+    preferences_options.emplace_back(Search::Option{ boost::nowide::widen(key), type,
+                                label.ToStdWstring(), _(label).ToStdWstring(),
+                                gc.group.ToStdWstring(), _(gc.group).ToStdWstring(),
+                                gc.category.ToStdWstring(), _(gc.category).ToStdWstring() });
+}
+
+void OptionsSearcher::append_preferences_options(const std::vector<GUI::Line>& opt_lines)
+{
+    //Preset::Type type = Preset::TYPE_PREFERENCES;
+    for (const GUI::Line& line : opt_lines) {
+        if (line.is_separator())
+            continue;
+        append_preferences_option(line);
+        //wxString label = line.label;
+        //if (label.IsEmpty())
+        //    continue;
+
+        //std::string key = get_key(line.get_options().front().opt_id, type);        
+        //const GroupAndCategory& gc = groups_and_categories[key];
+        //if (gc.group.IsEmpty() || gc.category.IsEmpty())
+        //    continue;        
+        //
+        //preferences_options.emplace_back(Search::Option{ boost::nowide::widen(key), type,
+        //                            label.ToStdWstring(), _(label).ToStdWstring(),
+        //                            gc.group.ToStdWstring(), _(gc.group).ToStdWstring(),
+        //                            gc.category.ToStdWstring(), _(gc.category).ToStdWstring() });
+    }
 }
 
 const Option& OptionsSearcher::get_option(size_t pos_in_filter) const
@@ -386,6 +431,34 @@ Option OptionsSearcher::get_option(const std::string& opt_key, const wxString& l
     return create_option(opt_key, label, type, gc);
 }
 
+void OptionsSearcher::show_dialog()
+{
+    if (!search_dialog) {
+        search_dialog = new SearchDialog(this);
+
+        auto parent = search_dialog->GetParent();
+        wxPoint pos = parent->ClientToScreen(wxPoint(0, 0));
+        pos.x += em_unit(parent) * 40;
+        pos.y += em_unit(parent) * 4;
+
+        search_dialog->SetPosition(pos);
+    }
+
+    search_dialog->Popup();
+}
+
+void OptionsSearcher::dlg_sys_color_changed()
+{
+    if (search_dialog)
+        search_dialog->on_sys_color_changed();
+}
+
+void OptionsSearcher::dlg_msw_rescale()
+{
+    if (search_dialog)
+        search_dialog->msw_rescale();
+}
+
 void OptionsSearcher::add_key(const std::string& opt_key, Preset::Type type, const wxString& group, const wxString& category)
 {
     groups_and_categories[get_key(opt_key, type)] = GroupAndCategory{group, category};
@@ -402,23 +475,29 @@ static const std::map<const char, int> icon_idxs = {
     {ImGui::PrinterSlaIconMarker, 2},
     {ImGui::FilamentIconMarker  , 3},
     {ImGui::MaterialIconMarker  , 4},
+    {ImGui::PreferencesButton   , 5},
 };
 
 SearchDialog::SearchDialog(OptionsSearcher* searcher)
-    : GUI::DPIDialog(NULL, wxID_ANY, _L("Search"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
+    : GUI::DPIDialog(GUI::wxGetApp().tab_panel(), wxID_ANY, _L("Search"), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER),
     searcher(searcher)
 {
     SetFont(GUI::wxGetApp().normal_font());
-    wxColour bgr_clr = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
-    SetBackgroundColour(bgr_clr);
+    GUI::wxGetApp().UpdateDarkUI(this);
 
     default_string = _L("Enter a search term");
     int border = 10;
     int em = em_unit();
 
     search_line = new wxTextCtrl(this, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    GUI::wxGetApp().UpdateDarkUI(search_line);
 
-    search_list = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxSize(em * 40, em * 30), wxDV_NO_HEADER | wxDV_SINGLE | wxBORDER_SIMPLE);
+    search_list = new wxDataViewCtrl(this, wxID_ANY, wxDefaultPosition, wxSize(em * 40, em * 30), wxDV_NO_HEADER | wxDV_SINGLE
+#ifdef _WIN32
+        | wxBORDER_SIMPLE
+#endif
+    );
+    GUI::wxGetApp().UpdateDarkUI(search_list);
     search_list_model = new SearchListModel(this);
     search_list->AssociateModel(search_list_model);
 
@@ -442,6 +521,7 @@ SearchDialog::SearchDialog(OptionsSearcher* searcher)
         check_english   = new wxCheckBox(this, wxID_ANY, _L("Search in English"));
 
     wxStdDialogButtonSizer* cancel_btn = this->CreateStdDialogButtonSizer(wxCANCEL);
+    GUI::wxGetApp().UpdateDarkUI(static_cast<wxButton*>(this->FindWindowById(wxID_CANCEL, this)));
 
     check_sizer->Add(new wxStaticText(this, wxID_ANY, _L("Use for search") + ":"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, border);
     check_sizer->Add(check_category, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, border);
@@ -500,7 +580,8 @@ void SearchDialog::Popup(wxPoint position /*= wxDefaultPosition*/)
     if (check_english)
         check_english->SetValue(params.english);
 
-    this->SetPosition(position);
+    if (position != wxDefaultPosition)
+        this->SetPosition(position);
     this->ShowModal();
 }
 
@@ -508,9 +589,16 @@ void SearchDialog::ProcessSelection(wxDataViewItem selection)
 {
     if (!selection.IsOk())
         return;
-
-    GUI::wxGetApp().sidebar().jump_to_option(search_list_model->GetRow(selection));
     this->EndModal(wxID_CLOSE);
+
+    // If call GUI::wxGetApp().sidebar.jump_to_option() directly from here,
+    // then mainframe will not have focus and found option will not be "active" (have cursor) as a result
+    // SearchDialog have to be closed and have to lose a focus
+    // and only after that jump_to_option() function can be called
+    // So, post event to plater: 
+    wxCommandEvent event(wxCUSTOMEVT_JUMP_TO_OPTION);
+    event.SetInt(search_list_model->GetRow(selection));
+    wxPostEvent(GUI::wxGetApp().plater(), event);
 }
 
 void SearchDialog::OnInputText(wxCommandEvent&)
@@ -637,7 +725,7 @@ void SearchDialog::OnLeftDown(wxMouseEvent& event)
     ProcessSelection(search_list->GetSelection());
 }
 
-void SearchDialog::on_dpi_changed(const wxRect& suggested_rect)
+void SearchDialog::msw_rescale()
 {
     const int& em = em_unit();
 
@@ -656,6 +744,13 @@ void SearchDialog::on_dpi_changed(const wxRect& suggested_rect)
 
 void SearchDialog::on_sys_color_changed()
 {
+#ifdef _WIN32
+    GUI::wxGetApp().UpdateAllStaticTextDarkUI(this);
+    GUI::wxGetApp().UpdateDarkUI(static_cast<wxButton*>(this->FindWindowById(wxID_CANCEL, this)), true);
+    for (wxWindow* win : std::vector<wxWindow*> {search_line, search_list, check_category, check_english})
+        if (win) GUI::wxGetApp().UpdateDarkUI(win);
+#endif
+
     // msw_rescale updates just icons, so use it
     search_list_model->msw_rescale();
 
@@ -669,7 +764,7 @@ void SearchDialog::on_sys_color_changed()
 SearchListModel::SearchListModel(wxWindow* parent) : wxDataViewVirtualListModel(0)
 {
     int icon_id = 0;
-    for (const std::string& icon : { "cog", "printer", "sla_printer", "spool", "resin" })
+    for (const std::string& icon : { "cog", "printer", "sla_printer", "spool", "resin", "notification_preferences" })
         m_icon[icon_id++] = ScalableBitmap(parent, icon);    
 }
 

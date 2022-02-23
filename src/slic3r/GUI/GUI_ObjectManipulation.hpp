@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "GUI_ObjectSettings.hpp"
+#include "GUI_ObjectList.hpp"
 #include "libslic3r/Point.hpp"
 #include <float.h>
 
@@ -20,11 +21,19 @@ class wxCheckBox;
 namespace Slic3r {
 namespace GUI {
 
+#ifdef _WIN32
+class BitmapComboBox;
+#endif
+
 #ifdef __WXOSX__
     static_assert(wxMAJOR_VERSION >= 3, "Use of wxBitmapComboBox on Manipulation panel requires wxWidgets 3.0 and newer");
     using choice_ctrl = wxBitmapComboBox;
 #else
+#ifdef _WIN32
+    using choice_ctrl = BitmapComboBox;
+#else
     using choice_ctrl = wxComboBox;
+#endif
 #endif // __WXOSX__
 
 class Selection;
@@ -44,6 +53,7 @@ public:
     ~ManipulationEditor() {}
 
     void                msw_rescale();
+    void                sys_color_changed(ObjectManipulation* parent);
     void                set_value(const wxString& new_value);
     void                kill_focus(ObjectManipulation *parent);
 
@@ -185,7 +195,7 @@ public:
 #endif // __APPLE__
 
     void update_item_name(const wxString &item_name);
-    void update_warning_icon_state(const wxString& tooltip);
+    void update_warning_icon_state(const MeshErrorsInfo& warning);
     void msw_rescale();
     void sys_color_changed();
     void on_change(const std::string& opt_key, int axis, double new_value);
