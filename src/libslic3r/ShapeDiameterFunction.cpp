@@ -443,7 +443,7 @@ indexed_triangle_set ShapeDiameterFunction::subdivide(
                 }
             }
 
-            if (index_offset < count_edge_vertices-1) {
+            if (index_offset < ((int)count_edge_vertices-1)) {
                 std::pair<size_t, size_t> new_key(new_index, key.second);
                 bool new_key_swap = false;
                 if (new_key.first > new_key.second) {
