@@ -405,7 +405,7 @@ indexed_triangle_set ShapeDiameterFunction::subdivide(
 
             int index_offset = count_edge_vertices/2;
             size_t i2 = (divide_index + 2) % 3;
-            if (count_edge_vertices % 2 == 0 && key_swap == l[i1] < l[i2]) {
+            if ((count_edge_vertices % 2 == 0) && (key_swap == (l[i1] < l[i2]))) {
                 --index_offset;
             }            
             int sign = (vs.positive_order) ? 1 : -1;

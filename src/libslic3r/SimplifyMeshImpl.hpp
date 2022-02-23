@@ -809,7 +809,6 @@ void SimplifiableMesh<Mesh>::remove_small_edges(double edge_length, double max_t
     // main iteration loop
     int               deleted_triangles = 0;
     std::vector<bool> deleted0, deleted1;
-    size_t            triangle_count = m_faceinfo.size();
 
     // main reduction become on first iteration
     for (int iteration = 0; iteration < 99; iteration++) {
