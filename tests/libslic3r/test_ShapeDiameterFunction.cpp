@@ -216,7 +216,7 @@ TEST_CASE("Divide triangle - Big triangle inside others", "[SDF]")
     };
     float                threshold = 4.f;
     indexed_triangle_set its_out = ShapeDiameterFunction::subdivide(its, threshold);
-    storeXY_to_svg(its, its_out, "Big_triangle_inside.svg");
+    //storeXY_to_svg(its, its_out, "Big_triangle_inside.svg");
     CHECK(!exist_twin_vertices(its_out.vertices, 1e-3f));
     CHECK(!exist_greater_edge(its_out, threshold));
     CHECK(its_out.indices.size() <= 114);
