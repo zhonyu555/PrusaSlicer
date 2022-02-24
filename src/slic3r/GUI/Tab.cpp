@@ -1499,6 +1499,10 @@ void TabPrint::build()
         optgroup->append_single_option_line("skirt_height", category_path + "skirt");
         optgroup->append_single_option_line("draft_shield", category_path + "skirt");
         optgroup->append_single_option_line("min_skirt_length", category_path + "skirt");
+        line = { L("Extra skirt base loops"), "" };
+        line.append_option(optgroup->get_option("skirt_extra_loops"));
+        line.append_option(optgroup->get_option("skirt_extra_loop_layers"));
+        optgroup->append_line(line);
 
         optgroup = page->new_optgroup(L("Brim"));
         optgroup->append_single_option_line("brim_type", category_path + "brim");
@@ -1552,6 +1556,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("bridge_speed");
         optgroup->append_single_option_line("gap_fill_speed");
         optgroup->append_single_option_line("ironing_speed");
+        optgroup->append_single_option_line("skirt_speed");
 
         optgroup = page->new_optgroup(L("Speed for non-print moves"));
         optgroup->append_single_option_line("travel_speed");

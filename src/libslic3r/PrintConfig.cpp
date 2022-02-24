@@ -2271,12 +2271,36 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(6));
 
+    def = this->add("skirt_extra_loops", coInt);
+    def->full_label = L("Extra skirt base loops");
+    def->tooltip = L("Add extra loops to inside and outside of skirt for given number of layers.");
+    def->sidetext = L("loops");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(0));
+
+    def = this->add("skirt_extra_loop_layers", coInt);
+    def->label = L("for");
+    def->full_label = L("Extra skirt base layers");
+    def->tooltip = L("Number of skirt layers to add extra loops to.");
+    def->sidetext = L("layers");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(1));
+
     def = this->add("skirt_height", coInt);
     def->label = L("Skirt height");
     def->tooltip = L("Height of skirt expressed in layers.");
     def->sidetext = L("layers");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionInt(1));
+
+    def = this->add("skirt_speed", coFloat);
+    def->label = L("Skirt");
+    def->full_label = L("Skirt speed");
+    def->tooltip = L("Speed to print skirt.");
+    def->sidetext = L("mm/s");
+    def->min = 1;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(40));
 
     def = this->add("draft_shield", coEnum);
     def->label = L("Draft shield");

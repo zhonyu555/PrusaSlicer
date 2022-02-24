@@ -583,6 +583,7 @@ public:
     PrintRegionPtrs&            print_regions_mutable() { return m_print_regions; }
 
     const ExtrusionEntityCollection& skirt() const { return m_skirt; }
+    const ExtrusionEntityCollection& skirt_base() const { return m_skirt_base; }
     const ExtrusionEntityCollection& brim() const { return m_brim; }
     // Convex hull of the 1st layer extrusions, for bed leveling and placing the initial purge line.
     // It encompasses the object extrusions, support extrusions, skirt, brim, wipe tower.
@@ -631,6 +632,7 @@ private:
 
     // Ordered collections of extrusion paths to build skirt loops and brim.
     ExtrusionEntityCollection               m_skirt;
+    ExtrusionEntityCollection               m_skirt_base;
     ExtrusionEntityCollection               m_brim;
     // Convex hull of the 1st layer extrusions.
     // It encompasses the object extrusions, support extrusions, skirt, brim, wipe tower.
