@@ -2343,10 +2343,14 @@ void TabPrinter::build_fff()
                     const int flavor = boost::any_cast<int>(value);
                     bool supports_travel_acceleration = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfRepRapFirmware));
                     bool supports_min_feedrates       = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfMarlinLegacy));
-                    if (supports_travel_acceleration != m_supports_travel_acceleration || supports_min_feedrates != m_supports_min_feedrates) {
+                    bool supports_retract_acceleration = flavor != int(gcfRepRapFirmware);
+                    if (supports_travel_acceleration != m_supports_travel_acceleration 
+                        || supports_min_feedrates != m_supports_min_feedrates
+                        || supports_retract_acceleration != m_supports_retract_acceleration) {
                         m_rebuild_kinematics_page = true;
                         m_supports_travel_acceleration = supports_travel_acceleration;
                         m_supports_min_feedrates = supports_min_feedrates;
+                        m_supports_retract_acceleration = supports_retract_acceleration;
                     }
                 }
                 build_unregular_pages();
@@ -2627,7 +2631,8 @@ PageShp TabPrinter::build_kinematics_page()
             append_option_line(optgroup, "machine_max_acceleration_" + axis);
         }
         append_option_line(optgroup, "machine_max_acceleration_extruding");
-        append_option_line(optgroup, "machine_max_acceleration_retracting");
+        if (m_supports_retract_acceleration)
+            append_option_line(optgroup, "machine_max_acceleration_retracting");
         if (m_supports_travel_acceleration)
             append_option_line(optgroup, "machine_max_acceleration_travel");
 
@@ -3033,10 +3038,14 @@ void TabPrinter::update_fff()
     const auto flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
     bool supports_travel_acceleration = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
     bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
-    if (m_supports_travel_acceleration != supports_travel_acceleration || m_supports_min_feedrates != supports_min_feedrates) {
+    bool supports_retract_acceleration = flavor != gcfRepRapFirmware;
+    if (m_supports_travel_acceleration != supports_travel_acceleration 
+        || m_supports_min_feedrates != supports_min_feedrates
+        || m_supports_retract_acceleration != supports_retract_acceleration) {
         m_rebuild_kinematics_page = true;
         m_supports_travel_acceleration = supports_travel_acceleration;
         m_supports_min_feedrates = supports_min_feedrates;
+        m_supports_retract_acceleration = supports_retract_acceleration;
     }
 
     toggle_options();

@@ -865,6 +865,8 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
             // RRF does not support setting min feedrates. Set them to zero.
             m_time_processor.machine_limits.machine_min_travel_rate.values.assign(m_time_processor.machine_limits.machine_min_travel_rate.size(), 0.);
             m_time_processor.machine_limits.machine_min_extruding_rate.values.assign(m_time_processor.machine_limits.machine_min_extruding_rate.size(), 0.);
+            // RRF does not have a separate retraction acceleration -- it uses max E accel.
+            m_time_processor.machine_limits.machine_max_acceleration_retracting = m_time_processor.machine_limits.machine_max_acceleration_e;
         }
     }
 
@@ -1090,7 +1092,10 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         if (machine_max_acceleration_extruding != nullptr)
             m_time_processor.machine_limits.machine_max_acceleration_extruding.values = machine_max_acceleration_extruding->values;
 
-        const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>("machine_max_acceleration_retracting");
+        // RRF does not use a specific M204 Retraction acceleration -- it uses just the max e accel.
+        const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>(m_flavor == gcfRepRapFirmware
+                                                                                                        ? "machine_max_acceleration_e"
+                                                                                                        : "machine_max_acceleration_retracting");
         if (machine_max_acceleration_retracting != nullptr)
             m_time_processor.machine_limits.machine_max_acceleration_retracting.values = machine_max_acceleration_retracting->values;
 
