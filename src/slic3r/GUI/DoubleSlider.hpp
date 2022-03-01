@@ -446,14 +446,26 @@ private:
     std::vector<wxPen*> m_line_pens;
     std::vector<wxPen*> m_segm_pens;
 
-    struct Ruler {
+    class Ruler {
+        wxWindow* m_parent;
+        // values to check if ruler has to be updated
+        double m_min_val;
+        double m_max_val;
+        double m_scroll_step;
+        size_t m_max_values_cnt;
+        int m_DPI;
+
+    public:
+
         double long_step;
         double short_step;
         std::vector<double> max_values;// max value for each object/instance in sequence print
                                        // > 1 for sequential print
 
-        void init(const std::vector<double>& values);
-        void update(wxWindow* win, const std::vector<double>& values, double scroll_step);
+        void set_parent(wxWindow* parent);
+        void update_dpi();
+        void init(const std::vector<double>& values, double scroll_step);
+        void update(const std::vector<double>& values, double scroll_step);
         bool is_ok() { return long_step > 0 && short_step > 0; }
         size_t count() { return max_values.size(); }
     } m_ruler;

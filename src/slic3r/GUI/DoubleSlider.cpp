@@ -123,7 +123,7 @@ Control::Control( wxWindow *parent,
     this->Bind(wxEVT_RIGHT_DOWN,  &Control::OnRightDown,this);
     this->Bind(wxEVT_RIGHT_UP,    &Control::OnRightUp,  this);
     this->Bind(wxEVT_SIZE, [this](wxSizeEvent& event) {
-        m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
+        m_ruler.update(m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
         event.Skip();
     });
 
@@ -146,6 +146,8 @@ Control::Control( wxWindow *parent,
 
     m_font = GetFont();
     this->SetMinSize(get_min_size());
+
+    m_ruler.set_parent(this->GetParent());
 }
 
 void Control::msw_rescale()
@@ -177,6 +179,9 @@ void Control::msw_rescale()
 
     SetMinSize(get_min_size());
     GetParent()->Layout();
+
+    m_ruler.update_dpi();
+    m_ruler.update(m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 }
 
 void Control::sys_color_changed()
@@ -273,11 +278,11 @@ void Control::SetMaxValue(const int max_value)
 void Control::SetSliderValues(const std::vector<double>& values)
 {
     m_values = values;
-    m_ruler.init(m_values);
+    m_ruler.init(m_values, get_scroll_step());
 
     // When "No sparce layer" is enabled, use m_layers_values for ruler update. 
     // Because of m_values has duplicate values in this case.
-    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
+//    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 }
 
 void Control::draw_scroll_line(wxDC& dc, const int lower_pos, const int higher_pos)
@@ -437,9 +442,12 @@ void Control::SetLayersTimes(const std::vector<float>& layers_times, float total
         if (m_layers_values.size() != m_layers_times.size())
             for (size_t i = m_layers_times.size(); i < m_layers_values.size(); i++)
                 m_layers_times.push_back(total_time);
+        m_ruler.update(m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
         Refresh();
         Update();
     }
+    else
+        m_ruler.update(m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 }
 
 void Control::SetLayersTimes(const std::vector<double>& layers_times)
@@ -1042,7 +1050,7 @@ void Control::draw_colored_band(wxDC& dc)
     }
 }
 
-void Control::Ruler::init(const std::vector<double>& values)
+void Control::Ruler::init(const std::vector<double>& values, double scroll_step)
 {
     max_values.clear();
     max_values.reserve(std::count(values.begin(), values.end(), values.front()));
@@ -1053,14 +1061,34 @@ void Control::Ruler::init(const std::vector<double>& values)
         it = std::find(it + 1, values.end(), values.front());
     }
     max_values.push_back(*(it - 1));
+
+    update(values, scroll_step);
 }
 
-void Control::Ruler::update(wxWindow* win, const std::vector<double>& values, double scroll_step)
+void Control::Ruler::set_parent(wxWindow* parent)
 {
-    if (values.empty())
+    m_parent = parent;
+    update_dpi();
+}
+
+void Control::Ruler::update_dpi()
+{
+    m_DPI = GUI::get_dpi_for_window(m_parent);
+}
+
+void Control::Ruler::update(const std::vector<double>& values, double scroll_step)
+{
+    if (values.empty() || 
+        // check if need to update ruler in respect to input values
+        values.front() == m_min_val && values.back() == m_max_val && m_scroll_step == scroll_step && max_values.size() == m_max_values_cnt)
         return;
-    int DPI = GUI::get_dpi_for_window(win);
-    int pixels_per_sm = lround((double)(DPI) * 5.0/25.4);
+
+    m_min_val           = values.front(); 
+    m_max_val           = values.back();
+    m_scroll_step       = scroll_step;
+    m_max_values_cnt    = max_values.size();
+
+    int pixels_per_sm = lround((double)(m_DPI) * 5.0/25.4);
 
     if (lround(scroll_step) > pixels_per_sm) {
         long_step = -1.0;
