@@ -1107,7 +1107,7 @@ void Control::draw_ruler(wxDC& dc)
         for (size_t tick = 1; tick < m_values.size(); tick++) {
             wxCoord pos = get_position_from_value(tick);
             draw_ticks_pair(dc, pos, mid, 5);
-            draw_tick_text(dc, wxPoint(mid, pos), tick);
+//            draw_tick_text(dc, wxPoint(mid, pos), tick);
         }
     else {
         auto draw_short_ticks = [this, mid](wxDC& dc, double& current_tick, int max_tick) {
