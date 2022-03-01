@@ -305,7 +305,7 @@ public:
 protected:
 
     void    render();
-    void    draw_focus_rect();
+    void    draw_focus_rect(wxDC& dc);
     void    draw_action_icon(wxDC& dc, const wxPoint pt_beg, const wxPoint pt_end);
     void    draw_scroll_line(wxDC& dc, const int lower_pos, const int higher_pos);
     void    draw_thumb(wxDC& dc, const wxCoord& pos_coord, const SelectedSlider& selection);
@@ -439,6 +439,9 @@ private:
     wxPen   DARK_GREY_PEN;
     wxPen   GREY_PEN;
     wxPen   LIGHT_GREY_PEN;
+
+    wxPen   FOCUS_RECT_PEN;
+    wxBrush FOCUS_RECT_BRUSH;
 
     std::vector<wxPen*> m_line_pens;
     std::vector<wxPen*> m_segm_pens;

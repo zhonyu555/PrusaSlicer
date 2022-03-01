@@ -141,6 +141,9 @@ Control::Control( wxWindow *parent,
     m_line_pens = { &DARK_GREY_PEN, &GREY_PEN, &LIGHT_GREY_PEN };
     m_segm_pens = { &DARK_ORANGE_PEN, &ORANGE_PEN, &LIGHT_ORANGE_PEN };
 
+    FOCUS_RECT_PEN   = wxPen(wxColour(128, 128, 10), 1, wxPENSTYLE_DOT);
+    FOCUS_RECT_BRUSH = wxBrush(wxColour(0, 0, 0), wxBRUSHSTYLE_TRANSPARENT);
+
     m_font = GetFont();
     this->SetMinSize(get_min_size());
 }
@@ -502,15 +505,17 @@ void Control::get_lower_and_higher_position(int& lower_pos, int& higher_pos)
     }
 }
 
-void Control::draw_focus_rect()
+void Control::draw_focus_rect(wxDC& dc)
 {
     if (!m_is_focused) 
         return;
     const wxSize sz = GetSize();
-    wxPaintDC dc(this);
-    const wxPen pen = wxPen(wxColour(128, 128, 10), 1, wxPENSTYLE_DOT);
-    dc.SetPen(pen);
-    dc.SetBrush(wxBrush(wxColour(0, 0, 0), wxBRUSHSTYLE_TRANSPARENT));
+//    wxPaintDC dc(this);
+    //const wxPen pen = wxPen(wxColour(128, 128, 10), 1, wxPENSTYLE_DOT);
+    //dc.SetPen(pen);
+    //dc.SetBrush(wxBrush(wxColour(0, 0, 0), wxBRUSHSTYLE_TRANSPARENT));
+    dc.SetPen(FOCUS_RECT_PEN);
+    dc.SetBrush(FOCUS_RECT_BRUSH);
     dc.DrawRectangle(1, 1, sz.x - 2, sz.y - 2);
 }
 
@@ -521,10 +526,11 @@ void Control::render()
 #else
     SetBackgroundColour(GetParent()->GetBackgroundColour());
 #endif // _WIN32 
-    draw_focus_rect();
 
     wxPaintDC dc(this);
     dc.SetFont(m_font);
+
+    draw_focus_rect(dc);
 
     const wxCoord lower_pos = get_position_from_value(m_lower_value);
     const wxCoord higher_pos = get_position_from_value(m_higher_value);
