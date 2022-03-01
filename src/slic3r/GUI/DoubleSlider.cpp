@@ -122,6 +122,10 @@ Control::Control( wxWindow *parent,
     this->Bind(wxEVT_KEY_UP,      &Control::OnKeyUp,    this);
     this->Bind(wxEVT_RIGHT_DOWN,  &Control::OnRightDown,this);
     this->Bind(wxEVT_RIGHT_UP,    &Control::OnRightUp,  this);
+    this->Bind(wxEVT_SIZE, [this](wxSizeEvent& event) {
+        m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
+        event.Skip();
+    });
 
     // control's view variables
     SLIDER_MARGIN     = 4 + GUI::wxGetApp().em_unit();
@@ -267,6 +271,10 @@ void Control::SetSliderValues(const std::vector<double>& values)
 {
     m_values = values;
     m_ruler.init(m_values);
+
+    // When "No sparce layer" is enabled, use m_layers_values for ruler update. 
+    // Because of m_values has duplicate values in this case.
+    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 }
 
 void Control::draw_scroll_line(wxDC& dc, const int lower_pos, const int higher_pos)
@@ -1093,7 +1101,7 @@ void Control::draw_ruler(wxDC& dc)
         return;
     // When "No sparce layer" is enabled, use m_layers_values for ruler update. 
     // Because of m_values has duplicate values in this case.
-    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
+//    m_ruler.update(this->GetParent(), m_layers_values.empty() ? m_values : m_layers_values, get_scroll_step());
 
     int height, width;
     get_size(&width, &height);
@@ -1107,7 +1115,7 @@ void Control::draw_ruler(wxDC& dc)
         for (size_t tick = 1; tick < m_values.size(); tick++) {
             wxCoord pos = get_position_from_value(tick);
             draw_ticks_pair(dc, pos, mid, 5);
-//            draw_tick_text(dc, wxPoint(mid, pos), tick);
+            draw_tick_text(dc, wxPoint(mid, pos), tick);
         }
     else {
         auto draw_short_ticks = [this, mid](wxDC& dc, double& current_tick, int max_tick) {
