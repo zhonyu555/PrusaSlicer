@@ -3229,6 +3229,10 @@ void GCodeProcessor::process_M566(const GCodeReader::GCodeLine& line)
 
         if (line.has_e())
             set_option_value(m_time_processor.machine_limits.machine_max_jerk_e, i, line.e() * MMMIN_TO_MMSEC);
+
+        float jerk_policy;
+        if (line.has_value('P', jerk_policy))
+            m_rrf_jerk_policy = jerk_policy == 0.f ? true : false;
     }
 }
 
