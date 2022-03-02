@@ -146,7 +146,7 @@ void FontManager::add_fonts(FontList font_list)
         add_font(fi);
 }
 
-std::shared_ptr<Emboss::FontFile> &FontManager::get_font_file()
+std::shared_ptr<const Emboss::FontFile> &FontManager::get_font_file()
 {
     // TODO: fix not selected font
     //if (!is_activ_font()) return nullptr;
@@ -367,7 +367,7 @@ void FontManager::create_texture(size_t index, const std::string &text, GLuint& 
     if (index >= m_font_list.size()) return;
     Item &item = m_font_list[index];
     const FontProp &font_prop = item.font_item.prop;
-    std::shared_ptr<Emboss::FontFile> &font_file = item.font_file;
+    std::shared_ptr<const Emboss::FontFile> &font_file = item.font_file;
     if (font_file == nullptr && !set_up_font_file(index)) return;
     ExPolygons shapes = Emboss::text2shapes(*font_file, text.c_str(), font_prop);
 
@@ -415,7 +415,7 @@ void FontManager::init_style_images(int max_width) {
     for (Item &item : m_font_list) {
         FontItem &        font_item = item.font_item;
         const FontProp &  font_prop = font_item.prop;
-        std::shared_ptr<Emboss::FontFile> &font_file = item.font_file;
+        std::shared_ptr<const Emboss::FontFile> &font_file = item.font_file;
         size_t index = &item - &m_font_list.front();
         if (font_file == nullptr && !set_up_font_file(index)) continue;
         if (font_file == nullptr) continue;
@@ -520,10 +520,10 @@ void FontManager::init_style_images(int max_width) {
 
 void FontManager::free_style_images() {
     if (!is_activ_font()) return;
-    std::shared_ptr<Emboss::FontFile> &font_file =
+    std::shared_ptr<const Emboss::FontFile> &font_file =
         m_font_list[m_font_selected].font_file;
-    if(font_file != nullptr)
-        font_file->cache.clear();
+    if (font_file != nullptr)
+        font_file->clear_glyph_cache();
 
     if (!m_exist_style_images) return;
     GLuint tex_id = (GLuint) (intptr_t) m_font_list.front().image->texture_id;

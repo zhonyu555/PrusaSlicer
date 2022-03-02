@@ -5,6 +5,7 @@
 #include <set>
 #include <optional>
 #include <memory>
+#include <mutex>
 #include <admesh/stl.h> // indexed_triangle_set
 #include "Polygon.hpp"
 #include "ExPolygon.hpp"
@@ -75,8 +76,6 @@ public:
         // for convert font units to pixel
         int unit_per_em;
 
-        Emboss::Glyphs cache; // cache of glyphs
-
         FontFile(std::vector<unsigned char> &&buffer,
                  unsigned int                 count,
                  int                          ascent,
@@ -97,6 +96,17 @@ public:
                    buffer.size() == other.buffer.size() &&
                    buffer == other.buffer;
         }
+
+        std::optional<Emboss::Glyph> get_glyph(int unicode) const;
+        // These two methods modifying cache are marked as const, because their
+        // access to the cache is guarded by a global mutex specific to all FontFile instances.
+        void                         cache_glyph(int unicode, Emboss::Glyph glyph) const;
+        void                         clear_glyph_cache() const;
+        size_t                       glyph_cache_size() const;
+
+    private:
+        // Cache of glyphs, guarded by a global mutex specific to all FontFile instances.
+        mutable Emboss::Glyphs m_cache;
     };
 
     /// <summary>
@@ -130,7 +140,7 @@ public:
     /// <param name="text">Characters to convert</param>
     /// <param name="font_prop">User defined property of the font</param>
     /// <returns>Inner polygon cw(outer ccw)</returns>
-    static ExPolygons text2shapes(FontFile & font,
+    static ExPolygons text2shapes(const FontFile &font,
                                   const char *    text,
                                   const FontProp &font_prop);
 
@@ -149,7 +159,7 @@ public:
     /// </summary>
     /// <param name="font">Selector of font</param>
     /// <returns>True when the font description contains italic/obligue otherwise False</returns>
-    static bool is_italic(FontFile &font);
+    static bool is_italic(const FontFile &font);
 
     /// <summary>
     /// Project 2d point into space

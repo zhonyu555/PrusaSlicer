@@ -662,7 +662,7 @@ bool GLGizmoEmboss::process()
     if (m_volume == nullptr) return false;
 
     // exist loaded font?
-    std::shared_ptr<Emboss::FontFile>& font_file = m_font_manager.get_font_file();
+    std::shared_ptr<const Emboss::FontFile>& font_file = m_font_manager.get_font_file();
     if (font_file == nullptr) return false;
     auto data = std::make_unique<EmbossDataUpdate>(font_file,
                                              create_configuration(),
@@ -1224,7 +1224,7 @@ void GLGizmoEmboss::draw_style_list() {
 bool GLGizmoEmboss::italic_button()
 {
     std::optional<wxFont> &wx_font = m_font_manager.get_wx_font(); 
-    std::shared_ptr<Emboss::FontFile> &font_file = m_font_manager.get_font_file();
+    std::shared_ptr<const Emboss::FontFile> &font_file = m_font_manager.get_font_file();
     if (!wx_font.has_value() || font_file == nullptr) { 
         draw_icon(IconType::italic, IconState::disabled);
         return false;
@@ -1266,7 +1266,7 @@ bool GLGizmoEmboss::italic_button()
 
 bool GLGizmoEmboss::bold_button() {
     std::optional<wxFont> &wx_font = m_font_manager.get_wx_font();
-    std::shared_ptr<Emboss::FontFile> &font_file = m_font_manager.get_font_file();
+    std::shared_ptr<const Emboss::FontFile> &font_file = m_font_manager.get_font_file();
     if (!wx_font.has_value() || font_file==nullptr) {
         draw_icon(IconType::bold, IconState::disabled);
         return false;
@@ -1576,7 +1576,7 @@ void GLGizmoEmboss::do_rotate(float relative_z_angle)
 
 void GLGizmoEmboss::draw_advanced()
 {
-    std::shared_ptr<Emboss::FontFile>& font_file = m_font_manager.get_font_file();
+    std::shared_ptr<const Emboss::FontFile>& font_file = m_font_manager.get_font_file();
     if (font_file == nullptr) { 
         ImGui::Text("%s", _u8L("Advanced font options could be change only for corect font.\nStart with select correct font.").c_str());
         return;
@@ -1589,7 +1589,7 @@ void GLGizmoEmboss::draw_advanced()
         ", descent=" + std::to_string(font_file->descent) +
         ", lineGap=" + std::to_string(font_file->linegap) +
         ", unitPerEm=" + std::to_string(font_file->unit_per_em) +
-        ", cache(" + std::to_string(font_file->cache.size()) + " glyphs)";
+        ", cache(" + std::to_string(font_file->glyph_cache_size()) + " glyphs)";
     if (font_file->count > 1) ff_property += 
         ", collect=" + std::to_string(font_file->index + 1) + "/" + std::to_string(font_file->count);
     m_imgui->text_colored(ImGuiWrapper::COL_GREY_DARK, ff_property);
@@ -1698,7 +1698,8 @@ void GLGizmoEmboss::draw_advanced()
                 ImGui::PushID(1 << (10 + i));
                 bool is_selected = i == font_file->index;
                 if (ImGui::Selectable(std::to_string(i).c_str(), is_selected)) {
-                    font_file->index = i;
+//FIXME change true type font index in collection atomically, by duplicating the font!
+//                    font_file->index = i;
                     exist_change = true;
                 }
                 ImGui::PopID();

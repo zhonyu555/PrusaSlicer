@@ -240,10 +240,10 @@ TriangleMesh EmbossCreateJob::create_default_mesh()
     return triangle_mesh;
 }
 
-TriangleMesh EmbossCreateJob::create_mesh(const char *      text,
-                                          Emboss::FontFile &font,
-                                          const FontProp &  font_prop,
-                                          Ctl &             ctl)
+TriangleMesh EmbossCreateJob::create_mesh(const char *            text,
+                                          const Emboss::FontFile &font,
+                                          const FontProp &        font_prop,
+                                          Ctl &                   ctl)
 {
     ExPolygons shapes = Emboss::text2shapes(font, text, font_prop);
     if (shapes.empty()) return {};

@@ -24,9 +24,8 @@ public:
 
     static std::optional<stbtt_fontinfo> load_font_info(const Emboss::FontFile &font);
     static std::optional<stbtt_fontinfo> load_font_info(const unsigned char *data, unsigned int index = 0);
-    static std::optional<Emboss::Glyph> get_glyph(stbtt_fontinfo &font_info, int unicode_letter, float flatness);
-    static std::optional<Emboss::Glyph> get_glyph(int unicode, const Emboss::FontFile &font, const FontProp &font_prop, 
-        Emboss::Glyphs &cache, std::optional<stbtt_fontinfo> &font_info_opt);
+    static std::optional<Emboss::Glyph> get_glyph(const stbtt_fontinfo &font_info, int unicode_letter, float flatness);
+    static std::optional<Emboss::Glyph> get_glyph(int unicode, const Emboss::FontFile &font, const FontProp &font_prop, std::optional<stbtt_fontinfo> &font_info_opt);
 
     static FontItem create_font_item(std::wstring name, std::wstring path);
 
@@ -63,7 +62,7 @@ std::optional<stbtt_fontinfo> Private::load_font_info(
     return font_info;
 }
 
-std::optional<Emboss::Glyph> Private::get_glyph(stbtt_fontinfo &font_info, int unicode_letter, float flatness)
+std::optional<Emboss::Glyph> Private::get_glyph(const stbtt_fontinfo &font_info, int unicode_letter, float flatness)
 {
     int glyph_index = stbtt_FindGlyphIndex(&font_info, unicode_letter);
     if (glyph_index == 0) {
@@ -128,13 +127,9 @@ std::optional<Emboss::Glyph> Private::get_glyph(
     int                            unicode,
     const Emboss::FontFile &       font,
     const FontProp &               font_prop,
-    Emboss::Glyphs &               cache,
     std::optional<stbtt_fontinfo> &font_info_opt)
 {
     const double RESOLUTION = 0.0125; // TODO: read from printer configuration
-    auto glyph_item = cache.find(unicode);
-    if (glyph_item != cache.end())
-        return glyph_item->second;
     
     if (!font_info_opt.has_value()) {
         font_info_opt = Private::load_font_info(font);
@@ -181,8 +176,6 @@ std::optional<Emboss::Glyph> Private::get_glyph(
     glyph_opt->shape = Slic3r::union_ex(glyph_opt->shape);
     // unify multipoints with similar position. Could appear after union
     dilate_to_unique_points(glyph_opt->shape); 
-
-    cache[unicode] = *glyph_opt;
 
     return glyph_opt;
 }
@@ -593,7 +586,7 @@ std::optional<Emboss::Glyph> Emboss::letter2glyph(const FontFile &font,
     return Private::get_glyph(*font_info_opt, letter, flatness);
 }
 
-ExPolygons Emboss::text2shapes(FontFile &      font,
+ExPolygons Emboss::text2shapes(const FontFile &font,
                                const char *    text,
                                const FontProp &font_prop)
 {
@@ -617,14 +610,26 @@ ExPolygons Emboss::text2shapes(FontFile &      font,
         if (wc == '\t') {
             // '\t' = 4*space => same as imgui
             const int count_spaces = 4;
-            std::optional<Glyph> space_opt = Private::get_glyph(int(' '), font, font_prop, font.cache, font_info_opt);
+            auto space = int(' ');
+            std::optional<Glyph> space_opt = font.get_glyph(space);
+            if (! space_opt) {
+                space_opt = Private::get_glyph(space, font, font_prop, font_info_opt);
+                if (space_opt)
+                    font.cache_glyph(space, *space_opt);
+            }
             if (!space_opt.has_value()) continue;
             cursor.x() += count_spaces * space_opt->advance_width;
             continue;
         }
 
         int unicode = static_cast<int>(wc);
-        std::optional<Glyph> glyph_opt = Private::get_glyph(unicode, font, font_prop, font.cache, font_info_opt);
+        std::optional<Glyph> glyph_opt = font.get_glyph(unicode);
+        if (! glyph_opt) {
+            glyph_opt = Private::get_glyph(unicode, font, font_prop, font_info_opt);
+            if (glyph_opt)
+                font.cache_glyph(unicode, *glyph_opt);
+        }
+
         if (!glyph_opt.has_value()) continue;
         
         // move glyph to cursor position
@@ -652,7 +657,7 @@ void Emboss::apply_transformation(const FontProp &font_prop,
     }
 }
 
-bool Emboss::is_italic(FontFile &font) { 
+bool Emboss::is_italic(const FontFile &font) { 
     std::optional<stbtt_fontinfo> font_info_opt = 
         Private::load_font_info(font);
 
@@ -813,4 +818,33 @@ Transform3d Emboss::create_transformation_onto_surface(const Vec3f &position,
     transform.rotate(view_rot);
     transform.rotate(up_rot);
     return transform;
+}
+
+static std::mutex FontFile_cache_mutex;
+
+std::optional<Emboss::Glyph> Emboss::FontFile::get_glyph(int unicode) const
+{
+    std::lock_guard<std::mutex> guard(FontFile_cache_mutex);
+    auto glyph_item = m_cache.find(unicode);
+    if (glyph_item != m_cache.end())
+        return glyph_item->second;
+    return {};
+}
+
+void Emboss::FontFile::cache_glyph(int unicode, Emboss::Glyph glyph) const
+{
+    std::lock_guard<std::mutex> guard(FontFile_cache_mutex);
+    m_cache[unicode] = std::move(glyph);
+}
+
+void Emboss::FontFile::clear_glyph_cache() const
+{
+    std::lock_guard<std::mutex> guard(FontFile_cache_mutex);
+    m_cache.clear();
+}
+
+size_t Emboss::FontFile::glyph_cache_size() const
+{
+    std::lock_guard<std::mutex> guard(FontFile_cache_mutex);
+    return m_cache.size();
 }

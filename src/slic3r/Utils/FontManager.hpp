@@ -72,7 +72,7 @@ public:
     void add_fonts(FontList font_list);
 
     // getter on active font file for access to glyphs
-    std::shared_ptr<Emboss::FontFile> &get_font_file();
+    std::shared_ptr<const Emboss::FontFile> &get_font_file();
 
     // getter on active font item for access to font property
     const FontItem &get_font_item() const;
@@ -137,7 +137,7 @@ public:
         std::string truncated_name; 
 
         // share font file data with emboss job thread
-        std::shared_ptr<Emboss::FontFile> font_file = nullptr;
+        std::shared_ptr<const Emboss::FontFile> font_file;
 
         std::optional<size_t> imgui_font_index;
 

@@ -46,10 +46,10 @@ public:
     /// <param name="font_prop">Property of font</param>
     /// <param name="ctl">Control for job, check of cancelation</param>
     /// <returns>Triangle mesh model</returns>
-    static TriangleMesh create_mesh(const char *      text,
-                                    Emboss::FontFile &font,
-                                    const FontProp &  font_prop,
-                                    Ctl &             ctl);
+    static TriangleMesh create_mesh(const char *            text,
+                                    const Emboss::FontFile &font,
+                                    const FontProp &        font_prop,
+                                    Ctl &                   ctl);
 
 private:
     static TriangleMesh create_default_mesh();
@@ -62,14 +62,14 @@ private:
 struct EmbossDataBase
 {
     // Pointer on Data of font (glyph shapes)
-    std::shared_ptr<Emboss::FontFile> font_file;
+    std::shared_ptr<const Emboss::FontFile> font_file;
     // font item is not used for create object
     TextConfiguration text_configuration;
     // new volume name created from text
     std::string volume_name;
-    EmbossDataBase(std::shared_ptr<Emboss::FontFile> font_file,
-                   TextConfiguration                 text_configuration,
-                   std::string                       volume_name)
+    EmbossDataBase(std::shared_ptr<const Emboss::FontFile> font_file,
+                   TextConfiguration                       text_configuration,
+                   std::string                             volume_name)
         : font_file(std::move(font_file))
         , text_configuration(text_configuration)
         , volume_name(volume_name)
@@ -88,10 +88,10 @@ struct EmbossDataUpdate : public EmbossDataBase
     // unique identifier of volume to change
     // Change of volume change id, last change could disapear
     // ObjectID     volume_id;
-    EmbossDataUpdate(std::shared_ptr<Emboss::FontFile> font_file,
-                     TextConfiguration                 text_configuration,
-                     std::string                       volume_name,
-                     ModelVolume *                     volume)
+    EmbossDataUpdate(std::shared_ptr<const Emboss::FontFile> font_file,
+                     TextConfiguration                       text_configuration,
+                     std::string                             volume_name,
+                     ModelVolume *                           volume)
         : EmbossDataBase(std::move(font_file), text_configuration, volume_name)
         , volume(volume)
     {}
@@ -125,7 +125,7 @@ struct EmbossDataCreate: public EmbossDataBase
     // It is inside of GLGizmoEmboss object,
     // so I hope it will survive
 
-    EmbossDataCreate(std::shared_ptr<Emboss::FontFile> font_file,
+    EmbossDataCreate(std::shared_ptr<const Emboss::FontFile> font_file,
                      const TextConfiguration &         text_configuration,
                      const std::string &               volume_name,
                      ModelVolumeType                   volume_type,
