@@ -147,7 +147,8 @@ Control::Control( wxWindow *parent,
     m_font = GetFont();
     this->SetMinSize(get_min_size());
 
-    m_ruler.set_parent(this->GetParent());
+    if (style == wxSL_VERTICAL)
+        m_ruler.set_parent(this->GetParent());
 }
 
 void Control::msw_rescale()
@@ -1052,6 +1053,8 @@ void Control::draw_colored_band(wxDC& dc)
 
 void Control::Ruler::init(const std::vector<double>& values, double scroll_step)
 {
+    if (!m_parent)
+        return;
     max_values.clear();
     max_values.reserve(std::count(values.begin(), values.end(), values.front()));
 
@@ -1073,12 +1076,13 @@ void Control::Ruler::set_parent(wxWindow* parent)
 
 void Control::Ruler::update_dpi()
 {
-    m_DPI = GUI::get_dpi_for_window(m_parent);
+    if (m_parent)
+        m_DPI = GUI::get_dpi_for_window(m_parent);
 }
 
 void Control::Ruler::update(const std::vector<double>& values, double scroll_step)
 {
-    if (values.empty() || 
+    if (!m_parent || values.empty() ||
         // check if need to update ruler in respect to input values
         values.front() == m_min_val && values.back() == m_max_val && m_scroll_step == scroll_step && max_values.size() == m_max_values_cnt)
         return;
@@ -1131,7 +1135,7 @@ void Control::Ruler::update(const std::vector<double>& values, double scroll_ste
 
 void Control::draw_ruler(wxDC& dc)
 {
-    if (m_values.empty())
+    if (m_values.empty() || !m_ruler.can_draw())
         return;
     // When "No sparce layer" is enabled, use m_layers_values for ruler update. 
     // Because of m_values has duplicate values in this case.

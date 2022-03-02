@@ -447,7 +447,8 @@ private:
     std::vector<wxPen*> m_segm_pens;
 
     class Ruler {
-        wxWindow* m_parent;
+        wxWindow* m_parent{nullptr}; // m_parent is nullptr for Unused ruler
+                                     // in this case we will not init/update/render it  
         // values to check if ruler has to be updated
         double m_min_val;
         double m_max_val;
@@ -468,6 +469,7 @@ private:
         void update(const std::vector<double>& values, double scroll_step);
         bool is_ok() { return long_step > 0 && short_step > 0; }
         size_t count() { return max_values.size(); }
+        bool can_draw() { return m_parent != nullptr; }
     } m_ruler;
 };
 
