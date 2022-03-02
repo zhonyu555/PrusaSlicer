@@ -2698,6 +2698,9 @@ PageShp TabPrinter::build_kinematics_page()
             append_option_line(optgroup, "machine_max_jerk_" + axis);
         }
 
+        if (!m_supports_retract_acceleration) // Rename/make a different variable to use?
+            append_option_line(optgroup, "machine_rrf_jerk_policy");
+
         if (m_supports_min_feedrates) {
             optgroup = page->new_optgroup(L("Minimum feedrates"));
             append_option_line(optgroup, "machine_min_extruding_rate");

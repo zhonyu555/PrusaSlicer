@@ -1713,12 +1713,17 @@ void GCode::print_machine_envelope(GCodeOutputStream &file, Print &print)
 
         assert(is_decimal_separator_point());
         file.write_format(flavor == gcfRepRapFirmware
-            ? "M566 X%.2lf Y%.2lf Z%.2lf E%.2lf ; sets the jerk limits, mm/min\n"
-            : "M205 X%.2lf Y%.2lf Z%.2lf E%.2lf ; sets the jerk limits, mm/sec\n",
+            ? "M566 X%.2lf Y%.2lf Z%.2lf E%.2lf %s ; sets the jerk limits, mm/min\n"
+            : "M205 X%.2lf Y%.2lf Z%.2lf E%.2lf %s; sets the jerk limits, mm/sec\n",
             print.config().machine_max_jerk_x.values.front() * factor,
             print.config().machine_max_jerk_y.values.front() * factor,
             print.config().machine_max_jerk_z.values.front() * factor,
-            print.config().machine_max_jerk_e.values.front() * factor);
+            print.config().machine_max_jerk_e.values.front() * factor,
+            flavor == gcfRepRapFirmware 
+                    ? print.config().machine_rrf_jerk_policy.values.front() 
+                        ? "P0" 
+                        : "P1" 
+                    : "");
         if (flavor != gcfRepRapFirmware)
             file.write_format("M205 S%d T%d ; sets the minimum extruding and travel feed rate, mm/sec\n",
                 int(print.config().machine_min_extruding_rate.values.front() + 0.5),

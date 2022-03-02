@@ -867,8 +867,8 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
             m_time_processor.machine_limits.machine_min_extruding_rate.values.assign(m_time_processor.machine_limits.machine_min_extruding_rate.size(), 0.);
             // RRF does not have a separate retraction acceleration -- it uses max E accel.
             m_time_processor.machine_limits.machine_max_acceleration_retracting = m_time_processor.machine_limits.machine_max_acceleration_e;
-            // Set RRF Jerk Policy (M566 P0) as default.
-            m_rrf_jerk_policy = true;
+            // Set RRF Jerk Policy based on config option.
+            m_rrf_jerk_policy = config.machine_rrf_jerk_policy.get_at(0);
         }
     }
 
@@ -1089,6 +1089,12 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         const ConfigOptionFloats* machine_max_jerk_e = config.option<ConfigOptionFloats>("machine_max_jerk_e");
         if (machine_max_jerk_e != nullptr)
             m_time_processor.machine_limits.machine_max_jerk_e.values = machine_max_jerk_e->values;
+
+        const ConfigOptionBools* machine_rrf_jerk_policy = config.option<ConfigOptionBools>("machine_rrf_jerk_policy");
+        if (machine_rrf_jerk_policy != nullptr) {
+            m_time_processor.machine_limits.machine_rrf_jerk_policy.values = machine_rrf_jerk_policy->values;
+            m_rrf_jerk_policy = machine_rrf_jerk_policy->get_at(0);
+        }
 
         const ConfigOptionFloats* machine_max_acceleration_extruding = config.option<ConfigOptionFloats>("machine_max_acceleration_extruding");
         if (machine_max_acceleration_extruding != nullptr)
