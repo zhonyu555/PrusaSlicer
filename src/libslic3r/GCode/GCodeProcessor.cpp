@@ -3083,6 +3083,12 @@ void GCodeProcessor::process_M203(const GCodeReader::GCodeLine& line)
 
             if (line.has_e())
                 set_option_value(m_time_processor.machine_limits.machine_max_feedrate_e, i, line.e() * factor);
+
+            float value;
+            if (m_flavor == gcfRepRapFirmware && line.has_value('I', value)) {
+                set_option_value(m_time_processor.machine_limits.machine_min_extruding_rate, i, value * factor);
+                set_option_value(m_time_processor.machine_limits.machine_min_travel_rate, i, value * factor);
+            }
         }
     }
 }
