@@ -40,7 +40,7 @@ void store_trinagulation(const ExPolygons &        shape,
 }
 } // namespace
 
-
+/*
 TEST_CASE("Triangulate rectangle with restriction on edge", "[Triangulation]")
 {
     //                    0            1            2            3 
@@ -89,6 +89,7 @@ TEST_CASE("Triangulation polygon", "[triangulation]")
     CHECK(tp.size() == tep.size());
     CHECK(tp.size() == 3);
 }
+*/
 
 TEST_CASE("Triangulation M shape polygon", "[triangulation]")
 {
