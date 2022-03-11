@@ -23,9 +23,14 @@ namespace Slic3r::GUI {
 struct Triangle {
     stl_triangle_vertex_indices indices;
     Vec3f normal;
+    float downward_dot_value;
     size_t index_in_its;
     Vec3i neighbours;
-    Vec3f z_coords_sorted_asc;
+    float lowest_z_coord;
+    // higher value of dot product of the downward direction and the two bottom edges
+    float edge_dot_value;
+    float weight;
+
     size_t order_by_z;
 
     //members updated during algorithm
@@ -68,59 +73,47 @@ struct SupportPlacerMesh {
             mesh(t_mesh), limit_angle_cos(dot_limit), gather_phase_target(patch_size) {
         auto neighbours = its_face_neighbors_par(mesh);
 
-        auto z_coords_sorted = [&](const size_t &face_index) {
-            const auto &face = mesh.indices[face_index];
-            Vec3f z_coords = Vec3f { mesh.vertices[face.x()].z(), mesh.vertices[face.y()].z(), mesh.vertices[face.z()].z() };
-            ;
-            std::sort(z_coords.data(), z_coords.data() + 3);
-            return z_coords;
-        };
-
         for (size_t face_index = 0; face_index < mesh.indices.size(); ++face_index) {
             Vec3f normal = its_face_normal(mesh, face_index);
-            triangles.push_back(
-                    Triangle { mesh.indices[face_index], normal, face_index, neighbours[face_index], z_coords_sorted(face_index) });
+            //extract vertices
+            std::vector<Vec3f> vertices { mesh.vertices[mesh.indices[face_index][0]],
+                    mesh.vertices[mesh.indices[face_index][1]], mesh.vertices[mesh.indices[face_index][2]] };
+
+            //sort vertices by z
+            std::sort(vertices.begin(), vertices.end(), [](const Vec3f &a, const Vec3f &b) {
+                return a.z() < b.z();
+            });
+
+            Vec3f lowest_edge_a = (vertices[1] - vertices[0]).normalized();
+            Vec3f lowest_edge_b = (vertices[2] - vertices[0]).normalized();
+            Vec3f down = -Vec3f::UnitZ();
+
+            //TODO verify
+            float weight = std::max(0.0f, (normal.dot(down) - limit_angle_cos) / (1.0f - limit_angle_cos))
+                    * its_face_area(mesh, face_index);
+
+            Triangle t { };
+            t.indices = mesh.indices[face_index];
+            t.normal = normal;
+            t.downward_dot_value = normal.dot(down);
+            t.index_in_its = face_index;
+            t.neighbours = neighbours[face_index];
+            t.lowest_z_coord = vertices[0].z();
+            t.edge_dot_value = std::max(lowest_edge_a.dot(down), lowest_edge_b.dot(down));
+            t.weight = weight;
+
+            triangles.push_back(t);
             triangle_indexes_by_z.push_back(face_index);
         }
 
-        std::sort(triangle_indexes_by_z.begin(), triangle_indexes_by_z.end(), [&](const size_t &left, const size_t &right) {
-            for (int i = 0; i < 2; ++i) {
-                if (triangles[left].z_coords_sorted_asc.data()[i] < triangles[right].z_coords_sorted_asc.data()[i]) {
-                    return true;
-                }
-                if (triangles[left].z_coords_sorted_asc.data()[i] > triangles[right].z_coords_sorted_asc.data()[i]) {
-                    return false;
-                }
-            }
-            // if two bottom points of both triangles have same z heights
-            // assume neighbours (but do not rely on that), so one edge is probably common
-
-            // find the other edge of both triangles that originates in the lowest point
-
-            //extract vertices
-            std::vector<Vec3f> vertices_left { mesh.vertices[triangles[left].indices[0]], mesh.vertices[triangles[left].indices[1]], mesh.vertices[triangles[left].indices[2]]};
-
-            std::vector<Vec3f> vertices_right { mesh.vertices[triangles[right].indices[0]], mesh.vertices[triangles[right].indices[1]],
-                    mesh.vertices[triangles[right].indices[2]] };
-
-            //sort vertices by z
-            std::sort(vertices_left.begin(), vertices_left.end(), [](const Vec3f &a, const Vec3f &b) {
-                return a.z() < b.z();
-            });
-
-            std::sort(vertices_right.begin(), vertices_right.end(), [](const Vec3f &a, const Vec3f &b) {
-                return a.z() < b.z();
-            });
-
-            //get the other edge
-            Vec3f lowest_edge_left = (vertices_left[2] - vertices_left[0]).normalized();
-            Vec3f lowest_edge_right = (vertices_right[2] - vertices_right[0]).normalized();
-
-            Vec3f down = -Vec3f::UnitZ();
-
-            //Pick the one that is more downwards
-            return lowest_edge_left.dot(down) > lowest_edge_right.dot(down);
-        });
+        std::sort(triangle_indexes_by_z.begin(), triangle_indexes_by_z.end(),
+                [&](const size_t &left, const size_t &right) {
+                    if (triangles[left].lowest_z_coord != triangles[right].lowest_z_coord) {
+                        return triangles[left].lowest_z_coord < triangles[right].lowest_z_coord;
+                    } else {
+                        return triangles[left].edge_dot_value > triangles[right].edge_dot_value;
+                    }
+                });
 
         for (size_t order_index = 0; order_index < triangle_indexes_by_z.size(); ++order_index) {
             triangles[triangle_indexes_by_z[order_index]].order_by_z = order_index;
@@ -133,60 +126,60 @@ struct SupportPlacerMesh {
         }
     }
 
-    const float calculate_support_cost(float dot_product, size_t index_in_its) const {
-        float weight = std::max(0.0f, (dot_product - limit_angle_cos) / (1.0f - limit_angle_cos));
-        return weight * its_face_area(mesh, index_in_its);
-    }
-
     void find_support_areas() {
         size_t next_group_id = 1;
         for (const size_t &current_index : triangle_indexes_by_z) {
             Triangle &current = triangles[current_index];
-            float dot_product = current.normal.dot(-Vec3f::UnitZ());
 
-            float neighbours_strength_sum = 0;
+            float gathering_neighbours_sum = 0;
+            bool neighbour_gathering_support = 0;
+            float strongest_neighbour_strength = 0;
             size_t group_id = 0;
+
             for (const auto &neighbour_index : current.neighbours) {
                 const Triangle &neighbour = triangles[neighbour_index];
                 if (!neighbour.visited) {
                     //not visited yet, ignore
                     continue;
-                } else {
-                    if (group_id == 0) {
-                        group_id = neighbour.group_id;
-                    }
+                }
 
-                    neighbours_strength_sum += neighbour.strength;
-                    float support_cost = calculate_support_cost(dot_product, current.index_in_its);
-                    if (neighbour.gathering_supports || neighbour.strength < support_cost) {
-                        continue;
-                    } else {
-                        current.strength = std::max(0.0f, neighbour.strength - support_cost);
-                        current.visited = true;
-                        current.supports = false;
-                        current.gathering_supports = false;
-                        current.group_id = neighbour.group_id;
-                        break;
-                    }
+                if (neighbour.gathering_supports) {
+                    gathering_neighbours_sum += neighbour.strength;
+                    neighbour_gathering_support = true;
+                }
+
+                if (neighbour.strength > strongest_neighbour_strength) {
+                    strongest_neighbour_strength = neighbour.strength;
+                    group_id = neighbour.group_id;
                 }
             }
 
-            if (!current.visited) {
-                if (dot_product > 0.2) {
-                    current.supports = true;
-                    current.visited = true;
-                    current.strength = neighbours_strength_sum + its_face_area(mesh, current.index_in_its);
-                    current.gathering_supports = current.strength < gather_phase_target;
-                    current.group_id = next_group_id;
-                    next_group_id++;
-                } else {
-                    current.strength = gather_phase_target;
-                    current.visited = true;
-                    current.supports = false;
-                    current.gathering_supports = false;
-                    current.group_id = group_id;
-                }
+            if (current.downward_dot_value < 0.1) {
+                current.visited = true;
+                current.supports = false;
+                current.strength = gather_phase_target;
+                current.group_id = group_id;
+                current.gathering_supports = false;
+                continue;
             }
+
+            if (neighbour_gathering_support || current.weight > strongest_neighbour_strength
+                    || strongest_neighbour_strength <= 0) {
+                current.visited = true;
+                current.supports = true;
+                current.strength = std::min(gathering_neighbours_sum
+                        + its_face_area(mesh, current.index_in_its), gather_phase_target);
+                current.gathering_supports = current.strength < gather_phase_target;
+                current.group_id = next_group_id;
+                next_group_id++;
+                continue;
+            }
+
+            current.visited = true;
+            current.supports = false;
+            current.strength = strongest_neighbour_strength - current.weight;
+            current.gathering_supports = false;
+            current.group_id = group_id;
         }
     }
 
@@ -204,14 +197,15 @@ struct SupportPlacerMesh {
                 return;
             }
 
-            for (int i = 0; i < triangles.size(); ++i) {
+            for (size_t i = 0; i < triangles.size(); ++i) {
                 Vec3f color = value_to_rgbf(0.0f, 2.0f * gather_phase_target, triangles[i].strength);
-                for (int index = 0; index < 3; ++index) {
+                for (size_t index = 0; index < 3; ++index) {
                     fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangles[i].indices[index]](0),
-                            mesh.vertices[triangles[i].indices[index]](1), mesh.vertices[triangles[i].indices[index]](2), color(0),
+                            mesh.vertices[triangles[i].indices[index]](1),
+                            mesh.vertices[triangles[i].indices[index]](2), color(0),
                             color(1), color(2));
                 }
-                fprintf(fp, "f %d %d %d\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
+                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
             }
             fclose(fp);
         }
@@ -225,13 +219,14 @@ struct SupportPlacerMesh {
             }
 
             for (size_t i = 0; i < triangles.size(); ++i) {
-                Vec3f color = value_to_rgbf(0.0f, 9.0f, float(triangles[i].group_id % 10));
-                for (int index = 0; index < 3; ++index) {
+                Vec3f color = value_to_rgbf(0.0f, 19.0f, float(triangles[i].group_id % 20));
+                for (size_t index = 0; index < 3; ++index) {
                     fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangles[i].indices[index]](0),
-                            mesh.vertices[triangles[i].indices[index]](1), mesh.vertices[triangles[i].indices[index]](2), color(0),
+                            mesh.vertices[triangles[i].indices[index]](1),
+                            mesh.vertices[triangles[i].indices[index]](2), color(0),
                             color(1), color(2));
                 }
-                fprintf(fp, "f %d %d %d\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
+                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
             }
             fclose(fp);
         }
@@ -245,14 +240,62 @@ struct SupportPlacerMesh {
             }
 
             for (size_t i = 0; i < triangle_indexes_by_z.size(); ++i) {
-                const Triangle& triangle = triangles[triangle_indexes_by_z[i]];
-                Vec3f color = value_to_rgbf(0.0f, 9999.0f, float(i % 10000));
-                for (int index = 0; index < 3; ++index) {
-                    fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangles[i].indices[index]](0),
-                            mesh.vertices[triangles[i].indices[index]](1), mesh.vertices[triangles[i].indices[index]](2), color(0),
+                const Triangle &triangle = triangles[triangle_indexes_by_z[i]];
+                Vec3f color = Vec3f { float(i) / float(triangle_indexes_by_z.size()), float(i)
+                        / float(triangle_indexes_by_z.size()), 0.5 };
+                for (size_t index = 0; index < 3; ++index) {
+                    fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangle.indices[index]](0),
+                            mesh.vertices[triangle.indices[index]](1),
+                            mesh.vertices[triangle.indices[index]](2), color(0),
                             color(1), color(2));
                 }
-                fprintf(fp, "f %d %d %d\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
+                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
+            }
+            fclose(fp);
+        }
+
+        {
+            std::string file_name = debug_out_path("weight.obj");
+            FILE *fp = boost::nowide::fopen(file_name.c_str(), "w");
+            if (fp == nullptr) {
+                BOOST_LOG_TRIVIAL(error)
+                << "stl_write_obj: Couldn't open " << file_name << " for writing";
+                return;
+            }
+
+            for (size_t i = 0; i < triangle_indexes_by_z.size(); ++i) {
+                const Triangle &triangle = triangles[triangle_indexes_by_z[i]];
+                Vec3f color = value_to_rgbf(0, 10, triangle.weight);
+                for (size_t index = 0; index < 3; ++index) {
+                    fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangle.indices[index]](0),
+                            mesh.vertices[triangle.indices[index]](1),
+                            mesh.vertices[triangle.indices[index]](2), color(0),
+                            color(1), color(2));
+                }
+                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
+            }
+            fclose(fp);
+        }
+
+        {
+            std::string file_name = debug_out_path("dot_value.obj");
+            FILE *fp = boost::nowide::fopen(file_name.c_str(), "w");
+            if (fp == nullptr) {
+                BOOST_LOG_TRIVIAL(error)
+                << "stl_write_obj: Couldn't open " << file_name << " for writing";
+                return;
+            }
+
+            for (size_t i = 0; i < triangle_indexes_by_z.size(); ++i) {
+                const Triangle &triangle = triangles[triangle_indexes_by_z[i]];
+                Vec3f color = value_to_rgbf(-1, 1, triangle.downward_dot_value);
+                for (size_t index = 0; index < 3; ++index) {
+                    fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangle.indices[index]](0),
+                            mesh.vertices[triangle.indices[index]](1),
+                            mesh.vertices[triangle.indices[index]](2), color(0),
+                            color(1), color(2));
+                }
+                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
             }
             fclose(fp);
         }
@@ -262,8 +305,9 @@ struct SupportPlacerMesh {
 }
 ;
 
-inline void do_experimental_support_placement(indexed_triangle_set mesh, TriangleSelectorGUI *selector, float dot_limit) {
-    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 3.0 };
+inline void do_experimental_support_placement(indexed_triangle_set mesh, TriangleSelectorGUI *selector,
+        float dot_limit) {
+    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 2.0 };
 
     support_placer.find_support_areas();
 
