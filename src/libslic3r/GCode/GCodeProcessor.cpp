@@ -262,10 +262,10 @@ static void recalculate_trapezoids(std::vector<GCodeProcessor::TimeBlock>& block
             // Recalculate if current block entry or exit junction speed has changed.
             if (curr->flags.recalculate || next->flags.recalculate) {
                 // NOTE: Entry and exit factors always > 0 by all previous logic operations.
-                GCodeProcessor::TimeBlock block = *curr;
-                block.feedrate_profile.exit = next->feedrate_profile.entry;
-                block.calculate_trapezoid();
-                curr->trapezoid = block.trapezoid;
+                //GCodeProcessor::TimeBlock block = *curr;
+                curr->feedrate_profile.exit = next->feedrate_profile.entry;
+                curr->calculate_trapezoid();
+                //curr->trapezoid = block.trapezoid;
                 curr->flags.recalculate = false; // Reset current only to ensure next trapezoid is computed
             }
         }
@@ -273,10 +273,10 @@ static void recalculate_trapezoids(std::vector<GCodeProcessor::TimeBlock>& block
 
     // Last/newest block in buffer. Always recalculated.
     if (next != nullptr) {
-        GCodeProcessor::TimeBlock block = *next;
-        block.feedrate_profile.exit = next->safe_feedrate;
-        block.calculate_trapezoid();
-        next->trapezoid = block.trapezoid;
+        //GCodeProcessor::TimeBlock block = *next;
+        next->feedrate_profile.exit = next->safe_feedrate;
+        next->calculate_trapezoid();
+        //next->trapezoid = block.trapezoid;
         next->flags.recalculate = false;
     }
 }
