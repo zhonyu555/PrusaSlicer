@@ -554,6 +554,7 @@ namespace Slic3r {
         unsigned int m_layer_id;
         CpColor m_cp_color;
         bool m_use_volumetric_e;
+        bool m_rrf_jerk_policy;
         SeamsDetector m_seams_detector;
         OptionsZCorrector m_options_z_corrector;
         size_t m_last_default_color_id;

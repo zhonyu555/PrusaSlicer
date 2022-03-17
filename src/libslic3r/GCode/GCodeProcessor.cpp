@@ -867,6 +867,8 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
             m_time_processor.machine_limits.machine_min_extruding_rate.values.assign(m_time_processor.machine_limits.machine_min_extruding_rate.size(), 0.);
             // RRF does not have a separate retraction acceleration -- it uses max E accel.
             m_time_processor.machine_limits.machine_max_acceleration_retracting = m_time_processor.machine_limits.machine_max_acceleration_e;
+            // Set RRF Jerk Policy (M566 P0) as default.
+            m_rrf_jerk_policy = true;
         }
     }
 
@@ -1231,6 +1233,7 @@ void GCodeProcessor::reset()
     m_result.id = ++s_result_id;
 
     m_use_volumetric_e = false;
+    m_rrf_jerk_policy = false;
     m_last_default_color_id = 0;
 
     m_options_z_corrector.reset();
@@ -2719,6 +2722,11 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         block.flags.nominal_length = (block.feedrate_profile.cruise <= v_allowable);
         block.flags.recalculate = true;
         block.safe_feedrate = curr.safe_feedrate;
+
+        if ((m_rrf_jerk_policy && m_flavor == gcfRepRapFirmware)
+                                && ((type != EMoveType::Extrude || blocks.empty()) 
+                                || (!blocks.empty() && blocks.back().move_type != EMoveType::Extrude)))
+            block.max_entry_speed = 0.f;
 
         // calculates block trapezoid
         block.calculate_trapezoid();
