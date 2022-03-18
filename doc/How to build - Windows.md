@@ -26,6 +26,8 @@ c:\src>cd c:\src\PrusaSlicer
 c:\src\PrusaSlicer>build_win.bat -d=..\PrusaSlicer-deps -r=console
 ```
 
+Append the parameter `-v=17` if you are running Visual Studio 2022.
+
 The build script will run for a while (over an hour, depending on your machine) and automatically perform the following steps:
 1. Configure and build [deps](#compile-the-dependencies) as RelWithDebInfo with `c:\src\PrusaSlicer-deps` as the destination directory
 2. Configure and build all [application targets](#compile-prusaslicer) as RelWithDebInfo
