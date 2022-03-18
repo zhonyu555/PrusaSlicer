@@ -1,6 +1,7 @@
 #include "libslic3r/Model.hpp"
 
 #include <algorithm>
+#include <queue>
 
 #include "slic3r/GUI/GLCanvas3D.hpp"
 #include "slic3r/GUI/Gizmos/GLGizmoPainterBase.hpp"
@@ -24,20 +25,19 @@ struct Triangle {
     stl_triangle_vertex_indices indices;
     Vec3f normal;
     float downward_dot_value;
-    size_t index_in_its;
+    size_t index;
     Vec3i neighbours;
     float lowest_z_coord;
     // higher value of dot product of the downward direction and the two bottom edges
     float edge_dot_value;
-    float weight;
+    float area;
 
     size_t order_by_z;
 
     //members updated during algorithm
-    float strength { 0.0 };
+    float unsupported_weight { 0.0 };
     bool supports = false;
     bool visited = false;
-    bool gathering_supports = false;
     size_t group_id = 0;
 };
 
@@ -62,15 +62,18 @@ inline float its_face_area(const indexed_triangle_set &its, const int face_idx) 
 }
 
 struct SupportPlacerMesh {
-    const float gather_phase_target;
+    const float unsupported_area_limit;
+    const float patch_size;
     const float limit_angle_cos;
 
     indexed_triangle_set mesh;
     std::vector<Triangle> triangles;
     std::vector<size_t> triangle_indexes_by_z;
 
-    explicit SupportPlacerMesh(indexed_triangle_set &&t_mesh, float dot_limit, float patch_size) :
-            mesh(t_mesh), limit_angle_cos(dot_limit), gather_phase_target(patch_size) {
+    explicit SupportPlacerMesh(indexed_triangle_set &&t_mesh, float dot_limit, float patch_size,
+            float unsupported_area_limit) :
+            mesh(t_mesh), limit_angle_cos(dot_limit), patch_size(patch_size), unsupported_area_limit(
+                    unsupported_area_limit) {
         auto neighbours = its_face_neighbors_par(mesh);
 
         for (size_t face_index = 0; face_index < mesh.indices.size(); ++face_index) {
@@ -88,23 +91,22 @@ struct SupportPlacerMesh {
             Vec3f lowest_edge_b = (vertices[2] - vertices[0]).normalized();
             Vec3f down = -Vec3f::UnitZ();
 
-            //TODO verify
-            float weight = std::max(0.0f, (normal.dot(down) - limit_angle_cos) / (1.0f - limit_angle_cos))
-                    * its_face_area(mesh, face_index);
-
             Triangle t { };
             t.indices = mesh.indices[face_index];
             t.normal = normal;
             t.downward_dot_value = normal.dot(down);
-            t.index_in_its = face_index;
+            t.index = face_index;
             t.neighbours = neighbours[face_index];
             t.lowest_z_coord = vertices[0].z();
             t.edge_dot_value = std::max(lowest_edge_a.dot(down), lowest_edge_b.dot(down));
-            t.weight = weight;
+            t.area = its_face_area(mesh, face_index);
 
             triangles.push_back(t);
             triangle_indexes_by_z.push_back(face_index);
         }
+
+        assert(triangle_indexes_by_z.size() == triangles.size());
+        assert(mesh.indices.size() == triangles.size());
 
         std::sort(triangle_indexes_by_z.begin(), triangle_indexes_by_z.end(),
                 [&](const size_t &left, const size_t &right) {
@@ -121,6 +123,9 @@ struct SupportPlacerMesh {
 
         for (Triangle &triangle : triangles) {
             std::sort(begin(triangle.neighbours), end(triangle.neighbours), [&](const size_t left, const size_t right) {
+                if (left < 0 || right < 0) {
+                    return true;
+                }
                 return triangles[left].order_by_z < triangles[right].order_by_z;
             });
         }
@@ -131,84 +136,72 @@ struct SupportPlacerMesh {
         for (const size_t &current_index : triangle_indexes_by_z) {
             Triangle &current = triangles[current_index];
 
-            float gathering_neighbours_sum = 0;
-            bool neighbour_gathering_support = 0;
-            float strongest_neighbour_strength = 0;
             size_t group_id = 0;
+            float neighbourhood_unsupported_area = 0;
+            bool visited_neighbour = false;
 
             for (const auto &neighbour_index : current.neighbours) {
+                if (neighbour_index < 0) {
+                    continue;
+                }
                 const Triangle &neighbour = triangles[neighbour_index];
                 if (!neighbour.visited) {
                     //not visited yet, ignore
                     continue;
                 }
-
-                if (neighbour.gathering_supports) {
-                    gathering_neighbours_sum += neighbour.strength;
-                    neighbour_gathering_support = true;
-                }
-
-                if (neighbour.strength > strongest_neighbour_strength) {
-                    strongest_neighbour_strength = neighbour.strength;
+                visited_neighbour = true;
+                if (neighbourhood_unsupported_area <= neighbour.unsupported_weight) {
+                    neighbourhood_unsupported_area = neighbour.unsupported_weight;
                     group_id = neighbour.group_id;
                 }
-            }
 
-            if (current.downward_dot_value < 0.1) {
-                current.visited = true;
-                current.supports = false;
-                current.strength = gather_phase_target;
-                current.group_id = group_id;
-                current.gathering_supports = false;
-                continue;
-            }
-
-            if (neighbour_gathering_support || current.weight > strongest_neighbour_strength
-                    || strongest_neighbour_strength <= 0) {
-                current.visited = true;
-                current.supports = true;
-                current.strength = std::min(gathering_neighbours_sum
-                        + its_face_area(mesh, current.index_in_its), gather_phase_target);
-                current.gathering_supports = current.strength < gather_phase_target;
-                current.group_id = next_group_id;
-                next_group_id++;
-                continue;
             }
 
             current.visited = true;
-            current.supports = false;
-            current.strength = strongest_neighbour_strength - current.weight;
-            current.gathering_supports = false;
+            current.unsupported_weight =
+                    current.downward_dot_value >= limit_angle_cos ? current.area + neighbourhood_unsupported_area : 0;
             current.group_id = group_id;
+
+            if (current.downward_dot_value > 0
+                    && (current.unsupported_weight > unsupported_area_limit || !visited_neighbour)) {
+                group_id = next_group_id;
+                next_group_id++;
+
+                std::queue<int> supporters { };
+                current.visited = false;
+                supporters.push(int(current_index));
+                float supported_size = 0;
+                while (supported_size < patch_size && !supporters.empty()) {
+                    int s = supporters.front();
+                    supporters.pop();
+                    Triangle &supporter = triangles[s];
+                    if (supporter.downward_dot_value <= 0.1) {
+                        continue;
+                    }
+
+                    if (supporter.visited) {
+                        supported_size += supporter.supports ? supporter.area : 0;
+                    } else {
+                        supporter.supports = true;
+                        supporter.unsupported_weight = 0;
+                        supported_size += supporter.area;
+                        supporter.visited = true;
+                        supporter.group_id = group_id;
+                        for (const auto &n : supporter.neighbours) {
+                            if (n < 0)
+                                continue;
+                            supporters.push(n);
+                        }
+                    }
+                }
+            }
+
         }
     }
 
 #ifdef DEBUG_FILES
     void debug_export() const {
         Slic3r::CNumericLocalesSetter locales_setter;
-
-        {
-            std::string file_name = debug_out_path("strength.obj");
-
-            FILE *fp = boost::nowide::fopen(file_name.c_str(), "w");
-            if (fp == nullptr) {
-                BOOST_LOG_TRIVIAL(error)
-                << "stl_write_obj: Couldn't open " << file_name << " for writing";
-                return;
-            }
-
-            for (size_t i = 0; i < triangles.size(); ++i) {
-                Vec3f color = value_to_rgbf(0.0f, 2.0f * gather_phase_target, triangles[i].strength);
-                for (size_t index = 0; index < 3; ++index) {
-                    fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangles[i].indices[index]](0),
-                            mesh.vertices[triangles[i].indices[index]](1),
-                            mesh.vertices[triangles[i].indices[index]](2), color(0),
-                            color(1), color(2));
-                }
-                fprintf(fp, "f %zu %zu %zu\n", i * 3 + 1, i * 3 + 2, i * 3 + 3);
-            }
-            fclose(fp);
-        }
         {
             std::string file_name = debug_out_path("groups.obj");
             FILE *fp = boost::nowide::fopen(file_name.c_str(), "w");
@@ -265,7 +258,7 @@ struct SupportPlacerMesh {
 
             for (size_t i = 0; i < triangle_indexes_by_z.size(); ++i) {
                 const Triangle &triangle = triangles[triangle_indexes_by_z[i]];
-                Vec3f color = value_to_rgbf(0, 10, triangle.weight);
+                Vec3f color = value_to_rgbf(0, 10, triangle.area);
                 for (size_t index = 0; index < 3; ++index) {
                     fprintf(fp, "v %f %f %f  %f %f %f\n", mesh.vertices[triangle.indices[index]](0),
                             mesh.vertices[triangle.indices[index]](1),
@@ -307,13 +300,13 @@ struct SupportPlacerMesh {
 
 inline void do_experimental_support_placement(indexed_triangle_set mesh, TriangleSelectorGUI *selector,
         float dot_limit) {
-    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 2.0 };
+    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 4, 10 };
 
     support_placer.find_support_areas();
 
     for (const Triangle &t : support_placer.triangles) {
         if (t.supports) {
-            selector->set_facet(t.index_in_its, EnforcerBlockerType::ENFORCER);
+            selector->set_facet(t.index, EnforcerBlockerType::ENFORCER);
             selector->request_update_render_data();
         }
     }
