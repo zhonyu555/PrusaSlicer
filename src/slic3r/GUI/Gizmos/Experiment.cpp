@@ -65,6 +65,7 @@ struct SupportPlacerMesh {
     const float unsupported_area_limit;
     const float patch_size;
     const float limit_angle_cos;
+    const float neighbour_max_distance = 2.0;
 
     indexed_triangle_set mesh;
     std::vector<Triangle> triangles;
@@ -131,6 +132,17 @@ struct SupportPlacerMesh {
         }
     }
 
+    float triangle_vertices_shortest_distance(const indexed_triangle_set &its, const size_t &face_a,
+            const size_t &face_b) {
+        float distance = std::numeric_limits<float>::max();
+        for (const auto &vertex_a_index : its.indices[face_a]) {
+            for (const auto &vertex_b_index : its.indices[face_b]) {
+                distance = std::min(distance, (its.vertices[vertex_a_index] - its.vertices[vertex_b_index]).norm());
+            }
+        }
+        return distance;
+    }
+
     void find_support_areas() {
         size_t next_group_id = 1;
         for (const size_t &current_index : triangle_indexes_by_z) {
@@ -140,19 +152,43 @@ struct SupportPlacerMesh {
             float neighbourhood_unsupported_area = 0;
             bool visited_neighbour = false;
 
-            for (const auto &neighbour_index : current.neighbours) {
-                if (neighbour_index < 0) {
+            std::queue<int> neighbours { };
+            std::set<int> explored { };
+            for (const auto &direct_neighbour_index : current.neighbours) {
+                if (direct_neighbour_index < 0 || !triangles[direct_neighbour_index].visited) {
                     continue;
                 }
-                const Triangle &neighbour = triangles[neighbour_index];
-                if (!neighbour.visited) {
-                    //not visited yet, ignore
-                    continue;
+                neighbours.push(direct_neighbour_index);
+                const Triangle &direct_neighbour = triangles[direct_neighbour_index];
+                if (neighbourhood_unsupported_area <= direct_neighbour.unsupported_weight) {
+                    neighbourhood_unsupported_area = direct_neighbour.unsupported_weight;
+                    group_id = direct_neighbour.group_id;
                 }
                 visited_neighbour = true;
-                if (neighbourhood_unsupported_area <= neighbour.unsupported_weight) {
-                    neighbourhood_unsupported_area = neighbour.unsupported_weight;
-                    group_id = neighbour.group_id;
+            }
+
+            while (!neighbours.empty() && !visited_neighbour) {
+                int neighbour_index = neighbours.front();
+                neighbours.pop();
+                explored.insert(neighbour_index);
+
+                const Triangle &neighbour = triangles[neighbour_index];
+                if (explored.find(neighbour_index) != explored.end()
+                        || triangle_vertices_shortest_distance(mesh, current.index, neighbour_index)
+                                > neighbour_max_distance) {
+                    // not visited, already explored, or too far
+                    continue;
+                }
+
+                if (neighbour.visited) {
+                    visited_neighbour = true;
+                    break;
+                }
+                for (const auto &neighbour_index : neighbour.neighbours) {
+                    if (neighbour_index < 0) {
+                        continue;
+                    }
+                    neighbours.push(neighbour_index);
                 }
 
             }
@@ -300,7 +336,7 @@ struct SupportPlacerMesh {
 
 inline void do_experimental_support_placement(indexed_triangle_set mesh, TriangleSelectorGUI *selector,
         float dot_limit) {
-    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 4, 10 };
+    SupportPlacerMesh support_placer { std::move(mesh), dot_limit, 3, 6 };
 
     support_placer.find_support_areas();
 
