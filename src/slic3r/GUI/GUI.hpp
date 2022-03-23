@@ -5,6 +5,7 @@ namespace boost { class any; }
 namespace boost::filesystem { class path; }
 
 #include <wx/string.h>
+#include <wx/arrstr.h>
 
 #include "libslic3r/Config.hpp"
 #include "libslic3r/Preset.hpp"
