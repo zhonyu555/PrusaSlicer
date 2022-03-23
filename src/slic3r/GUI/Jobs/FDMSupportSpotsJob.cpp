@@ -52,6 +52,8 @@ void FDMSupportSpotsJob::process(Ctl &ctl) {
             }
         }
 
+        support_spots_alg.debug_export();
+
         this->m_computed_support_data.emplace(data.first, supported_face_indexes);
     }
 
@@ -59,6 +61,7 @@ void FDMSupportSpotsJob::process(Ctl &ctl) {
         ctl.update_status(100, status_text_canceled);
         return;
     }
+
     ctl.update_status(100, status_text_canceled);
 }
 

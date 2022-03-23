@@ -171,13 +171,15 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
                 "Degree sign to use in the respective slider in FDM supports gizmo,"
                         "placed after the number with no whitespace in between.");
 
+        std::string mm = std::string("%.f") + I18N::translate_utf8("mm");
+
         m_imgui->slider_float("##angle_threshold_deg", &m_smart_support_limit_angle_deg, 0.f, 90.f, format_str.data(),
                 1.0f, true);
-        m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 20.f, format_str.data(),
+        m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 20.f, mm.data(),
                 1.0f, false);
-        m_imgui->slider_float("##patch_spacing", &m_smart_support_patch_spacing, 0.f, 20.f, format_str.data(),
+        m_imgui->slider_float("##patch_spacing", &m_smart_support_patch_spacing, 0.f, 20.f, mm.data(),
                 1.0f, false);
-        m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 10.f, format_str.data(),
+        m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 10.f, mm.data(),
                 1.0f, false);
 
         ImGui::NewLine();
@@ -433,11 +435,12 @@ void GLGizmoFdmSupports::select_facets_by_angle(float threshold_deg, bool block)
     m_parent.set_as_dirty();
 }
 
-void GLGizmoFdmSupports::compute_smart_support_placement(float limit_angle_deg, float patch_size, float patch_spacing, float islands_tolerance) {
-    float threshold = (float(M_PI) / 180.f) * limit_angle_deg;
+void GLGizmoFdmSupports::compute_smart_support_placement(float limit_angle_deg, float patch_size, float patch_spacing,
+        float islands_tolerance) {
+    float threshold = (float(M_PI) / 180.f) * (90.0f - limit_angle_deg);
 
     FDMSupportSpotsConfig support_spots_config {
-        threshold, patch_size, patch_spacing, islands_tolerance
+            threshold, patch_size, patch_spacing, islands_tolerance
     };
 
     const Selection &selection = m_parent.get_selection();

@@ -22,6 +22,7 @@ namespace FDMSupportSpotsImpl {
 struct Triangle {
     stl_triangle_vertex_indices indices;
     Vec3f normal;
+    Vec3f center;
     float downward_dot_value;
     size_t index;
     Vec3i neighbours;

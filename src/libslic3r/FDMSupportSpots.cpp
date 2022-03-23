@@ -53,6 +53,7 @@ FDMSupportSpots::FDMSupportSpots(FDMSupportSpotsConfig config, indexed_triangle_
         Triangle t { };
         t.indices = mesh.indices[face_index];
         t.normal = normal;
+        t.center = (vertices[0] + vertices[1] + vertices[2]) / 3.0f;
         t.downward_dot_value = normal.dot(down);
         t.index = face_index;
         t.neighbours = neighbours[face_index];
@@ -71,8 +72,11 @@ FDMSupportSpots::FDMSupportSpots(FDMSupportSpotsConfig config, indexed_triangle_
             [&](const size_t &left, const size_t &right) {
                 if (this->m_triangles[left].lowest_z_coord != this->m_triangles[right].lowest_z_coord) {
                     return this->m_triangles[left].lowest_z_coord < this->m_triangles[right].lowest_z_coord;
-                } else {
+                } else if (this->m_triangles[left].edge_dot_value != this->m_triangles[right].edge_dot_value) {
                     return this->m_triangles[left].edge_dot_value > this->m_triangles[right].edge_dot_value;
+                } else {
+                    return (abs(this->m_triangles[left].center.x() + this->m_triangles[left].center.y()) <
+                            abs(this->m_triangles[right].center.x() + this->m_triangles[right].center.y()));
                 }
             });
 
@@ -81,8 +85,11 @@ FDMSupportSpots::FDMSupportSpots(FDMSupportSpotsConfig config, indexed_triangle_
     }
 
     for (Triangle &triangle : this->m_triangles) {
-        std::sort(begin(triangle.neighbours), end(triangle.neighbours), [&](const size_t left, const size_t right) {
-            if (left < 0 || right < 0) {
+        std::sort(begin(triangle.neighbours), end(triangle.neighbours), [&](const int left, const int right) {
+            if (left < 0) {
+                return false;
+            }
+            if (right < 0) {
                 return true;
             }
             return this->m_triangles[left].order_by_z < this->m_triangles[right].order_by_z;
@@ -108,24 +115,24 @@ void FDMSupportSpots::find_support_areas() {
         Triangle &current = this->m_triangles[current_index];
 
         size_t group_id = 0;
-        float neighbourhood_unsupported_area = 0;
+        float neighbourhood_unsupported_area = this->m_config.patch_spacing;
         bool visited_neighbour = false;
 
         std::queue<int> neighbours { };
-        std::set<int> explored { };
         for (const auto &direct_neighbour_index : current.neighbours) {
             if (direct_neighbour_index < 0 || !this->m_triangles[direct_neighbour_index].visited) {
                 continue;
             }
             neighbours.push(direct_neighbour_index);
             const Triangle &direct_neighbour = this->m_triangles[direct_neighbour_index];
-            if (neighbourhood_unsupported_area <= direct_neighbour.unsupported_weight) {
+            if (neighbourhood_unsupported_area >= direct_neighbour.unsupported_weight) {
                 neighbourhood_unsupported_area = direct_neighbour.unsupported_weight;
                 group_id = direct_neighbour.group_id;
             }
             visited_neighbour = true;
         }
 
+        std::set<int> explored { };
         while (!neighbours.empty() && !visited_neighbour) {
             int neighbour_index = neighbours.front();
             neighbours.pop();
@@ -255,7 +262,7 @@ void FDMSupportSpots::debug_export() const {
 
         for (size_t i = 0; i < this->m_triangle_indexes_by_z.size(); ++i) {
             const Triangle &triangle = this->m_triangles[this->m_triangle_indexes_by_z[i]];
-            Vec3f color = value_to_rgbf(0, 10, triangle.area);
+            Vec3f color = value_to_rgbf(0, this->m_config.patch_size, triangle.unsupported_weight);
             for (size_t index = 0; index < 3; ++index) {
                 fprintf(fp, "v %f %f %f  %f %f %f\n", this->m_mesh.vertices[triangle.indices[index]](0),
                         this->m_mesh.vertices[triangle.indices[index]](1),
@@ -293,5 +300,4 @@ void FDMSupportSpots::debug_export() const {
 #endif
 
 }
-
 
