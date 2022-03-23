@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-03-19 17:06+0800\n"
+"PO-Revision-Date: 2022-03-23 11:27+0800\n"
 "Last-Translator: Kang Kang <kangkang0517@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -2224,7 +2224,7 @@ msgstr "执行切割"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:33 src/slic3r/GUI/ObjectDataViewModel.cpp:49
 msgid "Paint-on supports"
-msgstr "在支架上涂漆"
+msgstr "绘制支撑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:42 src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:39 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:112 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:31
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:49
@@ -2250,7 +2250,7 @@ msgstr "鼠标左键"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:47
 msgid "Enforce supports"
-msgstr "加强支持"
+msgstr "强制支持"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:48 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:117 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:37
 msgid "Right mouse button"
@@ -2258,7 +2258,7 @@ msgstr "鼠标右键"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:49 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:434
 msgid "Block supports"
-msgstr "块支撑"
+msgstr "阻止支撑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:50 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:119 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:39
 msgid "Shift + Left mouse button"
@@ -2286,7 +2286,7 @@ msgstr "三角形"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:56
 msgid "Highlight overhang by angle"
-msgstr "通过角度突出突出突出部分"
+msgstr "通过角度高亮悬挑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:57
 msgid "Enforce"
@@ -2306,7 +2306,7 @@ msgstr "智能填充"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:64 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:131
 msgid "Smart fill angle"
-msgstr "智能填充角"
+msgstr "智能填充角度"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:66 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:132
 msgid "Split triangles"
@@ -2332,7 +2332,7 @@ msgstr "绘制相对角度小于或等于“设置角度”的相邻面。"
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:229
 #, boost-format
 msgid "Allows painting only on facets selected by: \"%1%\""
-msgstr "仅允许在以下人员选择的面上绘制：\"%1%'"
+msgstr "仅允许在选择的面上绘制：\"%1%'"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:244 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:419 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:144
 msgid "Paints all facets inside, regardless of their orientation."
@@ -2344,7 +2344,7 @@ msgstr "忽略背对摄影机的面。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:262 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:437
 msgid "Paints only one facet."
-msgstr "只画一个面。"
+msgstr "只绘制一个面。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:270 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:285 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:445
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:462 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:132
@@ -2365,7 +2365,7 @@ msgstr "重置选择"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:364
 msgid "Block supports by angle"
-msgstr "按角度分块支撑"
+msgstr "按角度阻止支撑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:365
 msgid "Add supports by angle"
@@ -2373,7 +2373,7 @@ msgstr "按角度添加支撑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:432
 msgid "Add supports"
-msgstr "添加支持"
+msgstr "添加支撑"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFlatten.cpp:41
 msgid "Place on face"
@@ -2446,7 +2446,7 @@ msgstr "移动排水孔"
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:27
 #, boost-format
 msgid "Your printer has more extruders than the multi-material painting gizmo supports. For this reason, only the first %1% extruders will be able to be used for painting."
-msgstr "打印机的挤出机数量超过了多材质绘画gizmo支持的数量。因此，只有前%1%的挤出机才能用于涂漆。"
+msgstr "打印机的挤出机数量超过了多材质绘画gizmo支持的数量。因此，只有前%1%的挤出机才能用于绘制。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:45 src/slic3r/GUI/ObjectDataViewModel.cpp:51
 msgid "Multimaterial painting"
@@ -2509,15 +2509,15 @@ msgstr "比例"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:36 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:253
 msgid "Enforce seam"
-msgstr "加强接缝"
+msgstr "强制接缝"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:38 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:255
 msgid "Block seam"
-msgstr "块缝"
+msgstr "阻止接缝"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:52
 msgid "Seam painting"
-msgstr "缝画"
+msgstr "接缝绘制"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:67
 msgid "Mesh name"
@@ -3814,11 +3814,11 @@ msgstr "从图库中添加形状"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1830
 msgid "Remove paint-on supports"
-msgstr "清除支架上的油漆"
+msgstr "清除绘制的支撑"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1837
 msgid "Remove paint-on seam"
-msgstr "除去接缝上的油漆"
+msgstr "除去绘制的接缝"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1844
 msgid "Remove Multi Material painting"
@@ -4680,7 +4680,7 @@ msgstr "摄像机空间中的运动"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:145
 msgid "Page Up"
-msgstr "翻页"
+msgstr "上翻页"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:145
 msgid "Rotate selection 45 degrees CCW"
@@ -4688,7 +4688,7 @@ msgstr "将所选内容逆时针旋转45度"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:146
 msgid "Page Down"
-msgstr "翻页"
+msgstr "下翻页"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:146
 msgid "Rotate selection 45 degrees CW"
@@ -4704,11 +4704,11 @@ msgstr "线框缩放"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:149
 msgid "Gizmo rotate"
-msgstr "旋转小物件"
+msgstr "Gizmo 旋转"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:150
 msgid "Gizmo cut"
-msgstr "剪切小物件"
+msgstr "Gizmo 剪切"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:151
 msgid "Gizmo Place face on bed"
@@ -4716,23 +4716,23 @@ msgstr "放置小物件面到热床"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:152
 msgid "Gizmo SLA hollow"
-msgstr "小发明"
+msgstr "Gizmo SLA 空洞"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:153
 msgid "Gizmo SLA support points"
-msgstr "小物件SLA支撑点"
+msgstr "Gizmo SLA 支撑点"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:154
 msgid "Gizmo FDM paint-on supports"
-msgstr "支架上的Gizmo FDM涂料"
+msgstr "Gizmo FDM 绘制支撑"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:155
 msgid "Gizmo FDM paint-on seam"
-msgstr "缝上的Gizmo FDM涂料"
+msgstr "Gizmo FDM 绘制接缝"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:156
 msgid "Gizmo Multi Material painting"
-msgstr "Gizmo多材质绘画"
+msgstr "Gizmo 多材质绘画"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:157
 msgid "Unselect gizmo or clear selection"
@@ -5864,7 +5864,7 @@ msgstr "导出完成。"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:50
 msgid "Paint-on seam"
-msgstr "缝上油漆"
+msgstr "绘制接缝"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:52
 msgid "Sinking"
@@ -13016,7 +13016,7 @@ msgid ""
 "Did you know that you can paint directly on the object and select where to place the start/endpoint of each perimeter loop? Try the<a>Seam painting</a>feature. (Requires Advanced or "
 "Expert mode.)"
 msgstr ""
-"在接缝上绘制\n"
+"接缝绘制\n"
 "您是否知道可以直接在对象上绘制，并选择每个周长循环的起点/终点的位置？尝试<a>接缝绘制</a>功能。（需要高级或专家模式。）"
 
 #: resources/data/hints.ini: [hint:Insert Pause]
