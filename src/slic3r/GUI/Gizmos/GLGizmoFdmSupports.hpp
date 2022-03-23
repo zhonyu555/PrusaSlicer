@@ -3,8 +3,6 @@
 
 #include "GLGizmoPainterBase.hpp"
 
-#include "Experiment.cpp"
-
 namespace Slic3r::GUI {
 
 class GLGizmoFdmSupports : public GLGizmoPainterBase
@@ -38,9 +36,16 @@ private:
 
     void select_facets_by_angle(float threshold, bool block);
 
+    void compute_smart_support_placement(float limit_angle_deg, float patch_size, float patch_spacing, float islands_tolerance);
+
     // This map holds all translated description texts, so they can be easily referenced during layout calculations
     // etc. When language changes, GUI is recreated and this class constructed again, so the change takes effect.
     std::map<std::string, wxString> m_desc;
+
+    float m_smart_support_limit_angle_deg = 35.0f;
+    float m_smart_support_patch_size = 6.0f;
+    float m_smart_support_patch_spacing = 6.0f;
+    float m_smart_support_islands_tolerance = 1.0f;
 };
 
 

@@ -47,7 +47,6 @@ set(SLIC3R_GUI_SOURCES
     GUI/Gizmos/GLGizmoSlaSupports.hpp
     GUI/Gizmos/GLGizmoFdmSupports.cpp
     GUI/Gizmos/GLGizmoFdmSupports.hpp
-    GUI/Gizmos/Experiment.cpp
     GUI/Gizmos/GLGizmoFlatten.cpp
     GUI/Gizmos/GLGizmoFlatten.hpp
     GUI/Gizmos/GLGizmoCut.cpp
@@ -179,6 +178,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Jobs/ArrangeJob.cpp
     GUI/Jobs/RotoptimizeJob.hpp
     GUI/Jobs/RotoptimizeJob.cpp
+    GUI/Jobs/FDMSupportSpotsJob.hpp
+    GUI/Jobs/FDMSupportSpotsJob.cpp
     GUI/Jobs/FillBedJob.hpp
     GUI/Jobs/FillBedJob.cpp
     GUI/Jobs/SLAImportJob.hpp

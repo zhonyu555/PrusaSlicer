@@ -50,6 +50,8 @@ set(SLIC3R_SOURCES
     ExtrusionEntityCollection.hpp
     ExtrusionSimulator.cpp
     ExtrusionSimulator.hpp
+    FDMSupportSpots.cpp
+    FDMSupportSpots.hpp
     FileParserError.hpp
     Fill/Fill.cpp
     Fill/Fill.hpp
@@ -225,6 +227,8 @@ set(SLIC3R_SOURCES
     SlicesToTriangleMesh.cpp
     SlicingAdaptive.cpp
     SlicingAdaptive.hpp
+    Subdivide.cpp
+    Subdivide.hpp
     SupportMaterial.cpp
     SupportMaterial.hpp
     Surface.cpp
