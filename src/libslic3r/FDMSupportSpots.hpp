@@ -21,7 +21,6 @@ namespace Slic3r {
 namespace FDMSupportSpotsImpl {
 struct Triangle {
     stl_triangle_vertex_indices indices;
-    Vec3f normal;
     Vec3f center;
     float downward_dot_value;
     size_t index;
@@ -30,11 +29,12 @@ struct Triangle {
     // higher value of dot product of the downward direction and the two bottom edges
     float edge_dot_value;
     float area;
+    float largest_z_edge_len;
 
     size_t order_by_z;
 
     //members updated during algorithm
-    float unsupported_weight { 0.0 };
+    float unsupported_distance { 0.0 };
     bool supports = false;
     bool visited = false;
     size_t group_id = 0;
@@ -43,8 +43,8 @@ struct Triangle {
 
 struct FDMSupportSpotsConfig {
     float limit_angle_cos { 35.0f * PI / 180.0f };
-    float patch_size { 1.0f }; // (mm)
-    float patch_spacing { 2.0f }; // (mm)
+    float support_patch_size { 1.0f }; // (mm)
+    float max_distance { 2.0f }; // (mm)
     float islands_tolerance_distance { 0.3f }; //(mm)
     float max_side_length { 1.0f };// (mm)
 };

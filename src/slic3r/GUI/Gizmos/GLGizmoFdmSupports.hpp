@@ -44,7 +44,7 @@ private:
 
     float m_smart_support_limit_angle_deg = 45.0f;
     float m_smart_support_patch_size = 10.0f; //0.1mm
-    float m_smart_support_patch_spacing = 20.0f; //0.1mm
+    float m_smart_support_max_distance = 20.0f; //0.1mm
     float m_smart_support_islands_tolerance = 30.0f; //0.01mm
 };
 

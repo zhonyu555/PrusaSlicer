@@ -154,7 +154,6 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
     ImGui::Separator();
     {
         if (m_imgui->button("Subdivide")) {
-            const Selection &selection = m_parent.get_selection();
             const ModelObject *mo = m_c->selection_info()->model_object();
             for (ModelVolume *mv : mo->volumes)
                 if (mv->is_model_part()) {
@@ -178,7 +177,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
                 1.0f, true);
         m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 100.f, tenth_mm.data(),
                 1.0f, false);
-        m_imgui->slider_float("##patch_spacing", &m_smart_support_patch_spacing, 0.f, 100.f, tenth_mm.data(),
+        m_imgui->slider_float("##patch_spacing", &m_smart_support_max_distance, 0.f, 100.f, tenth_mm.data(),
                 1.0f, false);
         m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 100.f, hundreth_mm.data(),
                 1.0f, false);
@@ -187,7 +186,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
         ImGui::SameLine(window_width - buttons_width - m_imgui->scaled(0.5f));
         if (m_imgui->button(m_desc["enforce_button"], buttons_width, 0.f)) {
             compute_smart_support_placement(m_smart_support_limit_angle_deg, m_smart_support_patch_size * 0.1f,
-                    m_smart_support_patch_spacing * 0.1f, m_smart_support_islands_tolerance * 0.01f);
+                    m_smart_support_max_distance * 0.1f, m_smart_support_islands_tolerance * 0.01f);
         }
 
         if (m_imgui->button(m_desc.at("remove_all"))) {
@@ -437,12 +436,13 @@ void GLGizmoFdmSupports::select_facets_by_angle(float threshold_deg, bool block)
     m_parent.set_as_dirty();
 }
 
-void GLGizmoFdmSupports::compute_smart_support_placement(float limit_angle_deg, float patch_size, float patch_spacing,
+void GLGizmoFdmSupports::compute_smart_support_placement(float limit_angle_deg, float support_patch_size,
+        float max_distance,
         float islands_tolerance) {
     float threshold = (float(M_PI) / 180.f) * (90.0f - limit_angle_deg);
 
     FDMSupportSpotsConfig support_spots_config {
-            threshold, patch_size, patch_spacing, islands_tolerance
+            threshold, support_patch_size, max_distance, islands_tolerance
     };
 
     const Selection &selection = m_parent.get_selection();
