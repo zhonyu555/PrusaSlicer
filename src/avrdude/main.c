@@ -1523,6 +1523,10 @@ main_exit:
    */
 
   if (is_open) {
+#if defined(__APPLE__)
+    //FIXME hack to make PrusaLink aware MK3 firmware to work on OSX.
+    sleep(1);
+#endif // __APPLE__
     pgm->powerdown(pgm);
 
     pgm->disable(pgm);
