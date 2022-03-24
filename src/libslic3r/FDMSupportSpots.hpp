@@ -43,10 +43,10 @@ struct Triangle {
 
 struct FDMSupportSpotsConfig {
     float limit_angle_cos { 35.0f * PI / 180.0f };
-    float patch_size { 6.0f };
-    float patch_spacing { 6.0f };
-    float islands_tolerance_distance { 1.0f };
-    float max_side_length { 1.0f };
+    float patch_size { 1.0f }; // (mm)
+    float patch_spacing { 2.0f }; // (mm)
+    float islands_tolerance_distance { 0.3f }; //(mm)
+    float max_side_length { 1.0f };// (mm)
 };
 
 struct FDMSupportSpots {

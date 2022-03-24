@@ -182,9 +182,9 @@ void FDMSupportSpots::find_support_areas() {
                     supporter.visited = true;
                     supporter.group_id = group_id;
                     for (const auto &n : supporter.neighbours) {
-                        if (n < 0)
-                            continue;
-                        supporters.push(n);
+                        if (n >= 0) {
+                            supporters.push(n);
+                        }
                     }
                 }
             }

@@ -42,10 +42,10 @@ private:
     // etc. When language changes, GUI is recreated and this class constructed again, so the change takes effect.
     std::map<std::string, wxString> m_desc;
 
-    float m_smart_support_limit_angle_deg = 35.0f;
-    float m_smart_support_patch_size = 6.0f;
-    float m_smart_support_patch_spacing = 6.0f;
-    float m_smart_support_islands_tolerance = 1.0f;
+    float m_smart_support_limit_angle_deg = 45.0f;
+    float m_smart_support_patch_size = 10.0f; //0.1mm
+    float m_smart_support_patch_spacing = 20.0f; //0.1mm
+    float m_smart_support_islands_tolerance = 30.0f; //0.01mm
 };
 
 
