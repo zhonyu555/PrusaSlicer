@@ -1172,6 +1172,7 @@ bool GLModel::send_to_gpu()
         glsafe(::glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices_count * sizeof(unsigned short), reduced_indices.data(), GL_STATIC_DRAW));
     }
     else {
+        data.index_type = Geometry::EIndexType::UINT;
         glsafe(::glBufferData(GL_ELEMENT_ARRAY_BUFFER, data.indices_size_bytes(), data.indices.data(), GL_STATIC_DRAW));
     }
 
