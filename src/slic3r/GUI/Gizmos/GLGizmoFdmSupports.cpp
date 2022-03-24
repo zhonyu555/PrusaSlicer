@@ -171,38 +171,40 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
                 "Degree sign to use in the respective slider in FDM supports gizmo,"
                         "placed after the number with no whitespace in between.");
 
-        std::string mm = std::string("%.f") + I18N::translate_utf8("mm");
+        std::string tenth_mm = std::string("%.f") + I18N::translate_utf8(" * 0.1 (mm)");
+        std::string hundreth_mm = std::string("%.f") + I18N::translate_utf8(" * 0.01 (mm)");
 
         m_imgui->slider_float("##angle_threshold_deg", &m_smart_support_limit_angle_deg, 0.f, 90.f, format_str.data(),
                 1.0f, true);
-        m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 20.f, mm.data(),
+        m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 100.f, tenth_mm.data(),
                 1.0f, false);
-        m_imgui->slider_float("##patch_spacing", &m_smart_support_patch_spacing, 0.f, 20.f, mm.data(),
+        m_imgui->slider_float("##patch_spacing", &m_smart_support_patch_spacing, 0.f, 100.f, tenth_mm.data(),
                 1.0f, false);
-        m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 10.f, mm.data(),
+        m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 100.f, hundreth_mm.data(),
                 1.0f, false);
 
         ImGui::NewLine();
         ImGui::SameLine(window_width - buttons_width - m_imgui->scaled(0.5f));
         if (m_imgui->button(m_desc["enforce_button"], buttons_width, 0.f)) {
-            compute_smart_support_placement(m_smart_support_limit_angle_deg, m_smart_support_patch_size,
-                    m_smart_support_patch_spacing, m_smart_support_islands_tolerance);
+            compute_smart_support_placement(m_smart_support_limit_angle_deg, m_smart_support_patch_size * 0.1f,
+                    m_smart_support_patch_spacing * 0.1f, m_smart_support_islands_tolerance * 0.01f);
         }
 
         if (m_imgui->button(m_desc.at("remove_all"))) {
-               Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("Reset selection"), UndoRedo::SnapshotType::GizmoAction);
-               ModelObject *mo = m_c->selection_info()->model_object();
-               int idx = -1;
-               for (ModelVolume *mv : mo->volumes)
-                   if (mv->is_model_part()) {
-                       ++idx;
-                       m_triangle_selectors[idx]->reset();
-                       m_triangle_selectors[idx]->request_update_render_data();
-                   }
+            Plater::TakeSnapshot snapshot(wxGetApp().plater(), _L("Reset selection"),
+                    UndoRedo::SnapshotType::GizmoAction);
+            ModelObject *mo = m_c->selection_info()->model_object();
+            int idx = -1;
+            for (ModelVolume *mv : mo->volumes)
+                if (mv->is_model_part()) {
+                    ++idx;
+                    m_triangle_selectors[idx]->reset();
+                    m_triangle_selectors[idx]->request_update_render_data();
+                }
 
-               update_model_object();
-               m_parent.set_as_dirty();
-           }
+            update_model_object();
+            m_parent.set_as_dirty();
+        }
 
     }
 

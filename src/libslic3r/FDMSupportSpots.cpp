@@ -119,44 +119,35 @@ void FDMSupportSpots::find_support_areas() {
         bool visited_neighbour = false;
 
         std::queue<int> neighbours { };
-        for (const auto &direct_neighbour_index : current.neighbours) {
-            if (direct_neighbour_index < 0 || !this->m_triangles[direct_neighbour_index].visited) {
-                continue;
-            }
-            neighbours.push(direct_neighbour_index);
-            const Triangle &direct_neighbour = this->m_triangles[direct_neighbour_index];
-            if (neighbourhood_unsupported_area >= direct_neighbour.unsupported_weight) {
-                neighbourhood_unsupported_area = direct_neighbour.unsupported_weight;
-                group_id = direct_neighbour.group_id;
-            }
-            visited_neighbour = true;
-        }
-
+        neighbours.push(current_index);
         std::set<int> explored { };
-        while (!neighbours.empty() && !visited_neighbour) {
+        while (!neighbours.empty() && neighbourhood_unsupported_area > 0) {
             int neighbour_index = neighbours.front();
             neighbours.pop();
-            explored.insert(neighbour_index);
 
             const Triangle &neighbour = this->m_triangles[neighbour_index];
-            if (explored.find(neighbour_index) != explored.end()
-                    || triangle_vertices_shortest_distance(this->m_mesh, current.index, neighbour_index)
-                            > this->m_config.islands_tolerance_distance) {
-                // not visited, already explored, or too far
+            if (explored.find(neighbour_index) != explored.end()) {
+                continue;
+            }
+            explored.insert(neighbour_index);
+            if (triangle_vertices_shortest_distance(this->m_mesh, current.index, neighbour_index)
+                    > this->m_config.islands_tolerance_distance) {
                 continue;
             }
 
             if (neighbour.visited) {
                 visited_neighbour = true;
+                if (neighbourhood_unsupported_area >= neighbour.unsupported_weight) {
+                    neighbourhood_unsupported_area = neighbour.unsupported_weight;
+                    group_id = neighbour.group_id;
+                }
                 break;
             }
             for (const auto &neighbour_index : neighbour.neighbours) {
-                if (neighbour_index < 0) {
-                    continue;
+                if (neighbour_index >= 0) {
+                    neighbours.push(neighbour_index);
                 }
-                neighbours.push(neighbour_index);
             }
-
         }
 
         current.visited = true;
