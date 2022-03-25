@@ -736,7 +736,7 @@ void GCodeViewer::init()
 #if ENABLE_GL_SHADERS_ATTRIBUTES
             buffer.vertices.format = VBuffer::EFormat::Position;
 #if ENABLE_GL_CORE_PROFILE
-            buffer.shader = "thick_lines";
+            buffer.shader = "dashed_thick_lines";
 #else
             buffer.shader = "flat";
 #endif // ENABLE_GL_CORE_PROFILE
@@ -3028,6 +3028,7 @@ void GCodeViewer::render_toolpaths()
             const float zoom = float(camera.get_zoom());
             shader.set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
             shader.set_uniform("width", (zoom < 5.0f) ? 0.5f : (0.5f + 5.0f * (zoom - 5.0f) / (100.0f - 5.0f)));
+            shader.set_uniform("gap_size", 0.0f);
 #endif // ENABLE_GL_CORE_PROFILE
 
             glsafe(::glMultiDrawElements(GL_LINES, (const GLsizei*)path.sizes.data(), GL_UNSIGNED_SHORT, (const void* const*)path.offsets.data(), (GLsizei)path.sizes.size()));
