@@ -50,6 +50,8 @@ struct FDMSupportSpotsConfig {
 };
 
 struct FDMSupportSpots {
+    const Vec3f down = -Vec3f::UnitZ();
+
     FDMSupportSpotsConfig m_config;
     indexed_triangle_set m_mesh;
     std::vector<FDMSupportSpotsImpl::Triangle> m_triangles;

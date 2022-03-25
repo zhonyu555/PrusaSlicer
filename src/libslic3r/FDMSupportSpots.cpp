@@ -48,16 +48,15 @@ FDMSupportSpots::FDMSupportSpots(FDMSupportSpotsConfig config, indexed_triangle_
 
         Vec3f lowest_edge_a = (vertices[1] - vertices[0]).normalized();
         Vec3f lowest_edge_b = (vertices[2] - vertices[0]).normalized();
-        Vec3f down = -Vec3f::UnitZ();
 
         Triangle t { };
         t.indices = mesh.indices[face_index];
         t.center = (vertices[0] + vertices[1] + vertices[2]) / 3.0f;
-        t.downward_dot_value = normal.dot(down);
+        t.downward_dot_value = normal.dot(this->down);
         t.index = face_index;
         t.neighbours = neighbours[face_index];
         t.lowest_z_coord = vertices[0].z();
-        t.edge_dot_value = std::max(lowest_edge_a.dot(down), lowest_edge_b.dot(down));
+        t.edge_dot_value = std::max(lowest_edge_a.dot(this->down), lowest_edge_b.dot(this->down));
         t.area = its_face_area(mesh, face_index);
         t.largest_z_edge_len = std::max(
                 std::max((vertices[0].head<2>() - vertices[1].head<2>()).norm(),
@@ -77,6 +76,8 @@ FDMSupportSpots::FDMSupportSpots(FDMSupportSpotsConfig config, indexed_triangle_
                     return this->m_triangles[left].lowest_z_coord < this->m_triangles[right].lowest_z_coord;
                 } else if (this->m_triangles[left].edge_dot_value != this->m_triangles[right].edge_dot_value) {
                     return this->m_triangles[left].edge_dot_value > this->m_triangles[right].edge_dot_value;
+                } else if (this->m_triangles[left].center.z() != this->m_triangles[right].center.z()) {
+                    return this->m_triangles[left].center.z() < this->m_triangles[right].center.z();
                 } else {
                     return (abs(this->m_triangles[left].center.x() + this->m_triangles[left].center.y()) <
                             abs(this->m_triangles[right].center.x() + this->m_triangles[right].center.y()));
@@ -140,8 +141,11 @@ void FDMSupportSpots::find_support_areas() {
 
             if (neighbour.visited) {
                 visited_neighbours++;
-                neighbourhood_unsupported_distance = std::min(neighbourhood_unsupported_distance,
-                        neighbour.unsupported_distance + distance);
+                if (distance == 0 || (neighbour.center - current.center).normalized().dot(this->down)
+                        >= 0.1) {
+                    neighbourhood_unsupported_distance = std::min(neighbourhood_unsupported_distance,
+                            neighbour.unsupported_distance + distance);
+                }
                 if (group_id == 0) {
                     group_id = neighbour.group_id;
                 }
@@ -260,7 +264,6 @@ void FDMSupportSpots::debug_export() const {
         for (size_t i = 0; i < this->m_triangle_indexes_by_z.size(); ++i) {
             const Triangle &triangle = this->m_triangles[this->m_triangle_indexes_by_z[i]];
             Vec3f color = value_to_rgbf(0, this->m_config.max_distance, triangle.unsupported_distance);
-            std::cout << " unsupported dist: " << triangle.unsupported_distance << std::endl;
             for (size_t index = 0; index < 3; ++index) {
                 fprintf(fp, "v %f %f %f  %f %f %f\n", this->m_mesh.vertices[triangle.indices[index]](0),
                         this->m_mesh.vertices[triangle.indices[index]](1),
