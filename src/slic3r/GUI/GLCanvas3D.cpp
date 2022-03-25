@@ -6101,7 +6101,7 @@ void GLCanvas3D::_render_camera_target()
     }
 
 #if ENABLE_GL_CORE_PROFILE
-    GLShaderProgram* shader = wxGetApp().get_shader("lines_width");
+    GLShaderProgram* shader = wxGetApp().get_shader("thick_lines");
 #else
     GLShaderProgram* shader = wxGetApp().get_shader("flat");
 #endif // ENABLE_GL_CORE_PROFILE
@@ -6114,7 +6114,7 @@ void GLCanvas3D::_render_camera_target()
 #if ENABLE_GL_CORE_PROFILE
         const std::array<int, 4>& viewport = camera.get_viewport();
         shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
-        shader->set_uniform("width", 1.5f);
+        shader->set_uniform("width", 0.5f);
 #endif // ENABLE_GL_CORE_PROFILE
 #endif // ENABLE_GL_SHADERS_ATTRIBUTES
         for (int i = 0; i < 3; ++i) {

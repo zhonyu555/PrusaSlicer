@@ -156,7 +156,11 @@ void GLGizmoMove3D::on_render()
 
     if (m_hover_id == -1) {
 #if ENABLE_LEGACY_OPENGL_REMOVAL
+#if ENABLE_GL_CORE_PROFILE
+        GLShaderProgram* shader = wxGetApp().get_shader("thick_lines");
+#else
         GLShaderProgram* shader = wxGetApp().get_shader("flat");
+#endif // ENABLE_GL_CORE_PROFILE
         if (shader != nullptr) {
             shader->start_using();
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
@@ -165,6 +169,11 @@ void GLGizmoMove3D::on_render()
             const Camera& camera = wxGetApp().plater()->get_camera();
             shader->set_uniform("view_model_matrix", camera.get_view_matrix());
             shader->set_uniform("projection_matrix", camera.get_projection_matrix());
+#if ENABLE_GL_CORE_PROFILE
+            const std::array<int, 4>& viewport = camera.get_viewport();
+            shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
+            shader->set_uniform("width", 0.25f);
+#endif // ENABLE_GL_CORE_PROFILE
 #endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
             // draw axes
@@ -197,7 +206,11 @@ void GLGizmoMove3D::on_render()
     else {
         // draw axis
 #if ENABLE_LEGACY_OPENGL_REMOVAL
+#if ENABLE_GL_CORE_PROFILE
+        GLShaderProgram* shader = wxGetApp().get_shader("thick_lines");
+#else
         GLShaderProgram* shader = wxGetApp().get_shader("flat");
+#endif // ENABLE_GL_CORE_PROFILE
         if (shader != nullptr) {
             shader->start_using();
 
@@ -205,6 +218,11 @@ void GLGizmoMove3D::on_render()
             const Camera& camera = wxGetApp().plater()->get_camera();
             shader->set_uniform("view_model_matrix", camera.get_view_matrix());
             shader->set_uniform("projection_matrix", camera.get_projection_matrix());
+#if ENABLE_GL_CORE_PROFILE
+            const std::array<int, 4>& viewport = camera.get_viewport();
+            shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
+            shader->set_uniform("width", 0.5f);
+#endif // ENABLE_GL_CORE_PROFILE
 #endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
             render_grabber_connection(m_hover_id);
