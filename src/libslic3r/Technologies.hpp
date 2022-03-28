@@ -56,7 +56,7 @@
 // Enable removal of legacy OpenGL calls
 #define ENABLE_LEGACY_OPENGL_REMOVAL (1 && ENABLE_2_5_0_ALPHA1)
 // Enable OpenGL core profile context
-#define ENABLE_GL_CORE_PROFILE (0 && ENABLE_LEGACY_OPENGL_REMOVAL)
+#define ENABLE_GL_CORE_PROFILE (1 && ENABLE_LEGACY_OPENGL_REMOVAL)
 // Shows an imgui dialog with GLModel statistics data
 #define ENABLE_GLMODEL_STATISTICS (0 && ENABLE_LEGACY_OPENGL_REMOVAL)
 // Enable show non-manifold edges
