@@ -11,10 +11,10 @@
 
 #include "GUI_App.hpp"
 #include "GLCanvas3D.hpp"
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 #include "Plater.hpp"
 #include "Camera.hpp"
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
 #include <GL/glew.h>
 
@@ -109,7 +109,7 @@ const float Bed3D::Axes::DefaultTipLength = 5.0f;
 
 void Bed3D::Axes::render()
 {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
     auto render_axis = [this](GLShaderProgram* shader, const Transform3d& transform) {
         const Camera& camera = wxGetApp().plater()->get_camera();
         const Transform3d matrix = camera.get_view_matrix() * transform;
@@ -120,11 +120,11 @@ void Bed3D::Axes::render()
     auto render_axis = [this](const Transform3f& transform) {
         glsafe(::glPushMatrix());
         glsafe(::glMultMatrixf(transform.data()));
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
         m_arrow.render();
-#if !ENABLE_GL_SHADERS_ATTRIBUTES
+#if !ENABLE_LEGACY_OPENGL_REMOVAL
         glsafe(::glPopMatrix());
-#endif // !ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // !ENABLE_LEGACY_OPENGL_REMOVAL
     };
 
     if (!m_arrow.is_initialized())
@@ -142,38 +142,29 @@ void Bed3D::Axes::render()
     // x axis
 #if ENABLE_LEGACY_OPENGL_REMOVAL
     m_arrow.set_color(ColorRGBA::X());
-#else
-    m_arrow.set_color(-1, ColorRGBA::X());
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-#if ENABLE_GL_SHADERS_ATTRIBUTES
     render_axis(shader, Geometry::assemble_transform(m_origin, { 0.0, 0.5 * M_PI, 0.0 }));
 #else
+    m_arrow.set_color(-1, ColorRGBA::X());
     render_axis(Geometry::assemble_transform(m_origin, { 0.0, 0.5 * M_PI, 0.0 }).cast<float>());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     // y axis
 #if ENABLE_LEGACY_OPENGL_REMOVAL
     m_arrow.set_color(ColorRGBA::Y());
-#else
-    m_arrow.set_color(-1, ColorRGBA::Y());
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-#if ENABLE_GL_SHADERS_ATTRIBUTES
     render_axis(shader, Geometry::assemble_transform(m_origin, { -0.5 * M_PI, 0.0, 0.0 }));
 #else
+    m_arrow.set_color(-1, ColorRGBA::Y());
     render_axis(Geometry::assemble_transform(m_origin, { -0.5 * M_PI, 0.0, 0.0 }).cast<float>());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     // z axis
 #if ENABLE_LEGACY_OPENGL_REMOVAL
     m_arrow.set_color(ColorRGBA::Z());
-#else
-    m_arrow.set_color(-1, ColorRGBA::Z());
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-#if ENABLE_GL_SHADERS_ATTRIBUTES
     render_axis(shader, Geometry::assemble_transform(m_origin));
 #else
+    m_arrow.set_color(-1, ColorRGBA::Z());
     render_axis(Geometry::assemble_transform(m_origin).cast<float>());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     shader->stop_using();
 
@@ -266,7 +257,7 @@ Point Bed3D::point_projection(const Point& point) const
     return m_polygon.point_projection(point);
 }
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render(GLCanvas3D& canvas, const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, float scale_factor, bool show_axes, bool show_texture)
 {
     render_internal(canvas, view_matrix, projection_matrix, bottom, scale_factor, show_axes, show_texture, false);
@@ -286,15 +277,15 @@ void Bed3D::render_for_picking(GLCanvas3D& canvas, bool bottom, float scale_fact
 {
     render_internal(canvas, bottom, scale_factor, false, false, true);
 }
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_internal(GLCanvas3D& canvas, const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, float scale_factor,
     bool show_axes, bool show_texture, bool picking)
 #else
 void Bed3D::render_internal(GLCanvas3D& canvas, bool bottom, float scale_factor,
     bool show_axes, bool show_texture, bool picking)
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 {
     m_scale_factor = scale_factor;
 
@@ -311,7 +302,7 @@ void Bed3D::render_internal(GLCanvas3D& canvas, bool bottom, float scale_factor,
 
     switch (m_type)
     {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
     case Type::System: { render_system(canvas, view_matrix, projection_matrix, bottom, show_texture); break; }
     default:
     case Type::Custom: { render_custom(canvas, view_matrix, projection_matrix, bottom, show_texture, picking); break; }
@@ -319,7 +310,7 @@ void Bed3D::render_internal(GLCanvas3D& canvas, bool bottom, float scale_factor,
     case Type::System: { render_system(canvas, bottom, show_texture); break; }
     default:
     case Type::Custom: { render_custom(canvas, bottom, show_texture, picking); break; }
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
     }
 
     glsafe(::glDisable(GL_DEPTH_TEST));
@@ -504,7 +495,7 @@ void Bed3D::render_axes()
         m_axes.render();
 }
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_system(GLCanvas3D& canvas, const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, bool show_texture)
 {
     if (!bottom)
@@ -522,21 +513,21 @@ void Bed3D::render_system(GLCanvas3D& canvas, bool bottom, bool show_texture)
     if (show_texture)
         render_texture(bottom, canvas);
 }
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas, const Transform3d& view_matrix, const Transform3d& projection_matrix)
 #else
 void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 {
     if (m_texture_filename.empty()) {
         m_texture.reset();
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
         render_default(bottom, false, view_matrix, projection_matrix);
 #else
         render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
         return;
     }
 
@@ -549,11 +540,11 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
             if (m_temp_texture.get_id() == 0 || m_temp_texture.get_source() != m_texture_filename) {
                 // generate a temporary lower resolution texture to show while no main texture levels have been compressed
                 if (!m_temp_texture.load_from_svg_file(m_texture_filename, false, false, false, max_tex_size / 8)) {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
                     render_default(bottom, false, view_matrix, projection_matrix);
 #else
                     render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
                     return;
                 }
                 canvas.request_extra_frame();
@@ -561,11 +552,11 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
 
             // starts generating the main texture, compression will run asynchronously
             if (!m_texture.load_from_svg_file(m_texture_filename, true, true, true, max_tex_size)) {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
                 render_default(bottom, false, view_matrix, projection_matrix);
 #else
                 render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
                 return;
             }
         } 
@@ -573,11 +564,11 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
             // generate a temporary lower resolution texture to show while no main texture levels have been compressed
             if (m_temp_texture.get_id() == 0 || m_temp_texture.get_source() != m_texture_filename) {
                 if (!m_temp_texture.load_from_file(m_texture_filename, false, GLTexture::None, false)) {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
                     render_default(bottom, false, view_matrix, projection_matrix);
 #else
                     render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
                     return;
                 }
                 canvas.request_extra_frame();
@@ -585,20 +576,20 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
 
             // starts generating the main texture, compression will run asynchronously
             if (!m_texture.load_from_file(m_texture_filename, true, GLTexture::MultiThreaded, true)) {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
                 render_default(bottom, false, view_matrix, projection_matrix);
 #else
                 render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
                 return;
             }
         }
         else {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
             render_default(bottom, false, view_matrix, projection_matrix);
 #else
             render_default(bottom, false);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
             return;
         }
     }
@@ -619,10 +610,8 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
     GLShaderProgram* shader = wxGetApp().get_shader("printbed");
     if (shader != nullptr) {
         shader->start_using();
-#if ENABLE_GL_SHADERS_ATTRIBUTES
         shader->set_uniform("view_model_matrix", view_matrix);
         shader->set_uniform("projection_matrix", projection_matrix);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
         shader->set_uniform("transparent_background", bottom);
         shader->set_uniform("svg_source", boost::algorithm::iends_with(m_texture.get_source(), ".svg"));
 
@@ -716,11 +705,11 @@ void Bed3D::render_texture(bool bottom, GLCanvas3D& canvas)
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
 }
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_model(const Transform3d& view_matrix, const Transform3d& projection_matrix)
 #else
 void Bed3D::render_model()
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 {
     if (m_model_filename.empty())
         return;
@@ -744,7 +733,7 @@ void Bed3D::render_model()
         if (shader != nullptr) {
             shader->start_using();
             shader->set_uniform("emission_factor", 0.0f);
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
             const Transform3d matrix = view_matrix * Geometry::assemble_transform(m_model_offset);
             shader->set_uniform("view_model_matrix", matrix);
             shader->set_uniform("projection_matrix", projection_matrix);
@@ -752,51 +741,51 @@ void Bed3D::render_model()
 #else
             glsafe(::glPushMatrix());
             glsafe(::glTranslated(m_model_offset.x(), m_model_offset.y(), m_model_offset.z()));
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
             m_model.render();
-#if !ENABLE_GL_SHADERS_ATTRIBUTES
+#if !ENABLE_LEGACY_OPENGL_REMOVAL
             glsafe(::glPopMatrix());
-#endif // !ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // !ENABLE_LEGACY_OPENGL_REMOVAL
             shader->stop_using();
         }
     }
 }
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_custom(GLCanvas3D& canvas, const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, bool show_texture, bool picking)
 #else
 void Bed3D::render_custom(GLCanvas3D& canvas, bool bottom, bool show_texture, bool picking)
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 {
     if (m_texture_filename.empty() && m_model_filename.empty()) {
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
         render_default(bottom, picking, view_matrix, projection_matrix);
 #else
         render_default(bottom, picking);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
         return;
     }
 
+#if ENABLE_LEGACY_OPENGL_REMOVAL
     if (!bottom)
-#if ENABLE_GL_SHADERS_ATTRIBUTES
         render_model(view_matrix, projection_matrix);
-#else
-        render_model();
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
     if (show_texture)
-#if ENABLE_GL_SHADERS_ATTRIBUTES
         render_texture(bottom, canvas, view_matrix, projection_matrix);
 #else
+    if (!bottom)
+        render_model();
+
+    if (show_texture)
         render_texture(bottom, canvas);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 }
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_LEGACY_OPENGL_REMOVAL
 void Bed3D::render_default(bool bottom, bool picking, const Transform3d& view_matrix, const Transform3d& projection_matrix)
 #else
 void Bed3D::render_default(bool bottom, bool picking)
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 {
     m_texture.reset();
 
@@ -808,10 +797,8 @@ void Bed3D::render_default(bool bottom, bool picking)
     if (shader != nullptr) {
         shader->start_using();
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
         shader->set_uniform("view_model_matrix", view_matrix);
         shader->set_uniform("projection_matrix", projection_matrix);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
         glsafe(::glEnable(GL_DEPTH_TEST));
         glsafe(::glEnable(GL_BLEND));
