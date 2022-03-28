@@ -52,7 +52,7 @@ void FDMSupportSpotsJob::process(Ctl &ctl) {
             }
         }
 
-        support_spots_alg.debug_export();
+//        support_spots_alg.debug_export();
 
         this->m_computed_support_data.emplace(data.first, supported_face_indexes);
     }

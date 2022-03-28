@@ -83,7 +83,7 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
     if (!m_c->selection_info()->model_object())
         return;
 
-    const float approx_height = m_imgui->scaled(23.f);
+    const float approx_height = m_imgui->scaled(35.f);
     y = std::min(y, bottom_limit - approx_height);
     m_imgui->set_next_window_pos(x, y, ImGuiCond_Always);
 
@@ -153,11 +153,14 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
 
     ImGui::Separator();
     {
+        m_imgui->text(_L("Smart support placement (Beta)"));
+        m_imgui->text(_L("simplify models with unnecessary high polycount first, speeds up computation"));
+        m_imgui->text(_L("For low poly models, use subdivide to get more accurate results"));
         if (m_imgui->button("Subdivide")) {
             const ModelObject *mo = m_c->selection_info()->model_object();
             for (ModelVolume *mv : mo->volumes)
                 if (mv->is_model_part()) {
-                    auto new_its = its_subdivide(mv->mesh().its, 1.0f);
+                    auto new_its = its_subdivide(mv->mesh().its, 2.0f);
                     mv->set_mesh(new_its);
                     mv->set_new_unique_id();
                 }
@@ -174,13 +177,13 @@ void GLGizmoFdmSupports::on_render_input_window(float x, float y, float bottom_l
         std::string hundreth_mm = std::string("%.f") + I18N::translate_utf8(" * 0.01 (mm)");
 
         m_imgui->slider_float("##angle_threshold_deg", &m_smart_support_limit_angle_deg, 0.f, 90.f, format_str.data(),
-                1.0f, true);
+                1.0f, true, _L("angle threshold for supports"));
         m_imgui->slider_float("##patch_size", &m_smart_support_patch_size, 0.f, 100.f, tenth_mm.data(),
-                1.0f, false);
+                1.0f, false, _L("supports patch size to generate if needed"));
         m_imgui->slider_float("##patch_spacing", &m_smart_support_max_distance, 0.f, 100.f, tenth_mm.data(),
-                1.0f, false);
+                1.0f, false, _L("max tolerable unsupported distance"));
         m_imgui->slider_float("##island_tolerance", &m_smart_support_islands_tolerance, 0.f, 100.f, hundreth_mm.data(),
-                1.0f, false);
+                1.0f, false, _L("detail islands tolerance distance"));
 
         ImGui::NewLine();
         ImGui::SameLine(window_width - buttons_width - m_imgui->scaled(0.5f));
