@@ -300,9 +300,7 @@ void GLShaderProgram::set_uniform(int id, const Matrix3d& value) const
 {
     set_uniform(id, (Matrix3f)value.cast<float>());
 }
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
-#if ENABLE_GL_IMGUI_SHADERS
 void GLShaderProgram::set_uniform(int id, const Matrix4f& value) const
 {
     if (id >= 0)
@@ -313,7 +311,7 @@ void GLShaderProgram::set_uniform(int id, const Matrix4d& value) const
 {
     set_uniform(id, (Matrix4f)value.cast<float>());
 }
-#endif // ENABLE_GL_IMGUI_SHADERS
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
 #if ENABLE_GL_CORE_PROFILE
 void GLShaderProgram::set_uniform(int id, const Vec2f& value) const
