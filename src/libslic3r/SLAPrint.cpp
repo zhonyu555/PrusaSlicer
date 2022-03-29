@@ -661,9 +661,6 @@ void SLAPrint::process()
     apply_steps_on_objects(level1_obj_steps);
     apply_steps_on_objects(level2_obj_steps);
 
-    // this would disable the rasterization step
-    // std::fill(m_stepmask.begin(), m_stepmask.end(), false);
-    
     st = Steps::max_objstatus;
     for(SLAPrintStep currentstep : print_steps) {
         throw_if_canceled();

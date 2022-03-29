@@ -39,9 +39,9 @@ public:
     // A new unique timestamp is being assigned to the step every time the step changes its state.
     struct StateWithTimeStamp
     {
-        StateWithTimeStamp() : state(INVALID), timestamp(0) {}
-        State       state;
-        TimeStamp   timestamp;
+        State       state { INVALID };
+        TimeStamp   timestamp { 0 };
+        bool        enabled { true };
     };
 
     struct Warning
@@ -112,10 +112,24 @@ public:
         return this->state_with_timestamp_unguarded(step).state == DONE;
     }
 
+    void enable_unguarded(StepType step, bool enable) {
+        m_state[step].enabled = enable;
+    }
+
+    void enable_all_unguarded(bool enable) {
+        for (int istep = 0; istep < COUNT; ++ istep)
+            m_state[istep].enabled = enable;
+    }
+
+    bool is_enabled_unguarded(StepType step) const {
+        return this->state_with_timestamp_unguarded(step).enabled;
+    }
+
     // Set the step as started. Block on mutex while the Print / PrintObject / PrintRegion objects are being
     // modified by the UI thread.
     // This is necessary to block until the Print::apply() updates its state, which may
     // influence the processing step being entered.
+    // Returns false if the step is not enabled or if the step has already been finished (it is done).
     template<typename ThrowIfCanceled>
     bool set_started(StepType step, std::mutex &mtx, ThrowIfCanceled throw_if_canceled) {
         std::scoped_lock<std::mutex> lock(mtx);
@@ -134,9 +148,9 @@ public:
 //        for (int i = 0; i < int(COUNT); ++ i)
 //            assert(m_state[i].state != STARTED);
 #endif // NDEBUG
-        if (m_state[step].state == DONE)
-            return false;
         PrintStateBase::StateWithWarnings &state = m_state[step];
+        if (! state.enabled || state.state == DONE)
+            return false;
         state.state = STARTED;
         state.timestamp = ++ g_last_timestamp;
         state.mark_warnings_non_current();
@@ -518,14 +532,14 @@ public:
     using                           PrintStepEnum       = PrintStepEnumType;
     static constexpr const size_t   PrintStepEnumSize   = COUNT;
 
-    PrintBaseWithState() { m_stepmask.fill(true); }
+    PrintBaseWithState() = default;
 
     bool            is_step_done(PrintStepEnum step) const { return m_state.is_done(step, this->state_mutex()); }
 	PrintStateBase::StateWithTimeStamp step_state_with_timestamp(PrintStepEnum step) const { return m_state.state_with_timestamp(step, this->state_mutex()); }
     PrintStateBase::StateWithWarnings  step_state_with_warnings(PrintStepEnum step) const { return m_state.state_with_warnings(step, this->state_mutex()); }
 
 protected:
-    bool            set_started(PrintStepEnum step) { return m_stepmask[step] && m_state.set_started(step, this->state_mutex(), [this](){ this->throw_if_canceled(); }); }
+    bool            set_started(PrintStepEnum step) { return m_state.set_started(step, this->state_mutex(), [this](){ this->throw_if_canceled(); }); }
 	PrintStateBase::TimeStamp set_done(PrintStepEnum step) { 
 		std::pair<PrintStateBase::TimeStamp, bool> status = m_state.set_done(step, this->state_mutex(), [this](){ this->throw_if_canceled(); });
         if (status.second)
@@ -559,12 +573,14 @@ protected:
     template<typename PrintObject>
     void set_task_impl(const TaskParams &params, std::vector<PrintObject*> &print_objects)
     {
+        static constexpr const auto PrintObjectStepEnumSize = int(PrintObject::PrintObjectStepEnumSize);
+        using                       PrintObjectStepEnum     = typename PrintObject::PrintObjectStepEnum;
         // Grab the lock for the Print / PrintObject milestones.
         std::scoped_lock<std::mutex> lock(this->state_mutex());
 
         int n_object_steps = int(params.to_object_step) + 1;
         if (n_object_steps == 0)
-            n_object_steps = int(PrintObject::PrintObjectStepEnumSize);
+            n_object_steps = PrintObjectStepEnumSize;
 
         if (params.single_model_object.valid()) {
             // Find the print object to be processed with priority.
@@ -579,11 +595,10 @@ protected:
             // Find out whether the priority print object is being currently processed.
             bool running = false;
             for (int istep = 0; istep < n_object_steps; ++ istep) {
-                if (! print_object->m_stepmask[size_t(istep)])
+                if (! print_object->is_step_enabled_unguarded(PrintObjectStepEnum(istep)))
                     // Step was skipped, cancel.
                     break;
-                if (print_object->is_step_started_unguarded(
-                        PrintObject::PrintObjectStepEnum(istep))) {
+                if (print_object->is_step_started_unguarded(PrintObjectStepEnum(istep))) {
                     // No step was skipped, and a wanted step is being processed. Don't cancel.
                     running = true;
                     break;
@@ -596,8 +611,8 @@ protected:
             if (params.single_model_instance_only) {
                 // Suppress all the steps of other instances.
                 for (PrintObject *po : print_objects)
-                    for (size_t istep = 0; istep < PrintObject::PrintObjectStepEnumSize; ++ istep)
-                        po->m_stepmask[istep] = false;
+                    for (size_t istep = 0; istep < PrintObjectStepEnumSize; ++ istep)
+                        po->enable_step_unguarded(PrintObjectStepEnum(istep), false);
             } else if (! running) {
                 // Swap the print objects, so that the selected print_object is first in the row.
                 // At this point the background processing must be stopped, so it is safe to shuffle print objects.
@@ -606,19 +621,19 @@ protected:
             }
             // and set the steps for the current object.
             for (int istep = 0; istep < n_object_steps; ++ istep)
-                print_object->m_stepmask[size_t(istep)] = true;
-            for (int istep = n_object_steps; istep < int(PrintObject::PrintObjectStepEnumSize); ++ istep)
-                print_object->m_stepmask[size_t(istep)] = false;
+                print_object->enable_step_unguarded(PrintObjectStepEnum(istep), true);
+            for (int istep = n_object_steps; istep < PrintObjectStepEnumSize; ++ istep)
+                print_object->enable_step_unguarded(PrintObjectStepEnum(istep), false);
         } else {
             // Slicing all objects.
             bool running = false;
             for (PrintObject *print_object : print_objects)
                 for (int istep = 0; istep < n_object_steps; ++ istep) {
-                    if (! print_object->m_stepmask[size_t(istep)]) {
+                    if (! print_object->is_step_enabled_unguarded(PrintObjectStepEnum(istep))) {
                         // Step may have been skipped. Restart.
                         goto loop_end;
                     }
-                    if (print_object->is_step_started_unguarded(PrintObject::PrintObjectStepEnum(istep))) {
+                    if (print_object->is_step_started_unguarded(PrintObjectStepEnum(istep))) {
                         // This step is running, and the state cannot be changed due to the this->state_mutex() being locked.
                         // It is safe to manipulate m_stepmask of other PrintObjects and Print now.
                         running = true;
@@ -630,17 +645,17 @@ protected:
                 this->call_cancel_callback();
             for (PrintObject *po : print_objects) {
                 for (int istep = 0; istep < n_object_steps; ++ istep)
-                    po->m_stepmask[size_t(istep)] = true;
-                for (auto istep = size_t(n_object_steps); istep < PrintObject::PrintObjectStepEnumSize; ++ istep)
-                    po->m_stepmask[istep] = false;
+                    po->enable_step_unguarded(PrintObjectStepEnum(istep), true);
+                for (int istep = n_object_steps; istep < PrintObjectStepEnumSize; ++ istep)
+                    po->enable_step_unguarded(PrintObjectStepEnum(istep), false);
             }
         }
 
         if (params.to_object_step != -1 || params.to_print_step != -1) {
             // Limit the print steps.
             size_t istep = (params.to_object_step != -1) ? 0 : size_t(params.to_print_step) + 1;
-            for (; istep < m_stepmask.size(); ++ istep)
-                m_stepmask[istep] = false;
+            for (; istep < PrintStepEnumSize; ++ istep)
+                m_state.enable_unguarded(PrintStepEnum(istep), false);
         }
     }
 
@@ -649,14 +664,15 @@ protected:
     template<typename PrintObject>
     void finalize_impl(std::vector<PrintObject*> &print_objects)
     {
+        // Grab the lock for the Print / PrintObject milestones.
+        std::scoped_lock<std::mutex> lock(this->state_mutex());
         for (auto *po : print_objects)
-            po->m_stepmask.fill(true);
-        m_stepmask.fill(true);
+            po->enable_all_steps_unguarded(true);
+        m_state.enable_all_unguarded(true);
     }
 
 private:
     PrintState<PrintStepEnum, COUNT>    m_state;
-    std::array<bool, PrintStepEnumSize> m_stepmask;
 };
 
 template<typename PrintType, typename PrintObjectStepEnumType, const size_t COUNT>
@@ -675,10 +691,10 @@ public:
     PrintStateBase::StateWithWarnings  step_state_with_warnings(PrintObjectStepEnum step) const { return m_state.state_with_warnings(step, PrintObjectBase::state_mutex(m_print)); }
 
 protected:
-	PrintObjectBaseWithState(PrintType *print, ModelObject *model_object) : PrintObjectBase(model_object), m_print(print) { m_stepmask.fill(true); }
+	PrintObjectBaseWithState(PrintType *print, ModelObject *model_object) : PrintObjectBase(model_object), m_print(print) {}
 
     bool            set_started(PrintObjectStepEnum step) 
-        { return m_stepmask[step] && m_state.set_started(step, PrintObjectBase::state_mutex(m_print), [this](){ this->throw_if_canceled(); }); }
+        { return m_state.set_started(step, PrintObjectBase::state_mutex(m_print), [this](){ this->throw_if_canceled(); }); }
 	PrintStateBase::TimeStamp set_done(PrintObjectStepEnum step) { 
 		std::pair<PrintStateBase::TimeStamp, bool> status = m_state.set_done(step, PrintObjectBase::state_mutex(m_print), [this](){ this->throw_if_canceled(); });
         if (status.second)
@@ -699,6 +715,10 @@ protected:
     bool            is_step_started_unguarded(PrintObjectStepEnum step) const { return m_state.is_started_unguarded(step); }
     bool            is_step_done_unguarded(PrintObjectStepEnum step) const { return m_state.is_done_unguarded(step); }
 
+    bool            is_step_enabled_unguarded(PrintObjectStepEnum step) const { return m_state.is_enabled_unguarded(step); }
+    void            enable_step_unguarded(PrintObjectStepEnum step, bool enable) { m_state.enable_unguarded(step, enable); }
+    void            enable_all_steps_unguarded(bool enable) { m_state.enable_all_unguarded(enable); }
+
     // Add a slicing warning to the active PrintObject step and send a status notification.
     // This method could be called multiple times between this->set_started() and this->set_done().
     void            active_step_add_warning(PrintStateBase::WarningLevel warning_level, const std::string &message, int message_id = 0) {
@@ -714,7 +734,6 @@ protected:
 
     friend PrintType;
     PrintType                                *m_print;
-    std::array<bool, PrintObjectStepEnumSize> m_stepmask;
 
 private:
     PrintState<PrintObjectStepEnum, COUNT>    m_state;
