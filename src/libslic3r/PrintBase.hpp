@@ -117,7 +117,7 @@ public:
     }
 
     void enable_all_unguarded(bool enable) {
-        for (int istep = 0; istep < COUNT; ++ istep)
+        for (size_t istep = 0; istep < COUNT; ++ istep)
             m_state[istep].enabled = enable;
     }
 
