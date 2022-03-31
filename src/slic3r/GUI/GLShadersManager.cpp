@@ -34,7 +34,11 @@ std::pair<bool, std::string> GLShadersManager::init()
     bool valid = true;
 
 #if ENABLE_LEGACY_OPENGL_REMOVAL
+#if ENABLE_OPENGL_ES
+    const std::string prefix = "ES/";
+#else
     const std::string prefix = GUI::wxGetApp().is_gl_version_greater_or_equal_to(3, 1) ? "140/" : "110/";
+#endif // ENABLE_OPENGL_ES
     // imgui shader
     valid &= append_shader("imgui", { prefix + "imgui.vs", prefix + "imgui.fs" });
     // basic shader, used to render all what was previously rendered using the immediate mode

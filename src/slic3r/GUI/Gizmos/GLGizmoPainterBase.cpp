@@ -210,11 +210,11 @@ void GLGizmoPainterBase::render_cursor_circle()
     glsafe(::glScaled(gui_scale, gui_scale, 1.0));
 #endif // !ENABLE_LEGACY_OPENGL_REMOVAL
 
-#if !ENABLE_GL_CORE_PROFILE
+#if !ENABLE_GL_CORE_PROFILE && !ENABLE_OPENGL_ES
     glsafe(::glPushAttrib(GL_ENABLE_BIT));
     glsafe(::glLineStipple(4, 0xAAAA));
     glsafe(::glEnable(GL_LINE_STIPPLE));
-#endif // !ENABLE_GL_CORE_PROFILE
+#endif // !ENABLE_GL_CORE_PROFILE && !ENABLE_OPENGL_ES
 
 #if ENABLE_LEGACY_OPENGL_REMOVAL
     if (!m_circle.is_initialized() || !m_old_center.isApprox(center) || std::abs(m_old_cursor_radius - radius) > EPSILON) {
@@ -292,9 +292,9 @@ void GLGizmoPainterBase::render_cursor_circle()
     glsafe(::glEnd());
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
-#if !ENABLE_GL_CORE_PROFILE
+#if !ENABLE_GL_CORE_PROFILE && !ENABLE_OPENGL_ES
     glsafe(::glPopAttrib());
-#endif // !ENABLE_GL_CORE_PROFILE
+#endif // !ENABLE_GL_CORE_PROFILE && !ENABLE_OPENGL_ES
 #if !ENABLE_LEGACY_OPENGL_REMOVAL
     glsafe(::glPopMatrix());
 #endif // !ENABLE_LEGACY_OPENGL_REMOVAL

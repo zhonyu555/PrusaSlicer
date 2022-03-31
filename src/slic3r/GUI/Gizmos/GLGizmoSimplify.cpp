@@ -742,11 +742,11 @@ void GLGizmoSimplify::on_render()
         glsafe(::glMultMatrixd(trafo_matrix.data()));
 #endif // !ENABLE_LEGACY_OPENGL_REMOVAL
         auto* gouraud_shader = wxGetApp().get_shader("gouraud_light");
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         bool depth_test_enabled = ::glIsEnabled(GL_DEPTH_TEST);
 #else
         glsafe(::glPushAttrib(GL_DEPTH_TEST));
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         glsafe(::glEnable(GL_DEPTH_TEST));
         gouraud_shader->start_using();
 #if ENABLE_LEGACY_OPENGL_REMOVAL
@@ -779,12 +779,12 @@ void GLGizmoSimplify::on_render()
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
             contour_shader->stop_using();
         }
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         if (depth_test_enabled)
             glsafe(::glEnable(GL_DEPTH_TEST));
 #else
         glsafe(::glPopAttrib());
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 #if !ENABLE_LEGACY_OPENGL_REMOVAL
         glsafe(::glPopMatrix());
 #endif // !ENABLE_LEGACY_OPENGL_REMOVAL

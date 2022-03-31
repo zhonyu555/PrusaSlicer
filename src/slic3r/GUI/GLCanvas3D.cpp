@@ -1216,7 +1216,11 @@ bool GLCanvas3D::init()
         return false;
 
     glsafe(::glClearColor(1.0f, 1.0f, 1.0f, 1.0f));
+#if ENABLE_OPENGL_ES
+    glsafe(::glClearDepthf(1.0f));
+#else
     glsafe(::glClearDepth(1.0f));
+#endif // ENABLE_OPENGL_ES
 
     glsafe(::glDepthFunc(GL_LESS));
 
@@ -2055,6 +2059,9 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
             if (volume->is_wipe_tower) {
                 // There is only one wipe tower.
                 assert(volume_idx_wipe_tower_old == -1);
+#if ENABLE_OPENGL_ES
+                m_wipe_tower_mesh.clear();
+#endif // ENABLE_OPENGL_ES
                 volume_idx_wipe_tower_old = (int)volume_id;
             }
             if (!m_reload_delayed) {
@@ -2294,13 +2301,25 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
 
 #if ENABLE_LEGACY_OPENGL_REMOVAL
 #if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
+#if ENABLE_OPENGL_ES
+            int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(
+                x, y, w, depth, (float)height, a, !print->is_step_done(psWipeTower),
+                brim_width, &m_wipe_tower_mesh);
+#else
             int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(
                 x, y, w, depth, (float)height, a, !print->is_step_done(psWipeTower),
                 brim_width);
+#endif // ENABLE_OPENGL_ES
+#else
+#if ENABLE_OPENGL_ES
+            int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(
+                1000, x, y, w, depth, (float)height, a, !print->is_step_done(psWipeTower),
+                brim_width, &m_wipe_tower_mesh);
 #else
             int volume_idx_wipe_tower_new = m_volumes.load_wipe_tower_preview(
                 1000, x, y, w, depth, (float)height, a, !print->is_step_done(psWipeTower),
                 brim_width);
+#endif // ENABLE_OPENGL_ES
 #endif // ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
 #else
 #if ENABLE_WIPETOWER_OBJECTID_1000_REMOVAL
@@ -6444,6 +6463,43 @@ Vec3d GLCanvas3D::_mouse_to_3d(const Point& mouse_pos, float* z)
     if (m_canvas == nullptr)
         return Vec3d(DBL_MAX, DBL_MAX, DBL_MAX);
 
+#if ENABLE_OPENGL_ES
+    if (z == nullptr) {
+        const Camera& camera = wxGetApp().plater()->get_camera();
+        std::vector<Vec3d> hits;
+        for (GLVolume* v : m_volumes.volumes) {
+            if (v->is_active) {
+                const MeshRaycaster raycaster(v->is_wipe_tower ? m_wipe_tower_mesh : m_model->objects[v->object_idx()]->volumes[v->volume_idx()]->mesh());
+                Vec3f hit_position;
+                Vec3f hit_normal;
+                const Transform3d trafo = v->world_matrix();
+                if (raycaster.unproject_on_mesh(mouse_pos.cast<double>(), trafo, camera, hit_position, hit_normal))
+                    hits.emplace_back(trafo * hit_position.cast<double>());
+            }
+        }
+        if (hits.empty())
+            return _mouse_to_bed_3d(mouse_pos);
+        else {
+            const Vec3d camera_position = camera.get_position();
+            std::sort(hits.begin(), hits.end(), [&camera_position](const Vec3d& h1, const Vec3d& h2) {
+                return (h1 - camera_position).squaredNorm() < (h2 - camera_position).squaredNorm();
+                });
+            return hits.front();
+        }
+    }
+    else {
+        const Camera& camera = wxGetApp().plater()->get_camera();
+        const Matrix4d modelview = camera.get_view_matrix().matrix();
+        const Matrix4d projection = camera.get_projection_matrix().matrix();
+        const Vec4i viewport(camera.get_viewport().data());
+
+        const int y = viewport[3] - mouse_pos.y();
+
+        Vec3d out;
+        igl::unproject(Vec3d(mouse_pos.x(), y, *z), modelview, projection, viewport, out);
+        return out;
+    }
+#else
     const Camera& camera = wxGetApp().plater()->get_camera();
     const Matrix4d modelview  = camera.get_view_matrix().matrix();
     const Matrix4d projection = camera.get_projection_matrix().matrix();
@@ -6459,6 +6515,7 @@ Vec3d GLCanvas3D::_mouse_to_3d(const Point& mouse_pos, float* z)
     Vec3d out;
     igl::unproject(Vec3d(mouse_pos.x(), y, mouse_z), modelview, projection, viewport, out);
     return out;
+#endif // ENABLE_OPENGL_ES
 }
 
 Vec3d GLCanvas3D::_mouse_to_bed_3d(const Point& mouse_pos)

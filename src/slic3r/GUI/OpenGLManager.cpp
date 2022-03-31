@@ -78,7 +78,7 @@ bool OpenGLManager::GLInfo::is_mesa() const
     return boost::icontains(m_version, "mesa");
 }
 #endif // _WIN32
-#endif // ENABLE_OPENGL_ES
+#endif // ENABLE_GL_CORE_PROFILE
 
 int OpenGLManager::GLInfo::get_max_tex_size() const
 {
@@ -136,8 +136,16 @@ static bool version_greater_or_equal_to(const std::string& version, unsigned int
     if (tokens.empty())
         return false;
 
+#if ENABLE_OPENGL_ES
+    const std::string version_container = (tokens.size() > 1 && boost::istarts_with(tokens[1], "ES")) ? tokens[2] : tokens[0];
+#endif // ENABLE_OPENGL_ES
+
     std::vector<std::string> numbers;
+#if ENABLE_OPENGL_ES
+    boost::split(numbers, version_container, boost::is_any_of("."), boost::token_compress_on);
+#else
     boost::split(numbers, tokens[0], boost::is_any_of("."), boost::token_compress_on);
+#endif // ENABLE_OPENGL_ES
 
     unsigned int gl_major = 0;
     unsigned int gl_minor = 0;
@@ -192,6 +200,8 @@ std::string OpenGLManager::GLInfo::to_string(bool for_github) const
     out << b_start << "GL version:   " << b_end << m_version << line_end;
 #if ENABLE_GL_CORE_PROFILE
     out << b_start << "Profile:      " << b_end << (is_core_profile() ? "Core" : "Compatibility") << line_end;
+#else
+    out << b_start << "Profile:      " << b_end << "Compatibility" << line_end;
 #endif // ENABLE_GL_CORE_PROFILE
     out << b_start << "Vendor:       " << b_end << m_vendor << line_end;
     out << b_start << "Renderer:     " << b_end << m_renderer << line_end;
@@ -268,9 +278,9 @@ OpenGLManager::~OpenGLManager()
 bool OpenGLManager::init_gl()
 {
     if (!m_gl_initialized) {
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         glewExperimental = true;
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         GLenum err = glewInit();
         if (err != GLEW_OK) {
             BOOST_LOG_TRIVIAL(error) << "Unable to init glew library: " << glewGetErrorString(err);
@@ -279,7 +289,7 @@ bool OpenGLManager::init_gl()
 
 #if ENABLE_GL_CORE_PROFILE
         do {
-            // glewInit() generates an OpenGL GL_INVALID_ENUM error
+            // glewInit() generates an OpenGL GL_INVALID_ENUM error when using core profile
             err = ::glGetError();
         } while (err != GL_NO_ERROR);
 #endif // ENABLE_GL_CORE_PROFILE
@@ -304,21 +314,26 @@ bool OpenGLManager::init_gl()
         else
             s_framebuffers_type = EFramebufferType::Unknown;
 
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+        bool valid_version = s_gl_info.is_version_greater_or_equal_to(2, 0);
+#elif ENABLE_GL_CORE_PROFILE
         bool valid_version = s_gl_info.is_core_profile() ? s_gl_info.is_version_greater_or_equal_to(3, 3) : s_gl_info.is_version_greater_or_equal_to(2, 0);
 #else
         bool valid_version = s_gl_info.is_version_greater_or_equal_to(2, 0);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
         if (!valid_version) {
             // Complain about the OpenGL version.
             wxString message = from_u8((boost::format(
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+                _utf8(L("PrusaSlicer requires OpenGL ES 2.0 capable graphics driver to run correctly, \n"
+                    "while OpenGL version %s, render %s, vendor %s was detected."))) % s_gl_info.get_version() % s_gl_info.get_renderer() % s_gl_info.get_vendor()).str());
+#elif ENABLE_GL_CORE_PROFILE
                 _utf8(L("PrusaSlicer requires OpenGL %s capable graphics driver to run correctly, \n"
                     "while OpenGL version %s, render %s, vendor %s was detected."))) % (s_gl_info.is_core_profile() ? "3.3" : "2.0") % s_gl_info.get_version() % s_gl_info.get_renderer() % s_gl_info.get_vendor()).str());
 #else
                 _utf8(L("PrusaSlicer requires OpenGL 2.0 capable graphics driver to run correctly, \n"
                     "while OpenGL version %s, render %s, vendor %s was detected."))) % s_gl_info.get_version() % s_gl_info.get_renderer() % s_gl_info.get_vendor()).str());
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
             message += "\n";
         	message += _L("You may need to update your graphics card driver.");
 #ifdef _WIN32
@@ -345,13 +360,17 @@ bool OpenGLManager::init_gl()
 wxGLContext* OpenGLManager::init_glcontext(wxGLCanvas& canvas)
 {
     if (m_context == nullptr) {
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+        wxGLContextAttrs attrs;
+        attrs.ES2().MajorVersion(2).EndList();
+        m_context = new wxGLContext(&canvas, nullptr, &attrs);
+#elif ENABLE_GL_CORE_PROFILE
         wxGLContextAttrs attrs;
         attrs.CoreProfile().ForwardCompatible().OGLVersion(3, 3).EndList();
         m_context = new wxGLContext(&canvas, nullptr, &attrs);
 #else
         m_context = new wxGLContext(&canvas);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
 
 #ifdef __APPLE__ 
         // Part of hack to remove crash when closing the application on OSX 10.9.5 when building against newer wxWidgets
@@ -365,7 +384,7 @@ wxGLContext* OpenGLManager::init_glcontext(wxGLCanvas& canvas)
 
 wxGLCanvas* OpenGLManager::create_wxglcanvas(wxWindow& parent)
 {
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
     wxGLAttributes attribList;
     attribList.PlatformDefaults().RGBA().DoubleBuffer().MinRGBA(8, 8, 8, 8).Depth(24).SampleBuffers(1).Samplers(4).EndList();
 #else
@@ -384,7 +403,7 @@ wxGLCanvas* OpenGLManager::create_wxglcanvas(wxWindow& parent)
     	WX_GL_SAMPLES, 			4,
     	0
     };
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 
     if (s_multisample == EMultisampleState::Unknown) {
         detect_multisample(attribList);
@@ -392,26 +411,26 @@ wxGLCanvas* OpenGLManager::create_wxglcanvas(wxWindow& parent)
 //        std::cout << "Multisample " << (can_multisample() ? "enabled" : "disabled") << std::endl;
     }
 
-    if (!can_multisample())
-#if ENABLE_GL_CORE_PROFILE
-    {
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
+    if (!can_multisample()) {
         attribList.Reset();
         attribList.PlatformDefaults().RGBA().DoubleBuffer().MinRGBA(8, 8, 8, 8).Depth(24).EndList();
     }
 
     return new wxGLCanvas(&parent, attribList, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
 #else
+    if (!can_multisample())
         attribList[12] = 0;
 
     return new wxGLCanvas(&parent, wxID_ANY, attribList, wxDefaultPosition, wxDefaultSize, wxWANTS_CHARS);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 }
 
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 void OpenGLManager::detect_multisample(const wxGLAttributes& attribList)
 #else
 void OpenGLManager::detect_multisample(int* attribList)
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 {
     int wxVersion = wxMAJOR_VERSION * 10000 + wxMINOR_VERSION * 100 + wxRELEASE_NUMBER;
     bool enable_multisample = wxVersion >= 30003;
