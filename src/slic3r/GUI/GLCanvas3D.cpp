@@ -5326,7 +5326,7 @@ void GLCanvas3D::_picking_pass()
 #if !ENABLE_LEGACY_OPENGL_REMOVAL
         if (m_camera_clipping_plane.is_active())
             ::glDisable(GL_CLIP_PLANE0);
-#endif !ENABLE_LEGACY_OPENGL_REMOVAL
+#endif // !ENABLE_LEGACY_OPENGL_REMOVAL
 
 #if ENABLE_LEGACY_OPENGL_REMOVAL
         const Camera& camera = wxGetApp().plater()->get_camera();
