@@ -112,7 +112,6 @@ void GLModel::Geometry::add_vertex(const Vec3f& position, const Vec3f& normal)
     vertices.emplace_back(normal.z());
 }
 
-#if ENABLE_GL_CORE_PROFILE
 void GLModel::Geometry::add_vertex(const Vec4f& position)
 {
     assert(format.vertex_layout == EVertexLayout::P4);
@@ -121,7 +120,6 @@ void GLModel::Geometry::add_vertex(const Vec4f& position)
     vertices.emplace_back(position.z());
     vertices.emplace_back(position.w());
 }
-#endif // ENABLE_GL_CORE_PROFILE
 
 void GLModel::Geometry::add_index(unsigned int id)
 {
@@ -209,7 +207,6 @@ Vec2f GLModel::Geometry::extract_tex_coord_2(size_t id) const
     return { *(start + 0), *(start + 1) };
 }
 
-#if ENABLE_LEGACY_OPENGL_REMOVAL
 void GLModel::Geometry::set_vertex(size_t id, const Vec3f& position, const Vec3f& normal)
 {
     assert(format.vertex_layout == EVertexLayout::P3N3);
@@ -251,7 +248,6 @@ void GLModel::Geometry::remove_vertex(size_t id)
         vertices.erase(it, it + stride);
     }
 }
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
 size_t GLModel::Geometry::vertex_stride_floats(const Format& format)
 {
@@ -262,9 +258,7 @@ size_t GLModel::Geometry::vertex_stride_floats(const Format& format)
     case EVertexLayout::P3:   { return 3; }
     case EVertexLayout::P3T2: { return 5; }
     case EVertexLayout::P3N3: { return 6; }
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P4:   { return 4; }
-#endif // ENABLE_GL_CORE_PROFILE
     default:                  { assert(false); return 0; }
     };
 }
@@ -278,9 +272,7 @@ size_t GLModel::Geometry::position_stride_floats(const Format& format)
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
     case EVertexLayout::P3N3: { return 3; }
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P4:   { return 4; }
-#endif // ENABLE_GL_CORE_PROFILE
     default:                  { assert(false); return 0; }
     };
 }
@@ -293,12 +285,8 @@ size_t GLModel::Geometry::position_offset_floats(const Format& format)
     case EVertexLayout::P2T2:
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4: { return 0; }
-#else
-    case EVertexLayout::P3N3: { return 0; }
-#endif // ENABLE_GL_CORE_PROFILE
+    case EVertexLayout::P4:   { return 0; }
     default:                  { assert(false); return 0; }
     };
 }
@@ -360,12 +348,8 @@ bool GLModel::Geometry::has_position(const Format& format)
     case EVertexLayout::P2T2:
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4: { return true; }
-#else
-    case EVertexLayout::P3N3: { return true; }
-#endif // ENABLE_GL_CORE_PROFILE
+    case EVertexLayout::P4:   { return true; }
     default:                  { assert(false); return false; }
     };
 }
@@ -377,12 +361,8 @@ bool GLModel::Geometry::has_normal(const Format& format)
     case EVertexLayout::P2:
     case EVertexLayout::P2T2:
     case EVertexLayout::P3:
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P3T2:
-    case EVertexLayout::P4: { return false; }
-#else
-    case EVertexLayout::P3T2: { return false; }
-#endif // ENABLE_GL_CORE_PROFILE
+    case EVertexLayout::P4:   { return false; }
     case EVertexLayout::P3N3: { return true; }
     default:                  { assert(false); return false; }
     };
@@ -396,12 +376,8 @@ bool GLModel::Geometry::has_tex_coord(const Format& format)
     case EVertexLayout::P3T2: { return true; }
     case EVertexLayout::P2:
     case EVertexLayout::P3:
-#if ENABLE_GL_CORE_PROFILE
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4: { return false; }
-#else
-    case EVertexLayout::P3N3: { return false; }
-#endif // ENABLE_GL_CORE_PROFILE
+    case EVertexLayout::P4:   { return false; }
     default:                  { assert(false); return false; }
     };
 }
