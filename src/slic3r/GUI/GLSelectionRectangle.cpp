@@ -135,11 +135,13 @@ namespace GUI {
 #endif // !ENABLE_GL_CORE_PROFILE && !ENABLE_OPENGL_ES
 
 #if ENABLE_LEGACY_OPENGL_REMOVAL
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+        GLShaderProgram* shader = wxGetApp().get_shader("dashed_lines");
+#elif ENABLE_GL_CORE_PROFILE
         GLShaderProgram* shader = wxGetApp().get_shader("dashed_thick_lines");
 #else
         GLShaderProgram* shader = wxGetApp().get_shader("flat");
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
         if (shader != nullptr) {
             shader->start_using();
 
@@ -149,7 +151,18 @@ namespace GUI {
                 m_rectangle.reset();
 
                 GLModel::Geometry init_data;
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+                if (wxGetApp().is_gl_version_greater_or_equal_to(3, 1)) {
+                    init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P4 };
+                    init_data.reserve_vertices(8);
+                    init_data.reserve_indices(8);
+                }
+                else {
+                    init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
+                    init_data.reserve_vertices(4);
+                    init_data.reserve_indices(4);
+            }
+#elif ENABLE_GL_CORE_PROFILE
                 init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P4 };
                 init_data.reserve_vertices(8);
                 init_data.reserve_indices(8);
@@ -157,10 +170,10 @@ namespace GUI {
                 init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
                 init_data.reserve_vertices(4);
                 init_data.reserve_indices(4);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
 
                 // vertices
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
                 const float width = right - left;
                 const float height = top - bottom;
                 float perimeter = 0.0f;
@@ -197,20 +210,23 @@ namespace GUI {
                 init_data.add_index(1);
                 init_data.add_index(2);
                 init_data.add_index(3);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 
                 m_rectangle.init_from(std::move(init_data));
             }
 
             shader->set_uniform("view_model_matrix", Transform3d::Identity());
             shader->set_uniform("projection_matrix", Transform3d::Identity());
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+            shader->set_uniform("dash_size", 0.01f);
+            shader->set_uniform("gap_size", 0.0075f);
+#elif ENABLE_GL_CORE_PROFILE
             const std::array<int, 4>& viewport = wxGetApp().plater()->get_camera().get_viewport();
             shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
             shader->set_uniform("width", 0.25f);
             shader->set_uniform("dash_size", 0.01f);
             shader->set_uniform("gap_size", 0.0075f);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
 
             m_rectangle.set_color(ColorRGBA((m_state == EState::Select) ? 0.3f : 1.0f, (m_state == EState::Select) ? 1.0f : 0.3f, 0.3f, 1.0f));
             m_rectangle.render();

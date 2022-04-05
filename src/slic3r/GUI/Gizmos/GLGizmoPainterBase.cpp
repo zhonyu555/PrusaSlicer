@@ -225,30 +225,26 @@ void GLGizmoPainterBase::render_cursor_circle()
         GLModel::Geometry init_data;
         static const unsigned int StepsCount = 32;
         static const float StepSize = 2.0f * float(PI) / float(StepsCount);
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P4 };
-#else
-        init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
-#endif // ENABLE_GL_CORE_PROFILE
-        init_data.color  = { 0.0f, 1.0f, 0.3f, 1.0f };
-#if ENABLE_GL_CORE_PROFILE
         init_data.reserve_vertices(2 * StepsCount);
         init_data.reserve_indices(2 * StepsCount);
 #else
+        init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
         init_data.reserve_vertices(StepsCount);
         init_data.reserve_indices(StepsCount);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
+        init_data.color  = { 0.0f, 1.0f, 0.3f, 1.0f };
 
         // vertices + indices
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         float perimeter = 0.0f;
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
 
         for (unsigned int i = 0; i < StepsCount; ++i) {
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
             const float angle_i = float(i) * StepSize;
-            const unsigned int j = (i + 1) % StepsCount;
-            const float angle_j = float(j) * StepSize;
+            const float angle_j = float((i + 1) % StepsCount) * StepSize;
             const Vec2d v_i(2.0f * ((center.x() + ::cos(angle_i) * radius) * cnv_inv_width - 0.5f), -2.0f * ((center.y() + ::sin(angle_i) * radius) * cnv_inv_height - 0.5f));
             const Vec2d v_j(2.0f * ((center.x() + ::cos(angle_j) * radius) * cnv_inv_width - 0.5f), -2.0f * ((center.y() + ::sin(angle_j) * radius) * cnv_inv_height - 0.5f));
             init_data.add_vertex(Vec4f(v_i.x(), v_i.y(), 0.0f, perimeter));
@@ -260,28 +256,33 @@ void GLGizmoPainterBase::render_cursor_circle()
             init_data.add_vertex(Vec2f(2.0f * ((center.x() + ::cos(angle) * radius) * cnv_inv_width - 0.5f),
                                        -2.0f * ((center.y() + ::sin(angle) * radius) * cnv_inv_height - 0.5f)));
             init_data.add_index(i);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
         }
 
         m_circle.init_from(std::move(init_data));
     }
 
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+    GLShaderProgram* shader = wxGetApp().get_shader("dashed_lines");
+#elif ENABLE_GL_CORE_PROFILE
     GLShaderProgram* shader = wxGetApp().get_shader("dashed_thick_lines");
 #else
     GLShaderProgram* shader = GUI::wxGetApp().get_shader("flat");
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
     if (shader != nullptr) {
         shader->start_using();
         shader->set_uniform("view_model_matrix", Transform3d::Identity());
         shader->set_uniform("projection_matrix", Transform3d::Identity());
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+        shader->set_uniform("dash_size", 0.01f);
+        shader->set_uniform("gap_size", 0.0075f);
+#elif ENABLE_GL_CORE_PROFILE
         const std::array<int, 4>& viewport = wxGetApp().plater()->get_camera().get_viewport();
         shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
         shader->set_uniform("width", 0.25f);
         shader->set_uniform("dash_size", 0.01f);
         shader->set_uniform("gap_size", 0.0075f);
-#endif // ENABLE_GL_CORE_PROFILE
+#endif // ENABLE_OPENGL_ES
         m_circle.render();
         shader->stop_using();
     }

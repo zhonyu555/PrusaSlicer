@@ -49,7 +49,10 @@ std::pair<bool, std::string> GLShadersManager::init()
     valid &= append_shader("flat_texture", { prefix + "flat_texture.vs", prefix + "flat_texture.fs" });
     // used to render 3D scene background
     valid &= append_shader("background", { prefix + "background.vs", prefix + "background.fs" });
-#if ENABLE_GL_CORE_PROFILE
+#if ENABLE_OPENGL_ES
+    // used to render dashed lines
+    valid &= append_shader("dashed_lines", { prefix + "dashed_lines.vs", prefix + "dashed_lines.fs" });
+#elif ENABLE_GL_CORE_PROFILE
     // used to render thick and/or dashed lines
     valid &= append_shader("dashed_thick_lines", { prefix + "dashed_thick_lines.vs", prefix + "dashed_thick_lines.fs", prefix + "dashed_thick_lines.gs" });
 #endif // ENABLE_GL_CORE_PROFILE
