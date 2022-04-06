@@ -1,4 +1,4 @@
-#version 110
+#version 100
 
 // see as reference: https://stackoverflow.com/questions/52928678/dashed-line-in-opengl3
 

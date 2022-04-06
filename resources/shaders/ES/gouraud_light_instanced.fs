@@ -1,4 +1,4 @@
-#version 110
+#version 100
 
 uniform vec4 uniform_color;
 uniform float emission_factor;

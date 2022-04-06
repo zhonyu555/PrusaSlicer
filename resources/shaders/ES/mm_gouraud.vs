@@ -1,4 +1,4 @@
-#version 110
+#version 100
 
 const vec3 ZERO = vec3(0.0, 0.0, 0.0);
 

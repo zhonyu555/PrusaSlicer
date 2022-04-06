@@ -1,4 +1,4 @@
-#version 110
+#version 100
 
 #define INTENSITY_CORRECTION 0.6
 

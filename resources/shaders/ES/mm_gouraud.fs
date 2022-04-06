@@ -1,4 +1,4 @@
-#version 110
+#version 100
 #extension GL_OES_standard_derivatives : enable
 
 precision highp float;
