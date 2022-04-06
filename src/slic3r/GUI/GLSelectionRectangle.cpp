@@ -151,29 +151,12 @@ namespace GUI {
                 m_rectangle.reset();
 
                 GLModel::Geometry init_data;
-#if ENABLE_OPENGL_ES
-                if (wxGetApp().is_gl_version_greater_or_equal_to(3, 1)) {
-                    init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P4 };
-                    init_data.reserve_vertices(8);
-                    init_data.reserve_indices(8);
-                }
-                else {
-                    init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
-                    init_data.reserve_vertices(4);
-                    init_data.reserve_indices(4);
-            }
-#elif ENABLE_GL_CORE_PROFILE
+#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
                 init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P4 };
                 init_data.reserve_vertices(8);
                 init_data.reserve_indices(8);
-#else
-                init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
-                init_data.reserve_vertices(4);
-                init_data.reserve_indices(4);
-#endif // ENABLE_OPENGL_ES
 
                 // vertices
-#if ENABLE_GL_CORE_PROFILE || ENABLE_OPENGL_ES
                 const float width = right - left;
                 const float height = top - bottom;
                 float perimeter = 0.0f;
@@ -200,6 +183,11 @@ namespace GUI {
                 init_data.add_line(4, 5);
                 init_data.add_line(6, 7);
 #else
+                init_data.format = { GLModel::Geometry::EPrimitiveType::LineLoop, GLModel::Geometry::EVertexLayout::P2 };
+                init_data.reserve_vertices(4);
+                init_data.reserve_indices(4);
+
+                // vertices
                 init_data.add_vertex(Vec2f(left, bottom));
                 init_data.add_vertex(Vec2f(right, bottom));
                 init_data.add_vertex(Vec2f(right, top));

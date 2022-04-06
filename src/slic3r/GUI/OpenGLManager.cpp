@@ -316,7 +316,11 @@ bool OpenGLManager::init_gl()
             s_framebuffers_type = EFramebufferType::Unknown;
 
 #if ENABLE_OPENGL_ES
+#if ENABLE_OPENGL_ES_2_0
         bool valid_version = s_gl_info.is_version_greater_or_equal_to(2, 0);
+#else
+        bool valid_version = true;
+#endif // ENABLE_OPENGL_ES_2_0
 #elif ENABLE_GL_CORE_PROFILE
         bool valid_version = s_gl_info.is_core_profile() ? s_gl_info.is_version_greater_or_equal_to(3, 3) : s_gl_info.is_version_greater_or_equal_to(2, 0);
 #else
@@ -363,7 +367,11 @@ wxGLContext* OpenGLManager::init_glcontext(wxGLCanvas& canvas)
     if (m_context == nullptr) {
 #if ENABLE_OPENGL_ES
         wxGLContextAttrs attrs;
+#if ENABLE_OPENGL_ES_2_0
         attrs.ES2().MajorVersion(2).EndList();
+#else
+        attrs.ES2().EndList();
+#endif // ENABLE_OPENGL_ES_2_0
         m_context = new wxGLContext(&canvas, nullptr, &attrs);
 #elif ENABLE_GL_CORE_PROFILE
         wxGLContextAttrs attrs;

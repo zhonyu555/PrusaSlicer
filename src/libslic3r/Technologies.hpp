@@ -57,6 +57,8 @@
 #define ENABLE_LEGACY_OPENGL_REMOVAL (1 && ENABLE_2_5_0_ALPHA1)
 // Enable OpenGL ES
 #define ENABLE_OPENGL_ES (1 && ENABLE_LEGACY_OPENGL_REMOVAL)
+// Enable OpenGL ES forcing ES 2.0 as min version
+#define ENABLE_OPENGL_ES_2_0 (0 && ENABLE_OPENGL_ES)
 // Enable OpenGL core profile context (tested against Mesa 20.1.8 on Windows)
 #define ENABLE_GL_CORE_PROFILE (1 && ENABLE_LEGACY_OPENGL_REMOVAL && !ENABLE_OPENGL_ES)
 // Shows an imgui dialog with GLModel statistics data
