@@ -992,11 +992,7 @@ void TriangleSelectorGUI::render(ImGuiWrapper* imgui)
 
         auto *contour_shader = wxGetApp().get_shader("mm_contour");
         contour_shader->start_using();
-
-        glsafe(::glDepthFunc(GL_LEQUAL));
         m_paint_contour.render();
-        glsafe(::glDepthFunc(GL_LESS));
-
         contour_shader->stop_using();
     }
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
@@ -1387,10 +1383,7 @@ void TriangleSelectorGUI::render_paint_contour(const Transform3d& matrix)
         contour_shader->set_uniform("view_model_matrix", camera.get_view_matrix() * matrix);
         contour_shader->set_uniform("projection_matrix", camera.get_projection_matrix());
 
-        glsafe(::glDepthFunc(GL_LEQUAL));
         m_paint_contour.render();
-        glsafe(::glDepthFunc(GL_LESS));
-
         contour_shader->stop_using();
     }
 
