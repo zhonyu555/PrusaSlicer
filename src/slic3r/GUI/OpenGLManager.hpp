@@ -45,7 +45,7 @@ public:
 
         bool is_core_profile() const;
         bool is_mesa() const;
-        bool is_es() {
+        bool is_es() const {
             return
 #if ENABLE_OPENGL_ES
                 true;

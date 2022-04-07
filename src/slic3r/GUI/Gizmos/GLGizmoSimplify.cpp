@@ -354,7 +354,9 @@ void GLGizmoSimplify::on_render_input_window(float x, float y, float bottom_limi
     ImGui::Text(_u8L("%d triangles").c_str(), m_configuration.wanted_count);
     m_imgui->disabled_end(); // use_count
 
+#if !ENABLE_OPENGL_ES
     ImGui::Checkbox(_u8L("Show wireframe").c_str(), &m_show_wireframe);
+#endif // !ENABLE_OPENGL_ES
 
     m_imgui->disabled_begin(is_cancelling);
     if (m_imgui->button(_L("Close"))) {
@@ -773,9 +775,13 @@ void GLGizmoSimplify::on_render()
 #if !ENABLE_GL_CORE_PROFILE
             glsafe(::glLineWidth(1.0f));
 #endif // !ENABLE_GL_CORE_PROFILE
+#if !ENABLE_OPENGL_ES
             glsafe(::glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
+#endif // !ENABLE_OPENGL_ES
             glmodel.render();
+#if !ENABLE_OPENGL_ES
             glsafe(::glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
+#endif // !ENABLE_OPENGL_ES
 #if ENABLE_LEGACY_OPENGL_REMOVAL
             glmodel.set_color(color);
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
