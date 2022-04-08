@@ -112,6 +112,20 @@ void GLModel::Geometry::add_vertex(const Vec3f& position, const Vec3f& normal)
     vertices.emplace_back(normal.z());
 }
 
+void GLModel::Geometry::add_vertex(const Vec3f& position, const Vec3f& normal, const Vec3f& extra)
+{
+    assert(format.vertex_layout == EVertexLayout::P3N3E3);
+    vertices.emplace_back(position.x());
+    vertices.emplace_back(position.y());
+    vertices.emplace_back(position.z());
+    vertices.emplace_back(normal.x());
+    vertices.emplace_back(normal.y());
+    vertices.emplace_back(normal.z());
+    vertices.emplace_back(extra.x());
+    vertices.emplace_back(extra.y());
+    vertices.emplace_back(extra.z());
+}
+
 void GLModel::Geometry::add_vertex(const Vec4f& position)
 {
     assert(format.vertex_layout == EVertexLayout::P4);
@@ -253,13 +267,14 @@ size_t GLModel::Geometry::vertex_stride_floats(const Format& format)
 {
     switch (format.vertex_layout)
     {
-    case EVertexLayout::P2:   { return 2; }
-    case EVertexLayout::P2T2: { return 4; }
-    case EVertexLayout::P3:   { return 3; }
-    case EVertexLayout::P3T2: { return 5; }
-    case EVertexLayout::P3N3: { return 6; }
-    case EVertexLayout::P4:   { return 4; }
-    default:                  { assert(false); return 0; }
+    case EVertexLayout::P2:     { return 2; }
+    case EVertexLayout::P2T2:   { return 4; }
+    case EVertexLayout::P3:     { return 3; }
+    case EVertexLayout::P3T2:   { return 5; }
+    case EVertexLayout::P3N3:   { return 6; }
+    case EVertexLayout::P3N3E3: { return 9; }
+    case EVertexLayout::P4:     { return 4; }
+    default:                    { assert(false); return 0; }
     };
 }
 
@@ -268,12 +283,13 @@ size_t GLModel::Geometry::position_stride_floats(const Format& format)
     switch (format.vertex_layout)
     {
     case EVertexLayout::P2:
-    case EVertexLayout::P2T2: { return 2; }
+    case EVertexLayout::P2T2:   { return 2; }
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
-    case EVertexLayout::P3N3: { return 3; }
-    case EVertexLayout::P4:   { return 4; }
-    default:                  { assert(false); return 0; }
+    case EVertexLayout::P3N3:
+    case EVertexLayout::P3N3E3: { return 3; }
+    case EVertexLayout::P4:     { return 4; }
+    default:                    { assert(false); return 0; }
     };
 }
 
@@ -286,8 +302,9 @@ size_t GLModel::Geometry::position_offset_floats(const Format& format)
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4:   { return 0; }
-    default:                  { assert(false); return 0; }
+    case EVertexLayout::P3N3E3:
+    case EVertexLayout::P4:     { return 0; }
+    default:                    { assert(false); return 0; }
     };
 }
 
@@ -295,8 +312,9 @@ size_t GLModel::Geometry::normal_stride_floats(const Format& format)
 {
     switch (format.vertex_layout)
     {
-    case EVertexLayout::P3N3: { return 3; }
-    default:                  { assert(false); return 0; }
+    case EVertexLayout::P3N3:
+    case EVertexLayout::P3N3E3: { return 3; }
+    default:                    { assert(false); return 0; }
     };
 }
 
@@ -304,8 +322,9 @@ size_t GLModel::Geometry::normal_offset_floats(const Format& format)
 {
     switch (format.vertex_layout)
     {
-    case EVertexLayout::P3N3: { return 3; }
-    default:                  { assert(false); return 0; }
+    case EVertexLayout::P3N3:
+    case EVertexLayout::P3N3E3: { return 3; }
+    default:                    { assert(false); return 0; }
     };
 }
 
@@ -329,6 +348,24 @@ size_t GLModel::Geometry::tex_coord_offset_floats(const Format& format)
     };
 }
 
+size_t GLModel::Geometry::extra_stride_floats(const Format& format)
+{
+    switch (format.vertex_layout)
+    {
+    case EVertexLayout::P3N3E3: { return 3; }
+    default:                    { assert(false); return 0; }
+    };
+}
+
+size_t GLModel::Geometry::extra_offset_floats(const Format& format)
+{
+    switch (format.vertex_layout)
+    {
+    case EVertexLayout::P3N3E3: { return 6; }
+    default:                    { assert(false); return 0; }
+    };
+}
+
 size_t GLModel::Geometry::index_stride_bytes(const Geometry& data)
 {
     switch (data.index_type)
@@ -349,8 +386,9 @@ bool GLModel::Geometry::has_position(const Format& format)
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4:   { return true; }
-    default:                  { assert(false); return false; }
+    case EVertexLayout::P3N3E3:
+    case EVertexLayout::P4:     { return true; }
+    default:                    { assert(false); return false; }
     };
 }
 
@@ -362,9 +400,10 @@ bool GLModel::Geometry::has_normal(const Format& format)
     case EVertexLayout::P2T2:
     case EVertexLayout::P3:
     case EVertexLayout::P3T2:
-    case EVertexLayout::P4:   { return false; }
-    case EVertexLayout::P3N3: { return true; }
-    default:                  { assert(false); return false; }
+    case EVertexLayout::P4:     { return false; }
+    case EVertexLayout::P3N3:
+    case EVertexLayout::P3N3E3: { return true; }
+    default:                    { assert(false); return false; }
     };
 }
 
@@ -373,12 +412,28 @@ bool GLModel::Geometry::has_tex_coord(const Format& format)
     switch (format.vertex_layout)
     {
     case EVertexLayout::P2T2:
-    case EVertexLayout::P3T2: { return true; }
+    case EVertexLayout::P3T2:   { return true; }
     case EVertexLayout::P2:
     case EVertexLayout::P3:
     case EVertexLayout::P3N3:
-    case EVertexLayout::P4:   { return false; }
-    default:                  { assert(false); return false; }
+    case EVertexLayout::P3N3E3:
+    case EVertexLayout::P4:     { return false; }
+    default:                    { assert(false); return false; }
+    };
+}
+
+bool GLModel::Geometry::has_extra(const Format& format)
+{
+    switch (format.vertex_layout)
+    {
+    case EVertexLayout::P3N3E3: { return true; }
+    case EVertexLayout::P2:
+    case EVertexLayout::P2T2:
+    case EVertexLayout::P3:
+    case EVertexLayout::P3T2:
+    case EVertexLayout::P3N3:
+    case EVertexLayout::P4:     { return false; }
+    default:                    { assert(false); return false; }
     };
 }
 #else
@@ -868,9 +923,10 @@ void GLModel::render(const std::pair<size_t, size_t>& range)
     const GLenum index_type = get_index_type(data);
 
     const size_t vertex_stride_bytes = Geometry::vertex_stride_bytes(data.format);
-    const bool position = Geometry::has_position(data.format);
-    const bool normal = Geometry::has_normal(data.format);
+    const bool position  = Geometry::has_position(data.format);
+    const bool normal    = Geometry::has_normal(data.format);
     const bool tex_coord = Geometry::has_tex_coord(data.format);
+    const bool extra     = Geometry::has_extra(data.format);
 
 #if ENABLE_GL_CORE_PROFILE
     glsafe(::glBindVertexArray(m_render_data.vao_id));
@@ -878,9 +934,10 @@ void GLModel::render(const std::pair<size_t, size_t>& range)
 #endif // ENABLE_GL_CORE_PROFILE
     glsafe(::glBindBuffer(GL_ARRAY_BUFFER, m_render_data.vbo_id));
 
-    int position_id = -1;
-    int normal_id = -1;
+    int position_id  = -1;
+    int normal_id    = -1;
     int tex_coord_id = -1;
+    int extra_id     = -1;
 
     if (position) {
         position_id = shader->get_attrib_location("v_position");
@@ -903,6 +960,13 @@ void GLModel::render(const std::pair<size_t, size_t>& range)
             glsafe(::glEnableVertexAttribArray(tex_coord_id));
         }
     }
+    if (extra) {
+        extra_id = shader->get_attrib_location("v_extra");
+        if (extra_id != -1) {
+            glsafe(::glVertexAttribPointer(extra_id, Geometry::extra_stride_floats(data.format), GL_FLOAT, GL_FALSE, vertex_stride_bytes, (const void*)Geometry::extra_offset_bytes(data.format)));
+            glsafe(::glEnableVertexAttribArray(extra_id));
+        }
+    }
 
     shader->set_uniform("uniform_color", data.color);
 
@@ -914,6 +978,8 @@ void GLModel::render(const std::pair<size_t, size_t>& range)
     glsafe(::glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
 #endif // !ENABLE_GL_CORE_PROFILE
 
+    if (extra_id != -1)
+        glsafe(::glDisableVertexAttribArray(extra_id));
     if (tex_coord_id != -1)
         glsafe(::glDisableVertexAttribArray(tex_coord_id));
     if (normal_id != -1)

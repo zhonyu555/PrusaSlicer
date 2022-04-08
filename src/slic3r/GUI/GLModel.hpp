@@ -58,12 +58,13 @@ namespace GUI {
 
             enum class EVertexLayout : unsigned char
             {
-                P2,   // position 2 floats
-                P2T2, // position 2 floats + texture coords 2 floats
-                P3,   // position 3 floats
-                P3T2, // position 3 floats + texture coords 2 floats
-                P3N3, // position 3 floats + normal 3 floats
-                P4,   // position 4 floats
+                P2,     // position 2 floats
+                P2T2,   // position 2 floats + texture coords 2 floats
+                P3,     // position 3 floats
+                P3T2,   // position 3 floats + texture coords 2 floats
+                P3N3,   // position 3 floats + normal 3 floats
+                P3N3E3, // position 3 floats + normal 3 floats + extra 3 floats
+                P4,     // position 4 floats
             };
 
             enum class EIndexType : unsigned char
@@ -88,12 +89,13 @@ namespace GUI {
             void reserve_vertices(size_t vertices_count) { vertices.reserve(vertices_count * vertex_stride_floats(format)); }
             void reserve_indices(size_t indices_count) { indices.reserve(indices_count); }
 
-            void add_vertex(const Vec2f& position);                          // EVertexLayout::P2
-            void add_vertex(const Vec2f& position, const Vec2f& tex_coord);  // EVertexLayout::P2T2
-            void add_vertex(const Vec3f& position);                          // EVertexLayout::P3
-            void add_vertex(const Vec3f& position, const Vec2f& tex_coord);  // EVertexLayout::P3T2
-            void add_vertex(const Vec3f& position, const Vec3f& normal);     // EVertexLayout::P3N3
-            void add_vertex(const Vec4f& position);                          // EVertexLayout::P4
+            void add_vertex(const Vec2f& position);                                          // EVertexLayout::P2
+            void add_vertex(const Vec2f& position, const Vec2f& tex_coord);                  // EVertexLayout::P2T2
+            void add_vertex(const Vec3f& position);                                          // EVertexLayout::P3
+            void add_vertex(const Vec3f& position, const Vec2f& tex_coord);                  // EVertexLayout::P3T2
+            void add_vertex(const Vec3f& position, const Vec3f& normal);                     // EVertexLayout::P3N3
+            void add_vertex(const Vec3f& position, const Vec3f& normal, const Vec3f& extra); // EVertexLayout::P3N3E3
+            void add_vertex(const Vec4f& position);                                          // EVertexLayout::P4
 
             void set_vertex(size_t id, const Vec3f& position, const Vec3f& normal); // EVertexLayout::P3N3
 
@@ -139,11 +141,17 @@ namespace GUI {
             static size_t tex_coord_offset_floats(const Format& format);
             static size_t tex_coord_offset_bytes(const Format& format) { return tex_coord_offset_floats(format) * sizeof(float); }
 
+            static size_t extra_stride_floats(const Format& format);
+            static size_t extra_stride_bytes(const Format& format) { return extra_stride_floats(format) * sizeof(float); }
+            static size_t extra_offset_floats(const Format& format);
+            static size_t extra_offset_bytes(const Format& format) { return extra_offset_floats(format) * sizeof(float); }
+
             static size_t index_stride_bytes(const Geometry& data);
 
             static bool has_position(const Format& format);
             static bool has_normal(const Format& format);
             static bool has_tex_coord(const Format& format);
+            static bool has_extra(const Format& format);
 #else
             struct Entity
             {

@@ -36,6 +36,8 @@ std::pair<bool, std::string> GLShadersManager::init()
 #if ENABLE_LEGACY_OPENGL_REMOVAL
 #if ENABLE_OPENGL_ES
     const std::string prefix = "ES/";
+    // used to render wireframed triangles
+    valid &= append_shader("wireframe", { prefix + "wireframe.vs", prefix + "wireframe.fs" });
 #else
     const std::string prefix = GUI::wxGetApp().is_gl_version_greater_or_equal_to(3, 1) ? "140/" : "110/";
 #endif // ENABLE_OPENGL_ES
