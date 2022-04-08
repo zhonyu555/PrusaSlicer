@@ -1,5 +1,4 @@
 #version 100
-#extension GL_NV_fragdepth : enable
 
 precision highp float;
 
