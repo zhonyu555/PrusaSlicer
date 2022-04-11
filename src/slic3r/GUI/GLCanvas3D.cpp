@@ -1668,6 +1668,9 @@ void GLCanvas3D::render()
 #if ENABLE_RENDER_PICKING_PASS
     if (!m_picking_enabled || !m_show_picking_texture) {
 #endif // ENABLE_RENDER_PICKING_PASS
+
+    const bool is_looking_downward = camera.is_looking_downward();
+
     // draw scene
     glsafe(::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT));
     _render_background();
@@ -1677,12 +1680,13 @@ void GLCanvas3D::render()
         _render_gcode();
     _render_sla_slices();
     _render_selection();
+    if (is_looking_downward)
 #if ENABLE_LEGACY_OPENGL_REMOVAL
-    _render_bed(camera.get_view_matrix(), camera.get_projection_matrix(), !camera.is_looking_downward(), true);
+        _render_bed(camera.get_view_matrix(), camera.get_projection_matrix(), false, true);
 #else
-    _render_bed(!camera.is_looking_downward(), true);
+        _render_bed(false, true);
 #endif // ENABLE_LEGACY_OPENGL_REMOVAL
-    _render_objects(GLVolumeCollection::ERenderType::Transparent);
+        _render_objects(GLVolumeCollection::ERenderType::Transparent);
 
     _render_sequential_clearance();
 #if ENABLE_RENDER_SELECTION_CENTER
@@ -1703,6 +1707,12 @@ void GLCanvas3D::render()
     // could be invalidated by the following gizmo render methods
     _render_selection_sidebar_hints();
     _render_current_gizmo();
+    if (!is_looking_downward)
+#if ENABLE_LEGACY_OPENGL_REMOVAL
+        _render_bed(camera.get_view_matrix(), camera.get_projection_matrix(), true, true);
+#else
+        _render_bed(true, true);
+#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 #if ENABLE_RENDER_PICKING_PASS
     }
 #endif // ENABLE_RENDER_PICKING_PASS
