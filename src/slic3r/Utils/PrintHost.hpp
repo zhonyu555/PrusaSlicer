@@ -62,6 +62,10 @@ public:
     virtual bool get_groups(wxArrayString & /* groups */) const { return false; }
     virtual bool get_printers(wxArrayString & /* printers */) const { return false; }
 
+    // Support for Duet machine limits retrieval. Not supported by other print hosts.
+    // Returns false if not supported.
+    virtual bool get_machine_limits(wxString &msg, DynamicPrintConfig &limits) const { msg = "Unsupported Printer Host Type: " + (std::string)get_name(); return false; }
+
     static PrintHost* get_print_host(DynamicPrintConfig *config);
 
 protected:

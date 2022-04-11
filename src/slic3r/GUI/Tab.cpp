@@ -663,6 +663,9 @@ void TabPrinter::msw_rescale()
     if (m_reset_to_filament_color)
         m_reset_to_filament_color->msw_rescale();
 
+    if (m_get_machine_limits_btn)
+        m_get_machine_limits_btn->msw_rescale();
+
     Layout();
 }
 
@@ -2333,20 +2336,32 @@ void TabPrinter::build_fff()
         optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
                 if (opt_key == "silent_mode") {
+                    const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+                    bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
                     bool val = boost::any_cast<bool>(value);
-                    if (m_use_silent_mode != val) {
+                    bool use_silent_mode = val && is_marlin_flavor;
+                    if (m_use_silent_mode != use_silent_mode) {
                         m_rebuild_kinematics_page = true;
-                        m_use_silent_mode = val;
+                        m_use_silent_mode = use_silent_mode;
                     }
                 }
                 if (opt_key == "gcode_flavor") {
                     const int flavor = boost::any_cast<int>(value);
                     bool supports_travel_acceleration = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfRepRapFirmware));
                     bool supports_min_feedrates       = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfMarlinLegacy));
-                    if (supports_travel_acceleration != m_supports_travel_acceleration || supports_min_feedrates != m_supports_min_feedrates) {
+                    bool supports_retract_acceleration = flavor != int(gcfRepRapFirmware);
+                    bool use_silent_mode = m_config->opt_bool("silent_mode") && supports_min_feedrates;
+                    if (supports_travel_acceleration != m_supports_travel_acceleration 
+                        || supports_min_feedrates != m_supports_min_feedrates
+                        || supports_retract_acceleration != m_supports_retract_acceleration) {
                         m_rebuild_kinematics_page = true;
                         m_supports_travel_acceleration = supports_travel_acceleration;
                         m_supports_min_feedrates = supports_min_feedrates;
+                        m_supports_retract_acceleration = supports_retract_acceleration;
+                    }
+                    if (m_use_silent_mode != use_silent_mode) {
+                        m_rebuild_kinematics_page = true;
+                        m_use_silent_mode = use_silent_mode;
                     }
                 }
                 build_unregular_pages();
@@ -2583,8 +2598,54 @@ PageShp TabPrinter::build_kinematics_page()
 
     auto optgroup = page->new_optgroup(L("General"));
     {
-	    optgroup->append_single_option_line("machine_limits_usage");
-        Line line { "", "" };
+        Line line = optgroup->create_single_option_line("machine_limits_usage");
+
+        auto get_machine_limits_btn = [this](wxWindow* parent) {
+            m_get_machine_limits_btn = new ScalableButton(parent, wxID_ANY, "printer", _L("Get Machine Limits from Host"),
+                wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
+            ScalableButton* btn = m_get_machine_limits_btn;
+            btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+            btn->SetSize(btn->GetBestSize());
+            auto sizer = new wxBoxSizer(wxHORIZONTAL);
+            sizer->Add(btn);
+
+            btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+                if (!m_preset_bundle->physical_printers.has_selection()) {
+                    show_error(this, _L("No Physical Printer selected."));
+                    return;
+                }
+                
+                std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_preset_bundle->physical_printers.get_selected_printer_config()));
+
+                if (!host) {
+                    show_error(this, _L("Could not get a valid Printer Host reference."));
+                    return;
+                }
+
+                wxString msg;
+                DynamicPrintConfig cfg = *m_config;
+                bool result;
+                {
+                    // Show a wait cursor during the connection test, as it is blocking UI.
+                    wxBusyCursor wait;
+                    result = host->get_machine_limits(msg, cfg);
+                }
+
+                if (result) {
+                    this->load_config(cfg);
+                    show_info(this, _L("Machine limits retrieved from Printer Host:\n") + host->get_host(), _L("Success!"));
+                } else {
+                    show_error(this, msg);
+                }
+            });
+
+            return sizer;
+        };
+        if (m_supports_get_machine_limits)
+            line.append_widget(get_machine_limits_btn);
+        optgroup->append_line(line);
+
+        line = { "", "" };
         line.full_width = 1;
         line.widget = [this](wxWindow* parent) {
             return description_line_widget(parent, &m_machine_limits_description_line);
@@ -2627,7 +2688,8 @@ PageShp TabPrinter::build_kinematics_page()
             append_option_line(optgroup, "machine_max_acceleration_" + axis);
         }
         append_option_line(optgroup, "machine_max_acceleration_extruding");
-        append_option_line(optgroup, "machine_max_acceleration_retracting");
+        if (m_supports_retract_acceleration)
+            append_option_line(optgroup, "machine_max_acceleration_retracting");
         if (m_supports_travel_acceleration)
             append_option_line(optgroup, "machine_max_acceleration_travel");
 
@@ -2635,6 +2697,9 @@ PageShp TabPrinter::build_kinematics_page()
         for (const std::string &axis : axes)	{
             append_option_line(optgroup, "machine_max_jerk_" + axis);
         }
+
+        if (!m_supports_retract_acceleration) // Rename/make a different variable to use?
+            append_option_line(optgroup, "machine_rrf_jerk_policy");
 
         if (m_supports_min_feedrates) {
             optgroup = page->new_optgroup(L("Minimum feedrates"));
@@ -2913,6 +2978,7 @@ void TabPrinter::clear_pages()
 {
     Tab::clear_pages();
     m_reset_to_filament_color = nullptr;
+    m_get_machine_limits_btn = nullptr;
 }
 
 void TabPrinter::toggle_options()
@@ -2922,12 +2988,12 @@ void TabPrinter::toggle_options()
 
     const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
     bool have_multiple_extruders = m_extruders_count > 1;
+    bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
     if (m_active_page->title() == "Custom G-code")
         toggle_option("toolchange_gcode", have_multiple_extruders);
     if (m_active_page->title() == "General") {
         toggle_option("single_extruder_multi_material", have_multiple_extruders);
 
-        bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
         // Disable silent mode for non-marlin firmwares.
         toggle_option("silent_mode", is_marlin_flavor);
     }
@@ -3001,7 +3067,7 @@ void TabPrinter::toggle_options()
             || flavor == gcfRepRapFirmware);
 		const auto *machine_limits_usage = m_config->option<ConfigOptionEnum<MachineLimitsUsage>>("machine_limits_usage");
 		bool enabled = machine_limits_usage->value != MachineLimitsUsage::Ignore;
-        bool silent_mode = m_config->opt_bool("silent_mode");
+        bool silent_mode = m_config->opt_bool("silent_mode") && is_marlin_flavor;
         int  max_field = silent_mode ? 2 : 1;
     	for (const std::string &opt : Preset::machine_limits_options())
             for (int i = 0; i < max_field; ++ i)
@@ -3025,18 +3091,31 @@ void TabPrinter::update()
 
 void TabPrinter::update_fff()
 {
-    if (m_use_silent_mode != m_config->opt_bool("silent_mode"))	{
+    const auto flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+    bool supports_travel_acceleration   = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
+    bool supports_min_feedrates         = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
+    bool use_silent_mode                = m_config->opt_bool("silent_mode") && supports_min_feedrates;
+    bool supports_retract_acceleration  = flavor != gcfRepRapFirmware;
+    bool supports_get_machine_limits = m_preset_bundle->physical_printers.has_selection() 
+        && PrintHost::get_print_host(m_preset_bundle->physical_printers.get_selected_printer_config())->get_name() == "Duet";
+
+    if (m_use_silent_mode != use_silent_mode)	{
         m_rebuild_kinematics_page = true;
-        m_use_silent_mode = m_config->opt_bool("silent_mode");
+        m_use_silent_mode = use_silent_mode;
     }
 
-    const auto flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
-    bool supports_travel_acceleration = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
-    bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
-    if (m_supports_travel_acceleration != supports_travel_acceleration || m_supports_min_feedrates != supports_min_feedrates) {
+    if (m_supports_get_machine_limits != supports_get_machine_limits) {
+        m_rebuild_kinematics_page = true;
+        m_supports_get_machine_limits = supports_get_machine_limits;;
+    }
+        
+    if (m_supports_travel_acceleration != supports_travel_acceleration 
+        || m_supports_min_feedrates != supports_min_feedrates
+        || m_supports_retract_acceleration != supports_retract_acceleration) {
         m_rebuild_kinematics_page = true;
         m_supports_travel_acceleration = supports_travel_acceleration;
         m_supports_min_feedrates = supports_min_feedrates;
+        m_supports_retract_acceleration = supports_retract_acceleration;
     }
 
     toggle_options();
@@ -4257,6 +4336,13 @@ void TabPrinter::update_machine_limits_description(const MachineLimitsUsage usag
 		break;
 	default: assert(false);
 	}
+    
+    const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+    if (flavor == gcfRepRapFirmware)
+        text += _L("\n\nYou can retrieve machine limits from Duet printer hosts using the \"Get Machine Limits from "
+                   "Host\" button above. (RepRapFirmware 3.0+ required)\n\nIf no button is visible, you must first "
+                   "configure, then select, a compatible physical printer. See the cog button at the top of this page.");
+
     m_machine_limits_description_line->SetText(text);
 }
 

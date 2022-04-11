@@ -27,6 +27,7 @@ public:
 	bool can_test() const override { return true; }
     PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint | PrintHostPostUploadAction::StartSimulation; }
 	std::string get_host() const override { return host; }
+    bool get_machine_limits(wxString &msg, DynamicPrintConfig &limits) const override;
    
 private:
 	enum class ConnectionType { rrf, dsf, error };
@@ -36,6 +37,7 @@ private:
 	std::string get_upload_url(const std::string &filename, ConnectionType connectionType) const;
 	std::string get_connect_url(const bool dsfUrl) const;
 	std::string get_base_url() const;
+    std::string get_limits_url() const;
 	std::string timestamp_str() const;
 	ConnectionType connect(wxString &msg) const;
 	void disconnect(ConnectionType connectionType) const;

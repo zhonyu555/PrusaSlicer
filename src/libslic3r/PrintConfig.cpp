@@ -1756,6 +1756,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloats{ 1500., 1250. });
 
+    // RepRapFirmware jerk policy
+    def = this->add("machine_rrf_jerk_policy", coBools);
+    def->full_label = L("Use RRF Jerk Policy");
+    def->category = L("Machine limits");
+    def->tooltip = L("Use RepRapFirmware jerk policy (M566 P0) if enabled. "
+                     "If disabled, emulate marlin jerk (M566 P1).");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBools{ true, true });
+
     def = this->add("max_fan_speed", coInts);
     def->label = L("Max");
     def->tooltip = L("This setting represents the maximum speed of your fan.");

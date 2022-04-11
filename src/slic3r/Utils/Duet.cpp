@@ -42,6 +42,75 @@ bool Duet::test(wxString &msg) const
 	return connectionType != ConnectionType::error;
 }
 
+bool Duet::get_machine_limits(wxString &msg, DynamicPrintConfig &limits) const
+{
+    auto connectionType = connect(msg);
+
+    if (connectionType != ConnectionType::rrf) {
+        if (connectionType == ConnectionType::dsf)
+            msg = _L("DSF (SBC-mode) not yet supported.");
+        return false;
+    }
+
+    bool res = false;
+
+    auto url = get_limits_url();
+    auto http = Http::get(std::move(url));
+    http.on_error([&](std::string body, std::string error, unsigned status) {
+        BOOST_LOG_TRIVIAL(error) << boost::format("Duet: Error: %1%, HTTP %2%, body: `%3%`") % error % status % body;
+        msg = _L("Get Machine Limits failed (RRF3+ required):\n");
+        msg += format_error(body, error, status);
+    })
+    .on_complete([&](std::string body, unsigned) {
+        BOOST_LOG_TRIVIAL(debug) << boost::format("Duet: Got: %1%") % body;
+        
+        pt::ptree tree;
+        try {
+            std::istringstream iss(body);
+            pt::read_json(iss, tree);
+        }
+        catch (pt::json_parser_error){
+            msg = _L("Failed to parse JSON response.");
+            BOOST_LOG_TRIVIAL(error) << boost::format("Duet: Error: %1%") % msg;
+            return;
+        }
+        
+        if (!tree.get_child_optional("result.axes") || !tree.get_child_optional("result.extruders")) {
+            msg = _L("JSON response: unrecognized tree structure.");
+            BOOST_LOG_TRIVIAL(error) << boost::format("Duet: Error: %1%") % msg;
+            return;
+        }
+
+        const std::vector<std::string> axes{ "x", "y", "z" };
+        int index = 0;
+        for (const auto &axis : tree.get_child("result.axes")) {
+            limits.option<ConfigOptionFloats>("machine_max_acceleration_" + axes[index])->set_at(new ConfigOptionFloat(axis.second.get<double>("acceleration", 0.)),0,0);
+            limits.option<ConfigOptionFloats>("machine_max_jerk_"         + axes[index])->set_at(new ConfigOptionFloat(axis.second.get<double>("jerk", 0.) / 60.),0,0);
+            limits.option<ConfigOptionFloats>("machine_max_feedrate_"     + axes[index])->set_at(new ConfigOptionFloat(axis.second.get<double>("speed", 0.) / 60.),0,0);
+            if (index == 2) // if (axis.second.get<std::string>("letter") == "Z")
+                break;
+            index++;
+        }
+
+        for (const auto &extruder : tree.get_child("result.extruders")) {
+            limits.option<ConfigOptionFloats>("machine_max_acceleration_e")->set_at(new ConfigOptionFloat(extruder.second.get<double>("acceleration", 0.)),0,0);
+            limits.option<ConfigOptionFloats>("machine_max_jerk_e"        )->set_at(new ConfigOptionFloat(extruder.second.get<double>("jerk", 0.) / 60.),0,0);
+            limits.option<ConfigOptionFloats>("machine_max_feedrate_e"    )->set_at(new ConfigOptionFloat(extruder.second.get<double>("speed", 0.) / 60.),0,0);
+            break;
+        }
+
+        limits.option<ConfigOptionFloats>("machine_max_acceleration_extruding" )->set_at(new ConfigOptionFloat(tree.get<double>("result.printingAcceleration", 0.)),0,0);
+        limits.option<ConfigOptionFloats>("machine_max_acceleration_travel"    )->set_at(new ConfigOptionFloat(tree.get<double>("result.travelAcceleration", 0.)),0,0);
+
+        res = true;
+    })
+    .perform_sync();
+
+    disconnect(connectionType);
+
+    return res;
+}
+
 wxString Duet::get_test_ok_msg () const
 {
 	return _(L("Connection to Duet works correctly."));
@@ -221,6 +290,12 @@ std::string Duet::get_base_url() const
 	} else {
 		return (boost::format("http://%1%/") % host).str();
 	}
+}
+
+std::string Duet::get_limits_url() const
+{
+    return (boost::format("%1%rr_model?key=move")
+        % get_base_url()).str();
 }
 
 std::string Duet::timestamp_str() const

@@ -266,10 +266,10 @@ static void recalculate_trapezoids(std::vector<GCodeProcessor::TimeBlock>& block
             // Recalculate if current block entry or exit junction speed has changed.
             if (curr->flags.recalculate || next->flags.recalculate) {
                 // NOTE: Entry and exit factors always > 0 by all previous logic operations.
-                GCodeProcessor::TimeBlock block = *curr;
-                block.feedrate_profile.exit = next->feedrate_profile.entry;
-                block.calculate_trapezoid();
-                curr->trapezoid = block.trapezoid;
+                //GCodeProcessor::TimeBlock block = *curr;
+                curr->feedrate_profile.exit = next->feedrate_profile.entry;
+                curr->calculate_trapezoid();
+                //curr->trapezoid = block.trapezoid;
                 curr->flags.recalculate = false; // Reset current only to ensure next trapezoid is computed
             }
         }
@@ -277,10 +277,10 @@ static void recalculate_trapezoids(std::vector<GCodeProcessor::TimeBlock>& block
 
     // Last/newest block in buffer. Always recalculated.
     if (next != nullptr) {
-        GCodeProcessor::TimeBlock block = *next;
-        block.feedrate_profile.exit = next->safe_feedrate;
-        block.calculate_trapezoid();
-        next->trapezoid = block.trapezoid;
+        //GCodeProcessor::TimeBlock block = *next;
+        next->feedrate_profile.exit = next->safe_feedrate;
+        next->calculate_trapezoid();
+        //next->trapezoid = block.trapezoid;
         next->flags.recalculate = false;
     }
 }
@@ -869,6 +869,10 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
             // RRF does not support setting min feedrates. Set them to zero.
             m_time_processor.machine_limits.machine_min_travel_rate.values.assign(m_time_processor.machine_limits.machine_min_travel_rate.size(), 0.);
             m_time_processor.machine_limits.machine_min_extruding_rate.values.assign(m_time_processor.machine_limits.machine_min_extruding_rate.size(), 0.);
+            // RRF does not have a separate retraction acceleration -- it uses max E accel.
+            m_time_processor.machine_limits.machine_max_acceleration_retracting = m_time_processor.machine_limits.machine_max_acceleration_e;
+            // Set RRF Jerk Policy based on config option.
+            m_rrf_jerk_policy = config.machine_rrf_jerk_policy.get_at(0);
         }
     }
 
@@ -1088,11 +1092,20 @@ void GCodeProcessor::apply_config(const DynamicPrintConfig& config)
         if (machine_max_jerk_e != nullptr)
             m_time_processor.machine_limits.machine_max_jerk_e.values = machine_max_jerk_e->values;
 
+        const ConfigOptionBools* machine_rrf_jerk_policy = config.option<ConfigOptionBools>("machine_rrf_jerk_policy");
+        if (machine_rrf_jerk_policy != nullptr) {
+            m_time_processor.machine_limits.machine_rrf_jerk_policy.values = machine_rrf_jerk_policy->values;
+            m_rrf_jerk_policy = machine_rrf_jerk_policy->get_at(0);
+        }
+
         const ConfigOptionFloats* machine_max_acceleration_extruding = config.option<ConfigOptionFloats>("machine_max_acceleration_extruding");
         if (machine_max_acceleration_extruding != nullptr)
             m_time_processor.machine_limits.machine_max_acceleration_extruding.values = machine_max_acceleration_extruding->values;
 
-        const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>("machine_max_acceleration_retracting");
+        // RRF does not use a specific M204 Retraction acceleration -- it uses just the max e accel.
+        const ConfigOptionFloats* machine_max_acceleration_retracting = config.option<ConfigOptionFloats>(m_flavor == gcfRepRapFirmware
+                                                                                                        ? "machine_max_acceleration_e"
+                                                                                                        : "machine_max_acceleration_retracting");
         if (machine_max_acceleration_retracting != nullptr)
             m_time_processor.machine_limits.machine_max_acceleration_retracting.values = machine_max_acceleration_retracting->values;
 
@@ -1223,6 +1236,7 @@ void GCodeProcessor::reset()
     m_result.id = ++s_result_id;
 
     m_use_volumetric_e = false;
+    m_rrf_jerk_policy = false;
     m_last_default_color_id = 0;
 
     m_options_z_corrector.reset();
@@ -2737,6 +2751,11 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
         block.flags.recalculate = true;
         block.safe_feedrate = curr.safe_feedrate;
 
+        if ((m_rrf_jerk_policy && m_flavor == gcfRepRapFirmware)
+                                && ((type != EMoveType::Extrude || blocks.empty()) 
+                                || (!blocks.empty() && blocks.back().move_type != EMoveType::Extrude)))
+            block.max_entry_speed = 0.f;
+
         // calculates block trapezoid
         block.calculate_trapezoid();
 
@@ -3290,6 +3309,12 @@ void GCodeProcessor::process_M203(const GCodeReader::GCodeLine& line)
 
             if (line.has_e())
                 set_option_value(m_time_processor.machine_limits.machine_max_feedrate_e, i, line.e() * factor);
+
+            float value;
+            if (m_flavor == gcfRepRapFirmware && line.has_value('I', value)) {
+                set_option_value(m_time_processor.machine_limits.machine_min_extruding_rate, i, value * factor);
+                set_option_value(m_time_processor.machine_limits.machine_min_travel_rate, i, value * factor);
+            }
         }
     }
 }
@@ -3436,6 +3461,10 @@ void GCodeProcessor::process_M566(const GCodeReader::GCodeLine& line)
 
         if (line.has_e())
             set_option_value(m_time_processor.machine_limits.machine_max_jerk_e, i, line.e() * MMMIN_TO_MMSEC);
+
+        float jerk_policy;
+        if (line.has_value('P', jerk_policy))
+            m_rrf_jerk_policy = jerk_policy == 0.f ? true : false;
     }
 }
 
