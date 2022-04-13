@@ -3,6 +3,7 @@
 #include <cstring>
 #include <boost/format.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/nowide/convert.hpp>
 
 #include <wx/settings.h>
 #include <wx/sizer.h>
@@ -206,7 +207,7 @@ bool AppUpdateDownloadDialog::run_after_download() const
 
 boost::filesystem::path AppUpdateDownloadDialog::get_download_path() const
 {
-	return std::move(boost::filesystem::path(txtctrl_path->GetValue().ToUTF8().data()));
+	return boost::filesystem::path(txtctrl_path->GetValue().ToUTF8().data());
 }
 
 // MsgUpdateConfig
