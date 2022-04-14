@@ -100,6 +100,8 @@ set(SLIC3R_SOURCES
     Format/SL1.cpp
     Format/SL1_SVG.hpp
     Format/SL1_SVG.cpp
+    Format/SL1_Binary.hpp
+    Format/SL1_Binary.cpp
     Format/pwmx.hpp
     Format/pwmx.cpp
     GCode/ThumbnailData.cpp

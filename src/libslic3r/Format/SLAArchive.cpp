@@ -1,6 +1,7 @@
 #include "SLAArchive.hpp"
 
 #include "SL1.hpp"
+#include "SL1_Binary.hpp"
 #include "SL1_SVG.hpp"
 #include "pwmx.hpp"
 
@@ -28,6 +29,10 @@ static const std::map<std::string, ArchiveEntry> REGISTERED_ARCHIVES {
     {
         "SL2",
         { "sl2",  [] (const auto &cfg) { return std::make_unique<SL1_SVGArchive>(cfg); } }
+    },
+    {
+        "SL2B",
+        { "sl2b",  [] (const auto &cfg) { return std::make_unique<SL1_BinaryArchive>(cfg); } }
     },
     {
         "pwmx",
