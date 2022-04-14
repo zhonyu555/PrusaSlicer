@@ -504,6 +504,16 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(60));
 
+    def = this->add("overhang_speed", coFloat);
+    def->label = L("Overhangs");
+    def->category = L("Speed");
+    def->tooltip = L("Speed for printing overhangs.");
+    def->sidetext = L("mm/s");
+    def->aliases = { "overhang_feed_rate" };
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(60));
+
     def = this->add("brim_width", coFloat);
     def->label = L("Brim width");
     def->category = L("Skirt and brim");

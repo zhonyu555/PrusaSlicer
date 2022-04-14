@@ -855,13 +855,15 @@ namespace DoExport {
 	                const LayerRegion* layerm = layer->regions()[region_id];
 	                if (region.config().get_abs_value("perimeter_speed") == 0 ||
 	                    region.config().get_abs_value("small_perimeter_speed") == 0 ||
-	                    region.config().get_abs_value("external_perimeter_speed") == 0 ||
-	                    region.config().get_abs_value("bridge_speed") == 0)
-	                    mm3_per_mm.push_back(layerm->perimeters.min_mm3_per_mm());
+                            region.config().get_abs_value("external_perimeter_speed") == 0 ||
+                            region.config().get_abs_value("bridge_speed") == 0 ||
+                            region.config().get_abs_value("overhang_speed") == 0)
+                            mm3_per_mm.push_back(layerm->perimeters.min_mm3_per_mm());
 	                if (region.config().get_abs_value("infill_speed") == 0 ||
 	                    region.config().get_abs_value("solid_infill_speed") == 0 ||
-	                    region.config().get_abs_value("top_solid_infill_speed") == 0 ||
-                        region.config().get_abs_value("bridge_speed") == 0)
+                            region.config().get_abs_value("top_solid_infill_speed") == 0 ||
+                            region.config().get_abs_value("bridge_speed") == 0 ||
+                            region.config().get_abs_value("overhang_speed") == 0)
                     {
                         // Minimal volumetric flow should not be calculated over ironing extrusions.
                         // Use following lambda instead of the built-it method.
@@ -2905,8 +2907,10 @@ std::string GCode::_extrude(const ExtrusionPath &path, std::string description, 
             speed = m_config.get_abs_value("perimeter_speed");
         } else if (path.role() == erExternalPerimeter) {
             speed = m_config.get_abs_value("external_perimeter_speed");
-        } else if (path.role() == erOverhangPerimeter || path.role() == erBridgeInfill) {
+        } else if (path.role() == erBridgeInfill) {
             speed = m_config.get_abs_value("bridge_speed");
+        } else if (path.role() == erOverhangPerimeter) {
+            speed = m_config.get_abs_value("overhang_speed");
         } else if (path.role() == erInternalInfill) {
             speed = m_config.get_abs_value("infill_speed");
         } else if (path.role() == erSolidInfill) {
