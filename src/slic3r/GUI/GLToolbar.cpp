@@ -149,7 +149,7 @@ BackgroundTexture::Metadata::Metadata()
 {
 }
 
-const float GLToolbar::Default_Icons_Size = 40.0f;
+const float GLToolbar::Default_Icons_Size = 32.0f;
 
 GLToolbar::Layout::Layout()
     : type(Horizontal)
@@ -1940,7 +1940,7 @@ bool GLToolbar::generate_icons_texture()
     }
 
     std::vector<std::pair<int, bool>> states;
-    if (m_type == Normal) {
+    if (m_type == Normal) { // main and collapse toolbars
         states.push_back({ 1, false }); // Normal
         states.push_back({ 0, false }); // Pressed
         states.push_back({ 2, false }); // Disabled
@@ -1950,12 +1950,12 @@ bool GLToolbar::generate_icons_texture()
         states.push_back({ 0, false }); // HighlightedShown
         states.push_back({ 2, false }); // HighlightedHidden
     }
-    else {
+    else { // view toolbar
         states.push_back({ 1, false }); // Normal
-        states.push_back({ 1, true });  // Pressed
+        states.push_back({ 2, true });  // Pressed
         states.push_back({ 1, false }); // Disabled
         states.push_back({ 0, false }); // Hover
-        states.push_back({ 1, true });  // HoverPressed
+        states.push_back({ 2, true });  // HoverPressed
         states.push_back({ 1, false }); // HoverDisabled
         states.push_back({ 0, false }); // HighlightedShown
         states.push_back({ 1, false }); // HighlightedHidden
