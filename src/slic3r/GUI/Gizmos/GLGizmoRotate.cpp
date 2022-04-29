@@ -294,7 +294,12 @@ void GLGizmoRotate::init_data_from_selection(const Selection& selection)
     }
     else if (coordinates_type == ECoordinatesType::Local && selection.is_single_volume_or_modifier()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box = v.transformed_convex_hull_bounding_box(
+            v.get_instance_transformation().get_scaling_factor_matrix() * v.get_volume_transformation().get_scaling_factor_matrix());
+#else
         m_bounding_box = v.transformed_convex_hull_bounding_box(v.get_instance_transformation().get_matrix(true, true, false, true) * v.get_volume_transformation().get_matrix(true, true, false, true));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         m_center = v.world_matrix() * m_bounding_box.center();
     }
     else {
@@ -304,8 +309,13 @@ void GLGizmoRotate::init_data_from_selection(const Selection& selection)
             const GLVolume& v = *selection.get_volume(id);
             m_bounding_box.merge(v.transformed_convex_hull_bounding_box(v.get_volume_transformation().get_matrix()));
         }
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box = m_bounding_box.transformed(selection.get_volume(*ids.begin())->get_instance_transformation().get_scaling_factor_matrix());
+        m_center = selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix_no_scaling_factor() * m_bounding_box.center();
+#else
         m_bounding_box = m_bounding_box.transformed(selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix(true, true, false, true));
         m_center = selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix(false, false, true, false) * m_bounding_box.center();
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
 
     m_radius = Offset + m_bounding_box.radius();
@@ -318,11 +328,19 @@ void GLGizmoRotate::init_data_from_selection(const Selection& selection)
         m_orient_matrix = Transform3d::Identity();
     else if (coordinates_type == ECoordinatesType::Local && selection.is_single_volume_or_modifier()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_orient_matrix = v.get_instance_transformation().get_rotation_matrix() * v.get_volume_transformation().get_rotation_matrix();
+#else
         m_orient_matrix = v.get_instance_transformation().get_matrix(true, false, true, true) * v.get_volume_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
     else {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_orient_matrix = v.get_instance_transformation().get_rotation_matrix();
+#else
         m_orient_matrix = v.get_instance_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
 }
 #endif // ENABLE_WORLD_COORDINATE

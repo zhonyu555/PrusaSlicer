@@ -503,9 +503,17 @@ Transform3d GLGizmoMove3D::local_transform(const Selection& selection) const
     Transform3d ret = Geometry::assemble_transform(m_center);
     if (!wxGetApp().obj_manipul()->is_world_coordinates()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        Transform3d orient_matrix = v.get_instance_transformation().get_rotation_matrix();
+#else
         Transform3d orient_matrix = v.get_instance_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         if (selection.is_single_volume_or_modifier() && wxGetApp().obj_manipul()->is_local_coordinates())
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+            orient_matrix = orient_matrix * v.get_volume_transformation().get_rotation_matrix();
+#else
             orient_matrix = orient_matrix * v.get_volume_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         ret = ret * orient_matrix;
     }
     return ret;
@@ -535,7 +543,12 @@ void GLGizmoMove3D::calc_selection_box_and_center()
     }
     else if (coordinates_type == ECoordinatesType::Local && selection.is_single_volume_or_modifier()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box = v.transformed_convex_hull_bounding_box(
+            v.get_instance_transformation().get_scaling_factor_matrix() * v.get_volume_transformation().get_scaling_factor_matrix());
+#else
         m_bounding_box = v.transformed_convex_hull_bounding_box(v.get_instance_transformation().get_matrix(true, true, false, true) * v.get_volume_transformation().get_matrix(true, true, false, true));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         m_center = v.world_matrix() * m_bounding_box.center();
     }
     else {
@@ -545,8 +558,13 @@ void GLGizmoMove3D::calc_selection_box_and_center()
             const GLVolume& v = *selection.get_volume(id);
             m_bounding_box.merge(v.transformed_convex_hull_bounding_box(v.get_volume_transformation().get_matrix()));
         }
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box = m_bounding_box.transformed(selection.get_volume(*ids.begin())->get_instance_transformation().get_scaling_factor_matrix());
+        m_center = selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix_no_scaling_factor() * m_bounding_box.center();
+#else
         m_bounding_box = m_bounding_box.transformed(selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix(true, true, false, true));
         m_center = selection.get_volume(*ids.begin())->get_instance_transformation().get_matrix(false, false, true, false) * m_bounding_box.center();
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
 }
 #endif // ENABLE_WORLD_COORDINATE

@@ -252,14 +252,24 @@ void GLGizmoScale3D::on_render()
         }
 
 #if ENABLE_WORLD_COORDINATE
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box = m_bounding_box.transformed(selection.get_volume(*idxs.begin())->get_instance_transformation().get_scaling_factor_matrix());
+#else
         m_bounding_box = m_bounding_box.transformed(selection.get_volume(*idxs.begin())->get_instance_transformation().get_matrix(true, true, false, true));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
 #endif // ENABLE_WORLD_COORDINATE
 
         // gets transform from first selected volume
         const GLVolume& v = *selection.get_volume(*idxs.begin());
 #if ENABLE_WORLD_COORDINATE
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        const Transform3d inst_trafo = v.get_instance_transformation().get_matrix_no_scaling_factor();
+        m_grabbers_transform = inst_trafo * Geometry::assemble_transform(m_bounding_box.center());
+        m_center = inst_trafo * m_bounding_box.center();
+#else
         m_grabbers_transform = v.get_instance_transformation().get_matrix(false, false, true) * Geometry::assemble_transform(m_bounding_box.center());
         m_center = selection.get_volume(*idxs.begin())->get_instance_transformation().get_matrix(false, false, true, false) * m_bounding_box.center();
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         m_instance_center = v.get_instance_offset();
     }
     else if (selection.is_single_volume_or_modifier() && wxGetApp().obj_manipul()->is_instance_coordinates()) {
@@ -276,8 +286,14 @@ void GLGizmoScale3D::on_render()
 #endif // ENABLE_WORLD_COORDINATE
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
 #if ENABLE_WORLD_COORDINATE
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box.merge(v.transformed_convex_hull_bounding_box(
+            v.get_instance_transformation().get_scaling_factor_matrix() * v.get_volume_transformation().get_matrix_no_offset()));
+        Geometry::Transformation trafo(v.get_instance_transformation().get_rotation_matrix());
+#else
         m_bounding_box.merge(v.transformed_convex_hull_bounding_box(v.get_instance_transformation().get_matrix(true, true, false, true) * v.get_volume_transformation().get_matrix(true, false, false, true)));
         Geometry::Transformation trafo(v.get_instance_transformation().get_matrix(true, false, true, true));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         trafo.set_offset(v.world_matrix().translation());
         m_grabbers_transform = trafo.get_matrix();
         m_center = v.world_matrix() * m_bounding_box.center();
@@ -285,8 +301,14 @@ void GLGizmoScale3D::on_render()
     }
     else if (selection.is_single_volume_or_modifier() && wxGetApp().obj_manipul()->is_local_coordinates()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        m_bounding_box.merge(v.transformed_convex_hull_bounding_box(
+            v.get_instance_transformation().get_scaling_factor_matrix() * v.get_volume_transformation().get_scaling_factor_matrix()));
+        Geometry::Transformation trafo(v.get_instance_transformation().get_rotation_matrix() * v.get_volume_transformation().get_rotation_matrix());
+#else
         m_bounding_box.merge(v.transformed_convex_hull_bounding_box(v.get_instance_transformation().get_matrix(true, true, false, true) * v.get_volume_transformation().get_matrix(true, true, false, true)));
         Geometry::Transformation trafo(v.get_instance_transformation().get_matrix(true, false, true, true) * v.get_volume_transformation().get_matrix(true, false, true, true));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         trafo.set_offset(v.world_matrix().translation());
         m_grabbers_transform = trafo.get_matrix();
         m_center = v.world_matrix() * m_bounding_box.center();
@@ -832,9 +854,17 @@ Transform3d GLGizmoScale3D::local_transform(const Selection& selection) const
     Transform3d ret = Geometry::assemble_transform(m_center);
     if (!wxGetApp().obj_manipul()->is_world_coordinates()) {
         const GLVolume& v = *selection.get_volume(*selection.get_volume_idxs().begin());
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        Transform3d orient_matrix = v.get_instance_transformation().get_rotation_matrix();
+#else
         Transform3d orient_matrix = v.get_instance_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         if (selection.is_single_volume_or_modifier() && wxGetApp().obj_manipul()->is_local_coordinates())
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+            orient_matrix = orient_matrix * v.get_volume_transformation().get_rotation_matrix();
+#else
             orient_matrix = orient_matrix * v.get_volume_transformation().get_matrix(true, false, true, true);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
         ret = ret * orient_matrix;
     }
     return ret;
