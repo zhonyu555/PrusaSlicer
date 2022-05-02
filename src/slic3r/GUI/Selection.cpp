@@ -1288,6 +1288,7 @@ void Selection::mirror(Axis axis)
     set_bounding_boxes_dirty();
 }
 
+#if !ENABLE_TRANSFORMATIONS_BY_MATRICES
 void Selection::translate(unsigned int object_idx, const Vec3d& displacement)
 {
     if (!m_valid)
@@ -1336,6 +1337,7 @@ void Selection::translate(unsigned int object_idx, const Vec3d& displacement)
 
     this->set_bounding_boxes_dirty();
 }
+#endif // !ENABLE_TRANSFORMATIONS_BY_MATRICES
 
 void Selection::translate(unsigned int object_idx, unsigned int instance_idx, const Vec3d& displacement)
 {
@@ -1345,7 +1347,11 @@ void Selection::translate(unsigned int object_idx, unsigned int instance_idx, co
     for (unsigned int i : m_list) {
         GLVolume& v = *(*m_volumes)[i];
         if (v.object_idx() == (int)object_idx && v.instance_idx() == (int)instance_idx)
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+            v.set_instance_transformation(Geometry::assemble_transform(displacement) * v.get_instance_transformation().get_matrix());
+#else
             v.set_instance_offset(v.get_instance_offset() + displacement);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
 
     std::set<unsigned int> done;  // prevent processing volumes twice
@@ -1378,7 +1384,11 @@ void Selection::translate(unsigned int object_idx, unsigned int instance_idx, co
             if (v.object_idx() != object_idx || v.instance_idx() != (int)instance_idx)
                 continue;
 
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+            v.set_instance_transformation(Geometry::assemble_transform(displacement) * v.get_instance_transformation().get_matrix());
+#else
             v.set_instance_offset(v.get_instance_offset() + displacement);
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
             done.insert(j);
         }
     }
