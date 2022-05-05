@@ -75,6 +75,7 @@ bool GLGizmoScale3D::on_mouse(const wxMouseEvent &mouse_event)
 {
     if (mouse_event.Dragging()) {
         if (m_dragging) {
+#if !ENABLE_TRANSFORMATIONS_BY_MATRICES
 #if ENABLE_WORLD_COORDINATE_SCALE_REVISITED
             int res = 1;
             if (m_scale.x() != m_scale.y() || m_scale.x() != m_scale.z())
@@ -86,6 +87,7 @@ bool GLGizmoScale3D::on_mouse(const wxMouseEvent &mouse_event)
             }
             else {
 #endif // ENABLE_WORLD_COORDINATE_SCALE_REVISITED
+#endif // !ENABLE_TRANSFORMATIONS_BY_MATRICES
             // Apply new temporary scale factors
 #if ENABLE_WORLD_COORDINATE
                 TransformationType transformation_type;
@@ -103,10 +105,12 @@ bool GLGizmoScale3D::on_mouse(const wxMouseEvent &mouse_event)
 #else
                 if (mouse_event.CmdDown()) selection.translate(m_offset, true);
 #endif // ENABLE_WORLD_COORDINATE
+#if !ENABLE_TRANSFORMATIONS_BY_MATRICES
 #if ENABLE_WORLD_COORDINATE_SCALE_REVISITED
             }
 #endif // ENABLE_WORLD_COORDINATE_SCALE_REVISITED
-        }
+#endif // !ENABLE_TRANSFORMATIONS_BY_MATRICES
+    }
     }
     return use_grabbers(mouse_event);
 }
