@@ -1,2 +1,3 @@
 add_library(nanosvg nanosvg.cpp)
 target_compile_definitions(nanosvg PUBLIC NANOSVG_CPLUSPLUS NANOSVGRAST_CPLUSPLUS)
+target_link_libraries(nanosvg PUBLIC nowide)
