@@ -1154,13 +1154,21 @@ void Selection::flattening_rotate(const Vec3d& normal)
     for (unsigned int i : m_list) {
         GLVolume& v = *(*m_volumes)[i];
         // Normal transformed from the object coordinate space to the world coordinate space.
-        const auto &voldata = m_cache.volumes_data[i];
+#if ENABLE_TRANSFORMATIONS_BY_MATRICES
+        const Geometry::Transformation& old_inst_trafo = v.get_instance_transformation();
+        const Vec3d tnormal = old_inst_trafo.get_matrix().matrix().block(0, 0, 3, 3).inverse().transpose() * normal;
+        // Additional rotation to align tnormal with the down vector in the world coordinate space.
+        const Transform3d rotation_matrix = Transform3d(Eigen::Quaterniond().setFromTwoVectors(tnormal, -Vec3d::UnitZ()));
+        v.set_instance_transformation(old_inst_trafo.get_offset_matrix() * rotation_matrix * old_inst_trafo.get_matrix_no_offset());
+#else
+        const auto& voldata = m_cache.volumes_data[i];
         Vec3d tnormal = (Geometry::assemble_transform(
             Vec3d::Zero(), voldata.get_instance_rotation(), 
             voldata.get_instance_scaling_factor().cwiseInverse(), voldata.get_instance_mirror()) * normal).normalized();
         // Additional rotation to align tnormal with the down vector in the world coordinate space.
         auto  extra_rotation = Eigen::Quaterniond().setFromTwoVectors(tnormal, - Vec3d::UnitZ());
         v.set_instance_rotation(Geometry::extract_euler_angles(extra_rotation.toRotationMatrix() * m_cache.volumes_data[i].get_instance_rotation_matrix()));
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
     }
 
 #if !DISABLE_INSTANCES_SYNCH
