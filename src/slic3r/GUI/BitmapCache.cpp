@@ -15,9 +15,7 @@
     #include <wx/rawbmp.h>
 #endif /* __WXGTK2__ */
 
-//#define NANOSVG_IMPLEMENTATION
 #include "nanosvg/nanosvg.h"
-#define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvg/nanosvgrast.h"
 
 namespace Slic3r { namespace GUI {
@@ -335,20 +333,20 @@ wxBitmap* BitmapCache::load_svg(const std::string &bitmap_name, unsigned target_
     int   height   = (int)(svg_scale * image->height + 0.5f);
     int   n_pixels = width * height;
     if (n_pixels <= 0) {
-        ::nsvgDelete(image);
+        nsvgDelete(image);
         return nullptr;
     }
 
-    NSVGrasterizer *rast = ::nsvgCreateRasterizer();
+    NSVGrasterizer *rast = nsvgCreateRasterizer();
     if (rast == nullptr) {
-        ::nsvgDelete(image);
+        nsvgDelete(image);
         return nullptr;
     }
 
     std::vector<unsigned char> data(n_pixels * 4, 0);
-    ::nsvgRasterize(rast, image, 0, 0, svg_scale, data.data(), width, height, width * 4);
-    ::nsvgDeleteRasterizer(rast);
-    ::nsvgDelete(image);
+    nsvgRasterize(rast, image, 0, 0, svg_scale, data.data(), width, height, width * 4);
+    nsvgDeleteRasterizer(rast);
+    nsvgDelete(image);
 
     return this->insert_raw_rgba(bitmap_key, width, height, data.data(), grayscale);
 }

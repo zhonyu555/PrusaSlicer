@@ -29,6 +29,8 @@
 #ifndef NANOSVG_H
 #define NANOSVG_H
 
+namespace Slic3r {
+
 #ifndef NANOSVG_CPLUSPLUS
 #ifdef __cplusplus
 extern "C" {
@@ -181,15 +183,20 @@ void nsvgDelete(NSVGimage* image);
 #endif
 #endif
 
+} // namespace Slic3r
+
 #endif // NANOSVG_H
 
 #ifdef NANOSVG_IMPLEMENTATION
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <math.h>
 
 #include <boost/algorithm/string/replace.hpp>
+
+namespace Slic3r {
 
 #define NSVG_PI (3.14159265358979323846264338327f)
 #define NSVG_KAPPA90 (0.5522847493f)	// Length proportional to radius of a cubic bezier handle for 90deg arcs.
@@ -2975,5 +2982,7 @@ void nsvgDelete(NSVGimage* image)
 	}
 	free(image);
 }
+
+} // namespace Slic3r
 
 #endif

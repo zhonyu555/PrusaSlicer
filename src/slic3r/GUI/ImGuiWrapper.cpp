@@ -1198,20 +1198,20 @@ std::vector<unsigned char> ImGuiWrapper::load_svg(const std::string& bitmap_name
     int   height = (int)(svg_scale * image->height + 0.5f);
     int   n_pixels = width * height;
     if (n_pixels <= 0) {
-        ::nsvgDelete(image);
+        nsvgDelete(image);
         return empty_vector;
     }
 
-    NSVGrasterizer* rast = ::nsvgCreateRasterizer();
+    NSVGrasterizer* rast = nsvgCreateRasterizer();
     if (rast == nullptr) {
-        ::nsvgDelete(image);
+        nsvgDelete(image);
         return empty_vector;
     }
 
     std::vector<unsigned char> data(n_pixels * 4, 0);
-    ::nsvgRasterize(rast, image, 0, 0, svg_scale, data.data(), width, height, width * 4);
-    ::nsvgDeleteRasterizer(rast);
-    ::nsvgDelete(image);
+    nsvgRasterize(rast, image, 0, 0, svg_scale, data.data(), width, height, width * 4);
+    nsvgDeleteRasterizer(rast);
+    nsvgDelete(image);
 
     return data;
 }

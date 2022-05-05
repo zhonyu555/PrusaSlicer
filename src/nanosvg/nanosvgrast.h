@@ -25,6 +25,10 @@
 #ifndef NANOSVGRAST_H
 #define NANOSVGRAST_H
 
+#include "nanosvg.h"
+
+namespace Slic3r {
+
 #ifndef NANOSVGRAST_CPLUSPLUS
 #ifdef __cplusplus
 extern "C" {
@@ -65,18 +69,23 @@ void nsvgRasterize(NSVGrasterizer* r,
 // Deletes rasterizer context.
 void nsvgDeleteRasterizer(NSVGrasterizer*);
 
-
 #ifndef NANOSVGRAST_CPLUSPLUS
 #ifdef __cplusplus
 }
 #endif
 #endif
 
+} // namespace Slic3r
+
 #endif // NANOSVGRAST_H
 
 #ifdef NANOSVGRAST_IMPLEMENTATION
 
 #include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
+namespace Slic3r {
 
 #define NSVG__SUBSAMPLES	5
 #define NSVG__FIXSHIFT		10
@@ -1448,5 +1457,7 @@ void nsvgRasterize(NSVGrasterizer* r,
 	r->height = 0;
 	r->stride = 0;
 }
+
+} // namespace Slic3r
 
 #endif
