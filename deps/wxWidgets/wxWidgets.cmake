@@ -15,11 +15,9 @@ if (UNIX) # wxWidgets will not use char as the underlying type for wxString unle
 endif()
 
 prusaslicer_add_cmake_project(wxWidgets
-    # GIT_REPOSITORY "https://github.com/prusa3d/wxWidgets"
-    # GIT_TAG tm_cross_compile #${_wx_git_tag}
-    URL https://github.com/prusa3d/wxWidgets/archive/489f6118256853cf5b299d595868641938566cdb.zip
-    URL_HASH SHA256=5b22d465377cedd8044bba69bea958b248953fd3628c1de4913a84d4e6f6175b
-    DEPENDS ${PNG_PKG} ${ZLIB_PKG} ${EXPAT_PKG} dep_TIFF dep_JPEG
+    URL https://github.com/prusa3d/wxWidgets/archive/f1b2693df1cd1bfa5c6bc219e73f36e2500bb2ca.zip
+    URL_HASH SHA256=09fbf76b74e4902f8070411feedf2f7f7b74a1da9426e0ad535cdd5805ca181b
+    DEPENDS ${PNG_PKG} ${ZLIB_PKG} ${EXPAT_PKG} dep_TIFF dep_JPEG dep_NanoSVG
     CMAKE_ARGS
         -DwxBUILD_PRECOMP=ON
         ${_wx_toolkit}
@@ -32,7 +30,8 @@ prusaslicer_add_cmake_project(wxWidgets
         -DwxUSE_OPENGL=ON
         -DwxUSE_LIBPNG=sys
         -DwxUSE_ZLIB=sys
-        -DwxUSE_REGEX=builtin
+        -DwxUSE_NANOSVG=sys
+        -DwxUSE_REGEX=OFF
         -DwxUSE_LIBXPM=builtin
         -DwxUSE_LIBJPEG=sys
         -DwxUSE_LIBTIFF=sys

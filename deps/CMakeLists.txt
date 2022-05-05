@@ -183,6 +183,7 @@ include(CURL/CURL.cmake)
 
 include(JPEG/JPEG.cmake)
 include(TIFF/TIFF.cmake)
+include(NanoSVG/NanoSVG.cmake)
 include(wxWidgets/wxWidgets.cmake)
 
 set(_dep_list

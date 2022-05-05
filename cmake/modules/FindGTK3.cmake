@@ -42,5 +42,10 @@ set(VERSION_OK FALSE)
 endif ()
 endif ()
 endif ()
+
+# Remove some paths from include that prusaslicer already provides within deps:
+list(FILTER GTK3_INCLUDE_DIRS EXCLUDE REGEX png)
+list(FILTER GTK3_INCLUDE_DIRS EXCLUDE REGEX jpeg)
+
 include(FindPackageHandleStandardArgs)
 FIND_PACKAGE_HANDLE_STANDARD_ARGS(GTK3 DEFAULT_MSG GTK3_INCLUDE_DIRS GTK3_LIBRARIES VERSION_OK)
