@@ -647,8 +647,7 @@ bool Transformation::has_skew() const
 {
     return contains_skew(m_matrix);
 }
-
-#if !ENABLE_TRANSFORMATIONS_BY_MATRICES
+#else
 void Transformation::set_from_transform(const Transform3d& transform)
 {
     // offset
@@ -686,7 +685,7 @@ void Transformation::set_from_transform(const Transform3d& transform)
 //    if (!m_matrix.isApprox(transform))
 //        std::cout << "something went wrong in extracting data from matrix" << std::endl;
 }
-#endif // !ENABLE_TRANSFORMATIONS_BY_MATRICES
+#endif // ENABLE_TRANSFORMATIONS_BY_MATRICES
 
 void Transformation::reset()
 {
