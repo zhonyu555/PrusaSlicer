@@ -676,11 +676,14 @@ CopyFileResult copy_file_inner(const std::string& from, const std::string& to, s
 	// the copy_file() function will fail appropriately and we don't want the permission()
 	// calls to cause needless failures on permissionless filesystems (ie. FATs on SD cards etc.)
 	// or when the target file doesn't exist.
+	printf("from %s to %s\n",from.c_str(), to.c_str());
+	printf("pre permissions 1\n");
 	boost::system::error_code ec;
-	//boost::filesystem::permissions(target, perms, ec);
-	//if (ec)
-	//	BOOST_LOG_TRIVIAL(debug) << "boost::filesystem::permisions before copy error message (this could be irrelevant message based on file system): " << ec.message();
-	//ec.clear();
+	boost::filesystem::permissions(target, perms, ec);
+	if (ec)
+		BOOST_LOG_TRIVIAL(debug) << "boost::filesystem::permisions before copy error message (this could be irrelevant message based on file system): " << ec.message();
+	ec.clear();
+	printf("post permissions 1\n");
 #ifdef __linux__
 	// We want to allow copying files on Linux to succeed even if changing the file attributes fails.
 	// That may happen when copying on some exotic file system, for example Linux on Chrome.
@@ -688,14 +691,17 @@ CopyFileResult copy_file_inner(const std::string& from, const std::string& to, s
 #else // __linux__
 	boost::filesystem::copy_file(source, target, boost::filesystem::copy_option::overwrite_if_exists, ec);
 #endif // __linux__
+	printf("post copy file\n");
 	if (ec) {
 		error_message = ec.message();
 		return FAIL_COPY_FILE;
 	}
-	//ec.clear();
-	//boost::filesystem::permissions(target, perms, ec);
-	//if (ec)
-	//	BOOST_LOG_TRIVIAL(debug) << "boost::filesystem::permisions after copy error message (this could be irrelevant message based on file system): " << ec.message();
+	ec.clear();
+	printf("pre permissions 2\n");
+	boost::filesystem::permissions(target, perms, ec);
+	if (ec)
+		BOOST_LOG_TRIVIAL(debug) << "boost::filesystem::permisions after copy error message (this could be irrelevant message based on file system): " << ec.message();
+	printf("post permissions 2\n");
 	return SUCCESS;
 }
 
