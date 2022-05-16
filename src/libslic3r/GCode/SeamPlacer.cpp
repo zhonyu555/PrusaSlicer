@@ -705,11 +705,11 @@ struct SeamComparator {
         }
 
         // the penalites are kept close to range [0-1.x] however, it should not be relied upon
-        float penalty_a = (a.visibility + SeamPlacer::additional_angle_importance)
-                * compute_angle_penalty(a.local_ccw_angle)
+        float penalty_a = a.visibility +
+                SeamPlacer::angle_importance * compute_angle_penalty(a.local_ccw_angle)
                 + distance_penalty_a;
-        float penalty_b = (b.visibility + SeamPlacer::additional_angle_importance)
-                * compute_angle_penalty(b.local_ccw_angle)
+        float penalty_b = b.visibility +
+                SeamPlacer::angle_importance * compute_angle_penalty(b.local_ccw_angle)
                 + distance_penalty_b;
 
         return penalty_a < penalty_b;
@@ -762,10 +762,10 @@ struct SeamComparator {
         }
 
         //ranges:          [0 - 1]                                          (0 - 1.3]                  ;
-        float penalty_a = (a.visibility + SeamPlacer::additional_angle_importance)
-                * compute_angle_penalty(a.local_ccw_angle);
-        float penalty_b = (b.visibility + SeamPlacer::additional_angle_importance)
-                * compute_angle_penalty(b.local_ccw_angle);
+        float penalty_a = a.visibility
+                + SeamPlacer::angle_importance * compute_angle_penalty(a.local_ccw_angle);
+        float penalty_b = b.visibility +
+                SeamPlacer::angle_importance * compute_angle_penalty(b.local_ccw_angle);
 
         return penalty_a <= penalty_b || penalty_a - penalty_b < SeamPlacer::seam_align_score_tolerance;
     }
