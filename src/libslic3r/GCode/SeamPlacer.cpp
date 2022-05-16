@@ -8,11 +8,11 @@
 #include <algorithm>
 #include <queue>
 
+#include "libslic3r/AABBTreeLines.hpp"
 #include "libslic3r/ExtrusionEntity.hpp"
 #include "libslic3r/Print.hpp"
 #include "libslic3r/BoundingBox.hpp"
 #include "libslic3r/Color.hpp"
-#include "libslic3r/EdgeGrid.hpp"
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/Layer.hpp"
 #include "libslic3r/QuadricEdgeCollapse.hpp"
@@ -678,7 +678,7 @@ struct SeamComparator {
         }
 
         //avoid overhangs
-        if (a.overhang > 0.0f || b.overhang > 0.0f) {
+        if (a.overhang > 0.1f || b.overhang > 0.1f) {
             return a.overhang < b.overhang;
         }
 
@@ -738,7 +738,7 @@ struct SeamComparator {
         }
 
         //avoid overhangs
-        if (a.overhang > 0.0f || b.overhang > 0.0f) {
+        if (a.overhang > 0.1f || b.overhang > 0.1f) {
             return a.overhang < b.overhang;
         }
 
@@ -937,27 +937,52 @@ void pick_random_seam_point(const std::vector<SeamCandidate> &perimeter_points, 
     perimeter.finalized = true;
 }
 
-struct EdgeGridWrapper {
-    explicit EdgeGridWrapper(ExPolygons ex_polys) :
-            ex_polys(ex_polys) {
+class PerimeterDistancer {
+    std::vector<Linef> lines;
+    AABBTreeIndirect::Tree<2, double> tree;
 
-        grid.create(this->ex_polys, distance_field_resolution);
-        grid.calculate_sdf();
+public:
+    PerimeterDistancer(const Layer *layer) {
+        static const float eps = float(scale_(layer->object()->config().slice_closing_radius.value));
+        // merge with offset
+        ExPolygons merged = layer->merged(eps);
+        // ofsset back
+        ExPolygons layer_outline = offset_ex(merged, -eps);
+        for (const ExPolygon &island : layer_outline) {
+            assert(island.contour.is_counter_clockwise());
+            for (const auto &line : island.contour.lines()) {
+                lines.emplace_back(unscale(line.a), unscale(line.b));
+            }
+            for (const Polygon &hole : island.holes) {
+                assert(hole.is_clockwise());
+                for (const auto &line : hole.lines()) {
+                    lines.emplace_back(unscale(line.a), unscale(line.b));
+                }
+            }
+        }
+        tree = AABBTreeLines::build_aabb_tree_over_indexed_lines(lines);
     }
-    const coord_t distance_field_resolution = coord_t(scale_(1.) + 0.5);
-    EdgeGrid::Grid grid;
-    ExPolygons ex_polys;
+
+    float distance_from_perimeter(const Point &point) const {
+        Vec2d p = unscale(point);
+        size_t hit_idx_out;
+        Vec2d hit_point_out;
+        auto distance = AABBTreeLines::squared_distance_to_indexed_lines(lines, tree, p, hit_idx_out, hit_point_out);
+        if (distance < 0) {
+            return std::numeric_limits<float>::max();
+        }
+
+        distance = sqrt(distance);
+        const Linef &line = lines[hit_idx_out];
+        Vec2d v1 = line.b - line.a;
+        Vec2d v2 = p - line.a;
+        if ((v1.x() * v2.y()) - (v1.y() * v2.x()) > 0.0) {
+            distance *= -1;
+        }
+        return distance;
+    }
 }
 ;
-
-EdgeGridWrapper compute_layer_merged_edge_grid(const Layer *layer) {
-    static const float eps = float(scale_(layer->object()->config().slice_closing_radius.value));
-    // merge with offset
-    ExPolygons merged = layer->merged(eps);
-    // ofsset back
-    ExPolygons layer_outline = offset_ex(merged, -eps);
-    return EdgeGridWrapper(layer_outline);
-}
 
 } // namespace SeamPlacerImpl
 
@@ -1015,42 +1040,33 @@ void SeamPlacer::calculate_overhangs_and_layer_embedding(const PrintObject *po) 
     std::vector<PrintObjectSeamData::LayerSeams> &layers = m_seam_per_object[po].layers;
     tbb::parallel_for(tbb::blocked_range<size_t>(0, layers.size()),
             [po, &layers](tbb::blocked_range<size_t> r) {
-                std::unique_ptr<EdgeGridWrapper> prev_layer_grid;
+                std::unique_ptr<PerimeterDistancer> prev_layer_distancer;
                 if (r.begin() > 0) { // previous layer exists
-                    prev_layer_grid = std::make_unique<EdgeGridWrapper>(
-                            compute_layer_merged_edge_grid(po->layers()[r.begin() - 1]));
+                    prev_layer_distancer = std::make_unique<PerimeterDistancer>(po->layers()[r.begin() - 1]);
                 }
 
                 for (size_t layer_idx = r.begin(); layer_idx < r.end(); ++layer_idx) {
                     bool layer_has_multiple_loops =
                             layers[layer_idx].points[0].perimeter.end_index
                                     < layers[layer_idx].points.size() - 1;
-                    std::unique_ptr<EdgeGridWrapper> current_layer_grid = std::make_unique<EdgeGridWrapper>(
-                            compute_layer_merged_edge_grid(po->layers()[layer_idx]));
+                    std::unique_ptr<PerimeterDistancer> current_layer_distancer = std::make_unique<PerimeterDistancer>(po->layers()[layer_idx]);
 
                     for (SeamCandidate &perimeter_point : layers[layer_idx].points) {
                         Point point = Point::new_scale(Vec2f { perimeter_point.position.head<2>() });
-                        if (prev_layer_grid.get() != nullptr) {
-                            coordf_t overhang_dist;
-                            prev_layer_grid->grid.signed_distance(point, scaled(perimeter_point.perimeter.flow_width),
-                                    overhang_dist);
-                            perimeter_point.overhang =
-                                    unscale<float>(overhang_dist) - perimeter_point.perimeter.flow_width;
+                        if (prev_layer_distancer.get() != nullptr) {
+                            perimeter_point.overhang = prev_layer_distancer->distance_from_perimeter(point);
                         }
 
                         if (layer_has_multiple_loops) { // search for embedded perimeter points (points hidden inside the print ,e.g. multimaterial join, best position for seam)
-                            coordf_t layer_embedded_distance;
-                            current_layer_grid->grid.signed_distance(point, scaled(1.0f),
-                                    layer_embedded_distance);
-                            perimeter_point.embedded_distance = unscale<float>(layer_embedded_distance);
+                            perimeter_point.embedded_distance = current_layer_distancer->distance_from_perimeter(point);
                         }
                     }
 
-                    prev_layer_grid.swap(current_layer_grid);
+                    prev_layer_distancer.swap(current_layer_distancer);
                 }
             }
-    );
-}
+            );
+        }
 
 // Estimates, if there is good seam point in the layer_idx which is close to last_point_pos
 // uses comparator.is_first_not_much_worse method to compare current seam with the closest point
@@ -1463,7 +1479,7 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
 
     Vec3f seam_position;
     size_t seam_index;
-    if (const Perimeter &perimeter = layer_perimeters.points[closest_perimeter_point_index].perimeter;
+    if (const Perimeter &perimeter = layer_perimeters.points[closest_perimeter_point_index].perimeter ;
     perimeter.finalized) {
         seam_position = perimeter.final_seam_position;
         seam_index = perimeter.seam_index;

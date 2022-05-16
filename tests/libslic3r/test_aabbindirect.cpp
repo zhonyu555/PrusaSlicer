@@ -273,7 +273,7 @@ TEST_CASE("AABBTreeLines vs SignedDistanceGrid time Benchmark", "[AABBIndirect]"
 
 
     std::cout << "Test build and queries together - same number of contour points and query points" << std::endl <<
-            "And with limited contour edge length to 4mm " << std::endl;
+            "And with limited contour edge length to max 8mm " << std::endl;
       for (auto count : point_counts) {
 
           std::vector<Points> lines { Points { } };
@@ -285,7 +285,7 @@ TEST_CASE("AABBTreeLines vs SignedDistanceGrid time Benchmark", "[AABBIndirect]"
           for (int x = 0; x < count; ++x) {
               Vec2d cp { rand() / (double(RAND_MAX) + 1.0f) * 200.0 - 100.0, rand() / (double(RAND_MAX) + 1.0f) * 200.0
                       - 100.0 };
-              Vec2d contour = prevf + cp.normalized()*4.0; // limits the cnotour edge len to 4mm
+              Vec2d contour = prevf + cp.normalized() * (rand() / (double(RAND_MAX) + 1.0f) * 8.0f); // limits the cnotour edge len to 8mm
               lines[0].push_back(Point::new_scale(contour));
               linesf.emplace_back(prevf, contour);
               prevf = linesf.back().b;
