@@ -117,24 +117,16 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
 {
     wxHtmlWindow* html = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_AUTO);
 
-    // count lines in the message
-    int msg_lines = 0;
-    if (!monospaced_font) {
-        int line_len = 55;// count of symbols in one line
-        int start_line = 0;
-        for (auto i = msg.begin(); i != msg.end(); ++i) {
-            if (*i == '\n') {
-                int cur_line_len = i - msg.begin() - start_line;
-                start_line = i - msg.begin();
-                if (cur_line_len == 0 || line_len > cur_line_len)
-                    msg_lines++;
-                else
-                    msg_lines += std::lround((double)(cur_line_len) / line_len);
-            }
-        }
-        msg_lines++;
+    wxString inner_msg;
+    if (msg.Contains("<html>")) {
+        size_t pos = std::min(msg.First("<!DOCTYPE html>"), msg.First("<html>"));
+        if (msg.Contains("</html>"))
+            inner_msg = msg.SubString(pos, msg.First("</html>") + 7);
+        else
+            inner_msg = msg.SubString(pos, msg.Length() - 1);
+        msg = msg.SubString(0, pos-1);
     }
-
+    
     wxFont      font = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
     wxFont      monospace = wxGetApp().code_font();
     wxColour    text_clr = wxGetApp().get_label_clr_default();
@@ -187,8 +179,7 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
         }
         int page_height = std::min(int(font.GetPixelSize().y+2) * lines, 68 * em);
         page_size = wxSize(68 * em, page_height);
-    }
-    else {
+    } else {
         wxClientDC dc(parent);
         wxSize msg_sz = dc.GetMultiLineTextExtent(msg);
         page_size = wxSize(std::min(msg_sz.GetX() + 2 * em, 68 * em),
@@ -196,11 +187,19 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
     }
     html->SetMinSize(page_size);
 
+    if (!inner_msg.IsEmpty()) {
+        wxClientDC dc(parent);
+        wxSize msg_sz = dc.GetMultiLineTextExtent(inner_msg);
+        // Keep the page size in page_size until second html window is created
+        page_size = wxSize(std::min(msg_sz.GetX() + 2 * em, 68 * em),
+                           std::min(msg_sz.GetY() + 2 * em, 68 * em));
+    }
+
     std::string msg_escaped = xml_escape(into_u8(msg), is_marked_msg);
     boost::replace_all(msg_escaped, "\r\n", "<br>");
     boost::replace_all(msg_escaped, "\n", "<br>");
     if (monospaced_font)
-        // Code formatting will be preserved. This is useful for reporting errors from the placeholder parser.
+            // Code formatting will be preserved. This is useful for reporting errors from the placeholder parser.
         msg_escaped = std::string("<pre><code>") + msg_escaped + "</code></pre>";
     html->SetPage(format_wxstr("<html>"
                                     "<body bgcolor=%1% link=%2%>"
@@ -210,6 +209,7 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
                                     "</body>"
                                "</html>", 
                     bgr_clr_str, text_clr_str, from_u8(msg_escaped)));
+    
 
     html->Bind(wxEVT_HTML_LINK_CLICKED, [parent](wxHtmlLinkEvent& event) {
         wxGetApp().open_browser_with_warning_dialog(event.GetLinkInfo().GetHref(), parent, false);
@@ -217,7 +217,19 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
     });
 
     content_sizer->Add(html, 1, wxEXPAND);
+
+    if (!inner_msg.IsEmpty()) {
+        wxHtmlWindow* html2 = new wxHtmlWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHW_SCROLLBAR_AUTO);
+        html2->SetFonts(font.GetFaceName(), monospace.GetFaceName(), size);
+        html2->SetBorders(2);
+        html2->SetMinSize(page_size);
+        html2->SetPage(inner_msg);
+        content_sizer->Add(html2, 1, wxEXPAND);
+        //wxGetApp().UpdateDarkUI(html2);
+    }
+
     wxGetApp().UpdateDarkUI(html);
+   
 }
 
 // ErrorDialog
