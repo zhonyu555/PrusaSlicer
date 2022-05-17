@@ -700,6 +700,16 @@ wxMenuItem* MenuFactory::append_menu_item_fix_through_netfabb(wxMenu* menu)
     return menu_item;
 }
 
+
+wxMenuItem* MenuFactory::append_menu_item_fix_model_mesh(wxMenu* menu)
+{
+    wxMenuItem* menu_item = append_menu_item(menu, wxID_ANY, _L("Fix model mesh"), "",
+        [](wxCommandEvent&) { obj_list()->fix_model_mesh(); }, "", menu,
+        []() {return plater()->can_fix_model_mesh(); }, m_parent);
+
+    return menu_item;
+}
+
 wxMenuItem* MenuFactory::append_menu_item_simplify(wxMenu* menu)
 {
     wxMenuItem* menu_item = append_menu_item(menu, wxID_ANY, _L("Simplify model"), "",
@@ -923,6 +933,7 @@ void MenuFactory::create_common_object_menu(wxMenu* menu)
     append_menu_item_scale_selection_to_fit_print_volume(menu);
 
     append_menu_item_fix_through_netfabb(menu);
+    append_menu_item_fix_model_mesh(menu);
     append_menu_item_simplify(menu);
     append_menu_items_mirror(menu);
 }

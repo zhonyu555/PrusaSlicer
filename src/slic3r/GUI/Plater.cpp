@@ -1910,6 +1910,7 @@ struct Plater::priv
     bool can_arrange() const;
     bool can_layers_editing() const;
     bool can_fix_through_netfabb() const;
+    bool can_fix_model_mesh() const;
     bool can_simplify() const;
     bool can_set_instance_to_object() const;
     bool can_mirror() const;
@@ -4857,6 +4858,13 @@ bool Plater::priv::can_fix_through_netfabb() const
 #endif // FIX_THROUGH_NETFABB_ALWAYS
 }
 
+bool Plater::priv::can_fix_model_mesh() const
+{
+    std::vector<int> obj_idxs, vol_idxs;
+    sidebar->obj_list()->get_selection_indexes(obj_idxs, vol_idxs);
+    return ! obj_idxs.empty() || ! vol_idxs.empty();
+}
+
 bool Plater::priv::can_simplify() const
 {
     // is object for simplification selected
@@ -7075,6 +7083,7 @@ bool Plater::can_increase_instances() const { return p->can_increase_instances()
 bool Plater::can_decrease_instances() const { return p->can_decrease_instances(); }
 bool Plater::can_set_instance_to_object() const { return p->can_set_instance_to_object(); }
 bool Plater::can_fix_through_netfabb() const { return p->can_fix_through_netfabb(); }
+bool Plater::can_fix_model_mesh() const { return p->can_fix_model_mesh(); }
 bool Plater::can_simplify() const { return p->can_simplify(); }
 bool Plater::can_split_to_objects() const { return p->can_split_to_objects(); }
 bool Plater::can_split_to_volumes() const { return p->can_split_to_volumes(); }
