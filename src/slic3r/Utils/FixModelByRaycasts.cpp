@@ -1,14 +1,11 @@
-#ifndef SRC_SLIC3R_UTILS_FIXMODELMESH_HPP_
-#define SRC_SLIC3R_UTILS_FIXMODELMESH_HPP_
-
-#include <string>
+#include "FixModelByRaycasts.hpp"
 #include "libslic3r/AABBTreeIndirect.hpp"
+#include "libslic3r/TriangleMesh.hpp"
+#include "libslic3r/Model.hpp"
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
 #include "libigl/igl/copyleft/marching_cubes.h"
 #include "libigl/igl/voxel_grid.h"
-
-class wxProgressDialog;
 
 namespace Slic3r {
 
@@ -77,20 +74,27 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
                         apply_bonus = true;
                     }
 
-                    igl::Hit hit;
+                    std::vector<igl::Hit> hits;
                     size_t inside_hits = 0;
                     for (const Vec3f &dir : precomputed_sample_directions) {
-                        if (AABBTreeIndirect::intersect_ray_first_hit(its.vertices, its.indices, tree,
+                        if (AABBTreeIndirect::intersect_ray_all_hits(its.vertices, its.indices, tree,
                                 Vec3d(origin.cast<double>()),
-                                Vec3d(dir.cast<double>()), hit)) {
-                            Vec3f face_normal = its_face_normal(its, hit.id);
-                            if (dir.dot(face_normal) > 0) {
-                                inside_hits += 1;
+                                Vec3d(dir.cast<double>()),
+                                hits)) {
+                            for (const auto &hit : hits) {
+                                Vec3f face_normal = its_face_normal(its, hit.id);
+                                auto dot = dir.dot(face_normal);
+                                if (dot > 0) {
+                                    inside_hits += 1;
+                                    break;
+                                } else if (hit.t > thickness) {
+                                    break;
+                                }
                             }
                         }
                     }
 
-                    if (inside_hits > precomputed_sample_directions.size() / 2) {
+                    if (float(inside_hits) > float(precomputed_sample_directions.size()) * 2.0f / 3.0f) {
                         value = -distance;
                         if (apply_bonus) {
                             value = -2.0f * distance;
@@ -125,9 +129,10 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
 
     return fixed_mesh;
 }
+
 }
 
-bool fix_by_raycasting(ModelObject &model_object, int volume_idx, wxProgressDialog &progress_dlg,
+bool fix_model_by_raycasts(ModelObject &model_object, int volume_idx, wxProgressDialog &progress_dlg,
         const wxString &msg_header, std::string &fix_result) {
 
     std::vector<ModelVolume*> volumes;
@@ -150,5 +155,3 @@ bool fix_by_raycasting(ModelObject &model_object, int volume_idx, wxProgressDial
 }
 
 }
-
-#endif /* SRC_SLIC3R_UTILS_FIXMODELMESH_HPP_ */

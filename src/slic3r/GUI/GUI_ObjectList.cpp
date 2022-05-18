@@ -27,8 +27,10 @@
 #include <wx/listbook.h>
 #include <wx/numformatter.h>
 
+
 #include "slic3r/Utils/FixModelByWin10.hpp"
-#include "slic3r/Utils/FixModelMesh.hpp"
+#include "slic3r/Utils/FixModelByTetrahedrons.hpp"
+#include "slic3r/Utils/FixModelByRaycasts.hpp"
 
 #ifdef __WXMSW__
 #include "wx/uiaction.h"
@@ -4215,7 +4217,7 @@ void ObjectList::fix_model_mesh()
 
         plater->clear_before_change_mesh(obj_idx);
         std::string res;
-        if (!fix_by_raycasting(*(object(obj_idx)), vol_idx, progress_dlg, msg, res))
+        if (!fix_model_by_tetrahedrons(*(object(obj_idx)), vol_idx, progress_dlg, msg, res))
             return false;
         wxGetApp().plater()->changed_mesh(obj_idx);
 

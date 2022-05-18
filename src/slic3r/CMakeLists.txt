@@ -219,6 +219,10 @@ set(SLIC3R_GUI_SOURCES
     Utils/Http.hpp
     Utils/FixModelByWin10.cpp
     Utils/FixModelByWin10.hpp
+    Utils/FixModelByTetrahedrons.cpp
+    Utils/FixModelByTetrahedrons.hpp
+    Utils/FixModelByRaycasts.cpp
+    Utils/FixModelByRaycasts.hpp
     Utils/OctoPrint.cpp
     Utils/OctoPrint.hpp
     Utils/Duet.cpp
