@@ -41,7 +41,14 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
         std::cout << "vertices v" << vertices.rows() << std::endl;
         std::cout << "faces f" << faces.rows() << std::endl;
 
-        igl::copyleft::cgal::outer_hull(vertices, faces, hull_v, hull_f, J, flip);
+        Eigen::MatrixXf vertices2;
+        Eigen::MatrixXi faces2;
+
+        Eigen::VectorXi I;
+        Eigen::MatrixXi IF;
+        remesh_self_intersections(vertices, faces, {}, vertices2, faces2, IF, J, I);
+
+        igl::copyleft::cgal::outer_hull_legacy(vertices2, faces2, hull_v, hull_f, J, flip);
 
         std::cout << "hull v" << hull_v.rows() << std::endl;
         std::cout << "hull f" << hull_f.rows() << std::endl;
