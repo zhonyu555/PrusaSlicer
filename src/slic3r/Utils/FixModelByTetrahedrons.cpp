@@ -41,14 +41,13 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
         std::cout << "vertices v" << vertices.rows() << std::endl;
         std::cout << "faces f" << faces.rows() << std::endl;
 
-        Eigen::MatrixXf vertices2;
         Eigen::MatrixXi faces2;
 
         Eigen::VectorXi I;
         Eigen::MatrixXi IF;
-        remesh_self_intersections(vertices, faces, {}, vertices2, faces2, IF, J, I);
+        igl::copyleft::cgal::remesh_self_intersections(vertices, faces, {}, hull_v, faces2, IF, J, I);
 
-        igl::copyleft::cgal::outer_hull_legacy(vertices2, faces2, hull_v, hull_f, J, flip);
+        igl::copyleft::cgal::outer_hull_legacy(hull_v, faces2, hull_f, J, flip);
 
         std::cout << "hull v" << hull_v.rows() << std::endl;
         std::cout << "hull f" << hull_f.rows() << std::endl;
@@ -98,14 +97,14 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
 
     indexed_triangle_set fixed_mesh;
     fixed_mesh.vertices.resize(hull_v.rows());
-    fixed_mesh.indices.resize(hull_f.rows());
+    fixed_mesh.indices.resize(new_faces.rows());
 
     for (int v = 0; v < hull_v.rows(); ++v) {
         fixed_mesh.vertices[v] = hull_v.row(v).cast<float>();
     }
 
-    for (int f = 0; f < hull_f.rows(); ++f) {
-        fixed_mesh.indices[f] = hull_f.row(f);
+    for (int f = 0; f < new_faces.rows(); ++f) {
+        fixed_mesh.indices[f] = new_faces.row(f);
     }
 
     std::cout << "returning fixed mesh " << std::endl;
