@@ -27,6 +27,8 @@
 #include <wx/wupdlock.h>
 #include <wx/debug.h>
 
+#include <wx/msw/registry.h>
+
 #ifdef _MSW_DARK_MODE
 #include <wx/msw/dark_mode.h>
 #endif // _MSW_DARK_MODE
@@ -1236,8 +1238,31 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
     append(label_bold);
     append_text(_L("Additionally a backup snapshot of the whole configuration is created before an update is applied."));
 
+
+    auto* box_registry = new wxCheckBox(this, wxID_ANY, _L("Regitry for URL download"));
+    box_registry->SetValue(false);
+    append(box_registry);
+    
     box_slic3r->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { this->version_check = event.IsChecked(); });
     box_presets->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { this->preset_update = event.IsChecked(); });
+
+    box_registry->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) { 
+        if(!event.IsChecked())
+            return;
+        // Registry key creation for "prusaslicer://" URL
+        wxRegKey key_first(wxRegKey::HKCU, "Software\\Classes\\prusaslicer");
+        wxRegKey key_full(wxRegKey::HKCU, "Software\\Classes\\prusaslicer\\shell\\open\\command");
+        if (!key_first.Exists()) {
+            key_first.Create(false);
+        }
+        key_first.SetValue("URL Protocol", "");
+        
+        if (!key_full.Exists()) {
+            key_full.Create(false);
+        }
+        key_full = "\"C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe\" \"%1\"";
+       
+    });
 }
 
 PageReloadFromDisk::PageReloadFromDisk(ConfigWizard* parent)
