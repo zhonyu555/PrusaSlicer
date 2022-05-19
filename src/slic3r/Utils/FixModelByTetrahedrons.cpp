@@ -21,7 +21,7 @@ namespace detail {
 indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
 
     //first compute convex hull
-    Eigen::MatrixXf hull_v;
+    Eigen::MatrixXd hull_v;
     Eigen::MatrixXi hull_f;
     {
         Eigen::MatrixXf vertices(mesh.its.vertices.size(), 3);
@@ -35,8 +35,6 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
             faces.row(v) = mesh.its.indices[v];
         }
 
-        Eigen::MatrixXf hull_v;
-        Eigen::MatrixXi hull_f;
         Eigen::VectorXi J;
         Eigen::VectorXi flip;
 
@@ -53,14 +51,15 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
     Eigen::MatrixXf tets_v;
     Eigen::MatrixXi tets_t;
     Eigen::MatrixXi tets_f;
-    int result = igl::copyleft::tetgen::tetrahedralize(hull_v, hull_f, "", tets_v, tets_t, tets_f);
+    int result = igl::copyleft::tetgen::tetrahedralize(hull_v, hull_f, "pA", tets_v, tets_t, tets_f);
     if (result != 0) {
         std::cout << "Tetrahedronization failed " << std::endl;
         return mesh.its;
     }
 
-    Eigen::MatrixXf barycenters;
+    Eigen::MatrixXd barycenters;
     // Compute barycenters of all tets
+    std::cout << "Computing barucenters " << std::endl;
     igl::barycenter(hull_v, tets_t, barycenters);
 
     // Compute generalized winding number at all barycenters
@@ -92,14 +91,14 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
 
     indexed_triangle_set fixed_mesh;
     fixed_mesh.vertices.resize(hull_v.rows());
-    fixed_mesh.indices.resize(new_faces.rows());
+    fixed_mesh.indices.resize(hull_f.rows());
 
     for (int v = 0; v < hull_v.rows(); ++v) {
-        fixed_mesh.vertices[v] = hull_v.row(v);
+        fixed_mesh.vertices[v] = hull_v.row(v).cast<float>();
     }
 
-    for (int f = 0; f < new_faces.rows(); ++f) {
-        fixed_mesh.indices[f] = new_faces.row(f);
+    for (int f = 0; f < hull_f.rows(); ++f) {
+        fixed_mesh.indices[f] = hull_f.row(f);
     }
 
     std::cout << "returning fixed mesh " << std::endl;
