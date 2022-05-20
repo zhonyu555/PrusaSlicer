@@ -678,7 +678,8 @@ struct SeamComparator {
         }
 
         //avoid overhangs
-        if (a.overhang > 0.1f || b.overhang > 0.1f) {
+        if (a.overhang > SeamPlacer::overhang_distance_tolerance_factor * a.perimeter.flow_width ||
+                b.overhang > SeamPlacer::overhang_distance_tolerance_factor * b.perimeter.flow_width) {
             return a.overhang < b.overhang;
         }
 
@@ -738,7 +739,8 @@ struct SeamComparator {
         }
 
         //avoid overhangs
-        if (a.overhang > 0.1f || b.overhang > 0.1f) {
+        if (a.overhang > SeamPlacer::overhang_distance_tolerance_factor * a.perimeter.flow_width ||
+                b.overhang > SeamPlacer::overhang_distance_tolerance_factor * b.perimeter.flow_width) {
             return a.overhang < b.overhang;
         }
 
@@ -761,7 +763,6 @@ struct SeamComparator {
             return a.position.y() > b.position.y();
         }
 
-        //ranges:          [0 - 1]                                          (0 - 1.3]                  ;
         float penalty_a = a.visibility
                 + SeamPlacer::angle_importance * compute_angle_penalty(a.local_ccw_angle);
         float penalty_b = b.visibility +
@@ -780,11 +781,8 @@ struct SeamComparator {
         // looks scary, but it is gaussian combined with sigmoid,
         // so that concave points have much smaller penalty over convex ones
         // https://github.com/prusa3d/PrusaSlicer/tree/master/doc/seam_placement/corner_penalty_function.png
-        float f_value = gauss(ccw_angle, 0.0f, 1.0f, 3.0f) +
-                1.0f / (2 + std::exp(-ccw_angle)); // sigmoid, which heavily favourizes concave angles
-        //NOTE for very small angles, the noise in the angle computation cause aligned lines curving.
-        //for this reason, the value will be clamped to 1.2 value, throwing away angles roughly smaller than 30 degrees
-        return std::min(f_value, 1.2f);
+        return gauss(ccw_angle, 0.0f, 1.0f, 3.0f) +
+                1.0f / (2 + std::exp(-ccw_angle));
     }
 };
 
