@@ -3437,7 +3437,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             // during the scene manipulation.
 
 #if ENABLE_NEW_RECTANGLE_SELECTION
-            if (m_picking_enabled && !any_gizmo_active && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled()) && !rectangle_selection_dragging) {
+            if (m_picking_enabled && (!any_gizmo_active || !evt.CmdDown()) && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled()) && !rectangle_selection_dragging) {
 #else
             if (m_picking_enabled && (!any_gizmo_active || !evt.CmdDown()) && (!m_hover_volume_idxs.empty() || !is_layers_editing_enabled())) {
 #endif // ENABLE_NEW_RECTANGLE_SELECTION
@@ -7311,12 +7311,13 @@ bool GLCanvas3D::_is_any_volume_outside() const
 void GLCanvas3D::_update_selection_from_hover()
 {
     bool ctrl_pressed = wxGetKeyState(WXK_CONTROL);
+    bool selection_changed = false;
 
     if (m_hover_volume_idxs.empty()) {
-        if (!ctrl_pressed && m_rectangle_selection.get_state() == GLSelectionRectangle::EState::Select)
+        if (!ctrl_pressed && m_rectangle_selection.get_state() == GLSelectionRectangle::EState::Select) {
+            selection_changed = !m_selection.is_empty();
             m_selection.remove_all();
-
-        return;
+        }
     }
 
     GLSelectionRectangle::EState state = m_rectangle_selection.get_state();
@@ -7329,7 +7330,6 @@ void GLCanvas3D::_update_selection_from_hover()
         }
     }
 
-    bool selection_changed = false;
 #if ENABLE_NEW_RECTANGLE_SELECTION
     if (!m_rectangle_selection.is_empty()) {
 #endif // ENABLE_NEW_RECTANGLE_SELECTION

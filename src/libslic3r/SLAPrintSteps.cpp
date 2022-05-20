@@ -215,6 +215,22 @@ struct FaceHash {
     }
 };
 
+static void exclude_neighbors(const Vec3i                &face,
+                              std::vector<bool>          &mask,
+                              const indexed_triangle_set &its,
+                              const VertexFaceIndex      &index,
+                              size_t                      recursions)
+{
+    for (int i = 0; i < 3; ++i) {
+        const auto &neighbors_range = index[face(i)];
+        for (size_t fi_n : neighbors_range) {
+            mask[fi_n] = true;
+            if (recursions > 0)
+                exclude_neighbors(its.indices[fi_n], mask, its, index, recursions - 1);
+        }
+    }
+}
+
 // Create exclude mask for triangle removal inside hollowed interiors.
 // This is necessary when the interior is already part of the mesh which was
 // drilled using CGAL mesh boolean operation. Excluded will be the triangles
@@ -231,15 +247,6 @@ static std::vector<bool> create_exclude_mask(
 
     VertexFaceIndex neighbor_index{its};
 
-    auto exclude_neighbors = [&neighbor_index, &exclude_mask](const Vec3i &face)
-    {
-        for (int i = 0; i < 3; ++i) {
-            const auto &neighbors_range = neighbor_index[face(i)];
-            for (size_t fi_n : neighbors_range)
-                exclude_mask[fi_n] = true;
-        }
-    };
-
     for (size_t fi = 0; fi < its.indices.size(); ++fi) {
         auto &face = its.indices[fi];
 
@@ -249,7 +256,7 @@ static std::vector<bool> create_exclude_mask(
         }
 
         if (exclude_mask[fi]) {
-            exclude_neighbors(face);
+            exclude_neighbors(face, exclude_mask, its, neighbor_index, 1);
             continue;
         }
 
@@ -294,7 +301,7 @@ static std::vector<bool> create_exclude_mask(
 
             if (D_hole < D_tol && std::abs(dot) < normal_angle_tol) {
                 exclude_mask[fi] = true;
-                exclude_neighbors(face);
+                exclude_neighbors(face, exclude_mask, its, neighbor_index, 1);
             }
         }
     }
@@ -401,9 +408,9 @@ void SLAPrint::Steps::drill_holes(SLAPrintObject &po)
         AABBTreeIndirect::traverse(
                     tree,
                     AABBTreeIndirect::intersecting(ebb),
-                    [&part_to_drill, &hollowed_mesh](size_t faceid)
+                    [&part_to_drill, &hollowed_mesh](const auto& node)
         {
-            part_to_drill.indices.emplace_back(hollowed_mesh.its.indices[faceid]);
+            part_to_drill.indices.emplace_back(hollowed_mesh.its.indices[node.idx]);
         });
 
         auto cgal_meshpart = MeshBoolean::cgal::triangle_mesh_to_cgal(
@@ -1029,7 +1036,7 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
     // Estimated printing time
     // A layers count o the highest object
     if (printer_input.size() == 0)
-        print_statistics.estimated_print_time = std::nan("");
+        print_statistics.estimated_print_time = NaNd;
     else {
         print_statistics.estimated_print_time = estim_time;
         print_statistics.layers_times = layers_times;

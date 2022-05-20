@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <regex>
 #include <string_view>
+#include <boost/nowide/fstream.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
@@ -1050,8 +1051,6 @@ bool GUI_App::OnInit()
     }
 }
 
-static bool update_gui_after_init = true;
-
 bool GUI_App::on_init_inner()
 {
     // Set initialization of image handlers before any UI actions - See GH issue #7469
@@ -1204,10 +1203,17 @@ bool GUI_App::on_init_inner()
 
     if (is_editor()) {
 #ifdef __WXMSW__ 
-        if (app_config->get("associate_3mf") == "1")
-            associate_3mf_files();
-        if (app_config->get("associate_stl") == "1")
-            associate_stl_files();
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+        // file association is not possible anymore starting with Win 8
+        if (wxPlatformInfo::Get().GetOSMajorVersion() < 8) {
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+            if (app_config->get("associate_3mf") == "1")
+                associate_3mf_files();
+            if (app_config->get("associate_stl") == "1")
+                associate_stl_files();
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+        }
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
 #endif // __WXMSW__
 
         preset_updater = new PresetUpdater();
@@ -1245,8 +1251,15 @@ bool GUI_App::on_init_inner()
     }
     else {
 #ifdef __WXMSW__ 
-        if (app_config->get("associate_gcode") == "1")
-            associate_gcode_files();
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+        // file association is not possible anymore starting with Win 8
+        if (wxPlatformInfo::Get().GetOSMajorVersion() < 8) {
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+            if (app_config->get("associate_gcode") == "1")
+                associate_gcode_files();
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+        }
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
 #endif // __WXMSW__
     }
 
@@ -1327,18 +1340,18 @@ bool GUI_App::on_init_inner()
         // An ugly solution to GH #5537 in which GUI_App::init_opengl (normally called from events wxEVT_PAINT
         // and wxEVT_SET_FOCUS before GUI_App::post_init is called) wasn't called before GUI_App::post_init and OpenGL wasn't initialized.
 #ifdef __linux__
-        if (update_gui_after_init && m_opengl_initialized) {
+        if (! m_post_initialized && m_opengl_initialized) {
 #else
-        if (update_gui_after_init) {
+        if (! m_post_initialized) {
 #endif
-            update_gui_after_init = false;
+            m_post_initialized = true;
 #ifdef WIN32
             this->mainframe->register_win32_callbacks();
 #endif
             this->post_init();
         }
 
-        if (! update_gui_after_init && app_config->dirty() && app_config->get("autosave") == "1")
+        if (m_post_initialized && app_config->dirty() && app_config->get("autosave") == "1")
             app_config->save();
     });
 
@@ -2419,16 +2432,23 @@ void GUI_App::open_preferences(const std::string& highlight_option /*= std::stri
         this->plater_->refresh_print();
 
 #ifdef _WIN32
-    if (is_editor()) {
-        if (app_config->get("associate_3mf") == "1")
-            associate_3mf_files();
-        if (app_config->get("associate_stl") == "1")
-            associate_stl_files();
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+    // file association is not possible anymore starting with Win 8
+    if (wxPlatformInfo::Get().GetOSMajorVersion() < 8) {
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
+        if (is_editor()) {
+            if (app_config->get("associate_3mf") == "1")
+                associate_3mf_files();
+            if (app_config->get("associate_stl") == "1")
+                associate_stl_files();
+        }
+        else {
+            if (app_config->get("associate_gcode") == "1")
+                associate_gcode_files();
+        }
+#if ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
     }
-    else {
-        if (app_config->get("associate_gcode") == "1")
-            associate_gcode_files();
-    }
+#endif // ENABLE_REMOVE_ASSOCIATION_TO_FILE_FOR_WINDOWS_8_AND_LATER
 #endif // _WIN32
 
     if (mainframe->preferences_dialog->settings_layout_changed()) {
@@ -2726,17 +2746,25 @@ void GUI_App::MacOpenFiles(const wxArrayString &fileNames)
         // Running in G-code viewer.
         // Load the first G-code into the G-code viewer.
         // Or if no G-codes, send other files to slicer. 
-        if (! gcode_files.empty())
-            this->plater()->load_gcode(gcode_files.front());
+        if (! gcode_files.empty()) {
+            if (m_post_initialized)
+                this->plater()->load_gcode(gcode_files.front());
+            else
+                this->init_params->input_files = { into_u8(gcode_files.front()) };
+        }
         if (!non_gcode_files.empty()) 
             start_new_slicer(non_gcode_files, true);
     } else {
         if (! files.empty()) {
-            wxArrayString input_files;
-            for (size_t i = 0; i < non_gcode_files.size(); ++i) {
-                input_files.push_back(non_gcode_files[i]);
+            if (m_post_initialized) {
+                wxArrayString input_files;
+                for (size_t i = 0; i < non_gcode_files.size(); ++i)
+                    input_files.push_back(non_gcode_files[i]);
+                this->plater()->load_files(input_files);
+            } else {
+                for (const auto &f : non_gcode_files)
+                    this->init_params->input_files.emplace_back(into_u8(f));
             }
-            this->plater()->load_files(input_files);
         }
         for (const wxString &filename : gcode_files)
             start_new_gcodeviewer(&filename);
