@@ -110,6 +110,7 @@ if (SLIC3R_GUI)
     message(STATUS "wx libs: ${wxWidgets_LIBRARIES}")
 
     add_subdirectory(slic3r)
+    add_subdirectory(downloader)
 endif()
 
 
