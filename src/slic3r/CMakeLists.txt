@@ -223,6 +223,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/FixModelByTetrahedrons.hpp
     Utils/FixModelByRaycasts.cpp
     Utils/FixModelByRaycasts.hpp
+    Utils/FixModelByMeshFix.cpp
+    Utils/FixModelByMeshFix.hpp
     Utils/OctoPrint.cpp
     Utils/OctoPrint.hpp
     Utils/Duet.cpp
@@ -276,7 +278,7 @@ endforeach()
 
 encoding_check(libslic3r_gui)
 
-target_link_libraries(libslic3r_gui libslic3r avrdude libcereal imgui GLEW::GLEW OpenGL::GL hidapi libcurl ${wxWidgets_LIBRARIES})
+target_link_libraries(libslic3r_gui libslic3r avrdude libcereal imgui GLEW::GLEW OpenGL::GL hidapi libcurl meshfix ${wxWidgets_LIBRARIES})
 
 if (MSVC)
     target_link_libraries(libslic3r_gui Setupapi.lib)
