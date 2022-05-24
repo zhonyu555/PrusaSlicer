@@ -18,9 +18,14 @@ Vec3f sample_sphere_uniform(const Vec2f &samples) {
         1.0f - 2.0f * samples.y()};
 }
 
+float sigmoid(float x) {
+    float e = std::exp(x);
+    return (2.0f * e) / (1.0f + e) - 1.0f;
+}
+
 indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
     float thickness = 2.0f;
-    float resolution = 0.2f;
+    float resolution = 0.3f;
 
     //prepare uniform samples of a sphere
     size_t sqrt_sample_count = 8;
@@ -94,14 +99,13 @@ indexed_triangle_set fix_model_volume_mesh(const TriangleMesh &mesh) {
                         }
                     }
 
-                    if (float(inside_hits) > float(precomputed_sample_directions.size()) * 2.0f / 3.0f) {
-                        value = -distance;
-                        if (apply_bonus) {
-                            value = -2.0f * distance;
-                        }
-                    } else {
-                        value = distance;
+                    float ratio = float(inside_hits) / float(precomputed_sample_directions.size());
+                    float x = sigmoid(6 * (-ratio + 0.666f));
+
+                    if (x < 0 && apply_bonus) {
+                        x = x * 2.0f;
                     }
+                    value = distance * x;
                 }
             }
             );
