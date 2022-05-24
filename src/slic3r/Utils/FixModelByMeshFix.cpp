@@ -292,59 +292,59 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
                         on_progress(L("Fill holes"), 30);
                         if (canceled)
                             throw RepairCanceledException();
-                        if (tin.boundaries())
-                {
-                    on_progress(L("Patch small holes"), 40);
-                    if (canceled)
-                        throw RepairCanceledException();
-                    tin.fillSmallBoundaries(0, true);
-                }
+                        if (tin.boundaries()) {
+                            on_progress(L("Patch small holes"), 40);
+                            if (canceled)
+                                throw RepairCanceledException();
+                            tin.fillSmallBoundaries(0, true);
+                        }
 
-                on_progress(L("Geometry check"), 50);
-                if (canceled)
-                    throw RepairCanceledException();
-                // Run geometry correction
-                if (!tin.boundaries()) {
-                    int iteration = 0;
-                    on_progress(L("Iterative geometry correction"), 55);
-                    tin.deselectTriangles();
-                    tin.invertSelection();
-                    bool fixed = false;
-                    while (iteration < 10 && !fixed) { //default constants taken from TMesh library
-                        fixed = tin.meshclean_single_iteration(3);
-                        on_progress(L("Fixing geometry"), std::min(95, 60 + iteration * 8)); // majority of objects should finish in 4 iterations
+                        on_progress(L("Geometry check"), 50);
                         if (canceled)
                             throw RepairCanceledException();
-                        iteration++;
+                        // Run geometry correction
+                        if (!tin.boundaries()) {
+                            int iteration = 0;
+                            on_progress(L("Iterative geometry correction"), 55);
+                            tin.deselectTriangles();
+                            tin.invertSelection();
+                            bool fixed = false;
+                            while (iteration < 10 && !fixed) { //default constants taken from TMesh library
+                                fixed = tin.meshclean_single_iteration(3);
+                                on_progress(L("Fixing geometry"), std::min(95, 60 + iteration * 8)); // majority of objects should finish in 4 iterations
+                                if (canceled)
+                                    throw RepairCanceledException();
+                                iteration++;
+                            }
+                        }
+
+                        if (tin.boundaries() || tin.T.numels() == 0) {
+                            meshes_repaired.emplace_back(std::move(mv->mesh().its));
+                            throw Slic3r::RuntimeError(L("Model repair failed"));
+                        }
+
+                        meshes_repaired.emplace_back(std::move(tin.to_indexed_triangle_set()));
                     }
+                    for (size_t i = 0; i < volumes.size(); ++i) {
+                        volumes[i]->set_mesh(std::move(meshes_repaired[i]));
+                        volumes[i]->calculate_convex_hull();
+                        volumes[i]->set_new_unique_id();
+                    }
+                    model_object.invalidate_bounding_box();
+                    --ivolume;
+                    on_progress(L("Model repair finished"), 100);
+                    success = true;
+                    finished = true;
+                } catch (RepairCanceledException& /* ex */) {
+                    canceled = true;
+                    finished = true;
+                    on_progress(L("Model repair canceled"), 100);
+                } catch (std::exception &ex) {
+                    success = false;
+                    finished = true;
+                    on_progress(ex.what(), 100);
                 }
-
-                if (tin.boundaries() || tin.T.numels() == 0) {
-                    throw Slic3r::RuntimeError(L("Model repair failed"));
-                }
-
-                meshes_repaired.emplace_back(std::move(tin.to_indexed_triangle_set()));
-            }
-            for (size_t i = 0; i < volumes.size(); ++i) {
-                volumes[i]->set_mesh(std::move(meshes_repaired[i]));
-                volumes[i]->calculate_convex_hull();
-                volumes[i]->set_new_unique_id();
-            }
-            model_object.invalidate_bounding_box();
-            --ivolume;
-            on_progress(L("Model repair finished"), 100);
-            success = true;
-            finished = true;
-        } catch (RepairCanceledException& /* ex */) {
-            canceled = true;
-            finished = true;
-            on_progress(L("Model repair canceled"), 100);
-        } catch (std::exception &ex) {
-            success = false;
-            finished = true;
-            on_progress(ex.what(), 100);
-        }
-    });
+            });
     while (!finished) {
         condition.wait_for(lock, std::chrono::milliseconds(250), [&progress] {
             return progress.updated;
