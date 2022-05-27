@@ -2,10 +2,14 @@
 #project(PrusaSlicer_Downloader)
 
 add_executable(PrusaSlicer_Downloader  WIN32 
-	Downloader.cpp
-	Downloader.hpp
+	DownloaderApp.cpp
+	DownloaderApp.hpp
+	Download.cpp
+	Download.hpp
 	FileGet.cpp
 	FileGet.hpp
+	InstanceSend.cpp
+	InstanceSend.hpp
 	FromSlicer/Http.cpp
 	FromSlicer/Http.hpp
  )

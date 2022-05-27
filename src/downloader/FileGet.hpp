@@ -14,18 +14,21 @@ class FileGet : public std::enable_shared_from_this<FileGet> {
 private:
 	struct priv;
 public:
-	FileGet(int ID, std::string url, wxEvtHandler* evt_handler,const boost::filesystem::path& dest_folder);
+	FileGet(int ID, std::string url, const std::string& filename, wxEvtHandler* evt_handler,const boost::filesystem::path& dest_folder);
 	FileGet(FileGet&& other);
 	~FileGet();
 
-	std::shared_ptr<FileGet> get();
-	const int get_ID() const { return m_ID; }
+	void get();
+	void cancel();
+	static std::string escape_url(const std::string& url);
 private:
 	std::unique_ptr<priv> p;
-	const int m_ID;
 };
+// int = DOWNLOAD ID; string = file path
 wxDECLARE_EVENT(EVT_FILE_COMPLETE, wxCommandEvent);
+// int = DOWNLOAD ID; string = error msg
 wxDECLARE_EVENT(EVT_FILE_PROGRESS, wxCommandEvent);
+// int = DOWNLOAD ID; string = progress percent
 wxDECLARE_EVENT(EVT_FILE_ERROR, wxCommandEvent);
 
 }

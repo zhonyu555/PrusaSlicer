@@ -8,8 +8,8 @@
 
 namespace Downloader {
 
-namespace {
-std::string escape_url(const std::string& unescaped)
+
+std::string FileGet::escape_url(const std::string& unescaped)
 {
 	std::string ret_val;
 	CURL* curl = curl_easy_init();
@@ -24,14 +24,7 @@ std::string escape_url(const std::string& unescaped)
 	}
 	return ret_val;
 }
-std::string filename_from_url(const std::string& url)
-{
-	// TODO: can it be done with curl?
-	size_t slash = url.find_last_of("/");
-	if (slash == std::string::npos && slash != url.size()-1)
-		return std::string();
-	return url.substr(slash + 1, url.size() - slash + 1);
-}
+namespace {
 unsigned get_current_pid()
 {
 #ifdef WIN32
@@ -57,15 +50,16 @@ struct FileGet::priv
 	std::thread m_io_thread;
 	wxEvtHandler* m_evt_handler;
 	boost::filesystem::path m_dest_folder;
-
-	priv(int ID, std::string&& url, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder);
+	std::atomic_bool m_cancel = false;
+	priv(int ID, std::string&& url, const std::string& filename, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder);
 
 	void get_perform();
 };
 
-FileGet::priv::priv(int ID, std::string&& url, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder)
+FileGet::priv::priv(int ID, std::string&& url, const std::string& filename, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder)
 	: m_id(ID)
 	, m_url(std::move(url))
+	, m_filename(filename)
 	, m_evt_handler(evt_handler)
 	, m_dest_folder(dest_folder)
 {
@@ -75,20 +69,23 @@ void FileGet::priv::get_perform()
 {
 	assert(m_evt_handler);
 	assert(!m_url.empty());
-	m_url = escape_url(m_url);
 	assert(!m_url.empty());
-	m_filename = filename_from_url(m_url);
 	assert(!m_filename.empty());
 	assert(boost::filesystem::is_directory(m_dest_folder));
 
 	Downloader::Http::get(m_url)
 		//.size_limit(size_limit)
 		.on_progress([&](Downloader::Http::Progress progress, bool& cancel) {
+			if (m_cancel) {
+				cancel = true;
+				return;
+				// TODO: send canceled event?
+			}
 			wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_PROGRESS);
 			if (progress.dlnow == 0)
 				evt->SetString("0");
 			else
-				evt->SetString(std::to_string((float)progress.dltotal / (float)progress.dlnow));
+				evt->SetString(std::to_string(progress.dlnow * 100 / progress.dltotal));
 			evt->SetInt(m_id);
 			m_evt_handler->QueueEvent(evt);
 		})
@@ -99,7 +96,7 @@ void FileGet::priv::get_perform()
 			m_evt_handler->QueueEvent(evt);
 		})
 		.on_complete([&](std::string body, unsigned /* http_status */) {
-
+			
 			size_t body_size = body.size();
 			// TODO:
 			//if (body_size != expected_size) {
@@ -148,12 +145,11 @@ void FileGet::priv::get_perform()
 
 }
 
-FileGet::FileGet(int ID, std::string url, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder)
-	: p(new priv(ID, std::move(url), evt_handler, dest_folder))
-	, m_ID(ID)
+FileGet::FileGet(int ID, std::string url, const std::string& filename, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder)
+	: p(new priv(ID, std::move(url), filename, evt_handler, dest_folder))
 {}
 
-FileGet::FileGet(FileGet&& other) : p(std::move(other.p)), m_ID(other.get_ID()) {}
+FileGet::FileGet(FileGet&& other) : p(std::move(other.p)) {}
 
 FileGet::~FileGet()
 {
@@ -162,18 +158,21 @@ FileGet::~FileGet()
 	}
 }
 
-std::shared_ptr<FileGet> FileGet::get()
+void FileGet::get()
 {
-	auto self = std::make_shared<FileGet>(std::move(*this));
-
-	if (self->p) {
-		auto io_thread = std::thread([self]() {
-			self->p->get_perform();
+	if (p) {
+		auto io_thread = std::thread([&priv = p]() {
+			priv->get_perform();
 			});
-		self->p->m_io_thread = std::move(io_thread);
+		p->m_io_thread = std::move(io_thread);
 	}
+}
 
-	return self;
+void FileGet::cancel()
+{
+	if(p){
+		p->m_cancel = true;
+	}
 }
 
 }
