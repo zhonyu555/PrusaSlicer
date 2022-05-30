@@ -225,7 +225,7 @@ int Http::priv::xfercb(void *userp, curl_off_t dltotal, curl_off_t dlnow, curl_o
 	bool cb_cancel = false;
 
 	if (self->progressfn) {
-		Progress progress(dltotal, dlnow, ultotal, ulnow);
+		Progress progress(dltotal, dlnow, ultotal, ulnow, self->buffer);
 		self->progressfn(progress, cb_cancel);
 	}
 
@@ -370,7 +370,7 @@ void Http::priv::http_perform()
 		if (res == CURLE_ABORTED_BY_CALLBACK) {
 			if (cancel) {
 				// The abort comes from the request being cancelled programatically
-				Progress dummyprogress(0, 0, 0, 0);
+				Progress dummyprogress(0, 0, 0, 0, std::string());
 				bool cancel = true;
 				if (progressfn) { progressfn(dummyprogress, cancel); }
 			} else {

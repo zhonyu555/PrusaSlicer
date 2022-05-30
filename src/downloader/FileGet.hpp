@@ -30,6 +30,7 @@ wxDECLARE_EVENT(EVT_FILE_COMPLETE, wxCommandEvent);
 wxDECLARE_EVENT(EVT_FILE_PROGRESS, wxCommandEvent);
 // int = DOWNLOAD ID; string = progress percent
 wxDECLARE_EVENT(EVT_FILE_ERROR, wxCommandEvent);
-
+// int = DOWNLOAD ID; string = name
+wxDECLARE_EVENT(EVT_FILE_NAME_CHANGE, wxCommandEvent);
 }
 #endif

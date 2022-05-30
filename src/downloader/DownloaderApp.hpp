@@ -24,8 +24,20 @@ private:
     void on_progress(wxCommandEvent& event);
     void on_error(wxCommandEvent& event);
     void on_complete(wxCommandEvent& event);
-    
-   
+    void on_name_change(wxCommandEvent& event);
+    void on_open_in_slicer(wxCommandEvent& event);
+    void on_open_in_new_slicer(wxCommandEvent& event);
+    void on_open_in_explorer(wxCommandEvent& event);
+    void on_cancel_button(wxCommandEvent& event);
+
+
+    void start_next();
+    void set_download_state(int id, DownloadState state);
+    bool is_in_state(int id, DownloadState state) const;
+    bool cancel_download(int id);
+    wxString get_path_of(int id) const;
+    wxString get_folder_path_of(int id) const;
+
     int m_next_id { 0 };
     int get_next_id() {return ++m_next_id; }
 
@@ -33,12 +45,12 @@ private:
     size_t m_log_lines { 0 };
     wxString m_full_log;
 
-    wxDataViewListCtrl* dataview;
+    wxDataViewListCtrl* m_dataview;
 
     wxString m_url;
     wxString m_path_to_slicer;
 
-    std::unique_ptr<SlicerSend> m_instance_send;
+    std::unique_ptr<SlicerSend> m_slicer_send;
 
     boost::filesystem::path m_dest_folder;
 

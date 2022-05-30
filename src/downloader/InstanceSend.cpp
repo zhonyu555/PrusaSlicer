@@ -70,9 +70,9 @@ namespace {
 #ifdef _WIN32
 static HWND l_prusa_slicer_hwnd;
 static HWND l_downloader_hwnd;
-BOOL CALLBACK EnumWindowsProcSlicer(_In_ HWND   hwnd, _In_ LPARAM lParam)
+BOOL CALLBACK EnumWindowsProcSlicer(_In_ HWND hwnd, _In_ LPARAM lParam)
 {
-	//checks for other instances of prusaslicer, if found brings it to front and return false to stop enumeration and quit this instance
+	//checks for other instances of prusaslicer, if found brings it to front and return false to cancel enumeration and quit this instance
 	//search is done by classname(wxWindowNR is wxwidgets thing, so probably not unique) and name in window upper panel
 	//other option would be do a mutex and check for its existence
 	//BOOST_LOG_TRIVIAL(error) << "ewp: version: " << l_version_wstring;
@@ -136,9 +136,9 @@ bool send_message_slicer(const wxString& message)
 }
 
 
-BOOL CALLBACK EnumWindowsProcDownloader(_In_ HWND   hwnd, _In_ LPARAM lParam)
+BOOL CALLBACK EnumWindowsProcDownloader(_In_ HWND hwnd, _In_ LPARAM lParam)
 {
-	//checks for other instances of prusaslicer, if found brings it to front and return false to stop enumeration and quit this instance
+	//checks for other instances of prusaslicer, if found brings it to front and return false to cancel enumeration and quit this instance
 	//search is done by classname(wxWindowNR is wxwidgets thing, so probably not unique) and name in window upper panel
 	//other option would be do a mutex and check for its existence
 	//BOOST_LOG_TRIVIAL(error) << "ewp: version: " << l_version_wstring;
@@ -153,7 +153,7 @@ BOOL CALLBACK EnumWindowsProcDownloader(_In_ HWND   hwnd, _In_ LPARAM lParam)
 		return true;
 	std::wstring classNameString(className);
 	std::wstring wndTextString(wndText);
-	if (wndTextString.find(L"PrusaSlicer-Downloader") != std::wstring::npos && classNameString == L"wxWindowNR") {
+	if (wndTextString.find(L"Downloader") != std::wstring::npos && classNameString == L"wxWindowNR") {
 		//check if other instances has same instance hash
 		//if not it is not same version(binary) as this version 
 		HANDLE   handle = GetProp(hwnd, L"Instance_Hash_Minor");
@@ -210,6 +210,10 @@ bool execute_command(const wxString& command)
 #endif
 }
 
+
+// ------ SlicerSend ----------------
+
+
 bool SlicerSend::get_instance_exists() const
 {
     return !EnumWindows(EnumWindowsProcSlicer, 0);
@@ -219,6 +223,7 @@ bool SlicerSend::send_path(const wxString& path) const
 	std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
     return send_message_slicer(boost::nowide::widen(escaped));
 }
+
 bool SlicerSend::start_with_path(const wxString& path) const
 {
 	// "C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " 
@@ -226,6 +231,17 @@ bool SlicerSend::start_with_path(const wxString& path) const
 	//return execute_command(boost::nowide::widen(escaped));
 	return execute_command("C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " + boost::nowide::widen(escaped));
 }
+
+bool SlicerSend::start_or_send(const wxString& path) const
+{
+	if (send_path(path))
+		return true;
+	return start_with_path(path);
+}
+
+
+// ------ DownloaderSend ----------------
+
 
 bool DownloaderSend::get_instance_exists() const
 {
@@ -236,4 +252,6 @@ bool DownloaderSend::send_url(const wxString& url) const
 	//std::string escaped = escape_strings_cstyle({ boost::nowide::narrow(url) });
 	return send_message_downloader(url);
 }
+
+
 }

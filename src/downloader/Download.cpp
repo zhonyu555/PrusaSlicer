@@ -24,9 +24,12 @@ Download::Download(int ID, std::string url, wxEvtHandler* evt_handler, const boo
 
 void Download::start()
 {
+	m_state = DownloadState::DownloadOngoing;
 	m_file_get->get();
 }
-void Download::stop()
+void Download::cancel()
 {
+	m_state = DownloadState::DownloadStopped;
+	m_file_get->cancel();
 }
 }

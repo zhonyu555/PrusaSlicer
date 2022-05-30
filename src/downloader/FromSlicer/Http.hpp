@@ -22,8 +22,10 @@ public:
 		size_t ultotal;   // Total bytes to upload
 		size_t ulnow;     // Bytes uploaded so far
 
-		Progress(size_t dltotal, size_t dlnow, size_t ultotal, size_t ulnow) :
-			dltotal(dltotal), dlnow(dlnow), ultotal(ultotal), ulnow(ulnow)
+		const  std::string& buffer; // reference to buffer containing all data
+
+		Progress(size_t dltotal, size_t dlnow, size_t ultotal, size_t ulnow, const std::string& buffer) :
+			dltotal(dltotal), dlnow(dlnow), ultotal(ultotal), ulnow(ulnow), buffer(buffer)
 		{}
 	};
 
