@@ -42,7 +42,7 @@ namespace T_MESH
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_ints
+class mc_ints : public Data
 {
  public:
 
@@ -54,7 +54,7 @@ class mc_ints
  mc_ints(coord a, unsigned char b, Triangle *s) { ic = a; sg = b; v = NULL; source = s; }
  ~mc_ints() { if (v) delete(v); }
 
- static int compare(const void *e1, const void *e2);
+ static int compare(const Data *e1, const Data *e2);
 };
 
 
@@ -64,7 +64,7 @@ class mc_ints
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_cell
+class mc_cell : public Data
 {
  public:
  int x,y,z;			// Coordinates (i.e. cell's position)
@@ -94,7 +94,7 @@ private:
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_grid
+class mc_grid : public Data
 {
  Point origin;		 // Origin for normalization
  coord norm;		 // Normalization factor

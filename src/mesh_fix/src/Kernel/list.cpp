@@ -39,9 +39,9 @@ namespace T_MESH
 // Create a new node containing 'd', and link it to       //
 // 'p' on the left (prev) and to 'n' on the right (next). //
 
-Node::Node(const Node *p, const void *d, const Node *n)
+Node::Node(const Node *p, const Data *d, const Node *n)
 {
- data=(void *)d;
+ data=(Data *)d;
  if ((n_prev=(Node *)p) != NULL) n_prev->n_next = this;
  if ((n_next=(Node *)n) != NULL) n_next->n_prev = this;
 }
@@ -58,7 +58,7 @@ Node::~Node()
 
 /////////// Constructor from list ///////////////////
 
-List::List(const void **d, int n)
+List::List(const Data **d, int n)
 {
  l_head = l_tail = NULL; l_numels = 0;
  for (int i=0; i<n; i++) appendTail(d[i]);
@@ -73,21 +73,21 @@ List::~List()
 
 ////////////////// Append an element //////////////////
 
-void List::appendHead(const void *d)
+void List::appendHead(const Data *d)
 {
  l_head = new Node(NULL, d, l_head);
  if (l_tail == NULL) l_tail = l_head;
  l_numels++;
 }
 
-void List::appendTail(const void *d)
+void List::appendTail(const Data *d)
 {
  l_tail = new Node(l_tail, d, NULL);
  if (l_head == NULL) l_head = l_tail;
  l_numels++;
 }
 
-void List::insertAfter(Node *b, const void *d)
+void List::insertAfter(Node *b, const Data *d)
 {
  Node *nn = new Node(b, d, b->next());
  if (b == l_tail) l_tail = nn;
@@ -141,25 +141,25 @@ void List::moveNodeTo(Node *n, List *l)
 
 //// Removes the first node and returns the corresponding data /////
 
-void *List::popHead()
+Data *List::popHead()
 {
- void *data = (l_head != NULL)?(l_head->data):(NULL);
+ Data *data = (l_head != NULL)?(l_head->data):(NULL);
  if (l_head != NULL) removeCell(l_head);
  return data;
 }
 
 //// Removes the last node and returns the corresponding data /////
 
-void *List::popTail()
+Data *List::popTail()
 {
- void *data = (l_tail != NULL)?(l_tail->data):(NULL);
+ Data *data = (l_tail != NULL)?(l_tail->data):(NULL);
  if (l_tail != NULL) removeCell(l_tail);
  return data;
 }
 
 //////////////////// Removes an element //////////////////
 
-int List::removeNode(const void *d)
+int List::removeNode(const Data *d)
 {
  Node *tmp = l_head;
  int i=1;
@@ -216,19 +216,19 @@ void List::removeCell(Node *n)
 
 void List::freeCell(Node *n)
 {
- free(n->data);
+ delete(n->data);
  removeCell(n);
 }
 
-void List::freeNode(void *d)
+void List::freeNode(Data *d)
 {
- free(d);
+ delete(d);
  removeNode(d);
 }
 
 //////////////////// Belonging check /////////////////
 
-Node *List::containsNode(const void *d) const
+Node *List::containsNode(const Data *d) const
 {
  Node *tmp = l_head;
  
@@ -241,10 +241,10 @@ Node *List::containsNode(const void *d) const
 
 //////////////////// Replaces a node /////////////////
 
-Node *List::replaceNode(const void *od, const void *nd)
+Node *List::replaceNode(const Data *od, const Data *nd)
 {
  Node *tmp = containsNode(od);
- if (tmp != NULL) {tmp->data = (void *)nd; return tmp;}
+ if (tmp != NULL) { tmp->data = (Data *)nd; return tmp;}
  appendTail(nd);
  return l_tail;
 }
@@ -266,14 +266,14 @@ void List::removeNodes()
 
 ///// Conversion to array ///////
 
-void **List::toArray() const
+Data **List::toArray() const
 {
  Node *n = l_head;
  int i;
- void **array;
+ Data **array;
 
  if (l_numels == 0) return NULL;
- array = (void **)malloc(sizeof(void *)*l_numels);
+ array = (Data **)malloc(sizeof(Data *)*l_numels);
  if (array == NULL) return NULL;
  for (i=0; i<l_numels; i++, n=n->n_next) array[i] = n->data;
 
@@ -282,9 +282,9 @@ void **List::toArray() const
 
 ///// Sorts the list /////////
 
-int List::sort(int (*comp)(const void *, const void *))
+int List::sort(int (*comp)(const Data *, const Data *))
 {
- void **array;
+ Data **array;
  int ne = l_numels-1;
 
  if (l_numels < 2) return 0;

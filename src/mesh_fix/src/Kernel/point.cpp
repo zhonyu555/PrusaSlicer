@@ -235,7 +235,7 @@ bool Point::operator<(const Point& s) const
 }
 
 // This can be used with jqsort
-int xyzCompare(const void *a, const void *b)
+int xyzCompare(const Data *a, const Data *b)
 {
  coord c;
 

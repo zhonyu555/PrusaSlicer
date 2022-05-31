@@ -48,7 +48,7 @@ namespace T_MESH
 //! assigning up to 256 different states to the edge.
 
 
-class Edge
+class Edge : public Data
 {
  public :
 
@@ -237,14 +237,14 @@ class Edge
 };
 
 //! Edge comparison based on length to be used with jqsort() or abstractHeap.
-int edgeCompare(const void *a, const void *b);
+int edgeCompare(const Data *a, const Data *b);
 
 //! Lexycographic edge comparison to be used with jqsort() or abstractHeap.
-int lexEdgeCompare(const void *a, const void *b);
+int lexEdgeCompare(const Data *a, const Data *b);
 
 //! Vertex-based edge comparison for qsort.
 //! Duplicated edges are contiguous in this sorting.
-int vtxEdgeCompare(const void *a, const void *b);
+int vtxEdgeCompare(const Data *a, const Data *b);
 
 } //namespace T_MESH
 

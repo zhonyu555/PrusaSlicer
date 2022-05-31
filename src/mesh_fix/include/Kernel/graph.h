@@ -39,7 +39,7 @@ namespace T_MESH
 
 //! Base class type for nodes of non-oriented graphs
 
-class graphNode
+class graphNode : public Data
 {
  public:
 
@@ -62,7 +62,7 @@ class graphNode
 
 //! Base class type for edges of non-oriented graphs
 
-class graphEdge
+class graphEdge : public Data
 {
  public:
 

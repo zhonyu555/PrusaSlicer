@@ -33,7 +33,7 @@
 namespace T_MESH
 {
 
-int mc_ints::compare(const void *e1, const void *e2)
+int mc_ints::compare(const Data *e1, const Data *e2)
 {
  mc_ints *a = (mc_ints *)e1;
  mc_ints *b = (mc_ints *)e2;

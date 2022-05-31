@@ -145,6 +145,12 @@ inline void p_swap(void **a, void **b) {void *t = *a; *a = *b; *b = t;}
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+class Data {
+public:
+    virtual ~Data() = default;
+};
+
+
 } //namespace T_MESH
 
 #endif //_BASICS_H

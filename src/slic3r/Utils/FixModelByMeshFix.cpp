@@ -33,6 +33,20 @@
 
 namespace Slic3r {
 
+class RepairCanceledException: public std::exception {
+public:
+    const char* what() const throw () {
+        return "Model repair has been canceled";
+    }
+};
+
+class RepairFailedException: public std::exception {
+public:
+    const char* what() const throw () {
+        return "Model repair has failed";
+    }
+};
+
 namespace detail {
 
 using namespace T_MESH;
@@ -158,6 +172,9 @@ public:
         }
 
         for (const auto &face : its.indices) {
+            if (face.x() == face.y() || face.y() == face.z() || face.z() == face.x()) {
+                continue;
+            }
             this->CreateIndexedTriangle(tmp, face.x(), face.y(), face.z());
         }
 
@@ -188,15 +205,19 @@ public:
         return out;
     }
 
-    bool meshclean_single_iteration(int inner_loops) {
+    bool meshclean_single_iteration(int inner_loops, const std::atomic<bool> &canceled) {
         bool ni, nd;
         Triangle *t;
         Node *m;
 
         nd = strongDegeneracyRemoval(inner_loops);
+        if (canceled)
+            throw RepairCanceledException();
         deselectTriangles();
         invertSelection();
         ni = strongIntersectionRemoval(inner_loops);
+        if (canceled)
+            throw RepairCanceledException();
         if (ni && nd) {
             FOREACHTRIANGLE(t, m)
                 if (t->isExactlyDegenerate())
@@ -225,19 +246,10 @@ private:
 
 }
 
-class RepairCanceledException: public std::exception {
-public:
-    const char* what() const throw () {
-        return "Model repair has been canceled";
-    }
-};
-
 bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressDialog &progress_dlg,
         const wxString &msg_header, std::string &fix_result) {
-
-    std::mutex mutex;
+    std::mutex mtx;
     std::condition_variable condition;
-    std::unique_lock<std::mutex> lock(mutex);
     struct Progress {
         std::string message;
         int percent = 0;
@@ -256,8 +268,8 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
     // (It seems like wxWidgets initialize the COM contex as single threaded and we need a multi-threaded context).
     bool success = false;
     size_t ivolume = 0;
-    auto on_progress = [&mutex, &condition, &ivolume, &volumes, &progress](const char *msg, unsigned prcnt) {
-        std::lock_guard<std::mutex> lk(mutex);
+    auto on_progress = [&mtx, &condition, &ivolume, &volumes, &progress](const char *msg, unsigned prcnt) {
+        std::unique_lock<std::mutex> lock(mtx);
         progress.message = msg;
         progress.percent = (int) floor((float(prcnt) + float(ivolume) * 100.f) / float(volumes.size()));
         progress.updated = true;
@@ -269,62 +281,70 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
                     std::vector<TriangleMesh> meshes_repaired;
                     meshes_repaired.reserve(volumes.size());
                     for (ModelVolume *mv : volumes) {
+                        std::vector<indexed_triangle_set> parts = its_split(mv->mesh().its);
+                        for (size_t part_idx = 0; part_idx < parts.size(); ++part_idx) {
 
-                        detail::Basic_TMesh_Adapter tin { };
-                        on_progress(L("Loading source model"), 0);
-                        if (canceled)
-                            throw RepairCanceledException();
-                        tin.load_indexed_triangle_set(mv->mesh().its);
-
-                        on_progress(L("Join closest components"), 10);
-                        if (canceled)
-                            throw RepairCanceledException();
-                        joinClosestComponents(&tin);
-                        tin.deselectTriangles();
-
-                        // Keep only the largest component (i.e. with most triangles)
-                        on_progress(L("Remove smallest components"), 20);
-                        if (canceled)
-                            throw RepairCanceledException();
-                        tin.removeSmallestComponents();
-
-                        // Fill holes
-                        on_progress(L("Fill holes"), 30);
-                        if (canceled)
-                            throw RepairCanceledException();
-                        if (tin.boundaries()) {
-                            on_progress(L("Patch small holes"), 40);
+                            detail::Basic_TMesh_Adapter tin { };
+                            on_progress(L("Loading source model"), 0);
                             if (canceled)
                                 throw RepairCanceledException();
-                            tin.fillSmallBoundaries(0, true);
-                        }
-
-                        on_progress(L("Geometry check"), 50);
-                        if (canceled)
-                            throw RepairCanceledException();
-                        // Run geometry correction
-                        if (!tin.boundaries()) {
-                            int iteration = 0;
-                            on_progress(L("Iterative geometry correction"), 55);
+                            tin.load_indexed_triangle_set(parts[part_idx]);
+                            tin.boundaries();
+                            on_progress(L("Join closest components"), 10);
+                            if (canceled)
+                                throw RepairCanceledException();
+                            joinClosestComponents(&tin);
                             tin.deselectTriangles();
-                            tin.invertSelection();
-                            bool fixed = false;
-                            while (iteration < 10 && !fixed) { //default constants taken from TMesh library
-                                fixed = tin.meshclean_single_iteration(3);
-                                on_progress(L("Fixing geometry"), std::min(95, 60 + iteration * 8)); // majority of objects should finish in 4 iterations
+                            tin.boundaries();
+                            // Keep only the largest component (i.e. with most triangles)
+                            on_progress(L("Remove smallest components"), 20);
+                            if (canceled)
+                                throw RepairCanceledException();
+                            tin.removeSmallestComponents();
+
+                            // Fill holes
+                            on_progress(L("Check holes"), 30);
+                            if (canceled)
+                                throw RepairCanceledException();
+                            if (tin.boundaries()) {
+                                on_progress(L("Patch small holes"), 40);
                                 if (canceled)
                                     throw RepairCanceledException();
-                                iteration++;
+                                tin.fillSmallBoundaries(0, true);
                             }
+
+                            on_progress(L("Geometry check"), 50);
+                            if (canceled)
+                                throw RepairCanceledException();
+                            // Run geometry correction
+                            if (!tin.boundaries()) {
+                                int iteration = 0;
+                                on_progress(L("Iterative geometry correction"), 55);
+                                tin.deselectTriangles();
+                                tin.invertSelection();
+                                bool fixed = false;
+                                while (iteration < 10 && !fixed) { //default constants taken from TMesh library
+                                    fixed = tin.meshclean_single_iteration(3, canceled);
+                                    on_progress(L("Fixing geometry"), std::min(95, 60 + iteration * 8)); // majority of objects should finish in 4 iterations
+                                    if (canceled)
+                                        throw RepairCanceledException();
+                                    iteration++;
+                                }
+                            }
+
+                            if (tin.boundaries() || tin.T.numels() == 0) {
+                                throw RepairFailedException();
+                            }
+                            parts[part_idx] = tin.to_indexed_triangle_set();
                         }
 
-                        if (tin.boundaries() || tin.T.numels() == 0) {
-                            meshes_repaired.emplace_back(std::move(mv->mesh().its));
-                            throw Slic3r::RuntimeError(L("Model repair failed"));
+                        for (size_t part_idx = 1; part_idx < parts.size(); ++part_idx) {
+                            its_merge(parts[0], parts[part_idx]);
                         }
 
-                        meshes_repaired.emplace_back(std::move(tin.to_indexed_triangle_set()));
+                        meshes_repaired.emplace_back(std::move(parts[0]));
                     }
+
                     for (size_t i = 0; i < volumes.size(); ++i) {
                         volumes[i]->set_mesh(std::move(meshes_repaired[i]));
                         volumes[i]->calculate_convex_hull();
@@ -345,7 +365,9 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
                     on_progress(ex.what(), 100);
                 }
             });
+
     while (!finished) {
+        std::unique_lock<std::mutex> lock(mtx);
         condition.wait_for(lock, std::chrono::milliseconds(250), [&progress] {
             return progress.updated;
         });
@@ -357,6 +379,8 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
         progress.updated = false;
     }
 
+    worker_thread.join();
+
     if (canceled) {
         // Nothing to show.
     } else if (success) {
@@ -364,7 +388,7 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
     } else {
         fix_result = progress.message;
     }
-    worker_thread.join();
+
     return !canceled;
 }
 

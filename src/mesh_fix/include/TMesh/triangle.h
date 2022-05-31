@@ -46,7 +46,7 @@ namespace T_MESH
 //! assigning up to 256 different states to the edge.
 
 
-class Triangle
+class Triangle : public Data
 {
  public :
  

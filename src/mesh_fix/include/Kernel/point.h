@@ -68,7 +68,7 @@ PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rati
 //! of our version of the epsilon geometry for robust computation.
 
 
-class Point
+class Point : public Data
 {
  public :
  coord x,y,z;					//!< Coordinates
@@ -285,7 +285,7 @@ class Point
 };
 
 //! Lexycographic comparison to be used with jqsort() or abstractHeap.
-int xyzCompare(const void *p1, const void *p2);
+int xyzCompare(const Data *p1, const Data *p2);
 
 //! Static point with DBL_MAX coordinates.
 extern const Point INFINITE_POINT;

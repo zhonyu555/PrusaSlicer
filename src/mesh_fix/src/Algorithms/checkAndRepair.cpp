@@ -196,7 +196,7 @@ Vertex *Basic_TMesh::checkGeometry()
  if (varr == NULL) TMesh::warning("checkGeometry: Not enough memory. Can't check for coincident vertices.\n");
  else
  {
-  jqsort((void **)varr, V.numels(), xyzCompare);
+  jqsort((Data **)varr, V.numels(), xyzCompare);
   for (i=0; i<(V.numels()-1); i++)
   {
    v1 = ((Vertex *)varr[i]);
@@ -220,7 +220,7 @@ Vertex *Basic_TMesh::checkGeometry()
  if (evarr == NULL) TMesh::warning("checkGeometry: Not enough memory. Can't check for coincident edges.\n");
  else
  {
-  jqsort((void **)evarr, E.numels(), lexEdgeCompare);
+  jqsort((Data **)evarr, E.numels(), lexEdgeCompare);
   for (i=0; i<(E.numels()-1); i++)
   {
    if (!lexEdgeCompare(evarr[i], evarr[i+1]))
@@ -377,7 +377,7 @@ bool Basic_TMesh::rebuildConnectivity(bool fixconnectivity) //!< AMF_CHANGE 1.1>
  }
 
  for (i=0; i<V.numels(); i++) delete(var[i]);
- delete var;
+ delete [] var;
  delete [] triangles;
 
  if(fixconnectivity)	return fixConnectivity();

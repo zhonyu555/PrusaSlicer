@@ -32,6 +32,7 @@
 #define _JLIST_H
 
 #include <stdio.h>
+#include "basics.h"
 
 namespace T_MESH
 {
@@ -40,19 +41,18 @@ namespace T_MESH
 
 //! Generic node of a doubly likned list.
 
-
 class Node
 {
  friend class List; // This is to make methods in 'List' able to modify n_prev and n_next
 
  public :
- void *data;			//!< Actual data stored in the node
+ Data *data;			//!< Actual data stored in the node
 
  //! Creates an isolated node storing 'd'
- Node(const void *d) {data=(void *)d; n_prev=n_next=NULL;}
+ Node(const void *d) {data=(Data *)d; n_prev=n_next=NULL;}
 
  //! Creates a new node storing 'd' and links it to a previous node 'p' and to a next one 'n'.
- Node(const Node *p, const void *d, const Node *n);
+ Node(const Node *p, const Data *d, const Node *n);
  ~Node();			//!< Standard destructor
 
  inline Node *prev() const {return n_prev;}	//!< Returns the previous node in the list, possibly NULL
@@ -68,7 +68,7 @@ class Node
 //! Doubly linked list.
 
 
-class List
+class List : public Data
 { 
  protected :
 
@@ -82,10 +82,10 @@ class List
  List() {l_head = l_tail = NULL; l_numels = 0;}
 
  //! Creates a list containing an element 'd' (singleton)
- List(const void *d) {l_head = l_tail = new Node(d); l_numels = 1;}
+ List(const Data *d) {l_head = l_tail = new Node(d); l_numels = 1;}
 
  //! Creates a list out of an array 'd' made of 'n' elements.
- List(const void **d, int n);
+ List(const Data **d, int n);
 
  //! Creates a duplicated list.
  List(List& l) {l_head = l_tail = NULL; l_numels = 0; appendList(&l);}
@@ -100,12 +100,12 @@ class List
  Node *tail() const {return l_tail;}	//!< Gets the last node, NULL if empty. \n O(1).
  int numels() const {return l_numels;}	//!< Gets the number of elements. \n O(1).
 
- void appendHead(const void *d);	//!< Appends a new node storing 'd' to the head. \n O(1).
- void appendTail(const void *d);	//!< Appends a new node storing 'd' to the tail. \n O(1).
- void insertAfter(Node *n, const void *d); //! Inserts a new node storing 'd' right after 'n'. \n O(1).
+ void appendHead(const Data *d);	//!< Appends a new node storing 'd' to the head. \n O(1).
+ void appendTail(const Data *d);	//!< Appends a new node storing 'd' to the tail. \n O(1).
+ void insertAfter(Node *n, const Data *d); //! Inserts a new node storing 'd' right after 'n'. \n O(1).
 
  //! Deletes and removes the node containing 'd'. Returns its position, 0 if 'd' is not in the list. \n O(numels()).
- int  removeNode(const void *d);
+ int  removeNode(const Data *d);
 
  //! Deletes and i'th node (starting from 0). Returns 0 if the list has less than i+1 nodes. \n O(numels()).
  int  removeNode(int i);
@@ -125,11 +125,12 @@ class List
  //! Moves node 'n' from this list to the end of 'l'. \n O(1).
  void moveNodeTo(Node *n, List *l);
 
- void *popHead();		//!< Deletes and removes the first node. Returns its data. \n O(1).
- void *popTail();		//!< Deletes and removes the last node. Returns its data. \n O(1).
+ Data *popHead();		//!< Deletes and removes the first node. Returns its data. \n O(1).
+ Data *popTail();		//!< Deletes and removes the last node. Returns its data. \n O(1).
 
  //! Deletes and removes the node 'n' from the list and frees data memory. \n O(1).
 
+ // NOTE: The following is not true after refactoring, void* has been replaced with Data*
  //! Warning. This method uses the free() function to to dispose the memory space
  //! used by the data stored in the node. This means that such data should have
  //! been allocated through malloc(), calloc() or realloc(), and not through the
@@ -143,13 +144,13 @@ class List
  //! Deletes and removes the node storing 'd' and frees the memory occupied by 'd' itself. \n O(numels()).
 
  //! Warning. Read the comment for the method 'freeCell()'
- void freeNode(void *d);
+ void freeNode(Data *d);
 
  //! Returns the node storing 'd'. NULL if not found. \n O(numels()).
- Node *containsNode(const void *d) const;
+ Node *containsNode(const Data *d) const;
 
  //! Replaces old_n with new_n. The Node containing new_n is returned. \n O(numels()).
- Node *replaceNode(const void *old_n, const void *new_n);
+ Node *replaceNode(const Data *old_n, const Data *new_n);
 
  //! Deletes and removes all the nodes and frees data memory. \n O(numels()).
 
@@ -158,7 +159,7 @@ class List
 
  void removeNodes();		//!< Deletes and removes all the nodes. \n O(numels()).
 
- void **toArray() const;		//!< Creates an array out of the list. \n O(numels()).
+ Data **toArray() const;		//!< Creates an array out of the list. \n O(numels()).
 
  //! Sorts the list using 'comp' as comparison function for two elements. \n O(numels()^2).
 
@@ -167,7 +168,7 @@ class List
  //! the need to have a guaranteed O(NlogN) complexity, it is possible to implement a heap
  //! based on the 'abstractHeap' class. See the documentation of the standard 'qsort' library
  //! function for details on the prototype of the comparison function 'comp'.
- int sort(int (*comp)(const void *, const void *));
+ int sort(int (*comp)(const Data *, const Data *));
 };
 
 //! Convenience macro to scan the nodes of a list.

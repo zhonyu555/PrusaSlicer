@@ -45,6 +45,6 @@
 namespace T_MESH
 {
 
-extern void jqsort(void *v[], int numels, int (*comp)(const void *, const void *));
+extern void jqsort(Data *v[], int numels, int (*comp)(const Data *, const Data *));
 
 } //namespace T_MESH
