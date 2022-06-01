@@ -181,6 +181,15 @@ DownloadFrame::DownloadFrame(const wxString& title, const wxPoint& pos, const wx
     btn_cancel->Bind(wxEVT_BUTTON, [this](wxCommandEvent& evt) { on_cancel_button(evt); });
     btn_sizer->Add(btn_cancel, 0, wxLEFT | wxALIGN_CENTER_VERTICAL);
 
+    wxButton* btn_pause = new wxButton(this, wxID_EDIT, "Pause");
+    btn_pause->Bind(wxEVT_BUTTON, [this](wxCommandEvent& evt) { on_pause_button(evt); });
+    btn_sizer->Add(btn_pause, 0, wxLEFT | wxALIGN_CENTER_VERTICAL);
+
+
+    wxButton* btn_resume = new wxButton(this, wxID_EDIT, "Resume");
+    btn_resume->Bind(wxEVT_BUTTON, [this](wxCommandEvent& evt) { on_resume_button(evt); });
+    btn_sizer->Add(btn_resume, 0, wxLEFT | wxALIGN_CENTER_VERTICAL);
+
     //main_sizer->Add(data_sizer);
     //main_sizer->Add(btn_sizer);
    
@@ -245,25 +254,53 @@ void DownloadFrame::log(const wxString& msg)
 
 void DownloadFrame::on_progress(wxCommandEvent& event)
 {
-    //log(std::to_string(event.GetInt()) + ": " + event.GetString());
-    m_dataview->SetValue(std::stoi(boost::nowide::narrow(event.GetString())), event.GetInt() - 1, 2);
-    m_dataview->SetValue("Downloading", event.GetInt() -1, 3);
-
+   
+    for (size_t i = 0; i < m_dataview->GetItemCount(); i++) {
+        int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(i, 0)));
+        if (id == event.GetInt()) {
+            if (!is_in_state(id, DownloadState::DownloadOngoing))
+                return;
+            m_dataview->SetValue(std::stoi(boost::nowide::narrow(event.GetString())), i, 2);
+            m_dataview->SetValue("Downloading", i, 3);
+            return;
+        }
+    }
 }
 void DownloadFrame::on_error(wxCommandEvent& event)
 {
     set_download_state(event.GetInt(), DownloadState::DownloadError);
-    m_dataview->SetValue("Error", event.GetInt() - 1, 3);
+
+    for (size_t i = 0; i < m_dataview->GetItemCount(); i++) {
+        int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(i, 0)));
+        if (id == event.GetInt()) {
+            m_dataview->SetValue("Error - " + event.GetString(), i, 3);
+            return;
+        }
+    }
 }
 void DownloadFrame::on_complete(wxCommandEvent& event)
 {
     set_download_state(event.GetInt(), DownloadState::DownloadDone);
-    m_dataview->SetValue("Done", event.GetInt() - 1, 3);
+
+    for (size_t i = 0; i < m_dataview->GetItemCount(); i++) {
+        int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(i, 0)));
+        if (id == event.GetInt()) {
+            m_dataview->SetValue("Done", i, 3);
+            return;
+        }
+    }
+
     start_next();
 }
 void DownloadFrame::on_name_change(wxCommandEvent& event)
 {
-    m_dataview->SetValue(event.GetString(), event.GetInt() - 1, 1);
+    for (size_t i = 0; i < m_dataview->GetItemCount(); i++) {
+        int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(i, 0)));
+        if (id == event.GetInt())  {
+            m_dataview->SetValue(event.GetString(), i, 1);
+            return;
+        }
+    }
 }
 void DownloadFrame::start_next()
 {
@@ -313,7 +350,29 @@ void DownloadFrame::on_cancel_button(wxCommandEvent& event)
     int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(selected, 0)));
 
     if(cancel_download(id))
-        m_dataview->SetValue("Canceled", id - 1, 3);
+        m_dataview->SetValue("Canceled", selected, 3);
+    if (delete_download(id))
+        m_dataview->DeleteItem(selected);
+}
+
+void DownloadFrame::on_pause_button(wxCommandEvent& event)
+{
+    int selected = m_dataview->GetSelectedRow();
+    if (selected == wxNOT_FOUND) { return; }
+    int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(selected, 0)));
+
+    if (pause_download(id))
+        m_dataview->SetValue("Paused", selected, 3);
+}
+
+void DownloadFrame::on_resume_button(wxCommandEvent& event)
+{
+    int selected = m_dataview->GetSelectedRow();
+    if (selected == wxNOT_FOUND) { return; }
+    int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(selected, 0)));
+
+    if (resume_download(id))
+        m_dataview->SetValue("Paused", selected, 3);
 }
 
 void DownloadFrame::set_download_state(int id, DownloadState state)
@@ -326,11 +385,28 @@ void DownloadFrame::set_download_state(int id, DownloadState state)
     }
 }
 
-bool DownloadFrame::is_in_state(int id, DownloadState state) const
+void DownloadFrame::update_state_labels()
+{
+    for (size_t i = 0; i < m_dataview->GetItemCount(); i++) {
+        int id = std::stoi(boost::nowide::narrow(m_dataview->GetTextValue(i, 0)));
+        m_dataview->SetValue(c_state_labels.at(get_download_state(id)), i, 1);
+    }
+}
+
+DownloadState DownloadFrame::get_download_state(int id) const
 {
     for (size_t i = 0; i < m_downloads.size(); ++i) {
         if (m_downloads[i]->get_id() == id) {
             return m_downloads[i]->get_state();
+        }
+    }
+}
+
+bool DownloadFrame::is_in_state(int id, DownloadState state) const
+{
+    for (size_t i = 0; i < m_downloads.size(); ++i) {
+        if (m_downloads[i]->get_id() == id) {
+            return m_downloads[i]->get_state() == state;
         }
     }
 }
@@ -344,6 +420,45 @@ bool DownloadFrame::cancel_download(int id)
                 return true;
             }
             return false;
+        }
+    }
+    return false;
+}
+
+bool DownloadFrame::pause_download(int id)
+{
+    for (size_t i = 0; i < m_downloads.size(); ++i) {
+        if (m_downloads[i]->get_id() == id) {
+            if (m_downloads[i]->get_state() == DownloadState::DownloadOngoing) {
+                m_downloads[i]->pause();
+                return true;
+            }
+            return false;
+        }
+    }
+    return false;
+}
+
+bool DownloadFrame::resume_download(int id)
+{
+    for (size_t i = 0; i < m_downloads.size(); ++i) {
+        if (m_downloads[i]->get_id() == id) {
+            if (m_downloads[i]->get_state() == DownloadState::DownloadPaused) {
+                m_downloads[i]->resume();
+                return true;
+            }
+            return false;
+        }
+    }
+    return false;
+}
+
+bool DownloadFrame::delete_download(int id)
+{
+    for (size_t i = 0; i < m_downloads.size(); ++i) {
+        if (m_downloads[i]->get_id() == id) {
+            m_downloads.erase(m_downloads.begin() + i);
+            return true;
         }
     }
     return false;

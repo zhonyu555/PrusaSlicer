@@ -67,6 +67,8 @@ public:
 	// Sets a maximum size of the data that can be received.
 	// A value of zero sets the default limit, which is is 5MB.
 	Http& size_limit(size_t sizeLimit);
+	// range  of donloaded bytes. example: curl_easy_setopt(curl, CURLOPT_RANGE, "0-199");
+	Http& set_range(const std::string& range);
 	// Sets a HTTP header field.
 	Http& header(std::string name, const std::string &value);
 	// Removes a header field.

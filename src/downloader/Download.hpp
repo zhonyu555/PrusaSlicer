@@ -9,12 +9,12 @@ namespace Downloader {
 
 enum DownloadState
 {
-    DownloadPending,
+    DownloadPending = 0,
     DownloadOngoing,
     DownloadStopped,
     DownloadDone,
     DownloadError,
-
+    DownloadPaused
 };
 
 class Download { 
@@ -22,7 +22,8 @@ public:
     Download(int ID, std::string url, wxEvtHandler* evt_handler,const boost::filesystem::path& dest_folder);
     void start();
     void cancel();
-//  void pause();
+    void pause();
+    void resume();
 
     int get_id() const { return m_id; }
     boost::filesystem::path get_final_path() const { return m_final_path; }

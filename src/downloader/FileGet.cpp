@@ -55,7 +55,10 @@ struct FileGet::priv
 	std::thread m_io_thread;
 	wxEvtHandler* m_evt_handler;
 	boost::filesystem::path m_dest_folder;
-	std::atomic_bool m_cancel = false;
+	boost::filesystem::path m_tmp_path; // path when ongoing download
+	std::atomic_bool m_cancel { false };
+	std::atomic_bool m_pause  { false };
+	size_t m_written { 0 };
 	priv(int ID, std::string&& url, const std::string& filename, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder);
 
 	void get_perform();
@@ -79,68 +82,91 @@ void FileGet::priv::get_perform()
 	assert(boost::filesystem::is_directory(m_dest_folder));
 
 	// open dest file
-	boost::filesystem::path dest_path = m_dest_folder / m_filename;
-	std::string extension = boost::filesystem::extension(dest_path);
-	std::string just_filename = m_filename.substr(0, m_filename.size() - extension.size());
-	std::string final_filename = just_filename;
-
-	size_t version = 0;
-	while (boost::filesystem::exists(m_dest_folder / (final_filename + extension)) || boost::filesystem::exists(m_dest_folder / (final_filename + extension + "." + std::to_string(get_current_pid()) + ".download")))
+	if (m_written == 0)
 	{
-		++version;
-		final_filename = just_filename + "(" + std::to_string(version) + ")";
+		boost::filesystem::path dest_path = m_dest_folder / m_filename;
+		std::string extension = boost::filesystem::extension(dest_path);
+		std::string just_filename = m_filename.substr(0, m_filename.size() - extension.size());
+		std::string final_filename = just_filename;
+
+		size_t version = 0;
+		while (boost::filesystem::exists(m_dest_folder / (final_filename + extension)) || boost::filesystem::exists(m_dest_folder / (final_filename + extension + "." + std::to_string(get_current_pid()) + ".download")))
+		{
+			++version;
+			final_filename = just_filename + "(" + std::to_string(version) + ")";
+		}
+		m_filename = final_filename + extension;
+
+		m_tmp_path = m_dest_folder / (m_filename + "." + std::to_string(get_current_pid()) + ".download");
+
+		wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_NAME_CHANGE);
+		evt->SetString(boost::nowide::widen(m_filename));
+		evt->SetInt(m_id);
+		m_evt_handler->QueueEvent(evt);
 	}
-	m_filename = final_filename + extension;
-
-	boost::filesystem::path tmp_path = m_dest_folder / (m_filename + "." + std::to_string(get_current_pid()) + ".download");
-	dest_path = m_dest_folder / m_filename;
-
-	wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_NAME_CHANGE);
-	evt->SetString(boost::nowide::widen(m_filename));
-	evt->SetInt(m_id);
-	m_evt_handler->QueueEvent(evt);
-
+	
+	boost::filesystem::path dest_path = m_dest_folder / m_filename;
+	FILE* file;
 	// open file for writting
-	FILE* file = fopen(tmp_path.string().c_str(), "wb");
-	size_t written = 0;
+	if (m_written == 0)
+		file = fopen(m_tmp_path.string().c_str(), "wb");
+	else 
+		file = fopen(m_tmp_path.string().c_str(), "a");
 
+	std:: string range_string = std::to_string(m_written) + "-";
+
+	size_t written_previously = m_written;
+	size_t written_this_session = 0;
 	Downloader::Http::get(m_url)
 		.size_limit(DOWNLOAD_SIZE_LIMIT) //more?
+		.set_range(range_string)
 		.on_progress([&](Downloader::Http::Progress progress, bool& cancel) {
 			if (m_cancel) {
 				fclose(file);
 				// remove canceled file
-				std::remove(tmp_path.string().c_str());
+				std::remove(m_tmp_path.string().c_str());
+				m_written = 0;
 				cancel = true;
 				return;
 				// TODO: send canceled event?
-			}			
+			}		
+			if (m_pause) {
+				fclose(file);
+				cancel = true;
+				return;
+			}
+			
 			wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_PROGRESS);
-			if (progress.dlnow == 0)
+			/*if (progress.dlnow == 0 && m_written == 0) {
 				evt->SetString("0");
-			else {	
-				if (progress.dlnow - written > DOWNLOAD_MAX_CHUNK_SIZE || progress.dlnow == progress.dltotal) {
+				evt->SetInt(m_id);
+				m_evt_handler->QueueEvent(evt);
+			} else*/ 
+			if (progress.dlnow != 0) {
+				if (progress.dlnow - written_this_session > DOWNLOAD_MAX_CHUNK_SIZE || progress.dlnow == progress.dltotal) {
 					try
 					{
-						std::string part_for_write = progress.buffer.substr(written, progress.dlnow);
+						std::string part_for_write = progress.buffer.substr(written_this_session, progress.dlnow);
 						fwrite(part_for_write.c_str(), 1, part_for_write.size(), file);
 					}
-					catch (const std::exception&)
+					catch (const std::exception& e)
 					{
 						// fclose(file); do it?
 						wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_ERROR);
-						evt->SetString("Failed to write progress.");
+						evt->SetString(e.what());
 						evt->SetInt(m_id);
 						m_evt_handler->QueueEvent(evt);
 						cancel = true;
 						return;
 					}
-					written = progress.dlnow;
+					written_this_session = progress.dlnow;
+					m_written = written_previously + written_this_session;
 				}
 				evt->SetString(std::to_string(progress.dlnow * 100 / progress.dltotal));
+				evt->SetInt(m_id);
+				m_evt_handler->QueueEvent(evt);
 			}
-			evt->SetInt(m_id);
-			m_evt_handler->QueueEvent(evt);
+			
 		})
 		.on_error([&](std::string body, std::string error, unsigned http_status) {
 			fclose(file);
@@ -158,14 +184,16 @@ void FileGet::priv::get_perform()
 			//}
 			try
 			{
-				if (written < body.size())
+				/*
+				if (m_written < body.size())
 				{
 					// this code should never be entered. As there should be on_progress call after last bit downloaded.
-					std::string part_for_write = body.substr(written);
+					std::string part_for_write = body.substr(m_written);
 					fwrite(part_for_write.c_str(), 1, part_for_write.size(), file);
 				}
+				*/
 				fclose(file);
-				boost::filesystem::rename(tmp_path, dest_path);
+				boost::filesystem::rename(m_tmp_path, dest_path);
 			}
 			catch (const std::exception& e)
 			{
@@ -196,18 +224,25 @@ FileGet::FileGet(FileGet&& other) : p(std::move(other.p)) {}
 FileGet::~FileGet()
 {
 	if (p && p->m_io_thread.joinable()) {
-		p->m_io_thread.detach();
+		p->m_cancel = true;
+		p->m_io_thread.join();
 	}
 }
 
 void FileGet::get()
 {
-	if (p) {
-		auto io_thread = std::thread([&priv = p]() {
-			priv->get_perform();
-			});
-		p->m_io_thread = std::move(io_thread);
+	assert(p);
+	if (p->m_io_thread.joinable()) {
+			// This will stop transfers being done by the thread, if any.
+			// Cancelling takes some time, but should complete soon enough.
+			p->m_cancel = true;
+			p->m_io_thread.join();
 	}
+	p->m_cancel = false;
+	p->m_pause = false;
+	p->m_io_thread = std::thread([this]() {
+		p->get_perform();
+		});
 }
 
 void FileGet::cancel()
@@ -215,6 +250,28 @@ void FileGet::cancel()
 	if(p){
 		p->m_cancel = true;
 	}
+}
+
+void FileGet::pause()
+{
+	if (p) {
+		p->m_pause = true;
+	}
+}
+void FileGet::resume()
+{
+	assert(p);
+	if (p->m_io_thread.joinable()) {
+		// This will stop transfers being done by the thread, if any.
+		// Cancelling takes some time, but should complete soon enough.
+		p->m_cancel = true;
+		p->m_io_thread.join();
+	}
+	p->m_cancel = false;
+	p->m_pause = false;
+	p->m_io_thread = std::thread([this]() {
+		p->get_perform();
+		});
 }
 
 }

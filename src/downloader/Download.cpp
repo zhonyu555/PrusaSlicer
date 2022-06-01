@@ -32,4 +32,16 @@ void Download::cancel()
 	m_state = DownloadState::DownloadStopped;
 	m_file_get->cancel();
 }
+void Download::pause()
+{
+	assert(m_state == DownloadState::DownloadOngoing);
+	m_state = DownloadState::DownloadPaused;
+	m_file_get->pause();
+}
+void Download::resume()
+{
+	assert(m_state == DownloadState::DownloadPaused);
+	m_state = DownloadState::DownloadOngoing;
+	m_file_get->resume();
+}
 }

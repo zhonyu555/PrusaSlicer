@@ -4,6 +4,7 @@
 #include "InstanceSend.hpp"
 #include "Download.hpp"
 #include <vector>
+#include <map>
 #include <wx/wx.h>
 #include <wx/dataview.h>
 
@@ -29,12 +30,18 @@ private:
     void on_open_in_new_slicer(wxCommandEvent& event);
     void on_open_in_explorer(wxCommandEvent& event);
     void on_cancel_button(wxCommandEvent& event);
-
-
+    void on_pause_button(wxCommandEvent& event);
+    void on_resume_button(wxCommandEvent& event);
+    
+    void update_state_labels();
     void start_next();
     void set_download_state(int id, DownloadState state);
     bool is_in_state(int id, DownloadState state) const;
+    DownloadState get_download_state(int id) const;
     bool cancel_download(int id);
+    bool pause_download(int id);
+    bool resume_download(int id);
+    bool delete_download(int id);
     wxString get_path_of(int id) const;
     wxString get_folder_path_of(int id) const;
 
@@ -55,6 +62,19 @@ private:
     boost::filesystem::path m_dest_folder;
 
     std::vector<std::unique_ptr<Download>> m_downloads;
+    /* DownloadPending = 0,
+    DownloadOngoing,
+    DownloadStopped,
+    DownloadDone,
+    DownloadError,
+    DownloadPaused*/
+    const std::map<DownloadState, wxString> c_state_labels = {
+        {DownloadPending,   "Pending"},
+        {DownloadStopped,   "Canceled"},
+        {DownloadDone,      "Done"},
+        {DownloadError,     "Error"},
+        {DownloadPaused,    "Paused"},
+    };
 };
 
 class DownloadApp : public wxApp

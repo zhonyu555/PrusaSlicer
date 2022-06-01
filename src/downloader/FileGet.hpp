@@ -20,6 +20,8 @@ public:
 
 	void get();
 	void cancel();
+	void pause();
+	void resume();
 	static std::string escape_url(const std::string& url);
 private:
 	std::unique_ptr<priv> p;
