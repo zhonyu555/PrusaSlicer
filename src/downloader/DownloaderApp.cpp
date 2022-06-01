@@ -125,7 +125,7 @@ bool DownloadApp::OnCmdLineParsed(wxCmdLineParser& parser)
         if (!url.empty() && m_frame != nullptr)
             m_frame->start_download(std::move(url));
 
-        m_frame->start_download("open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl");
+        //m_frame->start_download("open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl");
 
         return wxApp::OnCmdLineParsed(parser);
     } 

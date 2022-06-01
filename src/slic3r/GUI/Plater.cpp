@@ -50,6 +50,7 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/ClipperUtils.hpp"
+#include "libslic3r/miniz_extension.hpp"
 
 #include "GUI.hpp"
 #include "GUI_App.hpp"
@@ -5452,6 +5453,37 @@ std::vector<size_t> Plater::load_files(const std::vector<std::string>& input_fil
     return p->load_files(paths, load_model, load_config, imperial_units);
 }
 
+void Plater::preview_archive(const boost::filesystem::path& input_file)
+{
+    BOOST_LOG_TRIVIAL(error) << "preview zip archive: " << input_file;
+
+    mz_zip_archive archive;
+    mz_zip_zero_struct(&archive);
+
+    if (!open_zip_reader(&archive, input_file.string()))
+        return ;
+
+    mz_uint num_entries = mz_zip_reader_get_num_files(&archive);
+
+    BOOST_LOG_TRIVIAL(error) << "entries: " << num_entries;
+    
+    mz_zip_archive_file_stat stat;
+    bool config_found = false;
+    for (mz_uint i = 0; i < num_entries; ++i) {
+        if (mz_zip_reader_file_stat(&archive, i, &stat)) {
+            std::string name(stat.m_filename);
+            //std::replace(name.begin(), name.end(), '\\', '/');
+
+            BOOST_LOG_TRIVIAL(error) << name;
+            
+        }
+    }
+    
+    close_zip_reader(&archive);
+
+
+}
+
 enum class LoadType : unsigned char
 {
     Unknown,
@@ -5533,7 +5565,7 @@ void ProjectDropDialog::on_dpi_changed(const wxRect& suggested_rect)
 
 bool Plater::load_files(const wxArrayString& filenames)
 {
-    const std::regex pattern_drop(".*[.](stl|obj|amf|3mf|prusa)", std::regex::icase);
+    const std::regex pattern_drop(".*[.](stl|obj|amf|3mf|prusa|zip)", std::regex::icase);
     const std::regex pattern_gcode_drop(".*[.](gcode|g)", std::regex::icase);
 
     std::vector<fs::path> paths;
@@ -5624,6 +5656,8 @@ bool Plater::load_files(const wxArrayString& filenames)
             }
 
             return true;
+        } else if (boost::algorithm::iends_with(filename, ".zip")) {
+            preview_archive(*it);
         }
     }
 
