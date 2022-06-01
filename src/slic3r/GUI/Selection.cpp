@@ -1925,12 +1925,10 @@ void Selection::render_sidebar_hints(const std::string& sidebar_field)
 
 #if ENABLE_GL_SHADERS_ATTRIBUTES
     const Transform3d base_matrix = Geometry::assemble_transform(get_bounding_box().center());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
-#if ENABLE_GL_SHADERS_ATTRIBUTES || ENABLE_WORLD_COORDINATE
     Transform3d orient_matrix = Transform3d::Identity();
 #else
     glsafe(::glPushMatrix());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES || ENABLE_WORLD_COORDINATE
+#endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
 #if ENABLE_WORLD_COORDINATE
     const Vec3d center = get_bounding_box().center();
