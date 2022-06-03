@@ -95,6 +95,7 @@
 #include "MsgDialog.hpp"
 #include "ProjectDirtyStateManager.hpp"
 #include "Gizmos/GLGizmoSimplify.hpp" // create suggestion notification
+#include "FileArchiveDialog.hpp"
 
 #ifdef __APPLE__
 #include "Gizmos/GLGizmosManager.hpp"
@@ -5453,32 +5454,73 @@ std::vector<size_t> Plater::load_files(const std::vector<std::string>& input_fil
     return p->load_files(paths, load_model, load_config, imperial_units);
 }
 
-void Plater::preview_archive(const boost::filesystem::path& input_file)
+void Plater::preview_archive(const boost::filesystem::path& archive_path)
 {
-    BOOST_LOG_TRIVIAL(error) << "preview zip archive: " << input_file;
+    BOOST_LOG_TRIVIAL(error) << "preview zip archive: " << archive_path;
 
     mz_zip_archive archive;
     mz_zip_zero_struct(&archive);
 
-    if (!open_zip_reader(&archive, input_file.string()))
+    if (!open_zip_reader(&archive, archive_path.string()))
         return ;
 
     mz_uint num_entries = mz_zip_reader_get_num_files(&archive);
 
-    BOOST_LOG_TRIVIAL(error) << "entries: " << num_entries;
+    //BOOST_LOG_TRIVIAL(error) << "entries: " << num_entries;
     
+
     mz_zip_archive_file_stat stat;
-    bool config_found = false;
+    
+    //bool config_found = false;
+    //for (mz_uint i = 0; i < num_entries; ++i) {
+    //    if (mz_zip_reader_file_stat(&archive, i, &stat)) {
+    //        std::string name(stat.m_filename);
+    //        //std::replace(name.begin(), name.end(), '\\', '/');
+
+    //        BOOST_LOG_TRIVIAL(error) << name;
+    //        
+    //    }
+    //}
+    
+    std::string archive_path_string = archive_path.string();
+    archive_path_string = archive_path_string.substr(0, archive_path_string.size() - 4);
+    boost::filesystem::path archive_dir(archive_path_string);
+
+
+    if (!boost::filesystem::is_directory(archive_dir) &&
+        !boost::filesystem::create_directory(archive_dir))
+        return;
+
+    std::replace(archive_path_string.begin(), archive_path_string.end(), '\\', '/');
+
+    std::vector<std::string> files;
+
+    // we first loop the entries to read from the archive the .model file only, in order to extract the version from it
     for (mz_uint i = 0; i < num_entries; ++i) {
         if (mz_zip_reader_file_stat(&archive, i, &stat)) {
             std::string name(stat.m_filename);
-            //std::replace(name.begin(), name.end(), '\\', '/');
-
-            BOOST_LOG_TRIVIAL(error) << name;
-            
+            std::replace(name.begin(), name.end(), '\\', '/');
+            files.push_back(name);
+            if (boost::algorithm::iends_with(name, ".stl")) {
+                try
+                {
+                    std::string final_path = archive_path_string + "/" + name;
+                    bool res = mz_zip_reader_extract_file_to_file(&archive, stat.m_filename, final_path.c_str(), 0);
+                    //bool res = mz_zip_reader_extract_file_to_callback(&archive, stat.m_filename, [](void* pOpaque, mz_uint64 file_ofs, const void* pBuf, size_t n)->size_t {}, &data, 0);
+                }
+                catch (const std::exception& e)
+                {
+                    // ensure the zip archive is closed and rethrow the exception
+                    close_zip_reader(&archive);
+                    throw Slic3r::FileIOError(e.what());
+                }
+            }
         }
     }
-    
+
+    FileArchiveDialog dlg(files);
+    dlg.ShowModal();
+
     close_zip_reader(&archive);
 
 

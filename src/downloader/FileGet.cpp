@@ -77,7 +77,6 @@ void FileGet::priv::get_perform()
 {
 	assert(m_evt_handler);
 	assert(!m_url.empty());
-	assert(!m_url.empty());
 	assert(!m_filename.empty());
 	assert(boost::filesystem::is_directory(m_dest_folder));
 

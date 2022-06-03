@@ -1239,17 +1239,27 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
     append_text(_L("Additionally a backup snapshot of the whole configuration is created before an update is applied."));
 
 
-    auto* box_registry = new wxCheckBox(this, wxID_ANY, _L("Regitry for URL download"));
-    box_registry->SetValue(false);
+   /* auto* box_registry = new wxCheckBox(this, wxID_ANY, _L("Regitry for URL download"));
+    box_registry->SetValue(false);*/
+    auto* box_registry = new wxButton(this, wxID_ANY, _L("Registry for URL download"));
     append(box_registry);
     
     box_slic3r->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { this->version_check = event.IsChecked(); });
     box_presets->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { this->preset_update = event.IsChecked(); });
 
-    box_registry->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) { 
-        if(!event.IsChecked())
-            return;
+    box_registry->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) { 
+        //if(!event.IsChecked())
+        //    return;
         // Registry key creation for "prusaslicer://" URL
+
+        boost::filesystem::path binary_path(resources_dir());
+
+        binary_path = binary_path.parent_path() / "prusa-slicer-downloader.exe";
+
+        std::string binary_string = binary_path.string();
+
+        std::string key_string = "\"" + binary_string + "\" \"-u\" \"%1\"";
+
         wxRegKey key_first(wxRegKey::HKCU, "Software\\Classes\\prusaslicer");
         wxRegKey key_full(wxRegKey::HKCU, "Software\\Classes\\prusaslicer\\shell\\open\\command");
         if (!key_first.Exists()) {
@@ -1260,7 +1270,8 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
         if (!key_full.Exists()) {
             key_full.Create(false);
         }
-        key_full = "\"C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe\" \"%1\"";
+        //key_full = "\"C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe\" \"%1\"";
+        key_full = key_string;
        
     });
 }
