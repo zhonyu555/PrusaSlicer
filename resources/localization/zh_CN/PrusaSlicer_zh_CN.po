@@ -3,13 +3,12 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST Translator Jiang Yue <maze1024@gmail.com>, 2019.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-4 10:15+0800\n"
+"PO-Revision-Date: 2022-06-04 12:57+0800\n"
 "Last-Translator: Bral@qq.com\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -33,7 +32,7 @@ msgid "License agreements of all following programs (libraries) are part of appl
 msgstr "所有以下程序(库)的许可协议是应用程序许可协议的一部分"
 
 #: src/slic3r/GUI/AboutDialog.cpp:210
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "About %s"
 msgstr "关于 %s"
 
@@ -64,12 +63,12 @@ msgid "Copy Version Info"
 msgstr "复制版本信息"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:79
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s has encountered an error. It was likely caused by running out of memory. If you are sure you have enough RAM on your system, this may also be a bug and we would be glad if you reported it."
 msgstr "%s 遇到错误。这可能是由于内存不足造成的。如果您确定您的系统上有足够的内存，这可能也是一个软件错误，欢迎你向我们提交问题报告。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:84
-#, possible-boost-format
+#, boost-format
 msgid "PrusaSlicer has encountered a fatal error: \"%1%\""
 msgstr "PrusaSlicer 遇到致命错误：“%1%”"
 
@@ -83,7 +82,7 @@ msgid "Slicing complete"
 msgstr "切片完成"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:199
-#, possible-boost-format
+#, boost-format
 msgid "Masked SLA file exported to %1%"
 msgstr "已将掩蔽 SLA 文件导出到 %1%"
 
@@ -126,34 +125,36 @@ msgid "Unknown error occured during exporting G-code."
 msgstr "导出 G-Code 时出现未知错误。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:695
-#, possible-boost-format
-msgid "Copying of the temporary G-code to the output G-code failed. Maybe the SD card is write locked?\n"
+#, boost-format
+msgid ""
+"Copying of the temporary G-code to the output G-code failed. Maybe the SD card is write locked?\n"
 "Error message: %1%"
-msgstr "将临时 G-Code 复制到输出 G-Code 失败。也许 SD 卡被写锁定了？\n"
+msgstr ""
+"将临时 G-Code 复制到输出 G-Code 失败。也许 SD 卡被写锁定了？\n"
 "错误消息：%1%"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:698
-#, possible-boost-format
+#, boost-format
 msgid "Copying of the temporary G-code to the output G-code failed. There might be problem with target device, please try exporting again or using different device. The corrupted output G-code is at %1%.tmp."
 msgstr "将临时 G-Code 复制到输出 G-Code 失败。目标设备可能有问题，请再次尝试导出或使用其他设备。损坏的输出 G-Code 在 %1%.tmp。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:701
-#, possible-boost-format
+#, boost-format
 msgid "Renaming of the G-code after copying to the selected destination folder has failed. Current path is %1%.tmp. Please try exporting again."
 msgstr "复制到所选目标文件夹后重命名 G-Code 失败。当前路径为 %1%.tmp。请再次尝试导出。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:704
-#, possible-boost-format
+#, boost-format
 msgid "Copying of the temporary G-code has finished but the original code at %1% couldn't be opened during copy check. The output G-code is at %2%.tmp."
 msgstr "临时 G-Code 的复制已完成，但在复制检查期间无法打开位于%1%的原始代码。输出 G-Code 为%2%.tmp。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:707
-#, possible-boost-format
+#, boost-format
 msgid "Copying of the temporary G-code has finished but the exported code couldn't be opened during copy check. The output G-code is at %1%.tmp."
 msgstr "临时 G-Code 的复制已完成，但在复制检查期间无法打开导出的代码。输出 G-Code 为%1%.tmp。"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:715
-#, possible-boost-format
+#, boost-format
 msgid "G-code file exported to %1%"
 msgstr "G-Code 文件导出到 %1%"
 
@@ -162,7 +163,7 @@ msgid "Copying of the temporary G-code to the output G-code failed"
 msgstr "将临时 G-Code 复制到输出 G-Code 失败"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:751
-#, possible-boost-format
+#, boost-format
 msgid "Scheduling upload to `%1%`. See Window -> Print Host Upload Queue"
 msgstr "计划上传到 `%1%`。请参阅窗口-> 打印主机上传队列"
 
@@ -369,10 +370,12 @@ msgid "Buttons And Text Colors Description"
 msgstr "按钮和文本颜色描述"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:49
-msgid "Layer height is not valid.\n"
+msgid ""
+"Layer height is not valid.\n"
 "\n"
 "The layer height will be reset to 0.01."
-msgstr "层高无效。\n"
+msgstr ""
+"层高无效。\n"
 "\n"
 "层高度将重置为 0.01。"
 
@@ -383,10 +386,12 @@ msgid "Layer height"
 msgstr "层高度"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:61
-msgid "First layer height is not valid.\n"
+msgid ""
+"First layer height is not valid.\n"
 "\n"
 "The first layer height will be reset to 0.01."
-msgstr "第一层高度无效。\n"
+msgstr ""
+"第一层高度无效。\n"
 "\n"
 "第一层高度将重置为0.01。"
 
@@ -395,14 +400,16 @@ msgid "First layer height"
 msgstr "第一层高度"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:82
-msgid "The Spiral Vase mode requires:\n"
+msgid ""
+"The Spiral Vase mode requires:\n"
 "- one perimeter\n"
 "- no top solid layers\n"
 "- 0% fill density\n"
 "- no support material\n"
 "- Ensure vertical shell thickness enabled\n"
 "- Detect thin walls disabled"
-msgstr "螺旋花瓶模式需要:\n"
+msgstr ""
+"螺旋花瓶模式需要:\n"
 "- 一个周长\n"
 "- 无顶部固体层\n"
 "- 0%填充密度\n"
@@ -419,10 +426,12 @@ msgid "Spiral Vase"
 msgstr "螺旋花瓶"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:121
-msgid "The Wipe Tower currently supports the non-soluble supports only\n"
+msgid ""
+"The Wipe Tower currently supports the non-soluble supports only\n"
 "if they are printed with the current extruder without triggering a tool change.\n"
 "(both support_material_extruder and support_material_interface_extruder need to be set to 0)."
-msgstr "擦拭塔目前仅支持使用当前挤出机打印的不可溶支架\n"
+msgstr ""
+"擦拭塔目前仅支持使用当前挤出机打印的不可溶支架\n"
 "如果它们是用当前的挤出机打印而不触发工具更换。\n"
 "（需要将 支撑材料挤出机 和 支撑材料界面挤出机 设置为0）。"
 
@@ -436,7 +445,8 @@ msgid "Wipe Tower"
 msgstr "擦拭塔"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:142
-msgid "For the Wipe Tower to work with the soluble supports, the support layers\n"
+msgid ""
+"For the Wipe Tower to work with the soluble supports, the support layers\n"
 "need to be synchronized with the object layers."
 msgstr "为了使擦拭塔与可溶支架一起工作，支架层需要与对象层同步。"
 
@@ -445,9 +455,11 @@ msgid "Shall I synchronize support layers in order to enable the Wipe Tower?"
 msgstr "我要同步支撑层以启用擦拭塔吗？"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:164
-msgid "Supports work better, if the following feature is enabled:\n"
+msgid ""
+"Supports work better, if the following feature is enabled:\n"
 "- Detect bridging perimeters"
-msgstr "如果启用以下功能，则支撑工作得更好:\n"
+msgstr ""
+"如果启用以下功能，则支撑工作得更好:\n"
 "- 检测桥接周长"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:167
@@ -459,7 +471,7 @@ msgid "Support Generator"
 msgstr "支撑生成器"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:195
-#, possible-boost-format
+#, boost-format
 msgid "The %1% infill pattern is not supposed to work at 100%% density."
 msgstr "%1% 填充图案不支持在 100%% 密度下使用。"
 
@@ -572,7 +584,7 @@ msgid "variants"
 msgstr "变种"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:93
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Incompatible with this %s"
 msgstr "与此 %s 不兼容"
 
@@ -614,12 +626,12 @@ msgid "None"
 msgstr "无"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:484
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Welcome to the %s Configuration Assistant"
 msgstr "欢迎访问 %s 配置助手"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:486
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Welcome to the %s Configuration Wizard"
 msgstr "欢迎访问 %s 配置向导"
 
@@ -628,7 +640,7 @@ msgid "Welcome"
 msgstr "欢迎"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:490
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Hello, welcome to %s! This %s helps you with the initial configuration; just a few settings and you will be ready to print."
 msgstr "您好，欢迎来到 %s！此 %s 可帮助您进行初始配置;只需几个设置，您就可以打印。"
 
@@ -641,7 +653,7 @@ msgid "Perform desktop integration (Sets this binary to be searchable by the sys
 msgstr "执行桌面集成（将此二进制文件设置为可被系统搜索）。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:550
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s Family"
 msgstr "%s 系列"
 
@@ -663,7 +675,7 @@ msgid "(All)"
 msgstr "(全部)"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:752
-#, possible-boost-format
+#, boost-format
 msgid "%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."
 msgstr "%1% 被 <b>*</b> 标记的项与某些已安装的打印机不兼容。"
 
@@ -677,7 +689,7 @@ msgid "SLA materials"
 msgstr "SLA 材料"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:755
-#, possible-boost-format
+#, boost-format
 msgid "All installed printers are compatible with the selected %1%."
 msgstr "所有安装的打印机都与选定的%1%兼容。"
 
@@ -722,7 +734,7 @@ msgid "Check for application updates"
 msgstr "检查应用程序更新"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1218
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "If enabled, %s checks for new application versions online. When a new version becomes available, a notification is displayed at the next application startup (never during program usage). This is only a notification mechanisms, no automatic installation is done."
 msgstr "如果启用，%s 将联机检查新的应用程序版本。当新版本可用时，在下次应用程序启动时将会显示通知（在程序使用期间从不显示通知）。这只是一个通知机制，不会自动安装。"
 
@@ -731,7 +743,7 @@ msgid "Update built-in Presets automatically"
 msgstr "自动更新内置预设"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1228
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "If enabled, %s downloads updates of built-in system presets in the background.These updates are downloaded into a separate temporary location.When a new preset version becomes available it is offered at application startup."
 msgstr "如果启用，%s 会在后台下载内置系统预设的更新。这些更新将下载到单独的临时位置。当新的预设版本可用时，它会在应用程序启动时提示。"
 
@@ -753,9 +765,11 @@ msgid "Export full pathnames of models and parts sources into 3mf and amf files"
 msgstr "将模型和零件源的完整路径名导出到 3mf 和 amf 文件中"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1250
-msgid "If enabled, allows the Reload from disk command to automatically find and load the files when invoked.\n"
+msgid ""
+"If enabled, allows the Reload from disk command to automatically find and load the files when invoked.\n"
 "If not enabled, the Reload from disk command will ask to select each file using an open file dialog."
-msgstr "如果启用，则允许从磁盘重新加载命令在调用时自动查找和加载文件。\n"
+msgstr ""
+"如果启用，则允许从磁盘重新加载命令在调用时自动查找和加载文件。\n"
 "如果未启用，则从磁盘重新加载命令将要求使用打开文件对话框选择每个文件。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1259
@@ -775,10 +789,12 @@ msgid "View mode"
 msgstr "查看模式"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1274
-msgid "PrusaSlicer's user interfaces comes in three variants:\n"
+msgid ""
+"PrusaSlicer's user interfaces comes in three variants:\n"
 "Simple, Advanced, and Expert.\n"
 "The Simple mode shows only the most frequently used settings relevant for regular 3D printing. The other two offer progressively more sophisticated fine-tuning, they are suitable for advanced and expert users, respectively."
-msgstr "PrusaSlicer 的用户界面有三种变体:\n"
+msgstr ""
+"PrusaSlicer 的用户界面有三种变体:\n"
 "简单、高级和专家。\n"
 "简单模式仅显示与常规 3D 打印相关的最常用设置。另外两个提供了越来越复杂的微调功能，分别适用于高级用户和专家用户。"
 
@@ -807,7 +823,7 @@ msgid "Other Vendors"
 msgstr "其他供应商"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1326
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Pick another vendor supported by %s"
 msgstr "选择%s支持的其他供应商"
 
@@ -916,12 +932,12 @@ msgid "SLA Technology Printers"
 msgstr "SLA 技术打印机"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2338
-#, possible-boost-format
+#, boost-format
 msgid "Following printer profiles has no default filament: %1%Please select one manually."
 msgstr "以下打印机配置文件没有默认耗材：%1%请手动选择一个。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2339
-#, possible-boost-format
+#, boost-format
 msgid "Following printer profiles has no default material: %1%Please select one manually."
 msgstr "以下打印机配置文件没有默认材料：%1%请手动选择一种。"
 
@@ -1077,10 +1093,12 @@ msgid "Desktop Integration"
 msgstr "桌面集成"
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:466
-msgid "Desktop Integration sets this binary to be searchable by the system.\n"
+msgid ""
+"Desktop Integration sets this binary to be searchable by the system.\n"
 "\n"
 "Press \"Perform\" to proceed."
-msgstr "桌面集成将此二进制文件设置为可由系统搜索。\n"
+msgstr ""
+"桌面集成将此二进制文件设置为可由系统搜索。\n"
 "\n"
 "按“执行”继续。"
 
@@ -1111,19 +1129,23 @@ msgid "Jump to move"
 msgstr "跳转移动"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1388
-#, possible-c-format, possible-boost-format
-msgid "Jump to height %s\n"
+#, c-format, boost-format
+msgid ""
+"Jump to height %s\n"
 "Set ruler mode\n"
 "or Set extruder sequence for the entire print"
-msgstr "跳转到高度%s\n"
+msgstr ""
+"跳转到高度%s\n"
 "设置标尺模式\n"
 "或设置整个打印的挤出机顺序"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1391
-#, possible-c-format, possible-boost-format
-msgid "Jump to height %s\n"
+#, c-format, boost-format
+msgid ""
+"Jump to height %s\n"
 "or Set ruler mode"
-msgstr "跳转到高度%s\n"
+msgstr ""
+"跳转到高度%s\n"
 "或设置标尺模式"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1396
@@ -1135,9 +1157,11 @@ msgid "This is wipe tower layer"
 msgstr "这是擦拭塔层"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1408
-msgid "The sequential print is on.\n"
+msgid ""
+"The sequential print is on.\n"
 "It's impossible to apply any custom G-code for objects printing sequentually."
-msgstr "顺序打印已打开。\n"
+msgstr ""
+"顺序打印已打开。\n"
 "无法为连续打印的对象应用任何自定义 G-Code。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1412
@@ -1169,10 +1193,12 @@ msgid "Add another code - Right click"
 msgstr "添加另一个代码-右键单击"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1440
-msgid "The sequential print is on.\n"
+msgid ""
+"The sequential print is on.\n"
 "It's impossible to apply any custom G-code for objects printing sequentually.\n"
 "This code won't be processed during G-code generation."
-msgstr "顺序打印已打开。\n"
+msgstr ""
+"顺序打印已打开。\n"
 "无法为连续打印的对象应用任何自定义 G-Code。\n"
 "G-Code 生成期间不会处理此代码。"
 
@@ -1181,27 +1207,27 @@ msgid "continue"
 msgstr "继续"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1466
-#, possible-boost-format
+#, boost-format
 msgid "Color change (\"%1%\")"
 msgstr "更改颜色（\"%1%\"）"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1467
-#, possible-boost-format
+#, boost-format
 msgid "Color change (\"%1%\") for Extruder %2%"
 msgstr "为挤出机%2%更改颜色（\"%1%\"）"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1469
-#, possible-boost-format
+#, boost-format
 msgid "Pause print (\"%1%\")"
 msgstr "暂停打印（\"%1%\"）"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1471
-#, possible-boost-format
+#, boost-format
 msgid "Custom template (\"%1%\")"
 msgstr "自定义模板（“%1%”）"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1473
-#, possible-boost-format
+#, boost-format
 msgid "Extruder (tool) is changed to Extruder \"%1%\""
 msgstr "挤出机（工具）更改为挤出机“%1%”"
 
@@ -1210,27 +1236,35 @@ msgid "Note"
 msgstr "笔记"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1482
-msgid "G-code associated to this tick mark is in a conflict with print mode.\n"
+msgid ""
+"G-code associated to this tick mark is in a conflict with print mode.\n"
 "Editing it will cause changes of Slider data."
-msgstr "与此记号关联的 G-Code 与打印模式冲突。\n"
+msgstr ""
+"与此记号关联的 G-Code 与打印模式冲突。\n"
 "编辑它将导致滑块数据的更改。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1485
-msgid "There is a color change for extruder that won't be used till the end of print job.\n"
+msgid ""
+"There is a color change for extruder that won't be used till the end of print job.\n"
 "This code won't be processed during G-code generation."
-msgstr "有一个挤出机的颜色更改，直到打印作业结束才会使用。\n"
+msgstr ""
+"有一个挤出机的颜色更改，直到打印作业结束才会使用。\n"
 "G-Code 生成期间不会处理此代码。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1488
-msgid "There is an extruder change set to the same extruder.\n"
+msgid ""
+"There is an extruder change set to the same extruder.\n"
 "This code won't be processed during G-code generation."
-msgstr "同一台挤出机上有一台挤出机更换装置。\n"
+msgstr ""
+"同一台挤出机上有一台挤出机更换装置。\n"
 "G-Code 生成期间不会处理此代码。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1491
-msgid "There is a color change for extruder that has not been used before.\n"
+msgid ""
+"There is a color change for extruder that has not been used before.\n"
 "Check your settings to avoid redundant color changes."
-msgstr "挤出机有一个以前从未使用过的颜色更改。\n"
+msgstr ""
+"挤出机有一个以前从未使用过的颜色更改。\n"
 "检查设置以避免重复的颜色更改。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1496
@@ -1247,7 +1281,7 @@ msgstr "编辑刻度线-单击鼠标右键"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1602 src/slic3r/GUI/DoubleSlider.cpp:1633
 #: src/slic3r/GUI/GUI_Factories.cpp:778
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Extruder %d"
 msgstr "挤出机 %d"
 
@@ -1276,12 +1310,12 @@ msgid "used"
 msgstr "已用"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1642
-#, possible-boost-format
+#, boost-format
 msgid "Switch code to Color change (%1%) for:"
 msgstr "将代码切换为颜色更改（%1%）:"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1643
-#, possible-boost-format
+#, boost-format
 msgid "Add color change (%1%) for:"
 msgstr "为以下各项添加颜色更改（%1%）:"
 
@@ -1374,9 +1408,11 @@ msgid "This action will cause deletion of all ticks on vertical slider."
 msgstr "此操作将导致删除垂直滑块上的所有标记。"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2087 src/slic3r/GUI/Tab.cpp:1322
-msgid "This action is not revertible.\n"
+msgid ""
+"This action is not revertible.\n"
 "Do you want to proceed?"
-msgstr "此操作不可恢复。\n"
+msgstr ""
+"此操作不可恢复。\n"
 "你想继续吗？"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2088
@@ -1392,7 +1428,7 @@ msgid "Enter custom G-code used on current layer"
 msgstr "输入当前图层上使用的自定义 G-Code"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2216
-#, possible-boost-format
+#, boost-format
 msgid "Custom G-code on current layer (%1% mm)."
 msgstr "当前图层上的自定义 G-Code (%1%mm)。"
 
@@ -1401,7 +1437,7 @@ msgid "Enter short message shown on Printer display when a print is paused"
 msgstr "输入暂停打印时打印机显示屏上显示的短消息"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2238
-#, possible-boost-format
+#, boost-format
 msgid "Message for pause print on current layer (%1% mm)."
 msgstr "在当前图层（%1%mm）上暂停打印的消息。"
 
@@ -1430,10 +1466,12 @@ msgid "Are you sure you want to continue?"
 msgstr "你确定要继续吗？"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2532
-msgid "Select YES if you want to delete all saved tool changes, \n"
+msgid ""
+"Select YES if you want to delete all saved tool changes, \n"
 "NO if you want all tool changes switch to color changes, \n"
 "or CANCEL to leave it unchanged."
-msgstr "如果要删除所有保存的刀具更改，请选择“是”， \n"
+msgstr ""
+"如果要删除所有保存的刀具更改，请选择“是”， \n"
 "如果要将所有刀具更改切换为颜色更改，请选择“否”， \n"
 "或者选择“取消”以保持其不变。"
 
@@ -1519,15 +1557,17 @@ msgid "N/A"
 msgstr ""
 
 #: src/slic3r/GUI/Field.cpp:226 src/slic3r/GUI/Field.cpp:298
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s doesn't support percentage"
 msgstr "%s 不支持百分比"
 
 #: src/slic3r/GUI/Field.cpp:266
-#, possible-c-format, possible-boost-format
-msgid "Input value is out of range\n"
+#, c-format, boost-format
+msgid ""
+"Input value is out of range\n"
 "Are you sure that %s is a correct value and that you want to continue?"
-msgstr "输入值超出范围\n"
+msgstr ""
+"输入值超出范围\n"
 "确定%s是正确的值并且要继续吗？"
 
 #: src/slic3r/GUI/Field.cpp:269 src/slic3r/GUI/Field.cpp:343
@@ -1540,16 +1580,18 @@ msgid "Input value is out of range"
 msgstr "输入值超出范围外"
 
 #: src/slic3r/GUI/Field.cpp:340
-#, possible-c-format, possible-boost-format
-msgid "Do you mean %s%% instead of %s %s?\n"
+#, c-format, boost-format
+msgid ""
+"Do you mean %s%% instead of %s %s?\n"
 "Select YES if you want to change this value to %s%%, \n"
 "or NO if you are sure that %s %s is a correct value."
-msgstr "您指的是 %s%% 而不是 %s %s？\n"
+msgstr ""
+"您指的是 %s%% 而不是 %s %s？\n"
 "如果要将此值更改为 %s%%,请选择\"是\"， \n"
 "或 否,如果您确定 %s %s 是一个正确的值。"
 
 #: src/slic3r/GUI/Field.cpp:397
-#, possible-boost-format
+#, boost-format
 msgid "Invalid input format. Expected vector of dimensions in the following format: \"%1%\""
 msgstr "输入格式无效。应为以下格式的维度向量：“%1%”"
 
@@ -1578,14 +1620,16 @@ msgid "Flashing cancelled."
 msgstr "烧录取消。"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:333
-#, possible-c-format, possible-boost-format
-msgid "This firmware hex file does not match the printer model.\n"
+#, c-format, boost-format
+msgid ""
+"This firmware hex file does not match the printer model.\n"
 "The hex file is intended for: %s\n"
 "Printer reported: %s\n"
 "\n"
 "Do you want to continue and flash this hex file anyway?\n"
 "Please only continue if you are sure this is the right thing to do."
-msgstr "此固件十六进制文件与打印机型号不匹配。\n"
+msgstr ""
+"此固件十六进制文件与打印机型号不匹配。\n"
 "十六进制文件用于:%s\n"
 "打印机报告:%s\n"
 " \n"
@@ -1593,29 +1637,31 @@ msgstr "此固件十六进制文件与打印机型号不匹配。\n"
 "只有在你确定这是正确的做法的情况下才能继续。"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:420 src/slic3r/GUI/FirmwareDialog.cpp:455
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Multiple %s devices found. Please only connect one at a time for flashing."
 msgstr "找到多个 %s 设备。请一次只连接一个设备来烧录。"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:437
-#, possible-c-format, possible-boost-format
-msgid "The %s device was not found.\n"
+#, c-format, boost-format
+msgid ""
+"The %s device was not found.\n"
 "If the device is connected, please press the Reset button next to the USB connector ..."
-msgstr "找不到 %s 设备。\n"
+msgstr ""
+"找不到 %s 设备。\n"
 "如果设备已连接，请按 USB 接口旁边的\"重置\"按钮..."
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:549
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "The %s device could not have been found"
 msgstr "找不到 %s 设备"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:650
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Error accessing port at %s: %s"
 msgstr "在访问 %s:%s 端口时出错"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:652
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Error: %s"
 msgstr "错误:%s"
 
@@ -1674,9 +1720,11 @@ msgid "Close"
 msgstr "关闭"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:915
-msgid "Are you sure you want to cancel firmware flashing?\n"
+msgid ""
+"Are you sure you want to cancel firmware flashing?\n"
 "This could leave your printer in an unusable state!"
-msgstr "确实要取消固件烧录吗？\n"
+msgstr ""
+"确实要取消固件烧录吗？\n"
 "这可能会使您的打印机处于无法使用的状态！"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:916
@@ -1726,10 +1774,12 @@ msgid "Choose one or more files (STL, OBJ):"
 msgstr "选择一个或多个文件（STL、OBJ）:"
 
 #: src/slic3r/GUI/GalleryDialog.cpp:442
-#, possible-boost-format
-msgid "It looks like selected %1%-file has an error or is destructed.\n"
+#, boost-format
+msgid ""
+"It looks like selected %1%-file has an error or is destructed.\n"
 "We can't load this file"
-msgstr "看起来选定的%1%文件有错误或已被破坏。\n"
+msgstr ""
+"看起来选定的%1%文件有错误或已被破坏。\n"
 "我们无法加载此文件"
 
 #: src/slic3r/GUI/GalleryDialog.cpp:453
@@ -1745,7 +1795,7 @@ msgid "Change thumbnail"
 msgstr "更改缩略图"
 
 #: src/slic3r/GUI/GalleryDialog.cpp:551 src/slic3r/GUI/GalleryDialog.cpp:556
-#, possible-boost-format
+#, boost-format
 msgid "Loading of the \"%1%\""
 msgstr "正在加载\"%1%\""
 
@@ -2124,13 +2174,13 @@ msgid "Redo History"
 msgstr "重做历史操作"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:3936
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Undo %1$d Action"
 msgid_plural "Undo %1$d Actions"
 msgstr[0] "撤消 %1$d 操作"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:3936
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Redo %1$d Action"
 msgid_plural "Redo %1$d Actions"
 msgstr[0] "重做 %1$d 操作"
@@ -2150,7 +2200,7 @@ msgid "Arrange options"
 msgstr "安排选项"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4039
-#, possible-boost-format
+#, boost-format
 msgid "Press %1%left mouse button to enter the exact value"
 msgstr "按鼠标左键%1%输入准确值"
 
@@ -2214,7 +2264,7 @@ msgid "Click right mouse button to open/close History"
 msgstr "单击鼠标右键打开/关闭历史记录"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4712
-#, possible-boost-format
+#, boost-format
 msgid "Next Undo action: %1%"
 msgstr "下一个撤消操作： %1%"
 
@@ -2224,7 +2274,7 @@ msgid "Redo"
 msgstr "重做"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4750
-#, possible-boost-format
+#, boost-format
 msgid "Next Redo action: %1%"
 msgstr "下一个重做操作： %1%"
 
@@ -2245,9 +2295,11 @@ msgid "Some objects are not visible during editing."
 msgstr "某些对象在编辑期间不可见。"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6372
-msgid "An object outside the print area was detected.\n"
+msgid ""
+"An object outside the print area was detected.\n"
 "Resolve the current problem to continue slicing."
-msgstr "检测到打印区域外的物体。\n"
+msgstr ""
+"检测到打印区域外的物体。\n"
 "重新解决当前问题以继续切片。"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:6446
@@ -2417,7 +2469,7 @@ msgid "On overhangs only"
 msgstr "只在悬挑上"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:174
-#, possible-boost-format
+#, boost-format
 msgid "Preselects faces by overhang angle. It is possible to restrict paintable facets to only preselected faces when the option \"%1%\" is enabled."
 msgstr "通过悬垂角度预选面。启用选项\"%1%\"时，可以将可绘制的面限制为仅预选的面。"
 
@@ -2432,7 +2484,7 @@ msgid "Paints neighboring facets whose relative angle is less or equal to set an
 msgstr "绘制相对角度小于或等于“设置角度”的相邻面。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:229
-#, possible-boost-format
+#, boost-format
 msgid "Allows painting only on facets selected by: \"%1%\""
 msgstr "仅允许在选择的面上绘制：\"%1%'"
 
@@ -2560,7 +2612,7 @@ msgid "Move drainage hole"
 msgstr "移动排水孔"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:27
-#, possible-boost-format
+#, boost-format
 msgid "Your printer has more extruders than the multi-material painting gizmo supports. For this reason, only the first %1% extruders will be able to be used for painting."
 msgstr "打印机的挤出机数量超过了多材质绘画 gizmo 支持的数量。因此，只有前%1%的挤出机才能用于绘制。"
 
@@ -2599,7 +2651,7 @@ msgid "Split bigger facets into smaller ones while the object is painted."
 msgstr "在绘制对象时，将较大的面拆分为较小的面。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:674
-#, possible-boost-format
+#, boost-format
 msgid "Painted using: Extruder %1%"
 msgstr "涂漆使用：挤压机%1%"
 
@@ -2659,7 +2711,7 @@ msgid "Decimate ratio"
 msgstr "抽取比"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:113
-#, possible-boost-format
+#, boost-format
 msgid "Processing model '%1%' with more than 1M triangles could be slow. It is highly recommend to reduce amount of triangles."
 msgstr "处理超过 1M 个三角形的模型“%1%”可能会很慢。强烈建议减少三角形的数量。"
 
@@ -2703,7 +2755,7 @@ msgid "Extra low"
 msgstr "超低"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:304
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%d triangles"
 msgstr "%d三角形"
 
@@ -2720,12 +2772,12 @@ msgid "Can't apply when proccess preview."
 msgstr "进程预览时无法应用。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:329
-#, possible-boost-format
+#, boost-format
 msgid "Process %1% / 100"
 msgstr "进程%1%/100"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:479
-#, possible-boost-format
+#, boost-format
 msgid "Simplify %1%"
 msgstr "简化%1%"
 
@@ -2915,7 +2967,7 @@ msgid "Undefined"
 msgstr "未定义"
 
 #: src/slic3r/GUI/GUI.cpp:317
-#, possible-boost-format
+#, boost-format
 msgid "%1% was substituted with %2%"
 msgstr "%1%被%2%取代"
 
@@ -2944,7 +2996,7 @@ msgid "Configuration bundle was loaded, however some configuration values were n
 msgstr "已加载配置包，但无法识别某些配置值。"
 
 #: src/slic3r/GUI/GUI.cpp:365
-#, possible-boost-format
+#, boost-format
 msgid "Configuration file \"%1%\" was loaded, however some configuration values were not recognized."
 msgstr "已加载配置文件\"%1%\"，但无法识别某些配置值。"
 
@@ -2965,8 +3017,9 @@ msgid "Artwork model by M Boyer"
 msgstr "M Boyer 的艺术模型"
 
 #: src/slic3r/GUI/GUI_App.cpp:411
-#, possible-boost-format
-msgid "Starting with %1% 2.3, configuration directory on Linux has changed (according to XDG Base Directory Specification) to \n"
+#, boost-format
+msgid ""
+"Starting with %1% 2.3, configuration directory on Linux has changed (according to XDG Base Directory Specification) to \n"
 "%2%.\n"
 "\n"
 "This directory did not exist yet (maybe you run the new version for the first time).\n"
@@ -2977,7 +3030,8 @@ msgid "Starting with %1% 2.3, configuration directory on Linux has changed (acco
 "Note that if you decide to downgrade %1% in future, it will use the old location again.\n"
 "\n"
 "What do you want to do now?"
-msgstr "从%1%2.3开始，Linux 上的配置目录已更改（根据 XDG 基本目录规范）为\n"
+msgstr ""
+"从%1%2.3开始，Linux 上的配置目录已更改（根据 XDG 基本目录规范）为\n"
 "%2%。\n"
 "\n"
 "此目录尚不存在（可能是您第一次运行新版本）。\n"
@@ -2989,7 +3043,7 @@ msgstr "从%1%2.3开始，Linux 上的配置目录已更改（根据 XDG 基本�
 "您现在想做什么？"
 
 #: src/slic3r/GUI/GUI_App.cpp:419
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s - BREAKING CHANGE"
 msgstr "%s - 突破性的改变"
 
@@ -3002,11 +3056,13 @@ msgid "Start the application"
 msgstr "启动应用程序"
 
 #: src/slic3r/GUI/GUI_App.cpp:698
-#, possible-c-format, possible-boost-format
-msgid "%s has encountered an error. It was likely caused by running out of memory. If you are sure you have enough RAM on your system, this may also be a bug and we would be glad if you reported it.\n"
+#, c-format, boost-format
+msgid ""
+"%s has encountered an error. It was likely caused by running out of memory. If you are sure you have enough RAM on your system, this may also be a bug and we would be glad if you reported it.\n"
 "\n"
 "The application will now terminate."
-msgstr "%s 遇到错误。这可能是由于内存不足造成的。如果您确定您的系统上有足够的内存，这可能也是一个软件错误，欢迎你向我们提交问题报告。\n"
+msgstr ""
+"%s 遇到错误。这可能是由于内存不足造成的。如果您确定您的系统上有足够的内存，这可能也是一个软件错误，欢迎你向我们提交问题报告。\n"
 "\n"
 "应用程序现在将终止。"
 
@@ -3015,10 +3071,12 @@ msgid "Fatal error"
 msgstr "致命错误"
 
 #: src/slic3r/GUI/GUI_App.cpp:705
-msgid "PrusaSlicer has encountered a localization error. Please report to PrusaSlicer team, what language was active and in which scenario this issue happened. Thank you.\n"
+msgid ""
+"PrusaSlicer has encountered a localization error. Please report to PrusaSlicer team, what language was active and in which scenario this issue happened. Thank you.\n"
 "\n"
 "The application will now terminate."
-msgstr "PrusaSlicer 遇到定位错误。请向 PrusaSlicer 团队报告，什么语言是活动的，以及在什么情况下发生了此问题。非常感谢。\n"
+msgstr ""
+"PrusaSlicer 遇到定位错误。请向 PrusaSlicer 团队报告，什么语言是活动的，以及在什么情况下发生了此问题。非常感谢。\n"
 "\n"
 "应用程序现在将终止。"
 
@@ -3027,7 +3085,7 @@ msgid "Critical error"
 msgstr "严重错误"
 
 #: src/slic3r/GUI/GUI_App.cpp:713
-#, possible-boost-format
+#, boost-format
 msgid "Internal error: %1%"
 msgstr "内部错误：%1%"
 
@@ -3040,19 +3098,21 @@ msgid "Error parsing PrusaGCodeViewer config file, it is probably corrupted. Try
 msgstr "分析 PrusaGCodeViewer 配置文件时出错，该文件可能已损坏。尝试手动删除该文件以从错误中恢复。"
 
 #: src/slic3r/GUI/GUI_App.cpp:960
-#, possible-boost-format
+#, boost-format
 msgid "You are opening %1% version %2%."
 msgstr "您正在打开%1%版本%2%。"
 
 #: src/slic3r/GUI/GUI_App.cpp:963
-#, possible-boost-format
-msgid "The active configuration was created by <b>%1% %2%</b>,\n"
+#, boost-format
+msgid ""
+"The active configuration was created by <b>%1% %2%</b>,\n"
 "while a newer configuration was found in <b>%3%</b>\n"
 "created by <b>%1% %4%</b>.\n"
 "\n"
 "Shall the newer configuration be imported?\n"
 "If so, your active configuration will be backed up before importing the new configuration."
-msgstr "活动配置是由<b>%1%%2%</b>创建的，\n"
+msgstr ""
+"活动配置是由<b>%1%%2%</b>创建的，\n"
 "而在<b>%3%</b>\n"
 "中发现了由<b>%1%%4%</b>创建的较新配置。\n"
 "\n"
@@ -3060,12 +3120,14 @@ msgstr "活动配置是由<b>%1%%2%</b>创建的，\n"
 "如果是这样，在导入新配置之前，将备份活动配置。"
 
 #: src/slic3r/GUI/GUI_App.cpp:971
-#, possible-boost-format
-msgid "An existing configuration was found in <b>%3%</b>\n"
+#, boost-format
+msgid ""
+"An existing configuration was found in <b>%3%</b>\n"
 "created by <b>%1% %2%</b>.\n"
 "\n"
 "Shall this configuration be imported?"
-msgstr "在由<b>%1%%2%</b>创建的<b>%3%</b>\n"
+msgstr ""
+"在由<b>%1%%2%</b>创建的<b>%3%</b>\n"
 "中找到了现有配置。\n"
 "\n"
 "是否要导入此配置？"
@@ -3083,20 +3145,24 @@ msgid "Continue and import newer configuration?"
 msgstr "是否继续并导入更新的配置？"
 
 #: src/slic3r/GUI/GUI_App.cpp:1051
-msgid "You are running a 32 bit build of PrusaSlicer on 64-bit Windows.\n"
+msgid ""
+"You are running a 32 bit build of PrusaSlicer on 64-bit Windows.\n"
 "32 bit build of PrusaSlicer will likely not be able to utilize all the RAM available in the system.\n"
 "Please download and install a 64 bit build of PrusaSlicer from https://www.prusa3d.cz/prusaslicer/.\n"
 "Do you wish to continue?"
-msgstr "您正在 64 位 Windows 上运行 32 位版本的 PrusaSlicer。\n"
+msgstr ""
+"您正在 64 位 Windows 上运行 32 位版本的 PrusaSlicer。\n"
 "PrusaSlicer 的 n32 位版本可能无法利用系统中的所有可用 RAM。\n"
 "请从下载并安装 64 位版本的 PrusaSlicerhttps://www.prusa3d.cz/prusaslicer/。\n"
 "你想继续吗？"
 
 #: src/slic3r/GUI/GUI_App.cpp:1134
-#, possible-c-format, possible-boost-format
-msgid "%s\n"
+#, c-format, boost-format
+msgid ""
+"%s\n"
 "Do you want to continue?"
-msgstr "%s\n"
+msgstr ""
+"%s\n"
 "要继续吗？"
 
 #: src/slic3r/GUI/GUI_App.cpp:1136 src/slic3r/GUI/GUI_App.cpp:3094
@@ -3109,7 +3175,7 @@ msgid "Loading configuration"
 msgstr "加载配置"
 
 #: src/slic3r/GUI/GUI_App.cpp:1209
-#, possible-boost-format
+#, boost-format
 msgid "New release version %1% is available."
 msgstr "新发布版本%1%可用。"
 
@@ -3118,7 +3184,7 @@ msgid "See Download page."
 msgstr "请参阅下载页面。"
 
 #: src/slic3r/GUI/GUI_App.cpp:1224
-#, possible-boost-format
+#, boost-format
 msgid "New prerelease version %1% is available."
 msgstr "新的预发布版本%1%可用。"
 
@@ -3139,14 +3205,16 @@ msgid "PrusaSlicer started after a crash"
 msgstr "PrusaSlicer 在崩溃后启动"
 
 #: src/slic3r/GUI/GUI_App.cpp:1337
-#, possible-boost-format
-msgid "PrusaSlicer crashed last time when attempting to set window position.\n"
+#, boost-format
+msgid ""
+"PrusaSlicer crashed last time when attempting to set window position.\n"
 "We are sorry for the inconvenience, it unfortunately happens with certain multiple-monitor setups.\n"
 "More precise reason for the crash: \"%1%\".\n"
 "For more information see our GitHub issue tracker: \"%2%\" and \"%3%\"\n"
 "\n"
 "To avoid this problem, consider disabling \"%4%\" in \"Preferences\". Otherwise, the application will most likely crash again next time."
-msgstr "PrusaSlicer 上次试图设置窗口位置时崩溃。\n"
+msgstr ""
+"PrusaSlicer 上次试图设置窗口位置时崩溃。\n"
 "我们很抱歉给您带来不便，不幸的是，在某些多显示器设置中会出现这种情况。\n"
 "崩溃的更确切原因：\"%1%\"。\n"
 "有关更多信息，请参见我们的 GITHUB 问题追踪：“%2%”和“%3%”\n"
@@ -3154,12 +3222,12 @@ msgstr "PrusaSlicer 上次试图设置窗口位置时崩溃。\n"
 "以避免此问题，考虑在“首选项”中禁用“%4%”。否则，下次应用程序很可能再次崩溃。"
 
 #: src/slic3r/GUI/GUI_App.cpp:1349
-#, possible-boost-format
+#, boost-format
 msgid "Disable \"%1%\""
 msgstr "禁用\"%1%\""
 
 #: src/slic3r/GUI/GUI_App.cpp:1350
-#, possible-boost-format
+#, boost-format
 msgid "Leave \"%1%\" enabled"
 msgstr "保持\"%1%'处于启用状态"
 
@@ -3168,15 +3236,19 @@ msgid "You have the following presets with saved options for \"Print Host upload
 msgstr "“打印主机上载”选项保存了以下预设"
 
 #: src/slic3r/GUI/GUI_App.cpp:1681
-msgid "But since this version of PrusaSlicer we don't show this information in Printer Settings anymore.\n"
+msgid ""
+"But since this version of PrusaSlicer we don't show this information in Printer Settings anymore.\n"
 "Settings will be available in physical printers settings."
-msgstr "但是由于这个版本的 PrusaSlicer，我们不再在打印机设置中显示这些信息。\n"
+msgstr ""
+"但是由于这个版本的 PrusaSlicer，我们不再在打印机设置中显示这些信息。\n"
 "设置将在物理打印机设置中可用。"
 
 #: src/slic3r/GUI/GUI_App.cpp:1683
-msgid "By default new Printer devices will be named as \"Printer N\" during its creation.\n"
+msgid ""
+"By default new Printer devices will be named as \"Printer N\" during its creation.\n"
 "Note: This name can be changed later from the physical printers settings"
-msgstr "默认情况下，新打印机设备在创建过程中将被命名为“打印机N”。\n"
+msgstr ""
+"默认情况下，新打印机设备在创建过程中将被命名为“打印机N”。\n"
 "注意：此名称可以在以后从物理打印机设置中更改"
 
 #: src/slic3r/GUI/GUI_App.cpp:1687 src/slic3r/GUI/PhysicalPrinterDialog.cpp:722
@@ -3224,7 +3296,7 @@ msgid "modified"
 msgstr "修改"
 
 #: src/slic3r/GUI/GUI_App.cpp:2234
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Run %s"
 msgstr "运行 %s"
 
@@ -3290,7 +3362,7 @@ msgid "Mode"
 msgstr "模式"
 
 #: src/slic3r/GUI/GUI_App.cpp:2266
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s View Mode"
 msgstr "%s 视图模式"
 
@@ -3323,7 +3395,7 @@ msgid "Loading a configuration snapshot"
 msgstr "加载配置快照"
 
 #: src/slic3r/GUI/GUI_App.cpp:2319
-#, possible-boost-format
+#, boost-format
 msgid "Continue to activate a configuration snapshot %1%?"
 msgstr "是否继续激活配置快照%1%？"
 
@@ -3340,9 +3412,11 @@ msgid "Language selection"
 msgstr "语言选择"
 
 #: src/slic3r/GUI/GUI_App.cpp:2389
-msgid "Switching the language will trigger application restart.\n"
+msgid ""
+"Switching the language will trigger application restart.\n"
 "You will lose content of the plater."
-msgstr "切换语言将触发应用程序重新启动。\n"
+msgstr ""
+"切换语言将触发应用程序重新启动。\n"
 "您将丢失未保存的内容。"
 
 #: src/slic3r/GUI/GUI_App.cpp:2391 src/slic3r/GUI/Preferences.cpp:582
@@ -3424,8 +3498,9 @@ msgid "You will not be asked about it again on hyperlinks hovering."
 msgstr "在悬停的超链接上，你不会再被问及此事。"
 
 #: src/slic3r/GUI/GUI_App.cpp:3102 src/slic3r/GUI/Plater.cpp:1738
-#, possible-boost-format
-msgid "Visit \"Preferences\" and check \"%1%\"\n"
+#, boost-format
+msgid ""
+"Visit \"Preferences\" and check \"%1%\"\n"
 "to changes your choice."
 msgstr "访问“首选项”并选中“%1%”，以更改您的选择。"
 
@@ -3439,7 +3514,7 @@ msgid "PrusaSlicer GUI initialization failed"
 msgstr "PrusaSlicer GUI 初始化失败"
 
 #: src/slic3r/GUI/GUI_Init.cpp:60
-#, possible-boost-format
+#, boost-format
 msgid "Fatal error, exception catched: %1%"
 msgstr "致命错误，捕获异常：%1%"
 
@@ -3500,7 +3575,7 @@ msgstr "熨烫"
 #: src/libslic3r/PrintConfig.cpp:1261 src/libslic3r/PrintConfig.cpp:1276
 #: src/libslic3r/PrintConfig.cpp:1286
 msgid "Fuzzy Skin"
-msgstr "毛茸茸的皮肤"
+msgstr "模糊皮肤"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:132 src/slic3r/GUI/GUI_Preview.cpp:220
 #: src/slic3r/GUI/Tab.cpp:1584 src/libslic3r/PrintConfig.cpp:484
@@ -3606,7 +3681,7 @@ msgstr "选择显示设置"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:407 src/slic3r/GUI/GUI_Factories.cpp:412
 #: src/slic3r/GUI/GUI_Factories.cpp:556 src/slic3r/GUI/GUI_Factories.cpp:562
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Quick Add Settings (%s)"
 msgstr "快速添加设置 （%s）"
 
@@ -3841,43 +3916,43 @@ msgid "No errors detected"
 msgstr "未检测到错误"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:409
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Auto-repaired %1$d error"
 msgid_plural "Auto-repaired %1$d errors"
 msgstr[0] "已自动修复%1$d错误"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:415
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d degenerate facet"
 msgid_plural "%1$d degenerate facets"
 msgstr[0] "%1$d退化面"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:417
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d edge fixed"
 msgid_plural "%1$d edges fixed"
 msgstr[0] "%1$d 边缘被修复"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:419
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d facet removed"
 msgid_plural "%1$d facets removed"
 msgstr[0] "%1$d 面移除"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:421
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d facet reversed"
 msgid_plural "%1$d facets reversed"
 msgstr[0] "%1$d 面反转"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:423
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d backward edge"
 msgid_plural "%1$d backward edges"
 msgstr[0] "%1$d 后边缘"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:426 src/slic3r/GUI/GUI_ObjectList.cpp:429
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d open edge"
 msgid_plural "%1$d open edges"
 msgstr[0] "%1$d 开放边缘"
@@ -4110,24 +4185,30 @@ msgid "Add Height Range"
 msgstr "添加高度范围"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3104
-msgid "Cannot insert a new layer range after the current layer range.\n"
+msgid ""
+"Cannot insert a new layer range after the current layer range.\n"
 "The next layer range is too thin to be split to two\n"
 "without violating the minimum layer height."
-msgstr "无法在当前图层范围之后插入新的图层范围。\n"
+msgstr ""
+"无法在当前图层范围之后插入新的图层范围。\n"
 "下一层范围太窄，无法在不违反最小层高度的情况下拆分为两层。"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3108
-msgid "Cannot insert a new layer range between the current and the next layer range.\n"
+msgid ""
+"Cannot insert a new layer range between the current and the next layer range.\n"
 "The gap between the current layer range and the next layer range\n"
 "is thinner than the minimum layer height allowed."
-msgstr "无法在当前层范围和下一层范围之间插入新层范围。\n"
+msgstr ""
+"无法在当前层范围和下一层范围之间插入新层范围。\n"
 "当前层范围和下一层范围之间的间隙\n"
 "小于允许的最小层高度。"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3113
-msgid "Cannot insert a new layer range after the current layer range.\n"
+msgid ""
+"Cannot insert a new layer range after the current layer range.\n"
 "Current layer range overlaps with the next layer range."
-msgstr "无法在当前图层范围之后插入新的图层范围。\n"
+msgstr ""
+"无法在当前图层范围之后插入新的图层范围。\n"
 "当前图层范围与下一图层范围重叠。"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3172
@@ -4160,12 +4241,12 @@ msgid "Unsupported selection"
 msgstr "不支持的选择"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3644
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "You started your selection with %s Item."
 msgstr "你从 %s 项开始选择。"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:3645
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "In this mode you can select only other %s Items%s"
 msgstr "在此模式下，您只能选择其他 %s 项%s"
 
@@ -4299,7 +4380,7 @@ msgid "Rotation"
 msgstr "旋转"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:250
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Toggle %c axis mirroring"
 msgstr "切换 %c 轴镜像"
 
@@ -4355,17 +4436,21 @@ msgid "Set Scale"
 msgstr "设置缩放 Set Scale"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:980
-msgid "The currently manipulated object is tilted (rotation angles are not multiples of 90°).\n"
+msgid ""
+"The currently manipulated object is tilted (rotation angles are not multiples of 90°).\n"
 "Non-uniform scaling of tilted objects is only possible in the World coordinate system,\n"
 "once the rotation is embedded into the object coordinates."
-msgstr "当前操作的对象是倾斜的(旋转角度不是 90° 的倍数)。\n"
+msgstr ""
+"当前操作的对象是倾斜的(旋转角度不是 90° 的倍数)。\n"
 "倾斜对象的非均匀缩放只能将旋转嵌入到对象的坐标中后，\n"
 "在世界坐标系中进行。"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:983
-msgid "This operation is irreversible.\n"
+msgid ""
+"This operation is irreversible.\n"
 "Do you want to proceed?"
-msgstr "此操作是不可逆的。\n"
+msgstr ""
+"此操作是不可逆的。\n"
 "是否要继续？"
 
 #: src/slic3r/GUI/GUI_ObjectSettings.cpp:63
@@ -4377,12 +4462,12 @@ msgid "Remove parameter"
 msgstr "删除参数"
 
 #: src/slic3r/GUI/GUI_ObjectSettings.cpp:105
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Delete Option %s"
 msgstr "删除选项 %s"
 
 #: src/slic3r/GUI/GUI_ObjectSettings.cpp:154
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Change Option %s"
 msgstr "更改选项 %s"
 
@@ -4480,7 +4565,7 @@ msgid "NOTE:"
 msgstr "注:"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:729
-#, possible-boost-format
+#, boost-format
 msgid "Sliced object \"%1%\" looks like a logo or a sign"
 msgstr "切片对象\"%1%\"看起来像一个徽标或标志"
 
@@ -4548,10 +4633,12 @@ msgid "Arranging done."
 msgstr "布局完成。"
 
 #: src/slic3r/GUI/Jobs/ArrangeJob.cpp:250
-#, possible-c-format, possible-boost-format
-msgid "Arrangement ignored the following objects which can't fit into a single bed:\n"
+#, c-format, boost-format
+msgid ""
+"Arrangement ignored the following objects which can't fit into a single bed:\n"
 "%s"
-msgstr "排列忽略了下列不能放在一张床上的对象:\n"
+msgstr ""
+"排列忽略了下列不能放在一张床上的对象:\n"
 "%s"
 
 #: src/slic3r/GUI/Jobs/FillBedJob.cpp:123
@@ -4587,9 +4674,11 @@ msgid "Reduced overhang slopes"
 msgstr "减少悬垂斜坡"
 
 #: src/slic3r/GUI/Jobs/RotoptimizeJob.hpp:26
-msgid "Optimize object rotation to have minimum amount of overhangs needing support structures.\n"
+msgid ""
+"Optimize object rotation to have minimum amount of overhangs needing support structures.\n"
 "Note that this method will try to find the best surface of the object for touching the print bed if no elevation is set."
-msgstr "优化对象旋转，使需要支撑结构的悬挑数量最少。\n"
+msgstr ""
+"优化对象旋转，使需要支撑结构的悬挑数量最少。\n"
 "请注意，如果未设置标高，此方法将尝试找到接触打印床的对象的最佳表面。"
 
 #: src/slic3r/GUI/Jobs/RotoptimizeJob.hpp:30
@@ -4819,9 +4908,11 @@ msgid "Remove Instance of the selected object"
 msgstr "删除所选对象的实例"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:136
-msgid "Press to select multiple objects\n"
+msgid ""
+"Press to select multiple objects\n"
 "or move multiple objects with mouse"
-msgstr "按可选择多个对象\n"
+msgstr ""
+"按可选择多个对象\n"
 "或用鼠标移动多个对象"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:137
@@ -4958,9 +5049,11 @@ msgid "Zoom to Bed"
 msgstr "缩放至热床"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:160
-msgid "Zoom to selected object\n"
+msgid ""
+"Zoom to selected object\n"
 "or all objects in scene, if none selected"
-msgstr "缩放到选定对象\n"
+msgstr ""
+"缩放到选定对象\n"
 "或场景中的所有对象（如果未选定）"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:161
@@ -5126,7 +5219,8 @@ msgstr "删除当前图层的颜色更改标记"
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:240
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:250
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:251
-msgid "Press to speed up 5 times while moving thumb\n"
+msgid ""
+"Press to speed up 5 times while moving thumb\n"
 "with arrow keys or mouse wheel"
 msgstr "用箭头键或鼠标滚轮移动拇指时，按可加速5次"
 
@@ -5247,12 +5341,12 @@ msgid "Open the software releases page in your browser"
 msgstr "在浏览器中打开软件发布页面"
 
 #: src/slic3r/GUI/MainFrame.cpp:1078
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s &Website"
 msgstr "%s 网站(&W)"
 
 #: src/slic3r/GUI/MainFrame.cpp:1079
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Open the %s website in your browser"
 msgstr "在浏览器中打开 %s 网站"
 
@@ -5277,12 +5371,12 @@ msgid "Report an I&ssue"
 msgstr "报告问题(&S)"
 
 #: src/slic3r/GUI/MainFrame.cpp:1089
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Report an issue on %s"
 msgstr "报告 %s 上的问题"
 
 #: src/slic3r/GUI/MainFrame.cpp:1092 src/slic3r/GUI/MainFrame.cpp:1095
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "&About %s"
 msgstr "关于 %s(&A)"
 
@@ -5386,9 +5480,11 @@ msgid "Recent projects"
 msgstr "最近项目"
 
 #: src/slic3r/GUI/MainFrame.cpp:1162
-msgid "The selected project is no longer available.\n"
+msgid ""
+"The selected project is no longer available.\n"
 "Do you want to remove it from the recent projects list?"
-msgstr "所选项目不再可用。\n"
+msgstr ""
+"所选项目不再可用。\n"
 "是否要将其从最近的项目列表中删除？"
 
 #: src/slic3r/GUI/MainFrame.cpp:1187
@@ -5592,7 +5688,7 @@ msgid "&Quit"
 msgstr "退出(&Q)"
 
 #: src/slic3r/GUI/MainFrame.cpp:1304 src/slic3r/GUI/MainFrame.cpp:1538
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Quit %s"
 msgstr "退出 %s"
 
@@ -5823,7 +5919,7 @@ msgid "File Not Found"
 msgstr "文件未找到"
 
 #: src/slic3r/GUI/MainFrame.cpp:1661
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Save %s file as:"
 msgstr "将 %s 文件另存为:"
 
@@ -5847,12 +5943,12 @@ msgstr "切片"
 
 #. TRN "Processing input_file_basename"
 #: src/slic3r/GUI/MainFrame.cpp:1684
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Processing %s"
 msgstr "处理 %s"
 
 #: src/slic3r/GUI/MainFrame.cpp:1707
-#, possible-boost-format
+#, boost-format
 msgid "%1% was successfully sliced."
 msgstr "%1% 已成功切片。"
 
@@ -5905,7 +6001,7 @@ msgid "Loading of a configuration bundle"
 msgstr "加载配置包"
 
 #: src/slic3r/GUI/MainFrame.cpp:1872
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%d presets successfully imported."
 msgstr "%d 预设已成功导入。"
 
@@ -5944,32 +6040,32 @@ msgid "Swap Y/Z axes"
 msgstr "交换Y/Z轴"
 
 #: src/slic3r/GUI/MsgDialog.cpp:212
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s error"
 msgstr "%s 错误"
 
 #: src/slic3r/GUI/MsgDialog.cpp:213
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s has encountered an error"
 msgstr "%s 遇到错误"
 
 #: src/slic3r/GUI/MsgDialog.cpp:232
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s warning"
 msgstr "%s 警告"
 
 #: src/slic3r/GUI/MsgDialog.cpp:233
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s has a warning"
 msgstr "%s有一个警告"
 
 #: src/slic3r/GUI/MsgDialog.cpp:246 src/slic3r/GUI/MsgDialog.cpp:259
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s info"
 msgstr "%s信息"
 
 #: src/slic3r/GUI/MsgDialog.cpp:287
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s information"
 msgstr "%s信息"
 
@@ -5986,9 +6082,11 @@ msgid "See more."
 msgstr "查看更多。"
 
 #: src/slic3r/GUI/NotificationManager.hpp:761
-msgid "You have just added a G-code for color change, but its value is empty.\n"
+msgid ""
+"You have just added a G-code for color change, but its value is empty.\n"
 "To export the G-code correctly, check the \"Color Change G-code\" in \"Printer Settings > Custom G-code\""
-msgstr "您刚刚添加了用于颜色更改的 G-Code，但其值为空。\n"
+msgstr ""
+"您刚刚添加了用于颜色更改的 G-Code，但其值为空。\n"
 "要正确导出 G-Code，请检查“打印机设置>自定义 G-Code ”中的“颜色更改 G-Code ”"
 
 #: src/slic3r/GUI/NotificationManager.hpp:764
@@ -6040,31 +6138,31 @@ msgid "Cancel upload"
 msgstr "取消上传"
 
 #: src/slic3r/GUI/NotificationManager.cpp:996
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d object was loaded with custom supports."
 msgid_plural "%1$d objects were loaded with custom supports."
 msgstr[0] "%1$d对象已加载自定义支持。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:997
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d object was loaded with custom seam."
 msgid_plural "%1$d objects were loaded with custom seam."
 msgstr[0] "%1$d对象已加载自定义接缝。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:998
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d object was loaded with multimaterial painting."
 msgid_plural "%1$d objects were loaded with multimaterial painting."
 msgstr[0] "%1$d对象加载了多材质绘画。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:999
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d object was loaded with variable layer height."
 msgid_plural "%1$d objects were loaded with variable layer height."
 msgstr[0] "%1$d对象加载了可变层高度。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:1000
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%1$d object was loaded with partial sinking."
 msgid_plural "%1$d objects were loaded with partial sinking."
 msgstr[0] "%1$d物体装载了部分下沉。"
@@ -6114,7 +6212,7 @@ msgstr "实例"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:98
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:266
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Instance %d"
 msgstr "实例 %d"
 
@@ -6128,10 +6226,12 @@ msgid "Range"
 msgstr "范围"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:257
-#, possible-c-format, possible-boost-format
-msgid "PrusaSlicer requires OpenGL 2.0 capable graphics driver to run correctly, \n"
+#, c-format, boost-format
+msgid ""
+"PrusaSlicer requires OpenGL 2.0 capable graphics driver to run correctly, \n"
 "while OpenGL version %s, render %s, vendor %s was detected."
-msgstr "PrusaSlicer 需要支持 OpenGL 2.0 的图形驱动程序才能正确运行， \n"
+msgstr ""
+"PrusaSlicer 需要支持 OpenGL 2.0 的图形驱动程序才能正确运行， \n"
 "当检测到 OpenGL 版本 %s、呈现 %s、供应商 %s 时。"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:260
@@ -6147,10 +6247,12 @@ msgid "Unsupported OpenGL version"
 msgstr "不支持的 OpenGL 版本"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:273
-#, possible-c-format, possible-boost-format
-msgid "Unable to load the following shaders:\n"
+#, c-format, boost-format
+msgid ""
+"Unable to load the following shaders:\n"
 "%s"
-msgstr "无法加载以下着色器:\n"
+msgstr ""
+"无法加载以下着色器:\n"
 "%s"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:274
@@ -6229,7 +6331,7 @@ msgid "HTTPS CA File"
 msgstr "HTTPS CA 文件"
 
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:405
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "On this system, %s uses HTTPS certificates from the system Certificate Store or Keychain."
 msgstr "在此系统上,%s 使用来自系统证书存储或钥匙串的 HTTPS 证书。"
 
@@ -6246,7 +6348,7 @@ msgid "You should change the name of your printer device."
 msgstr "您应该更改打印机设备的名称。"
 
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:642
-#, possible-boost-format
+#, boost-format
 msgid "Printer with name \"%1%\" already exists."
 msgstr "名为\"%1%'的打印机已存在。"
 
@@ -6255,7 +6357,7 @@ msgid "Replace?"
 msgstr "替换？"
 
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:670
-#, possible-boost-format
+#, boost-format
 msgid "Following printer preset is duplicated:%1%The above preset for printer \"%2%\" will be used just once."
 msgid_plural "Following printer presets are duplicated:%1%The above presets for printer \"%2%\" will be used just once."
 msgstr[0] "以下打印机预设重复：%1% 以上打印机“%2%”的预设将只使用一次。"
@@ -6273,9 +6375,11 @@ msgid "the following characters are not allowed:"
 msgstr "不允许使用以下字符:"
 
 #: src/slic3r/GUI/Plater.cpp:207
-msgid "For a multipart object, this value isn't accurate.\n"
+msgid ""
+"For a multipart object, this value isn't accurate.\n"
 "It doesn't take account of intersections and negative volumes."
-msgstr "对于多部分对象，此值不准确。\n"
+msgstr ""
+"对于多部分对象，此值不准确。\n"
 "没有考虑交叉点和负体积。"
 
 #: src/slic3r/GUI/Plater.cpp:211
@@ -6374,7 +6478,7 @@ msgid "Hold Shift to Slice & Export G-code"
 msgstr "按住 Shift 来切片并导出 G-Code"
 
 #: src/slic3r/GUI/Plater.cpp:1286
-#, possible-boost-format
+#, boost-format
 msgid "%1% (%2$d shell)"
 msgid_plural "%1% (%2$d shells)"
 msgstr[0] "%1% (%2$d 壳)"
@@ -6409,7 +6513,7 @@ msgid "Used Filament (in³)"
 msgstr "消耗耗材 (in³)"
 
 #: src/slic3r/GUI/Plater.cpp:1395
-#, possible-boost-format
+#, boost-format
 msgid "Filament at extruder %1%"
 msgstr "挤出机上的长丝%1%"
 
@@ -6443,7 +6547,7 @@ msgid "Import SLA archive"
 msgstr "导入 SLA 存档"
 
 #: src/slic3r/GUI/Plater.cpp:1727
-#, possible-boost-format
+#, boost-format
 msgid "Do you want to save the changes to \"%1%\"?"
 msgstr "是否要将更改保存到\"%1%\"？"
 
@@ -6452,20 +6556,22 @@ msgid "Ask for unsaved changes in project"
 msgstr "请求项目中未保存的更改"
 
 #: src/slic3r/GUI/Plater.cpp:1735
-msgid "You will not be asked about it again, when: \n"
+msgid ""
+"You will not be asked about it again, when: \n"
 "- Closing PrusaSlicer,\n"
 "- Loading or creating a new project"
-msgstr "当: \n"
+msgstr ""
+"当: \n"
 "-关闭 PrusaSlicer，\n"
 "-加载或创建新项目时，将不再询问您"
 
 #: src/slic3r/GUI/Plater.cpp:2197
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Successfully unmounted. The device %s(%s) can now be safely removed from the computer."
 msgstr "成功卸载。设备%s（%s）现在可以安全地从计算机上删除。"
 
 #: src/slic3r/GUI/Plater.cpp:2202
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Ejecting of device %s(%s) has failed."
 msgstr "弹出设备%s（%s）失败。"
 
@@ -6483,17 +6589,20 @@ msgid_plural "The presets below were temporarily installed on the active instanc
 msgstr[0] "以下预设已临时安装在 PrusaSlicer 的活动实例上"
 
 #: src/slic3r/GUI/Plater.cpp:2528
-#, possible-boost-format
+#, boost-format
 msgid "Failed loading file \"%1%\" due to an invalid configuration."
 msgstr "由于配置无效，无法加载文件\"%1%\"。"
 
 #: src/slic3r/GUI/Plater.cpp:2548
-#, possible-c-format, possible-boost-format
-msgid "Object size from file %s appears to be zero.\n"
+#, c-format, boost-format
+msgid ""
+"Object size from file %s appears to be zero.\n"
 "This object has been removed from the model"
-msgid_plural "Objects size from file %s appears to be zero.\n"
+msgid_plural ""
+"Objects size from file %s appears to be zero.\n"
 "These objects have been removed from the model"
-msgstr[0] "文件%s中的对象大小似乎为零。\n"
+msgstr[0] ""
+"文件%s中的对象大小似乎为零。\n"
 "这些对象已从模型中删除"
 
 #: src/slic3r/GUI/Plater.cpp:2552
@@ -6501,12 +6610,15 @@ msgid "The size of the object is zero"
 msgstr "对象的大小为零"
 
 #: src/slic3r/GUI/Plater.cpp:2565
-#, possible-c-format, possible-boost-format
-msgid "The dimensions of the object from file %s seem to be defined in meters.\n"
+#, c-format, boost-format
+msgid ""
+"The dimensions of the object from file %s seem to be defined in meters.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of the object?"
-msgid_plural "The dimensions of some objects from file %s seem to be defined in meters.\n"
+msgid_plural ""
+"The dimensions of some objects from file %s seem to be defined in meters.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of these objects?"
-msgstr[0] "文件%s中对象的尺寸似乎是以米为单位定义的。\n"
+msgstr[0] ""
+"文件%s中对象的尺寸似乎是以米为单位定义的。\n"
 "PrusaSlicer 的内部单位为毫米。是否要重新计算对象的尺寸？"
 
 #: src/slic3r/GUI/Plater.cpp:2569 src/slic3r/GUI/Plater.cpp:2591
@@ -6518,19 +6630,24 @@ msgid "Apply to all the remaining small objects being loaded."
 msgstr "应用于正在加载的所有剩余小对象。"
 
 #: src/slic3r/GUI/Plater.cpp:2587
-#, possible-c-format, possible-boost-format
-msgid "The dimensions of the object from file %s seem to be defined in inches.\n"
+#, c-format, boost-format
+msgid ""
+"The dimensions of the object from file %s seem to be defined in inches.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of the object?"
-msgid_plural "The dimensions of some objects from file %s seem to be defined in inches.\n"
+msgid_plural ""
+"The dimensions of some objects from file %s seem to be defined in inches.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of these objects?"
-msgstr[0] "文件%s中对象的尺寸似乎是以英寸为单位定义的。\n"
+msgstr[0] ""
+"文件%s中对象的尺寸似乎是以英寸为单位定义的。\n"
 "PrusaSlicer 的内部单位为毫米。是否要重新计算对象的尺寸？"
 
 #: src/slic3r/GUI/Plater.cpp:2605
-msgid "This file contains several objects positioned at multiple heights.\n"
+msgid ""
+"This file contains several objects positioned at multiple heights.\n"
 "Instead of considering them as multiple objects, should \n"
 "the file be loaded as a single object having multiple parts?"
-msgstr "该文件包含多个位于多个高度的对象。\n"
+msgstr ""
+"该文件包含多个位于多个高度的对象。\n"
 "不应将它们视为多个对象， \n"
 "文件是否应作为包含多个部分的单个对象加载？"
 
@@ -6547,15 +6664,17 @@ msgid "Detected advanced data"
 msgstr "检测到高级数据"
 
 #: src/slic3r/GUI/Plater.cpp:2637
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "You can't to add the object(s) from %s because of one or some of them is(are) multi-part"
 msgstr "不能从 %s 中添加对象, 因为其中一个或一些有多个部分"
 
 #: src/slic3r/GUI/Plater.cpp:2660
-msgid "Multiple objects were loaded for a multi-material printer.\n"
+msgid ""
+"Multiple objects were loaded for a multi-material printer.\n"
 "Instead of considering them as multiple objects, should I consider\n"
 "these files to represent a single object having multiple parts?"
-msgstr "为多材质打印机加载了多个对象。\n"
+msgstr ""
+"为多材质打印机加载了多个对象。\n"
 "除了将它们视为多个对象之外，我是否应该将这些文件视为\n"
 "表示具有多个部分的单个对象？"
 
@@ -6692,10 +6811,12 @@ msgid "Undo / Redo is processing"
 msgstr "撤消/重做正在处理"
 
 #: src/slic3r/GUI/Plater.cpp:4873
-#, possible-boost-format
-msgid "Switching the printer technology from %1% to %2%.\n"
+#, boost-format
+msgid ""
+"Switching the printer technology from %1% to %2%.\n"
 "Some %1% presets were modified, which will be lost after switching the printer technology."
-msgstr "将打印机技术从%1%切换到%2%。\n"
+msgstr ""
+"将打印机技术从%1%切换到%2%。\n"
 "修改了某些%1%的预设，切换打印机技术后这些预设将丢失。"
 
 #: src/slic3r/GUI/Plater.cpp:5070
@@ -6711,9 +6832,11 @@ msgid "You can keep presets modifications to the new project or discard them"
 msgstr "可以保留对新项目的预设修改，也可以放弃它们"
 
 #: src/slic3r/GUI/Plater.cpp:5075
-msgid "You can keep presets modifications to the new project, discard them or save changes as new presets.\n"
+msgid ""
+"You can keep presets modifications to the new project, discard them or save changes as new presets.\n"
 "Note, if changes will be saved then new project wouldn't keep them"
-msgstr "可以保留对新项目的预设修改、放弃它们或将更改另存为新预设。\n"
+msgstr ""
+"可以保留对新项目的预设修改、放弃它们或将更改另存为新预设。\n"
 "注意，如果更改将被保存，那么新项目将不会保留它们"
 
 #: src/slic3r/GUI/Plater.cpp:5081
@@ -6741,7 +6864,7 @@ msgid "Error while loading .gcode file"
 msgstr "加载 .gcode 文件时出错"
 
 #: src/slic3r/GUI/Plater.cpp:5269
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s - Drop project file"
 msgstr "%s - 删除项目文件"
 
@@ -6810,7 +6933,7 @@ msgid "Copies of the selected object"
 msgstr "选定对象的副本"
 
 #: src/slic3r/GUI/Plater.cpp:5586
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Set numbers of copies to %d"
 msgstr "将副本数设置为 %d"
 
@@ -6835,9 +6958,11 @@ msgid "The following characters are not allowed by a FAT file system:"
 msgstr "FAT 文件系统不允许使用以下字符:"
 
 #: src/slic3r/GUI/Plater.cpp:5917
-msgid "The plater is empty.\n"
+msgid ""
+"The plater is empty.\n"
 "Do you want to save the project?"
-msgstr "盘子是空的。\n"
+msgstr ""
+"盘子是空的。\n"
 "你想保存这个项目吗？"
 
 #: src/slic3r/GUI/Plater.cpp:5917
@@ -6944,10 +7069,12 @@ msgid "If this is enabled, when starting PrusaSlicer and another instance of the
 msgstr "如果启用此选项，则当启动 PrusaSlicer 且同一 PrusaSlicer 的另一个实例已在运行时，该实例将被重新激活。"
 
 #: src/slic3r/GUI/Preferences.cpp:224
-msgid "Always ask for unsaved changes in project, when: \n"
+msgid ""
+"Always ask for unsaved changes in project, when: \n"
 "- Closing PrusaSlicer,\n"
 "- Loading or creating a new project"
-msgstr "当: \n"
+msgstr ""
+"当: \n"
 "-关闭 PrusaSlicer，\n"
 "-加载或创建新项目时，始终在项目中请求未保存的更改"
 
@@ -6957,10 +7084,12 @@ msgid "Ask to save unsaved changes in presets when closing the application or wh
 msgstr "关闭应用程序或加载新项目时，要求保存预设中未保存的更改"
 
 #: src/slic3r/GUI/Preferences.cpp:235
-msgid "Always ask for unsaved changes in presets, when: \n"
+msgid ""
+"Always ask for unsaved changes in presets, when: \n"
 "- Closing PrusaSlicer while some presets are modified,\n"
 "- Loading a new project while some presets are modified"
-msgstr "当: \n"
+msgstr ""
+"当: \n"
 "-在某些预设被修改时关闭 PrusaSlicer，\n"
 "-在某些预设被修改时加载一个新项目时，始终要求对预设进行未保存的更改"
 
@@ -7155,9 +7284,11 @@ msgid "Use system menu for application"
 msgstr "使用系统菜单进行应用"
 
 #: src/slic3r/GUI/Preferences.cpp:509
-msgid "If enabled, application will use the standard Windows system menu,\n"
+msgid ""
+"If enabled, application will use the standard Windows system menu,\n"
 "but on some combination of display scales it can looks ugly. If disabled, old UI will be used."
-msgstr "如果启用，应用程序将使用标准 Windows 系统菜单，\n"
+msgstr ""
+"如果启用，应用程序将使用标准 Windows 系统菜单，\n"
 "但在某些显示比例组合上，它可能看起来很难看。如果禁用，将使用旧用户界面。"
 
 #: src/slic3r/GUI/Preferences.cpp:578
@@ -7165,9 +7296,11 @@ msgid "Changes for the critical options"
 msgstr "关键选项的更改"
 
 #: src/slic3r/GUI/Preferences.cpp:580
-msgid "Changing some options will trigger application restart.\n"
+msgid ""
+"Changing some options will trigger application restart.\n"
 "You will lose the content of the plater."
-msgstr "更改某些选项将触发应用程序重启。\n"
+msgstr ""
+"更改某些选项将触发应用程序重启。\n"
 "你会失去盘子里的东西。"
 
 #: src/slic3r/GUI/Preferences.cpp:694
@@ -7218,7 +7351,7 @@ msgid "Incompatible presets"
 msgstr "不兼容的预设"
 
 #: src/slic3r/GUI/PresetComboBoxes.cpp:337
-#, possible-boost-format
+#, boost-format
 msgid "Are you sure you want to delete \"%1%\" printer?"
 msgstr "确实要删除\"%1%\"打印机吗？"
 
@@ -7275,37 +7408,37 @@ msgid "Add/Remove printers"
 msgstr "添加/删除打印机"
 
 #: src/slic3r/GUI/PresetHints.cpp:32
-#, possible-boost-format
+#, boost-format
 msgid "If estimated layer time is below ~%1%s, fan will run at %2%%% and print speed will be reduced so that no less than %3%s are spent on that layer (however, speed will never be reduced below %4%mm/s)."
 msgstr "如果估计图层时间低于 ~%1%s,风扇将以 %2%%% 的速度运行,打印速度将降低,因此该图层上花费的时间不会低于 %3%s (但是,速度永远不会降低到 %4%mm/s 以下)。"
 
 #: src/slic3r/GUI/PresetHints.cpp:40
-#, possible-boost-format
+#, boost-format
 msgid "If estimated layer time is greater, but still below ~%1%s, fan will run at a proportionally decreasing speed between %2%%% and %3%%%."
 msgstr "如果估计的层时间更大，但仍低于~%1%s，风扇将以在%2%%%和%3%%%之间成比例降低的速度运行。"
 
 #: src/slic3r/GUI/PresetHints.cpp:44
-#, possible-boost-format
+#, boost-format
 msgid "If estimated layer time is greater, but still below ~%1%s, fan will run at %2%%%"
 msgstr "如果估计的层时间更长，但仍低于~%1%s，风扇将以%2%%%的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:55
-#, possible-boost-format
+#, boost-format
 msgid "Fan speed will be ramped from zero at layer %1% to %2%%% at layer %3%."
 msgstr "风扇速度将从第%1%层的零上升到第%3%层的%2%%%。"
 
 #: src/slic3r/GUI/PresetHints.cpp:57
-#, possible-boost-format
+#, boost-format
 msgid "During the other layers, fan will always run at %1%%%"
 msgstr "在其他层中，风扇将始终以%1%%%的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:57
-#, possible-boost-format
+#, boost-format
 msgid "Fan will always run at %1%%%"
 msgstr "风扇将始终以%1%%%的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:59
-#, possible-boost-format
+#, boost-format
 msgid "except for the first %1% layers."
 msgstr "除前 %1% 图层外。"
 
@@ -7378,7 +7511,7 @@ msgid "with a volumetric rate"
 msgstr "具有体积速率"
 
 #: src/slic3r/GUI/PresetHints.cpp:197
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%3.2f mm³/s at filament speed %3.2f mm/s."
 msgstr "%3.2f mm³/s，耗材速度 %3.2f mm/s。"
 
@@ -7387,12 +7520,12 @@ msgid "Recommended object thin wall thickness: Not available due to invalid laye
 msgstr "推荐对象薄壁厚度：由于层高度无效，不可用。"
 
 #: src/slic3r/GUI/PresetHints.cpp:221
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Recommended object thin wall thickness for layer height %.2f and"
 msgstr "推荐对象薄壁厚度，当层高度为 %.2f 和"
 
 #: src/slic3r/GUI/PresetHints.cpp:236
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%d lines: %.2f mm"
 msgstr "%d 线： %.2f mm"
 
@@ -7405,12 +7538,12 @@ msgid "Top / bottom shell thickness hint: Not available due to invalid layer hei
 msgstr "顶部/底部外壳厚度提示：由于层高度无效，不可用。"
 
 #: src/slic3r/GUI/PresetHints.cpp:282
-#, possible-boost-format
+#, boost-format
 msgid "Top shell is %1% mm thick for layer height %2% mm."
 msgstr "层高为 %2%mm 时，顶壳厚度为 %1%mm。"
 
 #: src/slic3r/GUI/PresetHints.cpp:285
-#, possible-boost-format
+#, boost-format
 msgid "Minimum top shell thickness is %1% mm."
 msgstr "最小顶壳厚度为%1%mm。"
 
@@ -7419,12 +7552,12 @@ msgid "Top is open."
 msgstr "顶部是开放的。"
 
 #: src/slic3r/GUI/PresetHints.cpp:301
-#, possible-boost-format
+#, boost-format
 msgid "Bottom shell is %1% mm thick for layer height %2% mm."
 msgstr "底壳厚度为 %1%mm，层高为 %2%mm。"
 
 #: src/slic3r/GUI/PresetHints.cpp:304
-#, possible-boost-format
+#, boost-format
 msgid "Minimum bottom shell thickness is %1% mm."
 msgstr "最小底壳厚度为 %1%mm。"
 
@@ -7449,7 +7582,7 @@ msgid "Group"
 msgstr "组"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:84
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Upload filename doesn't end with \"%s\". Do you wish to continue?"
 msgstr "上传文件名不以\"%s\"”结尾。你想继续吗？"
 
@@ -7551,7 +7684,7 @@ msgid "mm³/s"
 msgstr ""
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:57
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Save %s as:"
 msgstr "将 %s 另存为:"
 
@@ -7577,12 +7710,12 @@ msgid "Cannot overwrite an external profile."
 msgstr "无法覆盖外部配置文件。"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:134
-#, possible-boost-format
+#, boost-format
 msgid "Preset with name \"%1%\" already exists."
 msgstr "名为\"%1%\"的预设已存在。"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:136
-#, possible-boost-format
+#, boost-format
 msgid "Preset with name \"%1%\" already exists and is incompatible with selected printer."
 msgstr "名为\"%1%\"的预设已存在，且与所选打印机不兼容。"
 
@@ -7617,29 +7750,31 @@ msgid "Copy"
 msgstr "复制"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:283
-#, possible-boost-format
-msgid "You have selected physical printer \"%1%\" \n"
+#, boost-format
+msgid ""
+"You have selected physical printer \"%1%\" \n"
 "with related printer preset \"%2%\""
-msgstr "您已经选择了物理打印机\"%1%\" \n"
+msgstr ""
+"您已经选择了物理打印机\"%1%\" \n"
 "以及相关的打印机预设\"%2%\""
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:322
-#, possible-boost-format
+#, boost-format
 msgid "What would you like to do with \"%1%\" preset after saving?"
 msgstr "保存后，您想对\"%1%'预设做什么？"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:325
-#, possible-boost-format
+#, boost-format
 msgid "Change \"%1%\" to \"%2%\" for this physical printer \"%3%\""
 msgstr "将此物理打印机\"%3%\"的\"%1%\"更改为\"%2%\""
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:326
-#, possible-boost-format
+#, boost-format
 msgid "Add \"%1%\" as a next preset for the the physical printer \"%2%\""
 msgstr "添加\"%1%\"作为物理打印机\"%2%\"的下一个预设值"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:327
-#, possible-boost-format
+#, boost-format
 msgid "Just switch to \"%1%\" preset"
 msgstr "只需切换到\"%1%\"预设"
 
@@ -7699,7 +7834,7 @@ msgid "Send system info"
 msgstr "发送系统信息"
 
 #: src/slic3r/GUI/SendSystemInfoDialog.cpp:581
-#, possible-boost-format
+#, boost-format
 msgid "This is the first time you are running %1%. We would like to ask you to send some of your system information to us. This will only happen once and we will not ask you to do this again (only after you upgrade to the next version)."
 msgstr "这是您第一次运行%1%。我们希望您将一些系统信息发送给我们。这只会发生一次，我们不会要求您再次这样做（只有在您升级到下一个版本后）。"
 
@@ -7712,7 +7847,7 @@ msgid "Is it safe?"
 msgstr "安全吗？"
 
 #: src/slic3r/GUI/SendSystemInfoDialog.cpp:590
-#, possible-boost-format
+#, boost-format
 msgid "We do not send any personal information nor anything that would allow us to identify you later. To detect duplicate entries, a unique number derived from your system is sent, but the source information cannot be reconstructed. Apart from that, only general data about your OS, hardware and OpenGL installation are sent. PrusaSlicer is open source, if you want to inspect the code actually performing the communication, see %1%."
 msgstr "我们不会发送任何个人信息，也不会发送任何允许我们稍后确认您身份的信息。要检测重复条目，将发送从系统中派生的唯一编号，但无法重建源信息。除此之外，只发送有关操作系统、硬件和 OpenGL 安装的一般数据。PrusaSlicer 是开源的，如果您想检查实际执行通信的代码，请参阅%1%。"
 
@@ -7782,7 +7917,7 @@ msgstr "将此预设与其他预设进行比较"
 
 #. TRN "Save current Settings"
 #: src/slic3r/GUI/Tab.cpp:218
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Save current %s"
 msgstr "保存当前 %s"
 
@@ -7791,13 +7926,15 @@ msgid "Delete this preset"
 msgstr "删除该预设"
 
 #: src/slic3r/GUI/Tab.cpp:223
-msgid "Hover the cursor over buttons to find more information \n"
+msgid ""
+"Hover the cursor over buttons to find more information \n"
 "or click this button."
-msgstr "将光标悬停在按钮上以查找详细信息 \n"
+msgstr ""
+"将光标悬停在按钮上以查找详细信息 \n"
 "或单击此按钮。"
 
 #: src/slic3r/GUI/Tab.cpp:227
-#, possible-boost-format
+#, boost-format
 msgid "Search in settings [%1%]"
 msgstr "在设置[%1%]中搜索]"
 
@@ -8015,12 +8152,15 @@ msgid "Post processing scripts shall modify G-code file in place."
 msgstr "后处理脚本应适当修改 G-Code 文件。"
 
 #: src/slic3r/GUI/Tab.cpp:1842
-#, possible-c-format, possible-boost-format
-msgid "The following line %s contains reserved keywords.\n"
+#, c-format, boost-format
+msgid ""
+"The following line %s contains reserved keywords.\n"
 "Please remove it, as it may cause problems in G-code visualization and printing time estimation."
-msgid_plural "The following lines %s contain reserved keywords.\n"
+msgid_plural ""
+"The following lines %s contain reserved keywords.\n"
 "Please remove them, as they may cause problems in G-code visualization and printing time estimation."
-msgstr[0] "下一行%s包含保留关键字。\n"
+msgstr[0] ""
+"下一行%s包含保留关键字。\n"
 "请删除它们，因为它们可能会导致 G-Code 可视化和打印时间估计出现问题。"
 
 #: src/slic3r/GUI/Tab.cpp:1847
@@ -8099,10 +8239,12 @@ msgid "Volumetric flow hints not available"
 msgstr "容积流量提示不可用"
 
 #: src/slic3r/GUI/Tab.cpp:2249
-msgid "Note: All parameters from this group are moved to the Physical Printer settings (see changelog).\n"
+msgid ""
+"Note: All parameters from this group are moved to the Physical Printer settings (see changelog).\n"
 "\n"
 "A new Physical Printer profile is created by clicking on the \"cog\" icon right of the Printer profiles combo box, by selecting the \"Add physical printer\" item in the Printer combo box. The Physical Printer profile editor opens also when clicking on the \"cog\" icon in the Printer settings tab. The Physical Printer profiles are being stored into PrusaSlicer/physical_printer directory."
-msgstr "注意：此组中的所有参数都会移动到物理打印机设置（请参阅更改日志）。\n"
+msgstr ""
+"注意：此组中的所有参数都会移动到物理打印机设置（请参阅更改日志）。\n"
 "\n"
 "单击打印机配置文件组合框右侧的“齿轮”图标，选择打印机组合框中的“添加物理打印机”项，即可创建新的物理打印机配置文件。单击打印机设置选项卡中的“齿轮”图标时，物理打印机配置文件编辑器也会打开。\n"
 "物理打印机配置文件存储在 PrusaSlicer/Physical_Printer 目录中。"
@@ -8114,17 +8256,19 @@ msgstr "大小和坐标"
 #: src/slic3r/GUI/Tab.cpp:2292 src/slic3r/GUI/UnsavedChangesDialog.cpp:1285
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1673
 msgid "Capabilities"
-msgstr "权限"
+msgstr "功能"
 
 #: src/slic3r/GUI/Tab.cpp:2297
 msgid "Number of extruders of the printer."
 msgstr "打印机的挤出机数。"
 
 #: src/slic3r/GUI/Tab.cpp:2326
-msgid "Single Extruder Multi Material is selected, \n"
+msgid ""
+"Single Extruder Multi Material is selected, \n"
 "and all extruders must have the same diameter.\n"
 "Do you want to change the diameter for all extruders to first extruder nozzle diameter value?"
-msgstr "选择单挤出机多材料， \n"
+msgstr ""
+"选择单挤出机多材料， \n"
 "和所有挤出机必须具有相同的直径。\n"
 "是否要将所有挤出机的直径更改为第一挤出机喷嘴直径值？"
 
@@ -8251,10 +8395,12 @@ msgid "Reset to Filament Color"
 msgstr "重置为耗材颜色"
 
 #: src/slic3r/GUI/Tab.cpp:3005
-msgid "The Wipe option is not available when using the Firmware Retraction mode.\n"
+msgid ""
+"The Wipe option is not available when using the Firmware Retraction mode.\n"
 "\n"
 "Shall I disable it in order to enable Firmware Retraction?"
-msgstr "使用固件回抽模式时，\"擦除\"选项不可用。\n"
+msgstr ""
+"使用固件回抽模式时，\"擦除\"选项不可用。\n"
 "\n"
 "我应禁用它，以便启用固件回抽？"
 
@@ -8283,7 +8429,7 @@ msgid "It's a last preset for this physical printer."
 msgstr "这是这台物理打印机的最后一次预设。"
 
 #: src/slic3r/GUI/Tab.cpp:3699
-#, possible-boost-format
+#, boost-format
 msgid "Are you sure you want to delete \"%1%\" preset from the physical printer \"%2%\"?"
 msgstr "是否确实要从物理打印机\"%2%\"中删除\"%1%\"预设？"
 
@@ -8308,13 +8454,13 @@ msgid_plural "Note, that these printers will be deleted after deleting the selec
 msgstr[0] "请注意，删除选定预设后，这些打印机将被删除。"
 
 #: src/slic3r/GUI/Tab.cpp:3731
-#, possible-boost-format
+#, boost-format
 msgid "Are you sure you want to %1% the selected preset?"
 msgstr "是否确实要将所选预设 %1%？"
 
 #. TRN  Remove/Delete
 #: src/slic3r/GUI/Tab.cpp:3736
-#, possible-boost-format
+#, boost-format
 msgid "%1% Preset"
 msgstr "%1% 预设"
 
@@ -8377,9 +8523,11 @@ msgstr "解锁锁"
 
 #. TRN Description for "UNLOCKED LOCK"
 #: src/slic3r/GUI/Tab.cpp:4310
-msgid "indicates that some settings were changed and are not equal to the system (or default) values for the current option group.\n"
+msgid ""
+"indicates that some settings were changed and are not equal to the system (or default) values for the current option group.\n"
 "Click the UNLOCKED LOCK icon to reset all settings for current option group to the system (or default) values."
-msgstr "指示某些设置已更改,并且不等于当前选项组的系统(或默认值)值。\n"
+msgstr ""
+"指示某些设置已更改,并且不等于当前选项组的系统(或默认值)值。\n"
 "单击\"锁定锁定\"图标可将当前选项组的所有设置重置为系统(或默认值)值。"
 
 #: src/slic3r/GUI/Tab.cpp:4315
@@ -8388,9 +8536,11 @@ msgstr "灰色点"
 
 #. TRN Description for "WHITE BULLET"
 #: src/slic3r/GUI/Tab.cpp:4317
-msgid "for the left button: indicates a non-system (or non-default) preset,\n"
+msgid ""
+"for the left button: indicates a non-system (or non-default) preset,\n"
 "for the right button: indicates that the settings hasn't been modified."
-msgstr "对于左侧按钮:指示非系统(或非默认)预设，\n"
+msgstr ""
+"对于左侧按钮:指示非系统(或非默认)预设，\n"
 "对于右侧按钮:指示设置尚未修改。"
 
 #: src/slic3r/GUI/Tab.cpp:4320
@@ -8399,9 +8549,11 @@ msgstr "后箭头"
 
 #. TRN Description for "BACK ARROW"
 #: src/slic3r/GUI/Tab.cpp:4322
-msgid "indicates that the settings were changed and are not equal to the last saved preset for the current option group.\n"
+msgid ""
+"indicates that the settings were changed and are not equal to the last saved preset for the current option group.\n"
 "Click the BACK ARROW icon to reset all settings for the current option group to the last saved preset."
-msgstr "指示设置已更改,不等于当前选项组的最后一个保存预设。\n"
+msgstr ""
+"指示设置已更改,不等于当前选项组的最后一个保存预设。\n"
 "单击\"后退箭头\"图标可将当前选项组的所有设置重置为上次保存的预设。"
 
 #: src/slic3r/GUI/Tab.cpp:4332
@@ -8409,9 +8561,11 @@ msgid "LOCKED LOCK icon indicates that the settings are the same as the system (
 msgstr "锁定锁定图标表示设置与当前选项组的系统(或默认值)值相同"
 
 #: src/slic3r/GUI/Tab.cpp:4334
-msgid "UNLOCKED LOCK icon indicates that some settings were changed and are not equal to the system (or default) values for the current option group.\n"
+msgid ""
+"UNLOCKED LOCK icon indicates that some settings were changed and are not equal to the system (or default) values for the current option group.\n"
 "Click to reset all settings for current option group to the system (or default) values."
-msgstr "锁定的锁图标指示某些设置已更改,并且不等于当前选项组的系统(或默认值)值。\n"
+msgstr ""
+"锁定的锁图标指示某些设置已更改,并且不等于当前选项组的系统(或默认值)值。\n"
 "单击此处可将当前选项组的所有设置重置为系统(或默认值)值。"
 
 #: src/slic3r/GUI/Tab.cpp:4337
@@ -8423,9 +8577,11 @@ msgid "WHITE BULLET icon indicates that the settings are the same as in the last
 msgstr "灰色点图标表示设置与当前选项组上次保存的预设中的设置相同。"
 
 #: src/slic3r/GUI/Tab.cpp:4342
-msgid "BACK ARROW icon indicates that the settings were changed and are not equal to the last saved preset for the current option group.\n"
+msgid ""
+"BACK ARROW icon indicates that the settings were changed and are not equal to the last saved preset for the current option group.\n"
 "Click to reset all settings for the current option group to the last saved preset."
-msgstr "后退箭头图标表示设置已更改，不等于当前选项组的最后保存预设。\n"
+msgstr ""
+"后退箭头图标表示设置已更改，不等于当前选项组的最后保存预设。\n"
 "单击此处可将当前选项组的所有设置重置为上次保存的预设。"
 
 #: src/slic3r/GUI/Tab.cpp:4348
@@ -8433,9 +8589,11 @@ msgid "LOCKED LOCK icon indicates that the value is the same as the system (or d
 msgstr "锁定锁定图标表示该值与系统(或默认值)值相同。"
 
 #: src/slic3r/GUI/Tab.cpp:4349
-msgid "UNLOCKED LOCK icon indicates that the value was changed and is not equal to the system (or default) value.\n"
+msgid ""
+"UNLOCKED LOCK icon indicates that the value was changed and is not equal to the system (or default) value.\n"
 "Click to reset current value to the system (or default) value."
-msgstr "锁定的锁 图标指示该值已更改,不等于系统(或默认值)值。\n"
+msgstr ""
+"锁定的锁 图标指示该值已更改,不等于系统(或默认值)值。\n"
 "单击以将当前值重置为系统(或默认值)值。"
 
 #: src/slic3r/GUI/Tab.cpp:4355
@@ -8443,9 +8601,11 @@ msgid "WHITE BULLET icon indicates that the value is the same as in the last sav
 msgstr "灰色点图标表示该值与上次保存的预设中的值相同。"
 
 #: src/slic3r/GUI/Tab.cpp:4356
-msgid "BACK ARROW icon indicates that the value was changed and is not equal to the last saved preset.\n"
+msgid ""
+"BACK ARROW icon indicates that the value was changed and is not equal to the last saved preset.\n"
 "Click to reset current value to the last saved preset."
-msgstr "后退箭头图标指示该值已更改，不等于上次保存的预设。\n"
+msgstr ""
+"后退箭头图标指示该值已更改，不等于上次保存的预设。\n"
 "单击以将当前值重置为上次保存的预设。"
 
 #: src/slic3r/GUI/Tab.cpp:4510 src/slic3r/GUI/Tab.cpp:4512
@@ -8473,10 +8633,12 @@ msgid "Automatic generation"
 msgstr "自动生成"
 
 #: src/slic3r/GUI/Tab.cpp:4758
-#, possible-boost-format
-msgid "\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
+#, boost-format
+msgid ""
+"\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
 "To enable \"%1%\", please switch off \"%2%\""
-msgstr "\"%1%'被禁用，因为\"%2%'在\"%3%'类别中处于启用状态。\n"
+msgstr ""
+"\"%1%'被禁用，因为\"%2%'在\"%3%'类别中处于启用状态。\n"
 "要启用\"%1%\"，请关闭\"%2%\""
 
 #: src/slic3r/GUI/Tab.cpp:4760 src/libslic3r/PrintConfig.cpp:3578
@@ -8543,10 +8705,12 @@ msgid "You will not be asked about the unsaved changes in presets the next time 
 msgstr "下次切换预设时，不会询问预设中未保存的更改"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:900
-msgid "You will not be asked about the unsaved changes in presets the next time you: \n"
+msgid ""
+"You will not be asked about the unsaved changes in presets the next time you: \n"
 "- Closing PrusaSlicer while some presets are modified,\n"
 "- Loading a new project while some presets are modified"
-msgstr "下次您: \n"
+msgstr ""
+"下次您: \n"
 "-在修改某些预设时关闭 PrusaSlicer，\n"
 "-在修改某些预设时加载新项目时，将不会询问预设中未保存的更改"
 
@@ -8555,8 +8719,9 @@ msgid "PrusaSlicer will remember your action."
 msgstr "普鲁萨斯勒会记住你的行为。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:904
-#, possible-boost-format
-msgid "Visit \"Preferences\" and check \"%1%\"\n"
+#, boost-format
+msgid ""
+"Visit \"Preferences\" and check \"%1%\"\n"
 "to be asked about unsaved changes again."
 msgstr "访问“首选项”并选中“%1%”，再次询问未保存的更改。"
 
@@ -8586,12 +8751,12 @@ msgid "Transfer the selected settings to the newly selected preset."
 msgstr "将选定的设置转换为新选定的预设。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:947
-#, possible-boost-format
+#, boost-format
 msgid "Save the selected options to preset \"%1%\"."
 msgstr "将所选选项保存到预设\"%1%\"。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:948
-#, possible-boost-format
+#, boost-format
 msgid "Transfer the selected options to the newly selected preset \"%1%\"."
 msgstr "将所选选项转移到新选择的预设\"%1%\"。"
 
@@ -8601,17 +8766,17 @@ msgid_plural "The following presets were modified"
 msgstr[0] "修改了以下预设"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1230
-#, possible-boost-format
+#, boost-format
 msgid "Preset \"%1%\" has the following unsaved changes:"
 msgstr "预设\"%1%\"有以下未保存的更改:"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1234
-#, possible-boost-format
+#, boost-format
 msgid "Preset \"%1%\" is not compatible with the new printer profile and it has the following unsaved changes:"
 msgstr "预设\"%1%\"与新打印机配置文件不兼容，它有以下未保存的更改:"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1235
-#, possible-boost-format
+#, boost-format
 msgid "Preset \"%1%\" is not compatible with the new print profile and it has the following unsaved changes:"
 msgstr "预设\"%1%\"与新的打印配置文件不兼容，它有以下未保存的更改:"
 
@@ -8649,9 +8814,11 @@ msgid "Presets are the same"
 msgstr "预设是一样的"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1659
-msgid "Presets are different.\n"
+msgid ""
+"Presets are different.\n"
 "Click this button to select the same preset for the right and left preset."
-msgstr "预设是不同的。\n"
+msgstr ""
+"预设是不同的。\n"
 "单击此按钮为左右预设选择相同的预设。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1683
@@ -8667,7 +8834,7 @@ msgid "Update available"
 msgstr "更新可用"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:37
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "New version of %s is available"
 msgstr "新版本 %s 可用"
 
@@ -8705,9 +8872,11 @@ msgid "Configuration update"
 msgstr "配置更新"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:95
-msgid "PrusaSlicer is not using the newest configuration available.\n"
+msgid ""
+"PrusaSlicer is not using the newest configuration available.\n"
 "Configuration Wizard may not offer the latest printers, filaments and SLA materials to be installed."
-msgstr "PrusaSlicer 未使用可用的最新配置。\n"
+msgstr ""
+"PrusaSlicer 未使用可用的最新配置。\n"
 "配置向导可能不提供要安装的最新打印机、耗材和 SLA 材料。"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:97
@@ -8715,12 +8884,14 @@ msgid "Configuration update is available"
 msgstr "配置更新可用"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:100
-msgid "Would you like to install it?\n"
+msgid ""
+"Would you like to install it?\n"
 "\n"
 "Note that a full configuration snapshot will be created first. It can then be restored at any time should there be a problem with the new version.\n"
 "\n"
 "Updated configuration bundles:"
-msgstr "是否安装它？\n"
+msgstr ""
+"是否安装它？\n"
 "\n"
 "请注意，将首先创建完整的配置快照。然后，如果新版本出现问题，可以随时恢复它。\n"
 "\n"
@@ -8739,7 +8910,7 @@ msgid "Don't install"
 msgstr "不要安装"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:157 src/slic3r/GUI/UpdateDialogs.cpp:212
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s incompatibility"
 msgstr "%s 不兼容"
 
@@ -8748,41 +8919,45 @@ msgid "You must install a configuration update."
 msgstr "您必须安装配置更新。"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:160
-#, possible-c-format, possible-boost-format
-msgid "%s will now start updates. Otherwise it won't be able to start.\n"
+#, c-format, boost-format
+msgid ""
+"%s will now start updates. Otherwise it won't be able to start.\n"
 "\n"
 "Note that a full configuration snapshot will be created first. It can then be restored at any time should there be a problem with the new version.\n"
 "\n"
 "Updated configuration bundles:"
-msgstr "%s现在将开始更新。否则它将无法启动。\n"
+msgstr ""
+"%s现在将开始更新。否则它将无法启动。\n"
 "\n"
 "请注意，将首先创建完整的配置快照。如果新版本出现问题，可以随时恢复。\n"
 "\n"
 "更新的配置包:"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:200 src/slic3r/GUI/UpdateDialogs.cpp:247
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Exit %s"
 msgstr "退出 %s"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:213
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s configuration is incompatible"
 msgstr "%s 配置不兼容"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:216
-#, possible-c-format, possible-boost-format
-msgid "This version of %s is not compatible with currently installed configuration bundles.\n"
+#, c-format, boost-format
+msgid ""
+"This version of %s is not compatible with currently installed configuration bundles.\n"
 "This probably happened as a result of running an older %s after using a newer one.\n"
 "\n"
 "You may either exit %s and try again with a newer version, or you may re-run the initial configuration. Doing so will create a backup snapshot of the existing configuration before installing files compatible with this %s."
-msgstr "此版本的%s与当前安装的配置包不兼容。\n"
+msgstr ""
+"此版本的%s与当前安装的配置包不兼容。\n"
 "这可能是因为在使用较新的后运行较旧的%s。\n"
 "\n"
 "您可以退出%s并使用较新版本重试，也可以重新运行初始配置。这样做将在安装与此%s兼容的文件之前创建现有配置的备份快照。"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:225
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "This %s version: %s"
 msgstr "此 %s 版本:%s"
 
@@ -8795,14 +8970,16 @@ msgid "Re-configure"
 msgstr "重新配置"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:265
-#, possible-c-format, possible-boost-format
-msgid "%s now uses an updated configuration structure.\n"
+#, c-format, boost-format
+msgid ""
+"%s now uses an updated configuration structure.\n"
 "\n"
 "So called 'System presets' have been introduced, which hold the built-in default settings for various printers. These System presets cannot be modified, instead, users now may create their own presets inheriting settings from one of the System presets.\n"
 "An inheriting preset may either inherit a particular value from its parent or override it with a customized value.\n"
 "\n"
 "Please proceed with the %s that follows to set up the new presets and to choose whether to enable automatic preset updates."
-msgstr "%s 现在使用更新的配置结构。\n"
+msgstr ""
+"%s 现在使用更新的配置结构。\n"
 "\n"
 "所谓的\"系统预设\"已经引入,它保存各种打印机的内置默认设置。无法修改这些系统预设,相反,用户现在可以创建自己的预设,从其中一个系统预设继承设置。\n"
 "继承预设可以从其父级继承特定值,也可以使用自定义值覆盖该值。\n"
@@ -8822,7 +8999,7 @@ msgid "No updates available"
 msgstr "没有可用的更新"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:304
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "%s has no configuration updates available."
 msgstr "%s没有可用的配置更新。"
 
@@ -8831,10 +9008,12 @@ msgid "Ramming customization"
 msgstr "冲击自定义"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:54
-msgid "Ramming denotes the rapid extrusion just before a tool change in a single-extruder MM printer. Its purpose is to properly shape the end of the unloaded filament so it does not prevent insertion of the new filament and can itself be reinserted later. This phase is important and different materials can require different extrusion speeds to get the good shape. For this reason, the extrusion rates during ramming are adjustable.\n"
+msgid ""
+"Ramming denotes the rapid extrusion just before a tool change in a single-extruder MM printer. Its purpose is to properly shape the end of the unloaded filament so it does not prevent insertion of the new filament and can itself be reinserted later. This phase is important and different materials can require different extrusion speeds to get the good shape. For this reason, the extrusion rates during ramming are adjustable.\n"
 "\n"
 "This is an expert-level setting, incorrect adjustment will likely lead to jams, extruder wheel grinding into filament etc."
-msgstr "冲击表示在单挤出机 MM 打印机的挤出机更换之前的快速挤出。它的目的是正确地塑造卸载的耗材的末端, 这样它就不会导致插入新的耗材卡住, 并且原耗材本身可以再重新插入。这个阶段很重要, 不同的材料可能需要不同的挤压速度, 以获得良好的形状。因此, 夯实冲击过程中的挤出速率是可调的。\n"
+msgstr ""
+"冲击表示在单挤出机 MM 打印机的挤出机更换之前的快速挤出。它的目的是正确地塑造卸载的耗材的末端, 这样它就不会导致插入新的耗材卡住, 并且原耗材本身可以再重新插入。这个阶段很重要, 不同的材料可能需要不同的挤压速度, 以获得良好的形状。因此, 夯实冲击过程中的挤出速率是可调的。\n"
 "\n"
 "这是一个专家级设置, 不正确的调整很可能会导致卡料, 挤出机砂轮磨耗材等。"
 
@@ -8891,10 +9070,12 @@ msgid "From"
 msgstr "从"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:442
-msgid "Switching to simple settings will discard changes done in the advanced mode!\n"
+msgid ""
+"Switching to simple settings will discard changes done in the advanced mode!\n"
 "\n"
 "Do you want to proceed?"
-msgstr "切换到简单设置将放弃在高级模式下完成的更改！\n"
+msgstr ""
+"切换到简单设置将放弃在高级模式下完成的更改！\n"
 "\n"
 "是否要继续？"
 
@@ -8907,18 +9088,18 @@ msgid "Show advanced settings"
 msgstr "显示高级设置"
 
 #: src/slic3r/GUI/wxExtensions.cpp:644
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Switch to the %s mode"
 msgstr "切换到 %s 模式"
 
 #: src/slic3r/GUI/wxExtensions.cpp:645
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Current mode is %s"
 msgstr "当前模式为 %s"
 
 #: src/slic3r/Utils/AstroBox.cpp:69 src/slic3r/Utils/OctoPrint.cpp:141
 #: src/slic3r/Utils/Repetier.cpp:69
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "Mismatched type of print host: %s"
 msgstr "不匹配的打印主机类型：%s"
 
@@ -9061,7 +9242,7 @@ msgid "Could not connect to PrusaLink"
 msgstr "无法连接到 PrusaLink"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:61
-#, possible-boost-format
+#, boost-format
 msgid "Copying of file %1% to %2% failed: %3%"
 msgstr "将文件%1%复制到%2%失败：%3%"
 
@@ -9071,9 +9252,11 @@ msgid "Continue and install configuration updates?"
 msgstr "是否继续并安装配置更新？"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:777
-msgid "Configuration Updates causes a lost of preset modification.\n"
+msgid ""
+"Configuration Updates causes a lost of preset modification.\n"
 "So, check unsaved changes and save them if necessary."
-msgstr "配置更新会导致预设修改丢失。\n"
+msgstr ""
+"配置更新会导致预设修改丢失。\n"
 "So，检查未保存的更改，必要时保存。"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:779
@@ -9081,17 +9264,17 @@ msgid "Updating"
 msgstr "更新"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:808
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "requires min. %s and max. %s"
 msgstr "需要最小 %s 和最大 %s"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:812
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "requires min. %s"
 msgstr "需要最小 %s"
 
 #: src/slic3r/Utils/PresetUpdater.cpp:815
-#, possible-c-format, possible-boost-format
+#, c-format, boost-format
 msgid "requires max. %s"
 msgstr "需要最大 %s"
 
@@ -9100,12 +9283,12 @@ msgid "Could not detect system SSL certificate store. PrusaSlicer will be unable
 msgstr "无法检测到系统 SSL 证书存储。PrusaSlicer 将无法建立安全的网络连接。"
 
 #: src/slic3r/Utils/Http.cpp:78
-#, possible-boost-format
+#, boost-format
 msgid "PrusaSlicer detected system SSL certificate store in: %1%"
 msgstr "PrusaSlicer 在以下位置检测到系统 SSL 证书存储：%1%"
 
 #: src/slic3r/Utils/Http.cpp:82
-#, possible-boost-format
+#, boost-format
 msgid "To specify the system certificate store manually, please set the %1% environment variable to the correct CA bundle and restart the application."
 msgstr "要手动指定系统证书存储，请将%1%环境变量设置为正确的 CA 绑定，然后重新启动应用程序。"
 
@@ -9130,27 +9313,33 @@ msgid "Note: Repetier version at least 0.90.0 is required."
 msgstr "注：需要至少0.90.0的 Repetier 版本。"
 
 #: src/slic3r/Utils/Repetier.cpp:246
-#, possible-boost-format
-msgid "HTTP status: %1%\n"
+#, boost-format
+msgid ""
+"HTTP status: %1%\n"
 "Message body: \"%2%\""
-msgstr "HTTP 状态：%1%\n"
+msgstr ""
+"HTTP 状态：%1%\n"
 "消息正文：\"%2%'"
 
 #: src/slic3r/Utils/Repetier.cpp:253
-#, possible-boost-format
-msgid "Parsing of host response failed.\n"
+#, boost-format
+msgid ""
+"Parsing of host response failed.\n"
 "Message body: \"%1%\"\n"
 "Error: \"%2%\""
-msgstr "解析主机响应失败。\n"
+msgstr ""
+"解析主机响应失败。\n"
 "消息正文：\"%1%\"\n"
 "错误：\"%2%'"
 
 #: src/slic3r/Utils/Repetier.cpp:266
-#, possible-boost-format
-msgid "Enumeration of host printers failed.\n"
+#, boost-format
+msgid ""
+"Enumeration of host printers failed.\n"
 "Message body: \"%1%\"\n"
 "Error: \"%2%\""
-msgstr "主机打印机枚举失败。\n"
+msgstr ""
+"主机打印机枚举失败。\n"
 "消息正文：\"%1%\"\n"
 "错误：\"%2%'"
 
@@ -9179,7 +9368,7 @@ msgid "There is an object with no extrusions in the first layer."
 msgstr "第一层中有一个没有拉伸的对象。"
 
 #: src/libslic3r/GCode.cpp:570
-#, possible-boost-format
+#, boost-format
 msgid "Empty layer between %1% and %2%."
 msgstr "空层介于%1%和%2%之间。"
 
@@ -9188,7 +9377,7 @@ msgid "(Some lines not shown)"
 msgstr "（某些行未显示）"
 
 #: src/libslic3r/GCode.cpp:575
-#, possible-boost-format
+#, boost-format
 msgid "Object name: %1%"
 msgstr "对象名称：%1%"
 
@@ -9225,12 +9414,12 @@ msgid "Mixed"
 msgstr "混合"
 
 #: src/libslic3r/Flow.cpp:61
-#, possible-boost-format
+#, boost-format
 msgid "Cannot calculate extrusion width for %1%: Variable \"%2%\" not accessible."
 msgstr "无法计算%1%的拉伸宽度：无法访问变量\"%2%\"。"
 
 #: src/libslic3r/Format/3mf.cpp:1734
-#, possible-boost-format
+#, boost-format
 msgid "The selected 3mf file has been saved with a newer version of %1% and is not compatible."
 msgstr "所选 3mf 文件已使用较新版本的%1%保存，不兼容。"
 
@@ -9247,17 +9436,19 @@ msgid "The selected 3MF contains multi-material painted object using a newer ver
 msgstr "所选 3MF 包含使用较新版本的 PrusaSlicer 绘制的多材质对象，不兼容。"
 
 #: src/libslic3r/Format/AMF.cpp:993
-#, possible-boost-format
+#, boost-format
 msgid "The selected amf file has been saved with a newer version of %1% and is not compatible."
 msgstr "所选 amf 文件已使用较新版本的%1%保存，不兼容。"
 
 #: src/libslic3r/GCode/PostProcessor.cpp:289
-#, possible-boost-format
-msgid "Post-processing script %1% failed.\n"
+#, boost-format
+msgid ""
+"Post-processing script %1% failed.\n"
 "\n"
 "The post-processing script is expected to change the G-code file %2% in place, but the G-code file was deleted and likely saved under a new name.\n"
 "Please adjust the post-processing script to change the G-code in place and consult the manual on how to optionally rename the post-processed G-code file.\n"
-msgstr "后期处理脚本%1%失败。\n"
+msgstr ""
+"后期处理脚本%1%失败。\n"
 "\n"
 "后处理脚本预计会将 G-Code 文件%2%更改到位，但 G-Code 文件已被删除，并可能以新名称保存。\n"
 "请调整后处理脚本以就地更改 G-Code ，并参考手册，了解如何可选地重命名后处理 G-Code 文件。\n"
@@ -9459,12 +9650,12 @@ msgid "One or more object were assigned an extruder that the printer does not ha
 msgstr "为一个或多个对象分配了打印机没有的挤出机。"
 
 #: src/libslic3r/Print.cpp:576
-#, possible-boost-format
+#, boost-format
 msgid "%1%=%2% mm is too low to be printable at a layer height %3% mm"
 msgstr "%1%=%2%mm 太低，在图层高度 %3%mm 时无法打印"
 
 #: src/libslic3r/Print.cpp:579
-#, possible-boost-format
+#, boost-format
 msgid "Excessive %1%=%2% mm to be printable with a nozzle diameter %3% mm"
 msgstr "过量 %1%=%2%mm 可打印，使用喷嘴直径 %3%mm"
 
@@ -10490,7 +10681,7 @@ msgstr "风扇速度将从“禁用第一层”的零线性上升到“全风扇
 
 #: src/libslic3r/PrintConfig.cpp:1262
 msgid "Fuzzy skin type."
-msgstr "毛茸茸的皮肤类型。"
+msgstr "模糊皮肤类型。"
 
 #: src/libslic3r/PrintConfig.cpp:1269
 msgid "Outside walls"
@@ -10502,7 +10693,7 @@ msgstr "所有的墙"
 
 #: src/libslic3r/PrintConfig.cpp:1275
 msgid "Fuzzy skin thickness"
-msgstr "模糊表皮厚度"
+msgstr "模糊皮肤厚度"
 
 #: src/libslic3r/PrintConfig.cpp:1277
 msgid "The maximum distance that each skin point can be offset (both ways), measured perpendicular to the perimeter wall."
@@ -10510,11 +10701,11 @@ msgstr "每个蒙皮点可以偏移的最大距离（双向），垂直于周界
 
 #: src/libslic3r/PrintConfig.cpp:1285
 msgid "Fuzzy skin point distance"
-msgstr "模糊集肤点距离"
+msgstr "模糊皮肤点距离"
 
 #: src/libslic3r/PrintConfig.cpp:1287
 msgid "Perimeters will be split into multiple segments by inserting Fuzzy skin points. Lowering the Fuzzy skin point distance will increase the number of randomly offset points on the perimeter wall."
-msgstr "通过插入模糊皮肤点，周长将被分割成多个部分。降低“模糊蒙皮点距离”（Fuzzy skin point distance）将增加周界墙上随机偏移的点的数量。"
+msgstr "通过插入模糊皮肤点，周长将被分割成多个部分。降低“模糊皮肤点距离”（Fuzzy skin point distance）将增加周界墙上随机偏移的点的数量。"
 
 #: src/libslic3r/PrintConfig.cpp:1295
 msgid "Fill gaps"
@@ -10902,10 +11093,12 @@ msgid "Maximum acceleration when extruding"
 msgstr "挤出时的最大加速度"
 
 #: src/libslic3r/PrintConfig.cpp:1719
-msgid "Maximum acceleration when extruding (M204 P)\n"
+msgid ""
+"Maximum acceleration when extruding (M204 P)\n"
 "\n"
 "Marlin (legacy) firmware flavor will use this also as travel acceleration (M204 T)."
-msgstr "挤压时的最大加速度（M204P）\n"
+msgstr ""
+"挤压时的最大加速度（M204P）\n"
 "\n"
 "Marlin（旧版）固件版本也将使用它作为行程加速度（M204T）。"
 
@@ -11351,11 +11544,13 @@ msgid "Draft shield"
 msgstr "风挡"
 
 #: src/libslic3r/PrintConfig.cpp:2266
-msgid "With draft shield active, the skirt will be printed skirt_distance from the object, possibly intersecting brim.\n"
+msgid ""
+"With draft shield active, the skirt will be printed skirt_distance from the object, possibly intersecting brim.\n"
 "Enabled = skirt is as tall as the highest printed object.\n"
 "Limited = skirt is as tall as specified by skirt_height.\n"
 "This is useful to protect an ABS or ASA print from warping and detaching from print bed due to wind draft."
-msgstr "在拔模护罩处于活动状态时，裙子将在距离物体一定距离（可能与边缘相交）处打印。\n"
+msgstr ""
+"在拔模护罩处于活动状态时，裙子将在距离物体一定距离（可能与边缘相交）处打印。\n"
 "Enabled=裙子与最高的印刷品一样高。\n"
 "Limited=裙摆的高度与裙摆高度相同。\n"
 "这有助于保护 ABS 或 ASA 印刷品不因风的牵伸而翘曲或从打印床上脱落。"
@@ -11835,9 +12030,11 @@ msgid "Z travel"
 msgstr "行程"
 
 #: src/libslic3r/PrintConfig.cpp:2897
-msgid "Speed for movements along the Z axis.\n"
+msgid ""
+"Speed for movements along the Z axis.\n"
 "When set to zero, the value is ignored and regular travel speed is used instead."
-msgstr "沿Z轴移动的速度。\n"
+msgstr ""
+"沿Z轴移动的速度。\n"
 "当设置为零时，该值将被忽略，而使用常规行驶速度。"
 
 #: src/libslic3r/PrintConfig.cpp:2905
@@ -12069,10 +12266,12 @@ msgid "Area fill"
 msgstr "区域填充"
 
 #: src/libslic3r/PrintConfig.cpp:3176
-msgid "The percentage of the bed area. \n"
+msgid ""
+"The percentage of the bed area. \n"
 "If the print area exceeds the specified value, \n"
 "then a slow tilt will be used, otherwise - a fast tilt"
-msgstr "床面积的百分比。 \n"
+msgstr ""
+"床面积的百分比。 \n"
 "如果打印区域超过指定值， \n"
 "然后缓慢倾斜将被使用，否则 - 快速倾斜"
 
@@ -12758,9 +12957,11 @@ msgid "Logging level"
 msgstr "日志级别"
 
 #: src/libslic3r/PrintConfig.cpp:4458
-msgid "Sets logging sensitivity. 0:fatal, 1:error, 2:warning, 3:info, 4:debug, 5:trace\n"
+msgid ""
+"Sets logging sensitivity. 0:fatal, 1:error, 2:warning, 3:info, 4:debug, 5:trace\n"
 "For example. loglevel=2 logs fatal, error and warning level messages."
-msgstr "设置日志敏感度。0:致命、1:错误、2:警告、3:信息、4:调试、5:跟踪\n"
+msgstr ""
+"设置日志敏感度。0:致命、1:错误、2:警告、3:信息、4:调试、5:跟踪\n"
 "例如。loglevel=2记录致命、错误和警告级别的消息。"
 
 #: src/libslic3r/PrintConfig.cpp:4464
@@ -12788,200 +12989,267 @@ msgid "Generating support material"
 msgstr "生成支撑材料"
 
 #: resources/data/hints.ini: [hint:Fuzzy skin]
-msgid "Fuzzy skin\n"
+msgid ""
+"Fuzzy skin\n"
 "Did you know that you can create rough fibre-like texture on the sides of your models using the<a>Fuzzy skin</a>feature? You can also use modifiers to apply fuzzy-skin only to a portion of your model."
-msgstr "模糊皮肤\n"
+msgstr ""
+"模糊皮肤\n"
 "您知道吗，您可以使用<a>模糊皮肤</a>功能在模型的侧面创建粗糙的纤维状纹理？也可以使用修改器仅将模糊蒙皮应用于模型的一部分。"
 
 #: resources/data/hints.ini: [hint:Shapes gallery]
-msgid "Shapes gallery\n"
+msgid ""
+"Shapes gallery\n"
 "Did you know that PrusaSlicer has a Shapes Gallery? You can use the included models as modifiers, negative volumes or as printable objects. Right-click the platter and select<a>Add Shape - Gallery</a>."
-msgstr "形状库\n"
+msgstr ""
+"形状库\n"
 "您知道 PrusaSlicer 有一个形状库吗？可以将包含的模型用作修改器、负体积或可打印对象。右键单击盘子并选择添加形状-图库。"
 
 #: resources/data/hints.ini: [hint:Arrange settings]
-msgid "Arrange settings\n"
+msgid ""
+"Arrange settings\n"
 "Did you know that you can right-click the<a>Arrange icon</a>to adjust the size of the gap between objects and to allow automatic rotations?"
-msgstr "排列设置\n"
+msgstr ""
+"排列设置\n"
 "您是否知道可以右键单击<a>排列图标</a>来调整对象之间的间距大小并允许自动旋转？"
 
 #: resources/data/hints.ini: [hint:Negative volume]
-msgid "Negative volume\n"
+msgid ""
+"Negative volume\n"
 "Did you know that you can subtract one mesh from another using the Negative volume modifier? That way you can, for example, create easily resizable holes directly in PrusaSlicer. Read more in the documentation. (Requires Advanced or Expert mode.)"
-msgstr "负体积\n"
+msgstr ""
+"负体积\n"
 "您知道可以使用负体积修改器从一个网格中减去另一个网格吗？例如，通过这种方式，您可以直接在 PrusaSlicer 中创建易于调整大小的孔。请阅读文档中的更多内容。（需要高级或专家模式。）"
 
 #: resources/data/hints.ini: [hint:Simplify mesh]
-msgid "Simplify mesh\n"
+msgid ""
+"Simplify mesh\n"
 "Did you know that you can reduce the number of triangles in a mesh using the Simplify mesh feature? Right-click the model and select Simplify model. Read more in the documentation."
-msgstr "简化网格\n"
+msgstr ""
+"简化网格\n"
 "您知道使用简化网格功能可以减少网格中三角形的数量吗？在模型上单击鼠标右键，然后选择“简化模型”。请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Reload from disk]
-msgid "Reload from disk\n"
+msgid ""
+"Reload from disk\n"
 "Did you know that if you created a newer version of your model, you can simply reload it in PrusaSlicer? Right-click the model in the 3D view and choose Reload from disk. Read more in the documentation."
-msgstr "从磁盘重新加载\n"
+msgstr ""
+"从磁盘重新加载\n"
 "您是否知道，如果您创建了新版本的模型，只需在 PrusaSlicer 中重新加载即可？在三维视图中的模型上单击鼠标右键，然后选择“从磁盘重新加载”。请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Hiding sidebar]
-msgid "Hiding sidebar\n"
+msgid ""
+"Hiding sidebar\n"
 "Did you know that you can hide the right sidebar using the shortcut <b>Shift+Tab</b>? You can also enable the icon for this from the<a>Preferences</a>."
-msgstr "隐藏侧边栏\n"
+msgstr ""
+"隐藏侧边栏\n"
 "您是否知道可以使用快捷方式<b>Shift+Tab</b>隐藏右侧侧边栏？您还可以从<a>首选项中为此启用图标。"
 
 #: resources/data/hints.ini: [hint:Perspective camera]
-msgid "Perspective camera\n"
+msgid ""
+"Perspective camera\n"
 "Did you know that you can use the <b>K</b> key to quickly switch between an orthographic and perspective camera?"
-msgstr "透视相机\n"
+msgstr ""
+"透视相机\n"
 "您知道可以使用<b>K</b>键在正交相机和透视相机之间快速切换吗？"
 
 #: resources/data/hints.ini: [hint:Camera Views]
-msgid "Camera Views\n"
+msgid ""
+"Camera Views\n"
 "Did you know that you can use the number keys <b>0-6</b> to quickly switch between predefined camera angles?"
-msgstr "摄像机视图\n"
+msgstr ""
+"摄像机视图\n"
 "您是否知道可以使用数字键<b>0-6</b>在预定义的摄像机角度之间快速切换？"
 
 #: resources/data/hints.ini: [hint:Place on face]
-msgid "Place on face\n"
+msgid ""
+"Place on face\n"
 "Did you know that you can quickly orient a model so that one of its faces sits on the print bed? Select the<a>Place on face</a>function or press the <b>F</b> key."
-msgstr "面上放置\n"
+msgstr ""
+"面上放置\n"
 "您是否知道可以快速确定模型的方向，使其一个面位于打印床上？选择面上放置功能或按<b>F</b>键。"
 
 #: resources/data/hints.ini: [hint:Set number of instances]
-msgid "Set number of instances\n"
+msgid ""
+"Set number of instances\n"
 "Did you know that you can right-click a model and set an exact number of instances instead of copy-pasting it several times?"
-msgstr "设置实例数\n"
+msgstr ""
+"设置实例数\n"
 "您是否知道可以在模型上单击鼠标右键，设置实例的确切数量，而不是多次复制粘贴？"
 
 #: resources/data/hints.ini: [hint:Combine infill]
-msgid "Combine infill\n"
+msgid ""
+"Combine infill\n"
 "Did you know that you can print the infill with a higher layer height compared to perimeters to save print time using the setting<a>Combine infill every</a>."
-msgstr "组合内嵌\n"
+msgstr ""
+"组合内嵌\n"
 "您是否知道可以使用设置<a>组合内嵌间隔</a>以比周长更高的层高打印内嵌，以节省打印时间。"
 
 #: resources/data/hints.ini: [hint:Variable layer height]
-msgid "Variable layer height\n"
+msgid ""
+"Variable layer height\n"
 "Did you know that you can print different regions of your model with a different layer height and smooth the transitions between them? Try the<a>Variable layer height tool</a>. (Not available for SLA printers.)"
-msgstr "可变层高度\n"
+msgstr ""
+"可变层高度\n"
 "您是否知道可以使用不同的层高度打印模型的不同区域，并平滑它们之间的过渡？试试<a>可变层高度工具</a>。（不适用于 SLA 打印机。）"
 
 #: resources/data/hints.ini: [hint:Undo/redo history]
-msgid "Undo/redo history\n"
+msgid ""
+"Undo/redo history\n"
 "Did you know that you can right-click the<a>undo/redo arrows</a>to see the history of changes and to undo or redo several actions at once?"
-msgstr "撤消/重做历史记录\n"
+msgstr ""
+"撤消/重做历史记录\n"
 "您是否知道可以右键单击<a>撤消/重做箭头</a>查看更改历史记录，并同时撤消或重做多个操作？"
 
 #: resources/data/hints.ini: [hint:Different layer height for each model]
-msgid "Different layer height for each model\n"
+msgid ""
+"Different layer height for each model\n"
 "Did you know that you can print each model on the plater with a different layer height? Right-click the model in the 3D view, choose Layers and Perimeters and adjust the values in the right panel. Read more in the documentation."
-msgstr "每个模型的层高不同\n"
+msgstr ""
+"每个模型的层高不同\n"
 "您知道可以在制版机上以不同的层高打印每个模型吗？在三维视图中的模型上单击鼠标右键，选择“层”和“周长”，然后调整右侧面板中的值。请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Solid infill threshold area]
-msgid "Solid infill threshold area\n"
+msgid ""
+"Solid infill threshold area\n"
 "Did you know that you can make parts of your model with a small cross-section be filled with solid infill automatically? Set the<a>Solid infill threshold area</a>. (Expert mode only.)"
-msgstr "实体填充阈值区域\n"
+msgstr ""
+"实体填充阈值区域\n"
 "您是否知道可以用实体填充自动填充模型中横截面较小的部分？设置<a>实体填充阈值区域</a>。（仅限专家模式。）"
 
 #: resources/data/hints.ini: [hint:Search functionality]
-msgid "Search functionality\n"
+msgid ""
+"Search functionality\n"
 "Did you know that you use the<a>Search</a>tool to quickly find a specific PrusaSlicer setting? Or use the familiar shortcut <b>Ctrl+F</b>."
-msgstr "搜索功能\n"
+msgstr ""
+"搜索功能\n"
 "您是否知道使用<a>搜索</a>工具可以快速找到特定的 PrusaSlicer 设置？或者使用熟悉的快捷键<b>Ctrl+F</b>。"
 
 #: resources/data/hints.ini: [hint:Box selection]
-msgid "Box selection\n"
+msgid ""
+"Box selection\n"
 "Did you know that you can do a box selection with Shift+Mouse drag? You can also box-deselect objects with <b>Alt+Mouse drag</b>."
-msgstr "框选择\n"
+msgstr ""
+"框选择\n"
 "您知道可以使用 Shift+鼠标拖动进行框选择吗？您还可以通过按住 Alt 键并拖动鼠标来取消选择对象。"
 
-#: resources/data/hints.ini: [hint:Zoom on selected objects or on all objects if none selected]
-msgid "Zoom on selected objects or on all objects if none selected\n"
+#: resources/data/hints.ini: [hint:Zoom on selected objects or all if none
+#: selected]
+msgid ""
+"Zoom on selected objects or on all objects if none selected\n"
 "Did you know that you can zoom in on selected objects by pressing the <b>Z</b> key? If none are selected, the camera will zoom on all objects in the scene."
-msgstr "放大选定对象或所有对象（如果未选定）\n"
+msgstr ""
+"放大选定对象或所有对象（如果未选定）\n"
 "您是否知道可以通过按<b>Z</b>键放大选定对象？如果未选择任何对象，相机将缩放场景中的所有对象。"
 
 #: resources/data/hints.ini: [hint:Printable toggle]
-msgid "Printable toggle\n"
+msgid ""
+"Printable toggle\n"
 "Did you know that you can disable the G-code generation for the selected model without having to move or delete it? Toggle the Printable property of a model from the Right-click context menu."
-msgstr "可打印切换\n"
+msgstr ""
+"可打印切换\n"
 "您是否知道可以禁用所选型号的 G-Code 生成，而无需移动或删除它？从右键单击关联菜单切换模型的可打印属性。"
 
 #: resources/data/hints.ini: [hint:Mirror]
-msgid "Mirror\n"
+msgid ""
+"Mirror\n"
 "Did you know that you can mirror the selected model to create a reversed version of it? Right-click the model, select Mirror and pick the mirror axis."
-msgstr "镜像\n"
+msgstr ""
+"镜像\n"
 "您知道可以镜像所选模型以创建其反转版本吗？在模型上单击鼠标右键，选择“镜像”，然后拾取镜像轴。"
 
-#: resources/data/hints.ini: [hint:PageUp / PageDown quick rotation by 45 degrees]
-msgid "PageUp / PageDown quick rotation by 45 degrees\n"
+#: resources/data/hints.ini: [hint:PageUp / PageDown quick rotation by 45
+#: degrees]
+msgid ""
+"PageUp / PageDown quick rotation by 45 degrees\n"
 "Did you know that you can quickly rotate selected models by 45 degrees around the Z-axis clockwise or counter-clockwise by pressing <b>Page Up</b> or <b>Page Down</b> respectively?"
-msgstr "PageUp/PageDown 快速旋转 45 度\n"
+msgstr ""
+"PageUp/PageDown 快速旋转 45 度\n"
 "您是否知道可以分别按<b>向上翻页</b>或<b>向下翻页</b>以顺时针或逆时针方向将选定的模型快速旋转 45 度？"
 
 #: resources/data/hints.ini: [hint:Load config from G-code]
-msgid "Load config from G-code\n"
+msgid ""
+"Load config from G-code\n"
 "Did you know that you can use File-Import-Import Config to load print, filament and printer profiles from an existing G-code file? Similarly, you can use File-Import-Import SL1 / SL1S archive, which also lets you reconstruct 3D models from the voxel data."
-msgstr "从 G-Code 加载配置\n"
+msgstr ""
+"从 G-Code 加载配置\n"
 "您是否知道可以使用文件导入配置从现有 G-Code 文件加载打印、耗材和打印机配置文件？类似地，您可以使用 文件-导入-导入 SL1/SL1S 档案，它还允许您从体素数据重建三维模型。"
 
 #: resources/data/hints.ini: [hint:Ironing]
-msgid "Ironing\n"
+msgid ""
+"Ironing\n"
 "Did you know that you can smooth top surfaces of prints using Ironing? The nozzle will run a special second infill phase at the same layer to fill in holes and flatten any lifted plastic. Read more in the documentation. (Requires Advanced or Expert mode.)"
-msgstr "熨烫\n"
+msgstr ""
+"熨烫\n"
 "您知道吗，熨烫可以使印花的上表面光滑？喷嘴将在同一层上运行一个特殊的第二填充阶段，以填充孔并压平任何提升的塑料。请阅读文档中的更多内容。（需要高级或专家模式。）"
 
 #: resources/data/hints.ini: [hint:Paint-on supports]
-msgid "Paint-on supports\n"
+msgid ""
+"Paint-on supports\n"
 "Did you know that you can paint directly on the object and select areas, where supports should be enforced or blocked? Try the<a>Paint-on supports</a>feature. (Requires Advanced or Expert mode.)"
-msgstr "在支架上绘制\n"
+msgstr ""
+"在支架上绘制\n"
 "您是否知道可以直接在对象上绘制，并选择应在哪些区域强制或阻止支架？尝试在支架上绘制功能。（需要高级或专家模式。）"
 
 #: resources/data/hints.ini: [hint:Paint-on seam]
-msgid "Paint-on seam\n"
+msgid ""
+"Paint-on seam\n"
 "Did you know that you can paint directly on the object and select where to place the start/endpoint of each perimeter loop? Try the<a>Seam painting</a>feature. (Requires Advanced or Expert mode.)"
-msgstr "接缝绘制\n"
+msgstr ""
+"接缝绘制\n"
 "您是否知道可以直接在对象上绘制，并选择每个周长循环的起点/终点的位置？尝试<a>接缝绘制</a>功能。（需要高级或专家模式。）"
 
 #: resources/data/hints.ini: [hint:Insert Pause]
-msgid "Insert Pause\n"
+msgid ""
+"Insert Pause\n"
 "Did you know that you can schedule the print to pause at a specific layer? Right-click the layer slider in the Preview and select Add pause print (M601). This can be used to insert magnets, weights or nuts into your prints. Read more in the documentation."
-msgstr "插入暂停\n"
+msgstr ""
+"插入暂停\n"
 "您是否知道可以安排打印在特定图层暂停？在预览中的图层滑块上单击鼠标右键，然后选择“添加暂停打印”（M601）。这可以用来插入磁铁，重量或螺母到您的打印。请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Insert Custom G-code]
-msgid "Insert Custom G-code\n"
+msgid ""
+"Insert Custom G-code\n"
 "Did you know that you can insert a custom G-code at a specific layer? Left-click the layer in the Preview, Right-click the plus icon and select Add custom G-code. With this function you can, for example, create a temperature tower. Read more in the documentation."
-msgstr "插入自定义 G-Code\n"
+msgstr ""
+"插入自定义 G-Code\n"
 "您知道可以在特定层插入自定义 G-Code 吗？在预览中的图层上单击鼠标左键，右键单击加号图标，然后选择“添加自定义 G-Code ”。使用此功能，您可以创建一个温度塔。请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Configuration snapshots]
-msgid "Configuration snapshots\n"
+msgid ""
+"Configuration snapshots\n"
 "Did you know that you can roll back to a complete backup of all system and user profiles? You can view and move back and forth between snapshots using the Configuration - <a>Configuration snapshots menu</a>."
-msgstr "配置快照\n"
+msgstr ""
+"配置快照\n"
 "您知道可以回滚到所有系统和用户配置文件的完整备份吗？您可以使用配置-<a>配置快照菜单查看快照，并在快照之间来回移动。"
 
 #: resources/data/hints.ini: [hint:Minimum shell thickness]
-msgid "Minimum shell thickness\n"
+msgid ""
+"Minimum shell thickness\n"
 "Did you know that instead of the number of top and bottom layers, you can define the<a>Minimum shell thickness</a>in millimeters? This feature is especially useful when using the variable layer height function."
-msgstr "最小外壳厚度\n"
+msgstr ""
+"最小外壳厚度\n"
 "您是否知道，可以用毫米来定义<a>最小外壳厚度，而不是顶层和底层的数量？当使用可变层高度功能时，此功能特别有用。"
 
 #: resources/data/hints.ini: [hint:Settings in non-modal window]
-msgid "Settings in non-modal window\n"
+msgid ""
+"Settings in non-modal window\n"
 "Did you know that you can open the Settings in a new non-modal window? This means you can have settings open on one screen and the G-code Preview on the other. Go to the<a>Preferences</a>and select Settings in non-modal window."
-msgstr "非模式窗口中的设置\n"
+msgstr ""
+"非模式窗口中的设置\n"
 "您知道可以在新的非模式窗口中打开设置吗？这意味着您可以在一个屏幕上打开设置，在另一个屏幕上打开 G-Code 预览。转到<a>首选项</a>并在非模式窗口中选择设置。"
 
 #: resources/data/hints.ini: [hint:Adaptive infills]
-msgid "Adaptive infills\n"
+msgid ""
+"Adaptive infills\n"
 "Did you know that you can use the Adaptive cubic and Support cubic infills to decrease the print time and lower the filament consumption? Read more in the documentation."
-msgstr "自适应填充\n"
+msgstr ""
+"自适应填充\n"
 "您是否知道可以使用自适应立方和支持立方填充来减少打印时间和降低耗材消耗？请阅读文档中的更多内容。"
 
 #: resources/data/hints.ini: [hint:Fullscreen mode]
-msgid "Fullscreen mode\n"
+msgid ""
+"Fullscreen mode\n"
 "Did you know that you can switch PrusaSlicer to fullscreen mode? Use the <b>F11</b> hotkey."
-msgstr "全屏模式\n"
+msgstr ""
+"全屏模式\n"
 "您知道可以将 PrusaSlicer 切换到全屏模式吗？使用<b>F11</b>热键。"
-
