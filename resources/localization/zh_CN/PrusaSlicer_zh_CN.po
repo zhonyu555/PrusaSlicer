@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-04 12:57+0800\n"
+"PO-Revision-Date: 2022-06-04 17:35+0800\n"
 "Last-Translator: Bral@qq.com\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -36,8 +36,7 @@ msgstr "所有以下程序(库)的许可协议是应用程序许可协议的一�
 msgid "About %s"
 msgstr "关于 %s"
 
-#: src/slic3r/GUI/AboutDialog.cpp:242 src/slic3r/GUI/AboutDialog.cpp:367
-#: src/slic3r/GUI/GUI_App.cpp:262
+#: src/slic3r/GUI/AboutDialog.cpp:242 src/slic3r/GUI/AboutDialog.cpp:367 src/slic3r/GUI/GUI_App.cpp:262
 msgid "Version"
 msgstr "版本"
 
@@ -76,8 +75,7 @@ msgstr "PrusaSlicer 遇到致命错误：“%1%”"
 msgid "Please save your project and restart PrusaSlicer. We would be glad if you reported the issue."
 msgstr "请保存项目并重新启动 PrusaSlicer。如果你能报告这个问题，我们会很高兴的。"
 
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:162
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:204
+#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:162 src/slic3r/GUI/BackgroundSlicingProcess.cpp:204
 msgid "Slicing complete"
 msgstr "切片完成"
 
@@ -114,13 +112,11 @@ msgstr "浮动保留操作数"
 msgid "Stack overflow"
 msgstr "栈溢出"
 
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:659
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:726
+#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:659 src/slic3r/GUI/BackgroundSlicingProcess.cpp:726
 msgid "Running post-processing scripts"
 msgstr "运行后处理脚本"
 
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:690
-#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:710
+#: src/slic3r/GUI/BackgroundSlicingProcess.cpp:690 src/slic3r/GUI/BackgroundSlicingProcess.cpp:710
 msgid "Unknown error occured during exporting G-code."
 msgstr "导出 G-Code 时出现未知错误。"
 
@@ -167,9 +163,7 @@ msgstr "将临时 G-Code 复制到输出 G-Code 失败"
 msgid "Scheduling upload to `%1%`. See Window -> Print Host Upload Queue"
 msgstr "计划上传到 `%1%`。请参阅窗口-> 打印主机上传队列"
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:31
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:218 src/slic3r/GUI/Plater.cpp:204
-#: src/slic3r/GUI/Tab.cpp:2755
+#: src/slic3r/GUI/BedShapeDialog.cpp:31 src/slic3r/GUI/GUI_ObjectManipulation.cpp:218 src/slic3r/GUI/Plater.cpp:204 src/slic3r/GUI/Tab.cpp:2755
 msgid "Size"
 msgstr "大小"
 
@@ -189,54 +183,11 @@ msgstr "矩形框在X和Y方向的尺寸。"
 msgid "Distance of the 0,0 G-code coordinate from the front left corner of the rectangle."
 msgstr "G-Code 0,0 坐标相对于矩形框左前角的距离。"
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:64 src/slic3r/GUI/ConfigWizard.cpp:262
-#: src/slic3r/GUI/ConfigWizard.cpp:1476 src/slic3r/GUI/ConfigWizard.cpp:1490
-#: src/slic3r/GUI/ExtruderSequenceDialog.cpp:100
-#: src/slic3r/GUI/GCodeViewer.cpp:3181 src/slic3r/GUI/GCodeViewer.cpp:3187
-#: src/slic3r/GUI/GCodeViewer.cpp:3195 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188
-#: src/slic3r/GUI/GUI_ObjectLayers.cpp:145
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:320
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:409
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:477
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:478
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:134
-#: src/slic3r/GUI/WipeTowerDialog.cpp:116 src/libslic3r/PrintConfig.cpp:250
-#: src/libslic3r/PrintConfig.cpp:267 src/libslic3r/PrintConfig.cpp:274
-#: src/libslic3r/PrintConfig.cpp:437 src/libslic3r/PrintConfig.cpp:497
-#: src/libslic3r/PrintConfig.cpp:523 src/libslic3r/PrintConfig.cpp:598
-#: src/libslic3r/PrintConfig.cpp:606 src/libslic3r/PrintConfig.cpp:656
-#: src/libslic3r/PrintConfig.cpp:787 src/libslic3r/PrintConfig.cpp:798
-#: src/libslic3r/PrintConfig.cpp:816 src/libslic3r/PrintConfig.cpp:997
-#: src/libslic3r/PrintConfig.cpp:1212 src/libslic3r/PrintConfig.cpp:1279
-#: src/libslic3r/PrintConfig.cpp:1289 src/libslic3r/PrintConfig.cpp:1569
-#: src/libslic3r/PrintConfig.cpp:1763 src/libslic3r/PrintConfig.cpp:1824
-#: src/libslic3r/PrintConfig.cpp:1842 src/libslic3r/PrintConfig.cpp:1860
-#: src/libslic3r/PrintConfig.cpp:1923 src/libslic3r/PrintConfig.cpp:1933
-#: src/libslic3r/PrintConfig.cpp:2047 src/libslic3r/PrintConfig.cpp:2056
-#: src/libslic3r/PrintConfig.cpp:2075 src/libslic3r/PrintConfig.cpp:2096
-#: src/libslic3r/PrintConfig.cpp:2108 src/libslic3r/PrintConfig.cpp:2116
-#: src/libslic3r/PrintConfig.cpp:2157 src/libslic3r/PrintConfig.cpp:2165
-#: src/libslic3r/PrintConfig.cpp:2175 src/libslic3r/PrintConfig.cpp:2183
-#: src/libslic3r/PrintConfig.cpp:2191 src/libslic3r/PrintConfig.cpp:2253
-#: src/libslic3r/PrintConfig.cpp:2483 src/libslic3r/PrintConfig.cpp:2553
-#: src/libslic3r/PrintConfig.cpp:2570 src/libslic3r/PrintConfig.cpp:2671
-#: src/libslic3r/PrintConfig.cpp:2680 src/libslic3r/PrintConfig.cpp:2730
-#: src/libslic3r/PrintConfig.cpp:2882 src/libslic3r/PrintConfig.cpp:2970
-#: src/libslic3r/PrintConfig.cpp:2977 src/libslic3r/PrintConfig.cpp:2984
-#: src/libslic3r/PrintConfig.cpp:2998 src/libslic3r/PrintConfig.cpp:3022
-#: src/libslic3r/PrintConfig.cpp:3032 src/libslic3r/PrintConfig.cpp:3042
-#: src/libslic3r/PrintConfig.cpp:3226 src/libslic3r/PrintConfig.cpp:3267
-#: src/libslic3r/PrintConfig.cpp:3427 src/libslic3r/PrintConfig.cpp:3436
-#: src/libslic3r/PrintConfig.cpp:3445 src/libslic3r/PrintConfig.cpp:3455
-#: src/libslic3r/PrintConfig.cpp:3520 src/libslic3r/PrintConfig.cpp:3530
-#: src/libslic3r/PrintConfig.cpp:3542 src/libslic3r/PrintConfig.cpp:3562
-#: src/libslic3r/PrintConfig.cpp:3572 src/libslic3r/PrintConfig.cpp:3582
-#: src/libslic3r/PrintConfig.cpp:3600 src/libslic3r/PrintConfig.cpp:3615
-#: src/libslic3r/PrintConfig.cpp:3629 src/libslic3r/PrintConfig.cpp:3640
-#: src/libslic3r/PrintConfig.cpp:3653 src/libslic3r/PrintConfig.cpp:3698
-#: src/libslic3r/PrintConfig.cpp:3708 src/libslic3r/PrintConfig.cpp:3717
-#: src/libslic3r/PrintConfig.cpp:3727 src/libslic3r/PrintConfig.cpp:3743
-#: src/libslic3r/PrintConfig.cpp:3767
+#: src/slic3r/GUI/BedShapeDialog.cpp:64 src/slic3r/GUI/ConfigWizard.cpp:262 src/slic3r/GUI/ConfigWizard.cpp:1476 src/slic3r/GUI/ConfigWizard.cpp:1490 src/slic3r/GUI/ExtruderSequenceDialog.cpp:100 src/slic3r/GUI/GCodeViewer.cpp:3181 src/slic3r/GUI/GCodeViewer.cpp:3187 src/slic3r/GUI/GCodeViewer.cpp:3195 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188 src/slic3r/GUI/GUI_ObjectLayers.cpp:145 src/slic3r/GUI/GUI_ObjectManipulation.cpp:320 src/slic3r/GUI/GUI_ObjectManipulation.cpp:409 src/slic3r/GUI/GUI_ObjectManipulation.cpp:477 src/slic3r/GUI/GUI_ObjectManipulation.cpp:478 src/slic3r/GUI/ObjectDataViewModel.cpp:134 src/slic3r/GUI/WipeTowerDialog.cpp:116
+#: src/libslic3r/PrintConfig.cpp:250 src/libslic3r/PrintConfig.cpp:267 src/libslic3r/PrintConfig.cpp:274 src/libslic3r/PrintConfig.cpp:437 src/libslic3r/PrintConfig.cpp:497 src/libslic3r/PrintConfig.cpp:523 src/libslic3r/PrintConfig.cpp:598 src/libslic3r/PrintConfig.cpp:606 src/libslic3r/PrintConfig.cpp:656 src/libslic3r/PrintConfig.cpp:787 src/libslic3r/PrintConfig.cpp:798 src/libslic3r/PrintConfig.cpp:816 src/libslic3r/PrintConfig.cpp:997 src/libslic3r/PrintConfig.cpp:1212 src/libslic3r/PrintConfig.cpp:1279 src/libslic3r/PrintConfig.cpp:1289 src/libslic3r/PrintConfig.cpp:1569 src/libslic3r/PrintConfig.cpp:1763 src/libslic3r/PrintConfig.cpp:1824
+#: src/libslic3r/PrintConfig.cpp:1842 src/libslic3r/PrintConfig.cpp:1860 src/libslic3r/PrintConfig.cpp:1923 src/libslic3r/PrintConfig.cpp:1933 src/libslic3r/PrintConfig.cpp:2047 src/libslic3r/PrintConfig.cpp:2056 src/libslic3r/PrintConfig.cpp:2075 src/libslic3r/PrintConfig.cpp:2096 src/libslic3r/PrintConfig.cpp:2108 src/libslic3r/PrintConfig.cpp:2116 src/libslic3r/PrintConfig.cpp:2157 src/libslic3r/PrintConfig.cpp:2165 src/libslic3r/PrintConfig.cpp:2175 src/libslic3r/PrintConfig.cpp:2183 src/libslic3r/PrintConfig.cpp:2191 src/libslic3r/PrintConfig.cpp:2253 src/libslic3r/PrintConfig.cpp:2483 src/libslic3r/PrintConfig.cpp:2553
+#: src/libslic3r/PrintConfig.cpp:2570 src/libslic3r/PrintConfig.cpp:2671 src/libslic3r/PrintConfig.cpp:2680 src/libslic3r/PrintConfig.cpp:2730 src/libslic3r/PrintConfig.cpp:2882 src/libslic3r/PrintConfig.cpp:2970 src/libslic3r/PrintConfig.cpp:2977 src/libslic3r/PrintConfig.cpp:2984 src/libslic3r/PrintConfig.cpp:2998 src/libslic3r/PrintConfig.cpp:3022 src/libslic3r/PrintConfig.cpp:3032 src/libslic3r/PrintConfig.cpp:3042 src/libslic3r/PrintConfig.cpp:3226 src/libslic3r/PrintConfig.cpp:3267 src/libslic3r/PrintConfig.cpp:3427 src/libslic3r/PrintConfig.cpp:3436 src/libslic3r/PrintConfig.cpp:3445 src/libslic3r/PrintConfig.cpp:3455
+#: src/libslic3r/PrintConfig.cpp:3520 src/libslic3r/PrintConfig.cpp:3530 src/libslic3r/PrintConfig.cpp:3542 src/libslic3r/PrintConfig.cpp:3562 src/libslic3r/PrintConfig.cpp:3572 src/libslic3r/PrintConfig.cpp:3582 src/libslic3r/PrintConfig.cpp:3600 src/libslic3r/PrintConfig.cpp:3615 src/libslic3r/PrintConfig.cpp:3629 src/libslic3r/PrintConfig.cpp:3640 src/libslic3r/PrintConfig.cpp:3653 src/libslic3r/PrintConfig.cpp:3698 src/libslic3r/PrintConfig.cpp:3708 src/libslic3r/PrintConfig.cpp:3717 src/libslic3r/PrintConfig.cpp:3727 src/libslic3r/PrintConfig.cpp:3743 src/libslic3r/PrintConfig.cpp:3767
 msgid "mm"
 msgstr ""
 
@@ -252,13 +203,11 @@ msgstr "矩形"
 msgid "Circular"
 msgstr "圆形"
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:81 src/slic3r/GUI/GUI_Preview.cpp:252
-#: src/libslic3r/ExtrusionEntity.cpp:331 src/libslic3r/ExtrusionEntity.cpp:366
+#: src/slic3r/GUI/BedShapeDialog.cpp:81 src/slic3r/GUI/GUI_Preview.cpp:252 src/libslic3r/ExtrusionEntity.cpp:331 src/libslic3r/ExtrusionEntity.cpp:366
 msgid "Custom"
 msgstr "自定义"
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:104 src/slic3r/GUI/BedShapeDialog.cpp:179
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1701
+#: src/slic3r/GUI/BedShapeDialog.cpp:104 src/slic3r/GUI/BedShapeDialog.cpp:179 src/slic3r/GUI/GUI_ObjectList.cpp:1701
 msgid "Shape"
 msgstr "形状"
 
@@ -266,8 +215,7 @@ msgstr "形状"
 msgid "Load shape from STL..."
 msgstr "从 STL 文件加载形状..."
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:249 src/slic3r/GUI/GCodeViewer.cpp:3710
-#: src/slic3r/GUI/MainFrame.cpp:2140
+#: src/slic3r/GUI/BedShapeDialog.cpp:249 src/slic3r/GUI/GCodeViewer.cpp:3710 src/slic3r/GUI/MainFrame.cpp:2140
 msgid "Settings"
 msgstr "设置"
 
@@ -279,8 +227,7 @@ msgstr "纹理"
 msgid "Load..."
 msgstr "加载..."
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:292 src/slic3r/GUI/BedShapeDialog.cpp:362
-#: src/slic3r/GUI/Tab.cpp:3734
+#: src/slic3r/GUI/BedShapeDialog.cpp:292 src/slic3r/GUI/BedShapeDialog.cpp:362 src/slic3r/GUI/Tab.cpp:3734
 msgid "Remove"
 msgstr "移除"
 
@@ -296,8 +243,7 @@ msgstr "模型"
 msgid "Choose an STL file to import bed shape from:"
 msgstr "选择 STL 文件以从以下对象导入床形:"
 
-#: src/slic3r/GUI/BedShapeDialog.cpp:514 src/slic3r/GUI/BedShapeDialog.cpp:562
-#: src/slic3r/GUI/BedShapeDialog.cpp:584
+#: src/slic3r/GUI/BedShapeDialog.cpp:514 src/slic3r/GUI/BedShapeDialog.cpp:562 src/slic3r/GUI/BedShapeDialog.cpp:584
 msgid "Invalid file format."
 msgstr "无效的文件格式。"
 
@@ -379,9 +325,7 @@ msgstr ""
 "\n"
 "层高度将重置为 0.01。"
 
-#: src/slic3r/GUI/ConfigManipulation.cpp:50
-#: src/slic3r/GUI/GUI_ObjectLayers.cpp:29 src/slic3r/GUI/Tab.cpp:1453
-#: src/libslic3r/PrintConfig.cpp:263
+#: src/slic3r/GUI/ConfigManipulation.cpp:50 src/slic3r/GUI/GUI_ObjectLayers.cpp:29 src/slic3r/GUI/Tab.cpp:1453 src/libslic3r/PrintConfig.cpp:263
 msgid "Layer height"
 msgstr "层高度"
 
@@ -439,8 +383,7 @@ msgstr ""
 msgid "Shall I adjust those settings in order to enable the Wipe Tower?"
 msgstr "我要调整这些设置以启用擦拭塔吗？"
 
-#: src/slic3r/GUI/ConfigManipulation.cpp:126
-#: src/slic3r/GUI/ConfigManipulation.cpp:146
+#: src/slic3r/GUI/ConfigManipulation.cpp:126 src/slic3r/GUI/ConfigManipulation.cpp:146
 msgid "Wipe Tower"
 msgstr "擦拭塔"
 
@@ -479,16 +422,7 @@ msgstr "%1% 填充图案不支持在 100%% 密度下使用。"
 msgid "Shall I switch to rectilinear fill pattern?"
 msgstr "我要换成直线填充模式吗？"
 
-#: src/slic3r/GUI/ConfigManipulation.cpp:199
-#: src/slic3r/GUI/GUI_Factories.cpp:55 src/slic3r/GUI/GUI_Factories.cpp:128
-#: src/slic3r/GUI/Plater.cpp:460 src/slic3r/GUI/Tab.cpp:1506
-#: src/slic3r/GUI/Tab.cpp:1508 src/libslic3r/PrintConfig.cpp:452
-#: src/libslic3r/PrintConfig.cpp:693 src/libslic3r/PrintConfig.cpp:717
-#: src/libslic3r/PrintConfig.cpp:1071 src/libslic3r/PrintConfig.cpp:1085
-#: src/libslic3r/PrintConfig.cpp:1122 src/libslic3r/PrintConfig.cpp:1375
-#: src/libslic3r/PrintConfig.cpp:1385 src/libslic3r/PrintConfig.cpp:1454
-#: src/libslic3r/PrintConfig.cpp:1474 src/libslic3r/PrintConfig.cpp:1493
-#: src/libslic3r/PrintConfig.cpp:2314 src/libslic3r/PrintConfig.cpp:2331
+#: src/slic3r/GUI/ConfigManipulation.cpp:199 src/slic3r/GUI/GUI_Factories.cpp:55 src/slic3r/GUI/GUI_Factories.cpp:128 src/slic3r/GUI/Plater.cpp:460 src/slic3r/GUI/Tab.cpp:1506 src/slic3r/GUI/Tab.cpp:1508 src/libslic3r/PrintConfig.cpp:452 src/libslic3r/PrintConfig.cpp:693 src/libslic3r/PrintConfig.cpp:717 src/libslic3r/PrintConfig.cpp:1071 src/libslic3r/PrintConfig.cpp:1085 src/libslic3r/PrintConfig.cpp:1122 src/libslic3r/PrintConfig.cpp:1375 src/libslic3r/PrintConfig.cpp:1385 src/libslic3r/PrintConfig.cpp:1454 src/libslic3r/PrintConfig.cpp:1474 src/libslic3r/PrintConfig.cpp:1493 src/libslic3r/PrintConfig.cpp:2314 src/libslic3r/PrintConfig.cpp:2331
 msgid "Infill"
 msgstr "填充"
 
@@ -524,8 +458,7 @@ msgstr "回滚前"
 msgid "User"
 msgstr "用户"
 
-#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:28
-#: src/slic3r/GUI/GUI_Preview.cpp:238 src/libslic3r/ExtrusionEntity.cpp:317
+#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:28 src/slic3r/GUI/GUI_Preview.cpp:238 src/libslic3r/ExtrusionEntity.cpp:317
 msgid "Unknown"
 msgstr "未知"
 
@@ -549,9 +482,7 @@ msgstr "耗材"
 msgid "SLA print"
 msgstr "SLA 打印"
 
-#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:69
-#: src/slic3r/GUI/ConfigWizard.cpp:755 src/slic3r/GUI/GUI.cpp:340
-#: src/slic3r/GUI/Plater.cpp:820 src/libslic3r/Preset.cpp:1342
+#: src/slic3r/GUI/ConfigSnapshotDialog.cpp:69 src/slic3r/GUI/ConfigWizard.cpp:755 src/slic3r/GUI/GUI.cpp:340 src/slic3r/GUI/Plater.cpp:820 src/libslic3r/Preset.cpp:1342
 msgid "SLA material"
 msgstr "SLA 材料"
 
@@ -612,16 +543,11 @@ msgstr "所有标准"
 msgid "Standard"
 msgstr "标准"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:331 src/slic3r/GUI/ConfigWizard.cpp:651
-#: src/slic3r/GUI/Preferences.cpp:434 src/slic3r/GUI/Tab.cpp:3816
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1154
+#: src/slic3r/GUI/ConfigWizard.cpp:331 src/slic3r/GUI/ConfigWizard.cpp:651 src/slic3r/GUI/Preferences.cpp:434 src/slic3r/GUI/Tab.cpp:3816 src/slic3r/GUI/UnsavedChangesDialog.cpp:1154
 msgid "All"
 msgstr "所有"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:332 src/slic3r/GUI/ConfigWizard.cpp:652
-#: src/slic3r/GUI/DoubleSlider.cpp:2030 src/slic3r/GUI/Plater.cpp:432
-#: src/slic3r/GUI/Plater.cpp:578 src/slic3r/GUI/Preferences.cpp:436
-#: src/libslic3r/PrintConfig.cpp:1268
+#: src/slic3r/GUI/ConfigWizard.cpp:332 src/slic3r/GUI/ConfigWizard.cpp:652 src/slic3r/GUI/DoubleSlider.cpp:2030 src/slic3r/GUI/Plater.cpp:432 src/slic3r/GUI/Plater.cpp:578 src/slic3r/GUI/Preferences.cpp:436 src/libslic3r/PrintConfig.cpp:1268
 msgid "None"
 msgstr "无"
 
@@ -669,8 +595,7 @@ msgstr "供应商:"
 msgid "Profile:"
 msgstr "配置:"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:720 src/slic3r/GUI/ConfigWizard.cpp:892
-#: src/slic3r/GUI/ConfigWizard.cpp:952 src/slic3r/GUI/ConfigWizard.cpp:1088
+#: src/slic3r/GUI/ConfigWizard.cpp:720 src/slic3r/GUI/ConfigWizard.cpp:892 src/slic3r/GUI/ConfigWizard.cpp:952 src/slic3r/GUI/ConfigWizard.cpp:1088
 msgid "(All)"
 msgstr "(全部)"
 
@@ -679,8 +604,7 @@ msgstr "(全部)"
 msgid "%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."
 msgstr "%1% 被 <b>*</b> 标记的项与某些已安装的打印机不兼容。"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:752 src/slic3r/GUI/ConfigWizard.cpp:2043
-#: src/slic3r/GUI/ConfigWizard.cpp:2912
+#: src/slic3r/GUI/ConfigWizard.cpp:752 src/slic3r/GUI/ConfigWizard.cpp:2043 src/slic3r/GUI/ConfigWizard.cpp:2912
 msgid "Filaments"
 msgstr "耗材"
 
@@ -755,8 +679,7 @@ msgstr "未经用户同意，绝不会应用更新，也绝不会覆盖用户的
 msgid "Additionally a backup snapshot of the whole configuration is created before an update is applied."
 msgstr "此外，在应用更新之前，将创建整个配置的备份快照。"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:1243 src/slic3r/GUI/GUI_Factories.cpp:726
-#: src/slic3r/GUI/Plater.cpp:3560
+#: src/slic3r/GUI/ConfigWizard.cpp:1243 src/slic3r/GUI/GUI_Factories.cpp:726 src/slic3r/GUI/Plater.cpp:3560
 msgid "Reload from disk"
 msgstr "从磁盘重新加载"
 
@@ -847,9 +770,7 @@ msgstr "热床形状和大小"
 msgid "Set the shape of your printer's bed."
 msgstr "设置打印机热床的形状。"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:1433 src/slic3r/GUI/Field.cpp:255
-#: src/slic3r/GUI/Field.cpp:324 src/slic3r/GUI/Field.cpp:1562
-#: src/slic3r/GUI/GUI_ObjectLayers.cpp:429
+#: src/slic3r/GUI/ConfigWizard.cpp:1433 src/slic3r/GUI/Field.cpp:255 src/slic3r/GUI/Field.cpp:324 src/slic3r/GUI/Field.cpp:1562 src/slic3r/GUI/GUI_ObjectLayers.cpp:429
 msgid "Invalid numeric input."
 msgstr "无效的数字输入。"
 
@@ -901,9 +822,7 @@ msgstr "根据经验,PLA 为 160 至 230°C,ABS 为 215 至 250°C。"
 msgid "Extrusion Temperature:"
 msgstr "挤出温度:"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:1568 src/slic3r/GUI/ConfigWizard.cpp:1582
-#: src/libslic3r/PrintConfig.cpp:395 src/libslic3r/PrintConfig.cpp:1188
-#: src/libslic3r/PrintConfig.cpp:1243 src/libslic3r/PrintConfig.cpp:2792
+#: src/slic3r/GUI/ConfigWizard.cpp:1568 src/slic3r/GUI/ConfigWizard.cpp:1582 src/libslic3r/PrintConfig.cpp:395 src/libslic3r/PrintConfig.cpp:1188 src/libslic3r/PrintConfig.cpp:1243 src/libslic3r/PrintConfig.cpp:2792
 msgid "°C"
 msgstr ""
 
@@ -941,9 +860,7 @@ msgstr "以下打印机配置文件没有默认耗材：%1%请手动选择一个
 msgid "Following printer profiles has no default material: %1%Please select one manually."
 msgstr "以下打印机配置文件没有默认材料：%1%请手动选择一种。"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:2340 src/slic3r/GUI/ConfigWizard.cpp:2438
-#: src/slic3r/GUI/DoubleSlider.cpp:2521 src/slic3r/GUI/DoubleSlider.cpp:2542
-#: src/slic3r/GUI/GUI.cpp:232
+#: src/slic3r/GUI/ConfigWizard.cpp:2340 src/slic3r/GUI/ConfigWizard.cpp:2438 src/slic3r/GUI/DoubleSlider.cpp:2521 src/slic3r/GUI/DoubleSlider.cpp:2542 src/slic3r/GUI/GUI.cpp:232
 msgid "Notice"
 msgstr "通知"
 
@@ -1024,13 +941,7 @@ msgstr "下一步(&N) >"
 msgid "&Finish"
 msgstr "完成(&F)"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:2864
-#: src/slic3r/GUI/DesktopIntegrationDialog.cpp:490
-#: src/slic3r/GUI/FirmwareDialog.cpp:153
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:58
-#: src/slic3r/GUI/ProgressStatusBar.cpp:26
-#: src/slic3r/GUI/SendSystemInfoDialog.cpp:93
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:879
+#: src/slic3r/GUI/ConfigWizard.cpp:2864 src/slic3r/GUI/DesktopIntegrationDialog.cpp:490 src/slic3r/GUI/FirmwareDialog.cpp:153 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:58 src/slic3r/GUI/ProgressStatusBar.cpp:26 src/slic3r/GUI/SendSystemInfoDialog.cpp:93 src/slic3r/GUI/UnsavedChangesDialog.cpp:879
 msgid "Cancel"
 msgstr "取消"
 
@@ -1046,8 +957,7 @@ msgstr "Prusa MSLA 技术打印机"
 msgid "Filament Profiles Selection"
 msgstr "耗材配置选择"
 
-#: src/slic3r/GUI/ConfigWizard.cpp:2912 src/slic3r/GUI/ConfigWizard.cpp:2915
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3781
+#: src/slic3r/GUI/ConfigWizard.cpp:2912 src/slic3r/GUI/ConfigWizard.cpp:2915 src/slic3r/GUI/GUI_ObjectList.cpp:3781
 msgid "Type:"
 msgstr "类型:"
 
@@ -1087,8 +997,7 @@ msgstr "由于找不到应用程序目录，执行桌面集成失败。"
 msgid "Performing desktop integration failed - could not create Gcodeviewer desktop file. PrusaSlicer desktop file was probably created successfully."
 msgstr "执行桌面集成失败-无法创建 Gcodeviewer 桌面文件。PrusaSlicer 桌面文件可能已成功创建。"
 
-#: src/slic3r/GUI/DesktopIntegrationDialog.cpp:459
-#: src/slic3r/GUI/GUI_App.cpp:2243
+#: src/slic3r/GUI/DesktopIntegrationDialog.cpp:459 src/slic3r/GUI/GUI_App.cpp:2243
 msgid "Desktop Integration"
 msgstr "桌面集成"
 
@@ -1106,9 +1015,7 @@ msgstr ""
 msgid "Perform"
 msgstr "执行"
 
-#: src/slic3r/GUI/DesktopIntegrationDialog.cpp:486
-#: src/slic3r/GUI/GLCanvas3D.cpp:4689 src/slic3r/GUI/KBShortcutsDialog.cpp:97
-#: src/slic3r/GUI/MainFrame.cpp:1335
+#: src/slic3r/GUI/DesktopIntegrationDialog.cpp:486 src/slic3r/GUI/GLCanvas3D.cpp:4689 src/slic3r/GUI/KBShortcutsDialog.cpp:97 src/slic3r/GUI/MainFrame.cpp:1335
 msgid "Undo"
 msgstr "撤销"
 
@@ -1279,8 +1186,7 @@ msgstr "编辑刻度线-按住 Ctrl 键并单击鼠标左键"
 msgid "Edit tick mark - Right click"
 msgstr "编辑刻度线-单击鼠标右键"
 
-#: src/slic3r/GUI/DoubleSlider.cpp:1602 src/slic3r/GUI/DoubleSlider.cpp:1633
-#: src/slic3r/GUI/GUI_Factories.cpp:778
+#: src/slic3r/GUI/DoubleSlider.cpp:1602 src/slic3r/GUI/DoubleSlider.cpp:1633 src/slic3r/GUI/GUI_Factories.cpp:778
 #, c-format, boost-format
 msgid "Extruder %d"
 msgstr "挤出机 %d"
@@ -1415,11 +1321,7 @@ msgstr ""
 "此操作不可恢复。\n"
 "你想继续吗？"
 
-#: src/slic3r/GUI/DoubleSlider.cpp:2088
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1133 src/slic3r/GUI/GUI.cpp:245
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:645
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:675
-#: src/slic3r/GUI/WipeTowerDialog.cpp:58 src/slic3r/GUI/WipeTowerDialog.cpp:443
+#: src/slic3r/GUI/DoubleSlider.cpp:2088 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1133 src/slic3r/GUI/GUI.cpp:245 src/slic3r/GUI/PhysicalPrinterDialog.cpp:645 src/slic3r/GUI/PhysicalPrinterDialog.cpp:675 src/slic3r/GUI/WipeTowerDialog.cpp:58 src/slic3r/GUI/WipeTowerDialog.cpp:443
 msgid "Warning"
 msgstr "警告"
 
@@ -1487,14 +1389,7 @@ msgstr "最后一次颜色变化数据保存在多台挤出机打印中，整个
 msgid "Your current changes will delete all saved extruder (tool) changes."
 msgstr "您当前的更改将删除所有保存的挤出机（工具）更改。"
 
-#: src/slic3r/GUI/ExtraRenderers.cpp:316 src/slic3r/GUI/GUI_ObjectList.cpp:538
-#: src/slic3r/GUI/GUI_ObjectList.cpp:550 src/slic3r/GUI/GUI_ObjectList.cpp:979
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1966
-#: src/slic3r/GUI/GUI_ObjectList.cpp:4282
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:250
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:352
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:376
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:607 src/libslic3r/PrintConfig.cpp:774
+#: src/slic3r/GUI/ExtraRenderers.cpp:316 src/slic3r/GUI/GUI_ObjectList.cpp:538 src/slic3r/GUI/GUI_ObjectList.cpp:550 src/slic3r/GUI/GUI_ObjectList.cpp:979 src/slic3r/GUI/GUI_ObjectList.cpp:1966 src/slic3r/GUI/GUI_ObjectList.cpp:4282 src/slic3r/GUI/ObjectDataViewModel.cpp:250 src/slic3r/GUI/ObjectDataViewModel.cpp:352 src/slic3r/GUI/ObjectDataViewModel.cpp:376 src/slic3r/GUI/ObjectDataViewModel.cpp:607 src/libslic3r/PrintConfig.cpp:774
 msgid "default"
 msgstr "默认"
 
@@ -1506,11 +1401,7 @@ msgstr "设置挤出机顺序"
 msgid "Set extruder change for every"
 msgstr "设置挤出机每次更换"
 
-#: src/slic3r/GUI/ExtruderSequenceDialog.cpp:60
-#: src/libslic3r/PrintConfig.cpp:639 src/libslic3r/PrintConfig.cpp:1388
-#: src/libslic3r/PrintConfig.cpp:2085 src/libslic3r/PrintConfig.cpp:2260
-#: src/libslic3r/PrintConfig.cpp:2336 src/libslic3r/PrintConfig.cpp:2589
-#: src/libslic3r/PrintConfig.cpp:2637 src/libslic3r/PrintConfig.cpp:2656
+#: src/slic3r/GUI/ExtruderSequenceDialog.cpp:60 src/libslic3r/PrintConfig.cpp:639 src/libslic3r/PrintConfig.cpp:1388 src/libslic3r/PrintConfig.cpp:2085 src/libslic3r/PrintConfig.cpp:2260 src/libslic3r/PrintConfig.cpp:2336 src/libslic3r/PrintConfig.cpp:2589 src/libslic3r/PrintConfig.cpp:2637 src/libslic3r/PrintConfig.cpp:2656
 msgid "layers"
 msgstr "层"
 
@@ -1550,9 +1441,7 @@ msgstr "默认值"
 msgid "parameter name"
 msgstr "参数名称"
 
-#: src/slic3r/GUI/Field.cpp:204 src/slic3r/GUI/OptionsGroup.cpp:827
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1067
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1079
+#: src/slic3r/GUI/Field.cpp:204 src/slic3r/GUI/OptionsGroup.cpp:827 src/slic3r/GUI/UnsavedChangesDialog.cpp:1067 src/slic3r/GUI/UnsavedChangesDialog.cpp:1079
 msgid "N/A"
 msgstr ""
 
@@ -1574,8 +1463,7 @@ msgstr ""
 msgid "Parameter validation"
 msgstr "参数验证"
 
-#: src/slic3r/GUI/Field.cpp:282 src/slic3r/GUI/Field.cpp:390
-#: src/slic3r/GUI/Field.cpp:1574
+#: src/slic3r/GUI/Field.cpp:282 src/slic3r/GUI/Field.cpp:390 src/slic3r/GUI/Field.cpp:1574
 msgid "Input value is out of range"
 msgstr "输入值超出范围外"
 
@@ -1658,12 +1546,12 @@ msgstr "找不到 %s 设备"
 #: src/slic3r/GUI/FirmwareDialog.cpp:650
 #, c-format, boost-format
 msgid "Error accessing port at %s: %s"
-msgstr "在访问 %s:%s 端口时出错"
+msgstr "在访问 %s: %s 端口时出错"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:652
 #, c-format, boost-format
 msgid "Error: %s"
-msgstr "错误:%s"
+msgstr "错误: %s"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:787
 msgid "Firmware flasher"
@@ -1677,9 +1565,7 @@ msgstr "固件镜像:"
 msgid "Select a file"
 msgstr "选择一个文件"
 
-#: src/slic3r/GUI/FirmwareDialog.cpp:815
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:297
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:372
+#: src/slic3r/GUI/FirmwareDialog.cpp:815 src/slic3r/GUI/PhysicalPrinterDialog.cpp:297 src/slic3r/GUI/PhysicalPrinterDialog.cpp:372
 msgid "Browse"
 msgstr "浏览"
 
@@ -1711,11 +1597,7 @@ msgstr "准备好了"
 msgid "Advanced: Output log"
 msgstr "高级：输出日志"
 
-#: src/slic3r/GUI/FirmwareDialog.cpp:862
-#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:310
-#: src/slic3r/GUI/Mouse3DController.cpp:543
-#: src/slic3r/GUI/PrintHostDialogs.cpp:261
-#: src/slic3r/GUI/SendSystemInfoDialog.cpp:122
+#: src/slic3r/GUI/FirmwareDialog.cpp:862 src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:310 src/slic3r/GUI/Mouse3DController.cpp:543 src/slic3r/GUI/PrintHostDialogs.cpp:261 src/slic3r/GUI/SendSystemInfoDialog.cpp:122
 msgid "Close"
 msgstr "关闭"
 
@@ -1759,9 +1641,7 @@ msgstr "加入"
 msgid "Add one or more custom shapes"
 msgstr "添加一个或多个自定义形状"
 
-#: src/slic3r/GUI/GalleryDialog.cpp:118 src/slic3r/GUI/GalleryDialog.cpp:508
-#: src/slic3r/GUI/GLCanvas3D.cpp:4480 src/slic3r/GUI/GUI_Factories.cpp:444
-#: src/slic3r/GUI/Tab.cpp:3734
+#: src/slic3r/GUI/GalleryDialog.cpp:118 src/slic3r/GUI/GalleryDialog.cpp:508 src/slic3r/GUI/GLCanvas3D.cpp:4480 src/slic3r/GUI/GUI_Factories.cpp:444 src/slic3r/GUI/Tab.cpp:3734
 msgid "Delete"
 msgstr "删除"
 
@@ -1779,7 +1659,7 @@ msgid ""
 "It looks like selected %1%-file has an error or is destructed.\n"
 "We can't load this file"
 msgstr ""
-"看起来选定的%1%文件有错误或已被破坏。\n"
+"看起来选定的 %1% 文件有错误或已被破坏。\n"
 "我们无法加载此文件"
 
 #: src/slic3r/GUI/GalleryDialog.cpp:453
@@ -1797,7 +1677,7 @@ msgstr "更改缩略图"
 #: src/slic3r/GUI/GalleryDialog.cpp:551 src/slic3r/GUI/GalleryDialog.cpp:556
 #, boost-format
 msgid "Loading of the \"%1%\""
-msgstr "正在加载\"%1%\""
+msgstr "正在加载 \"%1%\""
 
 #: src/slic3r/GUI/GCodeViewer.cpp:274
 msgid "Tool position"
@@ -1839,63 +1719,55 @@ msgstr "从"
 msgid "to"
 msgstr "到"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3245 src/slic3r/GUI/GCodeViewer.cpp:3246
-#: src/slic3r/GUI/GCodeViewer.cpp:3295
+#: src/slic3r/GUI/GCodeViewer.cpp:3245 src/slic3r/GUI/GCodeViewer.cpp:3246 src/slic3r/GUI/GCodeViewer.cpp:3295
 msgid "Percentage"
 msgstr "百分率"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295
-#: src/slic3r/GUI/GUI_Preview.cpp:217 src/slic3r/GUI/GUI_Preview.cpp:958
+#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295 src/slic3r/GUI/GUI_Preview.cpp:217 src/slic3r/GUI/GUI_Preview.cpp:958
 msgid "Feature type"
 msgstr "功能类型"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295
-#: src/slic3r/GUI/RammingChart.cpp:90
+#: src/slic3r/GUI/GCodeViewer.cpp:3256 src/slic3r/GUI/GCodeViewer.cpp:3295 src/slic3r/GUI/RammingChart.cpp:90
 msgid "Time"
 msgstr "时间"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3295 src/slic3r/GUI/GCodeViewer.cpp:3306
-#: src/slic3r/GUI/GCodeViewer.cpp:3567
+#: src/slic3r/GUI/GCodeViewer.cpp:3295 src/slic3r/GUI/GCodeViewer.cpp:3306 src/slic3r/GUI/GCodeViewer.cpp:3567
 msgid "Used filament"
-msgstr "旧耗材"
+msgstr "消耗耗材"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3298
 msgid "Height (mm)"
-msgstr "高度（mm）"
+msgstr "高度 (mm)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3299
 msgid "Width (mm)"
-msgstr "宽度(mm)"
+msgstr "宽度 (mm)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3300
 msgid "Speed (mm/s)"
-msgstr "回退速度(mm/s)"
+msgstr "回退速度 (mm/s)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3301
 msgid "Fan Speed (%)"
-msgstr "风扇转速（%）"
+msgstr "风扇转速 (%)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3302
 msgid "Temperature (°C)"
-msgstr "温度（摄氏度）"
+msgstr "温度 (摄氏度)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3303
 msgid "Volumetric flow rate (mm³/s)"
-msgstr "体积流量（mm³/s）"
+msgstr "体积流量 (mm³/s)"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3306 src/slic3r/GUI/GUI_Preview.cpp:224
-#: src/slic3r/GUI/GUI_Preview.cpp:958
+#: src/slic3r/GUI/GCodeViewer.cpp:3306 src/slic3r/GUI/GUI_Preview.cpp:224 src/slic3r/GUI/GUI_Preview.cpp:958
 msgid "Tool"
 msgstr "工具"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3309 src/slic3r/GUI/GUI_Preview.cpp:225
-#: src/slic3r/GUI/GUI_Preview.cpp:957
+#: src/slic3r/GUI/GCodeViewer.cpp:3309 src/slic3r/GUI/GUI_Preview.cpp:225 src/slic3r/GUI/GUI_Preview.cpp:957
 msgid "Color Print"
 msgstr "彩色打印"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3347 src/slic3r/GUI/GCodeViewer.cpp:3393
-#: src/slic3r/GUI/GCodeViewer.cpp:3398 src/slic3r/GUI/GUI_ObjectList.cpp:312
-#: src/slic3r/GUI/wxExtensions.cpp:536 src/libslic3r/PrintConfig.cpp:769
+#: src/slic3r/GUI/GCodeViewer.cpp:3347 src/slic3r/GUI/GCodeViewer.cpp:3393 src/slic3r/GUI/GCodeViewer.cpp:3398 src/slic3r/GUI/GUI_ObjectList.cpp:312 src/slic3r/GUI/wxExtensions.cpp:536 src/libslic3r/PrintConfig.cpp:769
 msgid "Extruder"
 msgstr "挤出机"
 
@@ -1931,8 +1803,7 @@ msgstr "剩余时间"
 msgid "Duration"
 msgstr "期间"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3610 src/slic3r/GUI/GUI_Preview.cpp:1049
-#: src/libslic3r/PrintConfig.cpp:2887
+#: src/slic3r/GUI/GCodeViewer.cpp:3610 src/slic3r/GUI/GUI_Preview.cpp:1049 src/libslic3r/PrintConfig.cpp:2887
 msgid "Travel"
 msgstr "旅行"
 
@@ -1944,18 +1815,15 @@ msgstr "移动"
 msgid "Extrusion"
 msgstr "挤压"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3615 src/slic3r/GUI/Tab.cpp:1862
-#: src/slic3r/GUI/Tab.cpp:2802
+#: src/slic3r/GUI/GCodeViewer.cpp:3615 src/slic3r/GUI/Tab.cpp:1862 src/slic3r/GUI/Tab.cpp:2802
 msgid "Retraction"
 msgstr "回抽"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3632 src/slic3r/GUI/GCodeViewer.cpp:3635
-#: src/slic3r/GUI/GUI_Preview.cpp:1050
+#: src/slic3r/GUI/GCodeViewer.cpp:3632 src/slic3r/GUI/GCodeViewer.cpp:3635 src/slic3r/GUI/GUI_Preview.cpp:1050
 msgid "Wipe"
 msgstr "擦"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3667 src/slic3r/GUI/GUI_Preview.cpp:257
-#: src/slic3r/GUI/GUI_Preview.cpp:272
+#: src/slic3r/GUI/GCodeViewer.cpp:3667 src/slic3r/GUI/GUI_Preview.cpp:257 src/slic3r/GUI/GUI_Preview.cpp:272
 msgid "Options"
 msgstr "选项"
 
@@ -1987,20 +1855,15 @@ msgstr "打印暂停"
 msgid "Custom G-codes"
 msgstr "自定义 G-Code"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3696 src/slic3r/GUI/GCodeViewer.cpp:3715
-#: src/slic3r/GUI/GUI.cpp:341 src/slic3r/GUI/Plater.cpp:821
-#: src/libslic3r/PrintConfig.cpp:299
+#: src/slic3r/GUI/GCodeViewer.cpp:3696 src/slic3r/GUI/GCodeViewer.cpp:3715 src/slic3r/GUI/GUI.cpp:341 src/slic3r/GUI/Plater.cpp:821 src/libslic3r/PrintConfig.cpp:299
 msgid "Printer"
 msgstr "打印机"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3698 src/slic3r/GUI/GCodeViewer.cpp:3720
-#: src/slic3r/GUI/GUI.cpp:337 src/slic3r/GUI/Plater.cpp:817
+#: src/slic3r/GUI/GCodeViewer.cpp:3698 src/slic3r/GUI/GCodeViewer.cpp:3720 src/slic3r/GUI/GUI.cpp:337 src/slic3r/GUI/Plater.cpp:817
 msgid "Print settings"
 msgstr "打印设置"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3701 src/slic3r/GUI/GCodeViewer.cpp:3727
-#: src/slic3r/GUI/GUI.cpp:339 src/slic3r/GUI/Plater.cpp:818
-#: src/slic3r/GUI/Tab.cpp:1962 src/slic3r/GUI/Tab.cpp:1963
+#: src/slic3r/GUI/GCodeViewer.cpp:3701 src/slic3r/GUI/GCodeViewer.cpp:3727 src/slic3r/GUI/GUI.cpp:339 src/slic3r/GUI/Plater.cpp:818 src/slic3r/GUI/Tab.cpp:1962 src/slic3r/GUI/Tab.cpp:1963
 msgid "Filament"
 msgstr "耗材"
 
@@ -2016,9 +1879,7 @@ msgstr "正常模式"
 msgid "Stealth mode"
 msgstr "隐身模式"
 
-#: src/slic3r/GUI/GCodeViewer.cpp:3767 src/libslic3r/PrintConfig.cpp:1166
-#: src/libslic3r/PrintConfig.cpp:1184 src/libslic3r/PrintConfig.cpp:1194
-#: src/libslic3r/PrintConfig.cpp:1239
+#: src/slic3r/GUI/GCodeViewer.cpp:3767 src/libslic3r/PrintConfig.cpp:1166 src/libslic3r/PrintConfig.cpp:1184 src/libslic3r/PrintConfig.cpp:1194 src/libslic3r/PrintConfig.cpp:1239
 msgid "First layer"
 msgstr "第一层"
 
@@ -2034,8 +1895,7 @@ msgstr "显示隐形模式"
 msgid "Show normal mode"
 msgstr "显示正常模式"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:225 src/slic3r/GUI/GLCanvas3D.cpp:4627
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:53
+#: src/slic3r/GUI/GLCanvas3D.cpp:225 src/slic3r/GUI/GLCanvas3D.cpp:4627 src/slic3r/GUI/ObjectDataViewModel.cpp:53
 msgid "Variable layer height"
 msgstr "可变层高"
 
@@ -2131,13 +1991,11 @@ msgstr "可变层高度-平滑所有"
 msgid "Mirror Object"
 msgstr "镜像物体"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:2557
-#: src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:560
+#: src/slic3r/GUI/GLCanvas3D.cpp:2557 src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:560
 msgid "Gizmo-Move"
 msgstr "Gizmo-移动"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:2640
-#: src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:562
+#: src/slic3r/GUI/GLCanvas3D.cpp:2640 src/slic3r/GUI/Gizmos/GLGizmosManager.cpp:562
 msgid "Gizmo-Rotate"
 msgstr "Gizmo-旋转"
 
@@ -2185,13 +2043,11 @@ msgid "Redo %1$d Action"
 msgid_plural "Redo %1$d Actions"
 msgstr[0] "重做 %1$d 操作"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3956 src/slic3r/GUI/GLCanvas3D.cpp:4606
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:106 src/slic3r/GUI/Search.cpp:435
+#: src/slic3r/GUI/GLCanvas3D.cpp:3956 src/slic3r/GUI/GLCanvas3D.cpp:4606 src/slic3r/GUI/KBShortcutsDialog.cpp:106 src/slic3r/GUI/Search.cpp:435
 msgid "Search"
 msgstr "搜索"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:3970 src/slic3r/GUI/GLCanvas3D.cpp:3978
-#: src/slic3r/GUI/Search.cpp:441
+#: src/slic3r/GUI/GLCanvas3D.cpp:3970 src/slic3r/GUI/GLCanvas3D.cpp:3978 src/slic3r/GUI/Search.cpp:441
 msgid "Enter a search term"
 msgstr "输入搜索词"
 
@@ -2202,7 +2058,7 @@ msgstr "安排选项"
 #: src/slic3r/GUI/GLCanvas3D.cpp:4039
 #, boost-format
 msgid "Press %1%left mouse button to enter the exact value"
-msgstr "按鼠标左键%1%输入准确值"
+msgstr "按鼠标左键 %1% 输入准确值"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4041
 msgid "Spacing"
@@ -2212,8 +2068,7 @@ msgstr "空格"
 msgid "Enable rotations (slow)"
 msgstr "启用旋转（慢速）"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4066 src/slic3r/GUI/GLCanvas3D.cpp:4498
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:132 src/slic3r/GUI/Plater.cpp:1666
+#: src/slic3r/GUI/GLCanvas3D.cpp:4066 src/slic3r/GUI/GLCanvas3D.cpp:4498 src/slic3r/GUI/KBShortcutsDialog.cpp:132 src/slic3r/GUI/Plater.cpp:1666
 msgid "Arrange"
 msgstr "整理"
 
@@ -2221,8 +2076,7 @@ msgstr "整理"
 msgid "Add..."
 msgstr "添加..."
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4489 src/slic3r/GUI/KBShortcutsDialog.cpp:96
-#: src/slic3r/GUI/Plater.cpp:5476 src/slic3r/GUI/Tab.cpp:4141
+#: src/slic3r/GUI/GLCanvas3D.cpp:4489 src/slic3r/GUI/KBShortcutsDialog.cpp:96 src/slic3r/GUI/Plater.cpp:5476 src/slic3r/GUI/Tab.cpp:4141
 msgid "Delete all"
 msgstr "全部删除"
 
@@ -2242,8 +2096,7 @@ msgstr "复制"
 msgid "Paste"
 msgstr "粘贴"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4541 src/slic3r/GUI/GUI_Factories.cpp:1084
-#: src/slic3r/GUI/GUI_Factories.cpp:1108 src/slic3r/GUI/GUI_Factories.cpp:1119
+#: src/slic3r/GUI/GLCanvas3D.cpp:4541 src/slic3r/GUI/GUI_Factories.cpp:1084 src/slic3r/GUI/GUI_Factories.cpp:1108 src/slic3r/GUI/GUI_Factories.cpp:1119
 msgid "Add instance"
 msgstr "添加实例"
 
@@ -2268,8 +2121,7 @@ msgstr "单击鼠标右键打开/关闭历史记录"
 msgid "Next Undo action: %1%"
 msgstr "下一个撤消操作： %1%"
 
-#: src/slic3r/GUI/GLCanvas3D.cpp:4728 src/slic3r/GUI/KBShortcutsDialog.cpp:98
-#: src/slic3r/GUI/MainFrame.cpp:1338
+#: src/slic3r/GUI/GLCanvas3D.cpp:4728 src/slic3r/GUI/KBShortcutsDialog.cpp:98 src/slic3r/GUI/MainFrame.cpp:1338
 msgid "Redo"
 msgstr "重做"
 
@@ -2310,16 +2162,11 @@ msgstr "从矩形选择-添加"
 msgid "Selection-Remove from rectangle"
 msgstr "从矩形中选择-删除"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:50
-#: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:160 src/libslic3r/PrintConfig.cpp:4326
+#: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:50 src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:160 src/libslic3r/PrintConfig.cpp:4326
 msgid "Cut"
 msgstr "剪切"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:320
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:409
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:477
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:478
+#: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:188 src/slic3r/GUI/GUI_ObjectManipulation.cpp:320 src/slic3r/GUI/GUI_ObjectManipulation.cpp:409 src/slic3r/GUI/GUI_ObjectManipulation.cpp:477 src/slic3r/GUI/GUI_ObjectManipulation.cpp:478
 msgid "in"
 msgstr "在里面"
 
@@ -2339,42 +2186,27 @@ msgstr "旋转下部向上"
 msgid "Perform cut"
 msgstr "执行切割"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:33
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:49
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:33 src/slic3r/GUI/ObjectDataViewModel.cpp:49
 msgid "Paint-on supports"
 msgstr "绘制支撑"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:42
-#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:39
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:112
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:31
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:49
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:42 src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:39 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:112 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:31 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:49
 msgid "Clipping of view"
 msgstr "剪切视图"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:43
-#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:40
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:111
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:32
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:50
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:43 src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:40 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:111 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:32 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:50
 msgid "Reset direction"
 msgstr "重置方向"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:44
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:113
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:33
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:44 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:113 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:33
 msgid "Brush size"
 msgstr "刷子大小"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:45
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:114
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:34
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:45 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:114 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:34
 msgid "Brush shape"
 msgstr "画笔形状"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:46
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:115
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:35
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:46 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:115 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:35
 msgid "Left mouse button"
 msgstr "鼠标左键"
 
@@ -2382,52 +2214,35 @@ msgstr "鼠标左键"
 msgid "Enforce supports"
 msgstr "强制支持"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:48
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:117
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:37
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:48 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:117 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:37
 msgid "Right mouse button"
 msgstr "鼠标右键"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:49
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:434
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:49 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:434
 msgid "Block supports"
 msgstr "阻止支撑"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:50
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:119
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:39
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:50 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:119 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:39
 msgid "Shift + Left mouse button"
 msgstr "Shift+鼠标左键"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:51
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:429
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:40
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:250
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:51 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:429 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:40 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:250
 msgid "Remove selection"
 msgstr "删除所选内容"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:52
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:41
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:52 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:41
 msgid "Remove all selection"
 msgstr "删除所有选择"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:53
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:122
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:42
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:53 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:122 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:42
 msgid "Circle"
 msgstr "圆圈"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:54
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:123
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:43
-#: src/slic3r/GUI/GUI_Factories.cpp:461
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:54 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:123 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:43 src/slic3r/GUI/GUI_Factories.cpp:461
 msgid "Sphere"
 msgstr "球形"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:55
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:124
-#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:68
-#: src/libslic3r/PrintConfig.cpp:1147
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:55 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:124 src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:68 src/libslic3r/PrintConfig.cpp:1147
 msgid "Triangles"
 msgstr "三角形"
 
@@ -2439,28 +2254,23 @@ msgstr "通过角度高亮悬挑"
 msgid "Enforce"
 msgstr "执行"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:60
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:126
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:60 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:126
 msgid "Tool type"
 msgstr "工具类型"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:61
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:127
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:61 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:127
 msgid "Brush"
 msgstr "刷子"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:62
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:128
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:62 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:128
 msgid "Smart fill"
 msgstr "智能填充"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:64
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:131
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:64 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:131
 msgid "Smart fill angle"
 msgstr "智能填充角度"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:66
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:132
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:66 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:132
 msgid "Split triangles"
 msgstr "分裂三角形"
 
@@ -2471,45 +2281,34 @@ msgstr "只在悬挑上"
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:174
 #, boost-format
 msgid "Preselects faces by overhang angle. It is possible to restrict paintable facets to only preselected faces when the option \"%1%\" is enabled."
-msgstr "通过悬垂角度预选面。启用选项\"%1%\"时，可以将可绘制的面限制为仅预选的面。"
+msgstr "通过悬垂角度预选面。启用选项 \"%1%\" 时，可以将可绘制的面限制为仅预选的面。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:217
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:378
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:217 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:378
 msgid "Paints facets according to the chosen painting brush."
 msgstr "根据选择的画笔绘制面。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:225
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:391
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:225 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:391
 msgid "Paints neighboring facets whose relative angle is less or equal to set angle."
 msgstr "绘制相对角度小于或等于“设置角度”的相邻面。"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:229
 #, boost-format
 msgid "Allows painting only on facets selected by: \"%1%\""
-msgstr "仅允许在选择的面上绘制：\"%1%'"
+msgstr "仅允许在选择的面上绘制：\"%1%\""
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:244
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:419
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:144
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:244 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:419 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:144
 msgid "Paints all facets inside, regardless of their orientation."
 msgstr "绘制内部的所有面，无论其方向如何。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:253
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:428
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:152
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:253 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:428 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:152
 msgid "Ignores facets facing away from the camera."
 msgstr "忽略背对摄影机的面。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:262
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:437
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:262 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:437
 msgid "Paints only one facet."
 msgstr "只绘制一个面。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:270
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:285
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:445
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:462
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:132
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:270 src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:285 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:445 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:462 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:132
 msgid "Alt + Mouse wheel"
 msgstr "Alt+鼠标滚轮"
 
@@ -2517,15 +2316,11 @@ msgstr "Alt+鼠标滚轮"
 msgid "Splits bigger facets into smaller ones while the object is painted."
 msgstr "在绘制对象时，将较大的面拆分为较小的面。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:308
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:483
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:170
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:308 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:483 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:170
 msgid "Ctrl + Mouse wheel"
 msgstr "Ctrl+鼠标滚轮"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:313
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:488
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:175
+#: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:313 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:488 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:175
 msgid "Reset selection"
 msgstr "重置选择"
 
@@ -2557,13 +2352,11 @@ msgstr "预览挖空和钻孔模型"
 msgid "Offset"
 msgstr "偏移"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:33
-#: src/slic3r/GUI/Jobs/SLAImportJob.cpp:57
+#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:33 src/slic3r/GUI/Jobs/SLAImportJob.cpp:57
 msgid "Quality"
 msgstr "质量"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:34
-#: src/libslic3r/PrintConfig.cpp:3759
+#: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:34 src/libslic3r/PrintConfig.cpp:3759
 msgid "Closing distance"
 msgstr "近距离"
 
@@ -2614,10 +2407,9 @@ msgstr "移动排水孔"
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:27
 #, boost-format
 msgid "Your printer has more extruders than the multi-material painting gizmo supports. For this reason, only the first %1% extruders will be able to be used for painting."
-msgstr "打印机的挤出机数量超过了多材质绘画 gizmo 支持的数量。因此，只有前%1%的挤出机才能用于绘制。"
+msgstr "打印机的挤出机数量超过了多材质绘画 gizmo 支持的数量。因此，只有前 %1% 的挤出机才能用于绘制。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:45
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:51
+#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:45 src/slic3r/GUI/ObjectDataViewModel.cpp:51
 msgid "Multimaterial painting"
 msgstr "多材料绘画"
 
@@ -2629,8 +2421,7 @@ msgstr "第一种颜色"
 msgid "Second color"
 msgstr "第二种颜色"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:120
-#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:671
+#: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:120 src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:671
 msgid "Remove painted color"
 msgstr "去除油漆颜色"
 
@@ -2653,17 +2444,13 @@ msgstr "在绘制对象时，将较大的面拆分为较小的面。"
 #: src/slic3r/GUI/Gizmos/GLGizmoMmuSegmentation.cpp:674
 #, boost-format
 msgid "Painted using: Extruder %1%"
-msgstr "涂漆使用：挤压机%1%"
+msgstr "涂漆使用：挤出机 %1%"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoMove.cpp:55
 msgid "Move"
 msgstr "移动"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoRotate.cpp:466
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:543
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:562
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:578
-#: src/libslic3r/PrintConfig.cpp:4380
+#: src/slic3r/GUI/Gizmos/GLGizmoRotate.cpp:466 src/slic3r/GUI/GUI_ObjectManipulation.cpp:543 src/slic3r/GUI/GUI_ObjectManipulation.cpp:562 src/slic3r/GUI/GUI_ObjectManipulation.cpp:578 src/libslic3r/PrintConfig.cpp:4380
 msgid "Rotate"
 msgstr "旋转"
 
@@ -2671,26 +2458,19 @@ msgstr "旋转"
 msgid "Optimize orientation"
 msgstr "优化方向"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoRotate.cpp:552
-#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:319
+#: src/slic3r/GUI/Gizmos/GLGizmoRotate.cpp:552 src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:319
 msgid "Apply"
 msgstr "应用"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoScale.cpp:79
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:216
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:563
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:579
-#: src/libslic3r/PrintConfig.cpp:4395
+#: src/slic3r/GUI/Gizmos/GLGizmoScale.cpp:79 src/slic3r/GUI/GUI_ObjectManipulation.cpp:216 src/slic3r/GUI/GUI_ObjectManipulation.cpp:563 src/slic3r/GUI/GUI_ObjectManipulation.cpp:579 src/libslic3r/PrintConfig.cpp:4395
 msgid "Scale"
 msgstr "比例"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:36
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:253
+#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:36 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:253
 msgid "Enforce seam"
 msgstr "强制接缝"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:38
-#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:255
+#: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:38 src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:255
 msgid "Block seam"
 msgstr "阻止接缝"
 
@@ -2715,8 +2495,7 @@ msgstr "抽取比"
 msgid "Processing model '%1%' with more than 1M triangles could be slow. It is highly recommend to reduce amount of triangles."
 msgstr "处理超过 1M 个三角形的模型“%1%”可能会很慢。强烈建议减少三角形的数量。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:116
-#: src/slic3r/GUI/GUI_Factories.cpp:705
+#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:116 src/slic3r/GUI/GUI_Factories.cpp:705
 msgid "Simplify model"
 msgstr "简化模型"
 
@@ -2728,9 +2507,7 @@ msgstr "简化"
 msgid "Simplification is currently only allowed when a single part is selected"
 msgstr "当前仅当选择单个零件时才允许简化"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:157
-#: src/slic3r/GUI/MainFrame.cpp:1162 src/slic3r/GUI/MainFrame.cpp:1619
-#: src/slic3r/GUI/PrintHostDialogs.cpp:373
+#: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:157 src/slic3r/GUI/MainFrame.cpp:1162 src/slic3r/GUI/MainFrame.cpp:1619 src/slic3r/GUI/PrintHostDialogs.cpp:373
 msgid "Error"
 msgstr "错误"
 
@@ -2774,12 +2551,12 @@ msgstr "进程预览时无法应用。"
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:329
 #, boost-format
 msgid "Process %1% / 100"
-msgstr "进程%1%/100"
+msgstr "进程 %1%/100"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:479
 #, boost-format
 msgid "Simplify %1%"
-msgstr "简化%1%"
+msgstr "简化 %1%"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:39
 msgid "Head diameter"
@@ -2789,8 +2566,7 @@ msgstr "头直径"
 msgid "Lock supports under new islands"
 msgstr "新岛屿下的锁支撑"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:41
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1223
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:41 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1223
 msgid "Remove selected points"
 msgstr "删除所选点"
 
@@ -2798,13 +2574,11 @@ msgstr "删除所选点"
 msgid "Remove all points"
 msgstr "删除所有点"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:43
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1226
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:43 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1226
 msgid "Apply changes"
 msgstr "应用更改"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:44
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1227
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:44 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1227
 msgid "Discard changes"
 msgstr "放弃更改"
 
@@ -2812,13 +2586,11 @@ msgstr "放弃更改"
 msgid "Minimal points distance"
 msgstr "最小点距离"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:46
-#: src/libslic3r/PrintConfig.cpp:3589
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:46 src/libslic3r/PrintConfig.cpp:3589
 msgid "Support points density"
 msgstr "支撑点密度"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:47
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1229
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:47 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1229
 msgid "Auto-generate points"
 msgstr "自动生成点"
 
@@ -2882,9 +2654,7 @@ msgstr "SLA Gizmo 键盘快捷键"
 msgid "Note: some shortcuts work in (non)editing mode only."
 msgstr "注意:某些快捷方式仅在(非)编辑模式下工作。"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1215
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1218
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1219
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1215 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1218 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1219
 msgid "Left click"
 msgstr "左鍵單擊"
 
@@ -2900,9 +2670,7 @@ msgstr "右键点击"
 msgid "Remove point"
 msgstr "移除点"
 
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1217
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1220
-#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1221
+#: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1217 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1220 src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1221
 msgid "Drag"
 msgstr "拖动"
 
@@ -2969,7 +2737,7 @@ msgstr "未定义"
 #: src/slic3r/GUI/GUI.cpp:317
 #, boost-format
 msgid "%1% was substituted with %2%"
-msgstr "%1%被%2%取代"
+msgstr "%1% 被 %2% 取代"
 
 #: src/slic3r/GUI/GUI.cpp:326
 msgid "Most likely the configuration was produced by a newer version of PrusaSlicer or by some PrusaSlicer fork."
@@ -2998,7 +2766,7 @@ msgstr "已加载配置包，但无法识别某些配置值。"
 #: src/slic3r/GUI/GUI.cpp:365
 #, boost-format
 msgid "Configuration file \"%1%\" was loaded, however some configuration values were not recognized."
-msgstr "已加载配置文件\"%1%\"，但无法识别某些配置值。"
+msgstr "已加载配置文件 \"%1%\"，但无法识别某些配置值。"
 
 #: src/slic3r/GUI/GUI_App.cpp:266
 msgid "is based on Slic3r by Alessandro Ranellucci and the RepRap community."
@@ -3031,14 +2799,14 @@ msgid ""
 "\n"
 "What do you want to do now?"
 msgstr ""
-"从%1%2.3开始，Linux 上的配置目录已更改（根据 XDG 基本目录规范）为\n"
+"从 %1% 2.3开始，Linux 上的配置目录已更改（根据 XDG 基本目录规范）为\n"
 "%2%。\n"
 "\n"
 "此目录尚不存在（可能是您第一次运行新版本）。\n"
-"但是，在%3%中检测到旧的%1%配置目录。\n"
+"但是，在 %3% 中检测到旧的 %1% 配置目录。\n"
 "\n"
 "请考虑将旧目录的内容移动到新位置，以便访问您的配置文件等。\n"
-"请注意，如果您决定将来降级%1%，它将再次使用旧位置。\n"
+"请注意，如果您决定将来降级 %1%，它将再次使用旧位置。\n"
 "\n"
 "您现在想做什么？"
 
@@ -3100,7 +2868,7 @@ msgstr "分析 PrusaGCodeViewer 配置文件时出错，该文件可能已损坏
 #: src/slic3r/GUI/GUI_App.cpp:960
 #, boost-format
 msgid "You are opening %1% version %2%."
-msgstr "您正在打开%1%版本%2%。"
+msgstr "您正在打开 %1% 版本 %2%。"
 
 #: src/slic3r/GUI/GUI_App.cpp:963
 #, boost-format
@@ -3165,8 +2933,7 @@ msgstr ""
 "%s\n"
 "要继续吗？"
 
-#: src/slic3r/GUI/GUI_App.cpp:1136 src/slic3r/GUI/GUI_App.cpp:3094
-#: src/slic3r/GUI/Plater.cpp:1728 src/slic3r/GUI/UnsavedChangesDialog.cpp:889
+#: src/slic3r/GUI/GUI_App.cpp:1136 src/slic3r/GUI/GUI_App.cpp:3094 src/slic3r/GUI/Plater.cpp:1728 src/slic3r/GUI/UnsavedChangesDialog.cpp:889
 msgid "Remember my choice"
 msgstr "记住我的选择"
 
@@ -3177,7 +2944,7 @@ msgstr "加载配置"
 #: src/slic3r/GUI/GUI_App.cpp:1209
 #, boost-format
 msgid "New release version %1% is available."
-msgstr "新发布版本%1%可用。"
+msgstr "新发布版本 %1% 可用。"
 
 #: src/slic3r/GUI/GUI_App.cpp:1210
 msgid "See Download page."
@@ -3224,12 +2991,12 @@ msgstr ""
 #: src/slic3r/GUI/GUI_App.cpp:1349
 #, boost-format
 msgid "Disable \"%1%\""
-msgstr "禁用\"%1%\""
+msgstr "禁用 \"%1%\""
 
 #: src/slic3r/GUI/GUI_App.cpp:1350
 #, boost-format
 msgid "Leave \"%1%\" enabled"
-msgstr "保持\"%1%'处于启用状态"
+msgstr "保持 \"%1%\" 处于启用状态"
 
 #: src/slic3r/GUI/GUI_App.cpp:1677
 msgid "You have the following presets with saved options for \"Print Host upload\""
@@ -3397,7 +3164,7 @@ msgstr "加载配置快照"
 #: src/slic3r/GUI/GUI_App.cpp:2319
 #, boost-format
 msgid "Continue to activate a configuration snapshot %1%?"
-msgstr "是否继续激活配置快照%1%？"
+msgstr "是否继续激活配置快照 %1%？"
 
 #: src/slic3r/GUI/GUI_App.cpp:2333
 msgid "Failed to activate configuration snapshot."
@@ -3464,8 +3231,7 @@ msgstr "正在进行的上传"
 msgid "It's impossible to print multi-part object(s) with SLA technology."
 msgstr "无法使用 SLA 技术打印多部分对象。"
 
-#: src/slic3r/GUI/GUI_App.cpp:2870 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224
-#: src/slic3r/GUI/Plater.cpp:2439
+#: src/slic3r/GUI/GUI_App.cpp:2870 src/slic3r/GUI/Jobs/SLAImportJob.cpp:224 src/slic3r/GUI/Plater.cpp:2439
 msgid "Please check your object list before preset changing."
 msgstr "请在预设更改之前检查对象列表。"
 
@@ -3502,10 +3268,9 @@ msgstr "在悬停的超链接上，你不会再被问及此事。"
 msgid ""
 "Visit \"Preferences\" and check \"%1%\"\n"
 "to changes your choice."
-msgstr "访问“首选项”并选中“%1%”，以更改您的选择。"
+msgstr "访问“首选项”并选中 “%1%”，以更改您的选择。"
 
-#: src/slic3r/GUI/GUI_App.cpp:3104 src/slic3r/GUI/Plater.cpp:1740
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:906
+#: src/slic3r/GUI/GUI_App.cpp:3104 src/slic3r/GUI/Plater.cpp:1740 src/slic3r/GUI/UnsavedChangesDialog.cpp:906
 msgid "PrusaSlicer: Don't ask me again"
 msgstr "普鲁萨斯勒：别再问我了"
 
@@ -3518,43 +3283,18 @@ msgstr "PrusaSlicer GUI 初始化失败"
 msgid "Fatal error, exception catched: %1%"
 msgstr "致命错误，捕获异常：%1%"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:54 src/slic3r/GUI/GUI_Factories.cpp:127
-#: src/libslic3r/PrintConfig.cpp:264 src/libslic3r/PrintConfig.cpp:381
-#: src/libslic3r/PrintConfig.cpp:424 src/libslic3r/PrintConfig.cpp:433
-#: src/libslic3r/PrintConfig.cpp:685 src/libslic3r/PrintConfig.cpp:752
-#: src/libslic3r/PrintConfig.cpp:760 src/libslic3r/PrintConfig.cpp:1209
-#: src/libslic3r/PrintConfig.cpp:1296 src/libslic3r/PrintConfig.cpp:1521
-#: src/libslic3r/PrintConfig.cpp:1913 src/libslic3r/PrintConfig.cpp:1980
-#: src/libslic3r/PrintConfig.cpp:2214 src/libslic3r/PrintConfig.cpp:2800
-#: src/libslic3r/PrintConfig.cpp:2808 src/libslic3r/PrintConfig.cpp:2868
+#: src/slic3r/GUI/GUI_Factories.cpp:54 src/slic3r/GUI/GUI_Factories.cpp:127 src/libslic3r/PrintConfig.cpp:264 src/libslic3r/PrintConfig.cpp:381 src/libslic3r/PrintConfig.cpp:424 src/libslic3r/PrintConfig.cpp:433 src/libslic3r/PrintConfig.cpp:685 src/libslic3r/PrintConfig.cpp:752 src/libslic3r/PrintConfig.cpp:760 src/libslic3r/PrintConfig.cpp:1209 src/libslic3r/PrintConfig.cpp:1296 src/libslic3r/PrintConfig.cpp:1521 src/libslic3r/PrintConfig.cpp:1913 src/libslic3r/PrintConfig.cpp:1980 src/libslic3r/PrintConfig.cpp:2214 src/libslic3r/PrintConfig.cpp:2800 src/libslic3r/PrintConfig.cpp:2808 src/libslic3r/PrintConfig.cpp:2868
 #: src/libslic3r/PrintConfig.cpp:2877
 msgid "Layers and Perimeters"
 msgstr "图层和周长"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:56 src/slic3r/GUI/GUI_Factories.cpp:131
-#: src/slic3r/GUI/GUI_Preview.cpp:249 src/slic3r/GUI/Tab.cpp:1550
-#: src/slic3r/GUI/Tab.cpp:1552 src/libslic3r/ExtrusionEntity.cpp:328
-#: src/libslic3r/ExtrusionEntity.cpp:360 src/libslic3r/PrintConfig.cpp:647
-#: src/libslic3r/PrintConfig.cpp:2045 src/libslic3r/PrintConfig.cpp:2054
-#: src/libslic3r/PrintConfig.cpp:2063 src/libslic3r/PrintConfig.cpp:2073
-#: src/libslic3r/PrintConfig.cpp:2082 src/libslic3r/PrintConfig.cpp:2504
-#: src/libslic3r/PrintConfig.cpp:2510 src/libslic3r/PrintConfig.cpp:2518
-#: src/libslic3r/PrintConfig.cpp:2531 src/libslic3r/PrintConfig.cpp:2541
-#: src/libslic3r/PrintConfig.cpp:2549 src/libslic3r/PrintConfig.cpp:2567
-#: src/libslic3r/PrintConfig.cpp:2584 src/libslic3r/PrintConfig.cpp:2605
-#: src/libslic3r/PrintConfig.cpp:2618 src/libslic3r/PrintConfig.cpp:2635
-#: src/libslic3r/PrintConfig.cpp:2653 src/libslic3r/PrintConfig.cpp:2668
-#: src/libslic3r/PrintConfig.cpp:2678 src/libslic3r/PrintConfig.cpp:2687
-#: src/libslic3r/PrintConfig.cpp:2698 src/libslic3r/PrintConfig.cpp:2712
-#: src/libslic3r/PrintConfig.cpp:2728 src/libslic3r/PrintConfig.cpp:2736
-#: src/libslic3r/PrintConfig.cpp:2737 src/libslic3r/PrintConfig.cpp:2746
-#: src/libslic3r/PrintConfig.cpp:2760 src/libslic3r/PrintConfig.cpp:2768
+#: src/slic3r/GUI/GUI_Factories.cpp:56 src/slic3r/GUI/GUI_Factories.cpp:131 src/slic3r/GUI/GUI_Preview.cpp:249 src/slic3r/GUI/Tab.cpp:1550 src/slic3r/GUI/Tab.cpp:1552 src/libslic3r/ExtrusionEntity.cpp:328 src/libslic3r/ExtrusionEntity.cpp:360 src/libslic3r/PrintConfig.cpp:647 src/libslic3r/PrintConfig.cpp:2045 src/libslic3r/PrintConfig.cpp:2054 src/libslic3r/PrintConfig.cpp:2063 src/libslic3r/PrintConfig.cpp:2073 src/libslic3r/PrintConfig.cpp:2082 src/libslic3r/PrintConfig.cpp:2504 src/libslic3r/PrintConfig.cpp:2510 src/libslic3r/PrintConfig.cpp:2518 src/libslic3r/PrintConfig.cpp:2531 src/libslic3r/PrintConfig.cpp:2541
+#: src/libslic3r/PrintConfig.cpp:2549 src/libslic3r/PrintConfig.cpp:2567 src/libslic3r/PrintConfig.cpp:2584 src/libslic3r/PrintConfig.cpp:2605 src/libslic3r/PrintConfig.cpp:2618 src/libslic3r/PrintConfig.cpp:2635 src/libslic3r/PrintConfig.cpp:2653 src/libslic3r/PrintConfig.cpp:2668 src/libslic3r/PrintConfig.cpp:2678 src/libslic3r/PrintConfig.cpp:2687 src/libslic3r/PrintConfig.cpp:2698 src/libslic3r/PrintConfig.cpp:2712 src/libslic3r/PrintConfig.cpp:2728 src/libslic3r/PrintConfig.cpp:2736 src/libslic3r/PrintConfig.cpp:2737 src/libslic3r/PrintConfig.cpp:2746 src/libslic3r/PrintConfig.cpp:2760 src/libslic3r/PrintConfig.cpp:2768
 #: src/libslic3r/PrintConfig.cpp:2782
 msgid "Support material"
 msgstr "支撑材料"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:59 src/slic3r/GUI/GUI_Factories.cpp:135
-#: src/libslic3r/PrintConfig.cpp:3004 src/libslic3r/PrintConfig.cpp:3012
+#: src/slic3r/GUI/GUI_Factories.cpp:59 src/slic3r/GUI/GUI_Factories.cpp:135 src/libslic3r/PrintConfig.cpp:3004 src/libslic3r/PrintConfig.cpp:3012
 msgid "Wipe options"
 msgstr "擦除选项"
 
@@ -3562,96 +3302,44 @@ msgstr "擦除选项"
 msgid "Pad and Support"
 msgstr "垫和支撑"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:129 src/slic3r/GUI/GUI_Preview.cpp:245
-#: src/slic3r/GUI/Tab.cpp:1516 src/libslic3r/ExtrusionEntity.cpp:324
-#: src/libslic3r/ExtrusionEntity.cpp:352 src/libslic3r/PrintConfig.cpp:1537
-#: src/libslic3r/PrintConfig.cpp:1543 src/libslic3r/PrintConfig.cpp:1557
-#: src/libslic3r/PrintConfig.cpp:1567 src/libslic3r/PrintConfig.cpp:1575
-#: src/libslic3r/PrintConfig.cpp:1577
+#: src/slic3r/GUI/GUI_Factories.cpp:129 src/slic3r/GUI/GUI_Preview.cpp:245 src/slic3r/GUI/Tab.cpp:1516 src/libslic3r/ExtrusionEntity.cpp:324 src/libslic3r/ExtrusionEntity.cpp:352 src/libslic3r/PrintConfig.cpp:1537 src/libslic3r/PrintConfig.cpp:1543 src/libslic3r/PrintConfig.cpp:1557 src/libslic3r/PrintConfig.cpp:1567 src/libslic3r/PrintConfig.cpp:1575 src/libslic3r/PrintConfig.cpp:1577
 msgid "Ironing"
 msgstr "熨烫"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:130 src/libslic3r/PrintConfig.cpp:1260
-#: src/libslic3r/PrintConfig.cpp:1261 src/libslic3r/PrintConfig.cpp:1276
-#: src/libslic3r/PrintConfig.cpp:1286
+#: src/slic3r/GUI/GUI_Factories.cpp:130 src/libslic3r/PrintConfig.cpp:1260 src/libslic3r/PrintConfig.cpp:1261 src/libslic3r/PrintConfig.cpp:1276 src/libslic3r/PrintConfig.cpp:1286
 msgid "Fuzzy Skin"
 msgstr "模糊皮肤"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:132 src/slic3r/GUI/GUI_Preview.cpp:220
-#: src/slic3r/GUI/Tab.cpp:1584 src/libslic3r/PrintConfig.cpp:484
-#: src/libslic3r/PrintConfig.cpp:740 src/libslic3r/PrintConfig.cpp:1303
-#: src/libslic3r/PrintConfig.cpp:1494 src/libslic3r/PrintConfig.cpp:1576
-#: src/libslic3r/PrintConfig.cpp:1970 src/libslic3r/PrintConfig.cpp:2302
-#: src/libslic3r/PrintConfig.cpp:2355 src/libslic3r/PrintConfig.cpp:2853
+#: src/slic3r/GUI/GUI_Factories.cpp:132 src/slic3r/GUI/GUI_Preview.cpp:220 src/slic3r/GUI/Tab.cpp:1584 src/libslic3r/PrintConfig.cpp:484 src/libslic3r/PrintConfig.cpp:740 src/libslic3r/PrintConfig.cpp:1303 src/libslic3r/PrintConfig.cpp:1494 src/libslic3r/PrintConfig.cpp:1576 src/libslic3r/PrintConfig.cpp:1970 src/libslic3r/PrintConfig.cpp:2302 src/libslic3r/PrintConfig.cpp:2355 src/libslic3r/PrintConfig.cpp:2853
 msgid "Speed"
 msgstr "速度"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:133 src/slic3r/GUI/Tab.cpp:1623
-#: src/slic3r/GUI/Tab.cpp:2296 src/libslic3r/PrintConfig.cpp:770
-#: src/libslic3r/PrintConfig.cpp:1447 src/libslic3r/PrintConfig.cpp:1947
-#: src/libslic3r/PrintConfig.cpp:2323 src/libslic3r/PrintConfig.cpp:2597
-#: src/libslic3r/PrintConfig.cpp:2625
+#: src/slic3r/GUI/GUI_Factories.cpp:133 src/slic3r/GUI/Tab.cpp:1623 src/slic3r/GUI/Tab.cpp:2296 src/libslic3r/PrintConfig.cpp:770 src/libslic3r/PrintConfig.cpp:1447 src/libslic3r/PrintConfig.cpp:1947 src/libslic3r/PrintConfig.cpp:2323 src/libslic3r/PrintConfig.cpp:2597 src/libslic3r/PrintConfig.cpp:2625
 msgid "Extruders"
 msgstr "挤出机"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:134 src/libslic3r/PrintConfig.cpp:728
-#: src/libslic3r/PrintConfig.cpp:838 src/libslic3r/PrintConfig.cpp:1195
-#: src/libslic3r/PrintConfig.cpp:1455 src/libslic3r/PrintConfig.cpp:1956
-#: src/libslic3r/PrintConfig.cpp:2343 src/libslic3r/PrintConfig.cpp:2606
-#: src/libslic3r/PrintConfig.cpp:2840
+#: src/slic3r/GUI/GUI_Factories.cpp:134 src/libslic3r/PrintConfig.cpp:728 src/libslic3r/PrintConfig.cpp:838 src/libslic3r/PrintConfig.cpp:1195 src/libslic3r/PrintConfig.cpp:1455 src/libslic3r/PrintConfig.cpp:1956 src/libslic3r/PrintConfig.cpp:2343 src/libslic3r/PrintConfig.cpp:2606 src/libslic3r/PrintConfig.cpp:2840
 msgid "Extrusion Width"
 msgstr "挤出宽度"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:136 src/slic3r/GUI/Tab.cpp:1536
-#: src/libslic3r/PrintConfig.cpp:494 src/libslic3r/PrintConfig.cpp:505
-#: src/libslic3r/PrintConfig.cpp:521
+#: src/slic3r/GUI/GUI_Factories.cpp:136 src/slic3r/GUI/Tab.cpp:1536 src/libslic3r/PrintConfig.cpp:494 src/libslic3r/PrintConfig.cpp:505 src/libslic3r/PrintConfig.cpp:521
 msgid "Skirt and brim"
 msgstr "环绕和裙边"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:138 src/slic3r/GUI/Tab.cpp:1495
-#: src/slic3r/GUI/Tab.cpp:1528 src/slic3r/GUI/Tab.cpp:1645
-#: src/slic3r/GUI/Tab.cpp:1649 src/slic3r/GUI/Tab.cpp:2023
-#: src/slic3r/GUI/Tab.cpp:2393 src/slic3r/GUI/Tab.cpp:4712
-#: src/libslic3r/PrintConfig.cpp:247 src/libslic3r/PrintConfig.cpp:472
-#: src/libslic3r/PrintConfig.cpp:1396 src/libslic3r/PrintConfig.cpp:1483
-#: src/libslic3r/PrintConfig.cpp:1530 src/libslic3r/PrintConfig.cpp:2480
-#: src/libslic3r/PrintConfig.cpp:2490 src/libslic3r/PrintConfig.cpp:3028
-#: src/libslic3r/PrintConfig.cpp:3224
+#: src/slic3r/GUI/GUI_Factories.cpp:138 src/slic3r/GUI/Tab.cpp:1495 src/slic3r/GUI/Tab.cpp:1528 src/slic3r/GUI/Tab.cpp:1645 src/slic3r/GUI/Tab.cpp:1649 src/slic3r/GUI/Tab.cpp:2023 src/slic3r/GUI/Tab.cpp:2393 src/slic3r/GUI/Tab.cpp:4712 src/libslic3r/PrintConfig.cpp:247 src/libslic3r/PrintConfig.cpp:472 src/libslic3r/PrintConfig.cpp:1396 src/libslic3r/PrintConfig.cpp:1483 src/libslic3r/PrintConfig.cpp:1530 src/libslic3r/PrintConfig.cpp:2480 src/libslic3r/PrintConfig.cpp:2490 src/libslic3r/PrintConfig.cpp:3028 src/libslic3r/PrintConfig.cpp:3224
 msgid "Advanced"
 msgstr "高级"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:140 src/slic3r/GUI/Plater.cpp:428
-#: src/slic3r/GUI/Tab.cpp:4646 src/slic3r/GUI/Tab.cpp:4647
-#: src/libslic3r/PrintConfig.cpp:3418 src/libslic3r/PrintConfig.cpp:3425
-#: src/libslic3r/PrintConfig.cpp:3434 src/libslic3r/PrintConfig.cpp:3443
-#: src/libslic3r/PrintConfig.cpp:3453 src/libslic3r/PrintConfig.cpp:3463
-#: src/libslic3r/PrintConfig.cpp:3500 src/libslic3r/PrintConfig.cpp:3507
-#: src/libslic3r/PrintConfig.cpp:3518 src/libslic3r/PrintConfig.cpp:3528
-#: src/libslic3r/PrintConfig.cpp:3537 src/libslic3r/PrintConfig.cpp:3550
-#: src/libslic3r/PrintConfig.cpp:3560 src/libslic3r/PrintConfig.cpp:3569
-#: src/libslic3r/PrintConfig.cpp:3579 src/libslic3r/PrintConfig.cpp:3590
-#: src/libslic3r/PrintConfig.cpp:3598
+#: src/slic3r/GUI/GUI_Factories.cpp:140 src/slic3r/GUI/Plater.cpp:428 src/slic3r/GUI/Tab.cpp:4646 src/slic3r/GUI/Tab.cpp:4647 src/libslic3r/PrintConfig.cpp:3418 src/libslic3r/PrintConfig.cpp:3425 src/libslic3r/PrintConfig.cpp:3434 src/libslic3r/PrintConfig.cpp:3443 src/libslic3r/PrintConfig.cpp:3453 src/libslic3r/PrintConfig.cpp:3463 src/libslic3r/PrintConfig.cpp:3500 src/libslic3r/PrintConfig.cpp:3507 src/libslic3r/PrintConfig.cpp:3518 src/libslic3r/PrintConfig.cpp:3528 src/libslic3r/PrintConfig.cpp:3537 src/libslic3r/PrintConfig.cpp:3550 src/libslic3r/PrintConfig.cpp:3560 src/libslic3r/PrintConfig.cpp:3569 src/libslic3r/PrintConfig.cpp:3579
+#: src/libslic3r/PrintConfig.cpp:3590 src/libslic3r/PrintConfig.cpp:3598
 msgid "Supports"
 msgstr "支持"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:141 src/slic3r/GUI/Plater.cpp:574
-#: src/slic3r/GUI/Tab.cpp:4687 src/slic3r/GUI/Tab.cpp:4688
-#: src/slic3r/GUI/Tab.cpp:4760 src/libslic3r/PrintConfig.cpp:3606
-#: src/libslic3r/PrintConfig.cpp:3613 src/libslic3r/PrintConfig.cpp:3627
-#: src/libslic3r/PrintConfig.cpp:3638 src/libslic3r/PrintConfig.cpp:3648
-#: src/libslic3r/PrintConfig.cpp:3670 src/libslic3r/PrintConfig.cpp:3681
-#: src/libslic3r/PrintConfig.cpp:3688 src/libslic3r/PrintConfig.cpp:3695
-#: src/libslic3r/PrintConfig.cpp:3706 src/libslic3r/PrintConfig.cpp:3715
-#: src/libslic3r/PrintConfig.cpp:3724
+#: src/slic3r/GUI/GUI_Factories.cpp:141 src/slic3r/GUI/Plater.cpp:574 src/slic3r/GUI/Tab.cpp:4687 src/slic3r/GUI/Tab.cpp:4688 src/slic3r/GUI/Tab.cpp:4760 src/libslic3r/PrintConfig.cpp:3606 src/libslic3r/PrintConfig.cpp:3613 src/libslic3r/PrintConfig.cpp:3627 src/libslic3r/PrintConfig.cpp:3638 src/libslic3r/PrintConfig.cpp:3648 src/libslic3r/PrintConfig.cpp:3670 src/libslic3r/PrintConfig.cpp:3681 src/libslic3r/PrintConfig.cpp:3688 src/libslic3r/PrintConfig.cpp:3695 src/libslic3r/PrintConfig.cpp:3706 src/libslic3r/PrintConfig.cpp:3715 src/libslic3r/PrintConfig.cpp:3724
 msgid "Pad"
 msgstr "垫"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4705
-#: src/slic3r/GUI/Tab.cpp:4706 src/libslic3r/SLA/Hollowing.cpp:72
-#: src/libslic3r/SLA/Hollowing.cpp:84 src/libslic3r/SLA/Hollowing.cpp:91
-#: src/libslic3r/SLA/Hollowing.cpp:100 src/libslic3r/PrintConfig.cpp:3734
-#: src/libslic3r/PrintConfig.cpp:3741 src/libslic3r/PrintConfig.cpp:3751
-#: src/libslic3r/PrintConfig.cpp:3760
+#: src/slic3r/GUI/GUI_Factories.cpp:142 src/slic3r/GUI/Tab.cpp:4705 src/slic3r/GUI/Tab.cpp:4706 src/libslic3r/SLA/Hollowing.cpp:72 src/libslic3r/SLA/Hollowing.cpp:84 src/libslic3r/SLA/Hollowing.cpp:91 src/libslic3r/SLA/Hollowing.cpp:100 src/libslic3r/PrintConfig.cpp:3734 src/libslic3r/PrintConfig.cpp:3741 src/libslic3r/PrintConfig.cpp:3751 src/libslic3r/PrintConfig.cpp:3760
 msgid "Hollowing"
 msgstr "掏空"
 
@@ -3679,11 +3367,10 @@ msgstr "添加支撑生成器"
 msgid "Select showing settings"
 msgstr "选择显示设置"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:407 src/slic3r/GUI/GUI_Factories.cpp:412
-#: src/slic3r/GUI/GUI_Factories.cpp:556 src/slic3r/GUI/GUI_Factories.cpp:562
+#: src/slic3r/GUI/GUI_Factories.cpp:407 src/slic3r/GUI/GUI_Factories.cpp:412 src/slic3r/GUI/GUI_Factories.cpp:556 src/slic3r/GUI/GUI_Factories.cpp:562
 #, c-format, boost-format
 msgid "Quick Add Settings (%s)"
-msgstr "快速添加设置 （%s）"
+msgstr "快速添加设置 (%s)"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:444
 msgid "Remove the selected object"
@@ -3693,8 +3380,7 @@ msgstr "删除所选对象"
 msgid "Load"
 msgstr "加载"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:461 src/slic3r/GUI/GUI_Factories.cpp:501
-#: src/slic3r/GUI/GUI_Factories.cpp:505
+#: src/slic3r/GUI/GUI_Factories.cpp:461 src/slic3r/GUI/GUI_Factories.cpp:501 src/slic3r/GUI/GUI_Factories.cpp:505
 msgid "Box"
 msgstr "盒子"
 
@@ -3762,9 +3448,7 @@ msgstr "用新的 STL 替换选定的卷"
 msgid "Set extruder for selected items"
 msgstr "为选定的项设置挤出机"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:778 src/slic3r/Utils/Repetier.cpp:126
-#: src/slic3r/Utils/Repetier.cpp:209 src/libslic3r/PrintConfig.cpp:612
-#: src/libslic3r/PrintConfig.cpp:2720
+#: src/slic3r/GUI/GUI_Factories.cpp:778 src/slic3r/Utils/Repetier.cpp:126 src/slic3r/Utils/Repetier.cpp:209 src/libslic3r/PrintConfig.cpp:612 src/libslic3r/PrintConfig.cpp:2720
 msgid "Default"
 msgstr "默认"
 
@@ -3792,8 +3476,7 @@ msgstr "从米换算"
 msgid "Revert conversion from meters"
 msgstr "从仪表恢复转换"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:859 src/slic3r/GUI/GUI_ObjectList.cpp:2133
-#: src/libslic3r/PrintConfig.cpp:4371
+#: src/slic3r/GUI/GUI_Factories.cpp:859 src/slic3r/GUI/GUI_ObjectList.cpp:2133 src/libslic3r/PrintConfig.cpp:4371
 msgid "Merge"
 msgstr "合并"
 
@@ -3853,8 +3536,7 @@ msgstr "到零件"
 msgid "Split the selected object into individual parts"
 msgstr "将选定对象拆分为各个部分"
 
-#: src/slic3r/GUI/GUI_Factories.cpp:944 src/slic3r/GUI/GUI_Factories.cpp:954
-#: src/slic3r/GUI/GUI_Factories.cpp:975 src/libslic3r/PrintConfig.cpp:4400
+#: src/slic3r/GUI/GUI_Factories.cpp:944 src/slic3r/GUI/GUI_Factories.cpp:954 src/slic3r/GUI/GUI_Factories.cpp:975 src/libslic3r/PrintConfig.cpp:4400
 msgid "Split"
 msgstr "分裂"
 
@@ -3902,8 +3584,7 @@ msgstr "移除图层范围"
 msgid "Add layer range"
 msgstr "添加图层范围"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:297
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:139
+#: src/slic3r/GUI/GUI_ObjectList.cpp:297 src/slic3r/GUI/GUI_ObjectManipulation.cpp:139
 msgid "Name"
 msgstr "名称"
 
@@ -3925,7 +3606,7 @@ msgstr[0] "已自动修复%1$d错误"
 #, c-format, boost-format
 msgid "%1$d degenerate facet"
 msgid_plural "%1$d degenerate facets"
-msgstr[0] "%1$d退化面"
+msgstr[0] "%1$d 退化面"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:417
 #, c-format, boost-format
@@ -3993,8 +3674,7 @@ msgstr "重命名对象"
 msgid "Rename Sub-object"
 msgstr "重命名子对象"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:1242
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3997
+#: src/slic3r/GUI/GUI_ObjectList.cpp:1242 src/slic3r/GUI/GUI_ObjectList.cpp:3997
 msgid "Instances to Separated Objects"
 msgstr "分隔对象的实例"
 
@@ -4178,9 +3858,7 @@ msgstr "删除所选项目"
 msgid "Delete Selected"
 msgstr "删除所选"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3010
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3038
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3058
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3010 src/slic3r/GUI/GUI_ObjectList.cpp:3038 src/slic3r/GUI/GUI_ObjectList.cpp:3058
 msgid "Add Height Range"
 msgstr "添加高度范围"
 
@@ -4227,8 +3905,7 @@ msgstr "从列表中选择-添加"
 msgid "Object or Instance"
 msgstr "对象或实例"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3641
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3780
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3641 src/slic3r/GUI/GUI_ObjectList.cpp:3780
 msgid "Part"
 msgstr "部件"
 
@@ -4254,8 +3931,7 @@ msgstr "在此模式下，您只能选择其他 %s 项%s"
 msgid "of a current Object"
 msgstr "当前对象的"
 
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3653
-#: src/slic3r/GUI/GUI_ObjectList.cpp:3728 src/slic3r/GUI/Plater.cpp:181
+#: src/slic3r/GUI/GUI_ObjectList.cpp:3653 src/slic3r/GUI/GUI_ObjectList.cpp:3728 src/slic3r/GUI/Plater.cpp:181
 msgid "Info"
 msgstr "信息"
 
@@ -4349,13 +4025,11 @@ msgstr "设置可打印实例"
 msgid "Set Unprintable Instance"
 msgstr "设置不可打印的实例"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:55
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:84
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:55 src/slic3r/GUI/GUI_ObjectManipulation.cpp:84
 msgid "World coordinates"
 msgstr "世界坐标"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:56
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:85
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:56 src/slic3r/GUI/GUI_ObjectManipulation.cpp:85
 msgid "Local coordinates"
 msgstr "本地坐标"
 
@@ -4367,15 +4041,11 @@ msgstr "选择坐标空间，将在其中执行转换。"
 msgid "Object name"
 msgstr "对象名称"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:201
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:521
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:201 src/slic3r/GUI/GUI_ObjectManipulation.cpp:521
 msgid "Position"
 msgstr "位置"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:202
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:522
-#: src/slic3r/GUI/Mouse3DController.cpp:478
-#: src/slic3r/GUI/Mouse3DController.cpp:499
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:202 src/slic3r/GUI/GUI_ObjectManipulation.cpp:522 src/slic3r/GUI/Mouse3DController.cpp:478 src/slic3r/GUI/Mouse3DController.cpp:499
 msgid "Rotation"
 msgstr "旋转"
 
@@ -4388,9 +4058,7 @@ msgstr "切换 %c 轴镜像"
 msgid "Set Mirror"
 msgstr "设置镜像"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:324
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:336
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:348
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:324 src/slic3r/GUI/GUI_ObjectManipulation.cpp:336 src/slic3r/GUI/GUI_ObjectManipulation.cpp:348
 msgid "Drop to bed"
 msgstr "放到床上"
 
@@ -4402,8 +4070,7 @@ msgstr "重置旋转"
 msgid "Reset Rotation"
 msgstr "重置旋转"
 
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:398
-#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:400
+#: src/slic3r/GUI/GUI_ObjectManipulation.cpp:398 src/slic3r/GUI/GUI_ObjectManipulation.cpp:400
 msgid "Reset scale"
 msgstr "重置比例"
 
@@ -4503,60 +4170,47 @@ msgstr "显示"
 msgid "Feature types"
 msgstr "功能类型"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:239 src/libslic3r/ExtrusionEntity.cpp:318
-#: src/libslic3r/ExtrusionEntity.cpp:340
+#: src/slic3r/GUI/GUI_Preview.cpp:239 src/libslic3r/ExtrusionEntity.cpp:318 src/libslic3r/ExtrusionEntity.cpp:340
 msgid "Perimeter"
 msgstr "周长"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:240 src/libslic3r/ExtrusionEntity.cpp:319
-#: src/libslic3r/ExtrusionEntity.cpp:342
+#: src/slic3r/GUI/GUI_Preview.cpp:240 src/libslic3r/ExtrusionEntity.cpp:319 src/libslic3r/ExtrusionEntity.cpp:342
 msgid "External perimeter"
 msgstr "外部轮廓"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:241 src/libslic3r/ExtrusionEntity.cpp:320
-#: src/libslic3r/ExtrusionEntity.cpp:344
+#: src/slic3r/GUI/GUI_Preview.cpp:241 src/libslic3r/ExtrusionEntity.cpp:320 src/libslic3r/ExtrusionEntity.cpp:344
 msgid "Overhang perimeter"
 msgstr "悬空轮廓"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:242 src/libslic3r/ExtrusionEntity.cpp:321
-#: src/libslic3r/ExtrusionEntity.cpp:346
+#: src/slic3r/GUI/GUI_Preview.cpp:242 src/libslic3r/ExtrusionEntity.cpp:321 src/libslic3r/ExtrusionEntity.cpp:346
 msgid "Internal infill"
 msgstr "内部填充"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:243 src/libslic3r/ExtrusionEntity.cpp:322
-#: src/libslic3r/ExtrusionEntity.cpp:348 src/libslic3r/PrintConfig.cpp:2342
-#: src/libslic3r/PrintConfig.cpp:2354
+#: src/slic3r/GUI/GUI_Preview.cpp:243 src/libslic3r/ExtrusionEntity.cpp:322 src/libslic3r/ExtrusionEntity.cpp:348 src/libslic3r/PrintConfig.cpp:2342 src/libslic3r/PrintConfig.cpp:2354
 msgid "Solid infill"
 msgstr "实心填充"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:244 src/libslic3r/ExtrusionEntity.cpp:323
-#: src/libslic3r/ExtrusionEntity.cpp:350 src/libslic3r/PrintConfig.cpp:2839
-#: src/libslic3r/PrintConfig.cpp:2852
+#: src/slic3r/GUI/GUI_Preview.cpp:244 src/libslic3r/ExtrusionEntity.cpp:323 src/libslic3r/ExtrusionEntity.cpp:350 src/libslic3r/PrintConfig.cpp:2839 src/libslic3r/PrintConfig.cpp:2852
 msgid "Top solid infill"
 msgstr "顶部实心填充"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:246 src/libslic3r/ExtrusionEntity.cpp:325
-#: src/libslic3r/ExtrusionEntity.cpp:354
+#: src/slic3r/GUI/GUI_Preview.cpp:246 src/libslic3r/ExtrusionEntity.cpp:325 src/libslic3r/ExtrusionEntity.cpp:354
 msgid "Bridge infill"
 msgstr "搭桥填充"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:247 src/libslic3r/ExtrusionEntity.cpp:326
-#: src/libslic3r/ExtrusionEntity.cpp:356 src/libslic3r/PrintConfig.cpp:1302
+#: src/slic3r/GUI/GUI_Preview.cpp:247 src/libslic3r/ExtrusionEntity.cpp:326 src/libslic3r/ExtrusionEntity.cpp:356 src/libslic3r/PrintConfig.cpp:1302
 msgid "Gap fill"
 msgstr "间隙填充"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:248 src/libslic3r/ExtrusionEntity.cpp:327
-#: src/libslic3r/ExtrusionEntity.cpp:358
+#: src/slic3r/GUI/GUI_Preview.cpp:248 src/libslic3r/ExtrusionEntity.cpp:327 src/libslic3r/ExtrusionEntity.cpp:358
 msgid "Skirt/Brim"
 msgstr "环绕/裙边"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:250 src/libslic3r/ExtrusionEntity.cpp:329
-#: src/libslic3r/ExtrusionEntity.cpp:362 src/libslic3r/PrintConfig.cpp:2686
+#: src/slic3r/GUI/GUI_Preview.cpp:250 src/libslic3r/ExtrusionEntity.cpp:329 src/libslic3r/ExtrusionEntity.cpp:362 src/libslic3r/PrintConfig.cpp:2686
 msgid "Support material interface"
 msgstr "支撑材料端口"
 
-#: src/slic3r/GUI/GUI_Preview.cpp:251 src/slic3r/GUI/Tab.cpp:1634
-#: src/libslic3r/ExtrusionEntity.cpp:330 src/libslic3r/ExtrusionEntity.cpp:364
+#: src/slic3r/GUI/GUI_Preview.cpp:251 src/slic3r/GUI/Tab.cpp:1634 src/libslic3r/ExtrusionEntity.cpp:330 src/libslic3r/ExtrusionEntity.cpp:364
 msgid "Wipe tower"
 msgstr "擦料塔"
 
@@ -4567,7 +4221,7 @@ msgstr "注:"
 #: src/slic3r/GUI/GUI_Preview.cpp:729
 #, boost-format
 msgid "Sliced object \"%1%\" looks like a logo or a sign"
-msgstr "切片对象\"%1%\"看起来像一个徽标或标志"
+msgstr "切片对象 \"%1%\" 看起来像一个徽标或标志"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:730
 msgid "Apply color change automatically"
@@ -4585,10 +4239,7 @@ msgstr "工具标记"
 msgid "Legend/Estimated printing time"
 msgstr "图例/预计打印时间"
 
-#: src/slic3r/GUI/HintNotification.cpp:771
-#: src/slic3r/GUI/HintNotification.cpp:797
-#: src/slic3r/GUI/NotificationManager.cpp:374
-#: src/slic3r/GUI/NotificationManager.cpp:391
+#: src/slic3r/GUI/HintNotification.cpp:771 src/slic3r/GUI/HintNotification.cpp:797 src/slic3r/GUI/NotificationManager.cpp:374 src/slic3r/GUI/NotificationManager.cpp:391
 msgid "More"
 msgstr "更多"
 
@@ -4775,11 +4426,11 @@ msgstr "使用配置打开项目 STL/OBJ/AMF/3MF，清除模板"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:79
 msgid "Save project (3mf)"
-msgstr "保存项目（3mf）"
+msgstr "保存项目 (3mf)"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:80
 msgid "Save project as (3mf)"
-msgstr "将项目另存为（3mf）"
+msgstr "将项目另存为 (3mf)"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:81
 msgid "(Re)slice"
@@ -4791,14 +4442,13 @@ msgstr "导入 STL/OBJ/AMF/3MF 而不配置，保留模板"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:84
 msgid "Import Config from ini/amf/3mf/gcode"
-msgstr "从这个/amf/3mf/gcode 导入配置"
+msgstr "从这个 /amf/3mf/gcode 导入配置"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:85
 msgid "Load Config from ini/amf/3mf/gcode and merge"
 msgstr "从 ini/amf/3mf/gcode 加载配置并合并"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:87 src/slic3r/GUI/Plater.cpp:912
-#: src/slic3r/GUI/Plater.cpp:6505 src/libslic3r/PrintConfig.cpp:4271
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:87 src/slic3r/GUI/Plater.cpp:912 src/slic3r/GUI/Plater.cpp:6505 src/libslic3r/PrintConfig.cpp:4271
 msgid "Export G-code"
 msgstr "导出 G-Code"
 
@@ -4838,9 +4488,7 @@ msgstr "复制到剪贴板"
 msgid "Paste from clipboard"
 msgstr "從剪貼板粘貼"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:102
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:104
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:209
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:102 src/slic3r/GUI/KBShortcutsDialog.cpp:104 src/slic3r/GUI/KBShortcutsDialog.cpp:209
 msgid "Reload plater from disk"
 msgstr "从磁盘重新加载制版机"
 
@@ -4868,8 +4516,7 @@ msgstr "切换到 3D"
 msgid "Switch to Preview"
 msgstr "切换到预览"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:114
-#: src/slic3r/GUI/PrintHostDialogs.cpp:217
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:114 src/slic3r/GUI/PrintHostDialogs.cpp:217
 msgid "Print host upload queue"
 msgstr "打印主机上传队列"
 
@@ -4885,8 +4532,7 @@ msgstr "摄像机视图"
 msgid "Show/Hide object/instance labels"
 msgstr "显示/隐藏对象/实例标签"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:121
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:123 src/slic3r/GUI/Preferences.cpp:46
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:121 src/slic3r/GUI/KBShortcutsDialog.cpp:123 src/slic3r/GUI/Preferences.cpp:46
 msgid "Preferences"
 msgstr "首选项"
 
@@ -4894,8 +4540,7 @@ msgstr "首选项"
 msgid "Show keyboard shortcuts list"
 msgstr "显示键盘快捷键列表"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:129
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:213
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:129 src/slic3r/GUI/KBShortcutsDialog.cpp:213
 msgid "Commands"
 msgstr "命令"
 
@@ -4923,10 +4568,7 @@ msgstr "按下可激活选择矩形"
 msgid "Press to activate deselection rectangle"
 msgstr "按下可激活取消选择矩形"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:139
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:217
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:233
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:248
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:139 src/slic3r/GUI/KBShortcutsDialog.cpp:217 src/slic3r/GUI/KBShortcutsDialog.cpp:233 src/slic3r/GUI/KBShortcutsDialog.cpp:248
 msgid "Arrow Up"
 msgstr "上箭头"
 
@@ -4934,10 +4576,7 @@ msgstr "上箭头"
 msgid "Move selection 10 mm in positive Y direction"
 msgstr "沿Y轴正方向移动选择 10 毫米"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:140
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:218
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:234
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:249
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:140 src/slic3r/GUI/KBShortcutsDialog.cpp:218 src/slic3r/GUI/KBShortcutsDialog.cpp:234 src/slic3r/GUI/KBShortcutsDialog.cpp:249
 msgid "Arrow Down"
 msgstr "上箭头"
 
@@ -4945,10 +4584,7 @@ msgstr "上箭头"
 msgid "Move selection 10 mm in negative Y direction"
 msgstr "将所选内容沿Y轴负方向移动 10mm"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:141
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:219
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:235
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:246
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:141 src/slic3r/GUI/KBShortcutsDialog.cpp:219 src/slic3r/GUI/KBShortcutsDialog.cpp:235 src/slic3r/GUI/KBShortcutsDialog.cpp:246
 msgid "Arrow Left"
 msgstr "左箭头"
 
@@ -4956,10 +4592,7 @@ msgstr "左箭头"
 msgid "Move selection 10 mm in negative X direction"
 msgstr "将所选内容沿X轴负方向移动 10 毫米"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:142
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:220
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:236
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:247
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:142 src/slic3r/GUI/KBShortcutsDialog.cpp:220 src/slic3r/GUI/KBShortcutsDialog.cpp:236 src/slic3r/GUI/KBShortcutsDialog.cpp:247
 msgid "Arrow Right"
 msgstr "右箭头"
 
@@ -4967,8 +4600,7 @@ msgstr "右箭头"
 msgid "Move selection 10 mm in positive X direction"
 msgstr "沿X轴正方向移动所选内容 10 毫米"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:143
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:144
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:143 src/slic3r/GUI/KBShortcutsDialog.cpp:144
 msgid "Any arrow"
 msgstr "有箭吗"
 
@@ -5076,8 +4708,7 @@ msgstr "折叠/展开侧边栏"
 msgid "Show/Hide 3Dconnexion devices settings dialog, if enabled"
 msgstr "显示/隐藏 3Dconnexion 设备设置对话框（如果启用）"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:169
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:172
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:169 src/slic3r/GUI/KBShortcutsDialog.cpp:172
 msgid "Show/Hide 3Dconnexion devices settings dialog"
 msgstr "显示/隐藏 3Dconnexion 设备设置对话框"
 
@@ -5085,10 +4716,7 @@ msgstr "显示/隐藏 3Dconnexion 设备设置对话框"
 msgid "Minimize application"
 msgstr "最小化应用程序"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:181 src/slic3r/GUI/MainFrame.cpp:284
-#: src/slic3r/GUI/MainFrame.cpp:333 src/slic3r/GUI/MainFrame.cpp:445
-#: src/slic3r/GUI/MainFrame.cpp:448 src/slic3r/GUI/MainFrame.cpp:470
-#: src/slic3r/GUI/MainFrame.cpp:473
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:181 src/slic3r/GUI/MainFrame.cpp:284 src/slic3r/GUI/MainFrame.cpp:333 src/slic3r/GUI/MainFrame.cpp:445 src/slic3r/GUI/MainFrame.cpp:448 src/slic3r/GUI/MainFrame.cpp:470 src/slic3r/GUI/MainFrame.cpp:473
 msgid "Plater"
 msgstr "构建板"
 
@@ -5102,7 +4730,7 @@ msgstr "Gizmo 移动：按下可捕捉 1mm"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:186
 msgid "Gizmo scale: Press to snap by 5%"
-msgstr "Gizmo 比例：按下可按5%捕捉"
+msgstr "Gizmo 比例：按下可按 5% 捕捉"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:187
 msgid "Gizmo scale: Scale selection to fit print volume"
@@ -5148,29 +4776,23 @@ msgstr "对象列表"
 msgid "Open a G-code file"
 msgstr "打开一个 G-Code 文件"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:207 src/slic3r/GUI/MainFrame.cpp:1352
-#: src/slic3r/GUI/MainFrame.cpp:1356 src/slic3r/GUI/MainFrame.cpp:1523
-#: src/slic3r/GUI/MainFrame.cpp:1527
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:207 src/slic3r/GUI/MainFrame.cpp:1352 src/slic3r/GUI/MainFrame.cpp:1356 src/slic3r/GUI/MainFrame.cpp:1523 src/slic3r/GUI/MainFrame.cpp:1527
 msgid "Reload the plater from disk"
 msgstr "从磁盘重新加载制版机"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:217
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:221
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:217 src/slic3r/GUI/KBShortcutsDialog.cpp:221
 msgid "Vertical slider - Move active thumb Up"
 msgstr "垂直滑块-向上移动活动拇指"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:218
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:222
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:218 src/slic3r/GUI/KBShortcutsDialog.cpp:222
 msgid "Vertical slider - Move active thumb Down"
 msgstr "垂直滑块-向下移动活动拇指"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:219
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:223
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:219 src/slic3r/GUI/KBShortcutsDialog.cpp:223
 msgid "Horizontal slider - Move active thumb Left"
 msgstr "水平滑块-将活动拇指向左移动"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:220
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:224
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:220 src/slic3r/GUI/KBShortcutsDialog.cpp:224
 msgid "Horizontal slider - Move active thumb Right"
 msgstr "水平滑块-将活动拇指向右移动"
 
@@ -5186,8 +4808,7 @@ msgstr "显示/隐藏图例和估计打印时间"
 msgid "Show/Hide G-code window"
 msgstr "显示/隐藏 G-Code 窗口"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:230 src/slic3r/GUI/Plater.cpp:4458
-#: src/slic3r/GUI/Tab.cpp:2822
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:230 src/slic3r/GUI/Plater.cpp:4458 src/slic3r/GUI/Tab.cpp:2822
 msgid "Preview"
 msgstr "预览"
 
@@ -5215,10 +4836,7 @@ msgstr "为当前图层添加颜色更改标记"
 msgid "Delete color change marker for current layer"
 msgstr "删除当前图层的颜色更改标记"
 
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:239
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:240
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:250
-#: src/slic3r/GUI/KBShortcutsDialog.cpp:251
+#: src/slic3r/GUI/KBShortcutsDialog.cpp:239 src/slic3r/GUI/KBShortcutsDialog.cpp:240 src/slic3r/GUI/KBShortcutsDialog.cpp:250 src/slic3r/GUI/KBShortcutsDialog.cpp:251
 msgid ""
 "Press to speed up 5 times while moving thumb\n"
 "with arrow keys or mouse wheel"
@@ -5260,8 +4878,7 @@ msgstr "当水平滑块处于活动状态时，以下快捷方式适用于 G-Cod
 msgid "Keyboard shortcuts"
 msgstr "键盘快捷键"
 
-#: src/slic3r/GUI/MainFrame.cpp:75 src/slic3r/GUI/MainFrame.cpp:89
-#: src/slic3r/GUI/MainFrame.cpp:1413
+#: src/slic3r/GUI/MainFrame.cpp:75 src/slic3r/GUI/MainFrame.cpp:89 src/slic3r/GUI/MainFrame.cpp:1413
 msgid "Open a new PrusaSlicer instance"
 msgstr "打开一个新的 PrusaSlicer 实例"
 
@@ -5293,30 +4910,23 @@ msgstr "PrusaSlicer 快关门了"
 msgid "Closing PrusaSlicer while some presets are modified."
 msgstr "在修改某些预设时关闭 PrusaSlicer。"
 
-#: src/slic3r/GUI/MainFrame.cpp:285 src/slic3r/GUI/MainFrame.cpp:335
-#: src/slic3r/GUI/Tab.hpp:427 src/slic3r/GUI/Tab.hpp:550
+#: src/slic3r/GUI/MainFrame.cpp:285 src/slic3r/GUI/MainFrame.cpp:335 src/slic3r/GUI/Tab.hpp:427 src/slic3r/GUI/Tab.hpp:550
 msgid "Print Settings"
 msgstr "打印设置"
 
-#: src/slic3r/GUI/MainFrame.cpp:286 src/slic3r/GUI/MainFrame.cpp:339
-#: src/slic3r/GUI/MainFrame.cpp:2096 src/slic3r/GUI/MainFrame.cpp:2097
-#: src/slic3r/GUI/Tab.hpp:535
+#: src/slic3r/GUI/MainFrame.cpp:286 src/slic3r/GUI/MainFrame.cpp:339 src/slic3r/GUI/MainFrame.cpp:2096 src/slic3r/GUI/MainFrame.cpp:2097 src/slic3r/GUI/Tab.hpp:535
 msgid "Material Settings"
 msgstr "材料设置"
 
-#: src/slic3r/GUI/MainFrame.cpp:286 src/slic3r/GUI/MainFrame.cpp:337
-#: src/slic3r/GUI/MainFrame.cpp:2096 src/slic3r/GUI/MainFrame.cpp:2097
-#: src/slic3r/GUI/Tab.hpp:461
+#: src/slic3r/GUI/MainFrame.cpp:286 src/slic3r/GUI/MainFrame.cpp:337 src/slic3r/GUI/MainFrame.cpp:2096 src/slic3r/GUI/MainFrame.cpp:2097 src/slic3r/GUI/Tab.hpp:461
 msgid "Filament Settings"
 msgstr "耗材设置"
 
-#: src/slic3r/GUI/MainFrame.cpp:287 src/slic3r/GUI/MainFrame.cpp:341
-#: src/slic3r/GUI/Tab.hpp:503
+#: src/slic3r/GUI/MainFrame.cpp:287 src/slic3r/GUI/MainFrame.cpp:341 src/slic3r/GUI/Tab.hpp:503
 msgid "Printer Settings"
 msgstr "打印机设置"
 
-#: src/slic3r/GUI/MainFrame.cpp:632 src/slic3r/GUI/Plater.cpp:1721
-#: src/slic3r/GUI/Plater.cpp:2830
+#: src/slic3r/GUI/MainFrame.cpp:632 src/slic3r/GUI/Plater.cpp:1721 src/slic3r/GUI/Plater.cpp:2830
 msgid "Untitled"
 msgstr "无标题"
 
@@ -5406,8 +5016,7 @@ msgstr "等距视图"
 
 #. TRN To be shown in the main menu View->Top
 #. TRN To be shown in Print Settings "Top solid layers"
-#: src/slic3r/GUI/MainFrame.cpp:1118 src/libslic3r/PrintConfig.cpp:2867
-#: src/libslic3r/PrintConfig.cpp:2876
+#: src/slic3r/GUI/MainFrame.cpp:1118 src/libslic3r/PrintConfig.cpp:2867 src/libslic3r/PrintConfig.cpp:2876
 msgid "Top"
 msgstr "顶部"
 
@@ -5418,8 +5027,7 @@ msgstr "顶部视图"
 #. TRN To be shown in the main menu View->Bottom
 #. TRN To be shown in Print Settings "Bottom solid layers"
 #. TRN To be shown in Print Settings "Top solid layers"
-#: src/slic3r/GUI/MainFrame.cpp:1121 src/libslic3r/PrintConfig.cpp:423
-#: src/libslic3r/PrintConfig.cpp:432
+#: src/slic3r/GUI/MainFrame.cpp:1121 src/libslic3r/PrintConfig.cpp:423 src/libslic3r/PrintConfig.cpp:432
 msgid "Bottom"
 msgstr "底部"
 
@@ -5513,7 +5121,7 @@ msgstr "加载模型"
 
 #: src/slic3r/GUI/MainFrame.cpp:1205
 msgid "Import STL (Imperial Units)"
-msgstr "导入 STL（英制单位）"
+msgstr "导入 STL (英制单位)"
 
 #: src/slic3r/GUI/MainFrame.cpp:1205
 msgid "Load an model saved with imperial units"
@@ -5748,8 +5356,7 @@ msgstr "粘贴(&P)"
 msgid "Paste clipboard"
 msgstr "粘贴剪贴板"
 
-#: src/slic3r/GUI/MainFrame.cpp:1351 src/slic3r/GUI/MainFrame.cpp:1355
-#: src/slic3r/GUI/MainFrame.cpp:1522 src/slic3r/GUI/MainFrame.cpp:1526
+#: src/slic3r/GUI/MainFrame.cpp:1351 src/slic3r/GUI/MainFrame.cpp:1355 src/slic3r/GUI/MainFrame.cpp:1522 src/slic3r/GUI/MainFrame.cpp:1526
 msgid "Re&load from Disk"
 msgstr "从磁盘重新加载(&L)"
 
@@ -5795,7 +5402,7 @@ msgstr "显示打印机设置"
 
 #: src/slic3r/GUI/MainFrame.cpp:1388
 msgid "3&D"
-msgstr ""
+msgstr "3&D"
 
 #: src/slic3r/GUI/MainFrame.cpp:1388
 msgid "Show the 3D editing view"
@@ -5825,8 +5432,7 @@ msgstr "显示打印主机上传队列窗口"
 msgid "Open New Instance"
 msgstr "打开新实例"
 
-#: src/slic3r/GUI/MainFrame.cpp:1417
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1564
+#: src/slic3r/GUI/MainFrame.cpp:1417 src/slic3r/GUI/UnsavedChangesDialog.cpp:1564
 msgid "Compare Presets"
 msgstr "比较预设"
 
@@ -5900,7 +5506,7 @@ msgstr "配合设置选项卡(&R)"
 
 #: src/slic3r/GUI/MainFrame.cpp:1606
 msgid "Choose a file to slice (STL/OBJ/AMF/3MF/PRUSA):"
-msgstr "选择要切片的文件(STL/OBJ/AMF/3MF/PRUSA):"
+msgstr "选择要切片的文件 (STL/OBJ/AMF/3MF/PRUSA):"
 
 #: src/slic3r/GUI/MainFrame.cpp:1618
 msgid "No previously sliced file."
@@ -5935,9 +5541,7 @@ msgstr "G-Code"
 msgid "Save zip file as:"
 msgstr "将 zip 文件另存为:"
 
-#: src/slic3r/GUI/MainFrame.cpp:1682 src/slic3r/GUI/Plater.cpp:3307
-#: src/slic3r/GUI/Plater.cpp:6024 src/slic3r/GUI/Tab.cpp:1666
-#: src/slic3r/GUI/Tab.cpp:4713
+#: src/slic3r/GUI/MainFrame.cpp:1682 src/slic3r/GUI/Plater.cpp:3307 src/slic3r/GUI/Plater.cpp:6024 src/slic3r/GUI/Tab.cpp:1666 src/slic3r/GUI/Tab.cpp:4713
 msgid "Slicing"
 msgstr "切片"
 
@@ -6017,13 +5621,11 @@ msgstr "设备:"
 msgid "Speed:"
 msgstr "速度:"
 
-#: src/slic3r/GUI/Mouse3DController.cpp:472
-#: src/slic3r/GUI/Mouse3DController.cpp:493
+#: src/slic3r/GUI/Mouse3DController.cpp:472 src/slic3r/GUI/Mouse3DController.cpp:493
 msgid "Translation"
 msgstr "翻译"
 
-#: src/slic3r/GUI/Mouse3DController.cpp:484
-#: src/slic3r/GUI/Mouse3DController.cpp:493
+#: src/slic3r/GUI/Mouse3DController.cpp:484 src/slic3r/GUI/Mouse3DController.cpp:493
 msgid "Zoom"
 msgstr "快速移动"
 
@@ -6057,17 +5659,17 @@ msgstr "%s 警告"
 #: src/slic3r/GUI/MsgDialog.cpp:233
 #, c-format, boost-format
 msgid "%s has a warning"
-msgstr "%s有一个警告"
+msgstr "%s 有一个警告"
 
 #: src/slic3r/GUI/MsgDialog.cpp:246 src/slic3r/GUI/MsgDialog.cpp:259
 #, c-format, boost-format
 msgid "%s info"
-msgstr "%s信息"
+msgstr "%s 信息"
 
 #: src/slic3r/GUI/MsgDialog.cpp:287
 #, c-format, boost-format
 msgid "%s information"
-msgstr "%s信息"
+msgstr "%s 信息"
 
 #: src/slic3r/GUI/NotificationManager.hpp:752
 msgid "3D Mouse disconnected."
@@ -6141,31 +5743,31 @@ msgstr "取消上传"
 #, c-format, boost-format
 msgid "%1$d object was loaded with custom supports."
 msgid_plural "%1$d objects were loaded with custom supports."
-msgstr[0] "%1$d对象已加载自定义支持。"
+msgstr[0] "%1$d 对象已加载自定义支持。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:997
 #, c-format, boost-format
 msgid "%1$d object was loaded with custom seam."
 msgid_plural "%1$d objects were loaded with custom seam."
-msgstr[0] "%1$d对象已加载自定义接缝。"
+msgstr[0] "%1$d 对象已加载自定义接缝。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:998
 #, c-format, boost-format
 msgid "%1$d object was loaded with multimaterial painting."
 msgid_plural "%1$d objects were loaded with multimaterial painting."
-msgstr[0] "%1$d对象加载了多材质绘画。"
+msgstr[0] "%1$d 对象加载了多材质绘画。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:999
 #, c-format, boost-format
 msgid "%1$d object was loaded with variable layer height."
 msgid_plural "%1$d objects were loaded with variable layer height."
-msgstr[0] "%1$d对象加载了可变层高度。"
+msgstr[0] "%1$d 对象加载了可变层高度。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:1000
 #, c-format, boost-format
 msgid "%1$d object was loaded with partial sinking."
 msgid_plural "%1$d objects were loaded with partial sinking."
-msgstr[0] "%1$d物体装载了部分下沉。"
+msgstr[0] "%1$d 物体装载了部分下沉。"
 
 #: src/slic3r/GUI/NotificationManager.cpp:1113
 msgid "Slicing finished."
@@ -6179,18 +5781,11 @@ msgstr "导出 G-Code。"
 msgid "Export."
 msgstr "导出。"
 
-#: src/slic3r/GUI/NotificationManager.cpp:1447
-#: src/slic3r/GUI/NotificationManager.cpp:1454
-#: src/slic3r/GUI/NotificationManager.cpp:1470
-#: src/slic3r/GUI/NotificationManager.cpp:1476
-#: src/slic3r/GUI/NotificationManager.cpp:1547
+#: src/slic3r/GUI/NotificationManager.cpp:1447 src/slic3r/GUI/NotificationManager.cpp:1454 src/slic3r/GUI/NotificationManager.cpp:1470 src/slic3r/GUI/NotificationManager.cpp:1476 src/slic3r/GUI/NotificationManager.cpp:1547
 msgid "ERROR:"
 msgstr "错误:"
 
-#: src/slic3r/GUI/NotificationManager.cpp:1459
-#: src/slic3r/GUI/NotificationManager.cpp:1486
-#: src/slic3r/GUI/NotificationManager.cpp:1494
-#: src/slic3r/GUI/NotificationManager.cpp:1505 src/slic3r/GUI/Plater.cpp:3175
+#: src/slic3r/GUI/NotificationManager.cpp:1459 src/slic3r/GUI/NotificationManager.cpp:1486 src/slic3r/GUI/NotificationManager.cpp:1494 src/slic3r/GUI/NotificationManager.cpp:1505 src/slic3r/GUI/Plater.cpp:3175
 msgid "WARNING:"
 msgstr "警告:"
 
@@ -6210,14 +5805,12 @@ msgstr "下沉"
 msgid "Instances"
 msgstr "实例"
 
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:98
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:266
+#: src/slic3r/GUI/ObjectDataViewModel.cpp:98 src/slic3r/GUI/ObjectDataViewModel.cpp:266
 #, c-format, boost-format
 msgid "Instance %d"
 msgstr "实例 %d"
 
-#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4551
-#: src/slic3r/GUI/Tab.cpp:4642
+#: src/slic3r/GUI/ObjectDataViewModel.cpp:105 src/slic3r/GUI/Tab.cpp:4551 src/slic3r/GUI/Tab.cpp:4642
 msgid "Layers"
 msgstr "图层"
 
@@ -6325,8 +5918,7 @@ msgstr "证书文件 (*.crt,*.pem)|*.crt;*.pem|所有文件|*.*"
 msgid "Open CA certificate file"
 msgstr "打开 CA 证书文件"
 
-#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:404
-#: src/libslic3r/PrintConfig.cpp:307
+#: src/slic3r/GUI/PhysicalPrinterDialog.cpp:404 src/libslic3r/PrintConfig.cpp:307
 msgid "HTTPS CA File"
 msgstr "HTTPS CA 文件"
 
@@ -6350,7 +5942,7 @@ msgstr "您应该更改打印机设备的名称。"
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:642
 #, boost-format
 msgid "Printer with name \"%1%\" already exists."
-msgstr "名为\"%1%'的打印机已存在。"
+msgstr "名为 \"%1%\" 的打印机已存在。"
 
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:643
 msgid "Replace?"
@@ -6360,7 +5952,7 @@ msgstr "替换？"
 #, boost-format
 msgid "Following printer preset is duplicated:%1%The above preset for printer \"%2%\" will be used just once."
 msgid_plural "Following printer presets are duplicated:%1%The above presets for printer \"%2%\" will be used just once."
-msgstr[0] "以下打印机预设重复：%1% 以上打印机“%2%”的预设将只使用一次。"
+msgstr[0] "以下打印机预设重复：%1% 以上打印机 “%2%” 的预设将只使用一次。"
 
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:720
 msgid "It's not possible to delete the last related preset for the printer."
@@ -6408,14 +6000,13 @@ msgstr "消耗耗材 (mm³)"
 
 #: src/slic3r/GUI/Plater.cpp:299
 msgid "Used Material (unit)"
-msgstr "消耗材料（单位）"
+msgstr "消耗材料 (单位)"
 
 #: src/slic3r/GUI/Plater.cpp:300
 msgid "Cost (money)"
-msgstr "成本（金钱）"
+msgstr "成本 (金钱)"
 
-#: src/slic3r/GUI/Plater.cpp:301 src/slic3r/GUI/Plater.cpp:1339
-#: src/slic3r/GUI/Plater.cpp:1426
+#: src/slic3r/GUI/Plater.cpp:301 src/slic3r/GUI/Plater.cpp:1339 src/slic3r/GUI/Plater.cpp:1426
 msgid "Estimated printing time"
 msgstr "预计打印时间"
 
@@ -6427,8 +6018,7 @@ msgstr "工具更换次数"
 msgid "Select what kind of support do you need"
 msgstr "选择您需要何种支撑"
 
-#: src/slic3r/GUI/Plater.cpp:433 src/libslic3r/PrintConfig.cpp:2540
-#: src/libslic3r/PrintConfig.cpp:3499
+#: src/slic3r/GUI/Plater.cpp:433 src/libslic3r/PrintConfig.cpp:2540 src/libslic3r/PrintConfig.cpp:3499
 msgid "Support on build plate only"
 msgstr "仅从打印面板支撑"
 
@@ -6468,8 +6058,7 @@ msgstr "对象周围"
 msgid "Send to printer"
 msgstr "发送到打印机"
 
-#: src/slic3r/GUI/Plater.cpp:913 src/slic3r/GUI/Plater.cpp:3307
-#: src/slic3r/GUI/Plater.cpp:6027
+#: src/slic3r/GUI/Plater.cpp:913 src/slic3r/GUI/Plater.cpp:3307 src/slic3r/GUI/Plater.cpp:6027
 msgid "Slice now"
 msgstr "现在切片"
 
@@ -6485,7 +6074,7 @@ msgstr[0] "%1% (%2$d 壳)"
 
 #: src/slic3r/GUI/Plater.cpp:1314
 msgid "Used Material (ml)"
-msgstr "消耗材料（毫升）"
+msgstr "消耗材料 (毫升)"
 
 #: src/slic3r/GUI/Plater.cpp:1317
 msgid "object"
@@ -6498,7 +6087,7 @@ msgstr "支撑和垫"
 
 #: src/slic3r/GUI/Plater.cpp:1357
 msgid "Used Filament (in)"
-msgstr "消耗耗材（英寸）"
+msgstr "消耗耗材 (英寸)"
 
 #: src/slic3r/GUI/Plater.cpp:1359 src/slic3r/GUI/Plater.cpp:1412
 msgid "objects"
@@ -6515,14 +6104,13 @@ msgstr "消耗耗材 (in³)"
 #: src/slic3r/GUI/Plater.cpp:1395
 #, boost-format
 msgid "Filament at extruder %1%"
-msgstr "挤出机上的长丝%1%"
+msgstr "挤出机上的长丝 %1%"
 
 #: src/slic3r/GUI/Plater.cpp:1401
 msgid "(including spool)"
 msgstr "（包括线轴）"
 
-#: src/slic3r/GUI/Plater.cpp:1410 src/libslic3r/PrintConfig.cpp:1045
-#: src/libslic3r/PrintConfig.cpp:3293 src/libslic3r/PrintConfig.cpp:3294
+#: src/slic3r/GUI/Plater.cpp:1410 src/libslic3r/PrintConfig.cpp:1045 src/libslic3r/PrintConfig.cpp:3293 src/libslic3r/PrintConfig.cpp:3294
 msgid "Cost"
 msgstr "费用"
 
@@ -6549,7 +6137,7 @@ msgstr "导入 SLA 存档"
 #: src/slic3r/GUI/Plater.cpp:1727
 #, boost-format
 msgid "Do you want to save the changes to \"%1%\"?"
-msgstr "是否要将更改保存到\"%1%\"？"
+msgstr "是否要将更改保存到 \"%1%\"？"
 
 #: src/slic3r/GUI/Plater.cpp:1732 src/slic3r/GUI/Preferences.cpp:222
 msgid "Ask for unsaved changes in project"
@@ -6568,12 +6156,12 @@ msgstr ""
 #: src/slic3r/GUI/Plater.cpp:2197
 #, c-format, boost-format
 msgid "Successfully unmounted. The device %s(%s) can now be safely removed from the computer."
-msgstr "成功卸载。设备%s（%s）现在可以安全地从计算机上删除。"
+msgstr "成功卸载。设备 %s(%s) 现在可以安全地从计算机上删除。"
 
 #: src/slic3r/GUI/Plater.cpp:2202
 #, c-format, boost-format
 msgid "Ejecting of device %s(%s) has failed."
-msgstr "弹出设备%s（%s）失败。"
+msgstr "弹出设备 %s(%s) 失败。"
 
 #: src/slic3r/GUI/Plater.cpp:2221 src/slic3r/GUI/Plater.cpp:5086
 msgid "New Project"
@@ -6591,7 +6179,7 @@ msgstr[0] "以下预设已临时安装在 PrusaSlicer 的活动实例上"
 #: src/slic3r/GUI/Plater.cpp:2528
 #, boost-format
 msgid "Failed loading file \"%1%\" due to an invalid configuration."
-msgstr "由于配置无效，无法加载文件\"%1%\"。"
+msgstr "由于配置无效，无法加载文件 \"%1%\"。"
 
 #: src/slic3r/GUI/Plater.cpp:2548
 #, c-format, boost-format
@@ -6602,7 +6190,7 @@ msgid_plural ""
 "Objects size from file %s appears to be zero.\n"
 "These objects have been removed from the model"
 msgstr[0] ""
-"文件%s中的对象大小似乎为零。\n"
+"文件 %s 中的对象大小似乎为零。\n"
 "这些对象已从模型中删除"
 
 #: src/slic3r/GUI/Plater.cpp:2552
@@ -6618,7 +6206,7 @@ msgid_plural ""
 "The dimensions of some objects from file %s seem to be defined in meters.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of these objects?"
 msgstr[0] ""
-"文件%s中对象的尺寸似乎是以米为单位定义的。\n"
+"文件 %s 中对象的尺寸似乎是以米为单位定义的。\n"
 "PrusaSlicer 的内部单位为毫米。是否要重新计算对象的尺寸？"
 
 #: src/slic3r/GUI/Plater.cpp:2569 src/slic3r/GUI/Plater.cpp:2591
@@ -6638,7 +6226,7 @@ msgid_plural ""
 "The dimensions of some objects from file %s seem to be defined in inches.\n"
 "The internal unit of PrusaSlicer is a millimeter. Do you want to recalculate the dimensions of these objects?"
 msgstr[0] ""
-"文件%s中对象的尺寸似乎是以英寸为单位定义的。\n"
+"文件 %s 中对象的尺寸似乎是以英寸为单位定义的。\n"
 "PrusaSlicer 的内部单位为毫米。是否要重新计算对象的尺寸？"
 
 #: src/slic3r/GUI/Plater.cpp:2605
@@ -6981,10 +6569,7 @@ msgstr "修复网格后，移除了定制支架、接缝和多材料喷漆。"
 msgid "Paste From Clipboard"
 msgstr "从剪贴板粘贴"
 
-#: src/slic3r/GUI/Preferences.cpp:106 src/slic3r/GUI/Tab.cpp:2282
-#: src/slic3r/GUI/Tab.cpp:2508 src/slic3r/GUI/Tab.cpp:2614
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1285
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1673
+#: src/slic3r/GUI/Preferences.cpp:106 src/slic3r/GUI/Tab.cpp:2282 src/slic3r/GUI/Tab.cpp:2508 src/slic3r/GUI/Tab.cpp:2614 src/slic3r/GUI/UnsavedChangesDialog.cpp:1285 src/slic3r/GUI/UnsavedChangesDialog.cpp:1673
 msgid "General"
 msgstr "常规"
 
@@ -7078,8 +6663,7 @@ msgstr ""
 "-关闭 PrusaSlicer，\n"
 "-加载或创建新项目时，始终在项目中请求未保存的更改"
 
-#: src/slic3r/GUI/Preferences.cpp:233
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:897
+#: src/slic3r/GUI/Preferences.cpp:233 src/slic3r/GUI/UnsavedChangesDialog.cpp:897
 msgid "Ask to save unsaved changes in presets when closing the application or when loading a new project"
 msgstr "关闭应用程序或加载新项目时，要求保存预设中未保存的更改"
 
@@ -7093,8 +6677,7 @@ msgstr ""
 "-在某些预设被修改时关闭 PrusaSlicer，\n"
 "-在某些预设被修改时加载一个新项目时，始终要求对预设进行未保存的更改"
 
-#: src/slic3r/GUI/Preferences.cpp:242
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:896
+#: src/slic3r/GUI/Preferences.cpp:242 src/slic3r/GUI/UnsavedChangesDialog.cpp:896
 msgid "Ask for unsaved changes in presets when selecting new preset"
 msgstr "选择新预设时，询问预设中未保存的更改"
 
@@ -7102,8 +6685,7 @@ msgstr "选择新预设时，询问预设中未保存的更改"
 msgid "Always ask for unsaved changes in presets when selecting new preset or resetting a preset"
 msgstr "选择新预设或重置预设时，始终要求对预设进行未保存的更改"
 
-#: src/slic3r/GUI/Preferences.cpp:249
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:895
+#: src/slic3r/GUI/Preferences.cpp:249 src/slic3r/GUI/UnsavedChangesDialog.cpp:895
 msgid "Ask for unsaved changes in presets when creating new project"
 msgstr "创建新项目时，要求对预设进行未保存的更改"
 
@@ -7149,7 +6731,7 @@ msgstr "启用对传统 3DConnexion 设备的支持"
 
 #: src/slic3r/GUI/Preferences.cpp:305
 msgid "If enabled, the legacy 3DConnexion devices settings dialog is available by pressing CTRL+M"
-msgstr "如果启用，按 CTRL+M键可以使用传统的 3DConnexion 设备设置对话框"
+msgstr "如果启用，按 CTRL+M 键可以使用传统的 3DConnexion 设备设置对话框"
 
 #: src/slic3r/GUI/Preferences.cpp:314
 msgid "Camera"
@@ -7241,7 +6823,7 @@ msgstr "通知新版本"
 
 #: src/slic3r/GUI/Preferences.cpp:429
 msgid "You will be notified about new release after startup acordingly: All = Regular release and alpha / beta releases. Release only = regular release."
-msgstr "启动后，您将收到关于新版本的通知：All=常规版本和 alpha/beta 版本。仅发布=定期发布。"
+msgstr "启动后，您将收到关于新版本的通知：所有=常规版本和 alpha/beta 版本。仅发布=定期发布。"
 
 #: src/slic3r/GUI/Preferences.cpp:435
 msgid "Release only"
@@ -7331,18 +6913,11 @@ msgstr "布局选项"
 msgid "Text colors"
 msgstr "文本颜色"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:249
-#: src/slic3r/GUI/PresetComboBoxes.cpp:287
-#: src/slic3r/GUI/PresetComboBoxes.cpp:794
-#: src/slic3r/GUI/PresetComboBoxes.cpp:849
-#: src/slic3r/GUI/PresetComboBoxes.cpp:989
-#: src/slic3r/GUI/PresetComboBoxes.cpp:1033
+#: src/slic3r/GUI/PresetComboBoxes.cpp:249 src/slic3r/GUI/PresetComboBoxes.cpp:287 src/slic3r/GUI/PresetComboBoxes.cpp:794 src/slic3r/GUI/PresetComboBoxes.cpp:849 src/slic3r/GUI/PresetComboBoxes.cpp:989 src/slic3r/GUI/PresetComboBoxes.cpp:1033
 msgid "System presets"
 msgstr "系统预设"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:291
-#: src/slic3r/GUI/PresetComboBoxes.cpp:853
-#: src/slic3r/GUI/PresetComboBoxes.cpp:1037
+#: src/slic3r/GUI/PresetComboBoxes.cpp:291 src/slic3r/GUI/PresetComboBoxes.cpp:853 src/slic3r/GUI/PresetComboBoxes.cpp:1037
 msgid "User presets"
 msgstr "用户预设"
 
@@ -7353,7 +6928,7 @@ msgstr "不兼容的预设"
 #: src/slic3r/GUI/PresetComboBoxes.cpp:337
 #, boost-format
 msgid "Are you sure you want to delete \"%1%\" printer?"
-msgstr "确实要删除\"%1%\"打印机吗？"
+msgstr "确实要删除 \"%1%\" 打印机吗？"
 
 #: src/slic3r/GUI/PresetComboBoxes.cpp:340
 msgid "Delete Physical Printer"
@@ -7363,13 +6938,11 @@ msgstr "删除物理打印机"
 msgid "Click to edit preset"
 msgstr "单击以编辑预设"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:697
-#: src/slic3r/GUI/PresetComboBoxes.cpp:737
+#: src/slic3r/GUI/PresetComboBoxes.cpp:697 src/slic3r/GUI/PresetComboBoxes.cpp:737
 msgid "Add/Remove presets"
 msgstr "添加/删除预设"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:702
-#: src/slic3r/GUI/PresetComboBoxes.cpp:742 src/slic3r/GUI/Tab.cpp:3241
+#: src/slic3r/GUI/PresetComboBoxes.cpp:702 src/slic3r/GUI/PresetComboBoxes.cpp:742 src/slic3r/GUI/Tab.cpp:3241
 msgid "Add physical printer"
 msgstr "添加物理打印机"
 
@@ -7389,8 +6962,7 @@ msgstr "编辑物理打印机"
 msgid "Delete physical printer"
 msgstr "删除物理打印机"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:864
-#: src/slic3r/GUI/PresetComboBoxes.cpp:1051
+#: src/slic3r/GUI/PresetComboBoxes.cpp:864 src/slic3r/GUI/PresetComboBoxes.cpp:1051
 msgid "Physical printers"
 msgstr "物理打印机"
 
@@ -7402,8 +6974,7 @@ msgstr "添加/移除耗材"
 msgid "Add/Remove materials"
 msgstr "添加/删除材料"
 
-#: src/slic3r/GUI/PresetComboBoxes.cpp:892
-#: src/slic3r/GUI/PresetComboBoxes.cpp:1075
+#: src/slic3r/GUI/PresetComboBoxes.cpp:892 src/slic3r/GUI/PresetComboBoxes.cpp:1075
 msgid "Add/Remove printers"
 msgstr "添加/删除打印机"
 
@@ -7415,27 +6986,27 @@ msgstr "如果估计图层时间低于 ~%1%s,风扇将以 %2%%% 的速度运行,
 #: src/slic3r/GUI/PresetHints.cpp:40
 #, boost-format
 msgid "If estimated layer time is greater, but still below ~%1%s, fan will run at a proportionally decreasing speed between %2%%% and %3%%%."
-msgstr "如果估计的层时间更大，但仍低于~%1%s，风扇将以在%2%%%和%3%%%之间成比例降低的速度运行。"
+msgstr "如果估计的层时间更大，但仍低于 ~%1%s，风扇将以在 %2%%% 和 %3%%% 之间成比例降低的速度运行。"
 
 #: src/slic3r/GUI/PresetHints.cpp:44
 #, boost-format
 msgid "If estimated layer time is greater, but still below ~%1%s, fan will run at %2%%%"
-msgstr "如果估计的层时间更长，但仍低于~%1%s，风扇将以%2%%%的速度运行"
+msgstr "如果估计的层时间更长，但仍低于 ~%1%s，风扇将以 %2%%% 的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:55
 #, boost-format
 msgid "Fan speed will be ramped from zero at layer %1% to %2%%% at layer %3%."
-msgstr "风扇速度将从第%1%层的零上升到第%3%层的%2%%%。"
+msgstr "风扇速度将从第 %1% 层的零上升到第 %3% 层的 %2%%%。"
 
 #: src/slic3r/GUI/PresetHints.cpp:57
 #, boost-format
 msgid "During the other layers, fan will always run at %1%%%"
-msgstr "在其他层中，风扇将始终以%1%%%的速度运行"
+msgstr "在其他层中，风扇将始终以 %1%%% 的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:57
 #, boost-format
 msgid "Fan will always run at %1%%%"
-msgstr "风扇将始终以%1%%%的速度运行"
+msgstr "风扇将始终以 %1%%% 的速度运行"
 
 #: src/slic3r/GUI/PresetHints.cpp:59
 #, boost-format
@@ -7527,7 +7098,7 @@ msgstr "推荐对象薄壁厚度，当层高度为 %.2f 和"
 #: src/slic3r/GUI/PresetHints.cpp:236
 #, c-format, boost-format
 msgid "%d lines: %.2f mm"
-msgstr "%d 线： %.2f mm"
+msgstr "%d 线: %.2f mm"
 
 #: src/slic3r/GUI/PresetHints.cpp:240
 msgid "Recommended object thin wall thickness: Not available due to excessively small extrusion width."
@@ -7545,7 +7116,7 @@ msgstr "层高为 %2%mm 时，顶壳厚度为 %1%mm。"
 #: src/slic3r/GUI/PresetHints.cpp:285
 #, boost-format
 msgid "Minimum top shell thickness is %1% mm."
-msgstr "最小顶壳厚度为%1%mm。"
+msgstr "最小顶壳厚度为 %1%mm。"
 
 #: src/slic3r/GUI/PresetHints.cpp:288
 msgid "Top is open."
@@ -7584,7 +7155,7 @@ msgstr "组"
 #: src/slic3r/GUI/PrintHostDialogs.cpp:84
 #, c-format, boost-format
 msgid "Upload filename doesn't end with \"%s\". Do you wish to continue?"
-msgstr "上传文件名不以\"%s\"”结尾。你想继续吗？"
+msgstr "上传文件名不以 \"%s\" 结尾。你想继续吗？"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:91
 msgid "Upload"
@@ -7600,7 +7171,7 @@ msgstr "上传并模拟"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:247
 msgid "ID"
-msgstr ""
+msgstr "ID"
 
 #: src/slic3r/GUI/PrintHostDialogs.cpp:248
 msgid "Progress"
@@ -7635,8 +7206,7 @@ msgstr "取消选定"
 msgid "Show error message"
 msgstr "显示错误消息"
 
-#: src/slic3r/GUI/PrintHostDialogs.cpp:316
-#: src/slic3r/GUI/PrintHostDialogs.cpp:371
+#: src/slic3r/GUI/PrintHostDialogs.cpp:316 src/slic3r/GUI/PrintHostDialogs.cpp:371
 msgid "Enqueued"
 msgstr "加入队列"
 
@@ -7664,32 +7234,24 @@ msgstr "上传到打印主机时出错:"
 msgid "NO RAMMING AT ALL"
 msgstr "完全不存在"
 
-#: src/slic3r/GUI/RammingChart.cpp:90 src/slic3r/GUI/WipeTowerDialog.cpp:114
-#: src/libslic3r/PrintConfig.cpp:929 src/libslic3r/PrintConfig.cpp:973
-#: src/libslic3r/PrintConfig.cpp:988 src/libslic3r/PrintConfig.cpp:3160
-#: src/libslic3r/PrintConfig.cpp:3169 src/libslic3r/PrintConfig.cpp:3310
-#: src/libslic3r/PrintConfig.cpp:3318 src/libslic3r/PrintConfig.cpp:3326
-#: src/libslic3r/PrintConfig.cpp:3333 src/libslic3r/PrintConfig.cpp:3341
-#: src/libslic3r/PrintConfig.cpp:3349
+#: src/slic3r/GUI/RammingChart.cpp:90 src/slic3r/GUI/WipeTowerDialog.cpp:114 src/libslic3r/PrintConfig.cpp:929 src/libslic3r/PrintConfig.cpp:973 src/libslic3r/PrintConfig.cpp:988 src/libslic3r/PrintConfig.cpp:3160 src/libslic3r/PrintConfig.cpp:3169 src/libslic3r/PrintConfig.cpp:3310 src/libslic3r/PrintConfig.cpp:3318 src/libslic3r/PrintConfig.cpp:3326 src/libslic3r/PrintConfig.cpp:3333 src/libslic3r/PrintConfig.cpp:3341 src/libslic3r/PrintConfig.cpp:3349
 msgid "s"
-msgstr ""
+msgstr "s"
 
 #: src/slic3r/GUI/RammingChart.cpp:95
 msgid "Volumetric speed"
 msgstr "流量速度"
 
-#: src/slic3r/GUI/RammingChart.cpp:95 src/libslic3r/PrintConfig.cpp:886
-#: src/libslic3r/PrintConfig.cpp:1782
+#: src/slic3r/GUI/RammingChart.cpp:95 src/libslic3r/PrintConfig.cpp:886 src/libslic3r/PrintConfig.cpp:1782
 msgid "mm³/s"
-msgstr ""
+msgstr "mm³/s"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:57
 #, c-format, boost-format
 msgid "Save %s as:"
 msgstr "将 %s 另存为:"
 
-#: src/slic3r/GUI/SavePresetDialog.cpp:101
-#: src/slic3r/GUI/SavePresetDialog.cpp:109
+#: src/slic3r/GUI/SavePresetDialog.cpp:101 src/slic3r/GUI/SavePresetDialog.cpp:109
 msgid "The supplied name is not valid;"
 msgstr "提供的名称无效；"
 
@@ -7712,12 +7274,12 @@ msgstr "无法覆盖外部配置文件。"
 #: src/slic3r/GUI/SavePresetDialog.cpp:134
 #, boost-format
 msgid "Preset with name \"%1%\" already exists."
-msgstr "名为\"%1%\"的预设已存在。"
+msgstr "名为 \"%1%\" 的预设已存在。"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:136
 #, boost-format
 msgid "Preset with name \"%1%\" already exists and is incompatible with selected printer."
-msgstr "名为\"%1%\"的预设已存在，且与所选打印机不兼容。"
+msgstr "名为 \"%1%\" 的预设已存在，且与所选打印机不兼容。"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:137
 msgid "Note: This preset will be replaced after saving"
@@ -7739,8 +7301,7 @@ msgstr "名称不能以空格结尾。"
 msgid "The name cannot be the same as a preset alias name."
 msgstr "该名称不能与预设别名相同。"
 
-#: src/slic3r/GUI/SavePresetDialog.cpp:191
-#: src/slic3r/GUI/SavePresetDialog.cpp:197
+#: src/slic3r/GUI/SavePresetDialog.cpp:191 src/slic3r/GUI/SavePresetDialog.cpp:197
 msgid "Save preset"
 msgstr "保存预设"
 
@@ -7755,36 +7316,34 @@ msgid ""
 "You have selected physical printer \"%1%\" \n"
 "with related printer preset \"%2%\""
 msgstr ""
-"您已经选择了物理打印机\"%1%\" \n"
-"以及相关的打印机预设\"%2%\""
+"您已经选择了物理打印机 \"%1%\" \n"
+"以及相关的打印机预设 \"%2%\""
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:322
 #, boost-format
 msgid "What would you like to do with \"%1%\" preset after saving?"
-msgstr "保存后，您想对\"%1%'预设做什么？"
+msgstr "保存后，您想对 \"%1%\" 预设做什么？"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:325
 #, boost-format
 msgid "Change \"%1%\" to \"%2%\" for this physical printer \"%3%\""
-msgstr "将此物理打印机\"%3%\"的\"%1%\"更改为\"%2%\""
+msgstr "将此物理打印机 \"%3%\" 的 \"%1%\" 更改为 \"%2%\""
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:326
 #, boost-format
 msgid "Add \"%1%\" as a next preset for the the physical printer \"%2%\""
-msgstr "添加\"%1%\"作为物理打印机\"%2%\"的下一个预设值"
+msgstr "添加 \"%1%\" 作为物理打印机 \"%2%\" 的下一个预设值"
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:327
 #, boost-format
 msgid "Just switch to \"%1%\" preset"
-msgstr "只需切换到\"%1%\"预设"
+msgstr "只需切换到 \"%1%\" 预设"
 
-#: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345
-#: src/slic3r/GUI/Tab.cpp:2642
+#: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345 src/slic3r/GUI/Tab.cpp:2642
 msgid "Stealth"
 msgstr "隐形"
 
-#: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345
-#: src/slic3r/GUI/Tab.cpp:2636
+#: src/slic3r/GUI/Search.cpp:90 src/slic3r/GUI/Search.cpp:345 src/slic3r/GUI/Tab.cpp:2636
 msgid "Normal"
 msgstr "正常"
 
@@ -7828,15 +7387,14 @@ msgstr "缩放至合适"
 msgid "Data to send"
 msgstr "要发送的数据"
 
-#: src/slic3r/GUI/SendSystemInfoDialog.cpp:550
-#: src/slic3r/GUI/SendSystemInfoDialog.cpp:618
+#: src/slic3r/GUI/SendSystemInfoDialog.cpp:550 src/slic3r/GUI/SendSystemInfoDialog.cpp:618
 msgid "Send system info"
 msgstr "发送系统信息"
 
 #: src/slic3r/GUI/SendSystemInfoDialog.cpp:581
 #, boost-format
 msgid "This is the first time you are running %1%. We would like to ask you to send some of your system information to us. This will only happen once and we will not ask you to do this again (only after you upgrade to the next version)."
-msgstr "这是您第一次运行%1%。我们希望您将一些系统信息发送给我们。这只会发生一次，我们不会要求您再次这样做（只有在您升级到下一个版本后）。"
+msgstr "这是您第一次运行 %1%。我们希望您将一些系统信息发送给我们。这只会发生一次，我们不会要求您再次这样做（只有在您升级到下一个版本后）。"
 
 #: src/slic3r/GUI/SendSystemInfoDialog.cpp:585
 msgid "If we know your hardware, operating system, etc., it will greatly help us in development and prioritization, because we will be able to focus our effort more efficiently and spend time on features that are needed the most."
@@ -7936,7 +7494,7 @@ msgstr ""
 #: src/slic3r/GUI/Tab.cpp:227
 #, boost-format
 msgid "Search in settings [%1%]"
-msgstr "在设置[%1%]中搜索]"
+msgstr "在设置 [%1%] 中搜索"
 
 #: src/slic3r/GUI/Tab.cpp:1302
 msgid "Detach from system preset"
@@ -8076,7 +7634,7 @@ msgstr "修改器"
 
 #: src/slic3r/GUI/Tab.cpp:1606
 msgid "Acceleration control (advanced)"
-msgstr "加速控制（高级）"
+msgstr "加速控制 (高级)"
 
 #: src/slic3r/GUI/Tab.cpp:1614
 msgid "Autospeed (advanced)"
@@ -8126,24 +7684,15 @@ msgstr "输出文件"
 msgid "Post-processing scripts"
 msgstr "后处理脚本"
 
-#: src/slic3r/GUI/Tab.cpp:1716 src/slic3r/GUI/Tab.cpp:1717
-#: src/slic3r/GUI/Tab.cpp:2102 src/slic3r/GUI/Tab.cpp:2103
-#: src/slic3r/GUI/Tab.cpp:2489 src/slic3r/GUI/Tab.cpp:2490
-#: src/slic3r/GUI/Tab.cpp:2561 src/slic3r/GUI/Tab.cpp:2562
-#: src/slic3r/GUI/Tab.cpp:3940 src/slic3r/GUI/Tab.cpp:4568
-#: src/slic3r/GUI/Tab.cpp:4569
+#: src/slic3r/GUI/Tab.cpp:1716 src/slic3r/GUI/Tab.cpp:1717 src/slic3r/GUI/Tab.cpp:2102 src/slic3r/GUI/Tab.cpp:2103 src/slic3r/GUI/Tab.cpp:2489 src/slic3r/GUI/Tab.cpp:2490 src/slic3r/GUI/Tab.cpp:2561 src/slic3r/GUI/Tab.cpp:2562 src/slic3r/GUI/Tab.cpp:3940 src/slic3r/GUI/Tab.cpp:4568 src/slic3r/GUI/Tab.cpp:4569
 msgid "Notes"
 msgstr "备注"
 
-#: src/slic3r/GUI/Tab.cpp:1723 src/slic3r/GUI/Tab.cpp:2110
-#: src/slic3r/GUI/Tab.cpp:2496 src/slic3r/GUI/Tab.cpp:2568
-#: src/slic3r/GUI/Tab.cpp:4576 src/slic3r/GUI/Tab.cpp:4723
+#: src/slic3r/GUI/Tab.cpp:1723 src/slic3r/GUI/Tab.cpp:2110 src/slic3r/GUI/Tab.cpp:2496 src/slic3r/GUI/Tab.cpp:2568 src/slic3r/GUI/Tab.cpp:4576 src/slic3r/GUI/Tab.cpp:4723
 msgid "Dependencies"
 msgstr "依赖"
 
-#: src/slic3r/GUI/Tab.cpp:1724 src/slic3r/GUI/Tab.cpp:2111
-#: src/slic3r/GUI/Tab.cpp:2497 src/slic3r/GUI/Tab.cpp:2569
-#: src/slic3r/GUI/Tab.cpp:4577 src/slic3r/GUI/Tab.cpp:4724
+#: src/slic3r/GUI/Tab.cpp:1724 src/slic3r/GUI/Tab.cpp:2111 src/slic3r/GUI/Tab.cpp:2497 src/slic3r/GUI/Tab.cpp:2569 src/slic3r/GUI/Tab.cpp:4577 src/slic3r/GUI/Tab.cpp:4724
 msgid "Profile dependencies"
 msgstr "配置文件依赖"
 
@@ -8160,7 +7709,7 @@ msgid_plural ""
 "The following lines %s contain reserved keywords.\n"
 "Please remove them, as they may cause problems in G-code visualization and printing time estimation."
 msgstr[0] ""
-"下一行%s包含保留关键字。\n"
+"下一行 %s 包含保留关键字。\n"
 "请删除它们，因为它们可能会导致 G-Code 可视化和打印时间估计出现问题。"
 
 #: src/slic3r/GUI/Tab.cpp:1847
@@ -8183,8 +7732,7 @@ msgstr "热床"
 msgid "Cooling"
 msgstr "冷却"
 
-#: src/slic3r/GUI/Tab.cpp:1996 src/libslic3r/PrintConfig.cpp:1894
-#: src/libslic3r/PrintConfig.cpp:2944
+#: src/slic3r/GUI/Tab.cpp:1996 src/libslic3r/PrintConfig.cpp:1894 src/libslic3r/PrintConfig.cpp:2944
 msgid "Enable"
 msgstr "启用"
 
@@ -8216,21 +7764,15 @@ msgstr "单挤出机 多色 打印机的工具更换参数"
 msgid "Ramming settings"
 msgstr "冲击设置"
 
-#: src/slic3r/GUI/Tab.cpp:2081 src/slic3r/GUI/Tab.cpp:2401
-#: src/slic3r/GUI/Tab.cpp:4247 src/libslic3r/GCode.cpp:733
-#: src/libslic3r/PrintConfig.cpp:2450
+#: src/slic3r/GUI/Tab.cpp:2081 src/slic3r/GUI/Tab.cpp:2401 src/slic3r/GUI/Tab.cpp:4247 src/libslic3r/GCode.cpp:733 src/libslic3r/PrintConfig.cpp:2450
 msgid "Custom G-code"
 msgstr "自定义 G-Code"
 
-#: src/slic3r/GUI/Tab.cpp:2082 src/slic3r/GUI/Tab.cpp:2402
-#: src/libslic3r/GCode.cpp:707 src/libslic3r/PrintConfig.cpp:2400
-#: src/libslic3r/PrintConfig.cpp:2415
+#: src/slic3r/GUI/Tab.cpp:2082 src/slic3r/GUI/Tab.cpp:2402 src/libslic3r/GCode.cpp:707 src/libslic3r/PrintConfig.cpp:2400 src/libslic3r/PrintConfig.cpp:2415
 msgid "Start G-code"
 msgstr "起始 G-Code"
 
-#: src/slic3r/GUI/Tab.cpp:2092 src/slic3r/GUI/Tab.cpp:2412
-#: src/libslic3r/GCode.cpp:708 src/libslic3r/PrintConfig.cpp:662
-#: src/libslic3r/PrintConfig.cpp:672
+#: src/slic3r/GUI/Tab.cpp:2092 src/slic3r/GUI/Tab.cpp:2412 src/libslic3r/GCode.cpp:708 src/libslic3r/PrintConfig.cpp:662 src/libslic3r/PrintConfig.cpp:672
 msgid "End G-code"
 msgstr "结尾 G-Code"
 
@@ -8253,8 +7795,7 @@ msgstr ""
 msgid "Size and coordinates"
 msgstr "大小和坐标"
 
-#: src/slic3r/GUI/Tab.cpp:2292 src/slic3r/GUI/UnsavedChangesDialog.cpp:1285
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1673
+#: src/slic3r/GUI/Tab.cpp:2292 src/slic3r/GUI/UnsavedChangesDialog.cpp:1285 src/slic3r/GUI/UnsavedChangesDialog.cpp:1673
 msgid "Capabilities"
 msgstr "功能"
 
@@ -8272,23 +7813,19 @@ msgstr ""
 "和所有挤出机必须具有相同的直径。\n"
 "是否要将所有挤出机的直径更改为第一挤出机喷嘴直径值？"
 
-#: src/slic3r/GUI/Tab.cpp:2330 src/slic3r/GUI/Tab.cpp:2772
-#: src/libslic3r/PrintConfig.cpp:1858
+#: src/slic3r/GUI/Tab.cpp:2330 src/slic3r/GUI/Tab.cpp:2772 src/libslic3r/PrintConfig.cpp:1858
 msgid "Nozzle diameter"
 msgstr "喷嘴直径"
 
-#: src/slic3r/GUI/Tab.cpp:2422 src/libslic3r/GCode.cpp:709
-#: src/libslic3r/PrintConfig.cpp:402
+#: src/slic3r/GUI/Tab.cpp:2422 src/libslic3r/GCode.cpp:709 src/libslic3r/PrintConfig.cpp:402
 msgid "Before layer change G-code"
 msgstr "图层更改前 G-Code"
 
-#: src/slic3r/GUI/Tab.cpp:2432 src/libslic3r/GCode.cpp:710
-#: src/libslic3r/PrintConfig.cpp:1584
+#: src/slic3r/GUI/Tab.cpp:2432 src/libslic3r/GCode.cpp:710 src/libslic3r/PrintConfig.cpp:1584
 msgid "After layer change G-code"
 msgstr "图层更改后 G-Code"
 
-#: src/slic3r/GUI/Tab.cpp:2442 src/libslic3r/GCode.cpp:711
-#: src/libslic3r/PrintConfig.cpp:2827
+#: src/slic3r/GUI/Tab.cpp:2442 src/libslic3r/GCode.cpp:711 src/libslic3r/PrintConfig.cpp:2827
 msgid "Tool change G-code"
 msgstr "工具更改 G-Code"
 
@@ -8300,8 +7837,7 @@ msgstr "模型对象之间的 G-Code (用于顺序打印)"
 msgid "Color Change G-code"
 msgstr "颜色更改 G-Code"
 
-#: src/slic3r/GUI/Tab.cpp:2471 src/libslic3r/GCode.cpp:714
-#: src/libslic3r/PrintConfig.cpp:2441
+#: src/slic3r/GUI/Tab.cpp:2471 src/libslic3r/GCode.cpp:714 src/libslic3r/PrintConfig.cpp:2441
 msgid "Pause Print G-code"
 msgstr "暂停打印 G-Code"
 
@@ -8329,12 +7865,7 @@ msgstr "修正"
 msgid "Exposure"
 msgstr "曝光"
 
-#: src/slic3r/GUI/Tab.cpp:2612 src/slic3r/GUI/Tab.cpp:2699
-#: src/libslic3r/PrintConfig.cpp:1613 src/libslic3r/PrintConfig.cpp:1648
-#: src/libslic3r/PrintConfig.cpp:1665 src/libslic3r/PrintConfig.cpp:1682
-#: src/libslic3r/PrintConfig.cpp:1698 src/libslic3r/PrintConfig.cpp:1708
-#: src/libslic3r/PrintConfig.cpp:1718 src/libslic3r/PrintConfig.cpp:1731
-#: src/libslic3r/PrintConfig.cpp:1741
+#: src/slic3r/GUI/Tab.cpp:2612 src/slic3r/GUI/Tab.cpp:2699 src/libslic3r/PrintConfig.cpp:1613 src/libslic3r/PrintConfig.cpp:1648 src/libslic3r/PrintConfig.cpp:1665 src/libslic3r/PrintConfig.cpp:1682 src/libslic3r/PrintConfig.cpp:1698 src/libslic3r/PrintConfig.cpp:1708 src/libslic3r/PrintConfig.cpp:1718 src/libslic3r/PrintConfig.cpp:1731 src/libslic3r/PrintConfig.cpp:1741
 msgid "Machine limits"
 msgstr "机器限制"
 
@@ -8431,7 +7962,7 @@ msgstr "这是这台物理打印机的最后一次预设。"
 #: src/slic3r/GUI/Tab.cpp:3699
 #, boost-format
 msgid "Are you sure you want to delete \"%1%\" preset from the physical printer \"%2%\"?"
-msgstr "是否确实要从物理打印机\"%2%\"中删除\"%1%\"预设？"
+msgstr "是否确实要从物理打印机 \"%2%\" 中删除 \"%1%\" 预设？"
 
 #: src/slic3r/GUI/Tab.cpp:3711
 msgid "The physical printer below is based on the preset, you are going to delete."
@@ -8638,8 +8169,8 @@ msgid ""
 "\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
 "To enable \"%1%\", please switch off \"%2%\""
 msgstr ""
-"\"%1%'被禁用，因为\"%2%'在\"%3%'类别中处于启用状态。\n"
-"要启用\"%1%\"，请关闭\"%2%\""
+"\"%1%\" 被禁用，因为 \"%2%\" 在 \"%3%\" 类别中处于启用状态。\n"
+"要启用 \"%1%\"，请关闭 \"%2%\""
 
 #: src/slic3r/GUI/Tab.cpp:4760 src/libslic3r/PrintConfig.cpp:3578
 msgid "Object elevation"
@@ -8649,13 +8180,7 @@ msgstr "对象高程"
 msgid "Pad around object"
 msgstr "对象周围填充"
 
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:153
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:162
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1047
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1100
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1115
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1130
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1145
+#: src/slic3r/GUI/UnsavedChangesDialog.cpp:153 src/slic3r/GUI/UnsavedChangesDialog.cpp:162 src/slic3r/GUI/UnsavedChangesDialog.cpp:1047 src/slic3r/GUI/UnsavedChangesDialog.cpp:1100 src/slic3r/GUI/UnsavedChangesDialog.cpp:1115 src/slic3r/GUI/UnsavedChangesDialog.cpp:1130 src/slic3r/GUI/UnsavedChangesDialog.cpp:1145
 msgid "Undef"
 msgstr "未定义"
 
@@ -8675,8 +8200,7 @@ msgstr "旧值"
 msgid "New Value"
 msgstr "新值"
 
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:864
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:867
+#: src/slic3r/GUI/UnsavedChangesDialog.cpp:864 src/slic3r/GUI/UnsavedChangesDialog.cpp:867
 msgid "Keep"
 msgstr "保持"
 
@@ -8723,10 +8247,9 @@ msgstr "普鲁萨斯勒会记住你的行为。"
 msgid ""
 "Visit \"Preferences\" and check \"%1%\"\n"
 "to be asked about unsaved changes again."
-msgstr "访问“首选项”并选中“%1%”，再次询问未保存的更改。"
+msgstr "访问 “首选项” 并选中 \"%1%\"，再次询问未保存的更改。"
 
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:936
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1695
+#: src/slic3r/GUI/UnsavedChangesDialog.cpp:936 src/slic3r/GUI/UnsavedChangesDialog.cpp:1695
 msgid "Some fields are too long to fit. Right mouse click reveals the full text."
 msgstr "有些字段太长，无法容纳。鼠标右键单击显示全文。"
 
@@ -8753,12 +8276,12 @@ msgstr "将选定的设置转换为新选定的预设。"
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:947
 #, boost-format
 msgid "Save the selected options to preset \"%1%\"."
-msgstr "将所选选项保存到预设\"%1%\"。"
+msgstr "将所选选项保存到预设 \"%1%\"。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:948
 #, boost-format
 msgid "Transfer the selected options to the newly selected preset \"%1%\"."
-msgstr "将所选选项转移到新选择的预设\"%1%\"。"
+msgstr "将所选选项转移到新选择的预设 \"%1%\"。"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1224
 msgid "The following preset was modified"
@@ -8768,20 +8291,19 @@ msgstr[0] "修改了以下预设"
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1230
 #, boost-format
 msgid "Preset \"%1%\" has the following unsaved changes:"
-msgstr "预设\"%1%\"有以下未保存的更改:"
+msgstr "预设 \"%1%\" 有以下未保存的更改:"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1234
 #, boost-format
 msgid "Preset \"%1%\" is not compatible with the new printer profile and it has the following unsaved changes:"
-msgstr "预设\"%1%\"与新打印机配置文件不兼容，它有以下未保存的更改:"
+msgstr "预设 \"%1%\" 与新打印机配置文件不兼容，它有以下未保存的更改:"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1235
 #, boost-format
 msgid "Preset \"%1%\" is not compatible with the new print profile and it has the following unsaved changes:"
-msgstr "预设\"%1%\"与新的打印配置文件不兼容，它有以下未保存的更改:"
+msgstr "预设 \"%1%\" 与新的打印配置文件不兼容，它有以下未保存的更改:"
 
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1281
-#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1669
+#: src/slic3r/GUI/UnsavedChangesDialog.cpp:1281 src/slic3r/GUI/UnsavedChangesDialog.cpp:1669
 msgid "Extruders count"
 msgstr "挤出机计数"
 
@@ -8850,8 +8372,7 @@ msgstr "新版本:"
 msgid "Changelog & Download"
 msgstr "更改日志 & 下载"
 
-#: src/slic3r/GUI/UpdateDialogs.cpp:59 src/slic3r/GUI/UpdateDialogs.cpp:133
-#: src/slic3r/GUI/UpdateDialogs.cpp:191
+#: src/slic3r/GUI/UpdateDialogs.cpp:59 src/slic3r/GUI/UpdateDialogs.cpp:133 src/slic3r/GUI/UpdateDialogs.cpp:191
 msgid "Open changelog page"
 msgstr "打开更改日志页面"
 
@@ -8951,15 +8472,15 @@ msgid ""
 "\n"
 "You may either exit %s and try again with a newer version, or you may re-run the initial configuration. Doing so will create a backup snapshot of the existing configuration before installing files compatible with this %s."
 msgstr ""
-"此版本的%s与当前安装的配置包不兼容。\n"
-"这可能是因为在使用较新的后运行较旧的%s。\n"
+"此版本的 %s 与当前安装的配置包不兼容。\n"
+"这可能是因为在使用较新的后运行较旧的 %s。\n"
 "\n"
-"您可以退出%s并使用较新版本重试，也可以重新运行初始配置。这样做将在安装与此%s兼容的文件之前创建现有配置的备份快照。"
+"您可以退出 %s 并使用较新版本重试，也可以重新运行初始配置。这样做将在安装与此 %s 兼容的文件之前创建现有配置的备份快照。"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:225
 #, c-format, boost-format
 msgid "This %s version: %s"
-msgstr "此 %s 版本:%s"
+msgstr "此 %s 版本: %s"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:230
 msgid "Incompatible bundles:"
@@ -9001,7 +8522,7 @@ msgstr "没有可用的更新"
 #: src/slic3r/GUI/UpdateDialogs.cpp:304
 #, c-format, boost-format
 msgid "%s has no configuration updates available."
-msgstr "%s没有可用的配置更新。"
+msgstr "%s 没有可用的配置更新。"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:21
 msgid "Ramming customization"
@@ -9097,8 +8618,7 @@ msgstr "切换到 %s 模式"
 msgid "Current mode is %s"
 msgstr "当前模式为 %s"
 
-#: src/slic3r/Utils/AstroBox.cpp:69 src/slic3r/Utils/OctoPrint.cpp:141
-#: src/slic3r/Utils/Repetier.cpp:69
+#: src/slic3r/Utils/AstroBox.cpp:69 src/slic3r/Utils/OctoPrint.cpp:141 src/slic3r/Utils/Repetier.cpp:69
 #, c-format, boost-format
 msgid "Mismatched type of print host: %s"
 msgstr "不匹配的打印主机类型：%s"
@@ -9123,9 +8643,7 @@ msgstr "与 Duet 的连接工作正常。"
 msgid "Could not connect to Duet"
 msgstr "无法连接到 Duet"
 
-#: src/slic3r/Utils/Duet.cpp:88 src/slic3r/Utils/Duet.cpp:157
-#: src/slic3r/Utils/FlashAir.cpp:122 src/slic3r/Utils/FlashAir.cpp:143
-#: src/slic3r/Utils/FlashAir.cpp:159
+#: src/slic3r/Utils/Duet.cpp:88 src/slic3r/Utils/Duet.cpp:157 src/slic3r/Utils/FlashAir.cpp:122 src/slic3r/Utils/FlashAir.cpp:143 src/slic3r/Utils/FlashAir.cpp:159
 msgid "Unknown error occured"
 msgstr "发生未知错误"
 
@@ -9137,8 +8655,7 @@ msgstr "密码错误"
 msgid "Could not get resources to create a new connection"
 msgstr "无法获取资源以创建新连接"
 
-#: src/slic3r/Utils/FixModelByWin10.cpp:221
-#: src/slic3r/Utils/FixModelByWin10.cpp:362
+#: src/slic3r/Utils/FixModelByWin10.cpp:221 src/slic3r/Utils/FixModelByWin10.cpp:362
 msgid "Exporting source model"
 msgstr "导出源模型"
 
@@ -9154,14 +8671,11 @@ msgstr "由 Netfabb 服务修复模型"
 msgid "Mesh repair failed."
 msgstr "网格修复失败。"
 
-#: src/slic3r/Utils/FixModelByWin10.cpp:253
-#: src/slic3r/Utils/FixModelByWin10.cpp:389
+#: src/slic3r/Utils/FixModelByWin10.cpp:253 src/slic3r/Utils/FixModelByWin10.cpp:389
 msgid "Loading repaired model"
 msgstr "加载修复模型"
 
-#: src/slic3r/Utils/FixModelByWin10.cpp:265
-#: src/slic3r/Utils/FixModelByWin10.cpp:272
-#: src/slic3r/Utils/FixModelByWin10.cpp:303
+#: src/slic3r/Utils/FixModelByWin10.cpp:265 src/slic3r/Utils/FixModelByWin10.cpp:272 src/slic3r/Utils/FixModelByWin10.cpp:303
 msgid "Saving mesh into the 3MF container failed."
 msgstr "将网格保存到 3MF 容器失败。"
 
@@ -9211,7 +8725,7 @@ msgstr "无法连接到 FlashAir"
 
 #: src/slic3r/Utils/FlashAir.cpp:76
 msgid "Note: FlashAir with firmware 2.00.02 or newer and activated upload function is required."
-msgstr "注：需要固件为2.00.02 或更新版本的 FlashAir，并激活上传功能。"
+msgstr "注：需要固件为 2.00.02 或更新版本的 FlashAir，并激活上传功能。"
 
 #: src/slic3r/Utils/OctoPrint.cpp:164
 msgid "Connection to OctoPrint works correctly."
@@ -9244,10 +8758,9 @@ msgstr "无法连接到 PrusaLink"
 #: src/slic3r/Utils/PresetUpdater.cpp:61
 #, boost-format
 msgid "Copying of file %1% to %2% failed: %3%"
-msgstr "将文件%1%复制到%2%失败：%3%"
+msgstr "将文件 %1% 复制到 %2% 失败：%3%"
 
-#: src/slic3r/Utils/PresetUpdater.cpp:645
-#: src/slic3r/Utils/PresetUpdater.cpp:662
+#: src/slic3r/Utils/PresetUpdater.cpp:645 src/slic3r/Utils/PresetUpdater.cpp:662
 msgid "Continue and install configuration updates?"
 msgstr "是否继续并安装配置更新？"
 
@@ -9290,7 +8803,7 @@ msgstr "PrusaSlicer 在以下位置检测到系统 SSL 证书存储：%1%"
 #: src/slic3r/Utils/Http.cpp:82
 #, boost-format
 msgid "To specify the system certificate store manually, please set the %1% environment variable to the correct CA bundle and restart the application."
-msgstr "要手动指定系统证书存储，请将%1%环境变量设置为正确的 CA 绑定，然后重新启动应用程序。"
+msgstr "要手动指定系统证书存储，请将 %1% 环境变量设置为正确的 CA 绑定，然后重新启动应用程序。"
 
 #: src/slic3r/Utils/Http.cpp:91
 msgid "CURL init has failed. PrusaSlicer will be unable to establish network connections. See logs for additional details."
@@ -9310,7 +8823,7 @@ msgstr "无法连接到 Repetier"
 
 #: src/slic3r/Utils/Repetier.cpp:92
 msgid "Note: Repetier version at least 0.90.0 is required."
-msgstr "注：需要至少0.90.0的 Repetier 版本。"
+msgstr "注：需要至少 0.90.0 的 Repetier 版本。"
 
 #: src/slic3r/Utils/Repetier.cpp:246
 #, boost-format
@@ -9319,7 +8832,7 @@ msgid ""
 "Message body: \"%2%\""
 msgstr ""
 "HTTP 状态：%1%\n"
-"消息正文：\"%2%'"
+"消息正文：\"%2%\""
 
 #: src/slic3r/Utils/Repetier.cpp:253
 #, boost-format
@@ -9330,7 +8843,7 @@ msgid ""
 msgstr ""
 "解析主机响应失败。\n"
 "消息正文：\"%1%\"\n"
-"错误：\"%2%'"
+"错误：\"%2%\""
 
 #: src/slic3r/Utils/Repetier.cpp:266
 #, boost-format
@@ -9341,7 +8854,7 @@ msgid ""
 msgstr ""
 "主机打印机枚举失败。\n"
 "消息正文：\"%1%\"\n"
-"错误：\"%2%'"
+"错误：\"%2%\""
 
 #: src/slic3r/Config/Snapshot.cpp:584
 msgid "Taking a configuration snapshot failed."
@@ -9370,7 +8883,7 @@ msgstr "第一层中有一个没有拉伸的对象。"
 #: src/libslic3r/GCode.cpp:570
 #, boost-format
 msgid "Empty layer between %1% and %2%."
-msgstr "空层介于%1%和%2%之间。"
+msgstr "空层介于 %1% 和 %2% 之间。"
 
 #: src/libslic3r/GCode.cpp:573
 msgid "(Some lines not shown)"
@@ -9416,12 +8929,12 @@ msgstr "混合"
 #: src/libslic3r/Flow.cpp:61
 #, boost-format
 msgid "Cannot calculate extrusion width for %1%: Variable \"%2%\" not accessible."
-msgstr "无法计算%1%的拉伸宽度：无法访问变量\"%2%\"。"
+msgstr "无法计算 %1% 的拉伸宽度：无法访问变量 \"%2%\"。"
 
 #: src/libslic3r/Format/3mf.cpp:1734
 #, boost-format
 msgid "The selected 3mf file has been saved with a newer version of %1% and is not compatible."
-msgstr "所选 3mf 文件已使用较新版本的%1%保存，不兼容。"
+msgstr "所选 3mf 文件已使用较新版本的 %1% 保存，不兼容。"
 
 #: src/libslic3r/Format/3mf.cpp:1745
 msgid "The selected 3MF contains FDM supports painted object using a newer version of PrusaSlicer and is not compatible."
@@ -9438,7 +8951,7 @@ msgstr "所选 3MF 包含使用较新版本的 PrusaSlicer 绘制的多材质对
 #: src/libslic3r/Format/AMF.cpp:993
 #, boost-format
 msgid "The selected amf file has been saved with a newer version of %1% and is not compatible."
-msgstr "所选 amf 文件已使用较新版本的%1%保存，不兼容。"
+msgstr "所选 amf 文件已使用较新版本的 %1% 保存，不兼容。"
 
 #: src/libslic3r/GCode/PostProcessor.cpp:289
 #, boost-format
@@ -9448,9 +8961,9 @@ msgid ""
 "The post-processing script is expected to change the G-code file %2% in place, but the G-code file was deleted and likely saved under a new name.\n"
 "Please adjust the post-processing script to change the G-code in place and consult the manual on how to optionally rename the post-processed G-code file.\n"
 msgstr ""
-"后期处理脚本%1%失败。\n"
+"后期处理脚本 %1% 失败。\n"
 "\n"
-"后处理脚本预计会将 G-Code 文件%2%更改到位，但 G-Code 文件已被删除，并可能以新名称保存。\n"
+"后处理脚本预计会将 G-Code 文件 %2% 更改到位，但 G-Code 文件已被删除，并可能以新名称保存。\n"
 "请调整后处理脚本以就地更改 G-Code ，并参考手册，了解如何可选地重命名后处理 G-Code 文件。\n"
 
 #: src/libslic3r/miniz_extension.cpp:91
@@ -9681,15 +9194,15 @@ msgstr "层高度不能大于喷嘴直径"
 
 #: src/libslic3r/Print.cpp:663
 msgid "Relative extruder addressing requires resetting the extruder position at each layer to prevent loss of floating point accuracy. Add \"G92 E0\" to layer_gcode."
-msgstr "相对挤出机寻址要求在每层重置挤出机位置，以防止浮点精度损失。将“ G92E0 ”添加到图层代码中。"
+msgstr "相对挤出机寻址要求在每层重置挤出机位置，以防止浮点精度损失。将 \"G92E0\" 添加到图层代码中。"
 
 #: src/libslic3r/Print.cpp:665
 msgid "\"G92 E0\" was found in before_layer_gcode, which is incompatible with absolute extruder addressing."
-msgstr "“ G92E0 ”出现在 before_layer_gcode 中，与绝对挤出机寻址不兼容。"
+msgstr "\"G92E0\" 出现在 before_layer_gcode 中，与绝对挤出机寻址不兼容。"
 
 #: src/libslic3r/Print.cpp:667
 msgid "\"G92 E0\" was found in layer_gcode, which is incompatible with absolute extruder addressing."
-msgstr "“ G92E0 ”出现在 layer_gcode 中，这与绝对挤出机寻址不兼容。"
+msgstr "\"G92E0\" 出现在 layer_gcode 中，这与绝对挤出机寻址不兼容。"
 
 #: src/libslic3r/Print.cpp:809
 msgid "Infilling layers"
@@ -9795,8 +9308,7 @@ msgstr "未能在模型上钻一些孔"
 msgid "Slicing had to be stopped due to an internal error: Inconsistent slice index."
 msgstr "由于内部错误:切片索引不一致,必须停止切片。"
 
-#: src/libslic3r/SLAPrintSteps.cpp:682 src/libslic3r/SLAPrintSteps.cpp:691
-#: src/libslic3r/SLAPrintSteps.cpp:729
+#: src/libslic3r/SLAPrintSteps.cpp:682 src/libslic3r/SLAPrintSteps.cpp:691 src/libslic3r/SLAPrintSteps.cpp:729
 msgid "Visualizing supports"
 msgstr "可视化支撑"
 
@@ -9980,11 +9492,7 @@ msgstr "网桥"
 msgid "This is the acceleration your printer will use for bridges. Set zero to disable acceleration control for bridges."
 msgstr "这是打印机用于搭桥的加速。设置为零以禁用搭桥的加速度控制。"
 
-#: src/libslic3r/PrintConfig.cpp:445 src/libslic3r/PrintConfig.cpp:616
-#: src/libslic3r/PrintConfig.cpp:1169 src/libslic3r/PrintConfig.cpp:1178
-#: src/libslic3r/PrintConfig.cpp:1378 src/libslic3r/PrintConfig.cpp:1671
-#: src/libslic3r/PrintConfig.cpp:1722 src/libslic3r/PrintConfig.cpp:1733
-#: src/libslic3r/PrintConfig.cpp:1743 src/libslic3r/PrintConfig.cpp:1941
+#: src/libslic3r/PrintConfig.cpp:445 src/libslic3r/PrintConfig.cpp:616 src/libslic3r/PrintConfig.cpp:1169 src/libslic3r/PrintConfig.cpp:1178 src/libslic3r/PrintConfig.cpp:1378 src/libslic3r/PrintConfig.cpp:1671 src/libslic3r/PrintConfig.cpp:1722 src/libslic3r/PrintConfig.cpp:1733 src/libslic3r/PrintConfig.cpp:1743 src/libslic3r/PrintConfig.cpp:1941
 msgid "mm/s²"
 msgstr ""
 
@@ -9996,11 +9504,7 @@ msgstr "桥接角度"
 msgid "Bridging angle override. If left to zero, the bridging angle will be calculated automatically. Otherwise the provided angle will be used for all bridges. Use 180° for zero angle."
 msgstr "桥接角度覆盖。如果设为零，将自动计算桥接角度。否则，提供的角度将用于所有桥接。使用 180° 实现零角度。"
 
-#: src/libslic3r/PrintConfig.cpp:456 src/libslic3r/PrintConfig.cpp:1075
-#: src/libslic3r/PrintConfig.cpp:2232 src/libslic3r/PrintConfig.cpp:2242
-#: src/libslic3r/PrintConfig.cpp:2533 src/libslic3r/PrintConfig.cpp:2774
-#: src/libslic3r/PrintConfig.cpp:2991 src/libslic3r/PrintConfig.cpp:3552
-#: src/libslic3r/PrintConfig.cpp:3673
+#: src/libslic3r/PrintConfig.cpp:456 src/libslic3r/PrintConfig.cpp:1075 src/libslic3r/PrintConfig.cpp:2232 src/libslic3r/PrintConfig.cpp:2242 src/libslic3r/PrintConfig.cpp:2533 src/libslic3r/PrintConfig.cpp:2774 src/libslic3r/PrintConfig.cpp:2991 src/libslic3r/PrintConfig.cpp:3552 src/libslic3r/PrintConfig.cpp:3673
 msgid "°"
 msgstr ""
 
@@ -10012,11 +9516,7 @@ msgstr "桥接风扇速度"
 msgid "This fan speed is enforced during all bridges and overhangs."
 msgstr "此风扇速度在所有桥和悬空期间强制执行。"
 
-#: src/libslic3r/PrintConfig.cpp:464 src/libslic3r/PrintConfig.cpp:1087
-#: src/libslic3r/PrintConfig.cpp:1559 src/libslic3r/PrintConfig.cpp:1751
-#: src/libslic3r/PrintConfig.cpp:1814 src/libslic3r/PrintConfig.cpp:2065
-#: src/libslic3r/PrintConfig.cpp:2124 src/libslic3r/PrintConfig.cpp:3177
-#: src/libslic3r/PrintConfig.cpp:3466 src/libslic3r/PrintConfig.cpp:3592
+#: src/libslic3r/PrintConfig.cpp:464 src/libslic3r/PrintConfig.cpp:1087 src/libslic3r/PrintConfig.cpp:1559 src/libslic3r/PrintConfig.cpp:1751 src/libslic3r/PrintConfig.cpp:1814 src/libslic3r/PrintConfig.cpp:2065 src/libslic3r/PrintConfig.cpp:2124 src/libslic3r/PrintConfig.cpp:3177 src/libslic3r/PrintConfig.cpp:3466 src/libslic3r/PrintConfig.cpp:3592
 msgid "%"
 msgstr ""
 
@@ -10036,17 +9536,8 @@ msgstr "桥接"
 msgid "Speed for printing bridges."
 msgstr "打印桥接的速度。"
 
-#: src/libslic3r/PrintConfig.cpp:486 src/libslic3r/PrintConfig.cpp:894
-#: src/libslic3r/PrintConfig.cpp:902 src/libslic3r/PrintConfig.cpp:911
-#: src/libslic3r/PrintConfig.cpp:919 src/libslic3r/PrintConfig.cpp:946
-#: src/libslic3r/PrintConfig.cpp:965 src/libslic3r/PrintConfig.cpp:1306
-#: src/libslic3r/PrintConfig.cpp:1496 src/libslic3r/PrintConfig.cpp:1578
-#: src/libslic3r/PrintConfig.cpp:1654 src/libslic3r/PrintConfig.cpp:1688
-#: src/libslic3r/PrintConfig.cpp:1700 src/libslic3r/PrintConfig.cpp:1710
-#: src/libslic3r/PrintConfig.cpp:1773 src/libslic3r/PrintConfig.cpp:1832
-#: src/libslic3r/PrintConfig.cpp:1972 src/libslic3r/PrintConfig.cpp:2199
-#: src/libslic3r/PrintConfig.cpp:2208 src/libslic3r/PrintConfig.cpp:2739
-#: src/libslic3r/PrintConfig.cpp:2889 src/libslic3r/PrintConfig.cpp:2899
+#: src/libslic3r/PrintConfig.cpp:486 src/libslic3r/PrintConfig.cpp:894 src/libslic3r/PrintConfig.cpp:902 src/libslic3r/PrintConfig.cpp:911 src/libslic3r/PrintConfig.cpp:919 src/libslic3r/PrintConfig.cpp:946 src/libslic3r/PrintConfig.cpp:965 src/libslic3r/PrintConfig.cpp:1306 src/libslic3r/PrintConfig.cpp:1496 src/libslic3r/PrintConfig.cpp:1578 src/libslic3r/PrintConfig.cpp:1654 src/libslic3r/PrintConfig.cpp:1688 src/libslic3r/PrintConfig.cpp:1700 src/libslic3r/PrintConfig.cpp:1710 src/libslic3r/PrintConfig.cpp:1773 src/libslic3r/PrintConfig.cpp:1832 src/libslic3r/PrintConfig.cpp:1972 src/libslic3r/PrintConfig.cpp:2199
+#: src/libslic3r/PrintConfig.cpp:2208 src/libslic3r/PrintConfig.cpp:2739 src/libslic3r/PrintConfig.cpp:2889 src/libslic3r/PrintConfig.cpp:2899
 msgid "mm/s"
 msgstr ""
 
@@ -10170,8 +9661,7 @@ msgstr "与当前打印机配置文件关联的默认耗材配置文件。在选
 msgid "Default print profile"
 msgstr "默认打印配置文件"
 
-#: src/libslic3r/PrintConfig.cpp:630 src/libslic3r/PrintConfig.cpp:3396
-#: src/libslic3r/PrintConfig.cpp:3407
+#: src/libslic3r/PrintConfig.cpp:630 src/libslic3r/PrintConfig.cpp:3396 src/libslic3r/PrintConfig.cpp:3407
 msgid "Default print profile associated with the current printer profile. On selection of the current printer profile, this print profile will be activated."
 msgstr "与当前打印机配置文件关联的默认打印配置文件。选择当前打印机配置文件时，将激活此打印配置文件。"
 
@@ -10223,8 +9713,7 @@ msgstr "顶部填充模式"
 msgid "Fill pattern for top infill. This only affects the top visible layer, and not its adjacent solid shells."
 msgstr "填充顶部填充的模式。这仅影响顶部可见图层，而不影响其相邻的实体壳。"
 
-#: src/libslic3r/PrintConfig.cpp:704 src/libslic3r/PrintConfig.cpp:1144
-#: src/libslic3r/PrintConfig.cpp:2704 src/libslic3r/PrintConfig.cpp:2721
+#: src/libslic3r/PrintConfig.cpp:704 src/libslic3r/PrintConfig.cpp:1144 src/libslic3r/PrintConfig.cpp:2704 src/libslic3r/PrintConfig.cpp:2721
 msgid "Rectilinear"
 msgstr "直线"
 
@@ -10236,8 +9725,7 @@ msgstr "单调的"
 msgid "Aligned Rectilinear"
 msgstr "直线排列"
 
-#: src/libslic3r/PrintConfig.cpp:707 src/libslic3r/PrintConfig.cpp:1151
-#: src/libslic3r/PrintConfig.cpp:2722
+#: src/libslic3r/PrintConfig.cpp:707 src/libslic3r/PrintConfig.cpp:1151 src/libslic3r/PrintConfig.cpp:2722
 msgid "Concentric"
 msgstr "回环"
 
@@ -10269,12 +9757,7 @@ msgstr "外部轮廓"
 msgid "Set this to a non-zero value to set a manual extrusion width for external perimeters. If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. If expressed as percentage (for example 200%), it will be computed over layer height."
 msgstr "将其设置为非零值, 以设置外部周长的手动挤出宽度。如果为零, 将使用默认挤出宽度, 如果没有设置默认值将使用 1.125x 喷嘴直径。如果以百分比表示 (例如 200%), 则将根据图层高度计算。"
 
-#: src/libslic3r/PrintConfig.cpp:732 src/libslic3r/PrintConfig.cpp:843
-#: src/libslic3r/PrintConfig.cpp:1200 src/libslic3r/PrintConfig.cpp:1403
-#: src/libslic3r/PrintConfig.cpp:1460 src/libslic3r/PrintConfig.cpp:1487
-#: src/libslic3r/PrintConfig.cpp:1961 src/libslic3r/PrintConfig.cpp:2347
-#: src/libslic3r/PrintConfig.cpp:2521 src/libslic3r/PrintConfig.cpp:2610
-#: src/libslic3r/PrintConfig.cpp:2845
+#: src/libslic3r/PrintConfig.cpp:732 src/libslic3r/PrintConfig.cpp:843 src/libslic3r/PrintConfig.cpp:1200 src/libslic3r/PrintConfig.cpp:1403 src/libslic3r/PrintConfig.cpp:1460 src/libslic3r/PrintConfig.cpp:1487 src/libslic3r/PrintConfig.cpp:1961 src/libslic3r/PrintConfig.cpp:2347 src/libslic3r/PrintConfig.cpp:2521 src/libslic3r/PrintConfig.cpp:2610 src/libslic3r/PrintConfig.cpp:2845
 msgid "mm or %"
 msgstr "mm 或 %"
 
@@ -10282,10 +9765,7 @@ msgstr "mm 或 %"
 msgid "This separate setting will affect the speed of external perimeters (the visible ones). If expressed as percentage (for example: 80%) it will be calculated on the perimeters speed setting above. Set to zero for auto."
 msgstr "此单独的设置将影响外部轮廓（可见轮廓）的速度。如果以百分比表示（例如：80%）它将在上述周界速度设置上计算。为自动设置为零。"
 
-#: src/libslic3r/PrintConfig.cpp:744 src/libslic3r/PrintConfig.cpp:1222
-#: src/libslic3r/PrintConfig.cpp:1233 src/libslic3r/PrintConfig.cpp:2306
-#: src/libslic3r/PrintConfig.cpp:2359 src/libslic3r/PrintConfig.cpp:2690
-#: src/libslic3r/PrintConfig.cpp:2859
+#: src/libslic3r/PrintConfig.cpp:744 src/libslic3r/PrintConfig.cpp:1222 src/libslic3r/PrintConfig.cpp:1233 src/libslic3r/PrintConfig.cpp:2306 src/libslic3r/PrintConfig.cpp:2359 src/libslic3r/PrintConfig.cpp:2690 src/libslic3r/PrintConfig.cpp:2859
 msgid "mm/s or %"
 msgstr "mm/s 或 %"
 
@@ -10321,8 +9801,7 @@ msgstr "将此设置为挤出机周围的间隙半径。如果挤出机未居中
 msgid "Extruder Color"
 msgstr "挤出头颜色"
 
-#: src/libslic3r/PrintConfig.cpp:805 src/libslic3r/PrintConfig.cpp:868
-#: src/libslic3r/PrintConfig.cpp:3248
+#: src/libslic3r/PrintConfig.cpp:805 src/libslic3r/PrintConfig.cpp:868 src/libslic3r/PrintConfig.cpp:3248
 msgid "This is only used in the Slic3r interface as a visual help."
 msgstr "这仅在 Slic3r 界面中用作视觉帮助。"
 
@@ -10502,8 +9981,7 @@ msgstr "打印机固件 (或 Multi Material Unit 2.0) 在工具更换期间 (执
 msgid "Enter your filament diameter here. Good precision is required, so use a caliper and do multiple measurements along the filament, then compute the average."
 msgstr "在此处输入您的耗材直径。需要比较好的精度，建议使用卡钳沿耗材进行多次测量，然后计算平均值。"
 
-#: src/libslic3r/PrintConfig.cpp:1002 src/libslic3r/PrintConfig.cpp:3286
-#: src/libslic3r/PrintConfig.cpp:3287
+#: src/libslic3r/PrintConfig.cpp:1002 src/libslic3r/PrintConfig.cpp:3286 src/libslic3r/PrintConfig.cpp:3287
 msgid "Density"
 msgstr "密度"
 
@@ -10887,8 +10365,7 @@ msgstr "分段区域的最大宽度"
 msgid "Maximum width of a segmented region. Zero disables this feature."
 msgstr "分段区域的最大宽度。零将禁用此功能。"
 
-#: src/libslic3r/PrintConfig.cpp:1528 src/libslic3r/PrintConfig.cpp:2139
-#: src/libslic3r/PrintConfig.cpp:2148
+#: src/libslic3r/PrintConfig.cpp:1528 src/libslic3r/PrintConfig.cpp:2139 src/libslic3r/PrintConfig.cpp:2148
 msgid "mm (zero to disable)"
 msgstr "mm (0禁用)"
 
@@ -11250,8 +10727,7 @@ msgstr "额外装载距离"
 msgid "When set to zero, the distance the filament is moved from parking position during load is exactly the same as it was moved back during unload. When positive, it is loaded further,  if negative, the loading move is shorter than unloading."
 msgstr "当设置为零时，耗材在负载期间与停车位置移动的距离与卸载期间移回的距离完全相同。当为正时，它进一步加载，如果为负，加载移动比卸载短。"
 
-#: src/libslic3r/PrintConfig.cpp:1938 src/libslic3r/PrintConfig.cpp:1955
-#: src/libslic3r/PrintConfig.cpp:1969 src/libslic3r/PrintConfig.cpp:1979
+#: src/libslic3r/PrintConfig.cpp:1938 src/libslic3r/PrintConfig.cpp:1955 src/libslic3r/PrintConfig.cpp:1969 src/libslic3r/PrintConfig.cpp:1979
 msgid "Perimeters"
 msgstr "轮廓"
 
@@ -12275,8 +11751,7 @@ msgstr ""
 "如果打印区域超过指定值， \n"
 "然后缓慢倾斜将被使用，否则 - 快速倾斜"
 
-#: src/libslic3r/PrintConfig.cpp:3183 src/libslic3r/PrintConfig.cpp:3184
-#: src/libslic3r/PrintConfig.cpp:3185
+#: src/libslic3r/PrintConfig.cpp:3183 src/libslic3r/PrintConfig.cpp:3184 src/libslic3r/PrintConfig.cpp:3185
 msgid "Printer scaling correction"
 msgstr "打印机缩放校正"
 
@@ -13132,8 +12607,7 @@ msgstr ""
 "框选择\n"
 "您知道可以使用 Shift+鼠标拖动进行框选择吗？您还可以通过按住 Alt 键并拖动鼠标来取消选择对象。"
 
-#: resources/data/hints.ini: [hint:Zoom on selected objects or all if none
-#: selected]
+#: resources/data/hints.ini: [hint:Zoom on selected objects or all if none selected]
 msgid ""
 "Zoom on selected objects or on all objects if none selected\n"
 "Did you know that you can zoom in on selected objects by pressing the <b>Z</b> key? If none are selected, the camera will zoom on all objects in the scene."
@@ -13157,8 +12631,7 @@ msgstr ""
 "镜像\n"
 "您知道可以镜像所选模型以创建其反转版本吗？在模型上单击鼠标右键，选择“镜像”，然后拾取镜像轴。"
 
-#: resources/data/hints.ini: [hint:PageUp / PageDown quick rotation by 45
-#: degrees]
+#: resources/data/hints.ini: [hint:PageUp / PageDown quick rotation by 45 degrees]
 msgid ""
 "PageUp / PageDown quick rotation by 45 degrees\n"
 "Did you know that you can quickly rotate selected models by 45 degrees around the Z-axis clockwise or counter-clockwise by pressing <b>Page Up</b> or <b>Page Down</b> respectively?"
