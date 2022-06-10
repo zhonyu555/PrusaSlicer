@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <boost/nowide/convert.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <wx/event.h>
 #include <wx/cmdline.h>
 
@@ -155,7 +156,7 @@ DownloadFrame::DownloadFrame(const wxString& title, const wxPoint& pos, const wx
 
     data_sizer->Add(m_dataview, 1, wxEXPAND | wxBOTTOM);
 
-    m_dest_folder = boost::filesystem::path("C:\\Users\\User\\Downloads");
+    m_dest_folder = boost::dll::program_location().parent_path();//boost::filesystem::path("C:\\Users\\User\\Downloads");
 
     //m_log_label = new wxStaticText(this, wxID_ANY, "Log:");
     

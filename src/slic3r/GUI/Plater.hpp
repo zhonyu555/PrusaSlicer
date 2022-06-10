@@ -177,7 +177,7 @@ public:
     bool load_files(const wxArrayString& filenames);
     void check_selected_presets_visibility(PrinterTechnology loaded_printer_technology);
 
-    void preview_archive(const boost::filesystem::path& input_file);
+    bool preview_archive(const boost::filesystem::path& input_file);
 
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 

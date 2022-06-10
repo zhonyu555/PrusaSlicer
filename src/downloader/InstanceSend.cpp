@@ -6,6 +6,7 @@
 #endif //WIN32
 
 #include <boost/nowide/convert.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
 #include <wx/utils.h>
 
 namespace Downloader {
@@ -229,7 +230,9 @@ bool SlicerSend::start_with_path(const wxString& path) const
 	// "C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " 
 	std::string escaped = escape_strings_cstyle({  boost::nowide::narrow(path) });
 	//return execute_command(boost::nowide::widen(escaped));
-	return execute_command("C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " + boost::nowide::widen(escaped));
+	std::string binary = (boost::dll::program_location().parent_path() / "prusa-slicer.exe").string() + " ";
+	//return execute_command("C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " + boost::nowide::widen(escaped));
+	return execute_command(boost::nowide::widen(binary) + boost::nowide::widen(escaped));
 }
 
 bool SlicerSend::start_or_send(const wxString& path) const

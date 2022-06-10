@@ -5454,76 +5454,78 @@ std::vector<size_t> Plater::load_files(const std::vector<std::string>& input_fil
     return p->load_files(paths, load_model, load_config, imperial_units);
 }
 
-void Plater::preview_archive(const boost::filesystem::path& archive_path)
+bool Plater::preview_archive(const boost::filesystem::path& archive_path)
 {
-    BOOST_LOG_TRIVIAL(error) << "preview zip archive: " << archive_path;
-
     mz_zip_archive archive;
     mz_zip_zero_struct(&archive);
 
     if (!open_zip_reader(&archive, archive_path.string()))
-        return ;
+        return false;
 
-    mz_uint num_entries = mz_zip_reader_get_num_files(&archive);
-
-    //BOOST_LOG_TRIVIAL(error) << "entries: " << num_entries;
-    
+    mz_uint num_entries = mz_zip_reader_get_num_files(&archive);    
 
     mz_zip_archive_file_stat stat;
     
-    //bool config_found = false;
-    //for (mz_uint i = 0; i < num_entries; ++i) {
-    //    if (mz_zip_reader_file_stat(&archive, i, &stat)) {
-    //        std::string name(stat.m_filename);
-    //        //std::replace(name.begin(), name.end(), '\\', '/');
+    std::vector<boost::filesystem::path> selected_paths;
+    std::vector<std::string> unzipped_paths;
+    FileArchiveDialog dlg(&archive, selected_paths);
+    if (dlg.ShowModal() == wxID_OK)
+    {
+        std::string archive_path_string = archive_path.string();
+        archive_path_string = archive_path_string.substr(0, archive_path_string.size() - 4);
+       /* boost::filesystem::path archive_dir(archive_path_string);
+        
+        if (!boost::filesystem::is_directory(archive_dir) &&
+            !boost::filesystem::create_directory(archive_dir)) {
+                close_zip_reader(&archive);
+                return;
+        }*/
 
-    //        BOOST_LOG_TRIVIAL(error) << name;
-    //        
-    //    }
-    //}
-    
-    std::string archive_path_string = archive_path.string();
-    archive_path_string = archive_path_string.substr(0, archive_path_string.size() - 4);
-    boost::filesystem::path archive_dir(archive_path_string);
+        boost::filesystem::path archive_dir("C:\\Users\\User\\AppData\\Local\\Temp");
+        //m_result = {filename="C:\\Users\\User\\AppData\\Local\\Temp\\.7596.gcode.tmp" id=3 moves={ size=9639 } ...}
+       
+        for (mz_uint i = 0; i < num_entries; ++i) {
+            if (mz_zip_reader_file_stat(&archive, i, &stat)) {
+                std::string name(stat.m_filename);
+                for (const auto& path : selected_paths) {
+                    if (path.string() == name) {
+                        try
+                        {
+                            std::replace(name.begin(), name.end(), '\\', '/');
+                            // rename if file exists
+                            std::string filename = path.filename().string();
+                            std::string extension = boost::filesystem::extension(path);
+                            std::string just_filename = filename.substr(0, filename.size() - extension.size());
+                            std::string final_filename = just_filename;
 
+                            size_t version = 0;
+                            while (boost::filesystem::exists(archive_dir / (final_filename + extension)))
+                            {
+                                ++version;
+                                final_filename = just_filename + "(" + std::to_string(version) + ")";
+                            }
+                            filename = final_filename + extension;
 
-    if (!boost::filesystem::is_directory(archive_dir) &&
-        !boost::filesystem::create_directory(archive_dir))
-        return;
-
-    std::replace(archive_path_string.begin(), archive_path_string.end(), '\\', '/');
-
-    std::vector<std::string> files;
-
-    // we first loop the entries to read from the archive the .model file only, in order to extract the version from it
-    for (mz_uint i = 0; i < num_entries; ++i) {
-        if (mz_zip_reader_file_stat(&archive, i, &stat)) {
-            std::string name(stat.m_filename);
-            std::replace(name.begin(), name.end(), '\\', '/');
-            files.push_back(name);
-            if (boost::algorithm::iends_with(name, ".stl")) {
-                try
-                {
-                    std::string final_path = archive_path_string + "/" + name;
-                    bool res = mz_zip_reader_extract_file_to_file(&archive, stat.m_filename, final_path.c_str(), 0);
-                    //bool res = mz_zip_reader_extract_file_to_callback(&archive, stat.m_filename, [](void* pOpaque, mz_uint64 file_ofs, const void* pBuf, size_t n)->size_t {}, &data, 0);
-                }
-                catch (const std::exception& e)
-                {
-                    // ensure the zip archive is closed and rethrow the exception
-                    close_zip_reader(&archive);
-                    throw Slic3r::FileIOError(e.what());
+                            std::string final = (archive_dir / filename).string();
+                       
+                            unzipped_paths.emplace_back(final);
+                            bool res = mz_zip_reader_extract_file_to_file(&archive, stat.m_filename, final.c_str(), 0);
+                        }
+                        catch (const std::exception& e)
+                        {
+                            // ensure the zip archive is closed and rethrow the exception
+                            close_zip_reader(&archive);
+                            throw Slic3r::FileIOError(e.what());
+                        }
+                    }
                 }
             }
         }
     }
 
-    FileArchiveDialog dlg(files);
-    dlg.ShowModal();
-
     close_zip_reader(&archive);
 
-
+    return !load_files(unzipped_paths).empty();
 }
 
 enum class LoadType : unsigned char
@@ -5699,7 +5701,8 @@ bool Plater::load_files(const wxArrayString& filenames)
 
             return true;
         } else if (boost::algorithm::iends_with(filename, ".zip")) {
-            preview_archive(*it);
+            return preview_archive(*it);
+            
         }
     }
 
