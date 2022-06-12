@@ -4218,7 +4218,7 @@ void ObjectList::fix_model_mesh()
 
         plater->clear_before_change_mesh(obj_idx);
         std::string res;
-        if (!fix_model_by_meshfix(*(object(obj_idx)), vol_idx, progress_dlg, msg, res))
+        if (!fix_model_by_tetrahedrons(*(object(obj_idx)), vol_idx, progress_dlg, msg, res))
             return false;
         wxGetApp().plater()->changed_mesh(obj_idx);
 
