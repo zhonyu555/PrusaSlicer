@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-04 23:59+0800\n"
+"PO-Revision-Date: 2022-06-12 22:02+0800\n"
 "Last-Translator: Bral@qq.com\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -10247,7 +10247,7 @@ msgstr "这是打印机用于填充的加速。设置为零以禁用填充的加
 
 #: src/libslic3r/PrintConfig.cpp:1384
 msgid "Combine infill every"
-msgstr "将填充每个"
+msgstr "合并填充层数"
 
 #: src/libslic3r/PrintConfig.cpp:1386
 msgid "This feature allows to combine infill and speed up your print by extruding thicker infill layers while preserving thin perimeters, thus accuracy."
@@ -10259,15 +10259,15 @@ msgstr "混合填充每 n 个层"
 
 #: src/libslic3r/PrintConfig.cpp:1395
 msgid "Length of the infill anchor"
-msgstr "填充锚的长度"
+msgstr "填充锚点的长度"
 
 #: src/libslic3r/PrintConfig.cpp:1397
 msgid "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than infill_anchor_max is found, the infill line is connected to a perimeter segment at just one side and the length of the perimeter segment taken is limited to this parameter, but no longer than anchor_length_max. Set this parameter to zero to disable anchoring perimeters connected to a single infill line."
-msgstr "用附加周长的一小段将填充线连接到内部周长。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer 试图将两条紧密的填充线连接到一个短的周长段。如果找不到短于“填充”和“锚定”最大值的周长线段，则填充线仅在一侧连接到周长线段，并且所取周长线段的长度仅限于此参数，但不超过“锚定长度”最大值。将此参数设置为零，以禁用连接到单个填充线的锚定周长。"
+msgstr "用附加周长的一小段将填充线连接到内部周长。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer 试图将两条紧密的填充线连接到一个短的周长段。如果找不到短于“填充”和“锚点”最大值的周长线段，则填充线仅在一侧连接到周长线段，并且所取周长线段的长度仅限于此参数，但不超过“锚点长度”最大值。将此参数设置为零，以禁用连接到单个填充线的锚点周长。"
 
 #: src/libslic3r/PrintConfig.cpp:1413
 msgid "0 (no open anchors)"
-msgstr "0 (没有打开的锚)"
+msgstr "0 (没有锚点)"
 
 #: src/libslic3r/PrintConfig.cpp:1414 src/libslic3r/PrintConfig.cpp:1437
 msgid "1 mm"
@@ -10291,15 +10291,15 @@ msgstr "1000 (不限)"
 
 #: src/libslic3r/PrintConfig.cpp:1423
 msgid "Maximum length of the infill anchor"
-msgstr "填充锚的最大长度"
+msgstr "填充锚点的最大长度"
 
 #: src/libslic3r/PrintConfig.cpp:1425
 msgid "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than this parameter is found, the infill line is connected to a perimeter segment at just one side and the length of the perimeter segment taken is limited to infill_anchor, but no longer than this parameter. Set this parameter to zero to disable anchoring."
-msgstr "用附加周长的一小段将填充线连接到内部周长。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer 试图将两条紧密的填充线连接到一个短的周长段。如果找不到比此参数短的周长线段，则填充线仅在一侧连接到周长线段，并且所采用的周长线段的长度仅限于 infl_anchor，但不超过此参数。将此参数设置为零以禁用锚定。"
+msgstr "用附加周长的一小段将填充线连接到内部周长。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer 试图将两条紧密的填充线连接到一个短的周长段。如果找不到比此参数短的周长线段，则填充线仅在一侧连接到周长线段，并且所采用的周长线段的长度仅限于 infl_anchor，但不超过此参数。将此参数设置为零以禁用锚点。"
 
 #: src/libslic3r/PrintConfig.cpp:1436
 msgid "0 (not anchored)"
-msgstr "0 (未锚定)"
+msgstr "0 (没有锚点)"
 
 #: src/libslic3r/PrintConfig.cpp:1446
 msgid "Infill extruder"
