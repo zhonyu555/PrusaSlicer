@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-04 17:58+0800\n"
+"PO-Revision-Date: 2022-06-04 23:59+0800\n"
 "Last-Translator: Bral@qq.com\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -10379,7 +10379,7 @@ msgstr "使用热打印头熨烫顶层，使表面光滑"
 
 #: src/libslic3r/PrintConfig.cpp:1542 src/libslic3r/PrintConfig.cpp:1544
 msgid "Ironing Type"
-msgstr "熨烫式"
+msgstr "熨烫类型"
 
 #: src/libslic3r/PrintConfig.cpp:1549
 msgid "All top surfaces"
@@ -10391,7 +10391,7 @@ msgstr "仅最上面的表面"
 
 #: src/libslic3r/PrintConfig.cpp:1551
 msgid "All solid surfaces"
-msgstr "所有固体表面"
+msgstr "所有实心表面"
 
 #: src/libslic3r/PrintConfig.cpp:1556
 msgid "Flow rate"
