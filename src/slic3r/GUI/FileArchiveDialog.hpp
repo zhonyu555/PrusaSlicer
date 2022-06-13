@@ -4,8 +4,10 @@
 #include "GUI_Utils.hpp"
 #include "libslic3r/miniz_extension.hpp"
 
+#include <boost/filesystem/path.hpp>
 #include <wx/wx.h>
-
+#include <wx/dataview.h>
+#include "wxExtensions.hpp"
 
 namespace Slic3r {
 namespace GUI {

@@ -1248,8 +1248,7 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
     box_presets->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent &event) { this->preset_update = event.IsChecked(); });
 
     box_registry->Bind(wxEVT_BUTTON, [this](wxCommandEvent& event) { 
-        //if(!event.IsChecked())
-        //    return;
+#ifdef _WIN32
         // Registry key creation for "prusaslicer://" URL
 
         boost::filesystem::path binary_path(resources_dir());
@@ -1272,7 +1271,7 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
         }
         //key_full = "\"C:\\Program Files\\Prusa3D\\PrusaSlicer\\prusa-slicer-console.exe\" \"%1\"";
         key_full = key_string;
-       
+#endif
     });
 }
 

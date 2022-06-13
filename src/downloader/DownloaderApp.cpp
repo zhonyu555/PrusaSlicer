@@ -77,7 +77,8 @@ bool DownloadApp::OnInit()
     } 
     m_frame = new DownloadFrame("Downloader", wxPoint(50, 50), wxSize(450, 340));
     m_frame->Show(true);
-   
+
+#ifdef _WIN32   
     wxWindow::MSWRegisterMessageHandler(WM_COPYDATA, [](wxWindow* win, WXUINT /* nMsg */, WXWPARAM wParam, WXLPARAM lParam) {
         auto frame = dynamic_cast<DownloadFrame*>(win);
         COPYDATASTRUCT* copy_data_structure = { 0 };
@@ -88,6 +89,7 @@ bool DownloadApp::OnInit()
         }
         return true;
     });
+#endif
 
     return wxApp::OnInit();
 }
@@ -400,6 +402,7 @@ DownloadState DownloadFrame::get_download_state(int id) const
             return m_downloads[i]->get_state();
         }
     }
+    return DownloadState::DownloadStateUnknown;
 }
 
 bool DownloadFrame::is_in_state(int id, DownloadState state) const
@@ -409,6 +412,7 @@ bool DownloadFrame::is_in_state(int id, DownloadState state) const
             return m_downloads[i]->get_state() == state;
         }
     }
+    return false;
 }
 
 bool DownloadFrame::cancel_download(int id)
@@ -471,6 +475,7 @@ wxString DownloadFrame::get_path_of(int id) const
             return m_downloads[i]->get_final_path().string();
         }
     }
+    return wxString();
 }
 
 wxString DownloadFrame::get_folder_path_of(int id) const
@@ -480,6 +485,7 @@ wxString DownloadFrame::get_folder_path_of(int id) const
             return m_downloads[i]->get_final_path().parent_path().string();
         }
     }
+    return wxString();
 }
 
 void DownloadFrame::handle_message(const wxString& msg)

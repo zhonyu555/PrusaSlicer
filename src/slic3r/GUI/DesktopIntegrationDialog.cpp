@@ -420,6 +420,34 @@ void DesktopIntegrationDialog::perform_desktop_integration()
             show_error(nullptr, _L("Performing desktop integration failed - could not create Gcodeviewer desktop file. PrusaSlicer desktop file was probably created successfully."));
         }
     }
+    bool url_destop_file = true;
+    if (url_destop_file)
+    {
+        // no need for icon right?
+        std::string desktop_file = GUI::format(
+                "[Desktop Entry]\n"
+                "Name=PrusaSlicer URL Protocol%1%\n"
+                "Exec=\"%3%\" %%u\n"
+                "Terminal=false\n"
+                "Type=Application\n"
+                "MimeType=x-scheme-handler/prusaslicer;\n"
+                "StartupNotify=false\n"
+                , name_suffix, version_suffix, excutable_path);
+
+        std::string desktop_path = GUI::format("%1%/applications/PrusaSlicerURLProtocol%2%.desktop", target_dir_desktop, version_suffix);
+        if (create_desktop_file(desktop_path, desktop_file)) {
+            // save path to desktop file
+            //app_config->set("desktop_integration_app_viewer_path", desktop_path);
+            std::string command = GUI::format("xdg-mime default PrusaSlicerURLProtocol%1%.desktop x-scheme-handler/prusaslicer", version_suffix);
+            //std::string command = GUI::format("xdg-mime default PrusaSlicer%1%.desktop x-scheme-handler/prusaslicer", version_suffix);
+            BOOST_LOG_TRIVIAL(debug) << "system command: " << command;
+            int r = system(command.c_str());
+            BOOST_LOG_TRIVIAL(debug) << "system result: " << r;
+        } else {
+            BOOST_LOG_TRIVIAL(error) << "Performing desktop integration failed - could not create URL Protocol desktop file";
+            show_error(nullptr, _L("Performing desktop integration failed - could not create RL Protocol desktop file. PrusaSlicer desktop file was probably created successfully."));
+        }
+    }
     
     wxGetApp().plater()->get_notification_manager()->push_notification(NotificationType::DesktopIntegrationSuccess);
 }

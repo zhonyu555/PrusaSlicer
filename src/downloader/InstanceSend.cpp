@@ -217,22 +217,31 @@ bool execute_command(const wxString& command)
 
 bool SlicerSend::get_instance_exists() const
 {
+#ifdef _WIN32
     return !EnumWindows(EnumWindowsProcSlicer, 0);
+#endif
+    return false;
 }
 bool SlicerSend::send_path(const wxString& path) const
 {
+#ifdef _WIN32
 	std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
     return send_message_slicer(boost::nowide::widen(escaped));
+#endif
+    return false;
 }
 
 bool SlicerSend::start_with_path(const wxString& path) const
 {
+#ifdef _WIN32
 	// "C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " 
 	std::string escaped = escape_strings_cstyle({  boost::nowide::narrow(path) });
 	//return execute_command(boost::nowide::widen(escaped));
 	std::string binary = (boost::dll::program_location().parent_path() / "prusa-slicer.exe").string() + " ";
 	//return execute_command("C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " + boost::nowide::widen(escaped));
 	return execute_command(boost::nowide::widen(binary) + boost::nowide::widen(escaped));
+#endif
+	return false;
 }
 
 bool SlicerSend::start_or_send(const wxString& path) const
@@ -248,12 +257,18 @@ bool SlicerSend::start_or_send(const wxString& path) const
 
 bool DownloaderSend::get_instance_exists() const
 {
+#ifdef _WIN32
 	return !EnumWindows(EnumWindowsProcDownloader, 0);
+#endif 
+	return false;
 }
 bool DownloaderSend::send_url(const wxString& url) const
 {
+#ifdef _WIN32
 	//std::string escaped = escape_strings_cstyle({ boost::nowide::narrow(url) });
 	return send_message_downloader(url);
+#endif
+	return false;
 }
 
 

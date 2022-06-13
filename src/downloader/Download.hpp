@@ -14,7 +14,8 @@ enum DownloadState
     DownloadStopped,
     DownloadDone,
     DownloadError,
-    DownloadPaused
+    DownloadPaused,
+    DownloadStateUnknown
 };
 
 class Download { 
