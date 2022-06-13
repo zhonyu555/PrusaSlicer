@@ -423,16 +423,18 @@ void DesktopIntegrationDialog::perform_desktop_integration()
     bool url_destop_file = true;
     if (url_destop_file)
     {
+        boost::filesystem::path path(excutable_path);
+        std::string downloader_path = (path.parent_path() / "downloader/prusa-slicer-downloader").string();
         // no need for icon right?
         std::string desktop_file = GUI::format(
                 "[Desktop Entry]\n"
                 "Name=PrusaSlicer URL Protocol%1%\n"
-                "Exec=\"%3%\" %%u\n"
+                "Exec=\"%3%\" -u %%u\n"
                 "Terminal=false\n"
                 "Type=Application\n"
                 "MimeType=x-scheme-handler/prusaslicer;\n"
                 "StartupNotify=false\n"
-                , name_suffix, version_suffix, excutable_path);
+                , name_suffix, version_suffix, downloader_path);
 
         std::string desktop_path = GUI::format("%1%/applications/PrusaSlicerURLProtocol%2%.desktop", target_dir_desktop, version_suffix);
         if (create_desktop_file(desktop_path, desktop_file)) {

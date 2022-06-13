@@ -125,10 +125,10 @@ bool DownloadApp::OnCmdLineParsed(wxCmdLineParser& parser)
         m_frame->Close(true);
         return false;
     } else {
-        if (!url.empty() && m_frame != nullptr)
+        if (!url.empty() && m_frame != nullptr) {
             m_frame->start_download(std::move(url));
-
-        //m_frame->start_download("open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl");
+            //m_frame->start_download("prusaslicer://open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl");
+        }
 
         return wxApp::OnCmdLineParsed(parser);
     } 
@@ -207,10 +207,12 @@ DownloadFrame::DownloadFrame(const wxString& title, const wxPoint& pos, const wx
 
 void DownloadFrame::start_download(wxString url)
 {
+    printf("start_download %s \n", boost::nowide::narrow(url).c_str());
 //    prusaslicer://open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl
-    if (url.starts_with("prusaslicer://open/?file=")) {
+    if (url.starts_with("prusaslicer://open?file=")) {
         int id = get_next_id();
-        std::string escaped_url = FileGet::escape_url(boost::nowide::narrow(url.substr(25)));
+        std::string escaped_url = FileGet::escape_url(boost::nowide::narrow(url.substr(24)));
+        printf("escaped url %s \n", escaped_url.c_str());
         //log(std::to_string(id) + ": start " + escaped_url);
         //escaped_url = "https://media.printables.com/media/prints/216267/gcodes/1974221_32d21613-b567-4328-8261-49b46d9dd249/01_big_trex_skull_with_threads_015mm_pla_mk3_2d.gcode";
         m_downloads.emplace_back(std::make_unique<Download>(id, std::move(escaped_url), this, m_dest_folder));
@@ -229,11 +231,17 @@ void DownloadFrame::start_download(wxString url)
                 break;
             }
         }
+        printf("can start %d \n", can_start);
         if (can_start)
             m_downloads.back()->start();
 
     } else {
-        //log("wrong url: " + url);
+        printf("Did not parse \n");
+        if (url.size() > 24)
+        {
+            printf("%s\n", boost::nowide::narrow(url.substr(0,24)).c_str());
+            printf("prusaslicer://open?file=\n");
+        }
     }
    
 }

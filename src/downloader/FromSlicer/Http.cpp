@@ -1,5 +1,8 @@
 #include "Http.hpp"
 
+#include "slic3r/GUI/I18N.hpp"
+#include "slic3r/GUI/format.hpp"
+
 #include <cstdlib>
 #include <functional>
 #include <thread>

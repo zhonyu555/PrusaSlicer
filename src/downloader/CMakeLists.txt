@@ -1,7 +1,8 @@
 #cmake_minimum_required(VERSION 3.13)
 #project(PrusaSlicer_Downloader)
 
-add_executable(PrusaSlicer_Downloader  WIN32 
+#add_executable(PrusaSlicer_Downloader  WIN32
+add_executable(PrusaSlicer_Downloader 
 	DownloaderApp.cpp
 	DownloaderApp.hpp
 	Download.cpp
