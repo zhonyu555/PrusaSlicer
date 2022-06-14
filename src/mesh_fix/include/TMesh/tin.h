@@ -104,15 +104,7 @@ class Basic_TMesh
 		Basic_TMesh(const Triangle *t, const bool keep_ref = false);
 		void init(const Triangle *t, const bool keep_ref = false);
 
-		//FIXED:
 		//! Destructor. Frees the memory allocated for all the mesh elements.
-		//! Warning! This method uses the freeNodes() method of the class List,
-		//! which is not guaranteed to work correctly on systems other than
-		//! Linux (see the documentation of List for details).
-		//! Assuming that the method works correctly, however, the calling
-		//! function is responsible of freeing the memory that was possibly
-		//! allocated for objects pointed to by the 'info' field of mesh
-		//! elements. Clearly, this must be done before calling the destructor.
 		~Basic_TMesh();
 
 		//! Returns true only if object is a basic Basic_TMesh. All the reimplementations must return false.

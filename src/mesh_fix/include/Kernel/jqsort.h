@@ -42,9 +42,11 @@
 //! compare as equal, their order in the sorted array is undefined.
 //! See the manpage of the standard library qsort() function for further information.
 
+#include "basics.h"
+
 namespace T_MESH
 {
 
-extern void jqsort(Data *v[], int numels, int (*comp)(const Data *, const Data *));
+extern void jqsort(Data *v, int numels, int (*comp)(const Data&, const Data&));
 
 } //namespace T_MESH

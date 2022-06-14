@@ -116,13 +116,13 @@ namespace T_MESH
 			t = (Triangle *)n->data;
 			y = (Triangle *)m->data; // For any pair (t,y) of triangles in the cell
 			// The same triangle pair can be in different cells. The following avoids redoing the check.
-			if (t->info == NULL || y->info == NULL || (((List *)t->info)->containsNode(y) == NULL))
+			if (t->info.empty() || y->info.empty() || (((List *)t->info)->containsNode(y) == NULL))
 			{
 				if (t->intersects(y, justproper))
 				{
 					MARK_VISIT(t); MARK_VISIT(y);
-					ts = ((t->info != NULL) ? ((List *)t->info) : (new List)); ts->appendTail(y); t->info = ts;
-					ts = ((y->info != NULL) ? ((List *)y->info) : (new List)); ts->appendTail(t); y->info = ts;
+					ts = ((t->info.notEmpty()) ? ((List *)t->info) : (new List)); ts->appendTail(y); t->info = ts;
+					ts = ((y->info.notEmpty()) ? ((List *)y->info) : (new List)); ts->appendTail(t); y->info = ts;
 				}
 			}
 		}
@@ -177,7 +177,7 @@ int Basic_TMesh::selectIntersectingTriangles(UINT16 tris_per_cell, bool justprop
 
  // Deselect everything and select only intersecting triangles
  deselectTriangles();
- FOREACHTRIANGLE(t, n) t->info = NULL;
+ FOREACHTRIANGLE(t, n) t->info.forget();
  i=0; FOREACHNODE(cells, n)
  {
   (((di_cell *)n->data)->selectIntersections(justproper));
@@ -187,7 +187,7 @@ int Basic_TMesh::selectIntersectingTriangles(UINT16 tris_per_cell, bool justprop
  TMesh::end_progress();
 
  // Dispose memory allocated for cells
- FOREACHVTTRIANGLE(selT, t, n) { if (t->info!=NULL) delete((List *)t->info); t->info = NULL; }
+ FOREACHVTTRIANGLE(selT, t, n) t->info.clear();
  while (cells.numels()) delete((di_cell *)cells.popHead());
 
  // Count selected triangles for final report and delete stored normals

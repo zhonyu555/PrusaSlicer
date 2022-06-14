@@ -50,8 +50,6 @@ namespace detail {
 
 using namespace T_MESH;
 
-static int ensure_tmesh_initialization = (TMesh::init(), 0);
-
 double closestPair(List *bl1, List *bl2, Vertex **closest_on_bl1, Vertex **closest_on_bl2)
         {
     Node *n, *m;
@@ -76,30 +74,29 @@ bool joinClosestComponents(Basic_TMesh *tin)
     Triangle *t, *s;
     Node *n;
     List triList, boundary_loops, *one_loop;
-    List **bloops_array;
+    Data *bloops_array;
     int i, j, numloops;
 
     // Mark triangles with connected component's unique ID
     i = 0;
-    FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
-    FOREACHVTTRIANGLE((&(tin->T)), t, n) if (t->info == NULL)
+    FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = Data();
+    FOREACHVTTRIANGLE((&(tin->T)), t, n) if (t->info == Data())
     {
         i++;
         triList.appendHead(t);
-        t->info = new intWrapper(i);
 
         while (triList.numels())
         {
             t = (Triangle *)triList.popHead();
-            if ((s = t->t1()) != NULL && s->info == NULL) {triList.appendHead(s); s->info = new intWrapper(i);}
-            if ((s = t->t2()) != NULL && s->info == NULL) {triList.appendHead(s); s->info = new intWrapper(i);}
-            if ((s = t->t3()) != NULL && s->info == NULL) {triList.appendHead(s); s->info = new intWrapper(i);}
+            if ((s = t->t1()) != NULL && s->info.empty()) {triList.appendHead(s); s->info = i;}
+            if ((s = t->t2()) != NULL && s->info.empty()) {triList.appendHead(s); s->info = i;}
+            if ((s = t->t3()) != NULL && s->info.empty()) {triList.appendHead(s); s->info = i;}
         }
     }
 
     if (i<2)
     {
-        FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
+        FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = Data();
         //   JMesh::info("Mesh is a single component. Nothing done.");
         return false;
     }
@@ -122,7 +119,7 @@ bool joinClosestComponents(Basic_TMesh *tin)
     }
     FOREACHVVVERTEX((&(tin->V)), v, n) UNMARK_VISIT2(v);
 
-    bloops_array = (List **)boundary_loops.toArray();
+    bloops_array = boundary_loops.toArray();
     numloops = boundary_loops.numels();
 
     double adist,
@@ -131,7 +128,7 @@ bool joinClosestComponents(Basic_TMesh *tin)
     gv = NULL;
     for (i = 0; i < numloops; i++)
         for (j = 0; j < numloops; j++)
-            if (((Vertex*) bloops_array[i]->head()->data)->info != ((Vertex*) bloops_array[j]->head()->data)->info)
+            if (((Vertex*)((List*)(bloops_array[i]))->head()->data)->info != ((Vertex*) ((List*)(bloops_array[j]))->head()->data)->info)
                     {
                 adist = closestPair(bloops_array[i], bloops_array[j], &v, &w);
                 if (adist < mindist) {
@@ -145,12 +142,12 @@ bool joinClosestComponents(Basic_TMesh *tin)
         tin->joinBoundaryLoops(gv, gw, 1, 0);
 
     FOREACHVTTRIANGLE((&(tin->T)), t, n)
-        t->info = NULL;
+        t->info.clear();
     FOREACHVVVERTEX((&(tin->V)), v, n)
-        v->info = NULL;
+        v->info.clear();
 
-    free(bloops_array);
-    while ((one_loop = (List*) boundary_loops.popHead()) != NULL)
+    delete [] bloops_array;
+    while ((one_loop = (List*) boundary_loops.popHead()) != Data())
         delete one_loop;
 
     return (gv != NULL);
@@ -159,7 +156,6 @@ bool joinClosestComponents(Basic_TMesh *tin)
 class Basic_TMesh_Adapter: public Basic_TMesh {
 public:
     void load_indexed_triangle_set(const indexed_triangle_set &its) {
-
         for (const auto &vertex : its.vertices) {
             this->V.appendTail(this->newVertex(vertex.x(), vertex.y(), vertex.z()));
         }
@@ -241,6 +237,7 @@ private:
             free(tmp);
         }
         fixConnectivity();
+//        rebuildConnectivity(true);
         this->d_boundaries = this->d_handles = this->d_shells = 1;
     }
 };
@@ -279,6 +276,7 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
     auto worker_thread = boost::thread(
             [&model_object, &volumes, &ivolume, on_progress, &success, &canceled, &finished]() {
                 try {
+                    T_MESH::TMesh::init(); // TODO call only once (but it seems that multiple calls do not break it)
                     std::vector<TriangleMesh> meshes_repaired;
                     meshes_repaired.reserve(volumes.size());
                     for (ModelVolume *mv : volumes) {
@@ -296,7 +294,7 @@ bool fix_model_by_meshfix(ModelObject &model_object, int volume_idx, wxProgressD
                             on_progress(L("Join closest components"), unsigned(progress_part_base + 0.1 * percent_per_part));
                             if (canceled)
                                 throw RepairCanceledException();
-                            joinClosestComponents(&tin);
+                            while (joinClosestComponents(&tin)) (tin.shells());
                             tin.deselectTriangles();
                             tin.boundaries();
                             // Keep only the largest component (i.e. with most triangles)

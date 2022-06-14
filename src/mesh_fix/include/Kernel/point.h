@@ -68,23 +68,23 @@ PM_Rational orient2D(const PM_Rational& px, const PM_Rational& py, const PM_Rati
 //! of our version of the epsilon geometry for robust computation.
 
 
-class Point : public Data
+class Point
 {
  public :
  coord x,y,z;					//!< Coordinates
- Data *info;					//!< Further information
+ Data info;					//!< Further information
 
  //! Creates a new point with coordinates (0,0,0).
- Point() {x = y = z = 0; info = NULL;}
+ Point() {x = y = z = 0; info.forget();}
 
  //! Creates a new point with the same coordinates as 's'. The info field is not copied.
- Point(const Point *s) {x = s->x; y = s->y; z = s->z; info = NULL;}
+ Point(const Point *s) {x = s->x; y = s->y; z = s->z; info.forget();}
 
  //! Creates a new point with the same coordinates as 's'. The info field is not copied.
- Point(const Point& s) {x = s.x; y = s.y; z = s.z; info = NULL;}
+ Point(const Point& s) {x = s.x; y = s.y; z = s.z; info.forget();}
 
  //! Creates a new point with coordinates (a,b,c).
- Point(const coord& a, const coord& b, const coord& c) {x = a; y = b; z = c; info = NULL;}
+ Point(const coord& a, const coord& b, const coord& c) {x = a; y = b; z = c; info.forget();}
 
  //! Do not remove this. It makes the compiler produce a vtable for this object.
  TMESH_VIRTUAL bool isPoint() const { return true; }
@@ -285,7 +285,7 @@ class Point : public Data
 };
 
 //! Lexycographic comparison to be used with jqsort() or abstractHeap.
-int xyzCompare(const Data *p1, const Data *p2);
+int xyzCompare(const Data &p1, const Data &p2);
 
 //! Static point with DBL_MAX coordinates.
 extern const Point INFINITE_POINT;

@@ -36,7 +36,7 @@ namespace T_MESH
 
 //////// Length-based edge comparison for qsort //////////
 
-int edgeCompare(const Data *a, const Data *b)
+int edgeCompare(const Data &a, const Data &b)
 {
  coord la = ((Edge *)a)->squaredLength();
  coord lb = ((Edge *)b)->squaredLength();
@@ -50,7 +50,7 @@ int edgeCompare(const Data *a, const Data *b)
 
 //////// Lexycographic edge comparison for qsort //////////
 
-int lexEdgeCompare(const Data *a, const Data *b)
+int lexEdgeCompare(const Data& a, const Data &b)
 {
 	Vertex *va1 = ((Edge *)a)->v1;
 	Vertex *va2 = ((Edge *)a)->v2;
@@ -70,7 +70,7 @@ int lexEdgeCompare(const Data *a, const Data *b)
 
 //////// Vertex-based edge comparison for qsort //////////
 
-int vtxEdgeCompare(const Data *a, const Data *b)
+int vtxEdgeCompare(const Data &a, const Data &b)
 {
 	Vertex *va1 = ((Edge *)a)->v1;
 	Vertex *va2 = ((Edge *)a)->v2;
@@ -92,14 +92,14 @@ int vtxEdgeCompare(const Data *a, const Data *b)
 //!< AMF_ADD 1.1-2 >
 Edge::Edge(){
 	mask = 0;
-	info = NULL;
+	info.forget();
 }
 Edge::Edge(Vertex *va, Vertex *vb)
 {
  v1 = va;
  v2 = vb;
  t1 = t2 = NULL;
- info = NULL;
+ info.forget();
  mask = 0;
 }
 

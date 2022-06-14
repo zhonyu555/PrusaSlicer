@@ -34,8 +34,7 @@
 #include <vector>
 #include <algorithm>
 #endif
-
-#include "basics.h"
+#include "jqsort.h"
 
 namespace T_MESH
 {
@@ -70,15 +69,15 @@ void jqsort(void *v[], int numels, int(*comp)(const void *, const void *))
 
 class compobj
 {
-	int(*comp)(const Data *, const Data *);
+	int(*comp)(const Data&, const Data&);
 
 public:
-	compobj(int(*c)(const Data *, const Data *)) { comp = c; }
+	compobj(int(*c)(const Data&, const Data&)) { comp = c; }
 
-	bool operator()(Data *a, Data *b) {	return (comp(a, b) < 0); }
+	bool operator()(const Data& a, const Data& b) {	return (comp(a, b) < 0); }
 };
 
-void jqsort(Data *v[], int numels, int(*comp)(const Data *, const Data *))
+void jqsort(Data *v, int numels, int(*comp)(const Data&, const Data&))
 {
 	compobj a(comp);
 	std::sort(v, v + numels, a);

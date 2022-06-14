@@ -29,30 +29,30 @@ bool joinClosestComponents(Basic_TMesh *tin)
 	Triangle *t, *s;
 	Node *n;
 	List triList, boundary_loops, *one_loop;
-	List **bloops_array;
+	Data *bloops_array;
 	int i, j, numloops;
 
 	// Mark triangles with connected component's unique ID
 	i = 0;
-	FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
-	FOREACHVTTRIANGLE((&(tin->T)), t, n) if (t->info == NULL)
+	FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info.forget();
+	FOREACHVTTRIANGLE((&(tin->T)), t, n) if (t->info.empty())
 	{
 		i++;
 		triList.appendHead(t);
-		t->info = new intWrapper(i);
+		t->info = i;
 
 		while (triList.numels())
 		{
 			t = (Triangle *)triList.popHead();
-			if ((s = t->t1()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = new intWrapper(i); }
-			if ((s = t->t2()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = new intWrapper(i); }
-			if ((s = t->t3()) != NULL && s->info == NULL) { triList.appendHead(s); s->info = new intWrapper(i); }
+			if ((s = t->t1()) != NULL && s->info.empty()) { triList.appendHead(s); s->info = i; }
+			if ((s = t->t2()) != NULL && s->info.empty()) { triList.appendHead(s); s->info = i; }
+			if ((s = t->t3()) != NULL && s->info.empty()) { triList.appendHead(s); s->info = i; }
 		}
 	}
 
 	if (i<2)
 	{
-		FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
+		FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info.forget();
 		//   JMesh::info("Mesh is a single component. Nothing done.");
 		return false;
 	}
@@ -75,7 +75,7 @@ bool joinClosestComponents(Basic_TMesh *tin)
 	}
 	FOREACHVVVERTEX((&(tin->V)), v, n) UNMARK_VISIT2(v);
 
-	bloops_array = (List **)boundary_loops.toArray();
+	bloops_array = boundary_loops.toArray();
 	numloops = boundary_loops.numels();
 
 	int numtris = tin->T.numels();
@@ -84,7 +84,7 @@ bool joinClosestComponents(Basic_TMesh *tin)
 	gv = NULL;
 	for (i = 0; i<numloops; i++)
 	for (j = 0; j<numloops; j++)
-	if (((Vertex *)bloops_array[i]->head()->data)->info != ((Vertex *)bloops_array[j]->head()->data)->info)
+	if (((Vertex *)((List*)(bloops_array[i]))->head()->data)->info != ((Vertex *)((List*)(bloops_array[j]))->head()->data)->info)
 	{
 		adist = closestPair(bloops_array[i], bloops_array[j], &v, &w);
 		if (adist<mindist) { mindist = adist; gv = v; gw = w; }
@@ -92,10 +92,10 @@ bool joinClosestComponents(Basic_TMesh *tin)
 
 	if (gv != NULL) tin->joinBoundaryLoops(gv, gw, 1, 0);
 
-	FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info = NULL;
-	FOREACHVVVERTEX((&(tin->V)), v, n) v->info = NULL;
+	FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info.forget();
+	FOREACHVVVERTEX((&(tin->V)), v, n) v->info.forget();
 
-	free(bloops_array);
+	delete [] bloops_array;
 	while ((one_loop = (List *)boundary_loops.popHead()) != NULL) delete one_loop;
 
 	return (gv != NULL);

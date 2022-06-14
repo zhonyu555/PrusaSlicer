@@ -33,10 +33,10 @@
 namespace T_MESH
 {
 
-int mc_ints::compare(const Data *e1, const Data *e2)
+int mc_ints::compare(const Data &e1, const Data &e2)
 {
- mc_ints *a = (mc_ints *)e1;
- mc_ints *b = (mc_ints *)e2;
+ mc_ints* a = (mc_ints*)e1;
+ mc_ints* b = (mc_ints*)e2;
  coord& l1 = a->ic;
  coord& l2 = b->ic;
  if (l1 < l2) return -1;
@@ -134,7 +134,7 @@ UBYTE mc_cell::lookdown()
 	return i;
 }
 
-int mc_cell::compare(const Data *e1, const Data *e2)
+int mc_cell::compare(const Data &e1, const Data &e2)
 {
  mc_cell *a = (mc_cell *)e1;
  mc_cell *b = (mc_cell *)e2;
@@ -680,7 +680,7 @@ void mc_cell::merge(mc_cell *m)
 
 List *mc_grid::createCells()
 {
- int i,j,k=numrays+1;
+ int i,j,k,numcells=numrays+1;
  mc_ints *m;
  Node *n;
  List *ac = new List;
@@ -831,7 +831,7 @@ void mc_grid::remesh(bool simplify_result)
  int i=0;
  FOREACHVTTRIANGLE((&ntin.T), t, n)
  {
-  sample_triangle(t); t->info=NULL;
+  sample_triangle(t); t->info.forget();
   if (!((i++)%1000)) TMesh::report_progress("%d %% done   ",(i*50)/ntin.T.numels());
  }
 
@@ -866,9 +866,9 @@ void mc_grid::remesh(bool simplify_result)
 
  FOREACHVVVERTEX((&tin->V), v, n){
  
-  v->info = NULL;
+  v->info.forget();
  }
- FOREACHVTTRIANGLE((&ntin.T), t, n) if (t->info) { delete ((Point *)t->info); t->info = NULL; }
+ FOREACHVTTRIANGLE((&ntin.T), t, n) t->info.clear();
  TMesh::end_progress();
 }
 
@@ -993,7 +993,7 @@ void mc_grid::simplify()
 	FOREACHVVVERTEX((&tin->V), v, n)
 	{
 			t = ((Triangle *)v->info);
-			if (t->info != NULL) nnor = (Point *)t->info;
+			if (t->info.notEmpty()) nnor = (Point *)t->info;
 			else t->info = nnor = new Point(t->getVector());
 			v->info = nnor;
 			nnor->info = t;

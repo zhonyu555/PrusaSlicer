@@ -41,7 +41,7 @@ extern "C" double orient2d(double *, double *, double *);
 //!< AMF_ADD 1.1>
 Triangle::Triangle(){
  mask = 0;
- info = NULL;
+ info.forget();
 }
 
 Triangle::Triangle(Edge *a, Edge *b, Edge *c)
@@ -50,7 +50,7 @@ Triangle::Triangle(Edge *a, Edge *b, Edge *c)
  e2 = b;
  e3 = c;
  mask = 0;
- info = NULL;
+ info.forget();
 }
 
 

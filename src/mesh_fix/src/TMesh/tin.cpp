@@ -187,11 +187,11 @@ void Basic_TMesh::init(const Basic_TMesh *tin, const bool clone_info)
  Triangle *t, *nt;
  
  int i;
- Data **t_info = new Data *[tin->T.numels()];
+ Data *t_info = new Data [tin->T.numels()];
  i=0; FOREACHVTTRIANGLE((&(tin->T)), t, n) t_info[i++]=t->info;
- Data **e_info = new Data *[tin->E.numels()];
+ Data *e_info = new Data [tin->E.numels()];
  i=0; FOREACHVEEDGE((&(tin->E)), e, n) e_info[i++]=e->info;
- Data **v_info = new Data *[tin->V.numels()];
+ Data *v_info = new Data [tin->V.numels()];
  i=0; FOREACHVVVERTEX((&(tin->V)), v, n) v_info[i++]=v->info;
 
  FOREACHVVVERTEX((&(tin->V)), v, n)
@@ -205,10 +205,10 @@ void Basic_TMesh::init(const Basic_TMesh *tin, const bool clone_info)
  FOREACHVTTRIANGLE((&(tin->T)), t, n)
   {nt=newTriangle((Edge *)t->e1->info,(Edge *)t->e2->info,(Edge *)t->e3->info); T.appendTail(nt); t->info = nt;}
 
- FOREACHVVVERTEX((&(tin->V)), v, n) {((Vertex *)v->info)->e0 = (Edge *)v->e0->info; v->info = NULL;}
+ FOREACHVVVERTEX((&(tin->V)), v, n) {((Vertex *)v->info)->e0 = (Edge *)v->e0->info; v->info.forget();}
 
  FOREACHVEEDGE((&(tin->E)), e, n)
-  {((Edge *)e->info)->t1 = (e->t1)?((Triangle *)e->t1->info):(NULL); ((Edge *)e->info)->t2 = (e->t2)?((Triangle *)e->t2->info):(NULL); e->info = NULL;}
+  {((Edge *)e->info)->t1 = (e->t1)?((Triangle *)e->t1->info):(NULL); ((Edge *)e->info)->t2 = (e->t2)?((Triangle *)e->t2->info):(NULL); e->info.forget();}
 
  i=0; FOREACHVTTRIANGLE((&(tin->T)), t, n) t->info=t_info[i++];
  i=0; FOREACHVEEDGE((&(tin->E)), e, n) e->info=e_info[i++];
@@ -280,9 +280,9 @@ void Basic_TMesh::init(const Triangle *t0, const bool keep_reference)
 
  if (!keep_reference)
  {
-  FOREACHVVVERTEX((&sv), v, n) v->info = NULL;
-  FOREACHVEEDGE((&se), e, n) e->info = NULL;
-  FOREACHVTTRIANGLE((&st), t, n) t->info = NULL;
+  FOREACHVVVERTEX((&sv), v, n) v->info.forget();
+  FOREACHVEEDGE((&se), e, n) e->info.forget();
+  FOREACHVTTRIANGLE((&st), t, n) t->info.forget();
  }
 
  eulerUpdate();
@@ -428,11 +428,10 @@ Edge *Basic_TMesh::bridgeBoundaries(Edge *gve, Edge *gwe)
 {
 	if (gve == gwe || !gve->isOnBoundary() || !gwe->isOnBoundary()) return NULL;
 
-	Triangle *t;
 	Vertex *v = gve->commonVertex(gwe);
 	if (v != NULL)
 	{
-		t = EulerEdgeTriangle(gve, gwe);
+		EulerEdgeTriangle(gve, gwe);
 		return gve;
 	}
 
@@ -445,8 +444,8 @@ Edge *Basic_TMesh::bridgeBoundaries(Edge *gve, Edge *gwe)
 	Edge *je2 = CreateEdge(gwn, gvn);
 	Edge *je1 = CreateEdge(gv, gwn);
 
-	t = CreateTriangle(je, gwe, je1);
-	t = CreateTriangle(je1, je2, gve);
+	CreateTriangle(je, gwe, je1);
+	CreateTriangle(je1, je2, gve);
 
 	return je1;
 }
@@ -838,14 +837,14 @@ Basic_TMesh *Basic_TMesh::createSubMeshFromSelection(Triangle *t0, bool keep_ref
  FOREACHVEEDGE((&sE), e, n) e->v1->e0 = e->v2->e0 = e;
 
  int i;
- Data **v_info = NULL, **e_info = NULL, **t_info = NULL;
+ Data *v_info = NULL, *e_info = NULL, *t_info = NULL;
  if (!keep_ref)
  {
-  v_info = new Data *[sV.numels()];
+  v_info = new Data [sV.numels()];
   i=0; FOREACHVVVERTEX((&sV), v, n) v_info[i++] = v->info;
-  e_info = new Data *[sE.numels()];
+  e_info = new Data [sE.numels()];
   i=0; FOREACHVEEDGE((&sE), e, n) e_info[i++] = e->info;
-  t_info = new Data *[sT.numels()];
+  t_info = new Data [sT.numels()];
   i=0; FOREACHVTTRIANGLE((&sT), t, n) t_info[i++] = t->info;
  }
 
@@ -1850,7 +1849,7 @@ void Basic_TMesh::openToDisk()
 
  FOREACHEDGE(e, n) UNMARK_BIT(e, 3);
 
- FOREACHVERTEX(v, n) if (v->info) {delete(((List *)v->info)); v->info = NULL;}
+ FOREACHVERTEX(v, n) v->info.clear();
  duplicateNonManifoldVertices();
  d_boundaries = d_handles = d_shells = 1;
 }

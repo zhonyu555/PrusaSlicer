@@ -54,10 +54,9 @@ namespace T_MESH
 class abstractHeap
 {
  protected:
- Data **heap;		//!< Heap data is stored here
+ Data *heap;		//!< Heap data is stored here
  int numels;		//!< Current number of elements
  int maxels;		//!< Maximum number of elements
- int *positions;	//!< Optional pointer to an array of positions
 
  int upheap(int i);	//!< Moves the i'th object up on the heap
  int downheap(int i);	//!< Moves the i'th object down on the heap
@@ -67,7 +66,7 @@ class abstractHeap
  //! This function must be implemented in the extended class.
  //! The return value must be <0 if a<b, >0 if a>b or 0 if a=b.
 
- virtual int compare(const Data *a, const Data *b) = 0;
+ virtual int compare(const Data& a, const Data& b) = 0;
 
  public :
  
@@ -81,11 +80,11 @@ class abstractHeap
  //! returned, otherwise the index position of the newly inserted element is
  //! returned.
 
- int insert(Data *e);
+ int insert(const Data& e);
 
  int isEmpty() const {return (numels == 0);}	//!< Returns TRUE if the heap is empty
- Data *getHead() const {return heap[1];}	//!< Returns the first element of the heap
- Data *removeHead();				//!< Removes and returns the first element after rearranging the heap
+ Data getHead() const {return heap[1];}	//!< Returns the first element of the heap
+ Data removeHead();				//!< Removes and returns the first element after rearranging the heap
  void flush() {numels=0;}			//!< Removes all the elements
 };
 

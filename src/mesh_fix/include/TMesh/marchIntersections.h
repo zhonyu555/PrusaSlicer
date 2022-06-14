@@ -42,7 +42,7 @@ namespace T_MESH
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_ints : public Data
+class mc_ints
 {
  public:
 
@@ -54,7 +54,7 @@ class mc_ints : public Data
  mc_ints(coord a, unsigned char b, Triangle *s) { ic = a; sg = b; v = NULL; source = s; }
  ~mc_ints() { if (v) delete(v); }
 
- static int compare(const Data *e1, const Data *e2);
+ static int compare(const Data &e1, const Data &e2);
 };
 
 
@@ -64,7 +64,7 @@ class mc_ints : public Data
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_cell : public Data
+class mc_cell
 {
  public:
  int x,y,z;			// Coordinates (i.e. cell's position)
@@ -77,7 +77,7 @@ class mc_cell : public Data
  }
 
  void polygonize(Basic_TMesh *tin);
- static int compare(const Data *e1, const Data *e2);
+ static int compare(const Data &e1, const Data &e2);
 
  void merge(mc_cell *m);
 
@@ -94,7 +94,7 @@ private:
 //
 ///////////////////////////////////////////////////////////////
 
-class mc_grid : public Data
+class mc_grid
 {
  Point origin;		 // Origin for normalization
  coord norm;		 // Normalization factor

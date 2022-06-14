@@ -38,7 +38,7 @@ namespace T_MESH
 #define DI_MAX_NUMBER_OF_CELLS	10000
 #define DI_EPSILON_POINT Point(1.0e-9, 1.0e-9, 1.0e-9)
 
-class di_cell : public Data
+class di_cell
 {
 public:
     Point mp, Mp;

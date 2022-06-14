@@ -37,10 +37,9 @@ namespace T_MESH
 
 abstractHeap::abstractHeap(int size)
 {
- heap = new Data *[size+1];
+ heap = new Data[size+1];
  numels = 0;
  maxels = size;
- positions = NULL;
 }
 
 abstractHeap::~abstractHeap()
@@ -52,19 +51,15 @@ int abstractHeap::upheap(int k)
 {
  if (k < 2) return k;
  
- Data *t = heap[k];
+ Data t = heap[k];
  int fk = (k%2)?((k-1)/2):(k/2);
- Data *f = heap[fk];
+ Data f = heap[fk];
 
  if (compare(t, f) <= 0)
  {
   heap[k] = f;
   heap[fk] = t;
-  if (positions != NULL)
-  {
-   positions[to_int(f)] = k;
-   positions[to_int(t)] = fk;
-  }
+
   return upheap(fk);
  }
  return k;
@@ -74,45 +69,38 @@ int abstractHeap::downheap(int k)
 {
  int j;
  
- Data *t = heap[k];
+ Data t = heap[k];
  int fk = (numels%2)?((numels-1)/2):(numels/2);
  if (k > fk) return k;
  
  j = k+k;
  if (j < numels && compare(heap[j], heap[j+1]) >= 0) j++;
- Data *f = heap[j];
+ Data f = heap[j];
  if (compare(t, f) >= 0)
  {
   heap[k] = f;
   heap[j] = t;
-  if (positions != NULL)
-  {
-   positions[to_int(f)] = k;
-   positions[to_int(t)] = j;
-  }
+
   return downheap(j);
  }
 
  return k;
 }
 
-int abstractHeap::insert(Data *t)
+int abstractHeap::insert(const Data& t)
 {
  if (numels == maxels) return -1;
 
  heap[++numels] = t;
- if (positions != NULL) positions[to_int(t)] = numels;
  return upheap(numels);
 }
 
-Data *abstractHeap::removeHead()
+Data abstractHeap::removeHead()
 {
- Data *t = heap[1];
- if (positions != NULL) positions[to_int(t)] = 0;
+ Data t = heap[1];
  heap[1] = heap[numels--];
  if (numels)
  {
-  if (positions != NULL) positions[to_int(heap[1])] = 1;
   downheap(1);
  }
 

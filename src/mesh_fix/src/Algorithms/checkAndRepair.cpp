@@ -188,15 +188,15 @@ Vertex *Basic_TMesh::checkGeometry()
  double ang, minda = 0;
  Triangle *t;
  Edge *e;
- Vertex **varr = (Vertex **)V.toArray();
- Edge **evarr;
+ Data *varr = V.toArray();
+ Data *evarr;
  Vertex *v1, *v2;
  Node *n;
 
  if (varr == NULL) TMesh::warning("checkGeometry: Not enough memory. Can't check for coincident vertices.\n");
  else
  {
-  jqsort((Data **)varr, V.numels(), xyzCompare);
+  jqsort(varr, V.numels(), xyzCompare);
   for (i=0; i<(V.numels()-1); i++)
   {
    v1 = ((Vertex *)varr[i]);
@@ -216,11 +216,11 @@ Vertex *Basic_TMesh::checkGeometry()
   free(varr);
  }
 
- evarr = (Edge **)E.toArray();
+ evarr = E.toArray();
  if (evarr == NULL) TMesh::warning("checkGeometry: Not enough memory. Can't check for coincident edges.\n");
  else
  {
-  jqsort((Data **)evarr, E.numels(), lexEdgeCompare);
+  jqsort(evarr, E.numels(), lexEdgeCompare);
   for (i=0; i<(E.numels()-1); i++)
   {
    if (!lexEdgeCompare(evarr[i], evarr[i+1]))
@@ -278,11 +278,11 @@ int Basic_TMesh::mergeCoincidentEdges()
 
 	FOREACHEDGE(e, n)
 	{
-		if (e->v1->info != e->v1) e->v1 = (Vertex *)e->v1->info;
-		if (e->v2->info != e->v2) e->v2 = (Vertex *)e->v2->info;
+		if (e->v1->info.operator !=(e->v1)) e->v1 = (Vertex *)e->v1->info;
+		if (e->v2->info.operator !=(e->v2)) e->v2 = (Vertex *)e->v2->info;
 		e->v1->e0 = e->v2->e0 = e;
 	}
-	removeVertices();
+	int rv = removeVertices();
 
 	// At this point the mesh should no longer have duplicated vertices, but may have duplicated edges
 	E.sort(&vtxEdgeCompare);
@@ -292,10 +292,11 @@ int Basic_TMesh::mergeCoincidentEdges()
 		if (!e->isOnBoundary() || vtxEdgeCompare(e, pe)) pe = e;
 		e->info = pe;
 	}
-	FOREACHEDGE(e, n) if (e->info != e)
+	FOREACHEDGE(e, n) if (e->info.operator !=(e))
 	{
 		Triangle *t1 = e->getBoundaryTriangle();
 		Edge *f = ((Edge *)e->info);
+		Triangle *t2 = f->getBoundaryTriangle();
 		t1->replaceEdge(e, f);
 		((f->t1 == NULL) ? (f->t1) : (f->t2)) = t1;
 		e->v1 = e->v2 = NULL;
@@ -343,8 +344,8 @@ bool Basic_TMesh::rebuildConnectivity(bool fixconnectivity) //!< AMF_CHANGE 1.1>
  Edge *e;
  FOREACHEDGE(e, n)
  {
-  if (e->v1->info != e->v1) e->v1 = (Vertex *)e->v1->info;
-  if (e->v2->info != e->v2) e->v2 = (Vertex *)e->v2->info;
+  if (e->v1->info.operator !=(e->v1)) e->v1 = (Vertex *)e->v1->info;
+  if (e->v2->info.operator !=(e->v2)) e->v2 = (Vertex *)e->v2->info;
   e->v1->e0 = e->v2->e0 = e;
  }
  int rv = removeVertices();
@@ -354,14 +355,14 @@ bool Basic_TMesh::rebuildConnectivity(bool fixconnectivity) //!< AMF_CHANGE 1.1>
  Triangle *t;
  ExtVertex **var = new ExtVertex *[V.numels()];
  int i=0;
- FOREACHVERTEX(v, n) { v->e0 = NULL; var[i] = new ExtVertex(v); v->info = new intWrapper(i); i++; }
+ FOREACHVERTEX(v, n) { v->e0 = NULL; var[i] = new ExtVertex(v); v->info = i; i++; }
  int nt = T.numels();
  int *triangles = new int[nt*3];
  i = 0; FOREACHTRIANGLE(t, n)
  {
-  triangles[i * 3] = ((intWrapper*)t->v1()->info)->operator int();
-  triangles[i*3+1] = ((intWrapper*)t->v2()->info)->operator int();
-  triangles[i*3+2] = ((intWrapper*)t->v3()->info)->operator int();
+  triangles[i * 3] = (j_voidint)t->v1()->info;
+  triangles[i*3+1] = (j_voidint)t->v2()->info;
+  triangles[i*3+2] = (j_voidint)t->v3()->info;
   i++;
  }
  T.freeNodes();
@@ -449,7 +450,7 @@ int multiSplitEdge(Basic_TMesh *tin, Edge *e)
 	while (splitVertices.numels())
 	{
 		coord ad, mind = DBL_MAX;
-		Vertex *gv = nullptr;
+		Vertex *gv;
 		FOREACHVVVERTEX((&splitVertices), v, n) if ((ad = v->squaredDistance(e->v2)) < mind) { gv = v; mind = ad; }
 		splitVertices.removeNode(gv);
 		tin->splitEdge(e, gv);

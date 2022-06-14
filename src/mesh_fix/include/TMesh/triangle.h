@@ -46,12 +46,12 @@ namespace T_MESH
 //! assigning up to 256 different states to the edge.
 
 
-class Triangle : public Data
+class Triangle
 {
  public :
  
  Edge *e1, *e2, *e3; 		//!< Edges of the triangle
- Data* info;			//!< Further information
+ Data info;			//!< Further information
  unsigned char mask;		//!< bit-mask for marking purposes
 
  Triangle();

@@ -31,7 +31,9 @@
 #ifndef _BASICS_H
 #define _BASICS_H
 
+#include <functional>
 #include <stdio.h>
+#include <assert.h>
 #include <math.h>
 #include <time.h>
 #include <limits.h>
@@ -138,163 +140,80 @@ inline void p_swap(void **a, void **b) {void *t = *a; *a = *b; *b = t;}
 
 /////////////////////////////////////////////////////////////////////////////////////////////
 
+typedef int64_t  j_voidint;
 
-template<typename T, typename Child>
-class Primitive {
-protected:
-    T value;
-
-public:
-
-    // we must type cast to child to so
-    // a += 3 += 5 ... and etc.. work the same way
-    // as on primitives
-    Child &childRef(){
-        return *((Child*)this);
-    }
-
-    // you can overload to give a default value if you want
-    Primitive(){}
-    explicit Primitive(T v):value(v){}
-
-    T get(){
-        return value;
-    }
-
-    #define OP(op) Child &operator op(Child const &v){\
-        value op v.value; \
-        return childRef(); \
-    }\
-    Child &operator op(T const &v){\
-            value op v; \
-            return childRef(); \
-        }
-
-    // all with equals
-    OP(+=)
-    OP(-=)
-    OP(*=)
-    OP(/=)
-    OP(<<=)
-    OP(>>=)
-    OP(|=)
-    OP(^=)
-    OP(&=)
-    OP(%=)
-
-    #undef OP
-
-    #define OP(p) Child operator p(Child const &v){\
-        Child other = childRef();\
-        other p ## = v;\
-        return other;\
-    }\
-    Child operator p(T const &v){\
-           Child other = childRef();\
-           other p ## = v;\
-           return other;\
-       }
-
-    OP(+)
-    OP(-)
-    OP(*)
-    OP(/)
-    OP(<<)
-    OP(>>)
-    OP(|)
-    OP(^)
-    OP(&)
-    OP(%)
-
-    #undef OP
-
-
-    #define OP(p) bool operator p(Child const &v){\
-        return value p v.value;\
-    }\
-    bool operator p(T const &v){\
-           return value p v;\
-       }
-
-    OP(&&)
-    OP(||)
-    OP(<)
-    OP(<=)
-    OP(>)
-    OP(>=)
-    OP(==)
-    OP(!=)
-
-    #undef OP
-
-    Child operator +(){return Child(value);}
-    Child operator -(){return Child(-value);}
-    Child &operator ++(){++value; return childRef();}
-    Child operator ++(int){
-        Child ret(value);
-        ++value;
-        return childRef();
-    }
-    Child operator --(int){
-        Child ret(value);
-        --value;
-        return childRef();
-    }
-
-    bool operator!(){return !value;}
-    Child operator~(){return Child(~value);}
-
-};
-
-
+// void* replacement
 class Data {
-public:
-    virtual ~Data() = default;
-};
+    std::function<void(int64_t)> delete_object_func = [](int64_t){};
+    int64_t value = 0; // either pointer, or numeric value
 
-class intWrapper: public Data {
-private:
-    int val;
-    public:
-    intWrapper(int val = 0) :
-            val(val) {
-    }
-    operator int &() {
-        return val;
-    }
-    int* operator &() {
-        return &val;
-    }
-    operator int() const {
-        return val;
-    }
-    operator int*() {
-        return &val;
-    }
-};
-
-class doubleWrapper: public Data, public Primitive<double, doubleWrapper> {
 public:
-    doubleWrapper(double val = 0) {
-        this->value = val;
+    Data() {
+        delete_object_func = [](int64_t){};
     }
-    operator double &() {
+
+    Data(void* ptr) = delete;
+
+    template<typename S>
+    Data(S* ptr) {
+        delete_object_func = [](int64_t p){
+            delete reinterpret_cast<S*>(p);
+        };
+        value = reinterpret_cast<int64_t>(ptr);
+    }
+
+    operator void*() = delete;
+
+    template<typename S>
+    operator S*() const {
+        return reinterpret_cast<S*>(value);
+    }
+
+    bool empty() const {
+        return value == 0;
+    }
+
+    bool notEmpty() const {
+           return value != 0;
+       }
+
+
+    bool operator==(const Data &d) const {
+        return value == d.value;
+    }
+
+    bool operator!=(const Data &d) const {
+        return value != d.value;
+    }
+
+    template<typename S>
+    bool operator!=(const S* ptr) const {
+        return value != reinterpret_cast<int64_t>(ptr);
+    }
+
+    operator int64_t() const {
         return value;
     }
-    double* operator &() {
-        return &value;
+
+    Data& operator=(int64_t val) {
+        delete_object_func = [](int64_t){};
+        value = val;
+        return *this;
     }
-    operator double() const {
-        return value;
+
+    void clear() {
+        if (value != 0) {
+            delete_object_func(value);
+        }
+       forget();
     }
-    operator double*() {
-        return &value;
+
+    void forget() {
+        delete_object_func = [](int64_t) {};
+        value = 0;
     }
 };
 
-inline int to_int(Data *d) {
-    return static_cast<intWrapper*>(d)->operator int();
-}
 
 } //namespace T_MESH
 
