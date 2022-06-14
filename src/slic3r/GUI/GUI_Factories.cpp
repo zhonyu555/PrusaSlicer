@@ -701,12 +701,12 @@ wxMenuItem* MenuFactory::append_menu_item_fix_through_netfabb(wxMenu* menu)
 }
 
 
-wxMenuItem* MenuFactory::append_menu_item_fix_through_meshfix(wxMenu* menu)
+wxMenuItem* MenuFactory::append_menu_item_fix_through_tetgen(wxMenu* menu)
 {
     if (is_windows10())
         return nullptr;
-    wxMenuItem* menu_item = append_menu_item(menu, wxID_ANY, _L("Fix through MeshFix (experimental)"), "",
-        [](wxCommandEvent&) { obj_list()->repair_mesh(ObjectList::rmaMeshfix); }, "", menu,
+    wxMenuItem* menu_item = append_menu_item(menu, wxID_ANY, _L("Fix through TetGen (experimental)"), "",
+        [](wxCommandEvent&) { obj_list()->repair_mesh(ObjectList::rmaTetgen); }, "", menu,
         []() {return plater()->can_repair_mesh(); }, m_parent);
 
     return menu_item;
@@ -935,7 +935,7 @@ void MenuFactory::create_common_object_menu(wxMenu* menu)
     append_menu_item_scale_selection_to_fit_print_volume(menu);
 
     append_menu_item_fix_through_netfabb(menu);
-    append_menu_item_fix_through_meshfix(menu);
+    append_menu_item_fix_through_tetgen(menu);
     append_menu_item_simplify(menu);
     append_menu_items_mirror(menu);
 }

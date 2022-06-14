@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.0)
 project(libigl)
 
+add_subdirectory(${LIBDIR}/libigl/igl/tetgen)
+
 add_library(libigl INTERFACE)
 
 find_package(libigl QUIET)
@@ -12,3 +14,6 @@ else()
     message(STATUS "IGL NOT found, using bundled version...")
     target_include_directories(libigl SYSTEM BEFORE INTERFACE ${LIBDIR}/libigl)
 endif()
+
+target_link_libraries(libigl INTERFACE tetgen)
+target_include_directories(libigl INTERFACE ${LIBDIR}/libigl/igl/tetgen)

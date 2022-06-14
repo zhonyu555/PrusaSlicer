@@ -367,7 +367,7 @@ public:
     void instances_to_separated_objects(const int obj_idx);
     void split_instances();
     void rename_item();
-    enum REPAIR_MESH_ALG{rmaNetfabb, rmaMeshfix};
+    enum REPAIR_MESH_ALG{rmaNetfabb, rmaTetgen};
     void repair_mesh(REPAIR_MESH_ALG alg);
     void simplify();
     void update_item_error_icon(const int obj_idx, int vol_idx) const ;

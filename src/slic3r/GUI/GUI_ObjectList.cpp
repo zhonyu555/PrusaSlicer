@@ -28,7 +28,7 @@
 #include <wx/numformatter.h>
 
 #include "slic3r/Utils/FixModelByWin10.hpp"
-#include "slic3r/Utils/FixModelByMeshFix.hpp"
+#include "slic3r/Utils/FixModelByTetrahedrons.hpp"
 
 #ifdef __WXMSW__
 #include "wx/uiaction.h"
@@ -4097,8 +4097,8 @@ void ObjectList::repair_mesh(ObjectList::REPAIR_MESH_ALG alg)
             case rmaNetfabb:
                 result = fix_model_by_win10_sdk_gui(*(object(obj_idx)), vol_idx, progress_dlg, msg, res);
                 break;
-            case rmaMeshfix:
-                result = fix_model_by_meshfix(*(object(obj_idx)), vol_idx, progress_dlg, msg, res);
+            case rmaTetgen:
+                result = fix_model_by_tetrahedrons(*(object(obj_idx)), vol_idx, progress_dlg, msg, res);
                 break;
             default:
                 break;
