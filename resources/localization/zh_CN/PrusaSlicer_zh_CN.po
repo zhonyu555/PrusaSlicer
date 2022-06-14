@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-12 22:02+0800\n"
+"PO-Revision-Date: 2022-06-14 21:20+0800\n"
 "Last-Translator: Bral@qq.com\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.0.1\n"
+"X-Generator: Poedit 3.1\n"
 
 #: src/slic3r/GUI/AboutDialog.cpp:45 src/slic3r/GUI/AboutDialog.cpp:303
 msgid "Portions copyright"
@@ -2920,7 +2920,7 @@ msgid ""
 "Do you wish to continue?"
 msgstr ""
 "您正在 64 位 Windows 上运行 32 位版本的 PrusaSlicer。\n"
-"PrusaSlicer 的 n32 位版本可能无法利用系统中的所有可用 RAM。\n"
+"PrusaSlicer 的 32 位版本可能无法利用系统中的所有可用内存。\n"
 "请从下载并安装 64 位版本的 PrusaSlicerhttps://www.prusa3d.cz/prusaslicer/。\n"
 "你想继续吗？"
 
@@ -5833,7 +5833,7 @@ msgstr "您可能需要更新图形卡驱动程序。"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:263
 msgid "As a workaround, you may run PrusaSlicer with a software rendered 3D graphics by running prusa-slicer.exe with the --sw-renderer parameter."
-msgstr "作为一种解决方法，您可以通过运行 prusa 切片器，使用软件渲染 3D 图形来运行 PrusaSlicer。带有--sw renderer 参数的。"
+msgstr "作为一种解决方法，您可以通过添加 --sw-renderer 参数来运行 prusa-slicer.exe，以使用软件渲染 3D 图形来运行 PrusaSlicer。"
 
 #: src/slic3r/GUI/OpenGLManager.cpp:265
 msgid "Unsupported OpenGL version"
