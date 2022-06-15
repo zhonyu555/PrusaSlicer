@@ -8,6 +8,8 @@
 #include "libigl/igl/voxel_grid.h"
 #include "libigl/igl/for_each.h"
 #include "libigl/igl/barycenter.h"
+#include "libigl/igl/unique_simplices.h"
+#include "libigl/igl/remove_duplicates.h"
 #include "libigl/igl/remove_unreferenced.h"
 #include "libigl/igl/copyleft/cgal/remesh_self_intersections.h"
 #include "libigl/igl/winding_number.h"
@@ -56,91 +58,64 @@ public:
 
 namespace detail {
 
-indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
-    //first compute convex hull
-    Eigen::MatrixXd vertices;
-    Eigen::MatrixXi faces;
-//    Eigen::MatrixXi hull_faces;
+bool fix_mesh(
+        const Eigen::MatrixXd &V,
+        const Eigen::MatrixXi &F,
+        Eigen::MatrixXd &NV,
+        Eigen::MatrixXi &NF) {
+
+    NV = V;
+    NF = F;
+
     {
-        Eigen::MatrixXf orig_v(mesh.vertices.size(), 3);
-        Eigen::MatrixXi orig_f(mesh.indices.size(), 3);
-
-        for (int v = 0; v < mesh.vertices.size(); ++v) {
-            orig_v.row(v) = mesh.vertices[v];
-        }
-
-        for (int v = 0; v < mesh.indices.size(); ++v) {
-            orig_f.row(v) = mesh.indices[v];
-        }
-
-        std::cout << "orig vertices: " << orig_v.rows() << std::endl;
-        std::cout << "orig faces: " << orig_f.rows() << std::endl;
-
-        Eigen::MatrixXi IF;
-        Eigen::VectorXi J;
+        std::cout << "remesh " << std::endl;
+        Eigen::MatrixXd OV = NV;
+        Eigen::MatrixXi OF = NF;
+        Eigen::MatrixXi _TMP1;
+        Eigen::VectorXi _TMP2;
         Eigen::VectorXi IM;
-        //resolve self intersections
-        igl::copyleft::cgal::remesh_self_intersections(orig_v, orig_f, { }, vertices, faces, IF, J, IM);
-        std::cout << "remeshed vertices: " << vertices.rows() << std::endl;
-        std::cout << "remeshed faces: " << faces.rows() << std::endl;
-
+        igl::copyleft::cgal::remesh_self_intersections(OV, OF, { }, NV, NF, _TMP1, _TMP2, IM);
         // _apply_ duplicate vertex mapping IM to FF
-        for (int i = 0; i < faces.size(); ++i) {
-            faces.data()[i] = IM(faces.data()[i]);
+        for (int i = 0; i < NF.size(); ++i) {
+            NF.data()[i] = IM(NF.data()[i]);
         }
-
-        Eigen::MatrixXd tmpV;
-        Eigen::MatrixXi tmpF;
-        // remove any vertices now unreferenced after duplicate mapping.
-        igl::remove_unreferenced(vertices, faces, tmpV, tmpF, IM);
-        // Now (SV,SF) is ready to extract outer hull
-        Eigen::VectorXi flip;
-        igl::copyleft::cgal::outer_hull(tmpV, tmpF, vertices, faces, J, flip);
-
-//        // compute hull
-//        igl::copyleft::cgal::convex_hull(vertices, hull_faces);
-
-//        std::cout << " hull faces: " << hull_faces.rows() << std::endl;
+    }
+    {
+        std::cout << "duplicates " << std::endl;
+        Eigen::MatrixXd OV = NV;
+        Eigen::MatrixXi OF = NF;
+        Eigen::VectorXi IM;
+        igl::remove_duplicates(OV, OF, NV, NF, IM, 0.01);
+    }
+    {
+        std::cout << "unique triangles " << std::endl;
+        Eigen::MatrixXi oldF = NF;
+        igl::unique_simplices(oldF, NF);
+    }
+    {
+        std::cout << "remove unreferenced " << std::endl;
+        Eigen::MatrixXd oldRV = NV;
+        Eigen::MatrixXi oldRF = NF;
+        Eigen::VectorXi IM;
+        igl::remove_unreferenced(oldRV, oldRF, NV, NF, IM);
     }
 
-    std::cout << "tetrahedronize convex hull " << std::endl;
+    std::cout << "tetrahedronize " << std::endl;
     Eigen::MatrixXd tets_v;
     Eigen::MatrixXi tets_t;
     Eigen::MatrixXi tets_f;
-    int result = igl::copyleft::tetgen::tetrahedralize(vertices, faces, "cY", tets_v, tets_t, tets_f);
+    int result = igl::copyleft::tetgen::tetrahedralize(NV, NF, "cY", tets_v, tets_t, tets_f);
     if (result != 0) {
-        std::cout << "Tetrahedronization failed " << result << std::endl;
-        indexed_triangle_set fixed_mesh;
-        fixed_mesh.vertices.resize(vertices.rows());
-        fixed_mesh.indices.resize(faces.rows());
-
-        for (int v = 0; v < vertices.rows(); ++v) {
-            fixed_mesh.vertices[v] = vertices.row(v).cast<float>();
-        }
-
-        for (int f = 0; f < faces.rows(); ++f) {
-            fixed_mesh.indices[f] = faces.row(f);
-        }
-        return fixed_mesh;
+        return false;
     }
 
-    std::cout << "tetrahedrons count: " << tets_t.rows() << std::endl;
-
-    // Compute barycenters of all tets
+    std::cout << "barycenters " << std::endl;
     Eigen::MatrixXd barycenters;
-    std::cout << "Computing barycenters " << std::endl;
     igl::barycenter(tets_v, tets_t, barycenters);
 
-    std::cout << "barycenters count: " << barycenters.rows() << std::endl;
-
-    // Compute generalized winding number at all barycenters from remeshed input
-    std::cout << "Computing winding number over all " << tets_t.rows() << " tets..." << std::endl;
+    std::cout << "winding number " << std::endl;
     Eigen::VectorXd W;
-    igl::winding_number(vertices, faces, barycenters, W);
-
-    std::cout << "winding numbers count: " << W.rows() << std::endl;
-
-    std::cout << "Extracting internal tetrahedra " << std::endl;
+    igl::winding_number(V, F, barycenters, W);
     Eigen::MatrixXi CT((W.array() > 0.5).count(), 4);
     {
         size_t k = 0;
@@ -151,25 +126,49 @@ indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
             }
         }
     }
+    std::cout << "boundary facets " << std::endl;
+    igl::boundary_facets(CT, NF);
+    NF = NF.rowwise().reverse().eval();
 
-    std::cout << "Extracting boundary faces from  " << CT.rows() << " internal tetrahedra" << std::endl;
-    Eigen::MatrixXi new_faces;
-    igl::boundary_facets(CT, new_faces);
-    // boundary_facets seems to be reversed...
-    new_faces = new_faces.rowwise().reverse().eval();
-
-    std::cout << "new faces count: " << new_faces.rows() << std::endl;
-
-    indexed_triangle_set fixed_mesh;
-    fixed_mesh.vertices.resize(tets_v.rows());
-    fixed_mesh.indices.resize(new_faces.rows());
-
-    for (int v = 0; v < tets_v.rows(); ++v) {
-        fixed_mesh.vertices[v] = tets_v.row(v).cast<float>();
+    {
+        std::cout << "remove unreferenced " << std::endl;
+        Eigen::MatrixXi oldRF = NF;
+        Eigen::VectorXi IM;
+        igl::remove_unreferenced(tets_v, oldRF, NV, NF, IM);
     }
 
-    for (int f = 0; f < new_faces.rows(); ++f) {
-        fixed_mesh.indices[f] = new_faces.row(f);
+    return true;
+
+}
+
+indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
+    //first compute convex hull
+    Eigen::MatrixXd vertices;
+    Eigen::MatrixXi faces;
+
+    Eigen::MatrixXd orig_v(mesh.vertices.size(), 3);
+    Eigen::MatrixXi orig_f(mesh.indices.size(), 3);
+
+    for (int v = 0; v < mesh.vertices.size(); ++v) {
+        orig_v.row(v) = mesh.vertices[v].cast<double>();
+    }
+
+    for (int v = 0; v < mesh.indices.size(); ++v) {
+        orig_f.row(v) = mesh.indices[v];
+    }
+
+    fix_mesh(orig_v, orig_f, vertices, faces);
+
+    indexed_triangle_set fixed_mesh;
+    fixed_mesh.vertices.resize(vertices.rows());
+    fixed_mesh.indices.resize(faces.rows());
+
+    for (int v = 0; v < vertices.rows(); ++v) {
+        fixed_mesh.vertices[v] = vertices.row(v).cast<float>();
+    }
+
+    for (int f = 0; f < faces.rows(); ++f) {
+        fixed_mesh.indices[f] = faces.row(f);
     }
 
     std::cout << "returning fixed mesh " << std::endl;
