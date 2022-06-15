@@ -6,14 +6,15 @@
 
 #include "libigl/igl/copyleft/marching_cubes.h"
 #include "libigl/igl/voxel_grid.h"
+#include "libigl/igl/for_each.h"
 #include "libigl/igl/barycenter.h"
 #include "libigl/igl/remove_unreferenced.h"
 #include "libigl/igl/copyleft/cgal/remesh_self_intersections.h"
 #include "libigl/igl/winding_number.h"
 #include "libigl/igl/boundary_facets.h"
 #include "libigl/igl/copyleft/cgal/convex_hull.h"
+#include "libigl/igl/copyleft/cgal/outer_hull.h"
 #include "libigl/igl/copyleft/tetgen/tetrahedralize.h"
-#include "libigl/igl/copyleft/tetgen/cdt.h"
 
 #include <algorithm>
 #include <string.h>
@@ -37,7 +38,6 @@
 #include <wx/msgdlg.h>
 #include <wx/progdlg.h>
 
-
 namespace Slic3r {
 
 class RepairCanceledException: public std::exception {
@@ -54,14 +54,13 @@ public:
     }
 };
 
-
 namespace detail {
 
 indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
     //first compute convex hull
     Eigen::MatrixXd vertices;
     Eigen::MatrixXi faces;
-    Eigen::MatrixXi hull_faces;
+//    Eigen::MatrixXi hull_faces;
     {
         Eigen::MatrixXf orig_v(mesh.vertices.size(), 3);
         Eigen::MatrixXi orig_f(mesh.indices.size(), 3);
@@ -77,37 +76,50 @@ indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
         std::cout << "orig vertices: " << orig_v.rows() << std::endl;
         std::cout << "orig faces: " << orig_f.rows() << std::endl;
 
-        Eigen::VectorXi I;
         Eigen::MatrixXi IF;
         Eigen::VectorXi J;
+        Eigen::VectorXi IM;
         //resolve self intersections
-        igl::copyleft::cgal::remesh_self_intersections(orig_v, orig_f, { }, vertices, faces, IF, J, I);
+        igl::copyleft::cgal::remesh_self_intersections(orig_v, orig_f, { }, vertices, faces, IF, J, IM);
         std::cout << "remeshed vertices: " << vertices.rows() << std::endl;
         std::cout << "remeshed faces: " << faces.rows() << std::endl;
 
-        // compute hull
-        igl::copyleft::cgal::convex_hull(vertices, hull_faces);
+        // _apply_ duplicate vertex mapping IM to FF
+        for (int i = 0; i < faces.size(); ++i) {
+            faces.data()[i] = IM(faces.data()[i]);
+        }
 
-        std::cout << " hull faces: " << hull_faces.rows() << std::endl;
+        Eigen::MatrixXd tmpV;
+        Eigen::MatrixXi tmpF;
+        // remove any vertices now unreferenced after duplicate mapping.
+        igl::remove_unreferenced(vertices, faces, tmpV, tmpF, IM);
+        // Now (SV,SF) is ready to extract outer hull
+        Eigen::VectorXi flip;
+        igl::copyleft::cgal::outer_hull(tmpV, tmpF, vertices, faces, J, flip);
+
+//        // compute hull
+//        igl::copyleft::cgal::convex_hull(vertices, hull_faces);
+
+//        std::cout << " hull faces: " << hull_faces.rows() << std::endl;
     }
 
     std::cout << "tetrahedronize convex hull " << std::endl;
     Eigen::MatrixXd tets_v;
     Eigen::MatrixXi tets_t;
     Eigen::MatrixXi tets_f;
-    int result = igl::copyleft::tetgen::tetrahedralize(vertices, hull_faces, "pq1.414NEF", tets_v, tets_t, tets_f);
+    int result = igl::copyleft::tetgen::tetrahedralize(vertices, faces, "cY", tets_v, tets_t, tets_f);
     if (result != 0) {
-        std::cout << "Tetrahedronization failed " << std::endl;
+        std::cout << "Tetrahedronization failed " << result << std::endl;
         indexed_triangle_set fixed_mesh;
         fixed_mesh.vertices.resize(vertices.rows());
-        fixed_mesh.indices.resize(hull_faces.rows());
+        fixed_mesh.indices.resize(faces.rows());
 
         for (int v = 0; v < vertices.rows(); ++v) {
             fixed_mesh.vertices[v] = vertices.row(v).cast<float>();
         }
 
-        for (int f = 0; f < hull_faces.rows(); ++f) {
-            fixed_mesh.indices[f] = hull_faces.row(f);
+        for (int f = 0; f < faces.rows(); ++f) {
+            fixed_mesh.indices[f] = faces.row(f);
         }
         return fixed_mesh;
     }
@@ -121,15 +133,12 @@ indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
 
     std::cout << "barycenters count: " << barycenters.rows() << std::endl;
 
-
     // Compute generalized winding number at all barycenters from remeshed input
     std::cout << "Computing winding number over all " << tets_t.rows() << " tets..." << std::endl;
     Eigen::VectorXd W;
     igl::winding_number(vertices, faces, barycenters, W);
 
     std::cout << "winding numbers count: " << W.rows() << std::endl;
-
-
 
     std::cout << "Extracting internal tetrahedra " << std::endl;
     Eigen::MatrixXi CT((W.array() > 0.5).count(), 4);
@@ -145,7 +154,7 @@ indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
 
     std::cout << "Extracting boundary faces from  " << CT.rows() << " internal tetrahedra" << std::endl;
     Eigen::MatrixXi new_faces;
-    igl::boundary_facets(tets_t, new_faces);
+    igl::boundary_facets(CT, new_faces);
     // boundary_facets seems to be reversed...
     new_faces = new_faces.rowwise().reverse().eval();
 
@@ -169,8 +178,6 @@ indexed_triangle_set fix_model_volume_mesh(const indexed_triangle_set &mesh) {
 }
 
 }
-
-
 
 bool fix_model_by_tetrahedrons(ModelObject &model_object, int volume_idx, wxProgressDialog &progress_dlg,
         const wxString &msg_header, std::string &fix_result) {
