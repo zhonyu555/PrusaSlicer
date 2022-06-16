@@ -32,7 +32,8 @@ private:
     void on_cancel_button(wxCommandEvent& event);
     void on_pause_button(wxCommandEvent& event);
     void on_resume_button(wxCommandEvent& event);
-    
+    void on_url_msg(wxCommandEvent& event);
+
     void update_state_labels();
     void start_next();
     void set_download_state(int id, DownloadState state);
@@ -82,6 +83,7 @@ class DownloadApp : public wxApp
 protected:
     DownloadFrame* m_frame{ nullptr };
     std::unique_ptr<DownloaderSend> m_dwnldr_send;
+    std::unique_ptr<OtherDownloaderMessageHandler> m_message_handler;
 
     bool m_other_exists { false };
 
@@ -90,7 +92,7 @@ public:
     void OnInitCmdLine(wxCmdLineParser& parser) override;
     bool OnCmdLineParsed(wxCmdLineParser& parser) override;
     
-    
+    DownloadFrame* get_frame() { return m_frame; } 
 };
 
 wxDECLARE_APP(DownloadApp);

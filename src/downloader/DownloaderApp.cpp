@@ -71,6 +71,7 @@ bool DownloadApp::OnInit()
    
 
     if (m_dwnldr_send->get_instance_exists()) {
+        std::cout << "other instance exists" << std::endl;
         m_other_exists = true;
         m_frame = new DownloadFrame("Downloader", wxPoint(50, 50), wxSize(0,0));
         return wxApp::OnInit();
@@ -78,18 +79,20 @@ bool DownloadApp::OnInit()
     m_frame = new DownloadFrame("Downloader", wxPoint(50, 50), wxSize(450, 340));
     m_frame->Show(true);
 
-#ifdef _WIN32   
-    wxWindow::MSWRegisterMessageHandler(WM_COPYDATA, [](wxWindow* win, WXUINT /* nMsg */, WXWPARAM wParam, WXLPARAM lParam) {
-        auto frame = dynamic_cast<DownloadFrame*>(win);
-        COPYDATASTRUCT* copy_data_structure = { 0 };
-        copy_data_structure = (COPYDATASTRUCT*)lParam;
-        if (copy_data_structure->dwData == 1) {
-            LPCWSTR arguments = (LPCWSTR)copy_data_structure->lpData;
-            frame->handle_message(arguments);
-        }
-        return true;
-    });
-#endif
+//#ifdef _WIN32   
+//    wxWindow::MSWRegisterMessageHandler(WM_COPYDATA, [](wxWindow* win, WXUINT /* nMsg */, WXWPARAM wParam, WXLPARAM lParam) {
+//        auto frame = dynamic_cast<DownloadFrame*>(win);
+//        COPYDATASTRUCT* copy_data_structure = { 0 };
+//        copy_data_structure = (COPYDATASTRUCT*)lParam;
+//        if (copy_data_structure->dwData == 1) {
+//            LPCWSTR arguments = (LPCWSTR)copy_data_structure->lpData;
+//            frame->handle_message(arguments);
+//        }
+//        return true;
+//    });
+//#endif
+    m_message_handler = std::make_unique<OtherDownloaderMessageHandler>();
+    m_message_handler->init(m_frame);
 
     return wxApp::OnInit();
 }
@@ -124,7 +127,7 @@ bool DownloadApp::OnCmdLineParsed(wxCmdLineParser& parser)
         m_frame->log("sent " + url);
         m_frame->Close(true);
         return false;
-    } else {
+    } else {        
         if (!url.empty() && m_frame != nullptr) {
             m_frame->start_download(std::move(url));
             //m_frame->start_download("prusaslicer://open?file=https%3A%2F%2Fmedia.printables.com%2Fmedia%2Fprints%2F152208%2Fstls%2F1431590_8b8287b3-03b1-4cbe-82d0-268a0affa171%2Ff1_logo.stl");
@@ -203,6 +206,8 @@ DownloadFrame::DownloadFrame(const wxString& title, const wxPoint& pos, const wx
     Bind(EVT_FILE_PROGRESS, &DownloadFrame::on_progress, this);
     Bind(EVT_FILE_ERROR, &DownloadFrame::on_error, this);
     Bind(EVT_FILE_NAME_CHANGE, &DownloadFrame::on_name_change, this);
+    Bind(EVT_URL_MSG, &DownloadFrame::on_url_msg, this);
+    
 }
 
 void DownloadFrame::start_download(wxString url)
@@ -498,10 +503,13 @@ wxString DownloadFrame::get_folder_path_of(int id) const
 
 void DownloadFrame::handle_message(const wxString& msg)
 {
-    //log("recieved: " +  msg);
     start_download(msg);
 }
 
+void DownloadFrame::on_url_msg(wxCommandEvent& event)
+{
+    handle_message(event.GetString());
+}
 
 //wxIMPLEMENT_APP_NO_MAIN(MyApp);
 
