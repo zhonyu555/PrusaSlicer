@@ -18,7 +18,7 @@ namespace Downloader {
 class SlicerSend
 {
 public:
-    bool get_instance_exists() const;
+    //bool get_instance_exists() const;
     bool send_path(const wxString& path) const;
     bool start_with_path(const wxString& path) const;
     bool start_or_send(const wxString& path) const;

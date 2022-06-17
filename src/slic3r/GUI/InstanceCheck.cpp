@@ -545,6 +545,9 @@ namespace MessageHandlerDBusInternal
 	        "     <method name=\"AnotherInstance\">"
 	        "       <arg name=\"data\" direction=\"in\" type=\"s\" />"
 	        "     </method>"
+	        "	  <method name=\"Introspect\">"
+	        "       <arg name=\"data\" direction=\"out\" type=\"s\" />"
+	        "     </method>"
 	        "   </interface>"
 	        " </node>";
 	     
@@ -553,6 +556,7 @@ namespace MessageHandlerDBusInternal
 	    dbus_connection_send(connection, reply, NULL);
 	    dbus_message_unref(reply);
 	}
+
 	//method AnotherInstance receives message from another PrusaSlicer instance 
 	static void handle_method_another_instance(DBusConnection *connection, DBusMessage *request)
 	{
@@ -586,6 +590,9 @@ namespace MessageHandlerDBusInternal
 	        return DBUS_HANDLER_RESULT_HANDLED;
 	    } else if (0 == strcmp(our_interface.c_str(), interface_name) && 0 == strcmp("AnotherInstance", member_name)) {
 	        handle_method_another_instance(connection, message);
+	        return DBUS_HANDLER_RESULT_HANDLED;
+	    } else if (0 == strcmp(our_interface.c_str(), interface_name) && 0 == strcmp("Introspect", member_name)) {
+	         respond_to_introspect(connection, message);
 	        return DBUS_HANDLER_RESULT_HANDLED;
 	    } 
 	    return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

@@ -19,6 +19,22 @@
 namespace Downloader {
 
 namespace {
+	std::string get_instance_hash()
+	{
+		std::string slicer_path = (boost::dll::program_location()).string();
+	    size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
+	    std::string lock_name = std::to_string(hashed_path);
+		//std::cout << "hash: "<< lock_name;
+		return lock_name;	
+	}
+	std::string get_slicer_hash()
+	{
+		std::string slicer_path = (boost::dll::program_location()).string();
+	    size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path).parent_path().parent_path() / "prusa-slicer").string());
+	    std::string lock_name = std::to_string(hashed_path);
+		//std::cout << "hash: "<< lock_name;
+		return lock_name;	
+	}
 // TODO: Taken from from Config.cpp
 	std::string escape_strings_cstyle(const std::vector<std::string>& strs)
 	{
@@ -211,14 +227,9 @@ bool send_message_downloader(const wxString& message)
 }
 
 
-bool execute_command(const wxString& command)
-{
-	return wxExecute(command);
-}	
-
 #elif defined(__linux__)
 
-bool send_message_slicer(const std::string &message_text, const std::string &version)
+bool dbus_send_message(const std::string &message_text, const std::string &interface_name, const std::string &method_name, const std::string &object_name)
 {
 	DBusMessage* msg;
     // DBusMessageIter args;
@@ -227,10 +238,10 @@ bool send_message_slicer(const std::string &message_text, const std::string &ver
 	dbus_uint32_t 	serial = 0;
 	const char* sigval = message_text.c_str();
 	//std::string		interface_name = "com.prusa3d.prusaslicer.InstanceCheck";
-	std::string		interface_name = "com.prusa3d.prusaslicer.InstanceCheck.Object" + version;
-	std::string   	method_name = "AnotherInstance";
+	//std::string		interface_name = "com.prusa3d.prusaslicer.Downloader.Object" + version;
+	//std::string   	method_name = "AnotherInstance";
 	//std::string		object_name = "/com/prusa3d/prusaslicer/InstanceCheck";
-	std::string		object_name = "/com/prusa3d/prusaslicer/InstanceCheck/Object" + version;
+	//std::string		object_name = "/com/prusa3d/prusaslicer/Downloader/Object" + version;
 
 	std::cout << "interface_name: " << interface_name << std::endl;
 	std::cout << "method_name: " << method_name<< std::endl;
@@ -296,85 +307,7 @@ bool send_message_slicer(const std::string &message_text, const std::string &ver
 	return true;
 }
 
-bool send_message_downloader(const std::string &message_text, const std::string &version)
-{
-	DBusMessage* msg;
-    // DBusMessageIter args;
-	DBusConnection* conn;
-	DBusError 		err;
-	dbus_uint32_t 	serial = 0;
-	const char* sigval = message_text.c_str();
-	//std::string		interface_name = "com.prusa3d.prusaslicer.InstanceCheck";
-	std::string		interface_name = "com.prusa3d.prusaslicer.Downloader.Object" + version;
-	std::string   	method_name = "AnotherInstance";
-	//std::string		object_name = "/com/prusa3d/prusaslicer/InstanceCheck";
-	std::string		object_name = "/com/prusa3d/prusaslicer/Downloader/Object" + version;
-
-	std::cout << "interface_name: " << interface_name << std::endl;
-	std::cout << "method_name: " << method_name<< std::endl;
-	std::cout << "object_name: " << object_name << std::endl;
-	// initialise the error value
-	dbus_error_init(&err);
-
-	// connect to bus, and check for errors (use SESSION bus everywhere!)
-	conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
-	if (dbus_error_is_set(&err)) {
-		//BOOST_LOG_TRIVIAL(error) << "DBus Connection Error. Message to another instance wont be send.";
-		//BOOST_LOG_TRIVIAL(error) << "DBus Connection Error: " << err.message;
-		std::cout << "DBus Connection Error. Message to another instance wont be send." << std::endl;
-		std::cout << "DBus Connection Error: " << err.message << std::endl;
-		dbus_error_free(&err);
-		return true;
-	}
-	if (NULL == conn) {
-		//BOOST_LOG_TRIVIAL(error) << "DBus Connection is NULL. Message to another instance wont be send.";
-		std::cout << "DBus Connection is NULL. Message to another instance wont be send." << std::endl;
-		return true;
-	}
-	std::cout<< "dbus_bus_get SUCCESS" << std::endl;
-	//some sources do request interface ownership before constructing msg but i think its wrong.
-
-	//create new method call message
-	msg = dbus_message_new_method_call(interface_name.c_str(), object_name.c_str(), interface_name.c_str(), method_name.c_str());
-	if (NULL == msg) {
-		//BOOST_LOG_TRIVIAL(error) << "DBus Message is NULL. Message to another instance wont be send.";
-		std::cout << "DBus Message is NULL. Message to another instance wont be send."<< std::endl;
-		dbus_connection_unref(conn);
-		return true;
-	}
-	std::cout<< "dbus_message_new_method_call SUCCESS" << std::endl;
-	//the AnotherInstance method is not sending reply.
-	dbus_message_set_no_reply(msg, TRUE);
-
-	//append arguments to message
-	if (!dbus_message_append_args(msg, DBUS_TYPE_STRING, &sigval, DBUS_TYPE_INVALID)) {
-		//BOOST_LOG_TRIVIAL(error) << "Ran out of memory while constructing args for DBus message. Message to another instance wont be send.";
-		std::cout << "Ran out of memory while constructing args for DBus message. Message to another instance wont be send." << std::endl;
-		dbus_message_unref(msg);
-		dbus_connection_unref(conn);
-		return true;
-	}
-
-	// send the message and flush the connection
-	if (!dbus_connection_send(conn, msg, &serial)) {
-		//BOOST_LOG_TRIVIAL(error) << "Ran out of memory while sending DBus message.";
-		std::cout << "Ran out of memory while sending DBus message." << std::endl;
-		dbus_message_unref(msg);
-		dbus_connection_unref(conn);
-		return true;
-	}
-	dbus_connection_flush(conn);
-
-	BOOST_LOG_TRIVIAL(trace) << "DBus message sent.";
-	std::cout << "DBus message sent." << std::endl;
-
-	// free the message and close the connection
-	dbus_message_unref(msg);                                                                                                                                                                                    
-	dbus_connection_unref(conn);
-	return true;
-}
-
-bool get_other_downloader_exists(const std::string &version)
+bool dbus_send_wait_for_reply(const std::string &interface_name, const std::string &method_name, const std::string &object_name)
 {
 	
 	DBusMessage* msg;
@@ -385,9 +318,12 @@ bool get_other_downloader_exists(const std::string &version)
 	DBusError 		err;
 	dbus_uint32_t 	serial = 0;
 	//const char* sigval = message_text.c_str();
-	std::string		interface_name = "com.prusa3d.prusaslicer.Downloader.Object" + version;
-	std::string   	method_name = "Introspect";
-	std::string		object_name = "/com/prusa3d/prusaslicer/Downloader/Object" + version;
+	//std::string		interface_name = interface + version;
+	//std::string   	method_name = "Introspect";
+	//std::string		object_name = "/com/prusa3d/prusaslicer/Downloader/Object" + version;
+	//std::string		object_name = "/com/prusa3d/prusaslicer/InstanceCheck/Object" + version;
+
+	std::cout << "interface_name: " << interface_name << std::endl;
 
 	// initialise the error value
 	dbus_error_init(&err);
@@ -400,12 +336,12 @@ bool get_other_downloader_exists(const std::string &version)
 		std::cout << "DBus Connection Error. Message to another instance wont be send." << std::endl;
 		std::cout << "DBus Connection Error: " << err.message << std::endl;
 		dbus_error_free(&err);
-		return true;
+		return false;
 	}
 	if (NULL == conn) {
 		//BOOST_LOG_TRIVIAL(error) << "DBus Connection is NULL. Message to another instance wont be send.";
 		std::cout << "DBus Connection is NULL. Message to another instance wont be send." << std::endl;
-		return true;
+		return false;
 	}
 	//some sources do request interface ownership before constructing msg but i think its wrong.
 
@@ -415,7 +351,7 @@ bool get_other_downloader_exists(const std::string &version)
 		//BOOST_LOG_TRIVIAL(error) << "DBus Message is NULL. Message to another instance wont be send.";
 		std::cout << "DBus Message is NULL. Message to another instance wont be send."<< std::endl;
 		dbus_connection_unref(conn);
-		return true;
+		return false;
 	}
 	//the AnotherInstance method is not sending reply.
 	dbus_message_set_no_reply(msg, TRUE);
@@ -425,7 +361,7 @@ bool get_other_downloader_exists(const std::string &version)
         dbus_connection_unref(conn);
         perror(err.name);
         perror(err.message);
-        return true;
+        return false;
     }
 
 	if ( !dbus_message_get_args(reply, &err, DBUS_TYPE_STRING, &result, DBUS_TYPE_INVALID) ) {
@@ -434,7 +370,7 @@ bool get_other_downloader_exists(const std::string &version)
         dbus_connection_unref(conn);
         perror(err.name);
         perror(err.message);
-        return true;
+        return false;
     }
     // Work with the results of the remote procedure call
 
@@ -450,49 +386,60 @@ bool get_other_downloader_exists(const std::string &version)
 	// free the message and close the connection
 	dbus_message_unref(msg);                                                                                                                                                                                    
 	dbus_connection_unref(conn);
-	return false;
+	return true;
 	
 }
 
 #endif //__APPLE__/__linux__
+
+bool execute_command(const wxString& command)
+{
+	return wxExecute(command);
+}	
 
 }
 
 
 // ------ SlicerSend ----------------
 
-
+/*
 bool SlicerSend::get_instance_exists() const
 {
 #ifdef _WIN32
     return !EnumWindows(EnumWindowsProcSlicer, 0);
+#else
+    std::string slicer_path = (boost::dll::program_location()).string();
+    size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
+    std::string lock_name = std::to_string(hashed_path);
+    return !get_other_downloader_exists(lock_name, "com.prusa3d.prusaslicer.InstanceCheck.Object");
 #endif
     return false;
 }
+*/
 bool SlicerSend::send_path(const wxString& path) const
 {
 #ifdef _WIN32
 	std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
-    return send_message_slicer(boost::nowide::widen(escaped));
+    return send_message_slicer(boost::nowide::widen(escaped);
 #else
-    // todo: this path will be different 
-    std::string slicer_path = (boost::dll::program_location().parent_path().parent_path() / "prusa-slicer").string();
-    size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
-    std::string lock_name = std::to_string(hashed_path);
-	std::cout << "hash: "<< lock_name;
-    std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
-    return send_message_slicer(escaped, lock_name);
+	if (dbus_send_wait_for_reply("com.prusa3d.prusaslicer.InstanceCheck.Object" + get_slicer_hash(),"Introspect","/com/prusa3d/prusaslicer/InstanceCheck/Object" + get_slicer_hash()))
+	{
+		std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
+    	return dbus_send_message(escaped,"com.prusa3d.prusaslicer.InstanceCheck.Object" + get_slicer_hash(),"AnotherInstance","/com/prusa3d/prusaslicer/InstanceCheck/Object" + get_slicer_hash());
+	}
+	return false;
 #endif
 }
 
 bool SlicerSend::start_with_path(const wxString& path) const
 {
 #ifdef _WIN32
-	// "C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " 
 	std::string escaped = escape_strings_cstyle({  boost::nowide::narrow(path) });
-	//return execute_command(boost::nowide::widen(escaped));
 	std::string binary = (boost::dll::program_location().parent_path() / "prusa-slicer.exe").string() + " ";
-	//return execute_command("C:\\Users\\User\\Downloads\\PrusaSlicer-2.4.2+win64-202204251110\\prusa-slicer.exe " + boost::nowide::widen(escaped));
+	return execute_command(boost::nowide::widen(binary) + boost::nowide::widen(escaped));
+#else
+	std::string escaped = escape_strings_cstyle({  boost::nowide::narrow(path) });
+	std::string binary = (boost::dll::program_location().parent_path().parent_path() / "prusa-slicer").string() + " ";
 	return execute_command(boost::nowide::widen(binary) + boost::nowide::widen(escaped));
 #endif
 	return false;
@@ -500,6 +447,7 @@ bool SlicerSend::start_with_path(const wxString& path) const
 
 bool SlicerSend::start_or_send(const wxString& path) const
 {
+	std::cout << "start_or_send" << std::endl;	
 	if (send_path(path))
 		return true;
 	return start_with_path(path);
@@ -517,7 +465,7 @@ bool DownloaderSend::get_instance_exists() const
 	std::string slicer_path = (boost::dll::program_location()).string();
     size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
     std::string lock_name = std::to_string(hashed_path);
-    return !get_other_downloader_exists(lock_name);
+    return dbus_send_wait_for_reply("com.prusa3d.prusaslicer.Downloader.Object" + get_instance_hash(),"Introspect","/com/prusa3d/prusaslicer/Downloader/Object" + get_instance_hash());
 #endif 
 	return false;
 }
@@ -530,7 +478,7 @@ bool DownloaderSend::send_url(const wxString& url) const
 	std::string slicer_path = boost::dll::program_location().string();
     size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
     std::string lock_name = std::to_string(hashed_path);
-    return send_message_downloader(boost::nowide::narrow(url), lock_name);
+    return dbus_send_message(boost::nowide::narrow(url),  "com.prusa3d.prusaslicer.Downloader.Object" + get_instance_hash(),"AnotherInstance","/com/prusa3d/prusaslicer/Downloader/Object" + get_instance_hash());
 #endif
 	return false;
 }
@@ -696,19 +644,14 @@ void OtherDownloaderMessageHandler::handle_message(const std::string& message)
 
 namespace 
 {
-	std::string get_instance_hash()
-	{
-		std::string slicer_path = (boost::dll::program_location()).string();
-	    size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
-	    std::string lock_name = std::to_string(hashed_path);
-		//std::cout << "hash: "<< lock_name;
-		return lock_name;	
-	}
+	
 	//reply to introspect makes our DBus object visible for other programs like D-Feet
 	void respond_to_introspect(DBusConnection *connection, DBusMessage *request) 
 	{
     	DBusMessage *reply;
-	    const char  *introspection_data =
+    	
+	    //const char  *introspection_data =
+	    std::string introspection_data =
 	        " <!DOCTYPE node PUBLIC \"-//freedesktop//DTD D-BUS Object Introspection 1.0//EN\" "
 	        "\"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd\">"
 	        " <!-- dbus-sharp 0.8.1 -->"
@@ -718,13 +661,18 @@ namespace
 	        "       <arg name=\"data\" direction=\"out\" type=\"s\" />"
 	        "     </method>"
 	        "   </interface>"
-	        "   <interface name=\"com.prusa3d.prusaslicer.Downloader\">"
+	        "   <interface name=\"com.prusa3d.prusaslicer.Downloader.Object";
+	         introspection_data += get_instance_hash().c_str();
+	         introspection_data += "\">"
 	        "     <method name=\"AnotherInstance\">"
 	        "       <arg name=\"data\" direction=\"in\" type=\"s\" />"
 	        "     </method>"
+	        "     <method name=\"Introspect\">"
+	        "       <arg name=\"data\" direction=\"out\" type=\"s\" />"
+	        "     </method>"
 	        "   </interface>"
 	        " </node>";
-	     
+	    const char* introspection_data2 = introspection_data.c_str();
 	    reply = dbus_message_new_method_return(request);
 	    dbus_message_append_args(reply, DBUS_TYPE_STRING, &introspection_data, DBUS_TYPE_INVALID);
 	    dbus_connection_send(connection, reply, NULL);

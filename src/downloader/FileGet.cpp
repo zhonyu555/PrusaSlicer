@@ -4,6 +4,7 @@
 #include <thread>
 #include <curl/curl.h>
 #include <boost/nowide/fstream.hpp>
+#include <iostream>
 
 
 namespace Downloader {
@@ -105,6 +106,9 @@ void FileGet::priv::get_perform()
 	}
 	
 	boost::filesystem::path dest_path = m_dest_folder / m_filename;
+
+	std::cout << "dest_path: " << dest_path.string() << std::endl;
+	std::cout << "m_tmp_path: " << m_tmp_path.string() << std::endl;
 	FILE* file;
 	// open file for writting
 	if (m_written == 0)
