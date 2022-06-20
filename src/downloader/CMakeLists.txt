@@ -14,6 +14,13 @@ set(SLIC3R_DOWNLOADER_SOURCES
 	FromSlicer/Http.hpp
 )
 
+if (APPLE)
+    list(APPEND SLIC3R_GUI_SOURCES
+           InstanceSendMac.cpp
+	     InstanceSendMac.hpp
+        )
+endif ()
+
 if(NOT WIN32)
 	add_executable(PrusaSlicer_Downloader ${SLIC3R_DOWNLOADER_SOURCES})
 	set_target_properties(PrusaSlicer_Downloader PROPERTIES OUTPUT_NAME "prusa-slicer-downloader")

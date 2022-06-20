@@ -58,7 +58,7 @@ public:
     void           handle_message(const std::string& message);
 #ifdef __APPLE__
     // Messege form other instance, that it deleted its lockfile - first instance to get it will create its own.
-    //void           handle_message_other_closed();
+    void           handle_message_other_closed();
 #endif //__APPLE__
 #ifdef _WIN32
    // static void    init_windows_properties(MainFrame* main_frame, size_t instance_hash);
@@ -80,11 +80,11 @@ private:
 #endif //BACKGROUND_DOWNLOADER_MESSAGE_LISTENER
 
 #if __APPLE__
-    //implemented at InstanceCheckMac.mm
-    //void    register_for_messages(const std::string &version_hash);
-    //void    unregister_for_messages();
+    // implemented at InstanceSendMac.mm
+    void    register_for_messages(const std::string &version_hash);
+    void    unregister_for_messages();
     // Opaque pointer to RemovableDriveManagerMM
-    //void* m_impl_osx;
+    void* m_impl_osx;
 public: 
     //void    bring_instance_forward();
 #endif //__APPLE__

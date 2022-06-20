@@ -228,15 +228,17 @@ bool send_message_downloader(const wxString& message)
 
 #elif __APPLE__
 
-
-
-
-
-
-
-
-
-
+static bool send_message(const std::string& message_text, const std::string& version)
+{
+	//std::string v(version);
+	//std::replace(v.begin(), v.end(), '.', '-');
+	//if (!instance_check_internal::get_lock(v)) 
+	{
+		send_message_mac(message_text, version);
+		return true;
+	}
+	return false;
+}
 
 #else
 
@@ -517,7 +519,7 @@ void OtherDownloaderMessageHandler::init(wxEvtHandler* callback_evt_handler)
 	
 
 #if defined(__APPLE__)
-	//this->register_for_messages(wxGetApp().get_instance_hash_string());
+	this->register_for_messages(get_instance_hash());
 #endif //__APPLE__
 
 #ifdef BACKGROUND_DOWNLOADER_MESSAGE_LISTENER
@@ -577,7 +579,7 @@ void OtherDownloaderMessageHandler::init_windows_properties(MainFrame* main_fram
 }
 void OtherInstanceMessageHandler::print_window_info(HWND hwnd)
 {
-	std::wstring instance_hash = boost::nowide::widen(wxGetApp().get_instance_hash_string());
+	std::wstring instance_hash = boost::nowide::widen(get_instance_hash());
 	TCHAR 		 wndText[1000];
 	TCHAR 		 className[1000];
 	GetClassName(hwnd, className, 1000);
@@ -647,10 +649,11 @@ void OtherDownloaderMessageHandler::handle_message(const std::string& message)
 }
 
 #ifdef __APPLE__
-//void OtherDownloaderMessageHandler::handle_message_other_closed() 
-//{
-//	instance_check_internal::get_lock(wxGetApp().get_instance_hash_string() + ".lock", data_dir() + "/cache/");
-//}
+void OtherDownloaderMessageHandler::handle_message_other_closed() 
+{
+	//get_instance_hash
+	//instance_check_internal::get_lock(wxGetApp().get_instance_hash_string() + ".lock", data_dir() + "/cache/");
+}
 #endif //__APPLE__
 
 #ifdef BACKGROUND_DOWNLOADER_MESSAGE_LISTENER
