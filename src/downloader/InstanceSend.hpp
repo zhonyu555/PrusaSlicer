@@ -91,6 +91,7 @@ private:
     // implemented at InstanceSendMac.mm
     void    register_for_messages(const std::string &version_hash);
     void    unregister_for_messages();
+    void    bring_instance_forward();
     // Opaque pointer to RemovableDriveManagerMM
     void* m_impl_osx;
 public: 

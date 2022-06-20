@@ -1,6 +1,5 @@
 #import "InstanceSend.hpp"
 #import "InstanceSendMac.h"
-#import "GUI_App.hpp"
 
 @implementation DownloaderMessageHandlerMac
 
