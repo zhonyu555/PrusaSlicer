@@ -226,8 +226,19 @@ bool send_message_downloader(const wxString& message)
 	return false;
 }
 
+#elif __APPLE__
 
-#elif defined(__linux__)
+
+
+
+
+
+
+
+
+
+
+#else
 
 bool dbus_send_message(const std::string &message_text, const std::string &interface_name, const std::string &method_name, const std::string &object_name)
 {
@@ -421,6 +432,8 @@ bool SlicerSend::send_path(const wxString& path) const
 #ifdef _WIN32
 	std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
     return send_message_slicer(boost::nowide::widen(escaped));
+#elif __APPLE__
+	return false;
 #else
 	if (dbus_send_wait_for_reply("com.prusa3d.prusaslicer.InstanceCheck.Object" + get_slicer_hash(),"Introspect","/com/prusa3d/prusaslicer/InstanceCheck/Object" + get_slicer_hash()))
 	{
@@ -461,26 +474,28 @@ bool DownloaderSend::get_instance_exists() const
 {
 #ifdef _WIN32
 	return !EnumWindows(EnumWindowsProcDownloader, 0);
+#elif __APPLE__
+	return false;
 #else
 	std::string slicer_path = (boost::dll::program_location()).string();
     size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
     std::string lock_name = std::to_string(hashed_path);
     return dbus_send_wait_for_reply("com.prusa3d.prusaslicer.Downloader.Object" + get_instance_hash(),"Introspect","/com/prusa3d/prusaslicer/Downloader/Object" + get_instance_hash());
 #endif 
-	return false;
 }
 bool DownloaderSend::send_url(const wxString& url) const
 {
 #ifdef _WIN32
 	//std::string escaped = escape_strings_cstyle({ boost::nowide::narrow(url) });
 	return send_message_downloader(url);
+#elif __APPLE__
+	return false;
 #else
 	std::string slicer_path = boost::dll::program_location().string();
     size_t hashed_path = std::hash<std::string>{}(boost::filesystem::canonical(boost::filesystem::system_complete(slicer_path)).string());
     std::string lock_name = std::to_string(hashed_path);
     return dbus_send_message(boost::nowide::narrow(url),  "com.prusa3d.prusaslicer.Downloader.Object" + get_instance_hash(),"AnotherInstance","/com/prusa3d/prusaslicer/Downloader/Object" + get_instance_hash());
 #endif
-	return false;
 }
 
 
