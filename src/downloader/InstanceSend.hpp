@@ -15,6 +15,14 @@
 #endif //__linux__
 
 namespace Downloader {
+
+#if __APPLE__
+// apple implementation of inner functions of instance_check
+// in InstanceCheckMac.mm
+void send_message_mac(const std::string& msg, const std::string& version);
+//bool unlock_lockfile(const std::string& name, const std::string& path);
+#endif //__APPLE__
+
 class SlicerSend
 {
 public:
