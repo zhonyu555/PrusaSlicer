@@ -17,7 +17,7 @@ set(SLIC3R_DOWNLOADER_SOURCES
 if (APPLE)
     list(APPEND SLIC3R_DOWNLOADER_SOURCES
            InstanceSendMac.mm
-	     InstanceSendMac.hpp
+	     InstanceSendMac.h
         )
 endif ()
 
