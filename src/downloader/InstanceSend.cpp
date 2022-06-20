@@ -420,7 +420,7 @@ bool SlicerSend::send_path(const wxString& path) const
 {
 #ifdef _WIN32
 	std::string escaped = escape_strings_cstyle({ "prusa-downloader", boost::nowide::narrow(path) });
-    return send_message_slicer(boost::nowide::widen(escaped);
+    return send_message_slicer(boost::nowide::widen(escaped));
 #else
 	if (dbus_send_wait_for_reply("com.prusa3d.prusaslicer.InstanceCheck.Object" + get_slicer_hash(),"Introspect","/com/prusa3d/prusaslicer/InstanceCheck/Object" + get_slicer_hash()))
 	{
@@ -548,6 +548,7 @@ void OtherDownloaderMessageHandler::shutdown()
 }
 
 #ifdef _WIN32 
+#if 0
 void OtherDownloaderMessageHandler::init_windows_properties(MainFrame* main_frame, size_t instance_hash)
 {
 	//size_t       minor_hash = instance_hash & 0xFFFFFFFF;
@@ -559,9 +560,6 @@ void OtherDownloaderMessageHandler::init_windows_properties(MainFrame* main_fram
 	//SetProp(hwnd, L"Instance_Hash_Major", handle_major);
 	//BOOST_LOG_TRIVIAL(debug) << "window properties initialized " << instance_hash << " (" << minor_hash << " & "<< major_hash;
 }
-
-#if 0
-
 void OtherInstanceMessageHandler::print_window_info(HWND hwnd)
 {
 	std::wstring instance_hash = boost::nowide::widen(wxGetApp().get_instance_hash_string());

@@ -61,7 +61,7 @@ public:
     //void           handle_message_other_closed();
 #endif //__APPLE__
 #ifdef _WIN32
-    static void    init_windows_properties(MainFrame* main_frame, size_t instance_hash);
+   // static void    init_windows_properties(MainFrame* main_frame, size_t instance_hash);
 #endif //WIN32
 private:
     bool                    m_initialized { false };
