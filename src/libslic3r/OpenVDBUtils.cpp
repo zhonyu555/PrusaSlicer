@@ -81,15 +81,17 @@ openvdb::FloatGrid::Ptr mesh_to_grid(const indexed_triangle_set &    mesh,
 
     constexpr int DilateIterations = 1;
 
-    grid = openvdb::tools::dilateSdf(
-        *grid, interiorBandWidth, openvdb::tools::NN_FACE_EDGE,
-        DilateIterations,
-        openvdb::tools::FastSweepingDomain::SWEEP_LESS_THAN_ISOVALUE);
+    if (interiorBandWidth > 1.f)
+        grid = openvdb::tools::dilateSdf(
+            *grid, interiorBandWidth, openvdb::tools::NN_FACE_EDGE,
+            DilateIterations,
+            openvdb::tools::FastSweepingDomain::SWEEP_LESS_THAN_ISOVALUE);
 
-    grid = openvdb::tools::dilateSdf(
-        *grid, exteriorBandWidth, openvdb::tools::NN_FACE_EDGE,
-        DilateIterations,
-        openvdb::tools::FastSweepingDomain::SWEEP_GREATER_THAN_ISOVALUE);
+    if (exteriorBandWidth > 1.f)
+        grid = openvdb::tools::dilateSdf(
+            *grid, exteriorBandWidth, openvdb::tools::NN_FACE_EDGE,
+            DilateIterations,
+            openvdb::tools::FastSweepingDomain::SWEEP_GREATER_THAN_ISOVALUE);
 
     grid->insertMeta("voxel_scale", openvdb::FloatMetadata(voxel_scale));
 
