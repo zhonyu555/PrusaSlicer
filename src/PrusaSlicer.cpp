@@ -70,6 +70,11 @@ int CLI::run(int argc, char **argv)
     // Mark the main thread for the debugger and for runtime checks.
     set_current_thread_name("slic3r_main");
 
+    for (int i = 0; i < argc; ++i)
+    {
+        printf("[%d] %s\n",i,argv[i]);
+    }
+
 #ifdef __WXGTK__
     // On Linux, wxGTK has no support for Wayland, and the app crashes on
     // startup if gtk3 is used. This env var has to be set explicitly to
@@ -110,6 +115,7 @@ int CLI::run(int argc, char **argv)
         std::find(m_transforms.begin(), m_transforms.end(), "cut") == m_transforms.end() &&
         std::find(m_transforms.begin(), m_transforms.end(), "cut_x") == m_transforms.end() &&
         std::find(m_transforms.begin(), m_transforms.end(), "cut_y") == m_transforms.end();
+    bool                            start_as_downloader = false;
     bool 							start_as_gcodeviewer =
 #ifdef _WIN32
             false;
@@ -171,7 +177,12 @@ int CLI::run(int argc, char **argv)
             start_as_gcodeviewer = true;
             break;
         }
-    if (!start_as_gcodeviewer) {
+    for (const std::string& file : m_input_files)
+        if (boost::starts_with(file, "open?file=")) {
+            start_as_downloader = true;
+            break;
+        }
+    if (!start_as_gcodeviewer && !start_as_downloader) {
         for (const std::string& file : m_input_files) {
             if (!boost::filesystem::exists(file)) {
                 boost::nowide::cerr << "No such file: " << file << std::endl;
@@ -613,6 +624,7 @@ int CLI::run(int argc, char **argv)
         params.extra_config = std::move(m_extra_config);
         params.input_files  = std::move(m_input_files);
         params.start_as_gcodeviewer = start_as_gcodeviewer;
+        params.start_as_downloader = start_as_downloader;
         return Slic3r::GUI::GUI_Run(params);
 #else // SLIC3R_GUI
         // No GUI support. Just print out a help.
