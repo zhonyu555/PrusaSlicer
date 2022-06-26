@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-02-09 09:04+0100\n"
-"PO-Revision-Date: 2022-06-25 22:24-0700\n"
+"PO-Revision-Date: 2022-06-25 23:45-0700\n"
 "Last-Translator: Yifei Ding <yifeiding@pm.me.com>\n"
 "Language-Team: \n"
 "Language: zh_CN\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Poedit 3.1\n"
+"X-Generator: Poedit 3.0.1\n"
 
 #: src/slic3r/GUI/AboutDialog.cpp:45 src/slic3r/GUI/AboutDialog.cpp:303
 msgid "Portions copyright"
@@ -9429,9 +9429,7 @@ msgid "Avoid crossing perimeters"
 msgstr "避免跨越轮廓边界"
 
 #: src/libslic3r/PrintConfig.cpp:373
-msgid ""
-"Optimize travel moves in order to minimize the crossing of perimeters. This is mostly useful with Bowden extruders which suffer from oozing. This feature slows down both the print and the "
-"G-code generation."
+msgid "Optimize travel moves in order to minimize the crossing of perimeters. This is mostly useful with Bowden extruders which suffer from oozing. This feature slows down both the print and the G-code generation."
 msgstr "优化移动移动，以尽量减少周界交叉。这在远程（Bowden）挤出机中最有用，因为这些挤出机更容易漏料。启用此功能会降低打印和 G 代码生成速度。"
 
 #: src/libslic3r/PrintConfig.cpp:380
@@ -9439,9 +9437,7 @@ msgid "Avoid crossing perimeters - Max detour length"
 msgstr "避免穿越轮廓-最大绕行长度"
 
 #: src/libslic3r/PrintConfig.cpp:382
-msgid ""
-"The maximum detour length for avoid crossing perimeters. If the detour is longer than this value, avoid crossing perimeters is not applied for this travel path. Detour length could be "
-"specified either as an absolute value or as percentage (for example 50%) of a direct travel path."
+msgid "The maximum detour length for avoid crossing perimeters. If the detour is longer than this value, avoid crossing perimeters is not applied for this travel path. Detour length could be specified either as an absolute value or as percentage (for example 50%) of a direct travel path."
 msgstr "避免跨越轮廓的最大绕行长度。如果绕道长度超过该值，则避免穿越轮廓不适用于该行驶路径。迂回长度可以指定为绝对值或直接行驶路径的百分比（例如50%）。"
 
 #: src/libslic3r/PrintConfig.cpp:385
@@ -9758,9 +9754,7 @@ msgid "External perimeters"
 msgstr "外部轮廓"
 
 #: src/libslic3r/PrintConfig.cpp:729
-msgid ""
-"Set this to a non-zero value to set a manual extrusion width for external perimeters. If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be "
-"used. If expressed as percentage (for example 200%), it will be computed over layer height."
+msgid "Set this to a non-zero value to set a manual extrusion width for external perimeters. If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. If expressed as percentage (for example 200%), it will be computed over layer height."
 msgstr "将其设置为非零值, 以设置外部轮廓的手动挤出宽度。如果为零, 将使用默认挤出宽度, 如果没有设置默认值将使用 1.125 x 喷嘴直径。如果以百分比表示 (例如 200%), 则将根据图层高度计算。"
 
 #: src/libslic3r/PrintConfig.cpp:732 src/libslic3r/PrintConfig.cpp:843 src/libslic3r/PrintConfig.cpp:1200 src/libslic3r/PrintConfig.cpp:1403 src/libslic3r/PrintConfig.cpp:1460 src/libslic3r/PrintConfig.cpp:1487 src/libslic3r/PrintConfig.cpp:1961 src/libslic3r/PrintConfig.cpp:2347 src/libslic3r/PrintConfig.cpp:2521 src/libslic3r/PrintConfig.cpp:2610 src/libslic3r/PrintConfig.cpp:2845
@@ -9840,12 +9834,8 @@ msgid "Default extrusion width"
 msgstr "默认挤出宽度"
 
 #: src/libslic3r/PrintConfig.cpp:839
-msgid ""
-"Set this to a non-zero value to allow a manual extrusion width. If left to zero, Slic3r derives extrusion widths from the nozzle diameter (see the tooltips for perimeter extrusion width, "
-"infill extrusion width etc). If expressed as percentage (for example: 230%), it will be computed over layer height."
-msgstr ""
-"此值设置为非零值，以允许手动挤出宽度。如果向左留为零，Slic3r 将从喷嘴直径派生挤出宽度（参见工具尖，了解轮廓挤出宽度、填充挤出宽度等）。如果以百分比表示（例如：230%），则将在图层高度上计"
-"算。"
+msgid "Set this to a non-zero value to allow a manual extrusion width. If left to zero, Slic3r derives extrusion widths from the nozzle diameter (see the tooltips for perimeter extrusion width, infill extrusion width etc). If expressed as percentage (for example: 230%), it will be computed over layer height."
+msgstr "此值设置为非零值，以允许手动挤出宽度。如果向左留为零，Slic3r 将从喷嘴直径派生挤出宽度（参见工具尖，了解轮廓挤出宽度、填充挤出宽度等）。如果以百分比表示（例如：230%），则将在图层高度上计算。"
 
 #: src/libslic3r/PrintConfig.cpp:851
 msgid "Keep fan always on"
@@ -10032,9 +10022,7 @@ msgid "Spool weight"
 msgstr "料盘重量"
 
 #: src/libslic3r/PrintConfig.cpp:1053
-msgid ""
-"Enter weight of the empty filament spool. One may weigh a partially consumed filament spool before printing and one may compare the measured weight with the calculated weight of the "
-"filament with the spool to find out whether the amount of filament on the spool is sufficient to finish the print."
+msgid "Enter weight of the empty filament spool. One may weigh a partially consumed filament spool before printing and one may compare the measured weight with the calculated weight of the filament with the spool to find out whether the amount of filament on the spool is sufficient to finish the print."
 msgstr "输入空耗材滑阀的重量。打印前，可以对部分消耗的耗材料盘进行称重，并将测量重量与耗材和料盘的计算重量进行比较，以确定料盘上的耗材量是否足以完成打印。"
 
 #: src/libslic3r/PrintConfig.cpp:1057
@@ -10118,8 +10106,7 @@ msgid "First object layer over raft interface"
 msgstr "筏接触面上的首个对象层"
 
 #: src/libslic3r/PrintConfig.cpp:1176
-msgid ""
-"This is the acceleration your printer will use for first layer of object above raft interface. Set zero to disable acceleration control for first layer of object above raft interface."
+msgid "This is the acceleration your printer will use for first layer of object above raft interface. Set zero to disable acceleration control for first layer of object above raft interface."
 msgstr "这是打印机将用于raft界面上方首层对象的加速度。设置为零可禁用筏接口上方首层物体的加速度控制。"
 
 #: src/libslic3r/PrintConfig.cpp:1185
@@ -10131,11 +10118,8 @@ msgid "Heated build plate temperature for the first layer. Set this to zero to d
 msgstr "首层加热构建板温度。将此设置为零以禁用输出中的床温控制命令。"
 
 #: src/libslic3r/PrintConfig.cpp:1196
-msgid ""
-"Set this to a non-zero value to set a manual extrusion width for first layer. You can use this to force fatter extrudates for better adhesion. If expressed as percentage (for example "
-"120%) it will be computed over first layer height. If set to zero, it will use the default extrusion width."
-msgstr ""
-"将其设置为非零值, 以设置首层的手动挤出宽度。您可以使用它强制挤出更多挤出物以得到更好的附着力。如果以百分比表示 (例如 120%), 则将在首层高度上计算。如果设置为零, 它将使用默认的挤出宽度。"
+msgid "Set this to a non-zero value to set a manual extrusion width for first layer. You can use this to force fatter extrudates for better adhesion. If expressed as percentage (for example 120%) it will be computed over first layer height. If set to zero, it will use the default extrusion width."
+msgstr "将其设置为非零值, 以设置首层的手动挤出宽度。您可以使用它强制挤出更多挤出物以得到更好的附着力。如果以百分比表示 (例如 120%), 则将在首层高度上计算。如果设置为零, 它将使用默认的挤出宽度。"
 
 #: src/libslic3r/PrintConfig.cpp:1210
 msgid "When printing with very low layer heights, you might still want to print a thicker bottom layer to improve adhesion and tolerance for non perfect build plates."
@@ -10146,9 +10130,7 @@ msgid "First layer speed"
 msgstr "首层速度"
 
 #: src/libslic3r/PrintConfig.cpp:1219
-msgid ""
-"If expressed as absolute value in mm/s, this speed will be applied to all the print moves of the first layer, regardless of their type. If expressed as a percentage (for example: 40%) it "
-"will scale the default speeds."
+msgid "If expressed as absolute value in mm/s, this speed will be applied to all the print moves of the first layer, regardless of their type. If expressed as a percentage (for example: 40%) it will scale the default speeds."
 msgstr "如果以mm/s 表示为绝对值，则此速度将应用于首层的所有打印移动，而不管其类型如何。如果以百分比表示（例如：40%）它将缩放默认速度。"
 
 #: src/libslic3r/PrintConfig.cpp:1229
@@ -10156,9 +10138,7 @@ msgid "Speed of object first layer over raft interface"
 msgstr "首层物体在筏板界面上的速度"
 
 #: src/libslic3r/PrintConfig.cpp:1230
-msgid ""
-"If expressed as absolute value in mm/s, this speed will be applied to all the print moves of the first object layer above raft interface, regardless of their type. If expressed as a "
-"percentage (for example: 40%) it will scale the default speeds."
+msgid "If expressed as absolute value in mm/s, this speed will be applied to all the print moves of the first object layer above raft interface, regardless of their type. If expressed as a percentage (for example: 40%) it will scale the default speeds."
 msgstr "如果以毫米/秒的绝对值表示，该速度将应用于raft界面上方首个对象层的所有打印移动，无论其类型如何。如果以百分比（例如：40%）表示，它将缩放默认速度。"
 
 #: src/libslic3r/PrintConfig.cpp:1240
@@ -10174,9 +10154,7 @@ msgid "Full fan speed at layer"
 msgstr "风扇全速度层高"
 
 #: src/libslic3r/PrintConfig.cpp:1250
-msgid ""
-"Fan speed will be ramped up linearly from zero at layer \"disable_fan_first_layers\" to maximum at layer \"full_fan_speed_layer\". \"full_fan_speed_layer\" will be ignored if lower than "
-"\"disable_fan_first_layers\", in which case the fan will be running at maximum allowed speed at layer \"disable_fan_first_layers\" + 1."
+msgid "Fan speed will be ramped up linearly from zero at layer \"disable_fan_first_layers\" to maximum at layer \"full_fan_speed_layer\". \"full_fan_speed_layer\" will be ignored if lower than \"disable_fan_first_layers\", in which case the fan will be running at maximum allowed speed at layer \"disable_fan_first_layers\" + 1."
 msgstr "风扇速度将从“禁用风扇层后”的零线性上升到“风扇全速度层”的最大。如果低于“禁用风扇首层”，则“全风扇速度首层”将被忽略，在这种情况下，风扇将在“禁用风扇首层”+1层以最大允许速度运行。"
 
 #: src/libslic3r/PrintConfig.cpp:1262
@@ -10204,9 +10182,7 @@ msgid "Fuzzy skin point distance"
 msgstr "模糊皮肤分割点距离"
 
 #: src/libslic3r/PrintConfig.cpp:1287
-msgid ""
-"Perimeters will be split into multiple segments by inserting Fuzzy skin points. Lowering the Fuzzy skin point distance will increase the number of randomly offset points on the perimeter "
-"wall."
+msgid "Perimeters will be split into multiple segments by inserting Fuzzy skin points. Lowering the Fuzzy skin point distance will increase the number of randomly offset points on the perimeter wall."
 msgstr "通过插入分割点，轮廓将被分割成多个部分。降低“模糊皮肤分割点距离”（Fuzzy skin point distance）将增加轮廓上随机偏移的点的数量。"
 
 #: src/libslic3r/PrintConfig.cpp:1295
@@ -10286,14 +10262,8 @@ msgid "Length of the infill anchor"
 msgstr "填充锚点的长度"
 
 #: src/libslic3r/PrintConfig.cpp:1397
-msgid ""
-"Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. "
-"PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than infill_anchor_max is found, the infill line is connected to a "
-"perimeter segment at just one side and the length of the perimeter segment taken is limited to this parameter, but no longer than anchor_length_max. Set this parameter to zero to disable "
-"anchoring perimeters connected to a single infill line."
-msgstr ""
-"用附加轮廓的一小段将填充线连接到内部轮廓。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer试图将两条紧密的填充线连接到一个短的轮廓段。如果找不到短于“填充”和“锚定”最大值的轮廓"
-"线段，则填充线仅在一侧连接到轮廓线段，并且所取轮廓线段的长度仅限于此参数，但不超过“锚定长度”最大值。将此参数设置为零，以禁用连接到单个填充线的锚定轮廓。"
+msgid "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than infill_anchor_max is found, the infill line is connected to a perimeter segment at just one side and the length of the perimeter segment taken is limited to this parameter, but no longer than anchor_length_max. Set this parameter to zero to disable anchoring perimeters connected to a single infill line."
+msgstr "用附加轮廓的一小段将填充线连接到内部轮廓。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer试图将两条紧密的填充线连接到一个短的轮廓段。如果找不到短于“填充”和“锚定”最大值的轮廓线段，则填充线仅在一侧连接到轮廓线段，并且所取轮廓线段的长度仅限于此参数，但不超过“锚定长度”最大值。将此参数设置为零，以禁用连接到单个填充线的锚定轮廓。"
 
 #: src/libslic3r/PrintConfig.cpp:1413
 msgid "0 (no open anchors)"
@@ -10324,14 +10294,8 @@ msgid "Maximum length of the infill anchor"
 msgstr "填充锚点的最大长度"
 
 #: src/libslic3r/PrintConfig.cpp:1425
-msgid ""
-"Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. "
-"PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than this parameter is found, the infill line is connected to a "
-"perimeter segment at just one side and the length of the perimeter segment taken is limited to infill_anchor, but no longer than this parameter. Set this parameter to zero to disable "
-"anchoring."
-msgstr ""
-"用附加轮廓的一小段将填充线连接到内部轮廓。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer试图将两条紧密的填充线连接到一个短的轮廓段。如果找不到比此参数短的轮廓线段，则填充线"
-"仅在一侧连接到轮廓线段，并且所采用的轮廓线段的长度仅限于infl_anchor，但不超过此参数。将此参数设置为零以禁用锚定。"
+msgid "Connect an infill line to an internal perimeter with a short segment of an additional perimeter. If expressed as percentage (example: 15%) it is calculated over infill extrusion width. PrusaSlicer tries to connect two close infill lines to a short perimeter segment. If no such perimeter segment shorter than this parameter is found, the infill line is connected to a perimeter segment at just one side and the length of the perimeter segment taken is limited to infill_anchor, but no longer than this parameter. Set this parameter to zero to disable anchoring."
+msgstr "用附加轮廓的一小段将填充线连接到内部轮廓。如果以百分比（例如：15%）表示，则计算填充拉伸宽度。PrusaSlicer试图将两条紧密的填充线连接到一个短的轮廓段。如果找不到比此参数短的轮廓线段，则填充线仅在一侧连接到轮廓线段，并且所采用的轮廓线段的长度仅限于infl_anchor，但不超过此参数。将此参数设置为零以禁用锚定。"
 
 #: src/libslic3r/PrintConfig.cpp:1436
 msgid "0 (not anchored)"
@@ -11156,12 +11120,8 @@ msgid "Spiral vase"
 msgstr "螺旋花瓶"
 
 #: src/libslic3r/PrintConfig.cpp:2382
-msgid ""
-"This feature will raise Z gradually while printing a single-walled object in order to remove any visible seam. This option requires a single perimeter, no infill, no top solid layers and "
-"no support material. You can still set any number of bottom solid layers as well as skirt/brim loops. It won't work when printing more than one single object."
-msgstr ""
-"打印单壁对象时，此功能将逐渐升高Z，以移除任何可见接缝。此选项需要单个轮廓、无填充、无顶部实体层和无支撑材料。您仍然可以设置任意数量的底部实体层以及裙子/帽檐环。当打印多个对象时，它将不起作"
-"用。"
+msgid "This feature will raise Z gradually while printing a single-walled object in order to remove any visible seam. This option requires a single perimeter, no infill, no top solid layers and no support material. You can still set any number of bottom solid layers as well as skirt/brim loops. It won't work when printing more than one single object."
+msgstr "打印单壁对象时，此功能将逐渐升高Z，以移除任何可见接缝。此选项需要单个轮廓、无填充、无顶部实体层和无支撑材料。您仍然可以设置任意数量的底部实体层以及裙子/帽檐环。当打印多个对象时，它将不起作用。"
 
 #: src/libslic3r/PrintConfig.cpp:2390
 msgid "Temperature variation"
@@ -11446,9 +11406,7 @@ msgid "Style"
 msgstr "样式"
 
 #: src/libslic3r/PrintConfig.cpp:2747
-msgid ""
-"Style and shape of the support towers. Projecting the supports into a regular grid will create more stable supports, while snug support towers will save material and reduce object "
-"scarring."
+msgid "Style and shape of the support towers. Projecting the supports into a regular grid will create more stable supports, while snug support towers will save material and reduce object scarring."
 msgstr "支撑塔的样式和形状。将支架投影到规则的网格中将创建更稳定的支架，而紧贴的支撑塔将节省材料并减少物体疤痕。"
 
 #: src/libslic3r/PrintConfig.cpp:2754
@@ -12974,8 +12932,7 @@ msgstr "粗体(&B)"
 msgid "&Bottom"
 msgstr "底端(&B)"
 
-#: ../src/richtext/richtextborderspage.cpp:345 ../src/richtext/richtextborderspage.cpp:513 ../src/richtext/richtextmarginspage.cpp:259 ../src/richtext/richtextmarginspage.cpp:373
-#: ../src/richtext/richtextsizepage.cpp:637 ../src/richtext/richtextsizepage.cpp:644
+#: ../src/richtext/richtextborderspage.cpp:345 ../src/richtext/richtextborderspage.cpp:513 ../src/richtext/richtextmarginspage.cpp:259 ../src/richtext/richtextmarginspage.cpp:373 ../src/richtext/richtextsizepage.cpp:637 ../src/richtext/richtextsizepage.cpp:644
 msgid "&Bottom:"
 msgstr "底端(&B):"
 
@@ -12992,8 +12949,7 @@ msgstr "项目符号样式(&B):"
 msgid "&CD-Rom"
 msgstr "CD 光驱(&C)"
 
-#: ../src/generic/wizard.cpp:434 ../src/generic/fontdlgg.cpp:470 ../src/generic/fontdlgg.cpp:489 ../src/osx/carbon/fontdlg.cpp:402 ../src/common/dlgcmn.cpp:279
-#: ../src/common/stockitem.cpp:145
+#: ../src/generic/wizard.cpp:434 ../src/generic/fontdlgg.cpp:470 ../src/generic/fontdlgg.cpp:489 ../src/osx/carbon/fontdlg.cpp:402 ../src/common/dlgcmn.cpp:279 ../src/common/stockitem.cpp:145
 msgid "&Cancel"
 msgstr "取消(&C)"
 
@@ -13167,8 +13123,7 @@ msgstr "最后(&L)"
 msgid "&Left"
 msgstr "左(&L)"
 
-#: ../src/richtext/richtextindentspage.cpp:195 ../src/richtext/richtextborderspage.cpp:243 ../src/richtext/richtextborderspage.cpp:411 ../src/richtext/richtextliststylepage.cpp:381
-#: ../src/richtext/richtextmarginspage.cpp:186 ../src/richtext/richtextmarginspage.cpp:300 ../src/richtext/richtextsizepage.cpp:532 ../src/richtext/richtextsizepage.cpp:539
+#: ../src/richtext/richtextindentspage.cpp:195 ../src/richtext/richtextborderspage.cpp:243 ../src/richtext/richtextborderspage.cpp:411 ../src/richtext/richtextliststylepage.cpp:381 ../src/richtext/richtextmarginspage.cpp:186 ../src/richtext/richtextmarginspage.cpp:300 ../src/richtext/richtextsizepage.cpp:532 ../src/richtext/richtextsizepage.cpp:539
 msgid "&Left:"
 msgstr "左(&L):"
 
@@ -13296,8 +13251,7 @@ msgstr "复原(&R)"
 msgid "&Right"
 msgstr "右(&R)"
 
-#: ../src/richtext/richtextindentspage.cpp:213 ../src/richtext/richtextborderspage.cpp:277 ../src/richtext/richtextborderspage.cpp:445 ../src/richtext/richtextliststylepage.cpp:399
-#: ../src/richtext/richtextmarginspage.cpp:211 ../src/richtext/richtextmarginspage.cpp:325 ../src/richtext/richtextsizepage.cpp:602 ../src/richtext/richtextsizepage.cpp:609
+#: ../src/richtext/richtextindentspage.cpp:213 ../src/richtext/richtextborderspage.cpp:277 ../src/richtext/richtextborderspage.cpp:445 ../src/richtext/richtextliststylepage.cpp:399 ../src/richtext/richtextmarginspage.cpp:211 ../src/richtext/richtextmarginspage.cpp:325 ../src/richtext/richtextsizepage.cpp:602 ../src/richtext/richtextsizepage.cpp:609
 msgid "&Right:"
 msgstr "右(&R):"
 
@@ -13373,8 +13327,7 @@ msgstr "表格(&T)"
 msgid "&Top"
 msgstr "顶端(&T)"
 
-#: ../src/richtext/richtextborderspage.cpp:311 ../src/richtext/richtextborderspage.cpp:479 ../src/richtext/richtextmarginspage.cpp:234 ../src/richtext/richtextmarginspage.cpp:348
-#: ../src/richtext/richtextsizepage.cpp:567 ../src/richtext/richtextsizepage.cpp:574
+#: ../src/richtext/richtextborderspage.cpp:311 ../src/richtext/richtextborderspage.cpp:479 ../src/richtext/richtextmarginspage.cpp:234 ../src/richtext/richtextmarginspage.cpp:348 ../src/richtext/richtextsizepage.cpp:567 ../src/richtext/richtextsizepage.cpp:574
 msgid "&Top:"
 msgstr "顶端(&T):"
 
@@ -13508,9 +13461,7 @@ msgstr "(正常字体)"
 msgid "(bookmarks)"
 msgstr "(书签)"
 
-#: ../src/richtext/richtextindentspage.cpp:274 ../src/richtext/richtextindentspage.cpp:286 ../src/richtext/richtextindentspage.cpp:287 ../src/richtext/richtextindentspage.cpp:311
-#: ../src/richtext/richtextindentspage.cpp:326 ../src/richtext/richtextformatdlg.cpp:884 ../src/richtext/richtextfontpage.cpp:349 ../src/richtext/richtextfontpage.cpp:353
-#: ../src/richtext/richtextfontpage.cpp:357 ../src/richtext/richtextliststylepage.cpp:448 ../src/richtext/richtextliststylepage.cpp:460 ../src/richtext/richtextliststylepage.cpp:461
+#: ../src/richtext/richtextindentspage.cpp:274 ../src/richtext/richtextindentspage.cpp:286 ../src/richtext/richtextindentspage.cpp:287 ../src/richtext/richtextindentspage.cpp:311 ../src/richtext/richtextindentspage.cpp:326 ../src/richtext/richtextformatdlg.cpp:884 ../src/richtext/richtextfontpage.cpp:349 ../src/richtext/richtextfontpage.cpp:353 ../src/richtext/richtextfontpage.cpp:357 ../src/richtext/richtextliststylepage.cpp:448 ../src/richtext/richtextliststylepage.cpp:460 ../src/richtext/richtextliststylepage.cpp:461
 msgid "(none)"
 msgstr "(无)"
 
@@ -14198,7 +14149,7 @@ msgstr "大写(&P)"
 
 #: ../src/common/cmdproc.cpp:267
 msgid "Can't &Undo "
-msgstr "无法撤销(&U)"
+msgstr "无法撤销(&U) "
 
 #: ../src/common/image.cpp:2824
 msgid "Can't automatically determine the image format for non-seekable input."
@@ -14554,11 +14505,11 @@ msgstr "文字样式"
 
 #: ../src/richtext/richtextliststylepage.cpp:224 ../src/richtext/richtextliststylepage.cpp:226 ../src/richtext/richtextbulletspage.cpp:161 ../src/richtext/richtextbulletspage.cpp:163
 msgid "Check to add a period after the bullet."
-msgstr "勾选以在项目符号后加上句号"
+msgstr "勾选以在项目符号后加上句号。"
 
 #: ../src/richtext/richtextliststylepage.cpp:238 ../src/richtext/richtextliststylepage.cpp:240 ../src/richtext/richtextbulletspage.cpp:175 ../src/richtext/richtextbulletspage.cpp:177
 msgid "Check to add a right parenthesis."
-msgstr "勾选以加上右括号"
+msgstr "勾选以加上右括号。"
 
 #: ../src/richtext/richtextborderspage.cpp:383 ../src/richtext/richtextborderspage.cpp:385 ../src/richtext/richtextborderspage.cpp:551 ../src/richtext/richtextborderspage.cpp:553
 msgid "Check to edit all borders simultaneously."
@@ -14566,7 +14517,7 @@ msgstr "勾选以同时编辑边框。"
 
 #: ../src/richtext/richtextliststylepage.cpp:231 ../src/richtext/richtextliststylepage.cpp:233 ../src/richtext/richtextbulletspage.cpp:168 ../src/richtext/richtextbulletspage.cpp:170
 msgid "Check to enclose the bullet in parentheses."
-msgstr "勾选以将项目符号加上一对括号"
+msgstr "勾选以将项目符号加上一对括号。"
 
 #: ../src/richtext/richtextfontpage.cpp:315 ../src/richtext/richtextfontpage.cpp:317
 msgid "Check to indicate right-to-left text layout."
@@ -14586,7 +14537,7 @@ msgstr "勾选加下划线。"
 
 #: ../src/richtext/richtextstyledlg.cpp:289 ../src/richtext/richtextstyledlg.cpp:291
 msgid "Check to restart numbering."
-msgstr "勾选以重新编号"
+msgstr "勾选以重新编号。"
 
 #: ../src/richtext/richtextfontpage.cpp:277 ../src/richtext/richtextfontpage.cpp:279
 msgid "Check to show a line through the text."
@@ -15154,7 +15105,7 @@ msgstr "桌面"
 
 #: ../src/generic/aboutdlgg.cpp:70
 msgid "Developed by "
-msgstr "开发由"
+msgstr "开发由 "
 
 #: ../src/generic/aboutdlgg.cpp:176
 msgid "Developers"
@@ -15227,7 +15178,7 @@ msgstr "文档："
 
 #: ../src/generic/aboutdlgg.cpp:73
 msgid "Documentation by "
-msgstr "文档撰写由"
+msgstr "文档撰写由 "
 
 #: ../src/generic/aboutdlgg.cpp:180
 msgid "Documentation writers"
@@ -15283,7 +15234,7 @@ msgstr "编辑项"
 
 #: ../include/wx/generic/progdlgg.h:84
 msgid "Elapsed time:"
-msgstr "用时: "
+msgstr "用时："
 
 #: ../src/richtext/richtextsizepage.cpp:353 ../src/richtext/richtextsizepage.cpp:355 ../src/richtext/richtextsizepage.cpp:465 ../src/richtext/richtextsizepage.cpp:467
 msgid "Enable the height value."
@@ -15514,7 +15465,7 @@ msgstr "无法为 OpenGL 分配颜色"
 
 #: ../src/unix/displayx11.cpp:236
 msgid "Failed to change video mode"
-msgstr "无法改变视频模式。"
+msgstr "无法改变视频模式"
 
 #: ../src/common/image.cpp:3277
 #, c-format
@@ -15650,7 +15601,7 @@ msgstr "无法按编码 %s 显示 HTML 文档"
 
 #: ../src/msw/clipbrd.cpp:124
 msgid "Failed to empty the clipboard."
-msgstr "无法清空剪贴板"
+msgstr "无法清空剪贴板。"
 
 #: ../src/unix/displayx11.cpp:212
 msgid "Failed to enumerate video modes"
@@ -15894,7 +15845,7 @@ msgstr "无法从 DirectFB 管道中读取事件"
 
 #: ../src/unix/wakeuppipe.cpp:120
 msgid "Failed to read from wake-up pipe"
-msgstr "无法读取唤醒管道。"
+msgstr "无法读取唤醒管道"
 
 #: ../src/unix/utilsunx.cpp:679
 msgid "Failed to redirect child process input/output"
@@ -16430,8 +16381,7 @@ msgstr ""
 msgid "ICO: Error in reading mask DIB."
 msgstr "ICO: 读掩码DIB错误。"
 
-#: ../src/common/imagbmp.cpp:1290 ../src/common/imagbmp.cpp:1390 ../src/common/imagbmp.cpp:1405 ../src/common/imagbmp.cpp:1416 ../src/common/imagbmp.cpp:1430 ../src/common/imagbmp.cpp:1478
-#: ../src/common/imagbmp.cpp:1493 ../src/common/imagbmp.cpp:1507 ../src/common/imagbmp.cpp:1518
+#: ../src/common/imagbmp.cpp:1290 ../src/common/imagbmp.cpp:1390 ../src/common/imagbmp.cpp:1405 ../src/common/imagbmp.cpp:1416 ../src/common/imagbmp.cpp:1430 ../src/common/imagbmp.cpp:1478 ../src/common/imagbmp.cpp:1493 ../src/common/imagbmp.cpp:1507 ../src/common/imagbmp.cpp:1518
 msgid "ICO: Error writing the image file!"
 msgstr "ICO: 写图像文件错误！"
 
@@ -16620,8 +16570,7 @@ msgstr "插入图片"
 msgid "Insert Object"
 msgstr "插入对象"
 
-#: ../src/richtext/richtextctrl.cpp:1286 ../src/richtext/richtextctrl.cpp:1494 ../src/richtext/richtextbuffer.cpp:7822 ../src/richtext/richtextbuffer.cpp:7852
-#: ../src/richtext/richtextbuffer.cpp:7894
+#: ../src/richtext/richtextctrl.cpp:1286 ../src/richtext/richtextctrl.cpp:1494 ../src/richtext/richtextbuffer.cpp:7822 ../src/richtext/richtextbuffer.cpp:7852 ../src/richtext/richtextbuffer.cpp:7894
 msgid "Insert Text"
 msgstr "插入文本"
 
@@ -17014,7 +16963,7 @@ msgstr "列表样式"
 
 #: ../src/richtext/richtextfontpage.cpp:197 ../src/richtext/richtextfontpage.cpp:199
 msgid "Lists font sizes in points."
-msgstr "列表字体大小"
+msgstr "列表字体大小。"
 
 #: ../src/richtext/richtextfontpage.cpp:190 ../src/richtext/richtextfontpage.cpp:192
 msgid "Lists the available fonts."
@@ -17023,7 +16972,7 @@ msgstr "列出可用字体。"
 #: ../src/common/fldlgcmn.cpp:340
 #, c-format
 msgid "Load %s file"
-msgstr "装入文件 %s "
+msgstr "装入文件 %s"
 
 #: ../src/html/htmlwin.cpp:597
 msgid "Loading : "
@@ -17296,7 +17245,7 @@ msgstr "最小高度:"
 
 #: ../src/richtext/richtextsizepage.cpp:382
 msgid "Min width:"
-msgstr "最小宽度: "
+msgstr "最小宽度："
 
 #: ../src/msw/ole/automtn.cpp:668
 msgid "Missing a required parameter."
@@ -17333,11 +17282,11 @@ msgstr "上移"
 
 #: ../src/richtext/richtextsizepage.cpp:682 ../src/richtext/richtextsizepage.cpp:684
 msgid "Moves the object to the next paragraph."
-msgstr "将对象移至下一段落"
+msgstr "将对象移至下一段落。"
 
 #: ../src/richtext/richtextsizepage.cpp:676 ../src/richtext/richtextsizepage.cpp:678
 msgid "Moves the object to the previous paragraph."
-msgstr "将对象移至前一段落"
+msgstr "将对象移至前一段落。"
 
 #: ../src/richtext/richtextbuffer.cpp:9966
 msgid "Multiple Cell Properties"
@@ -17371,9 +17320,7 @@ msgstr "新增列表样式 (&L)..."
 msgid "New &Paragraph Style..."
 msgstr "新增段落样式 (&P)..."
 
-#: ../src/richtext/richtextstyledlg.cpp:606 ../src/richtext/richtextstyledlg.cpp:611 ../src/richtext/richtextstyledlg.cpp:654 ../src/richtext/richtextstyledlg.cpp:659
-#: ../src/richtext/richtextstyledlg.cpp:820 ../src/richtext/richtextstyledlg.cpp:825 ../src/richtext/richtextstyledlg.cpp:893 ../src/richtext/richtextstyledlg.cpp:901
-#: ../src/richtext/richtextstyledlg.cpp:934 ../src/richtext/richtextstyledlg.cpp:939
+#: ../src/richtext/richtextstyledlg.cpp:606 ../src/richtext/richtextstyledlg.cpp:611 ../src/richtext/richtextstyledlg.cpp:654 ../src/richtext/richtextstyledlg.cpp:659 ../src/richtext/richtextstyledlg.cpp:820 ../src/richtext/richtextstyledlg.cpp:825 ../src/richtext/richtextstyledlg.cpp:893 ../src/richtext/richtextstyledlg.cpp:901 ../src/richtext/richtextstyledlg.cpp:934 ../src/richtext/richtextstyledlg.cpp:939
 msgid "New Style"
 msgstr "新增样式"
 
@@ -17475,7 +17422,7 @@ msgstr "图像中没有未用的颜色。"
 #: ../src/generic/helpext.cpp:302
 #, c-format
 msgid "No valid mappings found in the file \"%s\"."
-msgstr "文件 \"%s\" 中无效映射"
+msgstr "文件 \"%s\" 中无效映射。"
 
 #: ../src/common/fmapbase.cpp:157
 msgid "Nordic (ISO-8859-10)"
@@ -17645,7 +17592,7 @@ msgstr "对象属性"
 
 #: ../src/msw/ole/automtn.cpp:660
 msgid "Object implementation does not support named arguments."
-msgstr "对象实现不支持命名参数"
+msgstr "对象实现不支持命名参数。"
 
 #: ../src/common/xtixml.cpp:264
 msgid "Objects must have an id attribute"
@@ -17713,7 +17660,7 @@ msgstr "方向"
 
 #: ../src/common/windowid.cpp:242
 msgid "Out of window IDs.  Recommend shutting down application."
-msgstr "window ID已用完。建议关闭应用。"
+msgstr "window ID 已用尽。建议关闭应用。"
 
 #: ../src/richtext/richtextborderspage.cpp:398 ../src/richtext/richtextborderspage.cpp:556
 msgid "Outline"
@@ -17725,7 +17672,7 @@ msgstr ""
 
 #: ../src/msw/ole/automtn.cpp:656
 msgid "Overflow while coercing argument values."
-msgstr "强制修改参数值溢出"
+msgstr "强制修改参数值溢出。"
 
 #: ../src/common/imagpcx.cpp:457 ../src/common/imagpcx.cpp:480
 msgid "PCX: couldn't allocate memory"
@@ -17911,8 +17858,7 @@ msgstr "页"
 msgid "Paint Brush"
 msgstr ""
 
-#: ../src/generic/prntdlgg.cpp:602 ../src/generic/prntdlgg.cpp:801 ../src/generic/prntdlgg.cpp:842 ../src/generic/prntdlgg.cpp:855 ../src/generic/prntdlgg.cpp:1052
-#: ../src/generic/prntdlgg.cpp:1057
+#: ../src/generic/prntdlgg.cpp:602 ../src/generic/prntdlgg.cpp:801 ../src/generic/prntdlgg.cpp:842 ../src/generic/prntdlgg.cpp:855 ../src/generic/prntdlgg.cpp:1052 ../src/generic/prntdlgg.cpp:1057
 msgid "Paper size"
 msgstr "纸张大小"
 
@@ -17981,7 +17927,7 @@ msgstr "请选择你想连接的ISP"
 
 #: ../src/common/headerctrlcmn.cpp:59
 msgid "Please select the columns to show and define their order:"
-msgstr "请选择列并显示和定义它们的顺序"
+msgstr "请选择列并显示和定义它们的顺序："
 
 #: ../src/common/prntbase.cpp:538
 msgid "Please wait while printing..."
@@ -18050,7 +17996,7 @@ msgstr "打印预览(&W)..."
 
 #: ../src/common/docview.cpp:1262
 msgid "Print preview creation failed."
-msgstr "打印预览创建失败"
+msgstr "打印预览创建失败。"
 
 #: ../src/common/stockitem.cpp:182
 msgid "Print preview..."
@@ -18090,7 +18036,7 @@ msgstr "打印机..."
 
 #: ../include/wx/richtext/richtextprint.h:163 ../src/common/prntbase.cpp:535 ../src/html/htmprint.cpp:277
 msgid "Printing"
-msgstr "正在打印 "
+msgstr "正在打印"
 
 #: ../src/common/prntbase.cpp:612
 msgid "Printing "
@@ -18108,7 +18054,7 @@ msgstr "正在打印页 %d..."
 #: ../src/common/prntbase.cpp:570
 #, c-format
 msgid "Printing page %d of %d"
-msgstr "正在打印页 %d 共 %d..."
+msgstr "正在打印页 %d 共 %d"
 
 #: ../src/generic/printps.cpp:201
 #, c-format
@@ -18291,7 +18237,7 @@ msgstr "替换为:"
 
 #: ../src/common/valtext.cpp:163
 msgid "Required information entry is empty."
-msgstr "所需的项目信息为空"
+msgstr "所需的项目信息为空。"
 
 #: ../src/common/translation.cpp:1975
 #, c-format
@@ -18333,7 +18279,7 @@ msgstr "右边距 (毫米):"
 
 #: ../src/richtext/richtextindentspage.cpp:148 ../src/richtext/richtextindentspage.cpp:150 ../src/richtext/richtextliststylepage.cpp:337 ../src/richtext/richtextliststylepage.cpp:339
 msgid "Right-align text."
-msgstr "文本右对齐"
+msgstr "文本右对齐。"
 
 #: ../src/generic/fontdlgg.cpp:322
 msgid "Roman"
@@ -18355,7 +18301,7 @@ msgstr "SPECIAL"
 #: ../src/common/fldlgcmn.cpp:342
 #, c-format
 msgid "Save %s file"
-msgstr "保存文件 %s "
+msgstr "保存文件 %s"
 
 #: ../src/generic/logg.cpp:512
 msgid "Save &As..."
@@ -18471,7 +18417,7 @@ msgstr "选择是否斜体。"
 
 #: ../src/richtext/richtextfontpage.cpp:239 ../src/richtext/richtextfontpage.cpp:241
 msgid "Select underlining or no underlining."
-msgstr "选择是否下划线"
+msgstr "选择是否下划线。"
 
 #: ../src/motif/filedlg.cpp:220
 msgid "Selection"
@@ -18479,7 +18425,7 @@ msgstr "选区"
 
 #: ../src/richtext/richtextliststylepage.cpp:187 ../src/richtext/richtextliststylepage.cpp:189
 msgid "Selects the list level to edit."
-msgstr "选择并辨析列表层级"
+msgstr "选择并辨析列表层级。"
 
 #. TRANSLATORS: Name of keyboard key
 #: ../src/common/accelcmn.cpp:82
@@ -18554,23 +18500,23 @@ msgstr "显示/隐藏 导航面板"
 
 #: ../src/richtext/richtextsymboldlg.cpp:421 ../src/richtext/richtextsymboldlg.cpp:423
 msgid "Shows a Unicode subset."
-msgstr "显示Unicode子集"
+msgstr "显示Unicode子集。"
 
 #: ../src/richtext/richtextliststylepage.cpp:472 ../src/richtext/richtextliststylepage.cpp:474 ../src/richtext/richtextbulletspage.cpp:263 ../src/richtext/richtextbulletspage.cpp:265
 msgid "Shows a preview of the bullet settings."
-msgstr "预览项目符号设定"
+msgstr "预览项目符号设定。"
 
 #: ../src/richtext/richtextfontpage.cpp:330 ../src/richtext/richtextfontpage.cpp:332
 msgid "Shows a preview of the font settings."
-msgstr "预览字体设定"
+msgstr "预览字体设定。"
 
 #: ../src/osx/carbon/fontdlg.cpp:394 ../src/osx/carbon/fontdlg.cpp:396
 msgid "Shows a preview of the font."
-msgstr "预览字体"
+msgstr "预览字体。"
 
 #: ../src/richtext/richtextindentspage.cpp:303 ../src/richtext/richtextindentspage.cpp:305
 msgid "Shows a preview of the paragraph settings."
-msgstr "预览段落设定"
+msgstr "预览段落设定。"
 
 #: ../src/generic/fontdlgg.cpp:460 ../src/generic/fontdlgg.cpp:462
 msgid "Shows the font preview."
@@ -18647,8 +18593,7 @@ msgstr "对不起，无法打开文件。"
 msgid "Sorry, not enough memory to create a preview."
 msgstr "对不起，没有足够内存创建预览。"
 
-#: ../src/richtext/richtextstyledlg.cpp:611 ../src/richtext/richtextstyledlg.cpp:659 ../src/richtext/richtextstyledlg.cpp:825 ../src/richtext/richtextstyledlg.cpp:901
-#: ../src/richtext/richtextstyledlg.cpp:939
+#: ../src/richtext/richtextstyledlg.cpp:611 ../src/richtext/richtextstyledlg.cpp:659 ../src/richtext/richtextstyledlg.cpp:825 ../src/richtext/richtextstyledlg.cpp:901 ../src/richtext/richtextstyledlg.cpp:939
 msgid "Sorry, that name is taken. Please choose another."
 msgstr "抱歉，名字已被使用。请选择其他名字。"
 
@@ -18686,7 +18631,7 @@ msgstr "报表用纸，5 1/2 x 8 1/2 英寸"
 
 #: ../src/richtext/richtextsizepage.cpp:518 ../src/richtext/richtextsizepage.cpp:523
 msgid "Static"
-msgstr "状态:"
+msgstr "静态"
 
 #: ../src/common/stockitem.cpp:198
 msgid "Stop"
@@ -18830,35 +18775,32 @@ msgstr "可用样式。"
 
 #: ../src/richtext/richtextbackgroundpage.cpp:168 ../src/richtext/richtextbackgroundpage.cpp:170
 msgid "The background colour."
-msgstr "背景色"
+msgstr "背景色。"
 
-#: ../src/richtext/richtextborderspage.cpp:267 ../src/richtext/richtextborderspage.cpp:269 ../src/richtext/richtextborderspage.cpp:301 ../src/richtext/richtextborderspage.cpp:303
-#: ../src/richtext/richtextborderspage.cpp:335 ../src/richtext/richtextborderspage.cpp:337 ../src/richtext/richtextborderspage.cpp:369 ../src/richtext/richtextborderspage.cpp:371
-#: ../src/richtext/richtextborderspage.cpp:435 ../src/richtext/richtextborderspage.cpp:437 ../src/richtext/richtextborderspage.cpp:469 ../src/richtext/richtextborderspage.cpp:471
-#: ../src/richtext/richtextborderspage.cpp:503 ../src/richtext/richtextborderspage.cpp:505 ../src/richtext/richtextborderspage.cpp:537 ../src/richtext/richtextborderspage.cpp:539
+#: ../src/richtext/richtextborderspage.cpp:267 ../src/richtext/richtextborderspage.cpp:269 ../src/richtext/richtextborderspage.cpp:301 ../src/richtext/richtextborderspage.cpp:303 ../src/richtext/richtextborderspage.cpp:335 ../src/richtext/richtextborderspage.cpp:337 ../src/richtext/richtextborderspage.cpp:369 ../src/richtext/richtextborderspage.cpp:371 ../src/richtext/richtextborderspage.cpp:435 ../src/richtext/richtextborderspage.cpp:437 ../src/richtext/richtextborderspage.cpp:469 ../src/richtext/richtextborderspage.cpp:471 ../src/richtext/richtextborderspage.cpp:503 ../src/richtext/richtextborderspage.cpp:505
+#: ../src/richtext/richtextborderspage.cpp:537 ../src/richtext/richtextborderspage.cpp:539
 msgid "The border line style."
 msgstr "边框线样式。"
 
 #: ../src/richtext/richtextmarginspage.cpp:267 ../src/richtext/richtextmarginspage.cpp:269
 msgid "The bottom margin size."
-msgstr "底边距"
+msgstr "底边距。"
 
 #: ../src/richtext/richtextmarginspage.cpp:381 ../src/richtext/richtextmarginspage.cpp:383
 msgid "The bottom padding size."
-msgstr "底内衬大小"
+msgstr "底内衬大小。"
 
 #: ../src/richtext/richtextsizepage.cpp:639 ../src/richtext/richtextsizepage.cpp:641 ../src/richtext/richtextsizepage.cpp:653 ../src/richtext/richtextsizepage.cpp:655
 msgid "The bottom position."
-msgstr "底部位置"
+msgstr "底部位置。"
 
-#: ../src/richtext/richtextliststylepage.cpp:254 ../src/richtext/richtextliststylepage.cpp:256 ../src/richtext/richtextliststylepage.cpp:275 ../src/richtext/richtextliststylepage.cpp:277
-#: ../src/richtext/richtextbulletspage.cpp:191 ../src/richtext/richtextbulletspage.cpp:193 ../src/richtext/richtextbulletspage.cpp:214 ../src/richtext/richtextbulletspage.cpp:216
+#: ../src/richtext/richtextliststylepage.cpp:254 ../src/richtext/richtextliststylepage.cpp:256 ../src/richtext/richtextliststylepage.cpp:275 ../src/richtext/richtextliststylepage.cpp:277 ../src/richtext/richtextbulletspage.cpp:191 ../src/richtext/richtextbulletspage.cpp:193 ../src/richtext/richtextbulletspage.cpp:214 ../src/richtext/richtextbulletspage.cpp:216
 msgid "The bullet character."
-msgstr "项目符号字符"
+msgstr "项目符号字符。"
 
 #: ../src/richtext/richtextsymboldlg.cpp:443 ../src/richtext/richtextsymboldlg.cpp:445
 msgid "The character code."
-msgstr "字符编码"
+msgstr "字符编码。"
 
 #: ../src/common/fontmap.cpp:203
 #, c-format
@@ -18868,7 +18810,7 @@ msgid ""
 "[Cancel] if it cannot be replaced"
 msgstr ""
 "未知字符集 '%s'。选择其它字符集\n"
-"代替它，如果无法替代请选择 [取消] "
+"代替它，如果无法替代请选择 [取消]"
 
 #: ../src/msw/ole/dataobj.cpp:394
 #, c-format
@@ -18910,7 +18852,7 @@ msgstr ""
 
 #: ../src/richtext/richtextindentspage.cpp:208 ../src/richtext/richtextindentspage.cpp:210 ../src/richtext/richtextliststylepage.cpp:394 ../src/richtext/richtextliststylepage.cpp:396
 msgid "The first line indent."
-msgstr "首行缩进"
+msgstr "首行缩进。"
 
 #: ../src/gtk/utilsgtk.cpp:481
 msgid "The following standard GTK+ options are also supported:\n"
@@ -18926,7 +18868,7 @@ msgstr "字体。"
 
 #: ../src/richtext/richtextsymboldlg.cpp:405 ../src/richtext/richtextsymboldlg.cpp:407
 msgid "The font from which to take the symbol."
-msgstr "符号使用该字体"
+msgstr "符号使用该字体。"
 
 #: ../src/generic/fontdlgg.cpp:427 ../src/generic/fontdlgg.cpp:429 ../src/generic/fontdlgg.cpp:434 ../src/generic/fontdlgg.cpp:436
 msgid "The font point size."
@@ -18938,7 +18880,7 @@ msgstr "字体大小(磅值)"
 
 #: ../src/richtext/richtextfontpage.cpp:181 ../src/richtext/richtextfontpage.cpp:183
 msgid "The font size units, points or pixels."
-msgstr "字体大小单位，磅值或像素值"
+msgstr "字体大小单位，磅值或像素值。"
 
 #: ../src/generic/fontdlgg.cpp:386 ../src/generic/fontdlgg.cpp:388
 msgid "The font style."
@@ -18960,19 +18902,19 @@ msgstr "水平排布(&H)"
 
 #: ../src/richtext/richtextindentspage.cpp:199 ../src/richtext/richtextindentspage.cpp:201 ../src/richtext/richtextliststylepage.cpp:385 ../src/richtext/richtextliststylepage.cpp:387
 msgid "The left indent."
-msgstr "左缩进"
+msgstr "左缩进。"
 
 #: ../src/richtext/richtextmarginspage.cpp:194 ../src/richtext/richtextmarginspage.cpp:196
 msgid "The left margin size."
-msgstr "左边距大小"
+msgstr "左边距大小。"
 
 #: ../src/richtext/richtextmarginspage.cpp:308 ../src/richtext/richtextmarginspage.cpp:310
 msgid "The left padding size."
-msgstr "左内衬大小"
+msgstr "左内衬大小。"
 
 #: ../src/richtext/richtextsizepage.cpp:534 ../src/richtext/richtextsizepage.cpp:536 ../src/richtext/richtextsizepage.cpp:548 ../src/richtext/richtextsizepage.cpp:550
 msgid "The left position."
-msgstr "左位置"
+msgstr "左位置。"
 
 #: ../src/richtext/richtextindentspage.cpp:288 ../src/richtext/richtextindentspage.cpp:290 ../src/richtext/richtextliststylepage.cpp:462 ../src/richtext/richtextliststylepage.cpp:464
 msgid "The line spacing."
@@ -18980,11 +18922,11 @@ msgstr "行距。"
 
 #: ../src/richtext/richtextbulletspage.cpp:255 ../src/richtext/richtextbulletspage.cpp:257
 msgid "The list item number."
-msgstr "列表编号"
+msgstr "列表编号。"
 
 #: ../src/msw/ole/automtn.cpp:664
 msgid "The locale ID is unknown."
-msgstr "区域ID未知"
+msgstr "区域ID未知。"
 
 #: ../src/richtext/richtextsizepage.cpp:366 ../src/richtext/richtextsizepage.cpp:368
 msgid "The object height."
@@ -19000,7 +18942,7 @@ msgstr "对象最大宽度。"
 
 #: ../src/richtext/richtextsizepage.cpp:420 ../src/richtext/richtextsizepage.cpp:422
 msgid "The object minimum height."
-msgstr "对象最小高度"
+msgstr "对象最小高度。"
 
 #: ../src/richtext/richtextsizepage.cpp:393 ../src/richtext/richtextsizepage.cpp:395
 msgid "The object minimum width."
@@ -19012,7 +18954,7 @@ msgstr "对象宽度。"
 
 #: ../src/richtext/richtextindentspage.cpp:227 ../src/richtext/richtextindentspage.cpp:229
 msgid "The outline level."
-msgstr "大纲层级"
+msgstr "大纲层级。"
 
 #: ../src/common/log.cpp:277
 #, fuzzy, c-format
@@ -19022,7 +18964,7 @@ msgstr[0] "前一消息重复 %lu 次"
 
 #: ../src/common/log.cpp:270
 msgid "The previous message repeated once."
-msgstr "前一消息重复一次"
+msgstr "前一消息重复一次。"
 
 #: ../src/richtext/richtextsymboldlg.cpp:462 ../src/richtext/richtextsymboldlg.cpp:464
 msgid "The range to show."
@@ -19051,11 +18993,11 @@ msgstr "右边距大小。"
 
 #: ../src/richtext/richtextmarginspage.cpp:333 ../src/richtext/richtextmarginspage.cpp:335
 msgid "The right padding size."
-msgstr "右内衬"
+msgstr "右内衬。"
 
 #: ../src/richtext/richtextsizepage.cpp:604 ../src/richtext/richtextsizepage.cpp:606 ../src/richtext/richtextsizepage.cpp:618 ../src/richtext/richtextsizepage.cpp:620
 msgid "The right position."
-msgstr "又位置"
+msgstr "又位置。"
 
 #: ../src/richtext/richtextbackgroundpage.cpp:309 ../src/richtext/richtextbackgroundpage.cpp:311
 msgid "The shadow blur distance."
@@ -19100,11 +19042,11 @@ msgstr "系统无法找到指定的文件。"
 
 #: ../src/richtext/richtexttabspage.cpp:114 ../src/richtext/richtexttabspage.cpp:116
 msgid "The tab position."
-msgstr "标签位置"
+msgstr "标签位置。"
 
 #: ../src/richtext/richtexttabspage.cpp:120
 msgid "The tab positions."
-msgstr "标签位置"
+msgstr "标签位置。"
 
 #: ../src/richtext/richtextctrl.cpp:3098
 msgid "The text couldn't be saved."
@@ -19116,7 +19058,7 @@ msgstr "上边距大小。"
 
 #: ../src/richtext/richtextmarginspage.cpp:356 ../src/richtext/richtextmarginspage.cpp:358
 msgid "The top padding size."
-msgstr "上内衬大小"
+msgstr "上内衬大小。"
 
 #: ../src/richtext/richtextsizepage.cpp:569 ../src/richtext/richtextsizepage.cpp:571 ../src/richtext/richtextsizepage.cpp:583 ../src/richtext/richtextsizepage.cpp:585
 msgid "The top position."
@@ -19156,7 +19098,7 @@ msgstr "这不是 %s。"
 
 #: ../src/common/wincmn.cpp:1653
 msgid "This platform does not support background transparency."
-msgstr "该平台不支持背景透明度"
+msgstr "该平台不支持背景透明度。"
 
 #: ../src/gtk/window.cpp:4660
 msgid "This program was compiled with a too old version of GTK+, please rebuild with GTK+ 2.12 or newer."
@@ -19252,7 +19194,7 @@ msgstr "输入字体名称。"
 
 #: ../src/richtext/richtextfontpage.cpp:166 ../src/richtext/richtextfontpage.cpp:168
 msgid "Type a size in points."
-msgstr "输入大小，以磅为单位"
+msgstr "输入大小，以磅为单位。"
 
 #: ../src/msw/ole/automtn.cpp:676
 #, c-format
@@ -19456,23 +19398,23 @@ msgstr "取消缩进"
 
 #: ../src/richtext/richtextborderspage.cpp:360 ../src/richtext/richtextborderspage.cpp:362
 msgid "Units for the bottom border width."
-msgstr "下边框单位"
+msgstr "下边框单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:277 ../src/richtext/richtextmarginspage.cpp:279
 msgid "Units for the bottom margin."
-msgstr "下边距单位"
+msgstr "下边距单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:528 ../src/richtext/richtextborderspage.cpp:530
 msgid "Units for the bottom outline width."
-msgstr "下轮廓单位"
+msgstr "下轮廓单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:391 ../src/richtext/richtextmarginspage.cpp:393
 msgid "Units for the bottom padding."
-msgstr "下内衬单位"
+msgstr "下内衬单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:664 ../src/richtext/richtextsizepage.cpp:666
 msgid "Units for the bottom position."
-msgstr "下位置单位"
+msgstr "下位置单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:596 ../src/richtext/richtextborderspage.cpp:598
 #, fuzzy
@@ -19481,23 +19423,23 @@ msgstr "上内衬单位"
 
 #: ../src/richtext/richtextborderspage.cpp:258 ../src/richtext/richtextborderspage.cpp:260
 msgid "Units for the left border width."
-msgstr "左边框单位"
+msgstr "左边框单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:204 ../src/richtext/richtextmarginspage.cpp:206
 msgid "Units for the left margin."
-msgstr "左边距单位"
+msgstr "左边距单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:426 ../src/richtext/richtextborderspage.cpp:428
 msgid "Units for the left outline width."
-msgstr "左轮廓单位"
+msgstr "左轮廓单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:318 ../src/richtext/richtextmarginspage.cpp:320
 msgid "Units for the left padding."
-msgstr "左内衬单位"
+msgstr "左内衬单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:559 ../src/richtext/richtextsizepage.cpp:561
 msgid "Units for the left position."
-msgstr "左位置单位"
+msgstr "左位置单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:485 ../src/richtext/richtextsizepage.cpp:487
 msgid "Units for the maximum object height."
@@ -19517,54 +19459,53 @@ msgstr "最小对象宽度单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:377 ../src/richtext/richtextsizepage.cpp:379
 msgid "Units for the object height."
-msgstr "对象高度单位"
+msgstr "对象高度单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:343 ../src/richtext/richtextsizepage.cpp:345
 msgid "Units for the object width."
-msgstr "对象宽度单位"
+msgstr "对象宽度单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:292 ../src/richtext/richtextborderspage.cpp:294
 msgid "Units for the right border width."
-msgstr "右边框单位"
+msgstr "右边框单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:229 ../src/richtext/richtextmarginspage.cpp:231
 msgid "Units for the right margin."
-msgstr "右边距单位"
+msgstr "右边距单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:460 ../src/richtext/richtextborderspage.cpp:462
 msgid "Units for the right outline width."
-msgstr "右轮廓单位"
+msgstr "右轮廓单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:343 ../src/richtext/richtextmarginspage.cpp:345
 msgid "Units for the right padding."
-msgstr "右内衬单位"
+msgstr "右内衬单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:629 ../src/richtext/richtextsizepage.cpp:631
 msgid "Units for the right position."
-msgstr "右位置单位"
+msgstr "右位置单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:326 ../src/richtext/richtextborderspage.cpp:328
 msgid "Units for the top border width."
-msgstr "上边框单位"
+msgstr "上边框单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:252 ../src/richtext/richtextmarginspage.cpp:254
 msgid "Units for the top margin."
-msgstr "上边距单位"
+msgstr "上边距单位。"
 
 #: ../src/richtext/richtextborderspage.cpp:494 ../src/richtext/richtextborderspage.cpp:496
 msgid "Units for the top outline width."
-msgstr "上轮廓单位"
+msgstr "上轮廓单位。"
 
 #: ../src/richtext/richtextmarginspage.cpp:366 ../src/richtext/richtextmarginspage.cpp:368
 msgid "Units for the top padding."
-msgstr "上内衬单位"
+msgstr "上内衬单位。"
 
 #: ../src/richtext/richtextsizepage.cpp:594 ../src/richtext/richtextsizepage.cpp:596
 msgid "Units for the top position."
-msgstr "上位置单位"
+msgstr "上位置单位。"
 
-#: ../src/richtext/richtextbackgroundpage.cpp:230 ../src/richtext/richtextbackgroundpage.cpp:232 ../src/richtext/richtextbackgroundpage.cpp:253 ../src/richtext/richtextbackgroundpage.cpp:255
-#: ../src/richtext/richtextbackgroundpage.cpp:293 ../src/richtext/richtextbackgroundpage.cpp:295 ../src/richtext/richtextbackgroundpage.cpp:320 ../src/richtext/richtextbackgroundpage.cpp:322
+#: ../src/richtext/richtextbackgroundpage.cpp:230 ../src/richtext/richtextbackgroundpage.cpp:232 ../src/richtext/richtextbackgroundpage.cpp:253 ../src/richtext/richtextbackgroundpage.cpp:255 ../src/richtext/richtextbackgroundpage.cpp:293 ../src/richtext/richtextbackgroundpage.cpp:295 ../src/richtext/richtextbackgroundpage.cpp:320 ../src/richtext/richtextbackgroundpage.cpp:322
 #, fuzzy
 msgid "Units for this value."
 msgstr "左边距单位"
@@ -20222,14 +20163,9 @@ msgstr "校验和错误"
 msgid "checksum failure reading tar header block"
 msgstr "读取tar头部块发生校验和错误"
 
-#: ../src/richtext/richtextbackgroundpage.cpp:226 ../src/richtext/richtextbackgroundpage.cpp:249 ../src/richtext/richtextbackgroundpage.cpp:289 ../src/richtext/richtextbackgroundpage.cpp:316
-#: ../src/richtext/richtextborderspage.cpp:254 ../src/richtext/richtextborderspage.cpp:288 ../src/richtext/richtextborderspage.cpp:322 ../src/richtext/richtextborderspage.cpp:356
-#: ../src/richtext/richtextborderspage.cpp:422 ../src/richtext/richtextborderspage.cpp:456 ../src/richtext/richtextborderspage.cpp:490 ../src/richtext/richtextborderspage.cpp:524
-#: ../src/richtext/richtextborderspage.cpp:592 ../src/richtext/richtextmarginspage.cpp:201 ../src/richtext/richtextmarginspage.cpp:226 ../src/richtext/richtextmarginspage.cpp:249
-#: ../src/richtext/richtextmarginspage.cpp:274 ../src/richtext/richtextmarginspage.cpp:315 ../src/richtext/richtextmarginspage.cpp:340 ../src/richtext/richtextmarginspage.cpp:363
-#: ../src/richtext/richtextmarginspage.cpp:388 ../src/richtext/richtextsizepage.cpp:339 ../src/richtext/richtextsizepage.cpp:373 ../src/richtext/richtextsizepage.cpp:400
-#: ../src/richtext/richtextsizepage.cpp:427 ../src/richtext/richtextsizepage.cpp:454 ../src/richtext/richtextsizepage.cpp:481 ../src/richtext/richtextsizepage.cpp:555
-#: ../src/richtext/richtextsizepage.cpp:590 ../src/richtext/richtextsizepage.cpp:625 ../src/richtext/richtextsizepage.cpp:660
+#: ../src/richtext/richtextbackgroundpage.cpp:226 ../src/richtext/richtextbackgroundpage.cpp:249 ../src/richtext/richtextbackgroundpage.cpp:289 ../src/richtext/richtextbackgroundpage.cpp:316 ../src/richtext/richtextborderspage.cpp:254 ../src/richtext/richtextborderspage.cpp:288 ../src/richtext/richtextborderspage.cpp:322 ../src/richtext/richtextborderspage.cpp:356 ../src/richtext/richtextborderspage.cpp:422 ../src/richtext/richtextborderspage.cpp:456 ../src/richtext/richtextborderspage.cpp:490 ../src/richtext/richtextborderspage.cpp:524 ../src/richtext/richtextborderspage.cpp:592 ../src/richtext/richtextmarginspage.cpp:201
+#: ../src/richtext/richtextmarginspage.cpp:226 ../src/richtext/richtextmarginspage.cpp:249 ../src/richtext/richtextmarginspage.cpp:274 ../src/richtext/richtextmarginspage.cpp:315 ../src/richtext/richtextmarginspage.cpp:340 ../src/richtext/richtextmarginspage.cpp:363 ../src/richtext/richtextmarginspage.cpp:388 ../src/richtext/richtextsizepage.cpp:339 ../src/richtext/richtextsizepage.cpp:373 ../src/richtext/richtextsizepage.cpp:400 ../src/richtext/richtextsizepage.cpp:427 ../src/richtext/richtextsizepage.cpp:454 ../src/richtext/richtextsizepage.cpp:481 ../src/richtext/richtextsizepage.cpp:555 ../src/richtext/richtextsizepage.cpp:590
+#: ../src/richtext/richtextsizepage.cpp:625 ../src/richtext/richtextsizepage.cpp:660
 msgid "cm"
 msgstr "厘米"
 
@@ -20461,37 +20397,18 @@ msgstr "内存耗尽"
 msgid "process context description"
 msgstr "进程上下文描述"
 
-#: ../src/richtext/richtextbackgroundpage.cpp:227 ../src/richtext/richtextbackgroundpage.cpp:250 ../src/richtext/richtextbackgroundpage.cpp:290 ../src/richtext/richtextbackgroundpage.cpp:317
-#: ../src/richtext/richtextfontpage.cpp:177 ../src/richtext/richtextfontpage.cpp:180 ../src/richtext/richtextborderspage.cpp:255 ../src/richtext/richtextborderspage.cpp:289
-#: ../src/richtext/richtextborderspage.cpp:323 ../src/richtext/richtextborderspage.cpp:357 ../src/richtext/richtextborderspage.cpp:423 ../src/richtext/richtextborderspage.cpp:457
-#: ../src/richtext/richtextborderspage.cpp:491 ../src/richtext/richtextborderspage.cpp:525 ../src/richtext/richtextborderspage.cpp:593
+#: ../src/richtext/richtextbackgroundpage.cpp:227 ../src/richtext/richtextbackgroundpage.cpp:250 ../src/richtext/richtextbackgroundpage.cpp:290 ../src/richtext/richtextbackgroundpage.cpp:317 ../src/richtext/richtextfontpage.cpp:177 ../src/richtext/richtextfontpage.cpp:180 ../src/richtext/richtextborderspage.cpp:255 ../src/richtext/richtextborderspage.cpp:289 ../src/richtext/richtextborderspage.cpp:323 ../src/richtext/richtextborderspage.cpp:357 ../src/richtext/richtextborderspage.cpp:423 ../src/richtext/richtextborderspage.cpp:457 ../src/richtext/richtextborderspage.cpp:491 ../src/richtext/richtextborderspage.cpp:525
+#: ../src/richtext/richtextborderspage.cpp:593
 msgid "pt"
 msgstr "点"
 
-#: ../src/richtext/richtextbackgroundpage.cpp:225 ../src/richtext/richtextbackgroundpage.cpp:228 ../src/richtext/richtextbackgroundpage.cpp:229 ../src/richtext/richtextbackgroundpage.cpp:248
-#: ../src/richtext/richtextbackgroundpage.cpp:251 ../src/richtext/richtextbackgroundpage.cpp:252 ../src/richtext/richtextbackgroundpage.cpp:288 ../src/richtext/richtextbackgroundpage.cpp:291
-#: ../src/richtext/richtextbackgroundpage.cpp:292 ../src/richtext/richtextbackgroundpage.cpp:315 ../src/richtext/richtextbackgroundpage.cpp:318 ../src/richtext/richtextbackgroundpage.cpp:319
-#: ../src/richtext/richtextfontpage.cpp:178 ../src/richtext/richtextborderspage.cpp:253 ../src/richtext/richtextborderspage.cpp:256 ../src/richtext/richtextborderspage.cpp:257
-#: ../src/richtext/richtextborderspage.cpp:287 ../src/richtext/richtextborderspage.cpp:290 ../src/richtext/richtextborderspage.cpp:291 ../src/richtext/richtextborderspage.cpp:321
-#: ../src/richtext/richtextborderspage.cpp:324 ../src/richtext/richtextborderspage.cpp:325 ../src/richtext/richtextborderspage.cpp:355 ../src/richtext/richtextborderspage.cpp:358
-#: ../src/richtext/richtextborderspage.cpp:359 ../src/richtext/richtextborderspage.cpp:421 ../src/richtext/richtextborderspage.cpp:424 ../src/richtext/richtextborderspage.cpp:425
-#: ../src/richtext/richtextborderspage.cpp:455 ../src/richtext/richtextborderspage.cpp:458 ../src/richtext/richtextborderspage.cpp:459 ../src/richtext/richtextborderspage.cpp:489
-#: ../src/richtext/richtextborderspage.cpp:492 ../src/richtext/richtextborderspage.cpp:493 ../src/richtext/richtextborderspage.cpp:523 ../src/richtext/richtextborderspage.cpp:526
-#: ../src/richtext/richtextborderspage.cpp:527 ../src/richtext/richtextborderspage.cpp:591 ../src/richtext/richtextborderspage.cpp:594 ../src/richtext/richtextborderspage.cpp:595
-#: ../src/richtext/richtextmarginspage.cpp:200 ../src/richtext/richtextmarginspage.cpp:202 ../src/richtext/richtextmarginspage.cpp:203 ../src/richtext/richtextmarginspage.cpp:225
-#: ../src/richtext/richtextmarginspage.cpp:227 ../src/richtext/richtextmarginspage.cpp:228 ../src/richtext/richtextmarginspage.cpp:248 ../src/richtext/richtextmarginspage.cpp:250
-#: ../src/richtext/richtextmarginspage.cpp:251 ../src/richtext/richtextmarginspage.cpp:273 ../src/richtext/richtextmarginspage.cpp:275 ../src/richtext/richtextmarginspage.cpp:276
-#: ../src/richtext/richtextmarginspage.cpp:314 ../src/richtext/richtextmarginspage.cpp:316 ../src/richtext/richtextmarginspage.cpp:317 ../src/richtext/richtextmarginspage.cpp:339
-#: ../src/richtext/richtextmarginspage.cpp:341 ../src/richtext/richtextmarginspage.cpp:342 ../src/richtext/richtextmarginspage.cpp:362 ../src/richtext/richtextmarginspage.cpp:364
-#: ../src/richtext/richtextmarginspage.cpp:365 ../src/richtext/richtextmarginspage.cpp:387 ../src/richtext/richtextmarginspage.cpp:389 ../src/richtext/richtextmarginspage.cpp:390
-#: ../src/richtext/richtextsizepage.cpp:338 ../src/richtext/richtextsizepage.cpp:341 ../src/richtext/richtextsizepage.cpp:342 ../src/richtext/richtextsizepage.cpp:372
-#: ../src/richtext/richtextsizepage.cpp:375 ../src/richtext/richtextsizepage.cpp:376 ../src/richtext/richtextsizepage.cpp:399 ../src/richtext/richtextsizepage.cpp:402
-#: ../src/richtext/richtextsizepage.cpp:403 ../src/richtext/richtextsizepage.cpp:426 ../src/richtext/richtextsizepage.cpp:429 ../src/richtext/richtextsizepage.cpp:430
-#: ../src/richtext/richtextsizepage.cpp:453 ../src/richtext/richtextsizepage.cpp:456 ../src/richtext/richtextsizepage.cpp:457 ../src/richtext/richtextsizepage.cpp:480
-#: ../src/richtext/richtextsizepage.cpp:483 ../src/richtext/richtextsizepage.cpp:484 ../src/richtext/richtextsizepage.cpp:554 ../src/richtext/richtextsizepage.cpp:557
-#: ../src/richtext/richtextsizepage.cpp:558 ../src/richtext/richtextsizepage.cpp:589 ../src/richtext/richtextsizepage.cpp:592 ../src/richtext/richtextsizepage.cpp:593
-#: ../src/richtext/richtextsizepage.cpp:624 ../src/richtext/richtextsizepage.cpp:627 ../src/richtext/richtextsizepage.cpp:628 ../src/richtext/richtextsizepage.cpp:659
-#: ../src/richtext/richtextsizepage.cpp:662 ../src/richtext/richtextsizepage.cpp:663
+#: ../src/richtext/richtextbackgroundpage.cpp:225 ../src/richtext/richtextbackgroundpage.cpp:228 ../src/richtext/richtextbackgroundpage.cpp:229 ../src/richtext/richtextbackgroundpage.cpp:248 ../src/richtext/richtextbackgroundpage.cpp:251 ../src/richtext/richtextbackgroundpage.cpp:252 ../src/richtext/richtextbackgroundpage.cpp:288 ../src/richtext/richtextbackgroundpage.cpp:291 ../src/richtext/richtextbackgroundpage.cpp:292 ../src/richtext/richtextbackgroundpage.cpp:315 ../src/richtext/richtextbackgroundpage.cpp:318 ../src/richtext/richtextbackgroundpage.cpp:319 ../src/richtext/richtextfontpage.cpp:178 ../src/richtext/richtextborderspage.cpp:253
+#: ../src/richtext/richtextborderspage.cpp:256 ../src/richtext/richtextborderspage.cpp:257 ../src/richtext/richtextborderspage.cpp:287 ../src/richtext/richtextborderspage.cpp:290 ../src/richtext/richtextborderspage.cpp:291 ../src/richtext/richtextborderspage.cpp:321 ../src/richtext/richtextborderspage.cpp:324 ../src/richtext/richtextborderspage.cpp:325 ../src/richtext/richtextborderspage.cpp:355 ../src/richtext/richtextborderspage.cpp:358 ../src/richtext/richtextborderspage.cpp:359 ../src/richtext/richtextborderspage.cpp:421 ../src/richtext/richtextborderspage.cpp:424 ../src/richtext/richtextborderspage.cpp:425
+#: ../src/richtext/richtextborderspage.cpp:455 ../src/richtext/richtextborderspage.cpp:458 ../src/richtext/richtextborderspage.cpp:459 ../src/richtext/richtextborderspage.cpp:489 ../src/richtext/richtextborderspage.cpp:492 ../src/richtext/richtextborderspage.cpp:493 ../src/richtext/richtextborderspage.cpp:523 ../src/richtext/richtextborderspage.cpp:526 ../src/richtext/richtextborderspage.cpp:527 ../src/richtext/richtextborderspage.cpp:591 ../src/richtext/richtextborderspage.cpp:594 ../src/richtext/richtextborderspage.cpp:595 ../src/richtext/richtextmarginspage.cpp:200 ../src/richtext/richtextmarginspage.cpp:202
+#: ../src/richtext/richtextmarginspage.cpp:203 ../src/richtext/richtextmarginspage.cpp:225 ../src/richtext/richtextmarginspage.cpp:227 ../src/richtext/richtextmarginspage.cpp:228 ../src/richtext/richtextmarginspage.cpp:248 ../src/richtext/richtextmarginspage.cpp:250 ../src/richtext/richtextmarginspage.cpp:251 ../src/richtext/richtextmarginspage.cpp:273 ../src/richtext/richtextmarginspage.cpp:275 ../src/richtext/richtextmarginspage.cpp:276 ../src/richtext/richtextmarginspage.cpp:314 ../src/richtext/richtextmarginspage.cpp:316 ../src/richtext/richtextmarginspage.cpp:317 ../src/richtext/richtextmarginspage.cpp:339
+#: ../src/richtext/richtextmarginspage.cpp:341 ../src/richtext/richtextmarginspage.cpp:342 ../src/richtext/richtextmarginspage.cpp:362 ../src/richtext/richtextmarginspage.cpp:364 ../src/richtext/richtextmarginspage.cpp:365 ../src/richtext/richtextmarginspage.cpp:387 ../src/richtext/richtextmarginspage.cpp:389 ../src/richtext/richtextmarginspage.cpp:390 ../src/richtext/richtextsizepage.cpp:338 ../src/richtext/richtextsizepage.cpp:341 ../src/richtext/richtextsizepage.cpp:342 ../src/richtext/richtextsizepage.cpp:372 ../src/richtext/richtextsizepage.cpp:375 ../src/richtext/richtextsizepage.cpp:376 ../src/richtext/richtextsizepage.cpp:399
+#: ../src/richtext/richtextsizepage.cpp:402 ../src/richtext/richtextsizepage.cpp:403 ../src/richtext/richtextsizepage.cpp:426 ../src/richtext/richtextsizepage.cpp:429 ../src/richtext/richtextsizepage.cpp:430 ../src/richtext/richtextsizepage.cpp:453 ../src/richtext/richtextsizepage.cpp:456 ../src/richtext/richtextsizepage.cpp:457 ../src/richtext/richtextsizepage.cpp:480 ../src/richtext/richtextsizepage.cpp:483 ../src/richtext/richtextsizepage.cpp:484 ../src/richtext/richtextsizepage.cpp:554 ../src/richtext/richtextsizepage.cpp:557 ../src/richtext/richtextsizepage.cpp:558 ../src/richtext/richtextsizepage.cpp:589 ../src/richtext/richtextsizepage.cpp:592
+#: ../src/richtext/richtextsizepage.cpp:593 ../src/richtext/richtextsizepage.cpp:624 ../src/richtext/richtextsizepage.cpp:627 ../src/richtext/richtextsizepage.cpp:628 ../src/richtext/richtextsizepage.cpp:659 ../src/richtext/richtextsizepage.cpp:662 ../src/richtext/richtextsizepage.cpp:663
 msgid "px"
 msgstr "像素"
 
