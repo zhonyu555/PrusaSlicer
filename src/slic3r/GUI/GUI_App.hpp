@@ -284,6 +284,7 @@ public:
     void            OSXStoreOpenFiles(const wxArrayString &files) override;
     // wxWidgets override to get an event on open files.
     void            MacOpenFiles(const wxArrayString &fileNames) override;
+    void            MacOpenURL(const wxString& url) override;
 #endif /* __APPLE */
 
     Sidebar&             sidebar();
