@@ -177,11 +177,12 @@ int CLI::run(int argc, char **argv)
             start_as_gcodeviewer = true;
             break;
         }
-    for (const std::string& file : m_input_files)
-        if (boost::starts_with(file, "open?file=")) {
+    for (const std::string& file : m_input_files) {
+        //if (boost::starts_with(file, "open?file=")) {
             start_as_downloader = true;
             break;
-        }
+        //}
+    }
     if (!start_as_gcodeviewer && !start_as_downloader) {
         for (const std::string& file : m_input_files) {
             if (!boost::filesystem::exists(file)) {

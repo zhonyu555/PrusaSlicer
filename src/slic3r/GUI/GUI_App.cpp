@@ -742,7 +742,12 @@ void GUI_App::post_init()
             this->plater()->load_gcode(wxString::FromUTF8(this->init_params->input_files[0].c_str()));
     }
     if (this->init_params->start_as_downloader) {
-        show_error(nullptr, "Got url msg.");
+        std::string msg;
+        for (int i = 0; i < this->init_params->input_files.size(); ++i)
+        {
+            msg += this->init_params->input_files[i];
+        }
+        show_error(nullptr, "Got url msg." + msg);
     }
     else {
         if (! this->init_params->preset_substitutions.empty())
