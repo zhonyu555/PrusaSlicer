@@ -2778,6 +2778,12 @@ void GUI_App::MacOpenFiles(const wxArrayString &fileNames)
             start_new_gcodeviewer(&filename);
     }
 }
+
+void GUI_App::MacOpenURL(const wxString& url)
+{
+    show_error(nullptr, L"MacOpenURL: " + url);
+}
+
 #endif /* __APPLE */
 
 Sidebar& GUI_App::sidebar()
