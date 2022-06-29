@@ -1864,7 +1864,6 @@ void NotificationManager::upload_job_notification_show_error(int id, const std::
 		}
 	}
 }
-
 void NotificationManager::push_download_progress_notification(const std::string& text, std::function<bool()> cancel_callback)
 {
 	// If already exists, change text and reset progress
@@ -1895,6 +1894,41 @@ void NotificationManager::set_download_progress_percentage(float percentage)
 		}
 	}
 }
+
+void NotificationManager::push_download_URL_progress_notification(size_t id, const std::string& text, std::function<bool()> cancel_callback)
+{
+	// If already exists
+	for (std::unique_ptr<PopNotification>& notification : m_pop_notifications) {
+		if (notification->get_type() == NotificationType::URLDownload && dynamic_cast<URLDownloadNotification*>(notification.get())->get_download_id() == id) {
+			return;
+		}
+	}
+	// push new one
+	NotificationData data{ NotificationType::URLDownload, NotificationLevel::ProgressBarNotificationLevel, 10, text };
+	push_notification_data(std::make_unique<NotificationManager::URLDownloadNotification>(data, m_id_provider, m_evt_handler, id, cancel_callback), 0);
+}
+void NotificationManager::set_download_URL_progress(size_t id, float percentage)
+{
+	for (std::unique_ptr<PopNotification>& notification : m_pop_notifications) {
+		if (notification->get_type() == NotificationType::URLDownload) {
+			URLDownloadNotification* ntf = dynamic_cast<URLDownloadNotification*>(notification.get());
+			if (ntf->get_download_id() != id)
+				continue;
+			// if this changes the percentage, it should be shown now
+			BOOST_LOG_TRIVIAL(error) << percentage;
+			float percent_b4 = ntf->get_percentage();
+			ntf->set_percentage(percentage);
+			if (ntf->get_percentage() != percent_b4)
+				wxGetApp().plater()->get_current_canvas3D()->schedule_extra_frame(0);
+			return;
+		}
+	}
+}
+
+void NotificationManager::set_download_URL_canceled(size_t id, const std::string& text)
+{}
+void NotificationManager::set_download_URL_error(size_t id, const std::string& text)
+{}
 
 void NotificationManager::init_slicing_progress_notification(std::function<bool()> cancel_callback)
 {

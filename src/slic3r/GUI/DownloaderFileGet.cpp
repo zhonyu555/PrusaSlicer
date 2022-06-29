@@ -1,13 +1,12 @@
-#include "FileGet.hpp"
-
+#include "DownloaderFileGet.hpp"
 
 #include <thread>
 #include <curl/curl.h>
 #include <boost/nowide/fstream.hpp>
 #include <iostream>
 
-
-namespace Downloader {
+namespace Slic3r {
+namespace GUI {
 
 const size_t DOWNLOAD_MAX_CHUNK_SIZE	= 10 * 1024 * 1024;
 const size_t DOWNLOAD_SIZE_LIMIT		= 1024 * 1024 * 1024;
@@ -39,13 +38,13 @@ unsigned get_current_pid()
 }
 
 // int = DOWNLOAD ID; string = file path
-wxDEFINE_EVENT(EVT_FILE_COMPLETE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_DWNLDR_FILE_COMPLETE, wxCommandEvent);
 // int = DOWNLOAD ID; string = error msg
-wxDEFINE_EVENT(EVT_FILE_ERROR, wxCommandEvent);
+wxDEFINE_EVENT(EVT_DWNLDR_FILE_ERROR, wxCommandEvent);
 // int = DOWNLOAD ID; string = progress percent
-wxDEFINE_EVENT(EVT_FILE_PROGRESS, wxCommandEvent);
+wxDEFINE_EVENT(EVT_DWNLDR_FILE_PROGRESS, wxCommandEvent);
 // int = DOWNLOAD ID; string = name
-wxDEFINE_EVENT(EVT_FILE_NAME_CHANGE, wxCommandEvent);
+wxDEFINE_EVENT(EVT_DWNLDR_FILE_NAME_CHANGE, wxCommandEvent);
 
 
 struct FileGet::priv
@@ -99,7 +98,7 @@ void FileGet::priv::get_perform()
 
 		m_tmp_path = m_dest_folder / (m_filename + "." + std::to_string(get_current_pid()) + ".download");
 
-		wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_NAME_CHANGE);
+		wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_NAME_CHANGE);
 		evt->SetString(boost::nowide::widen(m_filename));
 		evt->SetInt(m_id);
 		m_evt_handler->QueueEvent(evt);
@@ -120,10 +119,10 @@ void FileGet::priv::get_perform()
 
 	size_t written_previously = m_written;
 	size_t written_this_session = 0;
-	Downloader::Http::get(m_url)
+	Http::get(m_url)
 		.size_limit(DOWNLOAD_SIZE_LIMIT) //more?
 		.set_range(range_string)
-		.on_progress([&](Downloader::Http::Progress progress, bool& cancel) {
+		.on_progress([&](Http::Progress progress, bool& cancel) {
 			if (m_cancel) {
 				fclose(file);
 				// remove canceled file
@@ -139,7 +138,7 @@ void FileGet::priv::get_perform()
 				return;
 			}
 			
-			wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_PROGRESS);
+			wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_PROGRESS);
 			/*if (progress.dlnow == 0 && m_written == 0) {
 				evt->SetString("0");
 				evt->SetInt(m_id);
@@ -155,7 +154,7 @@ void FileGet::priv::get_perform()
 					catch (const std::exception& e)
 					{
 						// fclose(file); do it?
-						wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_ERROR);
+						wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_ERROR);
 						evt->SetString(e.what());
 						evt->SetInt(m_id);
 						m_evt_handler->QueueEvent(evt);
@@ -173,7 +172,7 @@ void FileGet::priv::get_perform()
 		})
 		.on_error([&](std::string body, std::string error, unsigned http_status) {
 			fclose(file);
-			wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_ERROR);
+			wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_ERROR);
 			evt->SetString(error);
 			evt->SetInt(m_id);
 			m_evt_handler->QueueEvent(evt);
@@ -202,14 +201,14 @@ void FileGet::priv::get_perform()
 			{
 				//TODO: report?
 				//error_message = GUI::format("Failed to write and move %1% to %2%", tmp_path, dest_path);
-				wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_ERROR);
+				wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_ERROR);
 				evt->SetString("Failed to write and move.");
 				evt->SetInt(m_id);
 				m_evt_handler->QueueEvent(evt);
 				return;
 			}
 
-			wxCommandEvent* evt = new wxCommandEvent(EVT_FILE_COMPLETE);
+			wxCommandEvent* evt = new wxCommandEvent(EVT_DWNLDR_FILE_COMPLETE);
 			evt->SetString(dest_path.string());
 			evt->SetInt(m_id);
 			m_evt_handler->QueueEvent(evt);
@@ -276,5 +275,5 @@ void FileGet::resume()
 		p->get_perform();
 		});
 }
-
+}
 }

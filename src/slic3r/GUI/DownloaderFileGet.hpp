@@ -1,7 +1,7 @@
-#ifndef slic3r_FileGet_hpp_
-#define slic3r_FileGet_hpp_
+#ifndef slic3r_DownloaderFileGet_hpp_
+#define slic3r_DownloaderFileGet_hpp_
 
-#include "FromSlicer/Http.hpp"
+#include "../Utils/Http.hpp"
 
 #include <memory>
 #include <string>
@@ -9,7 +9,8 @@
 #include <wx/frame.h>
 #include <boost/filesystem.hpp>
 
-namespace Downloader {
+namespace Slic3r {
+namespace GUI {
 class FileGet : public std::enable_shared_from_this<FileGet> {
 private:
 	struct priv;
@@ -27,12 +28,13 @@ private:
 	std::unique_ptr<priv> p;
 };
 // int = DOWNLOAD ID; string = file path
-wxDECLARE_EVENT(EVT_FILE_COMPLETE, wxCommandEvent);
+wxDECLARE_EVENT(EVT_DWNLDR_FILE_COMPLETE, wxCommandEvent);
 // int = DOWNLOAD ID; string = error msg
-wxDECLARE_EVENT(EVT_FILE_PROGRESS, wxCommandEvent);
+wxDECLARE_EVENT(EVT_DWNLDR_FILE_PROGRESS, wxCommandEvent);
 // int = DOWNLOAD ID; string = progress percent
-wxDECLARE_EVENT(EVT_FILE_ERROR, wxCommandEvent);
+wxDECLARE_EVENT(EVT_DWNLDR_FILE_ERROR, wxCommandEvent);
 // int = DOWNLOAD ID; string = name
-wxDECLARE_EVENT(EVT_FILE_NAME_CHANGE, wxCommandEvent);
+wxDECLARE_EVENT(EVT_DWNLDR_FILE_NAME_CHANGE, wxCommandEvent);
+}
 }
 #endif

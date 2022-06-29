@@ -46,6 +46,7 @@ class ObjectList;
 class ObjectLayers;
 class Plater;
 class NotificationManager;
+class Downloader;
 struct GUI_InitParams;
 
 
@@ -161,6 +162,7 @@ private:
 	std::unique_ptr <OtherInstanceMessageHandler> m_other_instance_message_handler;
     std::unique_ptr <AppUpdater> m_app_updater;
     std::unique_ptr <wxSingleInstanceChecker> m_single_instance_checker;
+    std::unique_ptr <Downloader> m_downloader;
     std::string m_instance_hash_string;
 	size_t m_instance_hash_int;
 
@@ -295,7 +297,8 @@ public:
     Plater*              plater();
     const Plater*        plater() const;
     Model&      		 model();
-    NotificationManager * notification_manager();
+    NotificationManager* notification_manager();
+    Downloader*          downloader();
 
     // Parameters extracted from the command line to be passed to GUI after initialization.
     GUI_InitParams* init_params { nullptr };
@@ -372,6 +375,9 @@ private:
     void            app_version_check(bool from_user);
 
     bool            m_datadir_redefined { false }; 
+
+    // URL download - PrusaSlicer gets system call to open prusaslicer:// URL which should contain address of download
+    void            start_download(std::string url);
 };
 
 DECLARE_APP(GUI_App)

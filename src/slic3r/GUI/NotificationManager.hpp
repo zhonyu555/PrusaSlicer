@@ -115,6 +115,8 @@ enum class NotificationType
 	NetfabbFinished,
 	// Short meesage to fill space between start and finish of export
 	ExportOngoing,
+	// Progressbar of download from prusaslicer:// url
+	URLDownload
 };
 
 class NotificationManager
@@ -208,6 +210,11 @@ public:
 	// Download App progress
 	void push_download_progress_notification(const std::string& text, std::function<bool()>	cancel_callback);
 	void set_download_progress_percentage(float percentage);
+	// Download URL progress notif
+	void push_download_URL_progress_notification(size_t id, const std::string& text, std::function<bool()> cancel_callback);
+	void set_download_URL_progress(size_t id, float percentage);
+	void set_download_URL_canceled(size_t id, const std::string& text);
+	void set_download_URL_error(size_t id, const std::string& text);
 	// slicing progress
 	void init_slicing_progress_notification(std::function<bool()> cancel_callback);
 	void set_slicing_progress_began();
@@ -493,6 +500,22 @@ private:
 
 		std::function<bool()>	m_cancel_callback;
 		long					m_hover_time{ 0 };
+	};
+
+	class URLDownloadNotification : public ProgressBarNotification//ProgressBarWithCancelNotification
+	{
+	public:
+		URLDownloadNotification(const NotificationData& n, NotificationIDProvider& id_provider, wxEvtHandler* evt_handler, size_t download_id, std::function<bool()> cancel_callback)
+			//: ProgressBarWithCancelNotification(n, id_provider, evt_handler, cancel_callback)
+			: ProgressBarNotification(n, id_provider, evt_handler)
+			, m_download_id(download_id)
+		{
+		}
+
+		size_t get_download_id() { return m_download_id; }
+	protected: 
+
+		size_t m_download_id;
 	};
 
 	class PrintHostUploadNotification : public ProgressBarNotification

@@ -1,11 +1,14 @@
-#ifndef slic3r_Download_hpp_
-#define slic3r_Download_hpp_
+#ifndef slic3r_Downloader_hpp_
+#define slic3r_Downloader_hpp_
 
-#include "FileGet.hpp"
-
+#include "DownloaderFileGet.hpp"
+#include <boost/filesystem/path.hpp>
 #include <wx/wx.h>
 
-namespace Downloader {
+namespace Slic3r {
+namespace GUI {
+
+class NotificationManager;
 
 enum DownloadState
 {
@@ -20,7 +23,7 @@ enum DownloadState
 
 class Download { 
 public:
-    Download(int ID, std::string url, wxEvtHandler* evt_handler,const boost::filesystem::path& dest_folder);
+    Download(int ID, std::string url, wxEvtHandler* evt_handler, const boost::filesystem::path& dest_folder);
     void start();
     void cancel();
     void pause();
@@ -38,6 +41,47 @@ private:
     std::shared_ptr<FileGet> m_file_get;
     DownloadState m_state { DownloadState::DownloadPending };
 };
-}
 
+class Downloader : public wxEvtHandler {
+public:
+    Downloader();
+    
+    bool get_initialized() { return m_initialized; }
+    void init(const boost::filesystem::path& dest_folder) 
+    { 
+        m_dest_folder = dest_folder;
+        m_initialized = true; 
+    }
+    void start_download(const std::string& full_url);
+
+    bool cancel_callback();
+private:
+    bool m_initialized { false };
+
+    std::vector<std::unique_ptr<Download>> m_downloads;
+    boost::filesystem::path m_dest_folder;
+
+    size_t m_next_id { 0 };
+    size_t get_next_id() { return ++m_next_id; }
+
+    void on_progress(wxCommandEvent& event);
+    void on_error(wxCommandEvent& event);
+    void on_complete(wxCommandEvent& event);
+    void on_name_change(wxCommandEvent& event);
+
+    void set_download_state(size_t id, DownloadState state);
+    /*
+    bool is_in_state(int id, DownloadState state) const;
+    DownloadState get_download_state(int id) const;
+    bool cancel_download(int id);
+    bool pause_download(int id);
+    bool resume_download(int id);
+    bool delete_download(int id);
+    wxString get_path_of(int id) const;
+    wxString get_folder_path_of(int id) const;
+    */
+};
+
+}
+}
 #endif

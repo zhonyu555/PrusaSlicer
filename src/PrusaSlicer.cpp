@@ -115,7 +115,8 @@ int CLI::run(int argc, char **argv)
         std::find(m_transforms.begin(), m_transforms.end(), "cut") == m_transforms.end() &&
         std::find(m_transforms.begin(), m_transforms.end(), "cut_x") == m_transforms.end() &&
         std::find(m_transforms.begin(), m_transforms.end(), "cut_y") == m_transforms.end();
-    bool                            start_as_downloader = false;
+    bool                            start_downloader = false;
+    std::string                     download_url;
     bool 							start_as_gcodeviewer =
 #ifdef _WIN32
             false;
@@ -177,14 +178,13 @@ int CLI::run(int argc, char **argv)
             start_as_gcodeviewer = true;
             break;
         }
-    for (const std::string& file : m_input_files) {
-        //if (boost::starts_with(file, "open?file=")) {
-            start_as_downloader = true;
-            break;
-        //}
-    }
-    if (!start_as_gcodeviewer && !start_as_downloader) {
+    if (!start_as_gcodeviewer) {
         for (const std::string& file : m_input_files) {
+            if (boost::starts_with(file, "prusaslicer://")) {
+                start_downloader = true;
+                download_url = file;
+                continue;
+            }
             if (!boost::filesystem::exists(file)) {
                 boost::nowide::cerr << "No such file: " << file << std::endl;
                 exit(1);
@@ -625,7 +625,8 @@ int CLI::run(int argc, char **argv)
         params.extra_config = std::move(m_extra_config);
         params.input_files  = std::move(m_input_files);
         params.start_as_gcodeviewer = start_as_gcodeviewer;
-        params.start_as_downloader = start_as_downloader;
+        params.start_downloader = start_downloader;
+        params.download_url = download_url;
         return Slic3r::GUI::GUI_Run(params);
 #else // SLIC3R_GUI
         // No GUI support. Just print out a help.

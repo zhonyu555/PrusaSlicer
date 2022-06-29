@@ -1253,11 +1253,13 @@ PageUpdate::PageUpdate(ConfigWizard *parent)
 
         boost::filesystem::path binary_path(resources_dir());
 
-        binary_path = binary_path.parent_path() / "prusa-slicer-downloader.exe";
+        //binary_path = binary_path.parent_path() / "prusa-slicer-downloader.exe";
+        binary_path = binary_path.parent_path() / "prusa-slicer-console.exe";
 
         std::string binary_string = binary_path.string();
 
-        std::string key_string = "\"" + binary_string + "\" \"-u\" \"%1\"";
+        //std::string key_string = "\"" + binary_string + "\" \"-u\" \"%1\"";
+        std::string key_string = "\"" + binary_string + "\" \"%1\"";
 
         wxRegKey key_first(wxRegKey::HKCU, "Software\\Classes\\prusaslicer");
         wxRegKey key_full(wxRegKey::HKCU, "Software\\Classes\\prusaslicer\\shell\\open\\command");

@@ -76,6 +76,7 @@
 #include "PrintHostDialogs.hpp"
 #include "DesktopIntegrationDialog.hpp"
 #include "SendSystemInfoDialog.hpp"
+#include "Downloader.hpp"
 
 #include "BitmapCache.hpp"
 #include "Notebook.hpp"
@@ -741,13 +742,16 @@ void GUI_App::post_init()
         if (! this->init_params->input_files.empty())
             this->plater()->load_gcode(wxString::FromUTF8(this->init_params->input_files[0].c_str()));
     }
-    if (this->init_params->start_as_downloader) {
+    if (this->init_params->start_downloader) {
+        /*
         std::string msg;
         for (int i = 0; i < this->init_params->input_files.size(); ++i)
         {
             msg += this->init_params->input_files[i];
         }
         show_error(nullptr, "Got url msg." + msg);
+        */
+        start_download(this->init_params->download_url);
     }
     else {
         if (! this->init_params->preset_substitutions.empty())
@@ -826,6 +830,7 @@ GUI_App::GUI_App(EAppMode mode)
     , m_imgui(new ImGuiWrapper())
 	, m_removable_drive_manager(std::make_unique<RemovableDriveManager>())
 	, m_other_instance_message_handler(std::make_unique<OtherInstanceMessageHandler>())
+    , m_downloader(std::make_unique<Downloader>())
 {
 	//app config initializes early becasuse it is used in instance checking in PrusaSlicer.cpp
 	this->init_app_config();
@@ -1255,7 +1260,8 @@ bool GUI_App::on_init_inner()
 
         Bind(EVT_SLIC3R_APP_OPEN_FAILED, [](const wxCommandEvent& evt) {
             show_error(nullptr, evt.GetString());
-        });
+        }); 
+
     }
     else {
 #ifdef __WXMSW__ 
@@ -2831,9 +2837,14 @@ wxBookCtrlBase* GUI_App::tab_panel() const
     return mainframe->m_tabpanel;
 }
 
-NotificationManager * GUI_App::notification_manager()
+NotificationManager* GUI_App::notification_manager()
 {
     return plater_->get_notification_manager();
+}
+
+Downloader* GUI_App::downloader()
+{
+    return m_downloader.get();
 }
 
 // extruders count from selected printer preset
@@ -3362,6 +3373,17 @@ void GUI_App::app_version_check(bool from_user)
     }
     std::string version_check_url = app_config->version_check_url();
     m_app_updater->sync_version(version_check_url, from_user);
+}
+
+void GUI_App::start_download(std::string url)
+{
+    if (!plater_) {
+        BOOST_LOG_TRIVIAL(error) << "Could not start URL download: plater is nullptr.";
+        return; 
+    }
+    if (!m_downloader->get_initialized())
+        m_downloader->init(boost::dll::program_location().parent_path()); // TODO WHERE
+    m_downloader->start_download(url);
 }
 
 } // GUI
