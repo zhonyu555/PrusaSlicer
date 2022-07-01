@@ -8151,7 +8151,7 @@ msgstr "Qualidade (fatiamento mais lento)"
 
 #: src/slic3r/GUI/Tab.cpp:1497
 msgid "Fuzzy skin (experimental)"
-msgstr "Fuzzy skin (Pele Difusa - experimental)"
+msgstr "Pele Difusa (Fuzzy skin - experimental)"
 
 #: src/slic3r/GUI/Tab.cpp:1520
 msgid "Reducing printing time"
