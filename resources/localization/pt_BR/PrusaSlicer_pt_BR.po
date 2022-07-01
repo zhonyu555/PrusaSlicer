@@ -3639,12 +3639,12 @@ msgstr "Bloco e suporte"
 #: src/libslic3r/PrintConfig.cpp:1561 src/libslic3r/PrintConfig.cpp:1575 src/libslic3r/PrintConfig.cpp:1585
 #: src/libslic3r/PrintConfig.cpp:1593 src/libslic3r/PrintConfig.cpp:1595
 msgid "Ironing"
-msgstr "Ironing (Passar ferro)"
+msgstr "Passar ferro"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:130 src/libslic3r/PrintConfig.cpp:1278 src/libslic3r/PrintConfig.cpp:1279
 #: src/libslic3r/PrintConfig.cpp:1294 src/libslic3r/PrintConfig.cpp:1304
 msgid "Fuzzy Skin"
-msgstr "Fuzzy Skin (Pele Difusa)"
+msgstr "Pele Difusa"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:132 src/slic3r/GUI/GUI_Preview.cpp:220 src/slic3r/GUI/Tab.cpp:1581
 #: src/libslic3r/PrintConfig.cpp:506 src/libslic3r/PrintConfig.cpp:762 src/libslic3r/PrintConfig.cpp:1321
@@ -11072,23 +11072,23 @@ msgstr "Padrão de preenchimento para preenchimento de baixa densidade."
 
 #: src/libslic3r/PrintConfig.cpp:1166 src/libslic3r/PrintConfig.cpp:2771
 msgid "Grid"
-msgstr "Grid (Grade)"
+msgstr "Grade"
 
 #: src/libslic3r/PrintConfig.cpp:1168
 msgid "Stars"
-msgstr "Stars (Estrelas)"
+msgstr "Estrelas"
 
 #: src/libslic3r/PrintConfig.cpp:1169
 msgid "Cubic"
-msgstr "Cubic (Cúbico)"
+msgstr "Cúbico"
 
 #: src/libslic3r/PrintConfig.cpp:1170
 msgid "Line"
-msgstr "Line (Linha)"
+msgstr "Linha"
 
 #: src/libslic3r/PrintConfig.cpp:1172 src/libslic3r/PrintConfig.cpp:2724
 msgid "Honeycomb"
-msgstr "Honeycomb (Colméia)"
+msgstr "Hexágono"
 
 #: src/libslic3r/PrintConfig.cpp:1173
 msgid "3D Honeycomb"
@@ -11717,11 +11717,11 @@ msgstr "Taxa de alimentação mínima ao extrudar (M205 S)"
 
 #: src/libslic3r/PrintConfig.cpp:1725
 msgid "Minimum travel feedrate"
-msgstr "Taxa de alimentação mínima ao viajar"
+msgstr "Taxa de alimentação mínima no deslocamento"
 
 #: src/libslic3r/PrintConfig.cpp:1727
 msgid "Minimum travel feedrate (M205 T)"
-msgstr "Taxa de alimentação mínima ao viajar (M205 T)"
+msgstr "Taxa de alimentação mínima no deslocamento (M205 T)"
 
 #: src/libslic3r/PrintConfig.cpp:1735
 msgid "Maximum acceleration when extruding"
@@ -12569,7 +12569,7 @@ msgid ""
 "with the print."
 msgstr ""
 "Se ativada, a torre de limpeza não será impressa em camadas sem alterações de ferramentas. Em camadas com uma "
-"troca de ferramentas, o extrusor viajará para baixo para imprimir a torre de limpeza. O usuário é responsável "
+"troca de ferramentas, o extrusor deslocará para baixo para imprimir a torre de limpeza. O usuário é responsável "
 "por garantir que não haja colisão com a impressão."
 
 #: src/libslic3r/PrintConfig.cpp:2497
@@ -14520,7 +14520,7 @@ msgstr ""
 "Passar Ferro\n"
 "Você sabia que pode suavizar as superfícies superiores das impressões usando o Passar Ferro? O bico executará uma "
 "segunda fase especial de preenchimento na mesma camada para preencher buracos e achatar qualquer plástico "
-"levantado. Leia mais na documentação. (Requer o modo Avançado ou Especialista.)"
+"levantado. Leia mais na documentação. (Requer o modo Avançado ou Especialista)"
 
 #: resources/data/hints.ini: [hint:Paint-on supports]
 msgid ""
@@ -14530,7 +14530,7 @@ msgid ""
 msgstr ""
 "Suportes para pintura\n"
 "Você sabia que pode pintar diretamente no objeto e selecionar áreas, onde os suportes devem ser aplicados ou "
-"bloqueados? Experimente o recurso <a>suportes pintados</a>. (Requer o modo Avançado ou Especialista.)"
+"bloqueados? Experimente o recurso <a>suportes pintados</a>. (Requer o modo Avançado ou Especialista)"
 
 #: resources/data/hints.ini: [hint:Paint-on seam]
 msgid ""
