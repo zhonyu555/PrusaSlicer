@@ -9,7 +9,7 @@
 namespace Slic3r {
 
 class ExPolygon;
-typedef std::vector<ExPolygon> ExPolygons;
+using ExPolygons = std::vector<ExPolygon>;
 
 class ExPolygon
 {
@@ -67,6 +67,8 @@ public:
     void simplify(double tolerance, ExPolygons* expolygons) const;
     void medial_axis(double max_width, double min_width, ThickPolylines* polylines) const;
     void medial_axis(double max_width, double min_width, Polylines* polylines) const;
+    Polylines medial_axis(double max_width, double min_width) const 
+        { Polylines out; this->medial_axis(max_width, min_width, &out); return out; }
     Lines lines() const;
 
     // Number of contours (outer contour with holes).
@@ -83,8 +85,8 @@ inline bool operator!=(const ExPolygon &lhs, const ExPolygon &rhs) { return lhs.
 inline size_t number_polygons(const ExPolygons &expolys)
 {
     size_t n_polygons = 0;
-    for (ExPolygons::const_iterator it = expolys.begin(); it != expolys.end(); ++ it)
-        n_polygons += it->holes.size() + 1;
+    for (const ExPolygon &ex : expolys)
+        n_polygons += ex.holes.size() + 1;
     return n_polygons;
 }
 
@@ -169,10 +171,10 @@ inline Polylines to_polylines(ExPolygon &&src)
     Polyline &pl = polylines[idx ++];
     pl.points = std::move(src.contour.points);
     pl.points.push_back(pl.points.front());
-    for (Polygons::const_iterator ith = src.holes.begin(); ith != src.holes.end(); ++ith) {
+    for (auto ith = src.holes.begin(); ith != src.holes.end(); ++ith) {
         Polyline &pl = polylines[idx ++];
         pl.points = std::move(ith->points);
-        pl.points.push_back(ith->points.front());
+        pl.points.push_back(pl.points.front());
     }
     assert(idx == polylines.size());
     return polylines;
@@ -183,14 +185,14 @@ inline Polylines to_polylines(ExPolygons &&src)
     Polylines polylines;
     polylines.assign(number_polygons(src), Polyline());
     size_t idx = 0;
-    for (ExPolygons::const_iterator it = src.begin(); it != src.end(); ++it) {
+    for (auto it = src.begin(); it != src.end(); ++it) {
         Polyline &pl = polylines[idx ++];
         pl.points = std::move(it->contour.points);
         pl.points.push_back(pl.points.front());
-        for (Polygons::const_iterator ith = it->holes.begin(); ith != it->holes.end(); ++ith) {
+        for (auto ith = it->holes.begin(); ith != it->holes.end(); ++ith) {
             Polyline &pl = polylines[idx ++];
             pl.points = std::move(ith->points);
-            pl.points.push_back(ith->points.front());
+            pl.points.push_back(pl.points.front());
         }
     }
     assert(idx == polylines.size());
@@ -351,22 +353,24 @@ inline ExPolygons expolygons_simplify(const ExPolygons &expolys, double toleranc
 	return out;
 }
 
-extern BoundingBox get_extents(const ExPolygon &expolygon);
-extern BoundingBox get_extents(const ExPolygons &expolygons);
-extern BoundingBox get_extents_rotated(const ExPolygon &poly, double angle);
-extern BoundingBox get_extents_rotated(const ExPolygons &polygons, double angle);
-extern std::vector<BoundingBox> get_extents_vector(const ExPolygons &polygons);
+BoundingBox get_extents(const ExPolygon &expolygon);
+BoundingBox get_extents(const ExPolygons &expolygons);
+BoundingBox get_extents_rotated(const ExPolygon &poly, double angle);
+BoundingBox get_extents_rotated(const ExPolygons &polygons, double angle);
+std::vector<BoundingBox> get_extents_vector(const ExPolygons &polygons);
 
-extern bool        remove_sticks(ExPolygon &poly);
-extern void 	   keep_largest_contour_only(ExPolygons &polygons);
+// Test for duplicate points. The points are copied, sorted and checked for duplicates globally.
+bool has_duplicate_points(const ExPolygon &expoly);
+bool has_duplicate_points(const ExPolygons &expolys);
 
-inline double area(const ExPolygons &polys)
-{
-    double s = 0.;
-    for (auto &p : polys) s += p.area();
+bool remove_sticks(ExPolygon &poly);
+void keep_largest_contour_only(ExPolygons &polygons);
 
-    return s;
-}
+inline double      area(const ExPolygon &poly) { return poly.area(); }
+inline double      area(const ExPolygons &polys) { double s = 0.; for (auto &p : polys) s += p.area(); return s; }
+
+// Removes all expolygons smaller than min_area and also removes all holes smaller than min_area
+bool        remove_small_and_small_holes(ExPolygons &expolygons, double min_area);
 
 } // namespace Slic3r
 

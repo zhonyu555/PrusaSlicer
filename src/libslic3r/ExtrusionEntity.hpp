@@ -11,7 +11,8 @@
 
 namespace Slic3r {
 
-class ExPolygonCollection;
+class ExPolygon;
+using ExPolygons = std::vector<ExPolygon>;
 class ExtrusionEntityCollection;
 class Extruder;
 
@@ -84,7 +85,7 @@ public:
     virtual ExtrusionEntity* clone() const = 0;
     // Create a new object, initialize it with this object using the move semantics.
     virtual ExtrusionEntity* clone_move() = 0;
-    virtual ~ExtrusionEntity() {}
+    virtual ~ExtrusionEntity() = default;
     virtual void reverse() = 0;
     virtual const Point& first_point() const = 0;
     virtual const Point& last_point() const = 0;
@@ -144,12 +145,12 @@ public:
     size_t size() const { return this->polyline.size(); }
     bool empty() const { return this->polyline.empty(); }
     bool is_closed() const { return ! this->empty() && this->polyline.points.front() == this->polyline.points.back(); }
-    // Produce a list of extrusion paths into retval by clipping this path by ExPolygonCollection.
+    // Produce a list of extrusion paths into retval by clipping this path by ExPolygons.
     // Currently not used.
-    void intersect_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const;
-    // Produce a list of extrusion paths into retval by removing parts of this path by ExPolygonCollection.
+    void intersect_expolygons(const ExPolygons &collection, ExtrusionEntityCollection* retval) const;
+    // Produce a list of extrusion paths into retval by removing parts of this path by ExPolygons.
     // Currently not used.
-    void subtract_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const;
+    void subtract_expolygons(const ExPolygons &collection, ExtrusionEntityCollection* retval) const;
     void clip_end(double distance);
     void simplify(double tolerance);
     double length() const override;
@@ -242,7 +243,7 @@ public:
     ExtrusionLoop(ExtrusionPaths &&paths, ExtrusionLoopRole role = elrDefault) : paths(std::move(paths)), m_loop_role(role) {}
     ExtrusionLoop(const ExtrusionPath &path, ExtrusionLoopRole role = elrDefault) : m_loop_role(role) 
         { this->paths.push_back(path); }
-    ExtrusionLoop(const ExtrusionPath &&path, ExtrusionLoopRole role = elrDefault) : m_loop_role(role)
+    ExtrusionLoop(ExtrusionPath &&path, ExtrusionLoopRole role = elrDefault) : m_loop_role(role)
         { this->paths.emplace_back(std::move(path)); }
     bool is_loop() const override{ return true; }
     bool can_reverse() const override { return false; }
@@ -258,6 +259,7 @@ public:
     double length() const override;
     bool split_at_vertex(const Point &point);
     void split_at(const Point &point, bool prefer_non_overhang);
+    std::pair<size_t, Point> get_closest_path_and_point(const Point& point, bool prefer_non_overhang) const;
     void clip_end(double distance, ExtrusionPaths* paths) const;
     // Test, whether the point is extruded by a bridging flow.
     // This used to be used to avoid placing seams on overhangs, but now the EdgeGrid is used instead.
@@ -323,10 +325,10 @@ inline void extrusion_paths_append(ExtrusionPaths &dst, Polylines &&polylines, E
     polylines.clear();
 }
 
-inline void extrusion_entities_append_paths(ExtrusionEntitiesPtr &dst, Polylines &polylines, ExtrusionRole role, double mm3_per_mm, float width, float height)
+inline void extrusion_entities_append_paths(ExtrusionEntitiesPtr &dst, const Polylines &polylines, ExtrusionRole role, double mm3_per_mm, float width, float height)
 {
     dst.reserve(dst.size() + polylines.size());
-    for (Polyline &polyline : polylines)
+    for (const Polyline &polyline : polylines)
         if (polyline.is_valid()) {
             ExtrusionPath *extrusion_path = new ExtrusionPath(role, mm3_per_mm, width, height);
             dst.push_back(extrusion_path);

@@ -55,7 +55,7 @@
         %code%{
             auto config = new DynamicPrintConfig();
             try {
-                config->load(path);
+                config->load(path, ForwardCompatibilitySubstitutionRule::Disable);
                 RETVAL = config;
             } catch (std::exception& e) {
                 delete config;
@@ -76,10 +76,6 @@
         %code{% RETVAL = new GCodeConfig(); %};
     static StaticPrintConfig* new_PrintConfig()
         %code{% RETVAL = static_cast<GCodeConfig*>(new PrintConfig()); %};
-    static StaticPrintConfig* new_PrintObjectConfig()
-        %code{% RETVAL = new PrintObjectConfig(); %};
-    static StaticPrintConfig* new_PrintRegionConfig()
-        %code{% RETVAL = new PrintRegionConfig(); %};
     static StaticPrintConfig* new_FullPrintConfig()
         %code{% RETVAL = static_cast<GCodeConfig*>(new FullPrintConfig()); %};
     ~StaticPrintConfig();
@@ -108,7 +104,7 @@
     std::string get_extrusion_axis()
         %code{%
             if (GCodeConfig* config = dynamic_cast<GCodeConfig*>(THIS)) {
-                RETVAL = config->get_extrusion_axis();
+                RETVAL = get_extrusion_axis(*config);
             } else {
                 CONFESS("This StaticConfig object does not provide get_extrusion_axis()");
             }
@@ -119,7 +115,7 @@
         %code%{
             auto config = new FullPrintConfig();
             try {
-                config->load(path);
+                config->load(path, ForwardCompatibilitySubstitutionRule::Disable);
                 RETVAL = static_cast<GCodeConfig*>(config);
             } catch (std::exception& e) {
                 delete config;

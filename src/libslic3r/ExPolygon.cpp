@@ -1,7 +1,7 @@
 #include "BoundingBox.hpp"
 #include "ExPolygon.hpp"
 #include "Exception.hpp"
-#include "Geometry.hpp"
+#include "Geometry/MedialAxis.hpp"
 #include "Polygon.hpp"
 #include "Line.hpp"
 #include "ClipperUtils.hpp"
@@ -92,7 +92,7 @@ bool ExPolygon::contains(const Line &line) const
 
 bool ExPolygon::contains(const Polyline &polyline) const
 {
-    return diff_pl((Polylines)polyline, *this).empty();
+    return diff_pl(polyline, *this).empty();
 }
 
 bool ExPolygon::contains(const Polylines &polylines) const
@@ -114,10 +114,11 @@ bool ExPolygon::contains(const Polylines &polylines) const
 
 bool ExPolygon::contains(const Point &point) const
 {
-    if (!this->contour.contains(point)) return false;
-    for (Polygons::const_iterator it = this->holes.begin(); it != this->holes.end(); ++it) {
-        if (it->contains(point)) return false;
-    }
+    if (! this->contour.contains(point))
+        return false;
+    for (const Polygon &hole : this->holes)
+        if (hole.contains(point))
+            return false;
     return true;
 }
 
@@ -367,9 +368,81 @@ extern std::vector<BoundingBox> get_extents_vector(const ExPolygons &polygons)
     return out;
 }
 
+bool has_duplicate_points(const ExPolygon &expoly)
+{
+#if 1
+    // Check globally.
+    size_t cnt = expoly.contour.points.size();
+    for (const Polygon &hole : expoly.holes)
+        cnt += hole.points.size();
+    std::vector<Point> allpts;
+    allpts.reserve(cnt);
+    allpts.insert(allpts.begin(), expoly.contour.points.begin(), expoly.contour.points.end());
+    for (const Polygon &hole : expoly.holes)
+        allpts.insert(allpts.end(), hole.points.begin(), hole.points.end());
+    return has_duplicate_points(std::move(allpts));
+#else
+    // Check per contour.
+    if (has_duplicate_points(expoly.contour))
+        return true;
+    for (const Polygon &hole : expoly.holes)
+        if (has_duplicate_points(hole))
+            return true;
+    return false;
+#endif
+}
+
+bool has_duplicate_points(const ExPolygons &expolys)
+{
+#if 1
+    // Check globally.
+    size_t cnt = 0;
+    for (const ExPolygon &expoly : expolys) {
+        cnt += expoly.contour.points.size();
+        for (const Polygon &hole : expoly.holes)
+            cnt += hole.points.size();
+    }
+    std::vector<Point> allpts;
+    allpts.reserve(cnt);
+    for (const ExPolygon &expoly : expolys) {
+        allpts.insert(allpts.begin(), expoly.contour.points.begin(), expoly.contour.points.end());
+        for (const Polygon &hole : expoly.holes)
+            allpts.insert(allpts.end(), hole.points.begin(), hole.points.end());
+    }
+    return has_duplicate_points(std::move(allpts));
+#else
+    // Check per contour.
+    for (const ExPolygon &expoly : expolys)
+        if (has_duplicate_points(expoly))
+            return true;
+    return false;
+#endif
+}
+
 bool remove_sticks(ExPolygon &poly)
 {
     return remove_sticks(poly.contour) || remove_sticks(poly.holes);
+}
+
+bool remove_small_and_small_holes(ExPolygons &expolygons, double min_area)
+{
+    bool   modified = false;
+    size_t free_idx = 0;
+    for (size_t expoly_idx = 0; expoly_idx < expolygons.size(); ++expoly_idx) {
+        if (std::abs(expolygons[expoly_idx].area()) >= min_area) {
+            // Expolygon is big enough, so also check all its holes
+            modified |= remove_small(expolygons[expoly_idx].holes, min_area);
+            if (free_idx < expoly_idx) {
+                std::swap(expolygons[expoly_idx].contour, expolygons[free_idx].contour);
+                std::swap(expolygons[expoly_idx].holes, expolygons[free_idx].holes);
+            }
+            ++free_idx;
+        } else
+            modified = true;
+    }
+    if (free_idx < expolygons.size())
+        expolygons.erase(expolygons.begin() + free_idx, expolygons.end());
+    return modified;
 }
 
 void keep_largest_contour_only(ExPolygons &polygons)

@@ -1,26 +1,33 @@
 #include <catch2/catch.hpp>
 
+#include "libslic3r/Config.hpp"
 #include "libslic3r/PrintConfig.hpp"
+#include "libslic3r/LocalesUtils.hpp"
+
+#include <cereal/types/polymorphic.hpp>
+#include <cereal/types/string.hpp> 
+#include <cereal/types/vector.hpp> 
+#include <cereal/archives/binary.hpp>
 
 using namespace Slic3r;
 
 SCENARIO("Generic config validation performs as expected.", "[Config]") {
     GIVEN("A config generated from default options") {
         Slic3r::DynamicPrintConfig config = Slic3r::DynamicPrintConfig::full_print_config();
-        WHEN( "perimeter_extrusion_width is set to 250%, a valid value") {
-            config.set_deserialize("perimeter_extrusion_width", "250%");
+        WHEN("perimeter_extrusion_width is set to 250%, a valid value") {
+            config.set_deserialize_strict("perimeter_extrusion_width", "250%");
             THEN( "The config is read as valid.") {
                 REQUIRE(config.validate().empty());
             }
         }
-        WHEN( "perimeter_extrusion_width is set to -10, an invalid value") {
+        WHEN("perimeter_extrusion_width is set to -10, an invalid value") {
             config.set("perimeter_extrusion_width", -10);
             THEN( "Validate returns error") {
                 REQUIRE(! config.validate().empty());
             }
         }
 
-        WHEN( "perimeters is set to -10, an invalid value") {
+        WHEN("perimeters is set to -10, an invalid value") {
             config.set("perimeters", -10);
             THEN( "Validate returns error") {
                 REQUIRE(! config.validate().empty());
@@ -30,8 +37,7 @@ SCENARIO("Generic config validation performs as expected.", "[Config]") {
 }
 
 SCENARIO("Config accessor functions perform as expected.", "[Config]") {
-    GIVEN("A config generated from default options") {
-        Slic3r::DynamicPrintConfig config = Slic3r::DynamicPrintConfig::full_print_config();
+    auto test = [](ConfigBase &config) {
         WHEN("A boolean option is set to a boolean value") {
             REQUIRE_NOTHROW(config.set("gcode_comments", true));
             THEN("The underlying value is set correctly.") {
@@ -39,7 +45,7 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
             }
         }
         WHEN("A boolean option is set to a string value representing a 0 or 1") {
-            CHECK_NOTHROW(config.set_deserialize("gcode_comments", "1"));
+            CHECK_NOTHROW(config.set_deserialize_strict("gcode_comments", "1"));
             THEN("The underlying value is set correctly.") {
                 REQUIRE(config.opt<ConfigOptionBool>("gcode_comments")->getBool() == true);
             }
@@ -58,14 +64,14 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
             }
         }
         WHEN("A numeric option is set from serialized string") {
-            config.set_deserialize("bed_temperature", "100");
+            config.set_deserialize_strict("bed_temperature", "100");
             THEN("The underlying value is set correctly.") {
                 REQUIRE(config.opt<ConfigOptionInts>("bed_temperature")->get_at(0) == 100);
             }
         }
 #if 0
-		//FIXME better design accessors for vector elements.
-		WHEN("An integer-based option is set through the integer interface") {
+        //FIXME better design accessors for vector elements.
+        WHEN("An integer-based option is set through the integer interface") {
             config.set("bed_temperature", 100);
             THEN("The underlying value is set correctly.") {
                 REQUIRE(config.opt<ConfigOptionInts>("bed_temperature")->get_at(0) == 100);
@@ -91,7 +97,7 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
         }
         WHEN("A numeric option is set to a non-numeric value.") {
             THEN("A BadOptionTypeException exception is thown.") {
-                REQUIRE_THROWS_AS(config.set_deserialize("perimeter_speed", "zzzz"), BadOptionTypeException);
+                REQUIRE_THROWS_AS(config.set_deserialize_strict("perimeter_speed", "zzzz"), BadOptionValueException);
             }
             THEN("The value does not change.") {
                 REQUIRE(config.opt<ConfigOptionFloat>("perimeter_speed")->getFloat() == 60.0);
@@ -112,11 +118,11 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
         WHEN("A string option is set through the double interface") {
             config.set("end_gcode", 100.5);
             THEN("The underlying value is set correctly.") {
-                REQUIRE(config.opt<ConfigOptionString>("end_gcode")->value == std::to_string(100.5));
+                REQUIRE(config.opt<ConfigOptionString>("end_gcode")->value == float_to_string_decimal_point(100.5));
             }
         }
         WHEN("A float or percent is set as a percent through the string interface.") {
-            config.set_deserialize("first_layer_extrusion_width", "100%");
+            config.set_deserialize_strict("first_layer_extrusion_width", "100%");
             THEN("Value and percent flag are 100/true") {
                 auto tmp = config.opt<ConfigOptionFloatOrPercent>("first_layer_extrusion_width");
                 REQUIRE(tmp->percent == true);
@@ -124,7 +130,7 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
             }
         }
         WHEN("A float or percent is set as a float through the string interface.") {
-            config.set_deserialize("first_layer_extrusion_width", "100");
+            config.set_deserialize_strict("first_layer_extrusion_width", "100");
             THEN("Value and percent flag are 100/false") {
                 auto tmp = config.opt<ConfigOptionFloatOrPercent>("first_layer_extrusion_width");
                 REQUIRE(tmp->percent == false);
@@ -187,6 +193,14 @@ SCENARIO("Config accessor functions perform as expected.", "[Config]") {
                 REQUIRE(config.opt_float("layer_height") == 0.5);
             }
         }
+    };
+    GIVEN("DynamicPrintConfig generated from default options") {
+        auto config = Slic3r::DynamicPrintConfig::full_print_config();
+        test(config);
+    }
+    GIVEN("FullPrintConfig generated from default options") {
+        Slic3r::FullPrintConfig config;
+        test(config);
     }
 }
 
@@ -194,10 +208,40 @@ SCENARIO("Config ini load/save interface", "[Config]") {
     WHEN("new_from_ini is called") {
 		Slic3r::DynamicPrintConfig config;
 		std::string path = std::string(TEST_DATA_DIR) + "/test_config/new_from_ini.ini";
-		config.load_from_ini(path);
+		config.load_from_ini(path, ForwardCompatibilitySubstitutionRule::Disable);
         THEN("Config object contains ini file options.") {
 			REQUIRE(config.option_throw<ConfigOptionStrings>("filament_colour", false)->values.size() == 1);
 			REQUIRE(config.option_throw<ConfigOptionStrings>("filament_colour", false)->values.front() == "#ABCD");
+        }
+    }
+}
+
+SCENARIO("DynamicPrintConfig serialization", "[Config]") {
+    WHEN("DynamicPrintConfig is serialized and deserialized") {
+        FullPrintConfig full_print_config;
+        DynamicPrintConfig cfg;
+        cfg.apply(full_print_config, false);
+
+        std::string serialized;
+        try {
+            std::ostringstream ss;
+            cereal::BinaryOutputArchive oarchive(ss);
+            oarchive(cfg);
+            serialized = ss.str();
+        } catch (const std::runtime_error & /* e */) {
+            // e.what();
+        }
+
+        THEN("Config object contains ini file options.") {
+            DynamicPrintConfig cfg2;
+            try {
+                std::stringstream ss(serialized);
+                cereal::BinaryInputArchive iarchive(ss);
+                iarchive(cfg2);
+            } catch (const std::runtime_error & /* e */) {
+                // e.what();
+            }
+            REQUIRE(cfg == cfg2);
         }
     }
 }

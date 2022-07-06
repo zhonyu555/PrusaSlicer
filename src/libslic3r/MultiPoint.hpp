@@ -17,7 +17,8 @@ class MultiPoint
 public:
     Points points;
     
-    MultiPoint() {}
+    MultiPoint() = default;
+    virtual ~MultiPoint() = default;
     MultiPoint(const MultiPoint &other) : points(other.points) {}
     MultiPoint(MultiPoint &&other) : points(std::move(other.points)) {}
     MultiPoint(std::initializer_list<Point> list) : points(list) {}
@@ -33,7 +34,9 @@ public:
     void rotate(double angle, const Point &center);
     void reverse() { std::reverse(this->points.begin(), this->points.end()); }
 
-    const Point& first_point() const { return this->points.front(); }
+    const Point& front() const { return this->points.front(); }
+    const Point& back() const { return this->points.back(); }
+    const Point& first_point() const { return this->front(); }
     virtual const Point& last_point() const = 0;
     virtual Lines lines() const = 0;
     size_t size() const { return points.size(); }
@@ -84,6 +87,13 @@ public:
 
     static Points _douglas_peucker(const Points &points, const double tolerance);
     static Points visivalingam(const Points& pts, const double& tolerance);
+
+    inline auto begin()        { return points.begin(); }
+    inline auto begin()  const { return points.begin(); }
+    inline auto end()          { return points.end();   }
+    inline auto end()    const { return points.end();   }
+    inline auto cbegin() const { return points.begin(); }
+    inline auto cend()   const { return points.end();   }
 };
 
 class MultiPoint3

@@ -1,11 +1,12 @@
 #ifndef slic3r_PresetComboBoxes_hpp_
 #define slic3r_PresetComboBoxes_hpp_
 
-#include <wx/bmpcbox.h>
+//#include <wx/bmpcbox.h>
 #include <wx/gdicmn.h>
 
 #include "libslic3r/Preset.hpp"
 #include "wxExtensions.hpp"
+#include "BitmapComboBox.hpp"
 #include "GUI_Utils.hpp"
 
 class wxString;
@@ -15,7 +16,6 @@ class ScalableButton;
 class wxBoxSizer;
 class wxComboBox;
 class wxStaticBitmap;
-class wxRadioBox;
 
 namespace Slic3r {
 
@@ -28,7 +28,7 @@ class BitmapCache;
 // ---------------------------------
 
 // BitmapComboBox used to presets list on Sidebar and Tabs
-class PresetComboBox : public wxBitmapComboBox
+class PresetComboBox : public BitmapComboBox
 {
     bool m_show_all { false };
 public:
@@ -71,6 +71,7 @@ public:
     void             show_all(bool show_all);
     virtual void update();
     virtual void msw_rescale();
+    virtual void sys_color_changed();
     virtual void OnSelect(wxCommandEvent& evt);
 
 protected:
@@ -121,25 +122,10 @@ protected:
 
     wxBitmap* get_bmp(  std::string bitmap_key, bool wide_icons, const std::string& main_icon_name, 
                         bool is_compatible = true, bool is_system = false, bool is_single_bar = false,
-                        std::string filament_rgb = "", std::string extruder_rgb = "");
+                        const std::string& filament_rgb = "", const std::string& extruder_rgb = "", const std::string& material_rgb = "");
 
     wxBitmap* get_bmp(  std::string bitmap_key, const std::string& main_icon_name, const std::string& next_icon_name,
                         bool is_enabled = true, bool is_compatible = true, bool is_system = false);
-
-#ifdef __APPLE__
-    /* For PresetComboBox we use bitmaps that are created from images that are already scaled appropriately for Retina
-     * (Contrary to the intuition, the `scale` argument for Bitmap's constructor doesn't mean
-     * "please scale this to such and such" but rather
-     * "the wxImage is already sized for backing scale such and such". )
-     * Unfortunately, the constructor changes the size of wxBitmap too.
-     * Thus We need to use unscaled size value for bitmaps that we use
-     * to avoid scaled size of control items.
-     * For this purpose control drawing methods and
-     * control size calculation methods (virtual) are overridden.
-     **/
-    bool OnAddBitmap(const wxBitmap& bitmap) override;
-    void OnDrawItem(wxDC& dc, const wxRect& rect, int item, int flags) const override;
-#endif
 
 private:
     void fill_width_height();
@@ -161,7 +147,8 @@ public:
     void set_extruder_idx(const int extr_idx)   { m_extruder_idx = extr_idx; }
     int  get_extruder_idx() const               { return m_extruder_idx; }
 
-    bool switch_to_tab();
+    void switch_to_tab();
+    void change_extruder_color();
     void show_add_menu();
     void show_edit_menu();
 

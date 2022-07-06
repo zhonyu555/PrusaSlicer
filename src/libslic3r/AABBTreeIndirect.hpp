@@ -15,11 +15,6 @@
 
 #include "Utils.hpp" // for next_highest_power_of_2()
 
-extern "C"
-{
-// Ray-Triangle Intersection Test Routines by Tomas Moller, May 2000
-#include <igl/raytri.c>
-}
 // Definition of the ray intersection hit structure.
 #include <igl/Hit.h>
 
@@ -231,6 +226,9 @@ namespace detail {
 		const VectorType					 origin;
 		const VectorType 					 dir;
 		const VectorType					 invdir;
+
+		// epsilon for ray-triangle intersection, see intersect_triangle1()
+		const double  						 eps;
 	};
 
     template<typename VertexType, typename IndexedFaceType, typename TreeType, typename VectorType>
@@ -283,44 +281,91 @@ namespace detail {
         return tmin < t1 && tmax > t0;
 	}
 
+	// The following intersect_triangle() is derived from raytri.c routine intersect_triangle1()
+	// Ray-Triangle Intersection Test Routines
+	// Different optimizations of my and Ben Trumbore's
+	// code from journals of graphics tools (JGT)
+	// http://www.acm.org/jgt/
+	// by Tomas Moller, May 2000
 	template<typename V, typename W>
-    std::enable_if_t<std::is_same<typename V::Scalar, double>::value && std::is_same<typename W::Scalar, double>::value, bool>
-	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v) {
-        return intersect_triangle1(const_cast<double*>(origin.data()), const_cast<double*>(dir.data()),
-                                   const_cast<double*>(v0.data()), const_cast<double*>(v1.data()), const_cast<double*>(v2.data()),
-                                   &t, &u, &v);
+	std::enable_if_t<std::is_same<typename V::Scalar, double>::value&& std::is_same<typename W::Scalar, double>::value, bool>
+	intersect_triangle(const V &orig, const V &dir, const W &vert0, const W &vert1, const W &vert2, double &t, double &u, double &v, double eps)
+	{
+	   // find vectors for two edges sharing vert0
+	   const V      edge1 = vert1 - vert0;
+	   const V      edge2 = vert2 - vert0;
+	   // begin calculating determinant - also used to calculate U parameter
+	   const V      pvec  = dir.cross(edge2);
+	   // if determinant is near zero, ray lies in plane of triangle
+	   const double det   = edge1.dot(pvec);
+	   V      	 	qvec;
+
+	   if (det > eps) {
+	      	// calculate distance from vert0 to ray origin
+	      	V tvec = orig - vert0;
+	      	// calculate U parameter and test bounds
+	      	u = tvec.dot(pvec);
+			if (u < 0.0 || u > det)
+				return false;
+	      	// prepare to test V parameter
+	      	qvec = tvec.cross(edge1);
+	      	// calculate V parameter and test bounds
+	      	v = dir.dot(qvec);
+	      	if (v < 0.0 || u + v > det)
+		 		return false;
+	   } else if (det < -eps) {
+	      	// calculate distance from vert0 to ray origin
+	      	V tvec = orig - vert0;
+	      	// calculate U parameter and test bounds
+	      	u = tvec.dot(pvec);
+	      	if (u > 0.0 || u < det)
+		 		return false;
+	      	// prepare to test V parameter
+	      	qvec = tvec.cross(edge1);
+	      	// calculate V parameter and test bounds
+	      	v = dir.dot(qvec);
+	      	if (v > 0.0 || u + v < det)
+		 		return false;
+	   } else 
+	     	// ray is parallel to the plane of the triangle
+		   	return false;
+
+	   double inv_det = 1.0 / det;
+	   // calculate t, ray intersects triangle
+	   t = edge2.dot(qvec) * inv_det;
+	   u *= inv_det;
+	   v *= inv_det;
+	   return true;
 	}
 
 	template<typename V, typename W>
     std::enable_if_t<std::is_same<typename V::Scalar, double>::value && !std::is_same<typename W::Scalar, double>::value, bool>
-	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v) {
-        using Vector = Eigen::Matrix<double, 3, 1>;
-        Vector w0 = v0.template cast<double>();
-        Vector w1 = v1.template cast<double>();
-        Vector w2 = v2.template cast<double>();
-        return intersect_triangle1(const_cast<double*>(origin.data()), const_cast<double*>(dir.data()),
-                                   w0.data(), w1.data(), w2.data(), &t, &u, &v);
+	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v, double eps) {
+        return intersect_triangle(origin, dir, v0.template cast<double>(), v1.template cast<double>(), v2.template cast<double>(), t, u, v, eps);
 	}
 
 	template<typename V, typename W>
     std::enable_if_t<! std::is_same<typename V::Scalar, double>::value && std::is_same<typename W::Scalar, double>::value, bool>
-	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v) {
-        using Vector = Eigen::Matrix<double, 3, 1>;
-        Vector o  = origin.template cast<double>();
-        Vector d  = dir.template cast<double>();
-        return intersect_triangle1(o.data(), d.data(), const_cast<double*>(v0.data()), const_cast<double*>(v1.data()), const_cast<double*>(v2.data()), &t, &u, &v);
+	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v, double eps) {
+        return intersect_triangle(origin.template cast<double>(), dir.template cast<double>(), v0, v1, v2, t, u, v, eps);
 	}
 
 	template<typename V, typename W>
     std::enable_if_t<! std::is_same<typename V::Scalar, double>::value && ! std::is_same<typename W::Scalar, double>::value, bool>
-	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v) {
-        using Vector = Eigen::Matrix<double, 3, 1>;
-        Vector o  = origin.template cast<double>();
-        Vector d  = dir.template cast<double>();
-        Vector w0 = v0.template cast<double>();
-        Vector w1 = v1.template cast<double>();
-        Vector w2 = v2.template cast<double>();
-	    return intersect_triangle1(o.data(), d.data(), w0.data(), w1.data(), w2.data(), &t, &u, &v);
+	intersect_triangle(const V &origin, const V &dir, const W &v0, const W &v1, const W &v2, double &t, double &u, double &v, double eps) {
+	    return intersect_triangle(origin.template cast<double>(), dir.template cast<double>(), v0.template cast<double>(), v1.template cast<double>(), v2.template cast<double>(), t, u, v, eps);
+	}
+
+	template<typename Tree>
+	double intersect_triangle_epsilon(const Tree &tree) {
+		double eps = 0.000001;
+		if (! tree.empty()) {
+			const typename Tree::BoundingBox &bbox = tree.nodes().front().bbox;
+			double l = (bbox.max() - bbox.min()).cwiseMax();
+			if (l > 0)
+				eps /= (l * l);
+		}
+		return eps;
 	}
 
     template<typename RayIntersectorType, typename Scalar>
@@ -343,7 +388,7 @@ namespace detail {
 		    if (intersect_triangle(
 		    		ray_intersector.origin, ray_intersector.dir, 
 		    		ray_intersector.vertices[face(0)], ray_intersector.vertices[face(1)], ray_intersector.vertices[face(2)], 
-                    t, u, v)
+                    t, u, v, ray_intersector.eps)
 		    	&& t > 0.) {
                 hit = igl::Hit { int(node.idx), -1, float(u), float(v), float(t) };
 				return true;
@@ -388,7 +433,7 @@ namespace detail {
 		    if (intersect_triangle(
 		    		ray_intersector.origin, ray_intersector.dir, 
 		    		ray_intersector.vertices[face(0)], ray_intersector.vertices[face(1)], ray_intersector.vertices[face(2)], 
-                    t, u, v)
+                    t, u, v, ray_intersector.eps)
 		    	&& t > 0.) {
                 ray_intersector.hits.emplace_back(igl::Hit{ int(node.idx), -1, float(u), float(v), float(t) });
 			}
@@ -401,6 +446,57 @@ namespace detail {
 		}
 	}
 
+    // Real-time collision detection, Ericson, Chapter 5
+    template<typename Vector>
+    static inline Vector closest_point_to_triangle(const Vector &p, const Vector &a, const Vector &b, const Vector &c)
+    {
+        using Scalar = typename Vector::Scalar;
+        // Check if P in vertex region outside A
+        Vector ab = b - a;
+        Vector ac = c - a;
+        Vector ap = p - a;
+        Scalar d1 = ab.dot(ap);
+        Scalar d2 = ac.dot(ap);
+        if (d1 <= 0 && d2 <= 0)
+          return a;
+        // Check if P in vertex region outside B
+        Vector bp = p - b;
+        Scalar d3 = ab.dot(bp);
+        Scalar d4 = ac.dot(bp);
+        if (d3 >= 0 && d4 <= d3)
+          return b;
+        // Check if P in edge region of AB, if so return projection of P onto AB
+        Scalar vc = d1*d4 - d3*d2;
+        if (a != b && vc <= 0 && d1 >= 0 && d3 <= 0) {
+            Scalar v = d1 / (d1 - d3);
+            return a + v * ab;
+        }
+        // Check if P in vertex region outside C
+        Vector cp = p - c;
+        Scalar d5 = ab.dot(cp);
+        Scalar d6 = ac.dot(cp);
+        if (d6 >= 0 && d5 <= d6)
+          return c;
+        // Check if P in edge region of AC, if so return projection of P onto AC
+        Scalar vb = d5*d2 - d1*d6;
+        if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+          Scalar w = d2 / (d2 - d6);
+          return a + w * ac;
+        }
+        // Check if P in edge region of BC, if so return projection of P onto BC
+        Scalar va = d3*d6 - d5*d4;
+        if (va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
+          Scalar w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+          return b + w * (c - b);
+        }
+        // P inside face region. Compute Q through its barycentric coordinates (u,v,w)
+        Scalar denom = Scalar(1.0) / (va + vb + vc);
+        Scalar v = vb * denom;
+        Scalar w = vc * denom;
+        return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0-v-w
+    };
+
+
 	// Nothing to do with COVID-19 social distancing.
 	template<typename AVertexType, typename AIndexedFaceType, typename ATreeType, typename AVectorType>
 	struct IndexedTriangleSetDistancer {
@@ -408,74 +504,36 @@ namespace detail {
 		using IndexedFaceType 	= AIndexedFaceType;
 		using TreeType			= ATreeType;
 		using VectorType 		= AVectorType;
+		using ScalarType 		= typename VectorType::Scalar;
 
 		const std::vector<VertexType> 		&vertices;
 		const std::vector<IndexedFaceType> 	&faces;
 		const TreeType 						&tree;
 
 		const VectorType					 origin;
+
+		inline VectorType closest_point_to_origin(size_t primitive_index,
+		        ScalarType& squared_distance){
+		    const auto &triangle = this->faces[primitive_index];
+		    VectorType closest_point = closest_point_to_triangle<VectorType>(origin,
+		            this->vertices[triangle(0)].template cast<ScalarType>(),
+		            this->vertices[triangle(1)].template cast<ScalarType>(),
+		            this->vertices[triangle(2)].template cast<ScalarType>());
+		    squared_distance = (origin - closest_point).squaredNorm();
+		    return closest_point;
+		}
 	};
 
-	// Real-time collision detection, Ericson, Chapter 5
-	template<typename Vector>
-	static inline Vector closest_point_to_triangle(const Vector &p, const Vector &a, const Vector &b, const Vector &c)
-	{
-		using Scalar = typename Vector::Scalar;
-		// Check if P in vertex region outside A
-		Vector ab = b - a;
-		Vector ac = c - a;
-		Vector ap = p - a;
-		Scalar d1 = ab.dot(ap);
-		Scalar d2 = ac.dot(ap);
-		if (d1 <= 0 && d2 <= 0)
-		  return a;
-		// Check if P in vertex region outside B
-		Vector bp = p - b;
-		Scalar d3 = ab.dot(bp);
-		Scalar d4 = ac.dot(bp);
-		if (d3 >= 0 && d4 <= d3)
-		  return b;
-		// Check if P in edge region of AB, if so return projection of P onto AB
-		Scalar vc = d1*d4 - d3*d2;
-		if (a != b && vc <= 0 && d1 >= 0 && d3 <= 0) {
-		    Scalar v = d1 / (d1 - d3);
-		    return a + v * ab;
-		}
-		// Check if P in vertex region outside C
-		Vector cp = p - c;
-		Scalar d5 = ab.dot(cp);
-		Scalar d6 = ac.dot(cp);
-		if (d6 >= 0 && d5 <= d6)
-		  return c;
-		// Check if P in edge region of AC, if so return projection of P onto AC
-		Scalar vb = d5*d2 - d1*d6;
-		if (vb <= 0 && d2 >= 0 && d6 <= 0) {
-		  Scalar w = d2 / (d2 - d6);
-		  return a + w * ac;
-		}
-		// Check if P in edge region of BC, if so return projection of P onto BC
-		Scalar va = d3*d6 - d5*d4;
-		if (va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
-		  Scalar w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
-		  return b + w * (c - b);
-		}
-		// P inside face region. Compute Q through its barycentric coordinates (u,v,w)
-		Scalar denom = Scalar(1.0) / (va + vb + vc);
-		Scalar v = vb * denom;
-		Scalar w = vc * denom;
-		return a + ab * v + ac * w; // = u*a + v*b + w*c, u = va * denom = 1.0-v-w
-	};
-
-	template<typename IndexedTriangleSetDistancerType, typename Scalar>
-    static inline Scalar squared_distance_to_indexed_triangle_set_recursive(
-        IndexedTriangleSetDistancerType	&distancer,
+	template<typename IndexedPrimitivesDistancerType, typename Scalar>
+    static inline Scalar squared_distance_to_indexed_primitives_recursive(
+        IndexedPrimitivesDistancerType	&distancer,
 		size_t 							 node_idx,
 		Scalar 							 low_sqr_d,
   		Scalar 							 up_sqr_d,
 		size_t 							&i,
-  		Eigen::PlainObjectBase<typename IndexedTriangleSetDistancerType::VectorType> &c)
+  		Eigen::PlainObjectBase<typename IndexedPrimitivesDistancerType::VectorType> &c)
 	{
-		using Vector = typename IndexedTriangleSetDistancerType::VectorType;
+		using Vector = typename IndexedPrimitivesDistancerType::VectorType;
 
   		if (low_sqr_d > up_sqr_d)
 			return low_sqr_d;
@@ -493,13 +551,9 @@ namespace detail {
 		assert(node.is_valid());
   		if (node.is_leaf()) 
   		{
-            const auto &triangle = distancer.faces[node.idx];
-            Vector c_candidate = closest_point_to_triangle<Vector>(
-				distancer.origin, 
-                distancer.vertices[triangle(0)].template cast<Scalar>(),
-                distancer.vertices[triangle(1)].template cast<Scalar>(),
-                distancer.vertices[triangle(2)].template cast<Scalar>());
-            set_min((c_candidate - distancer.origin).squaredNorm(), node.idx, c_candidate);
+            Scalar sqr_dist;
+            Vector c_candidate = distancer.closest_point_to_origin(node.idx, sqr_dist);
+            set_min(sqr_dist, node.idx, c_candidate);
   		} 
   		else
   		{
@@ -516,7 +570,7 @@ namespace detail {
 			{
                 size_t	i_left;
                 Vector 	c_left = c;
-                Scalar	sqr_d_left = squared_distance_to_indexed_triangle_set_recursive(distancer, left_node_idx, low_sqr_d, up_sqr_d, i_left, c_left);
+                Scalar	sqr_d_left = squared_distance_to_indexed_primitives_recursive(distancer, left_node_idx, low_sqr_d, up_sqr_d, i_left, c_left);
 				set_min(sqr_d_left, i_left, c_left);
 				looked_left = true;
 			};
@@ -524,13 +578,13 @@ namespace detail {
 			{
                 size_t	i_right;
                 Vector	c_right = c;
-                Scalar	sqr_d_right = squared_distance_to_indexed_triangle_set_recursive(distancer, right_node_idx, low_sqr_d, up_sqr_d, i_right, c_right);
+                Scalar	sqr_d_right = squared_distance_to_indexed_primitives_recursive(distancer, right_node_idx, low_sqr_d, up_sqr_d, i_right, c_right);
 				set_min(sqr_d_right, i_right, c_right);
 				looked_right = true;
 			};
 
 			// must look left or right if in box
-            using BBoxScalar = typename IndexedTriangleSetDistancerType::TreeType::BoundingBox::Scalar;
+            using BBoxScalar = typename IndexedPrimitivesDistancerType::TreeType::BoundingBox::Scalar;
             if (node_left.bbox.contains(distancer.origin.template cast<BBoxScalar>()))
 			  	look_left();
             if (node_right.bbox.contains(distancer.origin.template cast<BBoxScalar>()))
@@ -623,12 +677,15 @@ inline bool intersect_ray_first_hit(
 	// Direction of the ray.
 	const VectorType 					&dir,
 	// First intersection of the ray with the indexed triangle set.
-	igl::Hit 							&hit)
+	igl::Hit 							&hit,
+	// Epsilon for the ray-triangle intersection, it should be proportional to an average triangle edge length.
+	const double 						 eps = 0.000001)
 {
     using Scalar = typename VectorType::Scalar;
-    auto ray_intersector = detail::RayIntersector<VertexType, IndexedFaceType, TreeType, VectorType> {
+	auto ray_intersector = detail::RayIntersector<VertexType, IndexedFaceType, TreeType, VectorType> {
 		vertices, faces, tree,
-        origin, dir, VectorType(dir.cwiseInverse())
+        origin, dir, VectorType(dir.cwiseInverse()),
+        eps
 	};
 	return ! tree.empty() && detail::intersect_ray_recursive_first_hit(
         ray_intersector, size_t(0), std::numeric_limits<Scalar>::infinity(), hit);
@@ -652,16 +709,24 @@ inline bool intersect_ray_all_hits(
 	// Direction of the ray.
 	const VectorType 					&dir,
 	// All intersections of the ray with the indexed triangle set, sorted by parameter t.
-	std::vector<igl::Hit> 				&hits)
+	std::vector<igl::Hit> 				&hits,
+	// Epsilon for the ray-triangle intersection, it should be proportional to an average triangle edge length.
+	const double 						 eps = 0.000001)
 {
     auto ray_intersector = detail::RayIntersectorHits<VertexType, IndexedFaceType, TreeType, VectorType> {
         { vertices, faces, {tree},
-        origin, dir, VectorType(dir.cwiseInverse()) }
+        origin, dir, VectorType(dir.cwiseInverse()),
+        eps }
 	};
-	if (! tree.empty()) {
+	if (tree.empty()) {
+		hits.clear();
+	} else {
+		// Reusing the output memory if there is some memory already pre-allocated.
+        ray_intersector.hits = std::move(hits);
+        ray_intersector.hits.clear();
         ray_intersector.hits.reserve(8);
 		detail::intersect_ray_recursive_all_hits(ray_intersector, 0);
-		std::swap(hits, ray_intersector.hits);
+		hits = std::move(ray_intersector.hits);
 	    std::sort(hits.begin(), hits.end(), [](const auto &l, const auto &r) { return l.t < r.t; });
 	}
 	return ! hits.empty();
@@ -691,7 +756,7 @@ inline typename VectorType::Scalar squared_distance_to_indexed_triangle_set(
     auto distancer = detail::IndexedTriangleSetDistancer<VertexType, IndexedFaceType, TreeType, VectorType>
         { vertices, faces, tree, point };
     return tree.empty() ? Scalar(-1) : 
-    	detail::squared_distance_to_indexed_triangle_set_recursive(distancer, size_t(0), Scalar(0), std::numeric_limits<Scalar>::infinity(), hit_idx_out, hit_point_out);
+    	detail::squared_distance_to_indexed_primitives_recursive(distancer, size_t(0), Scalar(0), std::numeric_limits<Scalar>::infinity(), hit_idx_out, hit_point_out);
 }
 
 // Decides if exists some triangle in defined radius on a 3D indexed triangle set using a pre-built AABBTreeIndirect::Tree.
@@ -708,22 +773,22 @@ inline bool is_any_triangle_in_radius(
         const TreeType 						&tree,
         // Point to which the closest point on the indexed triangle set is searched for.
         const VectorType					&point,
-        // Maximum distance in which triangle is search for
-        typename VectorType::Scalar &max_distance)
+        //Square of maximum distance in which triangle is searched for
+        typename VectorType::Scalar &max_distance_squared)
 {
     using Scalar = typename VectorType::Scalar;
     auto distancer = detail::IndexedTriangleSetDistancer<VertexType, IndexedFaceType, TreeType, VectorType>
             { vertices, faces, tree, point };
 
-	size_t hit_idx;
-	VectorType hit_point = VectorType::Ones() * (std::nan(""));
+    size_t hit_idx;
+    VectorType hit_point = VectorType::Ones() * (NaN<typename VectorType::Scalar>);
 
 	if(tree.empty())
 	{
 		return false;
 	}
 
-	detail::squared_distance_to_indexed_triangle_set_recursive(distancer, size_t(0), Scalar(0), max_distance, hit_idx, hit_point);
+	detail::squared_distance_to_indexed_primitives_recursive(distancer, size_t(0), Scalar(0), max_distance_squared, hit_idx, hit_point);
 
     return hit_point.allFinite();
 }
@@ -772,22 +837,22 @@ struct Intersecting<Eigen::AlignedBox<CoordType, NumD>> {
 
 template<class G> auto intersecting(const G &g) { return Intersecting<G>{g}; }
 
-template<class G> struct Containing {};
+template<class G> struct Within {};
 
 // Intersection predicate specialization for box-box intersections
 template<class CoordType, int NumD>
-struct Containing<Eigen::AlignedBox<CoordType, NumD>> {
+struct Within<Eigen::AlignedBox<CoordType, NumD>> {
     Eigen::AlignedBox<CoordType, NumD> box;
 
-    Containing(const Eigen::AlignedBox<CoordType, NumD> &bb): box{bb} {}
+    Within(const Eigen::AlignedBox<CoordType, NumD> &bb): box{bb} {}
 
     bool operator() (const typename Tree<NumD, CoordType>::Node &node) const
     {
-        return box.contains(node.bbox);
+        return node.is_leaf() ? box.contains(node.bbox) : box.intersects(node.bbox);
     }
 };
 
-template<class G> auto containing(const G &g) { return Containing<G>{g}; }
+template<class G> auto within(const G &g) { return Within<G>{g}; }
 
 namespace detail {
 
@@ -802,7 +867,7 @@ void traverse_recurse(const Tree<Dims, T> &tree,
     if (!pred(tree.node(idx))) return;
 
     if (tree.node(idx).is_leaf()) {
-        callback(tree.node(idx).idx);
+        callback(tree.node(idx));
     } else {
 
         // call this with left and right node idx:

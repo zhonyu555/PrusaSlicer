@@ -11,6 +11,7 @@
 
 #include "FillBase.hpp"
 #include "FillRectilinear.hpp"
+#include "FillLightning.hpp"
 
 namespace Slic3r {
 
@@ -122,10 +123,10 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 	        if (surface.surface_type == stInternalVoid)
 	        	has_internal_voids = true;
 	        else {
-		        const PrintRegionConfig &region_config = layerm.region()->config();
+		        const PrintRegionConfig &region_config = layerm.region().config();
 		        FlowRole extrusion_role = surface.is_top() ? frTopSolidInfill : (surface.is_solid() ? frSolidInfill : frInfill);
 		        bool     is_bridge 	    = layer.id() > 0 && surface.is_bridge();
-		        params.extruder 	 = layerm.region()->extruder(extrusion_role);
+		        params.extruder 	 = layerm.region().extruder(extrusion_role);
 		        params.pattern 		 = region_config.fill_pattern.value;
 		        params.density       = float(region_config.fill_density);
 
@@ -160,11 +161,9 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 		            params.anchor_length = 1000.f;
 					params.anchor_length_max = 1000.f;
 		        } else {
-		            // it's internal infill, so we can calculate a generic flow spacing 
-		            // for all layers, for avoiding the ugly effect of
-		            // misaligned infill on first layer because of different extrusion width and
-		            // layer height
-		            params.spacing = layerm.flow(frInfill, layer.object()->config().layer_height).spacing();
+					// Internal infill. Calculating infill line spacing independent of the current layer height and 1st layer status,
+					// so that internall infill will be aligned over all layers of the current region.
+		            params.spacing = layerm.region().flow(*layer.object(), frInfill, layer.object()->config().layer_height, false).spacing();
 		            // Anchor a sparse infill to inner perimeters with the following anchor length:
 			        params.anchor_length = float(region_config.infill_anchor);
 					if (region_config.infill_anchor.percent)
@@ -213,7 +212,7 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 					Polygons polys = to_polygons(std::move(fill.expolygons));
 		            // Make a union of polygons, use a safety offset, subtract the preceding polygons.
 				    // Bridges are processed first (see SurfaceFill::operator<())
-		            fill.expolygons = all_polygons.empty() ? union_ex(polys, true) : diff_ex(polys, all_polygons, true);
+		            fill.expolygons = all_polygons.empty() ? union_safety_offset_ex(polys) : diff_ex(polys, all_polygons, ApplySafetyOffset::Yes);
 					append(all_polygons, std::move(polys));
 				} else if (&fill != &surface_fills.back())
 					append(all_polygons, to_polygons(fill.expolygons));
@@ -254,12 +253,11 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 	        // Corners of infill regions, which would not be filled with an extrusion path with a radius of distance_between_surfaces/2
 	        Polygons collapsed = diff(
 	            surfaces_polygons,
-	            offset2(surfaces_polygons, (float)-distance_between_surfaces/2, (float)+distance_between_surfaces/2),
-	            true);
+				opening(surfaces_polygons, float(distance_between_surfaces /2), float(distance_between_surfaces / 2 + ClipperSafetyOffset)));
 	        //FIXME why the voids are added to collapsed here? First it is expensive, second the result may lead to some unwanted regions being
 	        // added if two offsetted void regions merge.
 	        // polygons_append(voids, collapsed);
-	        ExPolygons extensions = intersection_ex(offset(collapsed, (float)distance_between_surfaces), voids, true);
+	        ExPolygons extensions = intersection_ex(expand(collapsed, float(distance_between_surfaces)), voids, ApplySafetyOffset::Yes);
 	        // Now find an internal infill SurfaceFill to add these extrusions to.
 	        SurfaceFill *internal_solid_fill = nullptr;
 			unsigned int region_id = 0;
@@ -277,11 +275,11 @@ std::vector<SurfaceFill> group_fills(const Layer &layer)
 	        	}
 	        if (internal_solid_fill == nullptr) {
 	        	// Produce another solid fill.
-		        params.extruder 	 = layerm.region()->extruder(frSolidInfill);
-	            params.pattern 		 = layerm.region()->config().top_fill_pattern == ipMonotonic ? ipMonotonic : ipRectilinear;
+		        params.extruder 	 = layerm.region().extruder(frSolidInfill);
+	            params.pattern 		 = layerm.region().config().top_fill_pattern == ipMonotonic ? ipMonotonic : ipRectilinear;
 	            params.density 		 = 100.f;
 		        params.extrusion_role = erInternalInfill;
-		        params.angle 		= float(Geometry::deg2rad(layerm.region()->config().fill_angle.value));
+		        params.angle 		= float(Geometry::deg2rad(layerm.region().config().fill_angle.value));
 		        // calculate the actual flow we'll be using for this infill
 				params.flow = layerm.flow(frSolidInfill);
 		        params.spacing = params.flow.spacing();	        
@@ -321,7 +319,7 @@ void export_group_fills_to_svg(const char *path, const std::vector<SurfaceFill> 
 #endif
 
 // friend to Layer
-void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree)
+void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree, FillLightning::Generator* lightning_generator)
 {
 	for (LayerRegion *layerm : m_regions)
 		layerm->fills.clear();
@@ -332,7 +330,8 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
 #endif /* SLIC3R_DEBUG_SLICE_PROCESSING */
 
 	std::vector<SurfaceFill>  surface_fills = group_fills(*this);
-	const Slic3r::BoundingBox bbox = this->object()->bounding_box();
+	const Slic3r::BoundingBox bbox 			= this->object()->bounding_box();
+	const auto                resolution 	= this->object()->print()->config().gcode_resolution.value;
 
 #ifdef SLIC3R_DEBUG_SLICE_PROCESSING
 	{
@@ -349,6 +348,9 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
         f->z 		= this->print_z;
         f->angle 	= surface_fill.params.angle;
         f->adapt_fill_octree = (surface_fill.params.pattern == ipSupportCubic) ? support_fill_octree : adaptive_fill_octree;
+
+        if (surface_fill.params.pattern == ipLightning)
+            dynamic_cast<FillLightning::Filler*>(f.get())->generator = lightning_generator;
 
         // calculate flow spacing for infill pattern generation
         bool using_internal_flow = ! surface_fill.surface.is_solid() && ! surface_fill.params.bridge;
@@ -374,6 +376,7 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
 		params.dont_adjust		 = false; //  surface_fill.params.dont_adjust;
         params.anchor_length     = surface_fill.params.anchor_length;
 		params.anchor_length_max = surface_fill.params.anchor_length_max;
+		params.resolution        = resolution;
 
         for (ExPolygon &expoly : surface_fill.expolygons) {
 			// Spacing is modified by the filler to indicate adjustments. Reset it for each expolygon.
@@ -504,7 +507,7 @@ void Layer::make_ironing()
 	for (LayerRegion *layerm : m_regions)
 		if (! layerm->slices.empty()) {
 			IroningParams ironing_params;
-			const PrintRegionConfig &config = layerm->region()->config();
+			const PrintRegionConfig &config = layerm->region().config();
 			if (config.ironing && 
 				(config.ironing_type == IroningType::AllSolid ||
 				 	(config.top_solid_layers > 0 && 
@@ -540,7 +543,7 @@ void Layer::make_ironing()
     fill_params.density 	 = 1.;
     fill_params.monotonic    = true;
 
-	for (size_t i = 0; i < by_extruder.size(); ++ i) {
+	for (size_t i = 0; i < by_extruder.size();) {
 		// Find span of regions equivalent to the ironing operation.
 		IroningParams &ironing_params = by_extruder[i];
 		size_t j = i;
@@ -559,7 +562,7 @@ void Layer::make_ironing()
 			Polygons infills;
 			for (size_t k = i; k < j; ++ k) {
 				const IroningParams		 &ironing_params  = by_extruder[k];
-				const PrintRegionConfig  &region_config   = ironing_params.layerm->region()->config();
+				const PrintRegionConfig  &region_config   = ironing_params.layerm->region().config();
 				bool					  iron_everything = region_config.ironing_type == IroningType::AllSolid;
 				bool					  iron_completely = iron_everything;
 				if (iron_everything) {
@@ -590,14 +593,17 @@ void Layer::make_ironing()
 							polygons_append(infills, surface.expolygon);
 				}
 			}
+
+			if (! infills.empty() || j > i + 1) {
+				// Ironing over more than a single region or over solid internal infill.
+				if (! infills.empty())
+					// For IroningType::AllSolid only:
+					// Add solid infill areas for layers, that contain some non-ironable infil (sparse infill, bridge infill).
+					append(polys, std::move(infills));
+				polys = union_safety_offset(polys);
+			}
 			// Trim the top surfaces with half the nozzle diameter.
 			ironing_areas = intersection_ex(polys, offset(this->lslices, - float(scale_(0.5 * nozzle_dmr))));
-			if (! infills.empty()) {
-				// For IroningType::AllSolid only:
-				// Add solid infill areas for layers, that contain some non-ironable infil (sparse infill, bridge infill).
-				append(infills, to_polygons(std::move(ironing_areas)));
-				ironing_areas = union_ex(infills, true);
-			}
 		}
 
         // Create the filler object.
@@ -627,6 +633,9 @@ void Layer::make_ironing()
 		            flow_mm3_per_mm, extrusion_width, float(extrusion_height));
 		    }
 		}
+
+		// Regions up to j were processed.
+		i = j;
 	}
 }
 

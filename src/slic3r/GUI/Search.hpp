@@ -17,10 +17,13 @@
 
 #include "GUI_Utils.hpp"
 #include "wxExtensions.hpp"
+#include "OptionsGroup.hpp"
 #include "libslic3r/Preset.hpp"
 
 
 namespace Slic3r {
+
+wxDECLARE_EVENT(wxCUSTOMEVT_JUMP_TO_OPTION, wxCommandEvent);
 
 namespace Search{
 
@@ -30,7 +33,6 @@ struct InputInfo
 {
     DynamicPrintConfig* config  {nullptr};
     Preset::Type        type    {Preset::TYPE_INVALID};
-    ConfigOptionMode    mode    {comSimple};
 };
 
 struct GroupAndCategory {
@@ -53,7 +55,7 @@ struct Option {
     std::wstring    category;
     std::wstring    category_local;
 
-    std::string     opt_key() const { return boost::nowide::narrow(key).substr(2); }
+    std::string     opt_key() const;
 };
 
 struct FoundOption {
@@ -80,12 +82,14 @@ class OptionsSearcher
 {
     std::string                             search_line;
     std::map<std::string, GroupAndCategory> groups_and_categories;
-    PrinterTechnology                       printer_technology;
+    PrinterTechnology                       printer_technology {ptAny};
+    ConfigOptionMode                        mode{ comUndef };
 
     std::vector<Option>                     options {};
+    std::vector<Option>                     preferences_options {};
     std::vector<FoundOption>                found {};
 
-    void append_options(DynamicPrintConfig* config, Preset::Type type, ConfigOptionMode mode);
+    void append_options(DynamicPrintConfig* config, Preset::Type type);
 
     void sort_options() {
         std::sort(options.begin(), options.end(), [](const Option& o1, const Option& o2) {
@@ -107,10 +111,11 @@ public:
     OptionsSearcher();
     ~OptionsSearcher();
 
-    void init(std::vector<InputInfo> input_values);
-    void apply(DynamicPrintConfig *config,
-               Preset::Type        type,
-               ConfigOptionMode    mode);
+    void append_preferences_option(const GUI::Line& opt_line);
+    void append_preferences_options(const std::vector<GUI::Line>& opt_lines);
+    void check_and_update(  PrinterTechnology pt_in, 
+                            ConfigOptionMode mode_in, 
+                            std::vector<InputInfo> input_values);
     bool search();
     bool search(const std::string& search, bool force = false);
 
@@ -127,13 +132,15 @@ public:
     const GroupAndCategory&         get_group_and_category (const std::string& opt_key) { return groups_and_categories[opt_key]; }
     std::string& search_string() { return search_line; }
 
-    void set_printer_technology(PrinterTechnology pt) { printer_technology = pt; }
-
     void sort_options_by_key() {
         std::sort(options.begin(), options.end(), [](const Option& o1, const Option& o2) {
             return o1.key < o2.key; });
     }
     void sort_options_by_label() { sort_options(); }
+
+    void show_dialog();
+    void dlg_sys_color_changed();
+    void dlg_msw_rescale();
 };
 
 
@@ -176,9 +183,11 @@ public:
     void Popup(wxPoint position = wxDefaultPosition);
     void ProcessSelection(wxDataViewItem selection);
 
-protected:
-    void on_dpi_changed(const wxRect& suggested_rect) override;
+    void msw_rescale();
     void on_sys_color_changed() override;
+
+protected:
+    void on_dpi_changed(const wxRect& suggested_rect) override { msw_rescale(); }
 };
 
 
@@ -189,7 +198,7 @@ protected:
 class SearchListModel : public wxDataViewVirtualListModel
 {
     std::vector<std::pair<wxString, int>>   m_values;
-    ScalableBitmap                          m_icon[5];
+    ScalableBitmap                          m_icon[6];
 
 public:
     enum {

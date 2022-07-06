@@ -1,6 +1,6 @@
 #include "ExtrusionEntity.hpp"
 #include "ExtrusionEntityCollection.hpp"
-#include "ExPolygonCollection.hpp"
+#include "ExPolygon.hpp"
 #include "ClipperUtils.hpp"
 #include "Extruder.hpp"
 #include "Flow.hpp"
@@ -12,14 +12,14 @@
 
 namespace Slic3r {
     
-void ExtrusionPath::intersect_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const
+void ExtrusionPath::intersect_expolygons(const ExPolygons &collection, ExtrusionEntityCollection* retval) const
 {
-    this->_inflate_collection(intersection_pl((Polylines)polyline, to_polygons(collection.expolygons)), retval);
+    this->_inflate_collection(intersection_pl(Polylines{ polyline }, collection), retval);
 }
 
-void ExtrusionPath::subtract_expolygons(const ExPolygonCollection &collection, ExtrusionEntityCollection* retval) const
+void ExtrusionPath::subtract_expolygons(const ExPolygons &collection, ExtrusionEntityCollection* retval) const
 {
-    this->_inflate_collection(diff_pl((Polylines)this->polyline, to_polygons(collection.expolygons)), retval);
+    this->_inflate_collection(diff_pl(Polylines{ this->polyline }, collection), retval);
 }
 
 void ExtrusionPath::clip_end(double distance)
@@ -193,12 +193,8 @@ bool ExtrusionLoop::split_at_vertex(const Point &point)
     return false;
 }
 
-// Splitting an extrusion loop, possibly made of multiple segments, some of the segments may be bridging.
-void ExtrusionLoop::split_at(const Point &point, bool prefer_non_overhang)
+std::pair<size_t, Point> ExtrusionLoop::get_closest_path_and_point(const Point& point, bool prefer_non_overhang) const
 {
-    if (this->paths.empty())
-        return;
-    
     // Find the closest path and closest point belonging to that path. Avoid overhangs, if asked for.
     size_t path_idx = 0;
     Point  p;
@@ -207,15 +203,15 @@ void ExtrusionLoop::split_at(const Point &point, bool prefer_non_overhang)
         Point  p_non_overhang;
         size_t path_idx_non_overhang = 0;
         double min_non_overhang = std::numeric_limits<double>::max();
-        for (const ExtrusionPath &path : this->paths) {
+        for (const ExtrusionPath& path : this->paths) {
             Point p_tmp = point.projection_onto(path.polyline);
             double dist = (p_tmp - point).cast<double>().norm();
             if (dist < min) {
                 p = p_tmp;
                 min = dist;
                 path_idx = &path - &this->paths.front();
-            } 
-            if (prefer_non_overhang && ! is_bridge(path.role()) && dist < min_non_overhang) {
+            }
+            if (prefer_non_overhang && !is_bridge(path.role()) && dist < min_non_overhang) {
                 p_non_overhang = p_tmp;
                 min_non_overhang = dist;
                 path_idx_non_overhang = &path - &this->paths.front();
@@ -224,9 +220,19 @@ void ExtrusionLoop::split_at(const Point &point, bool prefer_non_overhang)
         if (prefer_non_overhang && min_non_overhang != std::numeric_limits<double>::max()) {
             // Only apply the non-overhang point if there is one.
             path_idx = path_idx_non_overhang;
-            p        = p_non_overhang;
+            p = p_non_overhang;
         }
     }
+    return std::make_pair(path_idx, p);
+}
+
+// Splitting an extrusion loop, possibly made of multiple segments, some of the segments may be bridging.
+void ExtrusionLoop::split_at(const Point &point, bool prefer_non_overhang)
+{
+    if (this->paths.empty())
+        return;
+    
+    auto [path_idx, p] = get_closest_path_and_point(point, prefer_non_overhang);
     
     // now split path_idx in two parts
     const ExtrusionPath &path = this->paths[path_idx];
@@ -318,7 +324,7 @@ std::string ExtrusionEntity::role_to_string(ExtrusionRole role)
         case erIroning                      : return L("Ironing");
         case erBridgeInfill                 : return L("Bridge infill");
         case erGapFill                      : return L("Gap fill");
-        case erSkirt                        : return L("Skirt");
+        case erSkirt                        : return L("Skirt/Brim");
         case erSupportMaterial              : return L("Support material");
         case erSupportMaterialInterface     : return L("Support material interface");
         case erWipeTower                    : return L("Wipe tower");
@@ -349,7 +355,7 @@ ExtrusionRole ExtrusionEntity::string_to_role(const std::string_view role)
         return erBridgeInfill;
     else if (role == L("Gap fill"))
         return erGapFill;
-    else if (role == L("Skirt"))
+    else if (role == L("Skirt") || role == L("Skirt/Brim")) // "Skirt" is for backward compatibility with 2.3.1 and earlier
         return erSkirt;
     else if (role == L("Support material"))
         return erSupportMaterial;

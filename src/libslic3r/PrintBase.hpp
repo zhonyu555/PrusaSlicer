@@ -6,12 +6,8 @@
 #include <vector>
 #include <string>
 #include <functional>
-
-// tbb/mutex.h includes Windows, which in turn defines min/max macros. Convince Windows.h to not define these min/max macros.
-#ifndef NOMINMAX
-    #define NOMINMAX
-#endif
-#include "tbb/mutex.h"
+#include <atomic>
+#include <mutex>
 
 #include "ObjectID.hpp"
 #include "Model.hpp"
@@ -43,9 +39,9 @@ public:
     // A new unique timestamp is being assigned to the step every time the step changes its state.
     struct StateWithTimeStamp
     {
-        StateWithTimeStamp() : state(INVALID), timestamp(0) {}
-        State       state;
-        TimeStamp   timestamp;
+        State       state { INVALID };
+        TimeStamp   timestamp { 0 };
+        bool        enabled { true };
     };
 
     struct Warning
@@ -84,23 +80,23 @@ class PrintState : public PrintStateBase
 public:
     PrintState() {}
 
-    StateWithTimeStamp state_with_timestamp(StepType step, tbb::mutex &mtx) const {
-        tbb::mutex::scoped_lock lock(mtx);
+    StateWithTimeStamp state_with_timestamp(StepType step, std::mutex &mtx) const {
+        std::scoped_lock<std::mutex> lock(mtx);
         StateWithTimeStamp state = m_state[step];
         return state;
     }
 
-    StateWithWarnings state_with_warnings(StepType step, tbb::mutex &mtx) const {
-        tbb::mutex::scoped_lock lock(mtx);
+    StateWithWarnings state_with_warnings(StepType step, std::mutex &mtx) const {
+        std::scoped_lock<std::mutex> lock(mtx);
         StateWithWarnings state = m_state[step];
         return state;
     }
 
-    bool is_started(StepType step, tbb::mutex &mtx) const {
+    bool is_started(StepType step, std::mutex &mtx) const {
         return this->state_with_timestamp(step, mtx).state == STARTED;
     }
 
-    bool is_done(StepType step, tbb::mutex &mtx) const {
+    bool is_done(StepType step, std::mutex &mtx) const {
         return this->state_with_timestamp(step, mtx).state == DONE;
     }
 
@@ -116,13 +112,27 @@ public:
         return this->state_with_timestamp_unguarded(step).state == DONE;
     }
 
+    void enable_unguarded(StepType step, bool enable) {
+        m_state[step].enabled = enable;
+    }
+
+    void enable_all_unguarded(bool enable) {
+        for (size_t istep = 0; istep < COUNT; ++ istep)
+            m_state[istep].enabled = enable;
+    }
+
+    bool is_enabled_unguarded(StepType step) const {
+        return this->state_with_timestamp_unguarded(step).enabled;
+    }
+
     // Set the step as started. Block on mutex while the Print / PrintObject / PrintRegion objects are being
     // modified by the UI thread.
     // This is necessary to block until the Print::apply() updates its state, which may
     // influence the processing step being entered.
+    // Returns false if the step is not enabled or if the step has already been finished (it is done).
     template<typename ThrowIfCanceled>
-    bool set_started(StepType step, tbb::mutex &mtx, ThrowIfCanceled throw_if_canceled) {
-        tbb::mutex::scoped_lock lock(mtx);
+    bool set_started(StepType step, std::mutex &mtx, ThrowIfCanceled throw_if_canceled) {
+        std::scoped_lock<std::mutex> lock(mtx);
         // If canceled, throw before changing the step state.
         throw_if_canceled();
 #ifndef NDEBUG
@@ -138,9 +148,9 @@ public:
 //        for (int i = 0; i < int(COUNT); ++ i)
 //            assert(m_state[i].state != STARTED);
 #endif // NDEBUG
-        if (m_state[step].state == DONE)
-            return false;
         PrintStateBase::StateWithWarnings &state = m_state[step];
+        if (! state.enabled || state.state == DONE)
+            return false;
         state.state = STARTED;
         state.timestamp = ++ g_last_timestamp;
         state.mark_warnings_non_current();
@@ -154,8 +164,8 @@ public:
     // 		Timestamp when this stepentered the DONE state.
     // 		bool indicates whether the UI has to update the slicing warnings of this step or not.
 	template<typename ThrowIfCanceled>
-	std::pair<TimeStamp, bool> set_done(StepType step, tbb::mutex &mtx, ThrowIfCanceled throw_if_canceled) {
-        tbb::mutex::scoped_lock lock(mtx);
+	std::pair<TimeStamp, bool> set_done(StepType step, std::mutex &mtx, ThrowIfCanceled throw_if_canceled) {
+        std::scoped_lock<std::mutex> lock(mtx);
         // If canceled, throw before changing the step state.
         throw_if_canceled();
         assert(m_state[step].state == STARTED);
@@ -266,9 +276,9 @@ public:
     // Return value:
     // 		Current milestone (StepType).
     // 		bool indicates whether the UI has to be updated or not.
-    std::pair<StepType, bool> active_step_add_warning(PrintStateBase::WarningLevel warning_level, const std::string &message, int message_id, tbb::mutex &mtx)
+    std::pair<StepType, bool> active_step_add_warning(PrintStateBase::WarningLevel warning_level, const std::string &message, int message_id, std::mutex &mtx)
     {
-        tbb::mutex::scoped_lock lock(mtx);
+        std::scoped_lock<std::mutex> lock(mtx);
         assert(m_step_active != -1);
         StateWithWarnings &state = m_state[m_step_active];
         assert(state.state == STARTED);
@@ -314,7 +324,7 @@ protected:
     PrintObjectBase(ModelObject *model_object) : m_model_object(model_object) {}
     virtual ~PrintObjectBase() {}
     // Declared here to allow access from PrintBase through friendship.
-	static tbb::mutex&                  state_mutex(PrintBase *print);
+	static std::mutex&                  state_mutex(PrintBase *print);
 	static std::function<void()>        cancel_callback(PrintBase *print);
 	// Notify UI about a new warning of a milestone "step" on this PrintObjectBase.
 	// The UI will be notified by calling a status callback registered on print.
@@ -392,12 +402,12 @@ public:
         int                     to_print_step;
     };
     // After calling the apply() function, call set_task() to limit the task to be processed by process().
-    virtual void            set_task(const TaskParams &params) {}
+    virtual void            set_task(const TaskParams &params) = 0;
     // Perform the calculation. This is the only method that is to be called at a worker thread.
     virtual void            process() = 0;
     // Clean up after process() finished, either with success, error or if canceled.
     // The adjustments on the Print / PrintObject data due to set_task() are to be reverted here.
-    virtual void            finalize() {}
+    virtual void            finalize() = 0;
 
     struct SlicingStatus {
 		SlicingStatus(int percent, const std::string &text, unsigned int flags = 0) : percent(percent), text(text), flags(flags) {}
@@ -452,9 +462,9 @@ public:
 		// Canceled internally from Print::apply() through the Print/PrintObject::invalidate_step() or ::invalidate_all_steps().
 		CANCELED_INTERNAL = 2
 	};
-    CancelStatus               cancel_status() const { return m_cancel_status; }
+    CancelStatus               cancel_status() const { return m_cancel_status.load(std::memory_order_acquire); }
     // Has the calculation been canceled?
-	bool                       canceled() const { return m_cancel_status != NOT_CANCELED; }
+	bool                       canceled() const { return m_cancel_status.load(std::memory_order_acquire) != NOT_CANCELED; }
     // Cancel the running computation. Stop execution of all the background threads.
 	void                       cancel() { m_cancel_status = CANCELED_BY_USER; }
 	void                       cancel_internal() { m_cancel_status = CANCELED_INTERNAL; }
@@ -475,7 +485,7 @@ protected:
 	friend class PrintObjectBase;
     friend class BackgroundSlicingProcess;
 
-    tbb::mutex&            state_mutex() const { return m_state_mutex; }
+    std::mutex&            state_mutex() const { return m_state_mutex; }
     std::function<void()>  cancel_callback() { return m_cancel_callback; }
 	void				   call_cancel_callback() { m_cancel_callback(); }
 	// Notify UI about a new warning of a milestone "step" on this PrintBase.
@@ -485,7 +495,7 @@ protected:
 
     // If the background processing stop was requested, throw CanceledException.
     // To be called by the worker thread and its sub-threads (mostly launched on the TBB thread pool) regularly.
-    void                   throw_if_canceled() const { if (m_cancel_status) throw CanceledException(); }
+    void                   throw_if_canceled() const { if (m_cancel_status.load(std::memory_order_acquire)) throw CanceledException(); }
     // Wrapper around this->throw_if_canceled(), so that throw_if_canceled() may be passed to a function without making throw_if_canceled() public.
     PrintTryCancel         make_try_cancel() const { return PrintTryCancel(this); }
 
@@ -502,7 +512,7 @@ protected:
     status_callback_type                    m_status_callback;
 
 private:
-    tbb::atomic<CancelStatus>               m_cancel_status;
+    std::atomic<CancelStatus>               m_cancel_status;
 
     // Callback to be evoked to stop the background processing before a state is updated.
     cancel_callback_type                    m_cancel_callback = [](){};
@@ -510,15 +520,20 @@ private:
     // Mutex used for synchronization of the worker thread with the UI thread:
     // The mutex will be used to guard the worker thread against entering a stage
     // while the data influencing the stage is modified.
-    mutable tbb::mutex                      m_state_mutex;
+    mutable std::mutex                      m_state_mutex;
 
     friend PrintTryCancel;
 };
 
-template<typename PrintStepEnum, const size_t COUNT>
+template<typename PrintStepEnumType, const size_t COUNT>
 class PrintBaseWithState : public PrintBase
 {
 public:
+    using                           PrintStepEnum       = PrintStepEnumType;
+    static constexpr const size_t   PrintStepEnumSize   = COUNT;
+
+    PrintBaseWithState() = default;
+
     bool            is_step_done(PrintStepEnum step) const { return m_state.is_done(step, this->state_mutex()); }
 	PrintStateBase::StateWithTimeStamp step_state_with_timestamp(PrintStepEnum step) const { return m_state.state_with_timestamp(step, this->state_mutex()); }
     PrintStateBase::StateWithWarnings  step_state_with_warnings(PrintStepEnum step) const { return m_state.state_with_warnings(step, this->state_mutex()); }
@@ -553,14 +568,120 @@ protected:
             this->status_update_warnings(static_cast<int>(active_step.first), warning_level, message);
     }
 
+
+    // After calling the apply() function, set_task() may be called to limit the task to be processed by process().
+    template<typename PrintObject>
+    void set_task_impl(const TaskParams &params, std::vector<PrintObject*> &print_objects)
+    {
+        static constexpr const auto PrintObjectStepEnumSize = int(PrintObject::PrintObjectStepEnumSize);
+        using                       PrintObjectStepEnum     = typename PrintObject::PrintObjectStepEnum;
+        // Grab the lock for the Print / PrintObject milestones.
+        std::scoped_lock<std::mutex> lock(this->state_mutex());
+
+        int n_object_steps = int(params.to_object_step) + 1;
+        if (n_object_steps == 0)
+            n_object_steps = PrintObjectStepEnumSize;
+
+        if (params.single_model_object.valid()) {
+            // Find the print object to be processed with priority.
+            PrintObject *print_object = nullptr;
+            size_t       idx_print_object = 0;
+            for (; idx_print_object < print_objects.size(); ++ idx_print_object)
+                if (print_objects[idx_print_object]->model_object()->id() == params.single_model_object) {
+                    print_object = print_objects[idx_print_object];
+                    break;
+                }
+            assert(print_object != nullptr);
+            // Find out whether the priority print object is being currently processed.
+            bool running = false;
+            for (int istep = 0; istep < n_object_steps; ++ istep) {
+                if (! print_object->is_step_enabled_unguarded(PrintObjectStepEnum(istep)))
+                    // Step was skipped, cancel.
+                    break;
+                if (print_object->is_step_started_unguarded(PrintObjectStepEnum(istep))) {
+                    // No step was skipped, and a wanted step is being processed. Don't cancel.
+                    running = true;
+                    break;
+                }
+            }
+            if (! running)
+                this->call_cancel_callback();
+
+            // Now the background process is either stopped, or it is inside one of the print object steps to be calculated anyway.
+            if (params.single_model_instance_only) {
+                // Suppress all the steps of other instances.
+                for (PrintObject *po : print_objects)
+                    for (size_t istep = 0; istep < PrintObjectStepEnumSize; ++ istep)
+                        po->enable_step_unguarded(PrintObjectStepEnum(istep), false);
+            } else if (! running) {
+                // Swap the print objects, so that the selected print_object is first in the row.
+                // At this point the background processing must be stopped, so it is safe to shuffle print objects.
+                if (idx_print_object != 0)
+                    std::swap(print_objects.front(), print_objects[idx_print_object]);
+            }
+            // and set the steps for the current object.
+            for (int istep = 0; istep < n_object_steps; ++ istep)
+                print_object->enable_step_unguarded(PrintObjectStepEnum(istep), true);
+            for (int istep = n_object_steps; istep < PrintObjectStepEnumSize; ++ istep)
+                print_object->enable_step_unguarded(PrintObjectStepEnum(istep), false);
+        } else {
+            // Slicing all objects.
+            bool running = false;
+            for (PrintObject *print_object : print_objects)
+                for (int istep = 0; istep < n_object_steps; ++ istep) {
+                    if (! print_object->is_step_enabled_unguarded(PrintObjectStepEnum(istep))) {
+                        // Step may have been skipped. Restart.
+                        goto loop_end;
+                    }
+                    if (print_object->is_step_started_unguarded(PrintObjectStepEnum(istep))) {
+                        // This step is running, and the state cannot be changed due to the this->state_mutex() being locked.
+                        // It is safe to manipulate m_stepmask of other PrintObjects and Print now.
+                        running = true;
+                        goto loop_end;
+                    }
+                }
+        loop_end:
+            if (! running)
+                this->call_cancel_callback();
+            for (PrintObject *po : print_objects) {
+                for (int istep = 0; istep < n_object_steps; ++ istep)
+                    po->enable_step_unguarded(PrintObjectStepEnum(istep), true);
+                for (int istep = n_object_steps; istep < PrintObjectStepEnumSize; ++ istep)
+                    po->enable_step_unguarded(PrintObjectStepEnum(istep), false);
+            }
+        }
+
+        if (params.to_object_step != -1 || params.to_print_step != -1) {
+            // Limit the print steps.
+            size_t istep = (params.to_object_step != -1) ? 0 : size_t(params.to_print_step) + 1;
+            for (; istep < PrintStepEnumSize; ++ istep)
+                m_state.enable_unguarded(PrintStepEnum(istep), false);
+        }
+    }
+
+    // Clean up after process() finished, either with success, error or if canceled.
+    // The adjustments on the Print / PrintObject m_stepmask data due to set_task() are to be reverted here.
+    template<typename PrintObject>
+    void finalize_impl(std::vector<PrintObject*> &print_objects)
+    {
+        // Grab the lock for the Print / PrintObject milestones.
+        std::scoped_lock<std::mutex> lock(this->state_mutex());
+        for (auto *po : print_objects)
+            po->enable_all_steps_unguarded(true);
+        m_state.enable_all_unguarded(true);
+    }
+
 private:
-    PrintState<PrintStepEnum, COUNT> m_state;
+    PrintState<PrintStepEnum, COUNT>    m_state;
 };
 
-template<typename PrintType, typename PrintObjectStepEnum, const size_t COUNT>
+template<typename PrintType, typename PrintObjectStepEnumType, const size_t COUNT>
 class PrintObjectBaseWithState : public PrintObjectBase
 {
 public:
+    using                           PrintObjectStepEnum       = PrintObjectStepEnumType;
+    static constexpr const size_t   PrintObjectStepEnumSize   = COUNT;
+
     PrintType*       print()         { return m_print; }
     const PrintType* print() const   { return m_print; }
 
@@ -594,6 +715,10 @@ protected:
     bool            is_step_started_unguarded(PrintObjectStepEnum step) const { return m_state.is_started_unguarded(step); }
     bool            is_step_done_unguarded(PrintObjectStepEnum step) const { return m_state.is_done_unguarded(step); }
 
+    bool            is_step_enabled_unguarded(PrintObjectStepEnum step) const { return m_state.is_enabled_unguarded(step); }
+    void            enable_step_unguarded(PrintObjectStepEnum step, bool enable) { m_state.enable_unguarded(step, enable); }
+    void            enable_all_steps_unguarded(bool enable) { m_state.enable_all_unguarded(enable); }
+
     // Add a slicing warning to the active PrintObject step and send a status notification.
     // This method could be called multiple times between this->set_started() and this->set_done().
     void            active_step_add_warning(PrintStateBase::WarningLevel warning_level, const std::string &message, int message_id = 0) {
@@ -608,10 +733,10 @@ protected:
     void            throw_if_canceled() { if (m_print->canceled()) throw CanceledException(); }
 
     friend PrintType;
-    PrintType                               *m_print;
+    PrintType                                *m_print;
 
 private:
-    PrintState<PrintObjectStepEnum, COUNT>   m_state;
+    PrintState<PrintObjectStepEnum, COUNT>    m_state;
 };
 
 } // namespace Slic3r

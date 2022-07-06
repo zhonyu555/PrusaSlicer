@@ -58,11 +58,11 @@ public:
             thickness(rhs.thickness), thickness_layers(rhs.thickness_layers), 
             bridge_angle(rhs.bridge_angle), extra_perimeters(rhs.extra_perimeters)
         {};
-    Surface(SurfaceType _surface_type, const ExPolygon &&_expolygon)
+    Surface(SurfaceType _surface_type, ExPolygon &&_expolygon)
         : surface_type(_surface_type), expolygon(std::move(_expolygon)),
             thickness(-1), thickness_layers(1), bridge_angle(-1), extra_perimeters(0)
         {};
-    Surface(const Surface &other, const ExPolygon &&_expolygon)
+    Surface(const Surface &other, ExPolygon &&_expolygon)
         : surface_type(other.surface_type), expolygon(std::move(_expolygon)),
             thickness(other.thickness), thickness_layers(other.thickness_layers), 
             bridge_angle(other.bridge_angle), extra_perimeters(other.extra_perimeters)
@@ -90,7 +90,6 @@ public:
         return *this;
     }
 
-	operator Polygons()  const { return this->expolygon; }
 	double area() 		 const { return this->expolygon.area(); }
     bool   empty() 		 const { return expolygon.empty(); }
     void   clear() 			   { expolygon.clear(); }
@@ -106,6 +105,16 @@ public:
 
 typedef std::vector<Surface> Surfaces;
 typedef std::vector<Surface*> SurfacesPtr;
+
+inline Polygons to_polygons(const Surface &surface)
+{
+    return to_polygons(surface.expolygon);
+}
+
+inline Polygons to_polygons(Surface &&surface)
+{
+    return to_polygons(std::move(surface.expolygon));
+}
 
 inline Polygons to_polygons(const Surfaces &src)
 {
@@ -150,7 +159,7 @@ inline ExPolygons to_expolygons(Surfaces &&src)
 {
 	ExPolygons expolygons;
 	expolygons.reserve(src.size());
-	for (Surfaces::const_iterator it = src.begin(); it != src.end(); ++it)
+	for (auto it = src.begin(); it != src.end(); ++it)
 		expolygons.emplace_back(ExPolygon(std::move(it->expolygon)));
 	src.clear();
 	return expolygons;
@@ -251,8 +260,8 @@ inline void surfaces_append(Surfaces &dst, ExPolygons &&src, SurfaceType surface
 inline void surfaces_append(Surfaces &dst, ExPolygons &&src, const Surface &surfaceTempl) 
 { 
     dst.reserve(dst.size() + number_polygons(src));
-    for (ExPolygons::const_iterator it = src.begin(); it != src.end(); ++ it)
-        dst.emplace_back(Surface(surfaceTempl, std::move(*it)));
+    for (ExPolygon& explg : src)
+        dst.emplace_back(Surface(surfaceTempl, std::move(explg)));
     src.clear();
 }
 

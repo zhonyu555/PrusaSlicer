@@ -3,6 +3,7 @@
 
 #include "Point.hpp"
 #include "Polygon.hpp"
+#include "ExPolygon.hpp"
 
 namespace Slic3r {
 
@@ -52,7 +53,7 @@ public:
         PointType*      operator->() const { return &m_data->at(m_idx).point; }
         MutablePolygon& polygon() const { assert(this->valid()); return *m_data; }
         IndexType       size()    const { assert(this->valid()); return m_data->size(); }
-        iterator&       remove()        { this->m_idx = m_data->remove(*this).m_idx; return *this; }
+        iterator&       remove()        { m_idx = m_data->remove(*this).m_idx; return *this; }
         iterator        insert(const PointType pt) const { return m_data->insert(*this, pt); }
     private:
         iterator(MutablePolygon *data, IndexType idx) : m_data(data), m_idx(idx) {}
@@ -162,10 +163,10 @@ public:
         return out;
     };
 
-    bool            empty()  const { return this->m_size == 0; }
-    size_t          size()   const { return this->m_size; }
-    size_t          capacity() const { return this->m_data.capacity(); }
-    bool            valid()  const { return this->m_size >= 3; }
+    bool            empty()  const { return m_size == 0; }
+    size_t          size()   const { return m_size; }
+    size_t          capacity() const { return m_data.capacity(); }
+    bool            valid()  const { return m_size >= 3; }
     void            clear()        { m_data.clear(); m_size = 0; m_head = IndexType(-1); m_head_free = IndexType(-1); }
 
     iterator        begin()        { return { this, m_head }; }
@@ -308,6 +309,28 @@ inline bool operator!=(const MutablePolygon &p1, const MutablePolygon &p2) { ret
 void remove_duplicates(MutablePolygon &polygon);
 void remove_duplicates(MutablePolygon &polygon, double eps);
 
+// Remove nearly duplicate points. If a distance between two points is less than scaled_eps
+// and if the angle between its surrounding lines is less than max_angle, the point will be removed.
+// May reduce the polygon down to empty polygon.
+void remove_duplicates(MutablePolygon &polygon, coord_t scaled_eps, const double max_angle);
+inline ExPolygons remove_duplicates(ExPolygons expolygons, coord_t scaled_eps, double max_angle)
+{
+    MutablePolygon mp;
+    for (ExPolygon &expolygon : expolygons) {
+        mp.assign(expolygon.contour, expolygon.contour.size() * 2);
+        remove_duplicates(mp, scaled_eps, max_angle);
+        mp.polygon(expolygon.contour);
+        for (Polygon &hole : expolygon.holes) {
+            mp.assign(hole, hole.size() * 2);
+            remove_duplicates(mp, scaled_eps, max_angle);
+            mp.polygon(hole);
+        }
+        expolygon.holes.erase(std::remove_if(expolygon.holes.begin(), expolygon.holes.end(), [](const auto &p) { return p.empty(); }), expolygon.holes.end());
+    }
+    expolygons.erase(std::remove_if(expolygons.begin(), expolygons.end(), [](const auto &p) { return p.empty(); }), expolygons.end());
+    return expolygons;
+}
+
 void smooth_outward(MutablePolygon &polygon, coord_t clip_dist_scaled);
 
 inline Polygon smooth_outward(Polygon polygon, coord_t clip_dist_scaled)
@@ -328,6 +351,24 @@ inline Polygons smooth_outward(Polygons polygons, coord_t clip_dist_scaled)
     }
     polygons.erase(std::remove_if(polygons.begin(), polygons.end(), [](const auto &p){ return p.empty(); }), polygons.end());
     return polygons;
+}
+
+inline ExPolygons smooth_outward(ExPolygons expolygons, coord_t clip_dist_scaled)
+{
+    MutablePolygon mp;
+    for (ExPolygon &expolygon : expolygons) {
+        mp.assign(expolygon.contour, expolygon.contour.size() * 2);
+        smooth_outward(mp, clip_dist_scaled);
+        mp.polygon(expolygon.contour);
+        for (Polygon &hole : expolygon.holes) {
+            mp.assign(hole, hole.size() * 2);
+            smooth_outward(mp, clip_dist_scaled);
+            mp.polygon(hole);
+        }
+        expolygon.holes.erase(std::remove_if(expolygon.holes.begin(), expolygon.holes.end(), [](const auto &p) { return p.empty(); }), expolygon.holes.end());
+    }
+    expolygons.erase(std::remove_if(expolygons.begin(), expolygons.end(), [](const auto &p) { return p.empty(); }), expolygons.end());
+    return expolygons;
 }
 
 }

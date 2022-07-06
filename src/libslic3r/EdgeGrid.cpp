@@ -136,11 +136,6 @@ void EdgeGrid::Grid::create(const ExPolygons &expolygons, coord_t resolution)
 	create_from_m_contours(resolution);
 }
 
-void EdgeGrid::Grid::create(const ExPolygonCollection &expolygons, coord_t resolution)
-{
-	create(expolygons.expolygons, resolution);
-}
-
 // m_contours has been initialized. Now fill in the edge grid.
 void EdgeGrid::Grid::create_from_m_contours(coord_t resolution)
 {
@@ -546,7 +541,7 @@ bool EdgeGrid::Grid::inside(const Point &pt_src)
 		return false;
 	coord_t ix = p(0) / m_resolution;
 	coord_t iy = p(1) / m_resolution;
-	if (ix >= this->m_cols || iy >= this->m_rows)
+	if (ix >= m_cols || iy >= m_rows)
 		return false;
 
 	size_t i_closest = (size_t)-1;

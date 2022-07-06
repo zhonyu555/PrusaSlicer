@@ -227,10 +227,12 @@ struct PageWelcome: ConfigWizardPage
 {
     wxStaticText *welcome_text;
     wxCheckBox *cbox_reset;
+    wxCheckBox *cbox_integrate;
 
     PageWelcome(ConfigWizard *parent);
 
     bool reset_user_profile() const { return cbox_reset != nullptr ? cbox_reset->GetValue() : false; }
+    bool integrate_desktop() const { return cbox_integrate != nullptr ? cbox_integrate->GetValue() : false; }
 
     virtual void set_run_reason(ConfigWizard::RunReason run_reason) override;
 };
@@ -255,6 +257,9 @@ struct PagePrinters: ConfigWizardPage
     std::string get_vendor_id() const { return printer_pickers.empty() ? "" : printer_pickers[0]->vendor_id; }
 
     virtual void set_run_reason(ConfigWizard::RunReason run_reason) override;
+
+    bool has_printers { false };
+    bool is_primary_printer_page { false };
 };
 
 // Here we extend wxListBox and wxCheckListBox
@@ -421,8 +426,6 @@ struct PageMode: ConfigWizardPage
     PageMode(ConfigWizard *parent);
 
     void serialize_mode(AppConfig *app_config) const;
-
-    virtual void on_activate();
 };
 
 struct PageVendors: ConfigWizardPage
@@ -449,8 +452,8 @@ struct PageBedShape: ConfigWizardPage
 
 struct PageDiameters: ConfigWizardPage
 {
-    wxSpinCtrlDouble *spin_nozzle;
-    wxSpinCtrlDouble *spin_filam;
+    wxTextCtrl *diam_nozzle;
+    wxTextCtrl *diam_filam;
 
     PageDiameters(ConfigWizard *parent);
     virtual void apply_custom_config(DynamicPrintConfig &config);
@@ -510,14 +513,11 @@ private:
     ScalableBitmap bullet_black;
     ScalableBitmap bullet_blue;
     ScalableBitmap bullet_white;
-    wxStaticBitmap* logo;
 
     std::vector<Item> items;
     size_t item_active;
     ssize_t item_hover;
     size_t last_page;
-
-    int logo_height;
 
     int item_height() const { return std::max(bullet_black.bmp().GetSize().GetHeight(), em_w) + em_w; }
 
@@ -549,7 +549,9 @@ struct ConfigWizard::priv
     std::unique_ptr<DynamicPrintConfig> custom_config;           // Backing for custom printer definition
     bool any_fff_selected;        // Used to decide whether to display Filaments page
     bool any_sla_selected;        // Used to decide whether to display SLA Materials page
-	bool custom_printer_selected; 
+    bool custom_printer_selected { false }; 
+    // Set to true if there are none FFF printers on the main FFF page. If true, only SLA printers are shown (not even custum printers)
+    bool only_sla_mode { false };
 
     wxScrolledWindow *hscroll = nullptr;
     wxBoxSizer *hscroll_sizer = nullptr;
@@ -612,10 +614,12 @@ struct ConfigWizard::priv
 
     bool on_bnt_finish();
     bool check_and_install_missing_materials(Technology technology, const std::string &only_for_model_id = std::string());
-    void apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater);
+    bool apply_config(AppConfig *app_config, PresetBundle *preset_bundle, const PresetUpdater *updater, bool& apply_keeped_changes);
     // #ys_FIXME_alise
     void update_presets_in_config(const std::string& section, const std::string& alias_key, bool add);
-
+#ifdef __linux__
+    void perform_desktop_integration() const;
+#endif
     bool check_fff_selected();        // Used to decide whether to display Filaments page
     bool check_sla_selected();        // Used to decide whether to display SLA Materials page
 

@@ -7,7 +7,6 @@
 #include "Point.hpp"
 #include "BoundingBox.hpp"
 #include "ExPolygon.hpp"
-#include "ExPolygonCollection.hpp"
 
 namespace Slic3r {
 namespace EdgeGrid {
@@ -20,10 +19,13 @@ public:
 	Contour(const Slic3r::Point *data, size_t size, bool open) : Contour(data, data + size, open) {}
 	Contour(const std::vector<Slic3r::Point> &pts, bool open) : Contour(pts.data(), pts.size(), open) {}
 
-	const Slic3r::Point *begin()  const { return m_begin; }
-	const Slic3r::Point *end()    const { return m_end; }
-	bool                 open()   const { return m_open; }
-	bool                 closed() const { return ! m_open; }
+    const Slic3r::Point *begin()  const { return m_begin; }
+    const Slic3r::Point *end()    const { return m_end; }
+    bool                 open()   const { return m_open; }
+    bool                 closed() const { return !m_open; }
+
+    const Slic3r::Point &front()  const { return *m_begin; }
+    const Slic3r::Point &back()   const { return *(m_end - 1); }
 
 	// Start point of a segment idx.
 	const Slic3r::Point& segment_start(size_t idx) const {
@@ -61,6 +63,23 @@ public:
 
 	size_t               num_segments() const { return this->size() - (m_open ? 1 : 0); }
 
+    Line                 get_segment(size_t idx) const
+    {
+        assert(idx < this->num_segments());
+        return Line(this->segment_start(idx), this->segment_end(idx));
+    }
+
+    Lines                get_segments() const
+    {
+        Lines lines;
+        lines.reserve(this->num_segments());
+        if (this->num_segments() > 2) {
+            for (auto it = this->begin(); it != this->end() - 1; ++it) lines.push_back(Line(*it, *(it + 1)));
+            if (!m_open) lines.push_back(Line(this->back(), this->front()));
+        }
+        return lines;
+    }
+
 private:
 	size_t  			 size() const { return m_end - m_begin; }
 
@@ -92,7 +111,6 @@ public:
 	void create(const std::vector<Points> &polygons, coord_t resolution) { this->create(polygons, resolution, false); }
 	void create(const ExPolygon &expoly, coord_t resolution);
 	void create(const ExPolygons &expolygons, coord_t resolution);
-	void create(const ExPolygonCollection &expolygons, coord_t resolution);
 
 	const std::vector<Contour>& contours() const { return m_contours; }
 
@@ -103,7 +121,6 @@ public:
 	bool intersect(const Polygons &polygons) { for (size_t i = 0; i < polygons.size(); ++ i) if (intersect(polygons[i])) return true; return false; }
 	bool intersect(const ExPolygon &expoly) { if (intersect(expoly.contour)) return true; for (size_t i = 0; i < expoly.holes.size(); ++ i) if (intersect(expoly.holes[i])) return true; return false; }
 	bool intersect(const ExPolygons &expolygons) { for (size_t i = 0; i < expolygons.size(); ++ i) if (intersect(expolygons[i])) return true; return false; }
-	bool intersect(const ExPolygonCollection &expolygons) { return intersect(expolygons.expolygons); }
 
 	// Test, whether a point is inside a contour.
 	bool inside(const Point &pt);
@@ -371,7 +388,7 @@ protected:
 
 	// Referencing the source contours.
 	// This format allows one to work with any Slic3r fixed point contour format
-	// (Polygon, ExPolygon, ExPolygonCollection etc).
+	// (Polygon, ExPolygon, ExPolygons etc).
 	std::vector<Contour>						m_contours;
 
 	// Referencing a contour and a line segment of m_contours.

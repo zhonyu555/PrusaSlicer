@@ -34,11 +34,17 @@ std::string PresetHints::cooling_description(const Preset &preset)
                               "so that no less than %3%s are spent on that layer "
                               "(however, speed will never be reduced below %4%mm/s)."),
                               slowdown_below_layer_time, max_fan_speed, slowdown_below_layer_time, min_print_speed);
-        if (fan_below_layer_time > slowdown_below_layer_time)
-            out += "\n" + 
-                GUI::format(_L("If estimated layer time is greater, but still below ~%1%s, "
+        if (fan_below_layer_time > slowdown_below_layer_time) {
+            out += "\n";
+            if (min_fan_speed != max_fan_speed)
+                out += GUI::format(_L("If estimated layer time is greater, but still below ~%1%s, "
                                "fan will run at a proportionally decreasing speed between %2%%% and %3%%%."),
                                fan_below_layer_time, max_fan_speed, min_fan_speed);
+            else
+                out += GUI::format(_L("If estimated layer time is greater, but still below ~%1%s, "
+                               "fan will run at %2%%%"),
+                               fan_below_layer_time, min_fan_speed);
+        }
         out += "\n";
     }
 	if (preset.config.opt_bool("fan_always_on", 0)) {
@@ -209,22 +215,20 @@ std::string PresetHints::recommended_thin_wall_thickness(const PresetBundle &pre
 		out += _utf8(L("Recommended object thin wall thickness: Not available due to invalid layer height."));
 		return out;
 	}
-
-    Flow    external_perimeter_flow             = Flow::new_from_config_width(
-        frExternalPerimeter, 
-        *print_config.opt<ConfigOptionFloatOrPercent>("external_perimeter_extrusion_width"), 
-        nozzle_diameter, layer_height);
-    Flow    perimeter_flow                      = Flow::new_from_config_width(
-        frPerimeter, 
-        *print_config.opt<ConfigOptionFloatOrPercent>("perimeter_extrusion_width"), 
-        nozzle_diameter, layer_height);
-
     
     if (num_perimeters > 0) {
         int num_lines = std::min(num_perimeters * 2, 10);
         out += (boost::format(_utf8(L("Recommended object thin wall thickness for layer height %.2f and"))) % layer_height).str() + " ";
         // Start with the width of two closely spaced 
         try {
+            Flow external_perimeter_flow = Flow::new_from_config_width(
+                frExternalPerimeter, 
+                *print_config.opt<ConfigOptionFloatOrPercent>("external_perimeter_extrusion_width"), 
+                nozzle_diameter, layer_height);
+            Flow perimeter_flow          = Flow::new_from_config_width(
+                frPerimeter, 
+                *print_config.opt<ConfigOptionFloatOrPercent>("perimeter_extrusion_width"), 
+                nozzle_diameter, layer_height);
 	        double width = external_perimeter_flow.width() + external_perimeter_flow.spacing();
 	        for (int i = 2; i <= num_lines; thin_walls ? ++ i : i += 2) {
 	            if (i > 2)

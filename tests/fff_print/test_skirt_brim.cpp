@@ -31,13 +31,14 @@ static int get_brim_tool(const std::string &gcode)
 
 TEST_CASE("Skirt height is honored", "[Skirt]") {
     DynamicPrintConfig config = Slic3r::DynamicPrintConfig::full_print_config();
-    config.set_deserialize({
+    config.set_deserialize_strict({
     	{ "skirts",					1 },
     	{ "skirt_height", 			5 },
     	{ "perimeters", 			0 },
     	{ "support_material_speed", 99 },
 		// avoid altering speeds unexpectedly
     	{ "cooling", 				false },
+        // avoid altering speeds unexpectedly
     	{ "first_layer_speed", 		"100%" }
     });
 
@@ -64,7 +65,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
     GIVEN("A default configuration") {
 	    DynamicPrintConfig config = Slic3r::DynamicPrintConfig::full_print_config();
 		config.set_num_extruders(4);
-		config.set_deserialize({ 
+		config.set_deserialize_strict({
 			{ "support_material_speed", 		99 },
 			{ "first_layer_height", 			0.3 },
         	{ "gcode_comments", 				true },
@@ -78,7 +79,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
         });
 
         WHEN("Brim width is set to 5") {
-        	config.set_deserialize({
+        	config.set_deserialize_strict({
 				{ "perimeters", 		0 },
 				{ "skirts", 			0 },
 				{ "brim_width", 		5 }
@@ -100,7 +101,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
         }
 
         WHEN("Skirt area is smaller than the brim") {
-            config.set_deserialize({
+            config.set_deserialize_strict({
             	{ "skirts", 	1 },
             	{ "brim_width", 10}
             });
@@ -110,7 +111,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
         }
 
         WHEN("Skirt height is 0 and skirts > 0") {
-            config.set_deserialize({
+            config.set_deserialize_strict({
             	{ "skirts", 	  2 },
             	{ "skirt_height", 0 }
             });
@@ -123,7 +124,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
 		// This is a real error! One shall print the brim with the external perimeter extruder!
         WHEN("Perimeter extruder = 2 and support extruders = 3") {
             THEN("Brim is printed with the extruder used for the perimeters of first object") {
-				config.set_deserialize({
+				config.set_deserialize_strict({
 					{ "skirts", 					0 },
 					{ "brim_width", 				5 },
 					{ "perimeter_extruder", 		2 },
@@ -137,7 +138,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
         }
         WHEN("Perimeter extruder = 2, support extruders = 3, raft is enabled") {
             THEN("brim is printed with same extruder as skirt") {
-				config.set_deserialize({
+				config.set_deserialize_strict({
 					{ "skirts",						0 },
 					{ "brim_width", 				5 },
 					{ "perimeter_extruder", 		2 },
@@ -153,7 +154,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
 #endif
 
         WHEN("brim width to 1 with layer_width of 0.5") {
-        	config.set_deserialize({
+        	config.set_deserialize_strict({
 				{ "skirts", 						0 },
 				{ "first_layer_extrusion_width", 	0.5 },
 				{ "brim_width", 					1 }
@@ -167,7 +168,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
 
 #if 0
         WHEN("brim ears on a square") {
-			config.set_deserialize({
+			config.set_deserialize_strict({
 				{ "skirts",							0 },
 				{ "first_layer_extrusion_width",	0.5 },
 				{ "brim_width",						1 },
@@ -182,7 +183,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
         }
 
         WHEN("brim ears on a square but with a too small max angle") {
-			config.set_deserialize({
+			config.set_deserialize_strict({
 				{ "skirts",							0 },
 				{ "first_layer_extrusion_width",	0.5 },
 				{ "brim_width",						1 },
@@ -198,7 +199,7 @@ SCENARIO("Original Slic3r Skirt/Brim tests", "[SkirtBrim]") {
 #endif
 
         WHEN("Object is plated with overhang support and a brim") {
-        	config.set_deserialize({
+        	config.set_deserialize_strict({
 	            { "layer_height", 				0.4 },
 	            { "first_layer_height", 		0.4 },
 	            { "skirts", 					1 },
