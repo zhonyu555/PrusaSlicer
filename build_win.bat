@@ -70,14 +70,31 @@ SET PS_VERSION_EXCEEDED=17
 SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
 IF NOT EXIST "%VSWHERE%" SET VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
 FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`"%VSWHERE%" -nologo -property productId`) DO SET PS_PRODUCT_DEFAULT=%%I
+IF NOT EXIST "%VSWHERE%" (
+    SET EXIT_STATUS=-1
+    @ECHO ERROR: vsware.exe not found. 1>&2
+    GOTO :HELP
+)
+
+SET PS_VSWHERE_QUERY="%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo
+FOR /F "tokens=* USEBACKQ" %%I IN (`^"%PS_VSWHERE_QUERY% -property productID^"`) DO SET PS_PRODUCT_DEFAULT_A=%%I
+SET PS_PRODUCT_DEFAULT_A=
+REM FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`"%VSWHERE%" -nologo -property productId`) DO SET PS_PRODUCT_DEFAULT=%%I
+IF "%PS_PRODUCT_DEFAULT_A%" EQU "" (
+    @ECHO Visual Studio not found, searching for MSBuild
+    SET PS_VSWHERE_QUERY="%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo -products Microsoft.VisualStudio.Product.BuildTools
+    FOR /F "tokens=* USEBACKQ" %%I IN (`^"%PS_VSWHERE_QUERY% -products Microsoft.VisualStudio.Product.BuildTools -property productID^"`) DO SET PS_PRODUCT_DEFAULT_A=%%I
+)
+SET PS_PRODUCT_DEFAULT=%PS_PRODUCT_DEFAULT_A%
 IF "%PS_PRODUCT_DEFAULT%" EQU "" (
     SET EXIT_STATUS=-1
     @ECHO ERROR: No Visual Studio installation found. 1>&2
     GOTO :HELP
+) ELSE (
 )
 REM Default to the latest supported version if multiple are available
 FOR /F "tokens=1 USEBACKQ delims=." %%I IN (
-    `^""%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo -property catalog_buildVersion^"`
+    `^"%PS_VSWHERE_QUERY% -property catalog_buildVersion^"`
 ) DO SET PS_VERSION_SUPPORTED=%%I
 
 REM Probe build directories and system state for reasonable default arguments
@@ -89,6 +106,8 @@ SET PS_RUN=none
 SET PS_DESTDIR=
 SET PS_VERSION=
 SET PS_PRODUCT=%PS_PRODUCT_DEFAULT%
+SET PS_PRODUCT_NAME=Visual Studio
+IF "%PS_PRODUCT%" EQU "Microsoft.VisualStudio.Product.BuildTools" SET PS_PRODUCT_NAME=MSBuild Tools
 SET PS_PRIORITY=normal
 CALL :RESOLVE_DESTDIR_CACHE
 
@@ -184,9 +203,11 @@ SET PS_CURRENT_STEP=environment
 @ECHO ** Build Steps:  %PS_STEPS%
 @ECHO ** Run App:      %PS_RUN%
 @ECHO ** Deps path:    %PS_DESTDIR%
-@ECHO ** Using Microsoft Visual Studio installation found at:
+@ECHO ** Using Microsoft %PS_PRODUCT_NAME% installation found at:
 @ECHO **  %MSVC_DIR%
 SET CMAKE_GENERATOR=Visual Studio %PS_VERSION% %PS_PRODUCT_VERSION%
+REM SET CMAKE_GENERATOR=%PS_PRODUCT_NAME% Visual Studio %PS_VERSION% %PS_PRODUCT_VERSION%
+SET CMAKE_GENERATOR=Visual Studio 16 2019
 CALL "%MSVC_DIR%\Common7\Tools\vsdevcmd.bat" -arch=%PS_ARCH% -host_arch=%PS_ARCH_HOST% -app_platform=Desktop
 IF %ERRORLEVEL% NEQ 0 GOTO :END
 REM Need to reset the echo state after vsdevcmd.bat clobbers it.
@@ -206,9 +227,9 @@ IF "%PS_STEPS_DIRTY%" EQU "" (
     CALL :MAKE_OR_CLEAN_DIRECTORY "%PS_DESTDIR%"
 )
 cd deps\build || GOTO :END
-cmake.exe .. -DDESTDIR="%PS_DESTDIR%"
+cmake.exe .. -DDESTDIR="%PS_DESTDIR%" --log-level=VERBOSE --log-context
 IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
-    (del CMakeCache.txt && cmake.exe .. -DDESTDIR="%PS_DESTDIR%") || GOTO :END
+    (del CMakeCache.txt && cmake.exe .. -DDESTDIR="%PS_DESTDIR%" --log-level=VERBOSE --log-context) || GOTO :END
 ) ELSE GOTO :END
 (echo %PS_DESTDIR%)> "%PS_DEPS_PATH_FILE%"
 msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% /v:quiet %PS_PRIORITY% || GOTO :END
@@ -229,9 +250,9 @@ SET PS_PROJECT_IS_OPEN=
 FOR /F "tokens=2 delims=," %%I in (
     'tasklist /V /FI "IMAGENAME eq devenv.exe " /NH /FO CSV ^| find "%PS_SOLUTION_NAME%"'
 ) do SET PS_PROJECT_IS_OPEN=%%~I
-cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%
+cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% --log-level=VERBOSE --log-context
 IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
-    (del CMakeCache.txt && cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST%) || GOTO :END
+    (del CMakeCache.txt && cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% --log-level=VERBOSE) || GOTO :END
 ) ELSE GOTO :END
 REM Skip the build step if we're using the undocumented app-cmake to regenerate the full config from inside devenv
 IF "%PS_STEPS%" NEQ "app-cmake" msbuild /m ALL_BUILD.vcxproj /p:Configuration=%PS_CONFIG% /v:quiet %PS_PRIORITY% || GOTO :END
@@ -275,12 +296,12 @@ IF "%PS_RUN%" EQU "console" (
         @ECHO Preparing to run Visual Studio...
         cd ..\.. || GOTO :END
         REM This hack generates a single config for MSVS, guaranteeing it gets set as the active config.
-        cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG% > nul 2> nul || GOTO :END
+        cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG% --log-level=VERBOSE --log-context > nul 2> nul || GOTO :END
         REM Now launch devenv with the single config (setting it active) and a /command switch to re-run cmake and generate the full config list
         start devenv.exe %PS_SOLUTION_NAME%.sln /command ^"shell /o ^^^"%~f0^^^" -d ^^^"%PS_DESTDIR%^^^" -c %PS_CONFIG% -a %PS_ARCH% -r none -s app-cmake^"
         REM If devenv fails to launch just directly regenerate the full config list.
         IF %ERRORLEVEL% NEQ 0 (
-            cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% 2> nul 1> nul || GOTO :END
+            cmake.exe .. -DCMAKE_PREFIX_PATH="%PS_DESTDIR%\usr\local" -DCMAKE_CONFIGURATION_TYPES=%PS_CONFIG_LIST% --log-level=VERBOSE --log-context 2> nul 1> nul || GOTO :END
         )
     )
 )
