@@ -64,6 +64,7 @@ SET PS_DEPS_PATH_FILE=%~dp0deps\build\%PS_DEPS_PATH_FILE_NAME%
 SET PS_CONFIG_LIST="Debug;MinSizeRel;Release;RelWithDebInfo"
 REM SET PS_VERBOSE=--log-level=VERBOSE --log-context
 SET PS_VERBOSE=
+SET PS_USE_MSBUILD=
 
 REM The officially supported toolchain version is 16 (Visual Studio 2019)
 REM TODO: Update versions after Boost gets rolled to 1.78 or later
@@ -78,7 +79,7 @@ IF NOT EXIST "%VSWHERE%" (
 )
 
 SET PS_VSWHERE_QUERY="%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo
-FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`^"%PS_VSWHERE_QUERY% -property productID^"`) DO SET PS_PRODUCT_DEFAULT_A=%%I
+IF %PS_USE_MSBUILD% NEQ 1 FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`^"%PS_VSWHERE_QUERY% -property productID^"`) DO SET PS_PRODUCT_DEFAULT_A=%%I
 IF "%PS_PRODUCT_DEFAULT_A%" EQU "" (
     @ECHO Visual Studio not found, searching for MSBuild Tools
     FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`^"%PS_VSWHERE_QUERY% -products Microsoft.VisualStudio.Product.BuildTools -property productID^"`) DO SET PS_PRODUCT_DEFAULT_A=%%I
