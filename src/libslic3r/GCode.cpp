@@ -2506,7 +2506,9 @@ void GCode::append_full_config(const Print &print, std::string &str)
         //FIXME The print host keys should not be exported to full_print_config anymore. The following keys may likely be removed.
         "print_host"sv,
         "printhost_apikey"sv,
-        "printhost_cafile"sv
+        "printhost_cafile"sv,
+        "printhost_client_cert"sv,
+        "printhost_clinet_cert_password"sv
     };
     assert(std::is_sorted(banned_keys.begin(), banned_keys.end()));
     auto is_banned = [](const std::string &key) {

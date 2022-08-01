@@ -342,6 +342,22 @@ void PrintConfigDef::init_common_params()
     def->cli = ConfigOptionDef::nocli;
     def->set_default_value(new ConfigOptionString(""));
 
+    def = this->add("printhost_client_cert", coString);
+    def->label = L("Client Certificate File");
+    def->tooltip = L("A Client certificate file for use with 2-way ssl authentication, in p12/pfx format.  "
+                   "If left blank, no client certificate is used.");
+    def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
+    def->set_default_value(new ConfigOptionString(""));
+
+    def = this->add("printhost_client_cert_password", coString);
+    def->label = L("Client Certificate Password");
+    def->tooltip = L("Password for client certificate for 2-way ssl authentication. "
+                   "Leave blank if no password is needed");
+    def->mode = comAdvanced;
+    def->cli = ConfigOptionDef::nocli;
+    def->set_default_value(new ConfigOptionString(""));
+
     // Only available on Windows.
     def = this->add("printhost_ssl_ignore_revoke", coBool);
     def->label = L("Ignore HTTPS certificate revocation checks");
