@@ -25,6 +25,8 @@ protected:
 	    const std::pair<float, Point>   &direction, 
 	    ExPolygon                 		 expolygon,
 	    Polylines                       &polylines_out) override;
+
+    virtual float _calibration_density_ratio(size_t index) const override;
 };
 
 } // namespace Slic3r

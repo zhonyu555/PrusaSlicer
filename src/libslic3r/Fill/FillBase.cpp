@@ -161,6 +161,37 @@ std::pair<float, Point> Fill::_infill_direction(const Surface *surface) const
     return std::pair<float, Point>(out_angle, out_shift);
 }
 
+constexpr uint_least8_t _calibrated_density_data_size = 8;
+
+// Returns Y value of linear approximation based on points [x1,y1] and [x2,y2]
+float linear_approx(float val_x, float x1, float x2, float y1, float y2)
+{
+    const float percent = (val_x - x1) / (x2 - x1);
+    return y1 + percent * (y2 - y1);
+}
+
+float Fill::_calibrated_density(float density) const
+{
+    const std::array<uint_least8_t, _calibrated_density_data_size>
+                calibration_percents = {1, 5, 10, 20, 40, 60, 80, 99};
+    const float density100           = density * 100.;
+    if (density100 <= calibration_percents[0])
+        return density * _calibration_density_ratio(0);
+    if (density100 >= calibration_percents[calibration_percents.size() - 1])
+        return density * _calibration_density_ratio(calibration_percents.size() - 1);
+
+    // Find proper bucket
+    int i = 0;
+    for (i = 0; i < calibration_percents.size() - 2; ++i) 
+        if (density100 <= calibration_percents[i]) break;
+
+    return density * linear_approx(density100,
+                                   calibration_percents[i],
+                                   calibration_percents[i + 1],
+                                   _calibration_density_ratio(i),
+                                   _calibration_density_ratio(i + 1));
+}
+
 // A single T joint of an infill line to a closed contour or one of its holes.
 struct ContourIntersectionPoint {
     // Contour and point on a contour where an infill line is connected to.

@@ -31,4 +31,13 @@ GeneratorPtr build_generator(const PrintObject &print_object, const std::functio
     return GeneratorPtr(new Generator(print_object, throw_on_cancel_callback));
 }
 
+float Filler::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {1.68f,        1.453846154f, 1.453846154f, 1.453846154f,
+         1.467961165f, 1.535025381f, 1.475121951f, 1.584f};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
+}
+
 } // namespace Slic3r::FillAdaptive

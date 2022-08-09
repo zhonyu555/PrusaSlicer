@@ -20,6 +20,8 @@ protected:
 	    Polylines                       &polylines_out) override;
 
 	bool no_sort() const override { return true; }
+    // Returns calibration ratio for specified index representing specific density percentage
+    virtual float _calibration_density_ratio(size_t index) const override;
 };
 
 } // namespace Slic3r

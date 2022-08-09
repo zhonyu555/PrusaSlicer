@@ -50,6 +50,7 @@ protected:
 	Cache cache;
 
     float _layer_angle(size_t idx) const override { return float(M_PI/3.) * (idx % 3); }
+    virtual float _calibration_density_ratio(size_t index) const override;
 };
 
 } // namespace Slic3r

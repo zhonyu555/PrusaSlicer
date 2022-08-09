@@ -18,6 +18,9 @@ GeneratorPtr build_generator(const PrintObject &print_object, const std::functio
 
 class Filler : public Slic3r::Fill
 {
+    // Allows usage of desity calibration
+    friend class Generator;
+
 public:
     ~Filler() override = default;
 
@@ -33,6 +36,8 @@ protected:
 
     // Let the G-code export reoder the infill lines.
 	bool no_sort() const override { return false; }
+    // Returns calibration ratio for specified index representing specific density percentage
+    virtual float _calibration_density_ratio(size_t index) const override;
 };
 
 } // namespace FillAdaptive
