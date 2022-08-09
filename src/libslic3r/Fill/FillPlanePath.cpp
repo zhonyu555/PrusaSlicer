@@ -58,24 +58,21 @@ void FillPlanePath::_fill_surface_single(
     }
 }
 
-// Follow an Archimedean spiral, in polar coordinates: r=a+b\theta
+// Follow an Archimedean spiral, in polar coordinates: r=a+b*theta
 Pointfs FillArchimedeanChords::_generate(coord_t min_x, coord_t min_y, coord_t max_x, coord_t max_y, const double resolution)
 {
     // Radius to achieve.
     coordf_t rmax = std::sqrt(coordf_t(max_x)*coordf_t(max_x)+coordf_t(max_y)*coordf_t(max_y)) * std::sqrt(2.) + 1.5;
     // Now unwind the spiral.
-    coordf_t a = 1.;
-    coordf_t b = 1./(2.*M_PI);
+    coordf_t b = 1. / (2. * M_PI);
     coordf_t theta = 0.;
     coordf_t r = 1;
     Pointfs out;
-    //FIXME Vojtech: If used as a solid infill, there is a gap left at the center.
     out.emplace_back(0, 0);
-    out.emplace_back(1, 0);
     while (r < rmax) {
         // Discretization angle to achieve a discretization error lower than resolution.
         theta += 2. * acos(1. - resolution / r);
-        r = a + b * theta;
+        r = b * theta;
         out.emplace_back(r * cos(theta), r * sin(theta));
     }
     return out;
