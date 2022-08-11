@@ -3909,8 +3909,10 @@ void ObjectList::update_object_list_by_printer_technology()
             m_objects_model->Delete(layers_item);
 
             // Select object_item, if layers_item doesn't exist for item anymore, but was some of layer items was/were selected
-            if (some_layers_was_selected)
+            if (some_layers_was_selected) {
                 sel.Add(object_item);
+                select_item(object_item); // to correct update of the LayersPanel
+            }
         }
         else {
             wxDataViewItemArray all_obj_layers;
