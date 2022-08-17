@@ -413,8 +413,7 @@ struct GlobalModelInfo {
 ;
 
 //Extract perimeter polygons of the given layer
-Polygons extract_perimeter_polygons(const Layer *layer, const SeamPosition configured_seam_preference,
-        std::vector<const LayerRegion*> &corresponding_regions_out) {
+Polygons extract_perimeter_polygons(const Layer *layer, std::vector<const LayerRegion*> &corresponding_regions_out) {
     Polygons polygons;
     for (const LayerRegion *layer_region : layer->regions()) {
         for (const ExtrusionEntity *ex_entity : layer_region->perimeters.entities) {
@@ -429,9 +428,7 @@ Polygons extract_perimeter_polygons(const Layer *layer, const SeamPosition confi
                         }
                     }
 
-                    if (role == ExtrusionRole::erExternalPerimeter
-                            || (is_perimeter(role)
-                                    && configured_seam_preference == spRandom)) { //for random seam alignment, extract all perimeters
+                    if (role == ExtrusionRole::erExternalPerimeter) {
                         Points p;
                         perimeter->collect_points(p);
                         polygons.emplace_back(std::move(p));
@@ -1065,14 +1062,13 @@ public:
 // Parallel process and extract each perimeter polygon of the given print object.
 // Gather SeamCandidates of each layer into vector and build KDtree over them
 // Store results in the SeamPlacer variables m_seam_per_object
-void SeamPlacer::gather_seam_candidates(const PrintObject *po,
-        const SeamPlacerImpl::GlobalModelInfo &global_model_info, const SeamPosition configured_seam_preference) {
+void SeamPlacer::gather_seam_candidates(const PrintObject *po, const SeamPlacerImpl::GlobalModelInfo &global_model_info) {
     using namespace SeamPlacerImpl;
     PrintObjectSeamData &seam_data = m_seam_per_object.emplace(po, PrintObjectSeamData { }).first->second;
     seam_data.layers.resize(po->layer_count());
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, po->layers().size()),
-            [po, configured_seam_preference, &global_model_info, &seam_data]
+            [po, &global_model_info, &seam_data]
             (tbb::blocked_range<size_t> r) {
                 for (size_t layer_idx = r.begin(); layer_idx < r.end(); ++layer_idx) {
                     PrintObjectSeamData::LayerSeams &layer_seams = seam_data.layers[layer_idx];
@@ -1080,7 +1076,7 @@ void SeamPlacer::gather_seam_candidates(const PrintObject *po,
                     auto unscaled_z = layer->slice_z;
                     std::vector<const LayerRegion*> regions;
                     //NOTE corresponding region ptr may be null, if the layer has zero perimeters
-                    Polygons polygons = extract_perimeter_polygons(layer, configured_seam_preference, regions);
+                    Polygons polygons = extract_perimeter_polygons(layer, regions);
                     for (size_t poly_index = 0; poly_index < polygons.size(); ++poly_index) {
                         process_perimeter_polygon(polygons[poly_index], unscaled_z,
                                 regions[poly_index], global_model_info, layer_seams);
@@ -1490,7 +1486,7 @@ void SeamPlacer::init(const Print &print, std::function<void(void)> throw_if_can
             throw_if_canceled_func();
             BOOST_LOG_TRIVIAL(debug)
             << "SeamPlacer: gather_seam_candidates: start";
-            gather_seam_candidates(po, global_model_info, configured_seam_preference);
+            gather_seam_candidates(po, global_model_info);
             BOOST_LOG_TRIVIAL(debug)
             << "SeamPlacer: gather_seam_candidates: end";
             throw_if_canceled_func();
@@ -1584,13 +1580,12 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
 
     Point seam_point = Point::new_scale(seam_position.x(), seam_position.y());
 
-    if (const SeamCandidate &perimeter_point = layer_perimeters.points[seam_index];
-    (po->config().seam_position == spNearest || po->config().seam_position == spAligned) &&
-            loop.role() == ExtrusionRole::erPerimeter && //Hopefully internal perimeter
-            (seam_position - perimeter_point.position).squaredNorm() < 4.0f && // seam is on perimeter point
-            perimeter_point.local_ccw_angle < -EPSILON // In concave angles
-                    ) { // In this case, we are at internal perimeter, where the external perimeter has seam in concave angle. We want to align
-            // the internal seam into the concave corner, and not on the perpendicular projection on the closest edge (which is what the split_at function does)
+    if (loop.role() == ExtrusionRole::erPerimeter) { //Hopefully inner perimeter
+        const SeamCandidate &perimeter_point = layer_perimeters.points[seam_index];
+        ExtrusionLoop::ClosestPathPoint projected_point = loop.get_closest_path_and_point(seam_point, false);
+        // determine depth of the seam point.
+        float depth = (float) unscale(Point(seam_point - projected_point.foot_pt)).norm();
+        float beta_angle = cos(perimeter_point.local_ccw_angle / 2.0f);
         size_t index_of_prev =
                 seam_index == perimeter_point.perimeter.start_index ?
                                                                       perimeter_point.perimeter.end_index - 1 :
@@ -1600,18 +1595,50 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
                                                                         perimeter_point.perimeter.start_index :
                                                                         seam_index + 1;
 
-        Vec2f dir_to_middle =
-                ((perimeter_point.position - layer_perimeters.points[index_of_prev].position).head<2>().normalized()
-                        + (perimeter_point.position - layer_perimeters.points[index_of_next].position).head<2>().normalized())
-                        * 0.5;
+        if ((seam_position - perimeter_point.position).squaredNorm() < depth && // seam is on perimeter point
+                perimeter_point.local_ccw_angle < -EPSILON // In concave angles
+                        ) { // In this case, we are at internal perimeter, where the external perimeter has seam in concave angle. We want to align
+                // the internal seam into the concave corner, and not on the perpendicular projection on the closest edge (which is what the split_at function does)
+            Vec2f dir_to_middle =
+                    ((perimeter_point.position - layer_perimeters.points[index_of_prev].position).head<2>().normalized()
+                            + (perimeter_point.position - layer_perimeters.points[index_of_next].position).head<2>().normalized())
+                            * 0.5;
+            depth = 1.4142 * depth / beta_angle;
+            // There are some nice geometric identities in determination of the correct depth of new seam point.
+            //overshoot the target depth, in concave angles it will correctly snap to the corner; TODO: find out why such big overshoot is needed.
+            Vec2f final_pos = perimeter_point.position.head<2>() + depth * dir_to_middle;
+            projected_point = loop.get_closest_path_and_point(Point::new_scale(final_pos.x(), final_pos.y()), false);
+        } else { // not concave angle, in that case the nearest point is the good candidate
+            // but for staggering, we also need to recompute depth of the inner perimter, because in convex corners, the distance is larger than layer width
+            // we want the perpendicular depth, not distance to nearest point
+            depth = depth * beta_angle / 1.4142;
+        }
 
-        ExtrusionLoop::ClosestPathPoint projected_point = loop.get_closest_path_and_point(seam_point, true);
-        //get closest projected point, determine depth of the seam point.
-        float depth = (float) unscale(Point(seam_point - projected_point.foot_pt)).norm();
-        float angle_factor = cos(-perimeter_point.local_ccw_angle / 2.0f); // There are some nice geometric identities in determination of the correct depth of new seam point.
-        //overshoot the target depth, in concave angles it will correctly snap to the corner; TODO: find out why such big overshoot is needed.
-        Vec2f final_pos = perimeter_point.position.head<2>() + (1.4142 * depth / angle_factor) * dir_to_middle;
-        seam_point = Point::new_scale(final_pos.x(), final_pos.y());
+        seam_point = projected_point.foot_pt;
+
+        //lastly, for internal perimeters, do the staggering if needed
+        if (po->config().seam_position == spRandom || po->config().seam_position == spAligned) {
+        //Staggering
+            //fix depth, it is sometimes strongly underestimated
+            depth = std::max(loop.paths[projected_point.path_idx].width, depth)+ 0.3*loop.paths[projected_point.path_idx].width;
+            Vec2f current_pos = unscale(seam_point).cast<float>();
+            Vec2f next_pos = unscale(loop.paths[projected_point.path_idx].polyline.points[projected_point.segment_idx + 1]).cast<float>();
+            Vec2f dir_to_next = (next_pos - current_pos).normalized();
+            if (dir_to_next.squaredNorm() < EPSILON) {
+                projected_point.segment_idx = projected_point.segment_idx + 1;
+                if (projected_point.segment_idx >= loop.paths[projected_point.path_idx].polyline.points.size() - 1) {
+                    projected_point.path_idx = next_idx_modulo(projected_point.path_idx, loop.paths.size());
+                    projected_point.segment_idx = 0;
+                }
+                projected_point.segment_idx = next_idx_modulo(projected_point.segment_idx,
+                                            loop.paths[projected_point.path_idx].size());
+
+                next_pos = unscale(loop.paths[projected_point.path_idx].polyline.points[projected_point.segment_idx]).cast<float>();
+                dir_to_next = (next_pos - current_pos).normalized();
+            }
+            Vec2f staggered_pos = current_pos + depth * dir_to_next;
+            seam_point = Point::new_scale(staggered_pos.x(), staggered_pos.y());
+        }
     }
 
     // Because the G-code export has 1um resolution, don't generate segments shorter than 1.5 microns,
