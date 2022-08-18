@@ -966,7 +966,7 @@ void pick_random_seam_point(const std::vector<SeamCandidate> &perimeter_points, 
     std::vector<Viable> viables;
 
     const Vec3f pseudornd_seed = perimeter_points[viable_example_index].position;
-    float rand = std::abs(sin(pseudornd_seed.dot(Vec3f(12.9898,78.233, 133.3333))) * 43758.5453);
+    float rand = std::abs(sin(pseudornd_seed.dot(Vec3f(12.9898f,78.233f, 133.3333f))) * 43758.5453f);
     rand = rand - (int) rand;
 
     for (size_t index = start_index; index < end_index; ++index) {
