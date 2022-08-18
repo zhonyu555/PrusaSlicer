@@ -2243,6 +2243,12 @@ void PrintConfigDef::init_fff_params()
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionEnum<SeamPosition>(spAligned));
 
+    def = this->add("shifted_inner_seams", coBool);
+    def->label = L("Shifted inner seams");
+    def->tooltip = L("This option causes the inner seams to be shifted based on their depth, forming a zigzag pattern.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
 #if 0
     def = this->add("seam_preferred_direction", coFloat);
 //    def->gui_type = ConfigOptionDef::GUIType::slider;

@@ -1605,16 +1605,16 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
             Vec2f final_pos = perimeter_point.position.head<2>() + depth * dir_to_middle;
             projected_point = loop.get_closest_path_and_point(Point::new_scale(final_pos.x(), final_pos.y()), false);
         } else { // not concave angle, in that case the nearest point is the good candidate
-            // but for staggering, we also need to recompute depth of the inner perimter, because in convex corners, the distance is larger than layer width
+            // but for shifting, we also need to recompute depth of the inner perimter, because in convex corners, the distance is larger than layer width
             // we want the perpendicular depth, not distance to nearest point
             depth = depth * beta_angle / 1.4142;
         }
 
         seam_point = projected_point.foot_pt;
 
-        //lastly, for internal perimeters, do the staggering if needed
-        if (po->config().seam_position == spRandom || po->config().seam_position == spAligned) {
-        //Staggering
+        //lastly, for internal perimeters, do the shifting if needed
+        if (po->config().shifted_inner_seams) {
+        //shifting
             //fix depth, it is sometimes strongly underestimated
             depth = std::max(loop.paths[projected_point.path_idx].width, depth)+ 0.3*loop.paths[projected_point.path_idx].width;
             Vec2f current_pos = unscale(seam_point).cast<float>();
@@ -1632,8 +1632,8 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
                 next_pos = unscale(loop.paths[projected_point.path_idx].polyline.points[projected_point.segment_idx]).cast<float>();
                 dir_to_next = (next_pos - current_pos).normalized();
             }
-            Vec2f staggered_pos = current_pos + depth * dir_to_next;
-            seam_point = Point::new_scale(staggered_pos.x(), staggered_pos.y());
+            Vec2f shifted_pos = current_pos + depth * dir_to_next;
+            seam_point = Point::new_scale(shifted_pos.x(), shifted_pos.y());
         }
     }
 
