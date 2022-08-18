@@ -470,6 +470,7 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
     }
     Polygon polygon = orig_polygon;
     bool was_clockwise = polygon.make_counter_clockwise();
+    float angle_arm_len = region != nullptr ? region->flow(FlowRole::frExternalPerimeter).width() * 1.5f : 0.5f;
 
     std::vector<float> lengths { };
     for (size_t point_idx = 0; point_idx < polygon.size() - 1; ++point_idx) {
@@ -477,7 +478,7 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
     }
     lengths.push_back(std::max((unscale(polygon[0]) - unscale(polygon[polygon.size() - 1])).norm(), 0.1));
     std::vector<float> polygon_angles = calculate_polygon_angles_at_vertices(polygon, lengths,
-            SeamPlacer::polygon_local_angles_arm_distance);
+            angle_arm_len);
 
     result.perimeters.push_back( { });
     Perimeter &perimeter = result.perimeters.back();
@@ -1032,8 +1033,8 @@ public:
         tree = AABBTreeLines::build_aabb_tree_over_indexed_lines(lines);
     }
 
-    float distance_from_perimeter(const Point &point) const {
-        Vec2d p = unscale(point);
+    float distance_from_perimeter(const Vec2f &point) const {
+        Vec2d p = point.cast<double>();
         size_t hit_idx_out { };
         Vec2d hit_point_out = Vec2d::Zero();
         auto distance = AABBTreeLines::squared_distance_to_indexed_lines(lines, tree, p, hit_idx_out, hit_point_out);
@@ -1124,17 +1125,19 @@ void SeamPlacer::calculate_overhangs_and_layer_embedding(const PrintObject *po) 
                     std::unique_ptr<PerimeterDistancer> current_layer_distancer = std::make_unique<PerimeterDistancer>(po->layers()[layer_idx]);
 
                     for (SeamCandidate &perimeter_point : layers[layer_idx].points) {
-                        Point point = Point::new_scale(Vec2f { perimeter_point.position.head<2>() });
+                        Vec2f point = Vec2f { perimeter_point.position.head<2>() };
                         if (prev_layer_distancer.get() != nullptr) {
                             perimeter_point.overhang = prev_layer_distancer->distance_from_perimeter(point)
-//                                    + 0.5f * perimeter_point.perimeter.flow_width
+                                    + 0.6f * perimeter_point.perimeter.flow_width
                                     - tan(SeamPlacer::overhang_angle_threshold)
                                             * po->layers()[layer_idx]->height;
+                            perimeter_point.overhang =
+                                    perimeter_point.overhang < 0.0f ? 0.0f : perimeter_point.overhang;
                         }
 
                         if (should_compute_layer_embedding) { // search for embedded perimeter points (points hidden inside the print ,e.g. multimaterial join, best position for seam)
                             perimeter_point.embedded_distance = current_layer_distancer->distance_from_perimeter(point)
-                                    + 0.5f * perimeter_point.perimeter.flow_width;
+                                    + 0.6f * perimeter_point.perimeter.flow_width;
                         }
                     }
 
