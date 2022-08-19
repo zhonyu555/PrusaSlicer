@@ -1551,12 +1551,27 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
             m_seam_per_object.find(layer->object())->second.layers[layer_index];
 
     // Find the closest perimeter in the SeamPlacer to the first point of this loop.
-    size_t closest_perimeter_point_index;
-    {
-        const Point &fp = loop.first_point();
-        Vec2f unscaled_p = unscaled<float>(fp);
-        closest_perimeter_point_index = find_closest_point(*layer_perimeters.points_tree.get(),
-                to_3d(unscaled_p, float(unscaled_z)));
+    size_t closest_perimeter_point_index = 0;
+    { // local space for the closest_perimeter_point_index
+        Perimeter *closest_perimeter = nullptr;
+        size_t point_index = 0;
+        size_t path_index = 0;
+        while (point_index < loop.paths.back().size() || path_index < loop.paths.size()) {
+            Vec2f unscaled_p = unscaled<float>(loop.paths[path_index].polyline.points[point_index]);
+            closest_perimeter_point_index = find_closest_point(*layer_perimeters.points_tree.get(),
+                    to_3d(unscaled_p, float(unscaled_z)));
+            if (closest_perimeter != &layer_perimeters.points[closest_perimeter_point_index].perimeter) {
+                closest_perimeter = &layer_perimeters.points[closest_perimeter_point_index].perimeter;
+                if (point_index + 1 < loop.paths[path_index].polyline.points.size()) {
+                    point_index++;
+                } else {
+                    path_index++;
+                    point_index = 0;
+                }
+            } else {
+                break;
+            }
+        }
     }
 
     Vec3f seam_position;
