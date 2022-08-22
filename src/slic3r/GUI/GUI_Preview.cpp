@@ -782,6 +782,7 @@ void Preview::update_layers_slider_mode()
 
                     for (const auto& range : object->layer_config_ranges)
                         if (range.second.has("extruder") &&
+                            range.second.option("extruder")->getInt() != 0 && // extruder isn't default
                             range.second.option("extruder")->getInt() != extruder)
                             return false;
                 }
