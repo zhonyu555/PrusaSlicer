@@ -1629,26 +1629,31 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
 
         //lastly, for internal perimeters, do the shifting if needed
         if (po->config().shifted_inner_seams) {
-        //shifting
-            //fix depth, it is sometimes strongly underestimated
-            depth = std::max(loop.paths[projected_point.path_idx].width, (depth + 0.3f*loop.paths[projected_point.path_idx].width) * 1.2f);
-            Vec2f current_pos = unscale(seam_point).cast<float>();
-            Vec2f next_pos = unscale(loop.paths[projected_point.path_idx].polyline.points[projected_point.segment_idx + 1]).cast<float>();
-            Vec2f dir_to_next = (next_pos - current_pos).normalized();
-            if (dir_to_next.squaredNorm() < EPSILON) {
-                projected_point.segment_idx = projected_point.segment_idx + 1;
-                if (projected_point.segment_idx >= loop.paths[projected_point.path_idx].polyline.points.size() - 1) {
-                    projected_point.path_idx = next_idx_modulo(projected_point.path_idx, loop.paths.size());
-                    projected_point.segment_idx = 0;
+            auto get_next_loop_point = [loop](ExtrusionLoop::ClosestPathPoint current) {
+                current.segment_idx+=1;
+                if (current.segment_idx >= loop.paths[current.path_idx].polyline.points.size()) {
+                    current.path_idx = next_idx_modulo(current.path_idx, loop.paths.size());
+                    current.segment_idx = 0;
                 }
-                projected_point.segment_idx = next_idx_modulo(projected_point.segment_idx,
-                                            loop.paths[projected_point.path_idx].size());
+                current.foot_pt = loop.paths[current.path_idx].polyline.points[current.segment_idx];
+                return current;
+            };
+            //fix depth, it is sometimes strongly underestimated
+            depth = std::max(loop.paths[projected_point.path_idx].width, depth);
 
-                next_pos = unscale(loop.paths[projected_point.path_idx].polyline.points[projected_point.segment_idx]).cast<float>();
-                dir_to_next = (next_pos - current_pos).normalized();
+            while (depth > 0.0f) {
+                auto next_point = get_next_loop_point(projected_point);
+                Vec2f a = unscale(projected_point.foot_pt).cast<float>();
+                Vec2f b = unscale(next_point.foot_pt).cast<float>();
+                float dist = (a - b).norm();
+                if (dist > depth) {
+                    Vec2f final_pos = a + (b - a) * depth / dist;
+                    next_point.foot_pt = Point::new_scale(final_pos.x(), final_pos.y());
+                }
+                depth -= dist;
+                projected_point = next_point;
             }
-            Vec2f shifted_pos = current_pos + depth * dir_to_next;
-            seam_point = Point::new_scale(shifted_pos.x(), shifted_pos.y());
+            seam_point = projected_point.foot_pt;
         }
     }
 
