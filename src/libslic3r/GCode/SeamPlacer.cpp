@@ -1567,7 +1567,10 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
     { // local space for the closest_perimeter_point_index
         Perimeter *closest_perimeter = nullptr;
         ExtrusionLoop::ClosestPathPoint closest_point{0,0,loop.paths[0].polyline.points[0]};
-        while (closest_point.segment_idx < loop.paths.back().size() || closest_point.path_idx < loop.paths.size()) {
+        size_t points_count = std::accumulate(loop.paths.begin(), loop.paths.end(), 0, [](size_t acc,const ExtrusionPath& p) {
+           return acc + p.polyline.points.size();
+        });
+        for (size_t _ = 0; _ < points_count; ++_) {
             Vec2f unscaled_p = unscaled<float>(closest_point.foot_pt);
             closest_perimeter_point_index = find_closest_point(*layer_perimeters.points_tree.get(),
                     to_3d(unscaled_p, float(unscaled_z)));
