@@ -1637,7 +1637,7 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
         seam_point = projected_point.foot_pt;
 
         //lastly, for internal perimeters, do the shifting if needed
-        if (po->config().shifted_inner_seams) {
+        if (po->config().shifted_inner_seams && loop.length() > 0.0) {
             //fix depth, it is sometimes strongly underestimated
             depth = std::max(loop.paths[projected_point.path_idx].width, depth);
 
