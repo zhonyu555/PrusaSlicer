@@ -470,7 +470,7 @@ void process_perimeter_polygon(const Polygon &orig_polygon, float z_coord, const
     }
     Polygon polygon = orig_polygon;
     bool was_clockwise = polygon.make_counter_clockwise();
-    float angle_arm_len = region != nullptr ? region->flow(FlowRole::frExternalPerimeter).width() * 1.5f : 0.5f;
+    float angle_arm_len = region != nullptr ? region->flow(FlowRole::frExternalPerimeter).nozzle_diameter() : 0.5f;
 
     std::vector<float> lengths { };
     for (size_t point_idx = 0; point_idx < polygon.size() - 1; ++point_idx) {
@@ -1547,27 +1547,33 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
     const size_t layer_index = layer->id() - po->slicing_parameters().raft_layers();
     const double unscaled_z = layer->slice_z;
 
+    auto get_next_loop_point = [loop](ExtrusionLoop::ClosestPathPoint current) {
+        current.segment_idx += 1;
+        if (current.segment_idx >= loop.paths[current.path_idx].polyline.points.size()) {
+            current.path_idx = next_idx_modulo(current.path_idx, loop.paths.size());
+            current.segment_idx = 0;
+        }
+        current.foot_pt = loop.paths[current.path_idx].polyline.points[current.segment_idx];
+        return current;
+    };
+
     const PrintObjectSeamData::LayerSeams &layer_perimeters =
             m_seam_per_object.find(layer->object())->second.layers[layer_index];
 
-    // Find the closest perimeter in the SeamPlacer to the first point of this loop.
+    // Find the closest perimeter in the SeamPlacer to this loop.
+    // Repeat search until two consecutive points of the loop are found, that result in the same closest_perimeter
+    // This is beacuse with arachne, T-Junctions may exist and sometimes the wrong perimeter was chosen
     size_t closest_perimeter_point_index = 0;
     { // local space for the closest_perimeter_point_index
         Perimeter *closest_perimeter = nullptr;
-        size_t point_index = 0;
-        size_t path_index = 0;
-        while (point_index < loop.paths.back().size() || path_index < loop.paths.size()) {
-            Vec2f unscaled_p = unscaled<float>(loop.paths[path_index].polyline.points[point_index]);
+        ExtrusionLoop::ClosestPathPoint closest_point{0,0,loop.paths[0].polyline.points[0]};
+        while (closest_point.segment_idx < loop.paths.back().size() || closest_point.path_idx < loop.paths.size()) {
+            Vec2f unscaled_p = unscaled<float>(closest_point.foot_pt);
             closest_perimeter_point_index = find_closest_point(*layer_perimeters.points_tree.get(),
                     to_3d(unscaled_p, float(unscaled_z)));
             if (closest_perimeter != &layer_perimeters.points[closest_perimeter_point_index].perimeter) {
                 closest_perimeter = &layer_perimeters.points[closest_perimeter_point_index].perimeter;
-                if (point_index + 1 < loop.paths[path_index].polyline.points.size()) {
-                    point_index++;
-                } else {
-                    path_index++;
-                    point_index = 0;
-                }
+                closest_point = get_next_loop_point(closest_point);
             } else {
                 break;
             }
@@ -1629,15 +1635,6 @@ void SeamPlacer::place_seam(const Layer *layer, ExtrusionLoop &loop, bool extern
 
         //lastly, for internal perimeters, do the shifting if needed
         if (po->config().shifted_inner_seams) {
-            auto get_next_loop_point = [loop](ExtrusionLoop::ClosestPathPoint current) {
-                current.segment_idx+=1;
-                if (current.segment_idx >= loop.paths[current.path_idx].polyline.points.size()) {
-                    current.path_idx = next_idx_modulo(current.path_idx, loop.paths.size());
-                    current.segment_idx = 0;
-                }
-                current.foot_pt = loop.paths[current.path_idx].polyline.points[current.segment_idx];
-                return current;
-            };
             //fix depth, it is sometimes strongly underestimated
             depth = std::max(loop.paths[projected_point.path_idx].width, depth);
 
