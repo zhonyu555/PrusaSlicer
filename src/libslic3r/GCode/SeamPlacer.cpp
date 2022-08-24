@@ -786,8 +786,8 @@ struct SeamComparator {
         float distance_penalty_a = 0.0f;
         float distance_penalty_b = 0.0f;
         if (setup == spNearest) {
-            distance_penalty_a = (a.position.head<2>() - preffered_location).squaredNorm() > 5.0f*5.0f ? 5.0f : 0.0f;
-            distance_penalty_b = (b.position.head<2>() - preffered_location).squaredNorm() > 5.0f*5.0f ? 5.0f : 0.0f;
+            distance_penalty_a = 1.0f - gauss((a.position.head<2>() - preffered_location).norm(), 0.0f, 1.0f, 0.005f);
+            distance_penalty_b = 1.0f - gauss((b.position.head<2>() - preffered_location).norm(), 0.0f, 1.0f, 0.005f);
         }
 
         // the penalites are kept close to range [0-1.x] however, it should not be relied upon
