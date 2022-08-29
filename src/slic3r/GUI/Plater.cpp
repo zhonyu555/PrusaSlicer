@@ -6151,12 +6151,24 @@ void Plater::send_gcode()
         wxBusyCursor wait;
         upload_job.printhost->get_groups(groups);
     }
-    
-    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups);
+    // PrusaLink specific: Query the server for the list of file groups.
+    wxArrayString storage;
+    {
+        wxBusyCursor wait;
+        try {
+            upload_job.printhost->get_storage(storage);
+        } catch (const Slic3r::IOError& ex) {
+            show_error(this, ex.what(), false);
+            return;
+        }
+    }
+
+    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups, storage);
     if (dlg.ShowModal() == wxID_OK) {
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.post_action = dlg.post_action();
         upload_job.upload_data.group       = dlg.group();
+        upload_job.upload_data.storage     = dlg.storage();
 
         p->export_gcode(fs::path(), false, std::move(upload_job));
     }

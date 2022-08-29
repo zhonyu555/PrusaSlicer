@@ -26,15 +26,17 @@ namespace GUI {
 class PrintHostSendDialog : public GUI::MsgDialog
 {
 public:
-    PrintHostSendDialog(const boost::filesystem::path &path, PrintHostPostUploadActions post_actions, const wxArrayString& groups);
+    PrintHostSendDialog(const boost::filesystem::path &path, PrintHostPostUploadActions post_actions, const wxArrayString& groups, const wxArrayString& storage);
     boost::filesystem::path filename() const;
     PrintHostPostUploadAction post_action() const;
     std::string group() const;
+    std::string storage() const;
 
     virtual void EndModal(int ret) override;
 private:
     wxTextCtrl *txt_filename;
     wxComboBox *combo_groups;
+    wxComboBox* combo_storage;
     PrintHostPostUploadAction post_upload_action;
     wxString    m_valid_suffix;
 };

@@ -32,7 +32,8 @@ struct PrintHostUpload
     boost::filesystem::path upload_path;
     
     std::string group;
-    
+    std::string storage;
+
     PrintHostPostUploadAction post_action { PrintHostPostUploadAction::None };
 };
 
@@ -61,6 +62,9 @@ public:
     // Returns false if not supported. May throw HostNetworkError.
     virtual bool get_groups(wxArrayString & /* groups */) const { return false; }
     virtual bool get_printers(wxArrayString & /* printers */) const { return false; }
+    // Support for PrusaLink uploading to different storage. Not supported by other print hosts.
+    // Returns false if not supported or fail.
+    virtual bool get_storage(wxArrayString& /* storage */) const { return false; }
 
     static PrintHost* get_print_host(DynamicPrintConfig *config);
 
