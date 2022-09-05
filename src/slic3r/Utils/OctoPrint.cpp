@@ -9,6 +9,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/nowide/convert.hpp>
 
 #include <curl/curl.h>
 
