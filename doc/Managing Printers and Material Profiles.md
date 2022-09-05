@@ -7,11 +7,11 @@ The goal of this article is to serve as a reference to manage local printer and 
 The directory where said profiles reside can be found in the following respective locations.
 
 ### For Windows:
-  ''' C:\Users\*YOUR_USERNAME*\AppData\Roaming\PrusaSlicer\ '''
+  ` C:\Users\*YOUR_USERNAME*\AppData\Roaming\PrusaSlicer\ `
 ### For Mac OS:
- ''' /Users/*YOUR_USERNAME*/Library/Application Support/PrusaSlicer/ '''
+  ` /Users/*YOUR_USERNAME*/Library/Application Support/PrusaSlicer/ `
 ### For Linux:
-  ''' ~/.config/PrusaSlicer/ '''
+  ` ~/.config/PrusaSlicer/ `
   
 ## Options for Configuration
 The respective config files can be found and managed in the following directories:
