@@ -14,6 +14,7 @@ The directory where said profiles reside can be found in the following respectiv
 ## Options for Configuration
 The respective config files can be found and managed in the following directories:
 | Folder | Description |
+| ------ | ----------- |
 | filament | The location for all filament config files added to PrusaSlicer |
 | physical_printer | The location for all config files for network connected 3D Printers added to Prusa Slicer |
 | print | The location for all printer profiles added to PrusaSlicer |
