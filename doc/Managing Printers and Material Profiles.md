@@ -1,5 +1,5 @@
 
-# Managing Printers and Material Profiles.mb
+# Managing Printers and Material Profiles
 
 The goal of this article is to serve as a reference to manage local printer and material profiles used in PrusaSlicer. This entails how to backup, restore, add, and remove any and all profiles you may have (in bulk).
 
