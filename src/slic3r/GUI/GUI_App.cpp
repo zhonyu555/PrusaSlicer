@@ -2089,7 +2089,9 @@ bool GUI_App::load_language(wxString language, bool initial)
 	    	// Allocating a temporary locale will switch the default wxTranslations to its internal wxTranslations instance.
 	    	wxLocale temp_locale;
 	    	// Set the current translation's language to default, otherwise GetBestTranslation() may not work (see the wxWidgets source code).
-	    	wxTranslations::Get()->SetLanguage(wxLANGUAGE_DEFAULT);
+		wxTranslations *wx_trp = wxTranslations::Get();
+		if (wx_trp) {
+		    wx_trp->SetLanguage(wxLANGUAGE_DEFAULT);
 	    	// Let the wxFileTranslationsLoader enumerate all translation dictionaries for PrusaSlicer
 	    	// and try to match them with the system specific "preferred languages". 
 	    	// There seems to be a support for that on Windows and OSX, while on Linuxes the code just returns wxLocale::GetSystemLanguage().
@@ -2100,6 +2102,7 @@ bool GUI_App::load_language(wxString language, bool initial)
 				m_language_info_best = wxLocale::FindLanguageInfo(best_language);
 	        	BOOST_LOG_TRIVIAL(trace) << boost::format("Best translation language detected (may be different from user locales): %1%") % m_language_info_best->CanonicalName.ToUTF8().data();
 			}
+		}
             #ifdef __linux__
             wxString lc_all;
             if (wxGetEnv("LC_ALL", &lc_all) && ! lc_all.IsEmpty()) {
