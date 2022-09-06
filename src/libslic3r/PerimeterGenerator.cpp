@@ -185,12 +185,14 @@ static void fuzzy_polygon(Polygon &poly, double fuzzy_skin_thickness, double fuz
         dist_left_over = p0p1_size - dist_last_point;
         p0 = &p1;
     }
-    while (out.size() < 3) {
+    if (out.size() < 3) {
         size_t point_idx = poly.size() - 2;
-        out.emplace_back(poly[point_idx]);
-        if (point_idx == 0)
-            break;
-        -- point_idx;
+        while (out.size() < 3) {
+            out.emplace_back(poly[point_idx]);
+	    if (point_idx == 0)
+	        break;
+	    -- point_idx;
+        }
     }
     if (out.size() >= 3)
         poly.points = std::move(out);
@@ -226,12 +228,14 @@ static void fuzzy_extrusion_line(Arachne::ExtrusionLine &ext_lines, double fuzzy
         p0             = &p1;
     }
 
-    while (out.size() < 3) {
+    if (out.size() < 3) {
         size_t point_idx = ext_lines.size() - 2;
-        out.emplace_back(ext_lines[point_idx].p, ext_lines[point_idx].w, ext_lines[point_idx].perimeter_index);
-        if (point_idx == 0)
-            break;
-        -- point_idx;
+        while (out.size() < 3) {
+            out.emplace_back(ext_lines[point_idx].p, ext_lines[point_idx].w, ext_lines[point_idx].perimeter_index);
+	    if (point_idx == 0)
+	        break;
+	    -- point_idx;
+        }
     }
 
     if (ext_lines.back().p == ext_lines.front().p) // Connect endpoints.
