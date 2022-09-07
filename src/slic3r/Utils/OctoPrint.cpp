@@ -94,6 +94,20 @@ std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
     return out;
 #endif
 }
+std::string escape_url(const std::string& unescaped)
+{
+    std::string ret_val;
+    CURL* curl = curl_easy_init();
+    if (curl) {
+        char* decoded = curl_easy_escape(curl, unescaped.c_str(), unescaped.size());
+        if (decoded) {
+            ret_val = std::string(decoded);
+            curl_free(decoded);
+        }
+        curl_easy_cleanup(curl);
+    }
+    return ret_val;
+}
 } //namespace
 #endif // WIN32
 
@@ -622,8 +636,7 @@ bool PrusaLink::put_inner(PrintHostUpload upload_data, std::string url, const st
     
     const auto upload_filename = upload_data.upload_path.filename();
     const auto upload_parent_path = upload_data.upload_path.parent_path();
-
-    url += "/" + upload_filename.string();
+    url += "/" + escape_url(upload_filename.string());
 
     auto http = Http::put(std::move(url));
     set_auth(http);
