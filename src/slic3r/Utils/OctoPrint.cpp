@@ -29,9 +29,10 @@ namespace pt = boost::property_tree;
 
 namespace Slic3r {
 
+
+namespace {
 #ifdef WIN32
 // Workaround for Windows 10/11 mDNS resolve issue, where two mDNS resolves in succession fail.
-namespace {
 std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
 {
     // put ipv6 into [] brackets 
@@ -94,6 +95,7 @@ std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
     return out;
 #endif
 }
+#endif // WIN32
 std::string escape_url(const std::string& unescaped)
 {
     std::string ret_val;
@@ -109,7 +111,6 @@ std::string escape_url(const std::string& unescaped)
     return ret_val;
 }
 } //namespace
-#endif // WIN32
 
 OctoPrint::OctoPrint(DynamicPrintConfig *config) :
     m_host(config->opt_string("print_host")),
