@@ -427,7 +427,7 @@ bool PrusaLink::get_storage(wxArrayString& output) const
        
     })
     .on_complete([&, this](std::string body, unsigned) {
-        BOOST_LOG_TRIVIAL(debug) << boost::format("%1%: Got storage: %2%") % name % body;
+        BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Got storage: %2%") % name % body;
         try
         {
             std::stringstream ss(body);
@@ -447,8 +447,9 @@ bool PrusaLink::get_storage(wxArrayString& output) const
                 {
                     StorageInfo si;
                     si.name = boost::nowide::widen(*path);
-                    si.read_only = !space;
-                    si.free_space = space ? std::stoll(*space) : 0;
+                    // TODO: this turns off any read only checks
+                    si.read_only = false; //!space;
+                    si.free_space = 1; //space ? std::stoll(*space) : 0;
                     storage.emplace_back(std::move(si));
                 }
             }
