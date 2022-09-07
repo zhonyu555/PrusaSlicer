@@ -575,7 +575,7 @@ bool PrusaLink::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
     std::string url;
     bool res = true;
 
-    std::string storage_path = (use_put ? "api/v1" : "api/files");
+    std::string storage_path = (use_put ? "api/v1/files" : "api/files");
     storage_path += (upload_data.storage.empty() ? "/local" : upload_data.storage);
 
 #ifdef WIN32
