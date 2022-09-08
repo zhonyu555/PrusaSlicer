@@ -1609,7 +1609,10 @@ void  NotificationManager::push_upload_job_notification(int id, float filesize, 
 			return;
 		}
 	}
-	std::string text = PrintHostUploadNotification::get_upload_job_text(id, filename, host);
+	// filename is created from boost::filesystem::path.string() which if created by path / "file" return \\ as folder division. But could also contain / as folder division. Lets unite this into "/" only.
+	std::string correct_filename(filename);
+	std::replace(correct_filename.begin(), correct_filename.end(), '\\', '/');
+	std::string text = PrintHostUploadNotification::get_upload_job_text(id, correct_filename, host);
 	NotificationData data{ NotificationType::PrintHostUpload, NotificationLevel::ProgressBarNotificationLevel, 10, text };
 	push_notification_data(std::make_unique<NotificationManager::PrintHostUploadNotification>(data, m_id_provider, m_evt_handler, 0, id, filesize), 0);
 }
