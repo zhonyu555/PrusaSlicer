@@ -96,7 +96,7 @@ std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
 #endif
 }
 #endif // WIN32
-std::string escape_url(const std::string& unescaped)
+std::string escape_string(const std::string& unescaped)
 {
     std::string ret_val;
     CURL* curl = curl_easy_init();
@@ -110,6 +110,18 @@ std::string escape_url(const std::string& unescaped)
     }
     return ret_val;
 }
+std::string escape_path_by_element(const boost::filesystem::path& path)
+{
+    std::string ret_val = escape_string(path.filename().string());
+    boost::filesystem::path parent(path.parent_path());
+    while (!parent.empty())
+    {
+        ret_val = escape_string(parent.filename().string()) + "/" + ret_val;
+        parent = parent.parent_path();
+    }
+    return ret_val;
+}
+
 } //namespace
 
 OctoPrint::OctoPrint(DynamicPrintConfig *config) :
@@ -458,13 +470,13 @@ bool PrusaLink::get_storage(wxArrayString& output) const
             for (const auto& section : ptree.front().second) {
                 const auto path = section.second.get_optional<std::string>("path");
                 const auto space = section.second.get_optional<std::string>("free_space");
+                const auto read_only = section.second.get_optional<bool>("read_only");
                 if (path)
                 {
                     StorageInfo si;
-                    si.name = boost::nowide::widen(*path);
-                    // TODO: this turns off any read only checks
-                    si.read_only = false; //!space;
-                    si.free_space = 1; //space ? std::stoll(*space) : 0;
+                    si.name = boost::nowide::widen(*path);                 
+                    si.read_only = read_only? *read_only : false; // If read_only is missing, assume it is NOT read only.
+                    si.free_space = space ? std::stoll(*space) : 1;  // If free_space is missing, assume it there is free space.
                     storage.emplace_back(std::move(si));
                 }
             }
@@ -634,10 +646,8 @@ bool PrusaLink::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Erro
 bool PrusaLink::put_inner(PrintHostUpload upload_data, std::string url, const std::string& name, ProgressFn prorgess_fn, ErrorFn error_fn) const
 {
     bool res = true;
-    
-    const auto upload_filename = upload_data.upload_path.filename();
-    const auto upload_parent_path = upload_data.upload_path.parent_path();
-    url += "/" + escape_url(upload_filename.string());
+    // Percent escape all filenames in on path and add it to the url. This is different from POST.
+    url += "/" + escape_path_by_element(upload_data.upload_path);
 
     auto http = Http::put(std::move(url));
     set_auth(http);
