@@ -1,5 +1,3 @@
-min_slic3r_version = 2.5.0-alpha0
-0.1.2 Added VOXELPLA PLA Plus for i3 Mega(S)
 min_slic3r_version = 2.4.1-rc1
 0.1.1 Fixed before layer change g-code for Mega Zero.
 0.1.0 Added Anycubic 4Max Pro 2.0
