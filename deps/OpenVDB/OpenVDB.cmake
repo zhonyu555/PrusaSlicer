@@ -6,12 +6,13 @@ else()
     set(_build_static ON)
 endif()
 
-set (_openvdb_vdbprint ON)
-if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
-    # Build fails on raspberry pi due to missing link directive to latomic
-    # Let's hope it will be fixed soon.
-    set (_openvdb_vdbprint OFF)
-endif ()
+# Flatpak build fails with link error for vdbprint with TBB 2021.5.0
+set (_openvdb_vdbprint OFF)
+# if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+#     # Build fails on raspberry pi due to missing link directive to latomic
+#     # Let's hope it will be fixed soon.
+#     set (_openvdb_vdbprint OFF)
+# endif ()
 
 prusaslicer_add_cmake_project(OpenVDB
     # 8.2 patched
