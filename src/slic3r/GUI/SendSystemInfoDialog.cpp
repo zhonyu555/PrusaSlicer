@@ -4,6 +4,7 @@
 #include "libslic3r/BlacklistedLibraryCheck.hpp"
 #include "libslic3r/Platform.hpp"
 #include "libslic3r/Utils.hpp"
+#include "libslic3r/Color.hpp"
 
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/Utils/Http.hpp"
@@ -140,7 +141,7 @@ static bool check_internet_connection_win()
 {
     bool internet = true; // return true if COM object creation fails.
 
-    if (CoInitializeEx(NULL, COINIT_APARTMENTTHREADED) == S_OK) {
+    if (SUCCEEDED(CoInitializeEx(NULL, COINIT_APARTMENTTHREADED))) {
         {
             CComPtr<INetworkListManager> pNLM;
             if (pNLM.CoCreateInstance(CLSID_NetworkListManager) == S_OK) {
@@ -571,9 +572,8 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
     wxColour bgr_clr = wxGetApp().get_window_default_clr();
     SetBackgroundColour(bgr_clr);
     const auto text_clr = wxGetApp().get_label_clr_default();
-    auto text_clr_str = wxString::Format(wxT("#%02X%02X%02X"), text_clr.Red(), text_clr.Green(), text_clr.Blue());
-    auto bgr_clr_str = wxString::Format(wxT("#%02X%02X%02X"), bgr_clr.Red(), bgr_clr.Green(), bgr_clr.Blue());
-
+    auto text_clr_str = encode_color(ColorRGB(text_clr.Red(), text_clr.Green(), text_clr.Blue()));
+    auto bgr_clr_str = encode_color(ColorRGB(bgr_clr.Red(), bgr_clr.Green(), bgr_clr.Blue()));
 
     auto *topSizer = new wxBoxSizer(wxVERTICAL);
     auto *vsizer = new wxBoxSizer(wxVERTICAL);

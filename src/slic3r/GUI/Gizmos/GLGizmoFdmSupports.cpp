@@ -69,9 +69,7 @@ bool GLGizmoFdmSupports::on_init()
     return true;
 }
 
-
-
-void GLGizmoFdmSupports::render_painter_gizmo() const
+void GLGizmoFdmSupports::render_painter_gizmo()
 {
     const Selection& selection = m_parent.get_selection();
 
@@ -343,7 +341,11 @@ void GLGizmoFdmSupports::select_facets_by_angle(float threshold_deg, bool block)
 
         ++mesh_id;
 
+#if ENABLE_WORLD_COORDINATE
+        const Transform3d trafo_matrix = mi->get_matrix_no_offset() * mv->get_matrix_no_offset();
+#else
         const Transform3d trafo_matrix = mi->get_matrix(true) * mv->get_matrix(true);
+#endif // ENABLE_WORLD_COORDINATE
         Vec3f down  = (trafo_matrix.inverse() * (-Vec3d::UnitZ())).cast<float>().normalized();
         Vec3f limit = (trafo_matrix.inverse() * Vec3d(std::sin(threshold), 0, -std::cos(threshold))).cast<float>().normalized();
 

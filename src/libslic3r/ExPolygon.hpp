@@ -9,7 +9,7 @@
 namespace Slic3r {
 
 class ExPolygon;
-typedef std::vector<ExPolygon> ExPolygons;
+using ExPolygons = std::vector<ExPolygon>;
 
 class ExPolygon
 {
@@ -67,6 +67,8 @@ public:
     void simplify(double tolerance, ExPolygons* expolygons) const;
     void medial_axis(double max_width, double min_width, ThickPolylines* polylines) const;
     void medial_axis(double max_width, double min_width, Polylines* polylines) const;
+    Polylines medial_axis(double max_width, double min_width) const 
+        { Polylines out; this->medial_axis(max_width, min_width, &out); return out; }
     Lines lines() const;
 
     // Number of contours (outer contour with holes).
@@ -169,10 +171,10 @@ inline Polylines to_polylines(ExPolygon &&src)
     Polyline &pl = polylines[idx ++];
     pl.points = std::move(src.contour.points);
     pl.points.push_back(pl.points.front());
-    for (Polygons::const_iterator ith = src.holes.begin(); ith != src.holes.end(); ++ith) {
+    for (auto ith = src.holes.begin(); ith != src.holes.end(); ++ith) {
         Polyline &pl = polylines[idx ++];
         pl.points = std::move(ith->points);
-        pl.points.push_back(ith->points.front());
+        pl.points.push_back(pl.points.front());
     }
     assert(idx == polylines.size());
     return polylines;
@@ -183,14 +185,14 @@ inline Polylines to_polylines(ExPolygons &&src)
     Polylines polylines;
     polylines.assign(number_polygons(src), Polyline());
     size_t idx = 0;
-    for (ExPolygons::const_iterator it = src.begin(); it != src.end(); ++it) {
+    for (auto it = src.begin(); it != src.end(); ++it) {
         Polyline &pl = polylines[idx ++];
         pl.points = std::move(it->contour.points);
         pl.points.push_back(pl.points.front());
-        for (Polygons::const_iterator ith = it->holes.begin(); ith != it->holes.end(); ++ith) {
+        for (auto ith = it->holes.begin(); ith != it->holes.end(); ++ith) {
             Polyline &pl = polylines[idx ++];
             pl.points = std::move(ith->points);
-            pl.points.push_back(ith->points.front());
+            pl.points.push_back(pl.points.front());
         }
     }
     assert(idx == polylines.size());

@@ -14,6 +14,7 @@
 #include "libslic3r/BoundingBox.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
 #include "Jobs/Job.hpp"
+#include "Jobs/Worker.hpp"
 #include "Search.hpp"
 
 class wxButton;
@@ -31,6 +32,7 @@ using ModelObjectCutAttributes = enum_bitmask<ModelObjectCutAttribute>;
 class ModelInstance;
 class Print;
 class SLAPrint;
+enum PrintObjectStep : unsigned int;
 enum SLAPrintObjectStep : unsigned int;
 enum class ConversionType : int;
 
@@ -111,7 +113,7 @@ public:
     void                    update_mode();
     bool                    is_collapsed();
     void                    collapse(bool collapse);
-    void                    update_searcher();
+    void                    check_and_update_searcher(bool respect_mode = false);
     void                    update_ui_from_settings();
 
 #ifdef _MSW_DARK_MODE
@@ -173,12 +175,46 @@ public:
     std::vector<size_t> load_files(const std::vector<std::string>& input_files, bool load_model = true, bool load_config = true, bool imperial_units = false);
     // to be called on drag and drop
     bool load_files(const wxArrayString& filenames);
+    void check_selected_presets_visibility(PrinterTechnology loaded_printer_technology);
 
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 
     void update();
-    void stop_jobs();
-    bool is_any_job_running() const;
+
+    // Get the worker handling the UI jobs (arrange, fill bed, etc...)
+    // Here is an example of starting up an ad-hoc job:
+    //    queue_job(
+    //        get_ui_job_worker(),
+    //        [](Job::Ctl &ctl) {
+    //            // Executed in the worker thread
+    //
+    //            CursorSetterRAII cursor_setter{ctl};
+    //            std::string msg = "Running";
+    //
+    //            ctl.update_status(0, msg);
+    //            for (int i = 0; i < 100; i++) {
+    //                usleep(100000);
+    //                if (ctl.was_canceled()) break;
+    //                ctl.update_status(i + 1, msg);
+    //            }
+    //            ctl.update_status(100, msg);
+    //        },
+    //        [](bool, std::exception_ptr &e) {
+    //            // Executed in UI thread after the work is done
+    //
+    //            try {
+    //                if (e) std::rethrow_exception(e);
+    //            } catch (std::exception &e) {
+    //                BOOST_LOG_TRIVIAL(error) << e.what();
+    //            }
+    //            e = nullptr;
+    //        });
+    // This would result in quick run of the progress indicator notification
+    // from 0 to 100. Use replace_job() instead of queue_job() to cancel all
+    // pending jobs.
+    Worker& get_ui_job_worker();
+    const Worker & get_ui_job_worker() const;
+
     void select_view(const std::string& direction);
     void select_view_3D(const std::string& name);
 
@@ -188,6 +224,11 @@ public:
 
     bool are_view3D_labels_shown() const;
     void show_view3D_labels(bool show);
+
+#if ENABLE_PREVIEW_LAYOUT
+    bool is_legend_shown() const;
+    void show_legend(bool show);
+#endif // ENABLE_PREVIEW_LAYOUT
 
     bool is_sidebar_collapsed() const;
     void collapse_sidebar(bool show);
@@ -217,7 +258,7 @@ public:
     void cut(size_t obj_idx, size_t instance_idx, coordf_t z, ModelObjectCutAttributes attributes);
 
     void export_gcode(bool prefer_removable);
-    void export_stl(bool extended = false, bool selection_only = false);
+    void export_stl_obj(bool extended = false, bool selection_only = false);
     void export_amf();
     bool export_3mf(const boost::filesystem::path& output_path = boost::filesystem::path());
     void reload_from_disk();
@@ -226,6 +267,7 @@ public:
     bool has_toolpaths_to_export() const;
     void export_toolpaths_to_obj() const;
     void reslice();
+    void reslice_FFF_until_step(PrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
     void reslice_SLA_supports(const ModelObject &object, bool postpone_error_messages = false);
     void reslice_SLA_hollowing(const ModelObject &object, bool postpone_error_messages = false);
     void reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
@@ -302,7 +344,6 @@ public:
     void mirror(Axis axis);
     void split_object();
     void split_volume();
-    void optimize_rotation();
 
     bool can_delete() const;
     bool can_delete_all() const;
@@ -349,7 +390,9 @@ public:
     const GLToolbar& get_collapse_toolbar() const;
     GLToolbar& get_collapse_toolbar();
 
+#if !ENABLE_PREVIEW_LAYOUT
     void update_preview_bottom_toolbar();
+#endif // !ENABLE_PREVIEW_LAYOUT
     void update_preview_moves_slider();
     void enable_preview_moves_slider(bool enable);
 
@@ -415,6 +458,10 @@ public:
     void toggle_render_statistic_dialog();
     bool is_render_statistic_dialog_visible() const;
 
+#if ENABLE_PREVIEW_LAYOUT
+    void set_keep_current_preview_type(bool value);
+#endif // ENABLE_PREVIEW_LAYOUT
+
 	// Wrapper around wxWindow::PopupMenu to suppress error messages popping out while tracking the popup menu.
 	bool PopupMenu(wxMenu *menu, const wxPoint& pos = wxDefaultPosition);
     bool PopupMenu(wxMenu *menu, int x, int y) { return this->PopupMenu(menu, wxPoint(x, y)); }
@@ -433,6 +480,8 @@ public:
     static void show_illegal_characters_warning(wxWindow* parent);
 
 private:
+    void reslice_until_step_inner(int step, const ModelObject &object, bool postpone_error_messages);
+
     struct priv;
     std::unique_ptr<priv> p;
 

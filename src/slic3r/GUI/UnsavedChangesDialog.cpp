@@ -11,6 +11,7 @@
 
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/Color.hpp"
 #include "format.hpp"
 #include "GUI_App.hpp"
 #include "Plater.hpp"
@@ -58,8 +59,7 @@ static std::string get_icon_name(Preset::Type type, PrinterTechnology pt) {
 static std::string def_text_color()
 {
     wxColour def_colour = wxGetApp().get_label_clr_default();
-    auto clr_str = wxString::Format(wxT("#%02X%02X%02X"), def_colour.Red(), def_colour.Green(), def_colour.Blue());
-    return clr_str.ToStdString();
+    return encode_color(ColorRGB(def_colour.Red(), def_colour.Green(), def_colour.Blue()));
 }
 static std::string grey     = "#808080";
 static std::string orange   = "#ed6b21";
@@ -124,8 +124,8 @@ wxBitmap ModelNode::get_bitmap(const wxString& color)
     const int icon_height   = lround(1.6 * em);
 
     BitmapCache bmp_cache;
-    unsigned char rgb[3];
-    BitmapCache::parse_color(into_u8(color), rgb);
+    ColorRGB rgb;
+    decode_color(into_u8(color), rgb);
     // there is no need to scale created solid bitmap
 #ifndef __linux__
     return bmp_cache.mksolid(icon_width, icon_height, rgb, true);
@@ -656,6 +656,7 @@ void DiffViewCtrl::Clear()
 {
     model->Clear();
     m_items_map.clear();
+    m_has_long_strings = false;
 }
 
 wxString DiffViewCtrl::get_short_string(wxString full_string)
@@ -1030,7 +1031,7 @@ bool UnsavedChangesDialog::save(PresetCollection* dependent_presets, bool show_s
 wxString get_string_from_enum(const std::string& opt_key, const DynamicPrintConfig& config, bool is_infill = false)
 {
     const ConfigOptionDef& def = config.def()->options.at(opt_key);
-    const std::vector<std::string>& names = def.enum_labels;//ConfigOptionEnum<T>::get_enum_names();
+    const std::vector<std::string>& names = def.enum_labels.empty() ? def.enum_values : def.enum_labels;
     int val = config.option(opt_key)->getInt();
 
     // Each infill doesn't use all list of infill declared in PrintConfig.hpp.
@@ -1242,6 +1243,8 @@ void UnsavedChangesDialog::update(Preset::Type type, PresetCollection* dependent
 
 void UnsavedChangesDialog::update_tree(Preset::Type type, PresetCollection* presets_)
 {
+    // update searcher befofre update of tree
+    wxGetApp().sidebar().check_and_update_searcher();
     Search::OptionsSearcher& searcher = wxGetApp().sidebar().get_searcher();
     searcher.sort_options_by_key();
 
@@ -1297,9 +1300,6 @@ void UnsavedChangesDialog::update_tree(Preset::Type type, PresetCollection* pres
                 get_string_value(opt_key, old_config), get_string_value(opt_key, new_config), category_icon_map.at(option.category));
         }
     }
-
-    // Revert sort of searcher back
-    searcher.sort_options_by_label();
 }
 
 void UnsavedChangesDialog::on_dpi_changed(const wxRect& suggested_rect)
@@ -1523,8 +1523,8 @@ DiffPresetDialog::DiffPresetDialog(MainFrame* mainframe)
     topSizer->Add(m_top_info_line, 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, 2 * border);
     topSizer->Add(presets_sizer, 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(m_show_all_presets, 0, wxEXPAND | wxALL, border);
-    topSizer->Add(m_bottom_info_line, 0, wxEXPAND | wxALL, 2 * border);
     topSizer->Add(m_tree, 1, wxEXPAND | wxALL, border);
+    topSizer->Add(m_bottom_info_line, 0, wxEXPAND | wxALL, 2 * border);
 
     this->SetMinSize(wxSize(80 * em, 30 * em));
     this->SetSizer(topSizer);
@@ -1605,6 +1605,8 @@ void DiffPresetDialog::update_presets(Preset::Type type)
 
 void DiffPresetDialog::update_tree()
 {
+    // update searcher befofre update of tree
+    wxGetApp().sidebar().check_and_update_searcher(); 
     Search::OptionsSearcher& searcher = wxGetApp().sidebar().get_searcher();
     searcher.sort_options_by_key();
 
@@ -1689,12 +1691,17 @@ void DiffPresetDialog::update_tree()
                 left_val, right_val, category_icon_map.at(option.category));
         }
     }
+    
+    if (m_tree->has_long_strings())
+        bottom_info = _L("Some fields are too long to fit. Right mouse click reveals the full text.");
 
     bool tree_was_shown = m_tree->IsShown();
     m_tree->Show(show_tree);
-    if (!show_tree)
+
+    bool show_bottom_info = !show_tree || m_tree->has_long_strings();
+    if (show_bottom_info)
         m_bottom_info_line->SetLabel(bottom_info);
-    m_bottom_info_line->Show(!show_tree);
+    m_bottom_info_line->Show(show_bottom_info);
 
     if (tree_was_shown == m_tree->IsShown())
         Layout();
@@ -1702,9 +1709,6 @@ void DiffPresetDialog::update_tree()
         Fit();
         Refresh();
     }
-
-    // Revert sort of searcher back
-    searcher.sort_options_by_label();
 }
 
 void DiffPresetDialog::on_dpi_changed(const wxRect&)

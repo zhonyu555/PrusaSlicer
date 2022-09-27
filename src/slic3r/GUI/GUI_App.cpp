@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <regex>
 #include <string_view>
+#include <boost/nowide/fstream.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
@@ -44,6 +45,7 @@
 #include "libslic3r/Model.hpp"
 #include "libslic3r/I18N.hpp"
 #include "libslic3r/PresetBundle.hpp"
+#include "libslic3r/Color.hpp"
 
 #include "GUI.hpp"
 #include "GUI_Utils.hpp"
@@ -56,6 +58,8 @@
 #include "../Utils/PrintHost.hpp"
 #include "../Utils/Process.hpp"
 #include "../Utils/MacDarkMode.hpp"
+#include "../Utils/AppUpdater.hpp"
+#include "../Utils/WinRegistry.hpp"
 #include "slic3r/Config/Snapshot.hpp"
 #include "ConfigSnapshotDialog.hpp"
 #include "FirmwareDialog.hpp"
@@ -429,50 +433,21 @@ bool static check_old_linux_datadir(const wxString& app_name) {
 }
 #endif
 
-
 #ifdef _WIN32
+#if 0 // External Updater is replaced with AppUpdater.cpp
 static bool run_updater_win()
 {
     // find updater exe
     boost::filesystem::path path_updater = boost::dll::program_location().parent_path() / "prusaslicer-updater.exe";
-    if (boost::filesystem::exists(path_updater)) {
-        // run updater. Original args: /silent -restartapp prusa-slicer.exe -startappfirst
-
-        // Using quoted string as mentioned in CreateProcessW docs, silent execution parameter.
-        std::wstring wcmd = L"\"" + path_updater.wstring() + L"\" /silent";
-
-        // additional information
-        STARTUPINFOW si;
-        PROCESS_INFORMATION pi;
-
-        // set the size of the structures
-        ZeroMemory(&si, sizeof(si));
-        si.cb = sizeof(si);
-        ZeroMemory(&pi, sizeof(pi));
-
-        // start the program up
-        if (CreateProcessW(NULL,   // the path
-            wcmd.data(),    // Command line
-            NULL,           // Process handle not inheritable
-            NULL,           // Thread handle not inheritable
-            FALSE,          // Set handle inheritance to FALSE
-            0,              // No creation flags
-            NULL,           // Use parent's environment block
-            NULL,           // Use parent's starting directory 
-            &si,            // Pointer to STARTUPINFO structure
-            &pi             // Pointer to PROCESS_INFORMATION structure (removed extra parentheses)
-        )) {
-            // Close process and thread handles.
-            CloseHandle(pi.hProcess);
-            CloseHandle(pi.hThread);
-            return true;
-        } else {
-            BOOST_LOG_TRIVIAL(error) << "Failed to start prusaslicer-updater.exe with command " << wcmd;
-        }
-    }
-    return false;
+    // run updater. Original args: /silent -restartapp prusa-slicer.exe -startappfirst
+    std::string msg;
+    bool res = create_process(path_updater, L"/silent", msg);
+    if (!res)
+        BOOST_LOG_TRIVIAL(error) << msg; 
+    return res;
 }
-#endif //_WIN32
+#endif // 0
+#endif // _WIN32
 
 struct FileWildcards {
     std::string_view              title;
@@ -482,6 +457,7 @@ struct FileWildcards {
 static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
     /* FT_STL */     { "STL files"sv,       { ".stl"sv } },
     /* FT_OBJ */     { "OBJ files"sv,       { ".obj"sv } },
+    /* FT_OBJECT */  { "Object files"sv,    { ".stl"sv, ".obj"sv } },
     /* FT_AMF */     { "AMF files"sv,       { ".amf"sv, ".zip.amf"sv, ".xml"sv } },
     /* FT_3MF */     { "3MF files"sv,       { ".3mf"sv } },
     /* FT_GCODE */   { "G-code files"sv,    { ".gcode"sv, ".gco"sv, ".g"sv, ".ngc"sv } },
@@ -494,9 +470,47 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
 
     /* FT_TEX */     { "Texture"sv,         { ".png"sv, ".svg"sv } },
 
-    /* FT_SL1 */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv } },
+    /* FT_SL1 */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv, ".pwmx"sv } },
 };
 
+#if ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
+wxString file_wildcards(FileType file_type)
+{
+    const FileWildcards& data = file_wildcards_by_type[file_type];
+    std::string title;
+    std::string mask;
+
+    // Generate cumulative first item
+    for (const std::string_view& ext : data.file_extensions) {
+        if (title.empty()) {
+            title = "*";
+            title += ext;
+            mask = title;
+        }
+        else {
+            title += ", *";
+            title += ext;
+            mask += ";*";
+            mask += ext;
+        }
+        mask += ";*";
+        mask += boost::to_upper_copy(std::string(ext));
+    }
+
+    wxString ret = GUI::format_wxstr("%s (%s)|%s", data.title, title, mask);
+
+    // Adds an item for each of the extensions
+    if (data.file_extensions.size() > 1) {
+        for (const std::string_view& ext : data.file_extensions) {
+            title = "*";
+            title += ext;
+            ret += GUI::format_wxstr("|%s (%s)|%s", data.title, title, title);
+        }
+    }
+
+    return ret;
+}
+#else
 // This function produces a Win32 file dialog file template mask to be consumed by wxWidgets on all platforms.
 // The function accepts a custom extension parameter. If the parameter is provided, the custom extension
 // will be added as a fist to the list. This is important for a "file save" dialog on OSX, which strips
@@ -549,8 +563,10 @@ wxString file_wildcards(FileType file_type, const std::string &custom_extension)
             mask += ";*";
             mask += boost::to_upper_copy(std::string(ext));
         }
+
     return GUI::format_wxstr("%s (%s)|%s", data.title, title, mask);
 }
+#endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
 
 static std::string libslic3r_translate_callback(const char *s) { return wxGetTranslation(wxString(s, wxConvUTF8)).utf8_str().data(); }
 
@@ -722,7 +738,7 @@ void GUI_App::post_init()
     if (! this->initialized())
         throw Slic3r::RuntimeError("Calling post_init() while not yet initialized");
 
-    if (this->init_params->start_as_gcodeviewer) {
+    if (this->is_gcode_viewer()) {
         if (! this->init_params->input_files.empty())
             this->plater()->load_gcode(wxString::FromUTF8(this->init_params->input_files[0].c_str()));
     }
@@ -752,7 +768,7 @@ void GUI_App::post_init()
                 if (boost::algorithm::iends_with(filename, ".amf") ||
                     boost::algorithm::iends_with(filename, ".amf.xml") ||
                     boost::algorithm::iends_with(filename, ".3mf"))
-                    this->plater()->set_project_filename(filename);
+                    this->plater()->set_project_filename(from_u8(filename));
             }
         }
         if (! this->init_params->extra_config.empty())
@@ -774,18 +790,13 @@ void GUI_App::post_init()
         CallAfter([this] {
             bool cw_showed = this->config_wizard_startup();
             this->preset_updater->sync(preset_bundle);
+            this->app_version_check(false);
             if (! cw_showed) {
                 // The CallAfter is needed as well, without it, GL extensions did not show.
                 // Also, we only want to show this when the wizard does not, so the new user
                 // sees something else than "we want something" on the first start.
                 show_send_system_info_dialog_if_needed();
             }
-        #ifdef _WIN32
-            // Run external updater on Windows if version check is enabled.
-            if (this->preset_updater->version_check_enabled() && ! run_updater_win())
-                // "prusaslicer-updater.exe" was not started, run our own update check.
-        #endif // _WIN32
-                this->preset_updater->slic3r_update_notify();
         });
     }
 
@@ -811,6 +822,8 @@ GUI_App::GUI_App(EAppMode mode)
 {
 	//app config initializes early becasuse it is used in instance checking in PrusaSlicer.cpp
 	this->init_app_config();
+    // init app downloader after path to datadir is set
+    m_app_updater = std::make_unique<AppUpdater>();
 }
 
 GUI_App::~GUI_App()
@@ -871,6 +884,8 @@ void GUI_App::init_app_config()
 //    SetAppName(SLIC3R_APP_KEY);
 	SetAppName(SLIC3R_APP_KEY "-alpha");
 //    SetAppName(SLIC3R_APP_KEY "-beta");
+
+
 //	SetAppDisplayName(SLIC3R_APP_NAME);
 
 	// Set the Slic3r data directory at the Slic3r XS module.
@@ -1037,8 +1052,6 @@ bool GUI_App::OnInit()
     }
 }
 
-static bool update_gui_after_init = true;
-
 bool GUI_App::on_init_inner()
 {
     // Set initialization of image handlers before any UI actions - See GH issue #7469
@@ -1198,23 +1211,8 @@ bool GUI_App::on_init_inner()
 #endif // __WXMSW__
 
         preset_updater = new PresetUpdater();
-        Bind(EVT_SLIC3R_VERSION_ONLINE, [this](const wxCommandEvent& evt) {
-            app_config->set("version_online", into_u8(evt.GetString()));
-            app_config->save();
-            std::string opt = app_config->get("notify_release");
-            if (this->plater_ != nullptr && (opt == "all" || opt == "release")) {
-                if (*Semver::parse(SLIC3R_VERSION) < *Semver::parse(into_u8(evt.GetString()))) {
-                    this->plater_->get_notification_manager()->push_notification(NotificationType::NewAppAvailable
-                        , NotificationManager::NotificationLevel::ImportantNotificationLevel
-                        , Slic3r::format(_u8L("New release version %1% is available."), evt.GetString())
-                        , _u8L("See Download page.")
-                        , [](wxEvtHandler* evnthndlr) {wxGetApp().open_web_page_localized("https://www.prusa3d.com/slicerweb"); return true; }
-                    );
-                }
-            }
-            });
+        Bind(EVT_SLIC3R_VERSION_ONLINE, &GUI_App::on_version_read, this);
         Bind(EVT_SLIC3R_EXPERIMENTAL_VERSION_ONLINE, [this](const wxCommandEvent& evt) {
-            app_config->save();
             if (this->plater_ != nullptr && app_config->get("notify_release") == "all") {
                 std::string evt_string = into_u8(evt.GetString());
                 if (*Semver::parse(SLIC3R_VERSION) < *Semver::parse(evt_string)) {
@@ -1228,6 +1226,22 @@ bool GUI_App::on_init_inner()
                 }
             }
             });
+        Bind(EVT_SLIC3R_APP_DOWNLOAD_PROGRESS, [this](const wxCommandEvent& evt) {
+            //lm:This does not force a render. The progress bar only updateswhen the mouse is moved.
+            if (this->plater_ != nullptr)
+                this->plater_->get_notification_manager()->set_download_progress_percentage((float)std::stoi(into_u8(evt.GetString())) / 100.f );
+        });
+
+        Bind(EVT_SLIC3R_APP_DOWNLOAD_FAILED, [this](const wxCommandEvent& evt) {
+            if (this->plater_ != nullptr)
+                this->plater_->get_notification_manager()->close_notification_of_type(NotificationType::AppDownload);
+            if(!evt.GetString().IsEmpty())
+                show_error(nullptr, evt.GetString());
+        });
+
+        Bind(EVT_SLIC3R_APP_OPEN_FAILED, [](const wxCommandEvent& evt) {
+            show_error(nullptr, evt.GetString());
+        });
     }
     else {
 #ifdef __WXMSW__ 
@@ -1283,8 +1297,13 @@ bool GUI_App::on_init_inner()
     else
         load_current_presets();
 
+    // Save the active profiles as a "saved into project".
+    update_saved_preset_from_current_preset();
+
     if (plater_ != nullptr) {
+        // Save the names of active presets and project specific config into ProjectDirtyStateManager.
         plater_->reset_project_dirty_initial_presets();
+        // Update Project dirty state, update application title bar.
         plater_->update_project_dirty_from_presets();
     }
 
@@ -1308,18 +1327,18 @@ bool GUI_App::on_init_inner()
         // An ugly solution to GH #5537 in which GUI_App::init_opengl (normally called from events wxEVT_PAINT
         // and wxEVT_SET_FOCUS before GUI_App::post_init is called) wasn't called before GUI_App::post_init and OpenGL wasn't initialized.
 #ifdef __linux__
-        if (update_gui_after_init && m_opengl_initialized) {
+        if (! m_post_initialized && m_opengl_initialized) {
 #else
-        if (update_gui_after_init) {
+        if (! m_post_initialized) {
 #endif
-            update_gui_after_init = false;
+            m_post_initialized = true;
 #ifdef WIN32
             this->mainframe->register_win32_callbacks();
 #endif
             this->post_init();
         }
 
-        if (! update_gui_after_init && app_config->dirty() && app_config->get("autosave") == "1")
+        if (m_post_initialized && app_config->dirty() && app_config->get("autosave") == "1")
             app_config->save();
     });
 
@@ -1598,8 +1617,7 @@ void GUI_App::set_label_clr_modified(const wxColour& clr)
     if (m_color_label_modified == clr)
         return;
     m_color_label_modified = clr;
-    auto clr_str = wxString::Format(wxT("#%02X%02X%02X"), clr.Red(), clr.Green(), clr.Blue());
-    std::string str = clr_str.ToStdString();
+    const std::string str = encode_color(ColorRGB(clr.Red(), clr.Green(), clr.Blue()));
     app_config->set("label_clr_modified", str);
     app_config->save();
 }
@@ -1609,8 +1627,7 @@ void GUI_App::set_label_clr_sys(const wxColour& clr)
     if (m_color_label_sys == clr)
         return;
     m_color_label_sys = clr;
-    auto clr_str = wxString::Format(wxT("#%02X%02X%02X"), clr.Red(), clr.Green(), clr.Blue());
-    std::string str = clr_str.ToStdString();
+    const std::string str = encode_color(ColorRGB(clr.Red(), clr.Green(), clr.Blue()));
     app_config->set("label_clr_sys", str);
     app_config->save();
 }
@@ -1814,6 +1831,7 @@ void GUI_App::update_ui_from_settings()
         m_force_colors_update = false;
         mainframe->force_color_changed();
         mainframe->diff_dialog.force_color_changed();
+        mainframe->preferences_dialog->force_color_changed();
         mainframe->printhost_queue_dlg()->force_color_changed();
 #ifdef _MSW_DARK_MODE
         update_scrolls(mainframe);
@@ -2234,7 +2252,8 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
         local_menu->Append(config_id_base + ConfigMenuWizard, config_wizard_name + dots, config_wizard_tooltip);
         local_menu->Append(config_id_base + ConfigMenuSnapshots, _L("&Configuration Snapshots") + dots, _L("Inspect / activate configuration snapshots"));
         local_menu->Append(config_id_base + ConfigMenuTakeSnapshot, _L("Take Configuration &Snapshot"), _L("Capture a configuration snapshot"));
-        local_menu->Append(config_id_base + ConfigMenuUpdate, _L("Check for Configuration Updates"), _L("Check for configuration updates"));
+        local_menu->Append(config_id_base + ConfigMenuUpdateConf, _L("Check for Configuration Updates"), _L("Check for configuration updates"));
+        local_menu->Append(config_id_base + ConfigMenuUpdateApp, _L("Check for Application Updates"), _L("Check for new version of application"));
 #if defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION) 
         //if (DesktopIntegrationDialog::integration_possible())
         local_menu->Append(config_id_base + ConfigMenuDesktopIntegration, _L("Desktop Integration"), _L("Desktop Integration"));    
@@ -2276,9 +2295,12 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
         case ConfigMenuWizard:
             run_wizard(ConfigWizard::RR_USER);
             break;
-		case ConfigMenuUpdate:
+		case ConfigMenuUpdateConf:
 			check_updates(true);
 			break;
+        case ConfigMenuUpdateApp:
+            app_version_check(true);
+            break;
 #ifdef __linux__
         case ConfigMenuDesktopIntegration:
             show_desktop_integration_dialog();
@@ -2334,40 +2356,7 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
             break;
         case ConfigMenuPreferences:
         {
-            bool app_layout_changed = false;
-            {
-                // the dialog needs to be destroyed before the call to recreate_GUI()
-                // or sometimes the application crashes into wxDialogBase() destructor
-                // so we put it into an inner scope
-                PreferencesDialog dlg(mainframe);
-                dlg.ShowModal();
-                app_layout_changed = dlg.settings_layout_changed();
-                if (dlg.seq_top_layer_only_changed())
-                    this->plater_->refresh_print();
-
-                if (dlg.recreate_GUI()) {
-                    recreate_GUI(_L("Restart application") + dots);
-                    return;
-                }
-#ifdef _WIN32
-                if (is_editor()) {
-                    if (app_config->get("associate_3mf") == "1")
-                        associate_3mf_files();
-                    if (app_config->get("associate_stl") == "1")
-                        associate_stl_files();
-                }
-                else {
-                    if (app_config->get("associate_gcode") == "1")
-                        associate_gcode_files();
-                }
-#endif // _WIN32
-            }
-            if (app_layout_changed) {
-                // hide full main_sizer for mainFrame
-                mainframe->GetSizer()->Show(false);
-                mainframe->update_layout();
-                mainframe->select_tab(size_t(0));
-            }
+            open_preferences();
             break;
         }
         case ConfigMenuLanguage:
@@ -2415,36 +2404,34 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
     menu->Append(local_menu, _L("&Configuration"));
 }
 
-void GUI_App::open_preferences(size_t open_on_tab, const std::string& highlight_option)
+void GUI_App::open_preferences(const std::string& highlight_option /*= std::string()*/, const std::string& tab_name/*= std::string()*/)
 {
-    bool app_layout_changed = false;
-    {
-        // the dialog needs to be destroyed before the call to recreate_GUI()
-        // or sometimes the application crashes into wxDialogBase() destructor
-        // so we put it into an inner scope
-        PreferencesDialog dlg(mainframe, open_on_tab, highlight_option);
-        dlg.ShowModal();
-        app_layout_changed = dlg.settings_layout_changed();
+    mainframe->preferences_dialog->show(highlight_option, tab_name);
+
+    if (mainframe->preferences_dialog->recreate_GUI())
+        recreate_GUI(_L("Restart application") + dots);
+
 #if ENABLE_GCODE_LINES_ID_IN_H_SLIDER
-        if (dlg.seq_top_layer_only_changed() || dlg.seq_seq_top_gcode_indices_changed())
+    if (dlg.seq_top_layer_only_changed() || dlg.seq_seq_top_gcode_indices_changed())
 #else
-        if (dlg.seq_top_layer_only_changed())
+    if (mainframe->preferences_dialog->seq_top_layer_only_changed())
 #endif // ENABLE_GCODE_LINES_ID_IN_H_SLIDER
-            this->plater_->refresh_print();
+        this->plater_->refresh_print();
+
 #ifdef _WIN32
-        if (is_editor()) {
-            if (app_config->get("associate_3mf") == "1")
-                associate_3mf_files();
-            if (app_config->get("associate_stl") == "1")
-                associate_stl_files();
-        }
-        else {
-            if (app_config->get("associate_gcode") == "1")
-                associate_gcode_files();
-        }
-#endif // _WIN32
+    if (is_editor()) {
+        if (app_config->get("associate_3mf") == "1")
+            associate_3mf_files();
+        if (app_config->get("associate_stl") == "1")
+            associate_stl_files();
     }
-    if (app_layout_changed) {
+    else {
+        if (app_config->get("associate_gcode") == "1")
+            associate_gcode_files();
+    }
+#endif // _WIN32
+
+    if (mainframe->preferences_dialog->settings_layout_changed()) {
         // hide full main_sizer for mainFrame
         mainframe->GetSizer()->Show(false);
         mainframe->update_layout();
@@ -2481,16 +2468,13 @@ void GUI_App::update_saved_preset_from_current_preset()
     }
 }
 
-std::vector<std::pair<unsigned int, std::string>> GUI_App::get_selected_presets() const
+std::vector<const PresetCollection*> GUI_App::get_active_preset_collections() const
 {
-    std::vector<std::pair<unsigned int, std::string>> ret;
+    std::vector<const PresetCollection*> ret;
     PrinterTechnology printer_technology = preset_bundle->printers.get_edited_preset().printer_technology();
-    for (Tab* tab : tabs_list) {
-        if (tab->supports_printer_technology(printer_technology)) {
-            const PresetCollection* presets = tab->get_presets();
-            ret.push_back({ static_cast<unsigned int>(presets->type()), presets->get_selected_preset_name() });
-        }
-    }
+    for (const Tab* tab : tabs_list)
+        if (tab->supports_printer_technology(printer_technology))
+            ret.push_back(tab->get_presets());
     return ret;
 }
 
@@ -2742,17 +2726,25 @@ void GUI_App::MacOpenFiles(const wxArrayString &fileNames)
         // Running in G-code viewer.
         // Load the first G-code into the G-code viewer.
         // Or if no G-codes, send other files to slicer. 
-        if (! gcode_files.empty())
-            this->plater()->load_gcode(gcode_files.front());
+        if (! gcode_files.empty()) {
+            if (m_post_initialized)
+                this->plater()->load_gcode(gcode_files.front());
+            else
+                this->init_params->input_files = { into_u8(gcode_files.front()) };
+        }
         if (!non_gcode_files.empty()) 
             start_new_slicer(non_gcode_files, true);
     } else {
         if (! files.empty()) {
-            wxArrayString input_files;
-            for (size_t i = 0; i < non_gcode_files.size(); ++i) {
-                input_files.push_back(non_gcode_files[i]);
+            if (m_post_initialized) {
+                wxArrayString input_files;
+                for (size_t i = 0; i < non_gcode_files.size(); ++i)
+                    input_files.push_back(non_gcode_files[i]);
+                this->plater()->load_files(input_files);
+            } else {
+                for (const auto &f : non_gcode_files)
+                    this->init_params->input_files.emplace_back(into_u8(f));
             }
-            this->plater()->load_files(input_files);
         }
         for (const wxString &filename : gcode_files)
             start_new_gcodeviewer(&filename);
@@ -3144,117 +3136,102 @@ bool GUI_App::open_browser_with_warning_dialog(const wxString& url, wxWindow* pa
 
 
 #ifdef __WXMSW__
-static bool set_into_win_registry(HKEY hkeyHive, const wchar_t* pszVar, const wchar_t* pszValue)
-{
-    // see as reference: https://stackoverflow.com/questions/20245262/c-program-needs-an-file-association
-    wchar_t szValueCurrent[1000];
-    DWORD dwType;
-    DWORD dwSize = sizeof(szValueCurrent);
-
-    int iRC = ::RegGetValueW(hkeyHive, pszVar, nullptr, RRF_RT_ANY, &dwType, szValueCurrent, &dwSize);
-
-    bool bDidntExist = iRC == ERROR_FILE_NOT_FOUND;
-
-    if ((iRC != ERROR_SUCCESS) && !bDidntExist)
-        // an error occurred
-        return false;
-
-    if (!bDidntExist) {
-        if (dwType != REG_SZ)
-            // invalid type
-            return false;
-
-        if (::wcscmp(szValueCurrent, pszValue) == 0)
-            // value already set
-            return false;
-    }
-
-    DWORD dwDisposition;
-    HKEY hkey;
-    iRC = ::RegCreateKeyExW(hkeyHive, pszVar, 0, 0, 0, KEY_ALL_ACCESS, nullptr, &hkey, &dwDisposition);
-    bool ret = false;
-    if (iRC == ERROR_SUCCESS) {
-        iRC = ::RegSetValueExW(hkey, L"", 0, REG_SZ, (BYTE*)pszValue, (::wcslen(pszValue) + 1) * sizeof(wchar_t));
-        if (iRC == ERROR_SUCCESS)
-            ret = true;
-    }
-
-    RegCloseKey(hkey);
-    return ret;
-}
-
 void GUI_App::associate_3mf_files()
 {
-    wchar_t app_path[MAX_PATH];
-    ::GetModuleFileNameW(nullptr, app_path, sizeof(app_path));
-
-    std::wstring prog_path = L"\"" + std::wstring(app_path) + L"\"";
-    std::wstring prog_id = L"Prusa.Slicer.1";
-    std::wstring prog_desc = L"PrusaSlicer";
-    std::wstring prog_command = prog_path + L" \"%1\"";
-    std::wstring reg_base = L"Software\\Classes";
-    std::wstring reg_extension = reg_base + L"\\.3mf";
-    std::wstring reg_prog_id = reg_base + L"\\" + prog_id;
-    std::wstring reg_prog_id_command = reg_prog_id + L"\\Shell\\Open\\Command";
-
-    bool is_new = false;
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_extension.c_str(), prog_id.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id.c_str(), prog_desc.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id_command.c_str(), prog_command.c_str());
-
-    if (is_new)
-        // notify Windows only when any of the values gets changed
-        ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    associate_file_type(L".3mf", L"Prusa.Slicer.1", L"PrusaSlicer", true);
 }
 
 void GUI_App::associate_stl_files()
 {
-    wchar_t app_path[MAX_PATH];
-    ::GetModuleFileNameW(nullptr, app_path, sizeof(app_path));
-
-    std::wstring prog_path = L"\"" + std::wstring(app_path) + L"\"";
-    std::wstring prog_id = L"Prusa.Slicer.1";
-    std::wstring prog_desc = L"PrusaSlicer";
-    std::wstring prog_command = prog_path + L" \"%1\"";
-    std::wstring reg_base = L"Software\\Classes";
-    std::wstring reg_extension = reg_base + L"\\.stl";
-    std::wstring reg_prog_id = reg_base + L"\\" + prog_id;
-    std::wstring reg_prog_id_command = reg_prog_id + L"\\Shell\\Open\\Command";
-
-    bool is_new = false;
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_extension.c_str(), prog_id.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id.c_str(), prog_desc.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id_command.c_str(), prog_command.c_str());
-
-    if (is_new)
-        // notify Windows only when any of the values gets changed
-        ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    associate_file_type(L".stl", L"Prusa.Slicer.1", L"PrusaSlicer", true);
 }
 
 void GUI_App::associate_gcode_files()
 {
-    wchar_t app_path[MAX_PATH];
-    ::GetModuleFileNameW(nullptr, app_path, sizeof(app_path));
-
-    std::wstring prog_path = L"\"" + std::wstring(app_path) + L"\"";
-    std::wstring prog_id = L"PrusaSlicer.GCodeViewer.1";
-    std::wstring prog_desc = L"PrusaSlicerGCodeViewer";
-    std::wstring prog_command = prog_path + L" \"%1\"";
-    std::wstring reg_base = L"Software\\Classes";
-    std::wstring reg_extension = reg_base + L"\\.gcode";
-    std::wstring reg_prog_id = reg_base + L"\\" + prog_id;
-    std::wstring reg_prog_id_command = reg_prog_id + L"\\Shell\\Open\\Command";
-
-    bool is_new = false;
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_extension.c_str(), prog_id.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id.c_str(), prog_desc.c_str());
-    is_new |= set_into_win_registry(HKEY_CURRENT_USER, reg_prog_id_command.c_str(), prog_command.c_str());
-
-    if (is_new)
-        // notify Windows only when any of the values gets changed
-        ::SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    associate_file_type(L".gcode", L"PrusaSlicer.GCodeViewer.1", L"PrusaSlicerGCodeViewer", true);
 }
 #endif // __WXMSW__
+
+void GUI_App::on_version_read(wxCommandEvent& evt)
+{
+    app_config->set("version_online", into_u8(evt.GetString()));
+    app_config->save();
+    std::string opt = app_config->get("notify_release");
+    if (this->plater_ == nullptr || (opt != "all" && opt != "release")) {
+        return;
+    }
+    if (*Semver::parse(SLIC3R_VERSION) >= *Semver::parse(into_u8(evt.GetString()))) {
+        return;
+    }
+    // notification
+    /*
+    this->plater_->get_notification_manager()->push_notification(NotificationType::NewAppAvailable
+        , NotificationManager::NotificationLevel::ImportantNotificationLevel
+        , Slic3r::format(_u8L("New release version %1% is available."), evt.GetString())
+        , _u8L("See Download page.")
+        , [](wxEvtHandler* evnthndlr) {wxGetApp().open_web_page_localized("https://www.prusa3d.com/slicerweb"); return true; }
+    );
+    */
+    // updater 
+    // read triggered_by_user that was set when calling  GUI_App::app_version_check
+    app_updater(m_app_updater->get_triggered_by_user());
+}
+
+void GUI_App::app_updater(bool from_user)
+{
+    DownloadAppData app_data = m_app_updater->get_app_data();
+
+    if (from_user && (!app_data.version || *app_data.version <= *Semver::parse(SLIC3R_VERSION)))
+    {
+        BOOST_LOG_TRIVIAL(info) << "There is no newer version online.";
+        MsgNoAppUpdates no_update_dialog;
+        no_update_dialog.ShowModal();
+        return;
+
+    }
+
+    assert(!app_data.url.empty());
+    assert(!app_data.target_path.empty());
+
+    // dialog with new version info
+    AppUpdateAvailableDialog dialog(*Semver::parse(SLIC3R_VERSION), *app_data.version);
+    auto dialog_result = dialog.ShowModal();
+    // checkbox "do not show again"
+    if (dialog.disable_version_check()) {
+        app_config->set("notify_release", "none");
+    }
+    // Doesn't wish to update
+    if (dialog_result != wxID_OK) {
+        return;
+    }
+    // dialog with new version download (installer or app dependent on system) including path selection
+    AppUpdateDownloadDialog dwnld_dlg(*app_data.version, app_data.target_path);
+    dialog_result = dwnld_dlg.ShowModal();
+    //  Doesn't wish to download
+    if (dialog_result != wxID_OK) {
+        return;
+    }
+    app_data.target_path =dwnld_dlg.get_download_path();
+
+    // start download
+    this->plater_->get_notification_manager()->push_download_progress_notification(_utf8("Download"), std::bind(&AppUpdater::cancel_callback, this->m_app_updater.get()));
+    app_data.start_after = dwnld_dlg.run_after_download();
+    m_app_updater->set_app_data(std::move(app_data));
+    m_app_updater->sync_download();
+}
+
+void GUI_App::app_version_check(bool from_user)
+{
+    if (from_user) {
+        if (m_app_updater->get_download_ongoing()) {
+            MessageDialog msgdlg(nullptr, _L("Download of new version is already ongoing. Do you wish to continue?"), _L("Notice"), wxYES_NO);
+            if (msgdlg.ShowModal() != wxID_YES)
+                return;
+        }
+    }
+    std::string version_check_url = app_config->version_check_url();
+    m_app_updater->sync_version(version_check_url, from_user);
+}
 
 } // GUI
 } //Slic3r

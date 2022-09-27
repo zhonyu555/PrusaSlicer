@@ -5,10 +5,11 @@
 #include "Flow.hpp"
 #include "SurfaceCollection.hpp"
 #include "ExtrusionEntityCollection.hpp"
-#include "ExPolygonCollection.hpp"
 
 namespace Slic3r {
 
+class ExPolygon;
+using ExPolygons = std::vector<ExPolygon>;
 class Layer;
 using LayerPtrs = std::vector<Layer*>;
 class LayerRegion;
@@ -18,6 +19,10 @@ class PrintObject;
 
 namespace FillAdaptive {
     struct Octree;
+}
+
+namespace FillLightning {
+    class Generator;
 };
 
 class LayerRegion
@@ -151,8 +156,8 @@ public:
     }
     void                    make_perimeters();
     // Phony version of make_fills() without parameters for Perl integration only.
-    void                    make_fills() { this->make_fills(nullptr, nullptr); }
-    void                    make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree);
+    void                    make_fills() { this->make_fills(nullptr, nullptr, nullptr); }
+    void                    make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive::Octree* support_fill_octree, FillLightning::Generator* lightning_generator);
     void 					make_ironing();
 
     void                    export_region_slices_to_svg(const char *path) const;
@@ -187,7 +192,7 @@ class SupportLayer : public Layer
 public:
     // Polygons covered by the supports: base, interface and contact areas.
     // Used to suppress retraction if moving for a support extrusion over these support_islands.
-    ExPolygonCollection         support_islands;
+    ExPolygons                  support_islands;
     // Extrusion paths for the support base and for the support interface and contacts.
     ExtrusionEntityCollection   support_fills;
 

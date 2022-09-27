@@ -51,55 +51,6 @@
 namespace Slic3r {
 namespace GUI {
 
-
-void Tab::Highlighter::set_timer_owner(wxEvtHandler* owner, int timerid/* = wxID_ANY*/)
-{
-    m_timer.SetOwner(owner, timerid);
-}
-
-void Tab::Highlighter::init(std::pair<OG_CustomCtrl*, bool*> params)
-{
-    if (m_timer.IsRunning())
-        invalidate();
-    if (!params.first || !params.second)
-        return;
-
-    m_timer.Start(300, false);
-
-    m_custom_ctrl = params.first;
-    m_show_blink_ptr = params.second;
-
-    *m_show_blink_ptr = true;
-    m_custom_ctrl->Refresh();
-}
-
-void Tab::Highlighter::invalidate()
-{
-    m_timer.Stop();
-
-    if (m_custom_ctrl && m_show_blink_ptr) {
-        *m_show_blink_ptr = false;
-        m_custom_ctrl->Refresh();
-        m_show_blink_ptr = nullptr;
-        m_custom_ctrl = nullptr;
-    }
-
-    m_blink_counter = 0;
-}
-
-void Tab::Highlighter::blink()
-{
-    if (m_custom_ctrl && m_show_blink_ptr) {
-        *m_show_blink_ptr = !*m_show_blink_ptr;
-        m_custom_ctrl->Refresh();
-    }
-    else
-        return;
-
-    if ((++m_blink_counter) == 11)
-        invalidate();
-}
-
 Tab::Tab(wxBookCtrlBase* parent, const wxString& title, Preset::Type type) :
     m_parent(parent), m_title(title), m_type(type)
 {
@@ -134,10 +85,6 @@ Tab::Tab(wxBookCtrlBase* parent, const wxString& title, Preset::Type type) :
     }));
 
     m_highlighter.set_timer_owner(this, 0);
-    this->Bind(wxEVT_TIMER, [this](wxTimerEvent&)
-    {
-        m_highlighter.blink();
-    });
 }
 
 void Tab::set_type()
@@ -533,8 +480,8 @@ void Tab::update_label_colours()
                 color = &m_modified_label_clr;
         }
         if (OptionsGroup::is_option_without_field(opt.first)) {
-            if (m_colored_Label_colors.find(opt.first) != m_colored_Label_colors.end())
-                m_colored_Label_colors.at(opt.first) = *color;
+            if (Line* line = get_line(opt.first))
+                line->set_label_colour(color);
             continue;
         }
 
@@ -571,12 +518,12 @@ void Tab::decorate()
     for (const auto& opt : m_options_list)
     {
         Field*      field = nullptr;
-        wxColour*   colored_label_clr = nullptr;
+        bool        option_without_field = false;
 
         if(OptionsGroup::is_option_without_field(opt.first))
-            colored_label_clr = (m_colored_Label_colors.find(opt.first) == m_colored_Label_colors.end()) ? nullptr : &m_colored_Label_colors.at(opt.first);
+            option_without_field = true;
 
-        if (!colored_label_clr) {
+        if (!option_without_field) {
             field = get_field(opt.first);
             if (!field)
                 continue;
@@ -611,8 +558,14 @@ void Tab::decorate()
             tt = &m_tt_white_bullet;
         }
 
-        if (colored_label_clr) {
-            *colored_label_clr = *color;
+        if (option_without_field) {
+            if (Line* line = get_line(opt.first)) {
+                line->set_undo_bitmap(icon);
+                line->set_undo_to_sys_bitmap(sys_icon);
+                line->set_undo_tooltip(tt);
+                line->set_undo_to_sys_tooltip(sys_tt);
+                line->set_label_colour(color);
+            }
             continue;
         }
         
@@ -892,7 +845,7 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
 
     m_postpone_update_ui = false;
 
-    // When all values are rolled, then we hane to update whole tab in respect to the reverted values
+    // When all values are rolled, then we have to update whole tab in respect to the reverted values
     update();
 
     update_changed_ui();
@@ -1043,6 +996,11 @@ void Tab::sys_color_changed()
 Field* Tab::get_field(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
 {
     return m_active_page ? m_active_page->get_field(opt_key, opt_index) : nullptr;
+}
+
+Line* Tab::get_line(const t_config_option_key& opt_key)
+{
+    return m_active_page ? m_active_page->get_line(opt_key) : nullptr;
 }
 
 std::pair<OG_CustomCtrl*, bool*> Tab::get_custom_ctrl_with_blinking_ptr(const t_config_option_key& opt_key, int opt_index/* = -1*/)
@@ -1233,11 +1191,6 @@ void Tab::activate_option(const std::string& opt_key, const wxString& category)
     m_highlighter.init(get_custom_ctrl_with_blinking_ptr(opt_key));
 }
 
-void Tab::apply_searcher()
-{
-    wxGetApp().sidebar().get_searcher().apply(m_config, m_type, m_mode);
-}
-
 void Tab::cache_config_diff(const std::vector<std::string>& selected_options)
 {
     m_cache_config.apply_only(m_presets->get_edited_preset().config, selected_options);
@@ -1289,6 +1242,7 @@ void Tab::on_presets_changed()
     // to avoid needless preset loading from update() function
     m_dependent_tabs.clear();
 
+    // Update Project dirty state, update application title bar.
     wxGetApp().plater()->update_project_dirty_from_presets();
 }
 
@@ -1850,8 +1804,8 @@ bool Tab::validate_custom_gcode(const wxString& title, const std::string& gcode)
     return !invalid;
 }
 
-static void validate_custom_gcode_cb(Tab* tab, ConfigOptionsGroupShp opt_group, const t_config_option_key& opt_key, const boost::any& value) {
-    tab->validate_custom_gcodes_was_shown = !Tab::validate_custom_gcode(opt_group->title, boost::any_cast<std::string>(value));
+static void validate_custom_gcode_cb(Tab* tab, const wxString& title, const t_config_option_key& opt_key, const boost::any& value) {
+    tab->validate_custom_gcodes_was_shown = !Tab::validate_custom_gcode(title, boost::any_cast<std::string>(value));
     tab->update_dirty();
     tab->on_value_change(opt_key, value);
 }
@@ -1872,18 +1826,19 @@ void TabFilament::add_filament_overrides_page()
         else
             line = optgroup->create_single_option_line(optgroup->get_option(opt_key));
 
-        line.near_label_widget = [this, optgroup, opt_key, opt_index](wxWindow* parent) {
+        line.near_label_widget = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup), opt_key, opt_index](wxWindow* parent) {
             wxCheckBox* check_box = new wxCheckBox(parent, wxID_ANY, "");
 
-            check_box->Bind(wxEVT_CHECKBOX, [optgroup, opt_key, opt_index](wxCommandEvent& evt) {
+            check_box->Bind(wxEVT_CHECKBOX, [optgroup_wk, opt_key, opt_index](wxCommandEvent& evt) {
                 const bool is_checked = evt.IsChecked();
-                Field* field = optgroup->get_fieldc(opt_key, opt_index);
-                if (field != nullptr) {
-                    field->toggle(is_checked);
-                    if (is_checked)
-                        field->set_last_meaningful_value();
-                    else
-                        field->set_na_value();
+                if (auto optgroup_sh = optgroup_wk.lock(); optgroup_sh) {
+                    if (Field *field = optgroup_sh->get_fieldc(opt_key, opt_index); field != nullptr) {
+                        field->toggle(is_checked);
+                        if (is_checked)
+                            field->set_last_meaningful_value();
+                        else
+                            field->set_na_value();
+                    }
                 }
             }, check_box->GetId());
 
@@ -1968,7 +1923,7 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_cost");
         optgroup->append_single_option_line("filament_spool_weight");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value)
+        optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
         {
             update_dirty();
             if (opt_key == "filament_spool_weight") {
@@ -2080,8 +2035,8 @@ void TabFilament::build()
 
     page = add_options_page(L("Custom G-code"), "cog");
         optgroup = page->new_optgroup(L("Start G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("start_filament_gcode");
         option.opt.full_width = true;
@@ -2090,8 +2045,8 @@ void TabFilament::build()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("End G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("end_filament_gcode");
         option.opt.full_width = true;
@@ -2302,11 +2257,15 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
         optgroup->append_single_option_line("single_extruder_multi_material");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value) {
+        optgroup->m_on_change = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup)](t_config_option_key opt_key, boost::any value) {
+            auto optgroup_sh = optgroup_wk.lock();
+            if (!optgroup_sh)
+                return;
+
             // optgroup->get_value() return int for def.type == coInt,
             // Thus, there should be boost::any_cast<int> !
             // Otherwise, boost::any_cast<size_t> causes an "unhandled unknown exception"
-            size_t extruders_count = size_t(boost::any_cast<int>(optgroup->get_value("extruders_count")));
+            size_t extruders_count = size_t(boost::any_cast<int>(optgroup_sh->get_value("extruders_count")));
             wxTheApp->CallAfter([this, opt_key, value, extruders_count]() {
                 if (opt_key == "extruders_count" || opt_key == "single_extruder_multi_material") {
                     extruders_count_changed(extruders_count);
@@ -2361,11 +2320,12 @@ void TabPrinter::build_fff()
         option = optgroup->get_option("thumbnails");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
+        optgroup->append_single_option_line("thumbnails_format");
 
         optgroup->append_single_option_line("silent_mode");
         optgroup->append_single_option_line("remaining_times");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value) {
+        optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
                 if (opt_key == "silent_mode") {
                     bool val = boost::any_cast<bool>(value);
@@ -2400,8 +2360,8 @@ void TabPrinter::build_fff()
     const int notes_field_height = 25; // 250
     page = add_options_page(L("Custom G-code"), "cog");
         optgroup = page->new_optgroup(L("Start G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("start_gcode");
         option.opt.full_width = true;
@@ -2410,8 +2370,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("End G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("end_gcode");
         option.opt.full_width = true;
@@ -2420,8 +2380,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Before layer change G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("before_layer_gcode");
         option.opt.full_width = true;
@@ -2430,8 +2390,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("After layer change G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("layer_gcode");
         option.opt.full_width = true;
@@ -2440,8 +2400,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Tool change G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("toolchange_gcode");
         option.opt.full_width = true;
@@ -2450,8 +2410,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Between objects G-code (for sequential printing)"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("between_objects_gcode");
         option.opt.full_width = true;
@@ -2460,8 +2420,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Color Change G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("color_change_gcode");
         option.opt.is_code = true;
@@ -2469,8 +2429,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Pause Print G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("pause_print_gcode");
         option.opt.is_code = true;
@@ -2478,8 +2438,8 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Template Custom G-code"), 0);
-        optgroup->m_on_change = [this, optgroup](const t_config_option_key& opt_key, const boost::any& value) {
-            validate_custom_gcode_cb(this, optgroup, opt_key, value);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
         };
         option = optgroup->get_option("template_custom_gcode");
         option.opt.is_code = true;
@@ -2553,6 +2513,11 @@ void TabPrinter::build_sla()
     optgroup->append_single_option_line("max_exposure_time");
     optgroup->append_single_option_line("min_initial_exposure_time");
     optgroup->append_single_option_line("max_initial_exposure_time");
+
+
+    optgroup = page->new_optgroup(L("Output"));
+    optgroup->append_single_option_line("sla_archive_format");
+    optgroup->append_single_option_line("sla_output_precision");
 
     build_print_host_upload_group(page.get());
 
@@ -2866,9 +2831,6 @@ void TabPrinter::build_unregular_pages(bool from_initial_build/* = false*/)
 
     // Reload preset pages with current configuration values
     reload_config();
-
-    // apply searcher with current configuration
-    apply_searcher();
 }
 
 // this gets executed after preset is loaded and before GUI fields are updated
@@ -3519,6 +3481,28 @@ void Tab::activate_selected_page(std::function<void()> throw_if_canceled)
     toggle_options();
 }
 
+#ifdef WIN32
+// Override the wxCheckForInterrupt to process inperruptions just from key or mouse
+// and to avoid an unwanted early call of CallAfter()
+static bool CheckForInterrupt(wxWindow* wnd)
+{
+    wxCHECK(wnd, false);
+
+    MSG msg;
+    while (::PeekMessage(&msg, ((HWND)((wnd)->GetHWND())), WM_KEYFIRST, WM_KEYLAST, PM_REMOVE))
+    {
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+    }
+    while (::PeekMessage(&msg, ((HWND)((wnd)->GetHWND())), WM_MOUSEFIRST, WM_MOUSELAST, PM_REMOVE))
+    {
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+    }
+    return true;
+}
+#endif //WIN32
+
 bool Tab::tree_sel_change_delayed()
 {
     // There is a bug related to Ubuntu overlay scrollbars, see https://github.com/prusa3d/PrusaSlicer/issues/898 and https://github.com/prusa3d/PrusaSlicer/issues/952.
@@ -3555,7 +3539,7 @@ bool Tab::tree_sel_change_delayed()
     
     auto throw_if_canceled = std::function<void()>([this](){
 #ifdef WIN32
-            wxCheckForInterrupt(m_treectrl);
+            CheckForInterrupt(m_treectrl);
             if (m_page_switch_planned)
                 throw UIBuildCanceled();
 #else // WIN32
@@ -3804,8 +3788,12 @@ void Tab::create_line_with_widget(ConfigOptionsGroup* optgroup, const std::strin
     line.widget = widget;
     line.label_path = path;
 
-    m_colored_Label_colors[opt_key] = m_default_text_clr;
-    line.full_Label_color = &m_colored_Label_colors[opt_key];
+    // set default undo ui
+    line.set_undo_bitmap(&m_bmp_white_bullet);
+    line.set_undo_to_sys_bitmap(&m_bmp_white_bullet);
+    line.set_undo_tooltip(&m_tt_white_bullet);
+    line.set_undo_to_sys_tooltip(&m_tt_white_bullet);
+    line.set_label_colour(&m_default_text_clr);
 
     optgroup->append_line(line);
 }
@@ -4139,7 +4127,10 @@ wxSizer* TabPrint::create_manage_substitution_widget(wxWindow* parent)
     });
 
     create_btn(&m_del_all_substitutions_btn, _L("Delete all"), "cross");
-    m_del_all_substitutions_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) {
+    m_del_all_substitutions_btn->Bind(wxEVT_BUTTON, [this, parent](wxCommandEvent e) {
+        if (MessageDialog(parent, _L("Are you sure you want to delete all substitutions?"), SLIC3R_APP_NAME, wxYES_NO | wxCANCEL | wxICON_QUESTION).
+            ShowModal() != wxID_YES)
+            return;
         m_subst_manager.delete_all();
         m_del_all_substitutions_btn->Hide();
     });
@@ -4429,6 +4420,14 @@ Field* Page::get_field(const t_config_option_key& opt_key, int opt_index /*= -1*
     return field;
 }
 
+Line* Page::get_line(const t_config_option_key& opt_key)
+{
+    for (auto opt : m_optgroups)
+        if (Line* line = opt->get_line(opt_key))
+            return line;
+    return nullptr;
+}
+
 bool Page::set_value(const t_config_option_key& opt_key, const boost::any& value) {
     bool changed = false;
     for(auto optgroup: m_optgroups) {
@@ -4513,7 +4512,7 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("bottle_weight");
     optgroup->append_single_option_line("material_density");
 
-    optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value)
+    optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
     {
         if (opt_key == "material_colour") {
             update_dirty();

@@ -9,11 +9,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(_wx_toolkit "-DwxBUILD_TOOLKIT=gtk${_gtk_ver}")
 endif()
 
+set(_unicode_utf8 OFF)
+if (UNIX AND NOT APPLE) # wxWidgets will not use char as the underlying type for wxString unless its forced to.
+    set (_unicode_utf8 ON)
+endif()
+
 prusaslicer_add_cmake_project(wxWidgets
     # GIT_REPOSITORY "https://github.com/prusa3d/wxWidgets"
     # GIT_TAG tm_cross_compile #${_wx_git_tag}
-    URL https://github.com/prusa3d/wxWidgets/archive/refs/heads/v3.1.4-patched.zip
-    URL_HASH SHA256=69dec874981d2fc3d90345660c27f3450d8430c483e8446edcc87b6ed18bff8f
+    URL https://github.com/prusa3d/wxWidgets/archive/489f6118256853cf5b299d595868641938566cdb.zip
+    URL_HASH SHA256=5b22d465377cedd8044bba69bea958b248953fd3628c1de4913a84d4e6f6175b
     DEPENDS ${PNG_PKG} ${ZLIB_PKG} ${EXPAT_PKG} dep_TIFF dep_JPEG
     CMAKE_ARGS
         -DwxBUILD_PRECOMP=ON
@@ -23,6 +28,7 @@ prusaslicer_add_cmake_project(wxWidgets
         -DwxUSE_MEDIACTRL=OFF
         -DwxUSE_DETECT_SM=OFF
         -DwxUSE_UNICODE=ON
+        -DwxUSE_UNICODE_UTF8=${_unicode_utf8}
         -DwxUSE_OPENGL=ON
         -DwxUSE_LIBPNG=sys
         -DwxUSE_ZLIB=sys

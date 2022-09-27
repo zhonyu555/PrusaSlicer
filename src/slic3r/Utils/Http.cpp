@@ -181,7 +181,7 @@ Http::priv::~priv()
 
 bool Http::priv::ca_file_supported(::CURL *curl)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 	bool res = false;
 #else
 	bool res = true;
@@ -194,6 +194,7 @@ bool Http::priv::ca_file_supported(::CURL *curl)
 	if (::curl_easy_getinfo(curl, CURLINFO_TLS_SSL_PTR, &tls) == CURLE_OK) {
 		if (tls->backend == CURLSSLBACKEND_SCHANNEL || tls->backend == CURLSSLBACKEND_DARWINSSL) {
 			// With Windows and OS X native SSL support, cert files cannot be set
+            // DK: OSX is now not building CURL and links system one, thus we do not know which backend is installed. Still, false will be returned since the ifdef at the begining if this function.
 			res = false;
 		}
 	}
@@ -207,7 +208,6 @@ size_t Http::priv::writecb(void *data, size_t size, size_t nmemb, void *userp)
 	auto self = static_cast<priv*>(userp);
 	const char *cdata = static_cast<char*>(data);
 	const size_t realsize = size * nmemb;
-
 	const size_t limit = self->limit > 0 ? self->limit : DEFAULT_SIZE_LIMIT;
 	if (self->buffer.size() + realsize > limit) {
 		// This makes curl_easy_perform return CURLE_WRITE_ERROR

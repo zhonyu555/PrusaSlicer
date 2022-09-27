@@ -14,12 +14,14 @@
 #include "libslic3r/Config.hpp"
 #include "libslic3r/PrintConfig.hpp"
 
+#include <map>
+
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/nowide/fstream.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-#include <map>
+
 #include <cereal/archives/binary.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
@@ -65,7 +67,7 @@ inline void push_style_color(ImGuiCol idx, const ImVec4& col, bool fading_out, f
 
 void write_used_binary(const std::vector<std::string>& ids)
 {
-	boost::filesystem::ofstream file((boost::filesystem::path(data_dir()) / "cache" / "hints.cereal"), std::ios::binary);
+	boost::nowide::ofstream file((boost::filesystem::path(data_dir()) / "cache" / "hints.cereal").string(), std::ios::binary);
 	cereal::BinaryOutputArchive archive(file);
 		HintsCerealData cd { ids };
 	try
@@ -84,7 +86,7 @@ void read_used_binary(std::vector<std::string>& ids)
 		BOOST_LOG_TRIVIAL(warning) << "Failed to load to hints.cereal. File does not exists. " << path.string();
 		return;
 	}
-	boost::filesystem::ifstream file(path);
+	boost::nowide::ifstream file(path.string());
 	cereal::BinaryInputArchive archive(file);
 	HintsCerealData cd;
 	try
@@ -421,9 +423,9 @@ void HintDatabase::load_hints_from_file(const boost::filesystem::path& path)
 					m_loaded_hints.emplace_back(hint_data);
 				// open preferences
 				} else if(dict["hypertext_type"] == "preferences") {
-					int			page = static_cast<Preset::Type>(std::atoi(dict["hypertext_preferences_page"].c_str()));
+					std::string	page = dict["hypertext_preferences_page"];
 					std::string	item = dict["hypertext_preferences_item"];
-					HintData	hint_data{ id_string, text1, weight, was_displayed, hypertext_text, follow_text, disabled_tags, enabled_tags, false, documentation_link, [page, item]() { wxGetApp().open_preferences(page, item); } };
+					HintData	hint_data{ id_string, text1, weight, was_displayed, hypertext_text, follow_text, disabled_tags, enabled_tags, false, documentation_link, [page, item]() { wxGetApp().open_preferences(item, page); } };
 					m_loaded_hints.emplace_back(hint_data);
 				} else if (dict["hypertext_type"] == "plater") {
 					std::string	item = dict["hypertext_plater_item"];
@@ -928,7 +930,7 @@ void NotificationManager::HintNotification::render_preferences_button(ImGuiWrapp
 	}
 	if (imgui.button(button_text.c_str(), button_size.x, button_size.y))
 	{
-		wxGetApp().open_preferences(2, "show_hints");
+		wxGetApp().open_preferences("show_hints", "GUI");
 	}
 
 	ImGui::PopStyleColor(5);

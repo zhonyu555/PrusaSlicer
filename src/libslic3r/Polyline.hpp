@@ -16,7 +16,8 @@ typedef std::vector<ThickPolyline> ThickPolylines;
 
 class Polyline : public MultiPoint {
 public:
-    Polyline() {};
+    Polyline() = default;
+    ~Polyline() override = default;
     Polyline(const Polyline &other) : MultiPoint(other.points) {}
     Polyline(Polyline &&other) : MultiPoint(std::move(other.points)) {}
     Polyline(std::initializer_list<Point> list) : MultiPoint(list) {}
@@ -79,15 +80,6 @@ public:
 inline bool operator==(const Polyline &lhs, const Polyline &rhs) { return lhs.points == rhs.points; }
 inline bool operator!=(const Polyline &lhs, const Polyline &rhs) { return lhs.points != rhs.points; }
 
-// Don't use this class in production code, it is used exclusively by the Perl binding for unit tests!
-#ifdef PERL_UCHAR_MIN
-class PolylineCollection
-{
-public:
-    Polylines polylines;
-};
-#endif /* PERL_UCHAR_MIN */
-
 extern BoundingBox get_extents(const Polyline &polyline);
 extern BoundingBox get_extents(const Polylines &polylines);
 
@@ -138,7 +130,7 @@ inline Polylines to_polylines(std::vector<Points> &&paths)
 {
     Polylines out;
     out.reserve(paths.size());
-    for (const Points &path : paths)
+    for (Points &path : paths)
         out.emplace_back(std::move(path));
     return out;
 }

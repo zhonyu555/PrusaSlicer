@@ -116,6 +116,8 @@ public:
         // This type is here to support PresetConfigSubstitutions for physical printers, however it does not belong to the Preset class,
         // PhysicalPrinter class is used instead.
         TYPE_PHYSICAL_PRINTER,
+        // This type is here to support search through the Preferences
+        TYPE_PREFERENCES,
     };
 
     Type                type        = TYPE_INVALID;
@@ -395,6 +397,7 @@ public:
     void            discard_current_changes() {
         m_presets[m_idx_selected].reset_dirty();
         m_edited_preset = m_presets[m_idx_selected];
+        // Don't save the resetted preset state as a "saved into project" state.
 //        update_saved_preset_from_current_preset();
     }
 
@@ -672,7 +675,7 @@ public:
     bool                operator<(const PhysicalPrinter& other) const { return this->name < other.name; }
 
     // get full printer name included a name of the preset
-    std::string         get_full_name(std::string preset_name) const;
+    std::string         get_full_name(const std::string &preset_name) const;
 
     // get printer name from the full name uncluded preset name
     static std::string  get_short_name(std::string full_name);

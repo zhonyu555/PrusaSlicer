@@ -306,7 +306,7 @@ ConfigOptionDef* ConfigDef::add_nullable(const t_config_option_key &opt_key, Con
 std::ostream& ConfigDef::print_cli_help(std::ostream& out, bool show_defaults, std::function<bool(const ConfigOptionDef &)> filter) const
 {
     // prepare a function for wrapping text
-    auto wrap = [](std::string text, size_t line_length) -> std::string {
+    auto wrap = [](const std::string& text, size_t line_length) -> std::string {
         std::istringstream words(text);
         std::ostringstream wrapped;
         std::string word;
@@ -335,7 +335,7 @@ std::ostream& ConfigDef::print_cli_help(std::ostream& out, bool show_defaults, s
             categories.insert(def.category);
     }
     
-    for (auto category : categories) {
+    for (const std::string& category : categories) {
         if (category != "") {
             out << category << ":" << std::endl;
         } else if (categories.size() > 1) {
@@ -398,6 +398,42 @@ std::ostream& ConfigDef::print_cli_help(std::ostream& out, bool show_defaults, s
                 out << lines[i] << std::endl;
             }
         }
+    }
+    return out;
+}
+
+std::string ConfigBase::SetDeserializeItem::format(std::initializer_list<int> values)
+{
+    std::string out;
+    int i = 0;
+    for (int v : values) {
+        if (i ++ > 0)
+            out += ", ";
+        out += std::to_string(v);
+    }
+    return out;
+}
+
+std::string ConfigBase::SetDeserializeItem::format(std::initializer_list<float> values)
+{
+    std::string out;
+    int i = 0;
+    for (float v : values) {
+        if (i ++ > 0)
+            out += ", ";
+        out += float_to_string_decimal_point(double(v));
+    }
+    return out;
+}
+
+std::string ConfigBase::SetDeserializeItem::format(std::initializer_list<double> values)
+{
+    std::string out;
+    int i = 0;
+    for (float v : values) {
+        if (i ++ > 0)
+            out += ", ";
+        out += float_to_string_decimal_point(v);
     }
     return out;
 }
@@ -824,6 +860,7 @@ public:
                 m_ifs.seekg(m_file_pos, m_ifs.beg);
                 if (! m_ifs.read(m_block.data(), m_block_len))
                     return false;
+                assert(m_block_len == m_ifs.gcount());
             }
 
             assert(m_block_len > 0);
@@ -866,7 +903,7 @@ private:
 ConfigSubstitutions ConfigBase::load_from_gcode_file(const std::string &file, ForwardCompatibilitySubstitutionRule compatibility_rule)
 {
     // Read a 64k block from the end of the G-code.
-	boost::nowide::ifstream ifs(file);
+	boost::nowide::ifstream ifs(file, std::ifstream::binary);
     // Look for Slic3r or PrusaSlicer header.
     // Look for the header across the whole file as the G-code may have been extended at the start by a post-processing script or the user.
     bool has_delimiters = false;

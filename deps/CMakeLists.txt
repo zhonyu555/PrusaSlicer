@@ -179,7 +179,12 @@ include(CGAL/CGAL.cmake)
 include(NLopt/NLopt.cmake)
 
 include(OpenSSL/OpenSSL.cmake)
-include(CURL/CURL.cmake)
+
+set(CURL_PKG "")
+if (NOT CURL_FOUND) 
+    include(CURL/CURL.cmake)
+    set(CURL_PKG dep_CURL)
+endif ()
 
 include(JPEG/JPEG.cmake)
 include(TIFF/TIFF.cmake)
@@ -188,26 +193,23 @@ include(wxWidgets/wxWidgets.cmake)
 set(_dep_list
     dep_Boost
     dep_TBB
-    dep_CURL
+    ${CURL_PKG}
     dep_wxWidgets
     dep_Cereal
     dep_NLopt
     dep_OpenVDB
     dep_OpenCSG
     dep_CGAL
+    dep_Qhull
     ${PNG_PKG}
     ${ZLIB_PKG}
     ${EXPAT_PKG}
     )
 
-if (MSVC)
-    # Experimental
-    #list(APPEND _dep_list "dep_qhull")
-else()
-    list(APPEND _dep_list "dep_Qhull")
+# if (NOT MSVC)
     # Not working, static build has different Eigen
     #list(APPEND _dep_list "dep_libigl")
-endif()
+# endif()
 
 add_custom_target(deps ALL DEPENDS ${_dep_list})
 

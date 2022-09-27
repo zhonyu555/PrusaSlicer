@@ -65,6 +65,11 @@ const std::string& OpenGLManager::GLInfo::get_renderer() const
     return m_renderer;
 }
 
+bool OpenGLManager::GLInfo::is_mesa() const
+{
+    return boost::icontains(m_version, "mesa");
+}
+
 int OpenGLManager::GLInfo::get_max_tex_size() const
 {
     if (!m_detected)
@@ -233,8 +238,9 @@ OpenGLManager::~OpenGLManager()
 bool OpenGLManager::init_gl()
 {
     if (!m_gl_initialized) {
-        if (glewInit() != GLEW_OK) {
-            BOOST_LOG_TRIVIAL(error) << "Unable to init glew library";
+        GLenum err = glewInit();
+        if (err != GLEW_OK) {
+            BOOST_LOG_TRIVIAL(error) << "Unable to init glew library: " << glewGetErrorString(err);
             return false;
         }
         m_gl_initialized = true;

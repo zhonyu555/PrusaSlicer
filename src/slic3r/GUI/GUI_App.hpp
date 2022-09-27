@@ -32,6 +32,7 @@ class PresetUpdater;
 class ModelObject;
 class PrintHostJobQueue;
 class Model;
+class AppUpdater;
 
 namespace GUI{
 
@@ -53,6 +54,7 @@ enum FileType
 {
     FT_STL,
     FT_OBJ,
+    FT_OBJECT,
     FT_AMF,
     FT_3MF,
     FT_GCODE,
@@ -70,13 +72,18 @@ enum FileType
     FT_SIZE,
 };
 
+#if ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
+extern wxString file_wildcards(FileType file_type);
+#else
 extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = std::string{});
+#endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
 
 enum ConfigMenuIDs {
     ConfigMenuWizard,
     ConfigMenuSnapshots,
     ConfigMenuTakeSnapshot,
-    ConfigMenuUpdate,
+    ConfigMenuUpdateConf,
+    ConfigMenuUpdateApp,
     ConfigMenuDesktopIntegration,
     ConfigMenuPreferences,
     ConfigMenuModeSimple,
@@ -109,6 +116,7 @@ public:
 
 private:
     bool            m_initialized { false };
+    bool            m_post_initialized { false };
     bool            m_app_conf_exists{ false };
     EAppMode        m_app_mode{ EAppMode::Editor };
     bool            m_is_recreating_gui{ false };
@@ -151,6 +159,7 @@ private:
     std::unique_ptr<ImGuiWrapper> m_imgui;
     std::unique_ptr<PrintHostJobQueue> m_printhost_job_queue;
 	std::unique_ptr <OtherInstanceMessageHandler> m_other_instance_message_handler;
+    std::unique_ptr <AppUpdater> m_app_updater;
     std::unique_ptr <wxSingleInstanceChecker> m_single_instance_checker;
     std::string m_instance_hash_string;
 	size_t m_instance_hash_int;
@@ -251,7 +260,7 @@ public:
     bool            has_unsaved_preset_changes() const;
     bool            has_current_preset_changes() const;
     void            update_saved_preset_from_current_preset();
-    std::vector<std::pair<unsigned int, std::string>> get_selected_presets() const;
+    std::vector<const PresetCollection*> get_active_preset_collections() const;
     bool            check_and_save_current_preset_changes(const wxString& caption, const wxString& header, bool remember_choice = true, bool use_dont_save_insted_of_discard = false);
     void            apply_keeped_preset_modifications();
     bool            check_and_keep_current_preset_changes(const wxString& caption, const wxString& header, int action_buttons, bool* postponed_apply_of_keeped_changes = nullptr);
@@ -265,7 +274,7 @@ public:
     wxString 		current_language_code_safe() const;
     bool            is_localized() const { return m_wxLocale->GetLocale() != "English"; }
 
-    void            open_preferences(size_t open_on_tab = 0, const std::string& highlight_option = std::string());
+    void            open_preferences(const std::string& highlight_option = std::string(), const std::string& tab_name = std::string());
 
     virtual bool OnExceptionInMainLoop() override;
     // Calls wxLaunchDefaultBrowser if user confirms in dialog.
@@ -355,6 +364,11 @@ private:
     // Returns true if the configuration is fine. 
     // Returns true if the configuration is not compatible and the user decided to rather close the slicer instead of reconfiguring.
 	bool            check_updates(const bool verbose);
+    void            on_version_read(wxCommandEvent& evt);
+    // if the data from version file are already downloaded, shows dialogs to start download of new version of app
+    void            app_updater(bool from_user);
+    // inititate read of version file online in separate thread
+    void            app_version_check(bool from_user);
 
     bool            m_datadir_redefined { false }; 
 };
