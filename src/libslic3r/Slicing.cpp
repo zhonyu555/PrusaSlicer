@@ -109,6 +109,7 @@ SlicingParameters SlicingParameters::create_from_config(
     }
     params.min_layer_height = std::min(params.min_layer_height, params.layer_height);
     params.max_layer_height = std::max(params.max_layer_height, params.layer_height);
+    params.step_layer_height = print_config.step_layer_height;
 
     if (! soluble_interface) {
         params.gap_raft_object    = object_config.raft_contact_distance.value;
@@ -187,6 +188,7 @@ std::vector<coordf_t> layer_height_profile_from_ranges(
         coordf_t lo = it_range->first.first;
         coordf_t hi = it_range->first.second;
         coordf_t height = it_range->second;
+        height = round_to_factor(height, slicing_params.step_layer_height);
         coordf_t last_z      = layer_height_profile.empty() ? 0. : layer_height_profile[layer_height_profile.size() - 2];
         if (lo > last_z + EPSILON) {
             // Insert a step of normal layer height.
@@ -240,6 +242,7 @@ std::vector<double> layer_height_profile_adaptive(const SlicingParameters& slici
         // Slic3r::debugf "\n Slice layer: %d\n", $id;
         // determine next layer height
         float cusp_height = as.next_layer_height(float(print_z), quality_factor, current_facet);
+        cusp_height = round_to_factor(cusp_height, slicing_params.step_layer_height);
 
 #if 0
         // check for horizontal features and object size
@@ -379,6 +382,7 @@ std::vector<double> smooth_height_profile(const std::vector<double>& profile, co
             height = std::clamp(weight_total == 0 ? hi : height / weight_total, slicing_params.min_layer_height, slicing_params.max_layer_height);
             if (smoothing_params.keep_min)
                 height = std::min(height, hi);
+            height = round_to_factor(height, slicing_params.step_layer_height);
         }
 
         return ret;
@@ -614,6 +618,7 @@ std::vector<coordf_t> generate_object_layers(
                 coordf_t z2 = layer_height_profile[next];
                 coordf_t h2 = layer_height_profile[next + 1];
                 height = lerp(h1, h2, (slice_z - z1) / (z2 - z1));
+                height = round_to_factor(height, slicing_params.step_layer_height);
                 assert(height >= slicing_params.min_layer_height - EPSILON && height <= slicing_params.max_layer_height + EPSILON);
             }
         }

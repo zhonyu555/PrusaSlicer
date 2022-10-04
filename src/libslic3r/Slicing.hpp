@@ -63,6 +63,7 @@ struct SlicingParameters
     // or by an interactive layer height editor.
     coordf_t    min_layer_height { 0 };
     coordf_t    max_layer_height { 0 };
+    coordf_t    step_layer_height {0};
     coordf_t    max_suport_layer_height { 0 };
 
     // First layer height of the print, this may be used for the first layer of the raft

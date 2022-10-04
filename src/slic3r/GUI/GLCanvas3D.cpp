@@ -343,6 +343,7 @@ std::string GLCanvas3D::LayersEditing::get_tooltip(const GLCanvas3D& canvas) con
                     float dz = zi - zi_1;
                     h = (dz != 0.0f) ? static_cast<float>(lerp(m_layer_height_profile[i - 1], m_layer_height_profile[i + 1], (z - zi_1) / dz)) :
                         static_cast<float>(m_layer_height_profile[i + 1]);
+                    h = round_to_factor(h, m_slicing_parameters->step_layer_height);
                     break;
                 }
             }
