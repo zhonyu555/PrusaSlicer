@@ -2355,6 +2355,7 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line("use_firmware_retraction");
         optgroup->append_single_option_line("use_volumetric_e");
         optgroup->append_single_option_line("variable_layer_height");
+        optgroup->append_single_option_line("step_layer_height");
 
     const int gcode_field_height = 15; // 150
     const int notes_field_height = 25; // 250

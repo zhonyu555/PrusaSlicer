@@ -787,8 +787,8 @@ wxString Control::get_label(int tick, LabelType label_type/* = ltHeightWithLayer
             return value < m_layers_times.size() ? short_and_splitted_time(get_time_dhms(m_layers_times[value])) : "";
         }
         wxString str = m_values.empty() ?
-            wxString::Format("%.*f", 2, m_label_koef * value) :
-            wxString::Format("%.*f", 2, m_values[value]);
+            wxString::Format("%.*f", 3, m_label_koef * value) :
+            wxString::Format("%.*f", 3, m_values[value]);
         if (label_type == ltHeight)
             return str;
         if (label_type == ltHeightWithLayer) {

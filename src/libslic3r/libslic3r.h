@@ -258,6 +258,12 @@ constexpr inline bool is_approx(Number value, Number test_value)
     return std::fabs(double(value) - double(test_value)) < double(EPSILON);
 }
 
+template<typename T, typename Number>
+constexpr inline T round_to_factor(T value, Number factor)
+{
+    return value < factor ? factor : std::round(value / factor) * factor;
+}
+
 // A meta-predicate which is true for integers wider than or equal to coord_t
 template<class I> struct is_scaled_coord
 {

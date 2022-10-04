@@ -2945,6 +2945,15 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(true));
 
+    def = this->add("step_layer_height", coFloat);
+    def->label = L("Printer height increment");
+    def->tooltip = L("This is resolution of Z axis, a.k.a \"magic number\". Printer always change height with increments, despite commands precision. Typical values are between 0.01 mm and 0.04 mm. "
+                   "Also it's worth to set all other height parameters (layer, initial layer, support gaps) as multipliers of this value.");
+    def->sidetext = L("mm");
+    def->min = 0.001;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat{ 0.01 });
+
     def = this->add("wipe", coBools);
     def->label = L("Wipe while retracting");
     def->tooltip = L("This flag will move the nozzle while retracting to minimize the possible blob "
