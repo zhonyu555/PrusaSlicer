@@ -151,6 +151,8 @@ protected:
     double    m_norm;           // A coefficient to scale distances
     MultiPolygon m_merged_pile; // The already merged pile (vector of items)
     Box          m_pilebb;      // The bounding box of the merged pile.
+    MultiPolygon m_merged_bed_fit_pile; // The already merged pile (vector of items), "first layer"
+    Box          m_bed_fit_pilebb;      // The bounding box of the merged pile, "first layer"
     ItemGroup m_remaining;      // Remaining items
     ItemGroup m_items;          // allready packed items
     size_t    m_item_count = 0; // Number of all items to be packed
@@ -299,8 +301,11 @@ protected:
             break;
         }            
         }
-        
-        return std::make_tuple(score, fullbb);
+
+        // Calculate the full bounding box of the pile with the candidate item
+        auto bed_fit_bb = sl::boundingBox(m_bed_fit_pilebb, item.binFitShapeBoundingBox());
+
+        return std::make_tuple(score, bed_fit_bb);
     }
     
     std::function<double(const Item&)> get_objfn();
@@ -319,16 +324,19 @@ public:
 
         // Set up a callback that is called just before arranging starts
         // This functionality is provided by the Nester class (m_pack).
-        m_pconf.before_packing =
-        [this](const MultiPolygon& merged_pile,            // merged pile
+        m_pconf.before_packing_ex =
+        [this](const MultiPolygon& merged_pile,            // merged pile of poly-to-poly shapes
+               const MultiPolygon& merged_bin_fit_pile,    // merged pile of bin fit shapes
                const ItemGroup& items,             // packed items
                const ItemGroup& remaining)         // future items to be packed
         {
             m_items = items;
             m_merged_pile = merged_pile;
+            m_merged_bed_fit_pile = merged_bin_fit_pile;
             m_remaining = remaining;
 
             m_pilebb = sl::boundingBox(merged_pile);
+            m_bed_fit_pilebb = sl::boundingBox(merged_bin_fit_pile);
 
             m_rtree.clear();
             m_smallsrtree.clear();
@@ -435,8 +443,8 @@ template<> std::function<double(const Item&)> AutoArranger<Circle>::get_objfn()
         };
         
         if(isBig(item)) {
-            auto mp = m_merged_pile;
-            mp.push_back(item.transformedShape());
+            auto mp = m_merged_bed_fit_pile;
+            mp.push_back(item.transformedBinFitShape());
             auto chull = sl::convexHull(mp);
             double miss = Placer::overfit(chull, m_bin);
             if(miss < 0) miss = 0;
@@ -462,7 +470,7 @@ template<class Bin> void remove_large_items(std::vector<Item> &items, Bin &&bin)
 {
     auto it = items.begin();
     while (it != items.end())
-        sl::isInside(it->transformedShape(), bin) ?
+        sl::isInside(it->transformedBinFitShape(), bin) ?
             ++it : it = items.erase(it);
 }
 
@@ -491,18 +499,16 @@ void _arrange(
     coord_t md = params.min_obj_distance;
     md = md / 2;
     
-    auto corrected_bin = bin;
-    sl::offset(corrected_bin, md);
     ArrangeParams mod_params = params;
     mod_params.min_obj_distance = 0;
 
-    AutoArranger<BinT> arranger{corrected_bin, mod_params, progressfn, stopfn};
+    AutoArranger<BinT> arranger{bin, mod_params, progressfn, stopfn};
     
     auto infl = coord_t(std::ceil(params.min_obj_distance / 2.0));
     for (Item& itm : shapes) itm.inflate(infl);
     for (Item& itm : excludes) itm.inflate(infl);
     
-    remove_large_items(excludes, corrected_bin);
+    remove_large_items(excludes, bin);
 
     // If there is something on the plate
     if (!excludes.empty()) arranger.preload(excludes);
@@ -517,13 +523,13 @@ void _arrange(
     // polygon nesting, a convex hull needs to be calculated.
     if (params.allow_rotations) {
         for (auto &itm : shapes) {
-            itm.rotation(min_area_boundingbox_rotation(itm.rawShape()));
+            itm.rotation(min_area_boundingbox_rotation(itm.untransformedBinFitShape()));
 
             // If the item is too big, try to find a rotation that makes it fit
             if constexpr (std::is_same_v<BinT, Box>) {
-                auto bb = itm.boundingBox();
+                auto bb = itm.binFitShapeBoundingBox();
                 if (bb.width() >= bin.width() || bb.height() >= bin.height())
-                    itm.rotate(fit_into_box_rotation(itm.transformedShape(), bin));
+                    itm.rotate(fit_into_box_rotation(itm.transformedBinFitShape(), bin));
             }
         }
     }
@@ -581,12 +587,15 @@ static void process_arrangeable(const ArrangePolygon &arrpoly,
     const Vec2crd &offs     = arrpoly.translation;
     double         rotation = arrpoly.rotation;
 
+    Polygon first_layer_poly = arrpoly.first_layer_poly.contour;
+
     // This fixes:
     // https://github.com/prusa3d/PrusaSlicer/issues/2209
     if (p.points.size() < 3)
         return;
 
     outp.emplace_back(std::move(p));
+    outp.back().binFitShape(std::move(first_layer_poly));
     outp.back().rotation(rotation);
     outp.back().translation({offs.x(), offs.y()});
     outp.back().binId(arrpoly.bed_idx);

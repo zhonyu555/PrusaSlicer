@@ -1,8 +1,10 @@
 #include "ArrangeJob.hpp"
 
+#include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/BuildVolume.hpp"
 #include "libslic3r/MTUtils.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/Print.hpp"
 
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
@@ -154,6 +156,61 @@ arrangement::ArrangePolygon ArrangeJob::get_arrange_poly_(ModelInstance *mi)
             m_unarranged.emplace_back(mi);
     };
 
+    const bool is_fff = m_plater->printer_technology() == ptFFF;
+    if (is_fff) {
+        const Print &print = m_plater->fff_print();
+        const PrintConfig &print_config = print.config();
+        const DynamicPrintConfig & object_config = mi->get_object()->config.get();
+        const DynamicPrintConfig * plater_config = m_plater->config();
+        DynamicPrintConfig config = *plater_config;
+        config.apply_only(object_config, {"brim_type", "brim_separation", "brim_width"});
+        assert(config.has("brim_type"));
+        assert(config.has("brim_separation"));
+        assert(config.has("brim_width"));
+        const BrimType     brim_type         = config.opt_enum<BrimType>("brim_type");
+        const float        brim_separation   = config.opt_float("brim_separation");
+        const float        brim_width        = config.opt_float("brim_width");
+        const bool         draft_shield      = print_config.draft_shield != dsDisabled;
+        const bool         has_outer_brim    = brim_type == BrimType::btOuterOnly || brim_type == BrimType::btOuterAndInner;
+
+        // How wide is the brim? (in scaled units)
+        const coord_t brim_margin = scaled(brim_width + brim_separation);
+
+        // How wide is the skirt? (in scaled units)
+        coord_t skirt_margin = 0;
+
+        if (print.has_skirt())
+        {
+            float skirt_margin_mm = 0.f;
+            const Flow skirt_flow = print.skirt_flow();
+            const float spacing = skirt_flow.spacing();
+            size_t n_skirts = print_config.skirts.value;
+            skirt_margin_mm += print_config.skirt_distance.value;
+            skirt_margin_mm += (n_skirts + 0.5f) * spacing;
+            skirt_margin = scaled(skirt_margin_mm);
+        }
+
+        coord_t expansion = 0;
+        if (has_outer_brim)
+        {
+            if (draft_shield)
+                expansion = std::max(brim_margin, skirt_margin);
+            else
+                expansion = brim_margin + skirt_margin;
+        }
+        else
+            expansion = skirt_margin;
+
+        ap.first_layer_poly = ap.poly;
+
+        // This is an overestimation of the distance needed between
+        // object and bed edge. To get tighter results, one would need
+        // to look at the first layers of the object.
+        ExPolygons result = offset_ex(ap.first_layer_poly, expansion, Slic3r::ClipperLib::jtSquare);
+        if (!result.empty())
+            ap.first_layer_poly = ExPolygon(result.front());
+
+    }
     return ap;
 }
 

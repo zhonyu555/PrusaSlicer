@@ -42,12 +42,21 @@ static const constexpr int UNARRANGED = -1;
 /// polygon belongs: UNARRANGED means no place for the polygon
 /// (also the initial state before arrange), 0..N means the index of the bed.
 /// Zero is the physical bed, larger than zero means a virtual bed.
-struct ArrangePolygon { 
-    ExPolygon poly;                 /// The 2D silhouette to be arranged
+struct ArrangePolygon {
+    /// The 2D silhouette that will be packed against other
+    /// ArrangePolygon.poly's.  Must be a convex hull.
+    ExPolygon poly;
+
+    /// The 2D silhouette that will be packed against the bed
+    /// edges. Must be a convex hull.
+    ExPolygon first_layer_poly;
     Vec2crd   translation{0, 0};    /// The translation of the poly
     double    rotation{0.0};        /// The rotation of the poly in radians
-    coord_t   inflation = 0;        /// Arrange with inflated polygon
     int       bed_idx{UNARRANGED};  /// To which logical bed does poly belong...
+
+    /// How early should we try to place this ArrangePolygon?  Higher
+    /// number is earlier. Used to make sure the wipe tower is placed
+    /// on the first bed.
     int       priority{0};
     
     // If empty, any rotation is allowed (currently unsupported)
