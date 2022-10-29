@@ -552,7 +552,7 @@ if(SLIC3R_STATIC)
     set(USE_BLOSC TRUE)
 endif ()
 
-find_package(OpenVDB 7.1 COMPONENTS openvdb)
+find_package(OpenVDB 8.2 COMPONENTS openvdb)
 if(OpenVDB_FOUND)
     slic3r_remap_configs(IlmBase::Half RelWithDebInfo Release)
     slic3r_remap_configs(Blosc::blosc RelWithDebInfo Release)
