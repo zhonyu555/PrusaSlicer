@@ -32,8 +32,13 @@ class _Item {
 
     using VertexConstIterator = typename TContour<RawShape>::const_iterator;
 
-    // The original shape that gets encapsulated.
+    // An original shape that gets encapsulated.
+    // To be fitted against other _Item's sh_
     RawShape sh_;
+
+    // An original shape that gets encapsulated.
+    // To be fitted against the bin edges
+    RawShape bin_fit_shape_;
 
     // Transformation data
     Vertex translation_{0, 0};
@@ -48,6 +53,8 @@ class _Item {
     // For caching the calculations as they can get pretty expensive.
     mutable RawShape tr_cache_;
     mutable bool tr_cache_valid_ = false;
+    mutable RawShape bfs_cache_;
+    mutable bool bfs_cache_valid_ = false;
     mutable double area_cache_ = 0;
     mutable bool area_cache_valid_ = false;
     mutable RawShape inflate_cache_;
@@ -67,7 +74,8 @@ class _Item {
         Box bb; bool valid;
         BBCache(): valid(false) {}
     } bb_cache_;
-    
+    mutable struct BBCache bfs_bb_cache_;
+
     int binid_{BIN_ID_UNSET}, priority_{0};
     bool fixed_{false};
 
@@ -288,14 +296,41 @@ public:
     {
         rotation(rotation() + rads);
     }
-    
+
     inline void inflation(Coord distance) BP2D_NOEXCEPT
     {
         inflation_ = distance;
         has_inflation_ = true;
         invalidateCache();
     }
-    
+
+    /**
+     * @brief Setup the shape that is packed against the bed edges.
+     *
+     * If this shape is set, the item will be packed against the bed
+     * borders with this shape.  Packing with other items is still
+     * done with the shape set in the constructor.
+     *
+     * The shape contour will be copied into the _Item object.
+     *
+     * Note: This shape, if set, is not inflated with the ::inflation
+     * property.
+     *
+     * @param contour Item-to-bin shape
+     */
+    inline void binFitShape(const TContour<RawShape>& contour) BP2D_NOEXCEPT
+    {
+        const THolesContainer<RawShape> holes = {};
+        bin_fit_shape_ = sl::create<RawShape>(contour, holes);
+        invalidateCache();
+    }
+
+    inline void binFitShape(RawShape&& shape) BP2D_NOEXCEPT
+    {
+        bin_fit_shape_ = std::move(shape);
+        invalidateCache();
+    }
+
     inline Coord inflation() const BP2D_NOEXCEPT {
         return inflation_;
     }
@@ -321,6 +356,8 @@ public:
             rotation_ = rot; has_rotation_ = true; tr_cache_valid_ = false;
             rmt_valid_ = false; lmb_valid_ = false;
             bb_cache_.valid = false;
+            bfs_bb_cache_.valid = false;
+            bfs_cache_valid_ = false;
         }
     }
 
@@ -328,10 +365,15 @@ public:
     {
         if(translation_ != tr) {
             translation_ = tr; has_translation_ = true; tr_cache_valid_ = false;
-            //bb_cache_.valid = false;
+            bfs_cache_valid_ = false;
         }
     }
 
+    /**
+     * @brief The inflated, rotated and translated item shape.
+     *
+     * Used to pack items against other items.
+     */
     inline const RawShape& transformedShape() const
     {
         if(tr_cache_valid_) return tr_cache_;
@@ -345,6 +387,34 @@ public:
         return tr_cache_;
     }
 
+    /**
+     * @brief Returns a rotated and translated shape for fitting
+     * against the bin borders.
+     *
+     * This shape is used to check if the item fits inside the borders
+     * of the bin.
+     *
+     * If a \link binFitShape bin fit shape is set\endlink, this
+     * returns that shape rotated and translated.
+     *
+     * If a bin fit shape is not set, this returns the inflated
+     * item shape, rotated and translated. It's the same result as
+     * transformedShape(), for backwards compability.
+     */
+    inline const RawShape& transformedBinFitShape() const
+    {
+        if(!bin_fit_shape_.is_valid())
+            return transformedShape();
+        if(bfs_cache_valid_) return bfs_cache_;
+
+        RawShape cpy = bin_fit_shape_;
+        if(has_rotation_) sl::rotate(cpy, rotation_);
+        if(has_translation_) sl::translate(cpy, translation_);
+        bfs_cache_ = cpy; bfs_cache_valid_ = true;
+
+        return bfs_cache_;
+    }
+
     inline operator RawShape() const
     {
         return transformedShape();
@@ -353,6 +423,24 @@ public:
     inline const RawShape& rawShape() const BP2D_NOEXCEPT
     {
         return sh_;
+    }
+
+    /**
+     * @brief Returns the bin fit shape.
+     *
+     * This shape is used for the bin boundary checking.
+     *
+     * If a \link binFitShape bin fit shape was setup\endlink, this
+     * returns that shape. No rotation or translation applied.
+     *
+     * If a bin fit shape was not set up, this returns the inflated
+     * item shape. It's not rotated or translated.
+     */
+    inline const RawShape& untransformedBinFitShape() const BP2D_NOEXCEPT
+    {
+        if(bin_fit_shape_.is_valid())
+            return bin_fit_shape_;
+        return infaltedShape();
     }
 
     inline void resetTransformation() BP2D_NOEXCEPT
@@ -376,6 +464,40 @@ public:
 
         auto &bb = bb_cache_.bb; auto &tr = translation_;
         return {bb.minCorner() + tr, bb.maxCorner() + tr };
+    }
+
+    /**
+     * @brief Returns the bounding box for fitting against the bin
+     * borders.
+     *
+     * This bounding box is used to check if the item fits inside the
+     * borders of the bin.
+     *
+     * If a \link binFitShape bin fit shape was setup\endlink, this
+     * returns the bounding box of that shape rotated and translated.
+     *
+     * If a bin fit shape was not set up, this returns the bounding
+     * box of the inflated item shape, rotated and translated. It's
+     * the same result as boundingBox(), for backwards
+     * compability.
+     */
+    inline Box binFitShapeBoundingBox() const {
+        if(!bin_fit_shape_.is_valid())
+            return boundingBox();
+        if(!bfs_bb_cache_.valid) {
+            if(!has_rotation_)
+                bfs_bb_cache_.bb = sl::boundingBox(bin_fit_shape_);
+            else {
+                // TODO make sure this works
+                auto rotsh = bin_fit_shape_;
+                sl::rotate(rotsh, rotation_);
+                bfs_bb_cache_.bb = sl::boundingBox(rotsh);
+            }
+            bfs_bb_cache_.valid = true;
+        }
+
+        auto &bfs_bb = bfs_bb_cache_.bb; auto &tr = translation_;
+        return {bfs_bb.minCorner() + tr, bfs_bb.maxCorner() + tr };
     }
 
     inline Vertex referenceVertex() const {
@@ -431,10 +553,12 @@ private:
     inline void invalidateCache() const BP2D_NOEXCEPT
     {
         tr_cache_valid_ = false;
+        bfs_cache_valid_ = false;
         lmb_valid_ = false; rmt_valid_ = false;
         area_cache_valid_ = false;
         inflate_cache_valid_ = false;
         bb_cache_.valid = false;
+        bfs_bb_cache_.valid = false;
         convexity_ = Convexity::UNCHECKED;
     }
 

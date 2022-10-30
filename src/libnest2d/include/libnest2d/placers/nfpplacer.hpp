@@ -90,11 +90,19 @@ struct NfpPConfig {
     bool parallel = true;
 
     /**
-     * @brief before_packing Callback that is called just before a search for
-     * a new item's position is started. You can use this to create various
-     * cache structures and update them between subsequent packings.
+     * @brief Callback that is called just before a search for a new
+     * item's position is started.
      *
-     * \param merged pile A polygon that is the union of all items in the bin.
+     * You can use this to create various cache structures and update
+     * them between subsequent packings.
+     *
+     * \param merged_pile A polygon that is the union of all items in the bin.
+     *
+     * \param merged_bin_fit_pile Similar to merged_pile, this is a
+     * union of all the items' \link _Item::transformedBinFitShape bin 
+     * fit shapes\endlink. Typically used for checking against the
+     * border of the bin.
+     * \see _Item::transformedBinFitShape()
      *
      * \param pile The items parameter is a container with all the placed
      * polygons excluding the current candidate. You can for instance check the
@@ -112,7 +120,26 @@ struct NfpPConfig {
      * into an L shape. This parameter can be used to make these kind of
      * decisions (for you or a more intelligent AI).
      */
-    std::function<void(const nfp::Shapes<RawShape>&, // merged pile
+    std::function<void(const nfp::Shapes<RawShape>&, // merged pile, item to item shapes
+                       const nfp::Shapes<RawShape>&, // merged pile, bin fit shapes
+                       const ItemGroup&,             // packed items
+                       const ItemGroup&              // remaining items
+                       )> before_packing_ex;
+
+    /**
+     * @brief This is a simpler version of
+     * #before_packing_ex without the bin_fit_shape_merged_pile
+     * parameter.
+     *
+     * \param merged_pile A polygon that is the union of all items in the bin.
+     *
+     * \param pile The items parameter is a container with all the placed
+     * polygons excluding the current candidate.
+     *
+     * \param remaining A container with the remaining items waiting to be
+     * placed.
+     */
+    std::function<void(const nfp::Shapes<RawShape>&, // merged pile, item to item shapes
                        const ItemGroup&,             // packed items
                        const ItemGroup&              // remaining items
                        )> before_packing;
@@ -440,6 +467,7 @@ private:
     // Norming factor for the optimization function
     const double norm_;
     Pile merged_pile_;
+    Pile merged_bin_fit_pile_;
 
 public:
 
@@ -675,14 +703,14 @@ private:
             setInitialPosition(item);
             auto best_tr = item.translation();
             auto best_rot = item.rotation();
-            best_overfit = overfit(item.transformedShape(), bin_);
+            best_overfit = overfit(item.transformedBinFitShape(), bin_);
 
             for(auto rot : config_.rotations) {
                 item.translation(initial_tr);
                 item.rotation(initial_rot + rot);
                 setInitialPosition(item);
                 double of = 0.;
-                if ((of = overfit(item.transformedShape(), bin_)) < best_overfit) {
+                if ((of = overfit(item.transformedBinFitShape(), bin_)) < best_overfit) {
                     best_overfit = of;
                     best_tr = item.translation();
                     best_rot = item.rotation();
@@ -694,7 +722,7 @@ private:
             item.translation(best_tr);
         } else {
 
-            Pile merged_pile = merged_pile_;
+            Pile merged_bin_fit_pile = merged_bin_fit_pile_;
 
             for(auto rot : config_.rotations) {
 
@@ -737,22 +765,21 @@ private:
 
                 auto alignment = config_.alignment;
 
-                auto boundaryCheck = [alignment, &merged_pile, &getNfpPoint,
+                auto boundaryCheck = [alignment, &merged_bin_fit_pile, &getNfpPoint,
                         &item, &bin, &iv, &startpos] (const Optimum& o)
                 {
                     auto v = getNfpPoint(o);
                     auto d = (v - iv) + startpos;
                     item.translation(d);
 
-                    merged_pile.emplace_back(item.transformedShape());
-                    auto chull = sl::convexHull(merged_pile);
-                    merged_pile.pop_back();
+                    merged_bin_fit_pile.emplace_back(item.transformedBinFitShape());
+                    auto chull = sl::convexHull(merged_bin_fit_pile);
+                    merged_bin_fit_pile.pop_back();
 
                     double miss = 0;
                     if(alignment == Config::Alignment::DONT_ALIGN)
-                       miss = sl::isInside(chull, bin) ? -1.0 : 1.0;
+                        miss = sl::isInside(chull, bin) ? -1.0 : 1.0;
                     else miss = overfit(chull, bin);
-
                     return miss;
                 };
 
@@ -762,7 +789,9 @@ private:
                 if(config_.parallel) policy |= std::launch::async;
 
                 if(config_.before_packing)
-                    config_.before_packing(merged_pile, items_, remlist);
+                    config_.before_packing(merged_pile_, items_, remlist);
+                if(config_.before_packing_ex)
+                    config_.before_packing_ex(merged_pile_, merged_bin_fit_pile_, items_, remlist);
 
                 using OptResult = opt::Result<double>;
                 using OptResults = std::vector<OptResult>;
@@ -890,6 +919,7 @@ private:
         if(can_pack) {
             ret = PackResult(item);
             merged_pile_ = nfp::merge(merged_pile_, item.transformedShape());
+            merged_bin_fit_pile_ = nfp::merge(merged_bin_fit_pile_, item.transformedBinFitShape());
         } else {
             ret = PackResult(best_overfit);
         }
@@ -908,7 +938,7 @@ private:
 
         nfp::Shapes<RawShape> m;
         m.reserve(items_.size());
-        for(Item& item : items_) m.emplace_back(item.transformedShape());
+        for(Item& item : items_) m.emplace_back(item.transformedBinFitShape());
 
         auto c = boundingCircle(sl::convexHull(m));
 
@@ -920,9 +950,9 @@ private:
         if(items_.empty() ||
                 config_.alignment == Config::Alignment::DONT_ALIGN) return;
 
-        Box bb = items_.front().get().boundingBox();
+        Box bb = items_.front().get().binFitShapeBoundingBox();
         for(Item& item : items_)
-            bb = sl::boundingBox(item.boundingBox(), bb);
+            bb = sl::boundingBox(item.binFitShapeBoundingBox(), bb);
 
         Vertex ci, cb;
 
@@ -999,7 +1029,7 @@ private:
     }
 
     void placeOutsideOfBin(Item& item) {
-        auto&& bb = item.boundingBox();
+        auto&& bb = item.binFitShapeBoundingBox();
         Box binbb = sl::boundingBox(bin_);
 
         Vertex v = { getX(bb.maxCorner()), getY(bb.minCorner()) };
