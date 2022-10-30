@@ -55,6 +55,9 @@ FillAdaptive::OctreePtr         build_octree(
 //
 class Filler : public Slic3r::Fill
 {
+    // Allows usage of desity calibration
+    friend std::pair<double, double> adaptive_fill_line_spacing(const PrintObject &print_object);
+
 public:
     ~Filler() override {}
 
@@ -71,6 +74,8 @@ protected:
     // may not be optimal as the internal infill lines may get extruded before the long infill
     // lines to which the short infill lines are supposed to anchor.
 	bool no_sort() const override { return false; }
+    // Returns calibration ratio for specified index representing specific density percentage
+    virtual float _calibration_density_ratio(size_t index) const override;
 };
 
 } // namespace FillAdaptive

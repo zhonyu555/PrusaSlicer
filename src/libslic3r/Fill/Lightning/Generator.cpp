@@ -3,6 +3,7 @@
 
 #include "Generator.hpp"
 #include "TreeNode.hpp"
+#include "../FillLightning.hpp"
 
 #include "../../ClipperUtils.hpp"
 #include "../../Layer.hpp"
@@ -37,7 +38,9 @@ Generator::Generator(const PrintObject &print_object, const std::function<void()
     const double               layer_thickness      = scaled<double>(object_config.layer_height.value);
 
     m_infill_extrusion_width = scaled<float>(region_config.infill_extrusion_width.percent ? default_infill_extrusion_width * 0.01 * region_config.infill_extrusion_width : region_config.infill_extrusion_width);
-    m_supporting_radius      = coord_t(m_infill_extrusion_width) * 100 / coord_t(region_config.fill_density.value);
+    const Slic3r::FillLightning::Filler fil;
+    float calibrated_density = fil._calibrated_density(region_config.fill_density.value);
+    m_supporting_radius      = coord_t(m_infill_extrusion_width * 100 / calibrated_density);
 
     const double lightning_infill_overhang_angle      = M_PI / 4; // 45 degrees
     const double lightning_infill_prune_angle         = M_PI / 4; // 45 degrees

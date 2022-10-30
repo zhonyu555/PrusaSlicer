@@ -161,7 +161,7 @@ void FillGyroid::_fill_surface_single(
 
     BoundingBox bb = expolygon.contour.bounding_box();
     // Density adjusted to have a good %of weight.
-    double      density_adjusted = std::max(0., params.density * DensityAdjust);
+    double      density_adjusted = _calibrated_density(std::max(0., params.density * DensityAdjust));
     // Distance between the gyroid waves in scaled coordinates.
     coord_t     distance = coord_t(scale_(this->spacing) / density_adjusted);
 
@@ -205,6 +205,15 @@ void FillGyroid::_fill_surface_single(
 	        	it->rotate(infill_angle);
 	    }
     }
+}
+
+float FillGyroid::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {1.083666667f, 1.055519481f, 1.05210356f,  1.057235772f,
+         1.065901639f, 1.091550084f, 1.092314154f, 1.093980286};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
 }
 
 } // namespace Slic3r

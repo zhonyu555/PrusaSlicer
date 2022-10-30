@@ -17,7 +17,7 @@ void FillConcentric::_fill_surface_single(
     BoundingBox bounding_box = expolygon.contour.bounding_box();
     
     coord_t min_spacing = scale_(this->spacing);
-    coord_t distance = coord_t(min_spacing / params.density);
+    coord_t distance = coord_t(min_spacing / _calibrated_density(params.density));
     
     if (params.density > 0.9999f && !params.dont_adjust) {
         distance = this->_adjust_solid_spacing(bounding_box.size()(0), distance);
@@ -59,6 +59,15 @@ void FillConcentric::_fill_surface_single(
     //TODO: return ExtrusionLoop objects to get better chained paths,
     // otherwise the outermost loop starts at the closest point to (0, 0).
     // We want the loops to be split inside the G-code generator to get optimum path planning.
+}
+
+float FillConcentric::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {0.795789474f, 0.9f,         0.910843373f, 0.919148936f,
+         0.924770642f, 0.925714286f, 0.92618683f,  0.926287129f};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
 }
 
 } // namespace Slic3r

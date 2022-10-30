@@ -20,7 +20,7 @@ void FillHoneycomb::_fill_surface_single(
         it_m = this->cache.insert(it_m, std::pair<CacheID, CacheData>(cache_id, CacheData()));
         CacheData &m        = it_m->second;
         coord_t min_spacing = coord_t(scale_(this->spacing));
-        m.distance          = coord_t(min_spacing / params.density);
+        m.distance          = coord_t(min_spacing / _calibrated_density(params.density));
         m.hex_side          = coord_t(m.distance / (sqrt(3)/2));
         m.hex_width         = m.distance * 2; // $m->{hex_width} == $m->{hex_side} * sqrt(3);
         coord_t hex_height  = m.hex_side * 2;
@@ -79,5 +79,15 @@ void FillHoneycomb::_fill_surface_single(
     else
         connect_infill(std::move(all_polylines), expolygon, polylines_out, this->spacing, params);
 }
+
+float FillHoneycomb::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {0.738863636f, 0.766745283f, 0.772209026f, 0.794865526f,
+         0.838967742f, 0.887847064f, 0.943344215f, 1.006407129};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
+}
+
 
 } // namespace Slic3r

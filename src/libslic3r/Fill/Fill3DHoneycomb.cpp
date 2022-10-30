@@ -142,7 +142,7 @@ void Fill3DHoneycomb::_fill_surface_single(
 {
     // no rotation is supported for this infill pattern
     BoundingBox bb = expolygon.contour.bounding_box();
-    coord_t     distance = coord_t(scale_(this->spacing) / params.density);
+    coord_t     distance = coord_t(scale_(this->spacing) / _calibrated_density(params.density));
 
     // align bounding box to a multiple of our honeycomb grid module
     // (a module is 2*$distance since one $distance half-module is 
@@ -169,6 +169,15 @@ void Fill3DHoneycomb::_fill_surface_single(
         append(polylines_out, chain_polylines(std::move(polylines)));
     else
         this->connect_infill(std::move(polylines), expolygon, polylines_out, this->spacing, params);
+}
+
+float Fill3DHoneycomb::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {0.691702128f, 0.745642202f, 0.737188209f, 0.739704209f,
+         0.740968661f, 0.740827953f, 0.740125213f, 0.741416724f};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
 }
 
 } // namespace Slic3r

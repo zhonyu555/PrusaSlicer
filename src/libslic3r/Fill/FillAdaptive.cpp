@@ -296,6 +296,7 @@ std::pair<double, double> adaptive_fill_line_spacing(const PrintObject &print_ob
     const std::vector<double> &nozzle_diameters               = print_object.print()->config().nozzle_diameter.values;
     double                     max_nozzle_diameter            = *std::max_element(nozzle_diameters.begin(), nozzle_diameters.end());
     double                     default_infill_extrusion_width = Flow::auto_extrusion_width(FlowRole::frInfill, float(max_nozzle_diameter));
+    const Slic3r::FillAdaptive::Filler fil;
     for (size_t region_id = 0; region_id < print_object.num_printing_regions(); ++ region_id) {
         const PrintRegionConfig &config                 = print_object.printing_region(region_id).config();
         bool                     nonempty               = config.fill_density > 0;
@@ -305,7 +306,7 @@ std::pair<double, double> adaptive_fill_line_spacing(const PrintObject &print_ob
         region_fill_data.push_back(RegionFillData({
             has_adaptive_infill ? Tristate::Maybe : Tristate::No,
             has_support_infill ? Tristate::Maybe : Tristate::No,
-            config.fill_density,
+            fil._calibrated_density(config.fill_density),
             infill_extrusion_width != 0. ? infill_extrusion_width : default_infill_extrusion_width
         }));
         build_octree |= has_adaptive_infill || has_support_infill;
@@ -1546,6 +1547,15 @@ void Octree::insert_triangle(const Vec3d &a, const Vec3d &b, const Vec3d &c, Cub
                 this->insert_triangle(a, b, c, current_cube->children[i], bbox, depth);
         }
     }
+}
+
+float Filler::_calibration_density_ratio(size_t index) const
+{
+    // Calibration ratios for following densities: 1, 5, 10, 20, 40, 60, 80, 99 %
+    const std::array<float, 8> density_calibration =
+        {1.26f,        1.35f,        1.35f,        1.356053812f,
+         1.356053812f, 1.356053812f, 1.356053812f, 1.355869565f};
+    return density_calibration[std::min(index, density_calibration.size() - 1)];
 }
 
 } // namespace FillAdaptive

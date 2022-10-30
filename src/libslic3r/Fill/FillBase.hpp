@@ -131,6 +131,11 @@ protected:
 
     virtual std::pair<float, Point> _infill_direction(const Surface *surface) const;
 
+    // Returns calibration ratio for specified index representing specific density percentage
+    virtual float _calibration_density_ratio(size_t index) const {return 1.f;}
+    // Returns proper density based on user input and calibration data
+    virtual float _calibrated_density(float density) const;
+
 public:
     static void connect_infill(Polylines &&infill_ordered, const ExPolygon &boundary, Polylines &polylines_out, const double spacing, const FillParams &params);
     static void connect_infill(Polylines &&infill_ordered, const Polygons &boundary, const BoundingBox& bbox, Polylines &polylines_out, const double spacing, const FillParams &params);
