@@ -3096,7 +3096,7 @@ bool GCode::needs_retraction(const Polyline &travel, ExtrusionRole role)
         return false;
     }
 
-    if (role == erSupportMaterial) {
+    if (role == erSupportMaterial && m_config.retract_skip_support_islands) {
         const SupportLayer* support_layer = dynamic_cast<const SupportLayer*>(m_layer);
         //FIXME support_layer->support_islands.contains should use some search structure!
         if (support_layer != NULL && ! intersection_pl(travel, support_layer->support_islands).empty())
