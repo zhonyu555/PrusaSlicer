@@ -482,6 +482,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                clip_multipart_objects))
     ((ConfigOptionBool,                dont_support_bridges))
     ((ConfigOptionFloat,               elefant_foot_compensation))
+    ((ConfigOptionInt,                 elefant_foot_compensation_layers))
     ((ConfigOptionFloatOrPercent,      extrusion_width))
     ((ConfigOptionFloat,               first_layer_acceleration_over_raft))
     ((ConfigOptionFloatOrPercent,      first_layer_speed_over_raft))
