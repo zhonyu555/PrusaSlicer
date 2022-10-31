@@ -128,7 +128,8 @@ bool Repetier::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Error
     }
 
     if(upload_data.post_action == PrintHostPostUploadAction::StartPrint) {
-        http.form_add("name", upload_filename.string());
+        http.form_add("name", upload_filename.string())
+            .form_add("autostart", "1");
     }
 
     http.form_add("a", "upload")
