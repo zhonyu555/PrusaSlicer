@@ -25,6 +25,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/nowide/args.hpp>
+#include <boost/log/trivial.hpp>
 #include <boost/nowide/cenv.hpp>
 #include <boost/nowide/iostream.hpp>
 #include <boost/nowide/integration/filesystem.hpp>
@@ -721,7 +722,20 @@ bool CLI::setup(int argc, char **argv)
 
     set_data_dir(m_config.opt_string("datadir"));
     
-    //FIXME Validating at this stage most likely does not make sense, as the config is not fully initialized yet.
+    // if datadir is still empty (means no --datadir opt)
+    // then use datadir from environment
+    if (data_dir().empty()) {
+        auto data_dir_candidate = boost::nowide::getenv("PRUSA_SLICER_DATADIR");
+
+        if (data_dir_candidate != nullptr) {
+            set_data_dir(data_dir_candidate);
+            BOOST_LOG_TRIVIAL(info)
+                << "Trying to use datadir from environment variable: "
+                << data_dir_candidate << std::endl;
+        }
+    }
+
+    // FIXME Validating at this stage most likely does not make sense, as the config is not fully initialized yet.
     if (!validity.empty()) {
         boost::nowide::cerr << "error: " << validity << std::endl;
         return false;
