@@ -145,6 +145,34 @@ void ArrangeJob::prepare_selected() {
     for (auto &p : m_unselected) p.translation(X) -= p.bed_idx * stride;
 }
 
+static Flow skirt_flow_approximation(DynamicPrintConfig const& config)
+{
+    assert(config.has("first_layer_extrusion_width"));
+    assert(config.has("perimeter_extrusion_width"));
+    assert(config.has("extrusion_width"));
+    assert(config.has("first_layer_height"));
+    assert(config.has("support_material_extruder"));
+    assert(config.has("nozzle_diameter"));
+    ConfigOptionFloatOrPercent width = *config.option<ConfigOptionFloatOrPercent>("first_layer_extrusion_width");
+    if (width.value == 0)
+        width = *config.option<ConfigOptionFloatOrPercent>("perimeter_extrusion_width");
+    if (width.value == 0)
+        width = *config.option<ConfigOptionFloatOrPercent>("extrusion_width");
+
+    ConfigOptionFloatOrPercent first_layer_height = *config.option<ConfigOptionFloatOrPercent>("first_layer_height");
+    assert(! first_layer_height.percent);
+
+    int extruder = config.opt_int("support_material_extruder");
+
+    ConfigOptionFloats nozzle_diameter = *config.option<ConfigOptionFloats>("nozzle_diameter");
+
+    return Flow::new_from_config_width(
+        frPerimeter,
+        width,
+        (float)nozzle_diameter.get_at(extruder),
+        (float)first_layer_height.value);
+}
+
 arrangement::ArrangePolygon ArrangeJob::get_arrange_poly_(ModelInstance *mi)
 {
     arrangement::ArrangePolygon ap = get_arrange_poly(mi, m_plater);
@@ -179,15 +207,19 @@ arrangement::ArrangePolygon ArrangeJob::get_arrange_poly_(ModelInstance *mi)
         // How wide is the skirt? (in scaled units)
         coord_t skirt_margin = 0;
 
+        config.apply_only(print_config, {"first_layer_extrusion_width", "perimeter_extrusion_width", "extrusion_width"});
+        config.apply_only(object_config, {"first_layer_extrusion_width", "perimeter_extrusion_width", "extrusion_width"});
+        const Flow skirt_flow = skirt_flow_approximation(config);
+
         if (print.has_skirt())
         {
-            float skirt_margin_mm = 0.f;
-            const Flow skirt_flow = print.skirt_flow();
-            const float spacing = skirt_flow.spacing();
-            size_t n_skirts = print_config.skirts.value;
-            skirt_margin_mm += print_config.skirt_distance.value;
-            skirt_margin_mm += (n_skirts + 0.5f) * spacing;
-            skirt_margin = scaled(skirt_margin_mm);
+            int skirts = print_config.skirts.value;
+            if (skirts == 0 && print.has_infinite_skirt())
+                skirts = 1;
+            skirt_margin = scaled(
+                print_config.skirt_distance.value
+                    + (skirts + 0.5f) * skirt_flow.spacing()
+            );
         }
 
         coord_t expansion = 0;
