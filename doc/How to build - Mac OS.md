@@ -73,7 +73,7 @@ on both the dependencies bundle as well as PrusaSlicer itself.
 
 Official Mac PrusaSlicer builds are currently built against SDK 10.9 to ensure compatibility with older Macs.
 
-_Warning:_ XCode may be set such that it rejects SDKs bellow some version (silently, more or less).
+_Warning:_ XCode may be set such that it rejects SDKs below some version (silently, more or less).
 This is set in the property list file
 
     /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Info.plist
