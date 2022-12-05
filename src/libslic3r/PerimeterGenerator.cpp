@@ -2,7 +2,10 @@
 #include "ClipperUtils.hpp"
 #include "ExtrusionEntityCollection.hpp"
 #include "ShortestPath.hpp"
+#include "Surface.hpp"
 #include "clipper/clipper_z.hpp"
+#include "SVG.hpp"
+#include "Utils.hpp"
 
 #include "Arachne/WallToolPaths.hpp"
 #include "Arachne/utils/ExtrusionLine.hpp"
@@ -10,6 +13,7 @@
 #include <cmath>
 #include <cassert>
 #include <stack>
+#include <string>
 #include <unordered_map>
 
 //#define ARACHNE_DEBUG
@@ -567,6 +571,75 @@ static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator &p
     return extrusion_coll;
 }
 
+// Return new generated extrusions and polygons filled by those extrusions
+std::tuple<std::vector<ExtrusionPaths>, Polygons> generate_structure_on_overhangs(ExPolygons      infill_area,
+                                                                                           const Polygons &lower_slices_polygons,
+                                                                                           const Flow     &overhang_flow,
+                                                                                           double          scaled_resolution,
+                                                                                           const PrintObjectConfig &object_config,
+                                                                                           const PrintConfig       &print_config)
+{
+    //This function will generate perimeters over overhangs. It is a simple demo to get you started
+
+    // infill area is already without the perimeters. 
+    // The diff operation below produces polygons of overhangs ( we take the area to be filled, and remove the parts supported by lower level.)
+    ExPolygons overhangs  = diff_ex(infill_area, lower_slices_polygons);
+
+    //ExPolygon is a contour polygon that also stores its holes. We need it here so that we can later iterate over all connected overhang areas and fill them
+    // while respecting the holes of the object.
+    // Note that you can also use Polygon structure, holes are still recognized by clockwise orientation - but you will loose the information about which 
+    // contour contains which hole
+
+    //NOTE that all points have scaled values - which means they are in nanometers. If you debug print them, you will get quite big numbers.
+    // I advise to use doubles when computing something so that you avoid overflow issues.
+    // There are conversion functions scaled() and unscaled() to convert between millimters and nanometers
+
+//example of debug export file. The svg image will be written into the "out" folder of your workspace directory (from where you run the program),
+// you have to create the "out" directory first to actually get the images
+#if 1
+        {
+            BoundingBox              bbox   = get_extents(union_(to_polygons(infill_area), lower_slices_polygons));
+            bbox.offset(scale_(1.));
+            ::Slic3r::SVG svg(debug_out_path(("debug_svg"+ std::to_string(std::rand())).c_str()).c_str(), bbox);
+            for (const Line &line : to_lines(infill_area)) svg.draw(line, "red", scale_(0.2));
+            for (const Line &line : to_lines(lower_slices_polygons)) svg.draw(line, "green", scale_(0.2));
+            svg.Close();
+        }
+#endif
+
+    std::vector<ExtrusionPaths> perims; // overhang region -> perimeter shells ( so that each overhang region is finished first before moving to next)
+    for (const ExPolygon &overhang_area : overhangs) {
+
+        perims.emplace_back(); // new overhang area
+        ExtrusionPaths &overhang_region = perims.back(); // perimeters in the new overhang area
+
+        Polygons perimeter_polygon = offset(overhang_area, -overhang_flow.scaled_spacing() * 0.5); // the central axis of the generated extrusion should be 
+        // one half away from the boundary of the polygon to fill, otherwise we would not fit the model properly
+
+        //  fill the overhang with perimeters until it is full
+        // We are generating the perimeters from outside to inside
+        while (!perimeter_polygon.empty()) {
+
+            // prepare next perimeter lines
+            Polylines perimeter_polyline = to_polylines(perimeter_polygon); //convert the polygon to polylines
+
+            // make extrusions from polylines (by adding flow params) and append them to this overhang region
+            extrusion_paths_append(overhang_region, perimeter_polyline,
+                                    erOverhangPerimeter,
+                                    overhang_flow.mm3_per_mm(),
+                                    overhang_flow.width(),
+                                    overhang_flow.height());
+
+            perimeter_polygon = shrink(perimeter_polygon, overhang_flow.scaled_spacing()); // Shrink the perimeter polygon by full width, to get the central axis
+            // of the next perimeter extrusion
+        }
+    }
+
+// return the generated perimeters and overhang polygons filled by those perimeters.
+    return {perims, to_polygons(overhangs)};
+}
+
+
 #ifdef ARACHNE_DEBUG
 static void export_perimeters_to_svg(const std::string &path, const Polygons &contours, const std::vector<Arachne::VariableWidthLines> &perimeters, const ExPolygons &infill_area)
 {
@@ -802,13 +875,31 @@ void PerimeterGenerator::process_arachne()
             ex.simplify_p(m_scaled_resolution, &pp);
         // collapse too narrow infill areas
         const auto    min_perimeter_infill_spacing = coord_t(solid_infill_spacing * (1. - INSET_OVERLAP_TOLERANCE));
-        // append infill areas to fill_surfaces
-        this->fill_surfaces->append(
-            offset2_ex(
-                union_ex(pp),
-                float(- min_perimeter_infill_spacing / 2.),
-                float(inset + min_perimeter_infill_spacing / 2.)),
-            stInternal);
+    // append infill areas to fill_surfaces
+    ExPolygons infill_areas =
+        offset2_ex(
+            union_ex(pp),
+            float(- min_perimeter_infill_spacing / 2.),
+            float(inset + min_perimeter_infill_spacing / 2.));
+
+         if (lower_slices != nullptr && config->overhangs && 
+            config->perimeters > 0 && layer_id > object_config->raft_layers) {
+            // Generate extra perimeters on overhang areas, and cut them to these parts only, to save print time and material
+            auto [extra_perimeters, filled_area] = generate_structure_on_overhangs(infill_areas,
+                                                                                            this->lower_slices_polygons(),
+                                                                                            this->overhang_flow, this->m_scaled_resolution,
+                                                                                            *this->object_config, *this->print_config);
+            if (!extra_perimeters.empty()) {
+                ExtrusionEntityCollection &this_islands_perimeters = static_cast<ExtrusionEntityCollection&>(*loops->entities.back());
+                ExtrusionEntitiesPtr       old_entities;
+                old_entities.swap(this_islands_perimeters.entities);
+                for (ExtrusionPaths &paths : extra_perimeters) 
+                    this_islands_perimeters.append(std::move(paths));
+                append(this_islands_perimeters.entities, old_entities);
+                infill_areas = diff_ex(infill_areas, filled_area);
+            }
+        }
+        fill_surfaces->append(infill_areas, stInternal);
     }
 }
 
@@ -1073,13 +1164,31 @@ void PerimeterGenerator::process_classic()
             ex.simplify_p(m_scaled_resolution, &pp);
         // collapse too narrow infill areas
         coord_t min_perimeter_infill_spacing = coord_t(solid_infill_spacing * (1. - INSET_OVERLAP_TOLERANCE));
-        // append infill areas to fill_surfaces
-        this->fill_surfaces->append(
+         // append infill areas to fill_surfaces
+        ExPolygons infill_areas =
             offset2_ex(
                 union_ex(pp),
                 float(- inset - min_perimeter_infill_spacing / 2.),
-                float(min_perimeter_infill_spacing / 2.)),
-            stInternal);
+                float(min_perimeter_infill_spacing / 2.));
+
+        if (lower_slices != nullptr && config->overhangs && 
+            config->perimeters > 0 && layer_id > object_config->raft_layers) {
+            // Generate extra perimeters on overhang areas, and cut them to these parts only, to save print time and material
+            auto [extra_perimeters, filled_area] = generate_structure_on_overhangs(infill_areas,
+                                                                                            this->lower_slices_polygons(),
+                                                                                            this->overhang_flow, this->m_scaled_resolution,
+                                                                                            *this->object_config, *this->print_config);
+            if (!extra_perimeters.empty()) {
+                ExtrusionEntityCollection &this_islands_perimeters = static_cast<ExtrusionEntityCollection&>(*loops->entities.back());
+                ExtrusionEntitiesPtr       old_entities;
+                old_entities.swap(this_islands_perimeters.entities);
+                for (ExtrusionPaths &paths : extra_perimeters) 
+                    this_islands_perimeters.append(std::move(paths));
+                append(this_islands_perimeters.entities, old_entities);
+                infill_areas = diff_ex(infill_areas, filled_area);
+            }
+        }
+        fill_surfaces->append(infill_areas, stInternal);
     } // for each island
 }
 
