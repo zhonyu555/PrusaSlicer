@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Slic3rPE\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-09-05 15:33+0200\n"
-"PO-Revision-Date: 2022-12-06 10:16+0800\n"
+"PO-Revision-Date: 2022-12-06 17:21+0800\n"
 "Last-Translator: BiseChen <bise.chen@gmail.com>\n"
 "Language-Team: \n"
 "Language: zh_TW\n"
@@ -172,7 +172,7 @@ msgstr "原點"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:33 src/libslic3r/PrintConfig.cpp:1016
 msgid "Diameter"
-msgstr "直徑"
+msgstr "線材直徑"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:49
 msgid "Size in X and Y of the rectangular plate."
@@ -333,7 +333,7 @@ msgstr ""
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:50 src/slic3r/GUI/GUI_ObjectLayers.cpp:29 src/slic3r/GUI/Tab.cpp:1449 src/libslic3r/PrintConfig.cpp:285
 msgid "Layer height"
-msgstr "層高"
+msgstr "打印層高"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:61
 msgid ""
@@ -485,7 +485,7 @@ msgstr "打印"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:65
 msgid "filaments"
-msgstr "線材料"
+msgstr "線材"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:68 src/libslic3r/Preset.cpp:1342
 msgid "SLA print"
@@ -615,7 +615,7 @@ msgstr "標記為 <b>*</b> 的 %1% 與某些已安裝的打印機<b>不</b>相�
 
 #: src/slic3r/GUI/ConfigWizard.cpp:752 src/slic3r/GUI/ConfigWizard.cpp:2043 src/slic3r/GUI/ConfigWizard.cpp:2912
 msgid "Filaments"
-msgstr "線材料"
+msgstr "線材"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:752
 msgid "SLA materials"
@@ -628,7 +628,7 @@ msgstr "所有安裝的打印機都與所選%1% 相容。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:755 src/libslic3r/Preset.cpp:1341
 msgid "filament"
-msgstr "線材料"
+msgstr "線材"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:778
 msgid "Only the following installed printers are compatible with the selected filaments"
@@ -780,7 +780,7 @@ msgstr "輸入的數值無效。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1457
 msgid "Filament and Nozzle Diameters"
-msgstr "線材料與噴嘴直徑"
+msgstr "線材與噴嘴直徑"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1457
 msgid "Print Diameters"
@@ -796,7 +796,7 @@ msgstr "噴嘴孔徑："
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1485
 msgid "Enter the diameter of your filament."
-msgstr "輸入線材料的直徑。"
+msgstr "輸入線材的直徑。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1486
 msgid "Good precision is required, so use a caliper and do multiple measurements along the filament, then compute the average."
@@ -804,7 +804,7 @@ msgstr "因為需要良好的精度，請使用游標卡尺沿著線材進行多
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1489
 msgid "Filament Diameter:"
-msgstr "線材料直徑："
+msgstr "線材直徑："
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1547
 msgid "Nozzle and Bed Temperatures"
@@ -816,7 +816,7 @@ msgstr "溫度"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1563
 msgid "Enter the temperature needed for extruding your filament."
-msgstr "輸入擠出線材料時所需的溫度。"
+msgstr "輸入擠出線材時所需的溫度。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1564
 msgid "A rule of thumb is 160 to 230 °C for PLA, and 215 to 250 °C for ABS."
@@ -832,7 +832,7 @@ msgstr "°C"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1577
 msgid "Enter the bed temperature needed for getting your filament to stick to your heated bed."
-msgstr "輸入線材料可以黏在載台所需的溫度。"
+msgstr "輸入線材可以黏在載台所需的溫度。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1578
 msgid "A rule of thumb is 60 °C for PLA and 110 °C for ABS. Leave zero if you have no heated bed."
@@ -857,7 +857,7 @@ msgstr "SLA 技術打印機"
 #: src/slic3r/GUI/ConfigWizard.cpp:2338
 #, boost-format
 msgid "Following printer profiles has no default filament: %1%Please select one manually."
-msgstr "下列打印機設定檔沒有預設線材料：%1%，請手動選擇一個。"
+msgstr "下列打印機設定檔沒有預設線材：%1%，請手動選擇一個。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2339
 #, boost-format
@@ -870,11 +870,11 @@ msgstr "注意"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2459
 msgid "The following FFF printer models have no filament selected:"
-msgstr "以下 FFF 打印機模式未選擇線材料："
+msgstr "以下 FFF 打印機模式未選擇線材："
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2463
 msgid "Do you want to select default filaments for these FFF printer models?"
-msgstr "您是否要為這些FFF打印機模式選擇預設的線材料？"
+msgstr "您是否要為這些FFF打印機模式選擇預設的線材？"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2477
 msgid "The following SLA printer models have no materials selected:"
@@ -911,7 +911,7 @@ msgstr "一些打印機被移除。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2717
 msgid "A new filament was installed and it will be activated."
-msgstr "已安裝一個新的線材料且已經啟用。"
+msgstr "已安裝一個新的線材且已經啟用。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2718
 msgid "A new SLA material was installed and it will be activated."
@@ -919,7 +919,7 @@ msgstr "已安裝一個新的打印材料且已經啟用。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2729
 msgid "Some filaments were uninstalled."
-msgstr "一些線材料被移除。"
+msgstr "一些線材被移除。"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2729
 msgid "Some SLA materials were uninstalled."
@@ -960,7 +960,7 @@ msgstr "Prusa MSLA 技術打印機"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2912
 msgid "Filament Profiles Selection"
-msgstr "線材料設定檔選擇"
+msgstr "線材設定檔選擇"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:2912 src/slic3r/GUI/ConfigWizard.cpp:2915 src/slic3r/GUI/GUI_ObjectList.cpp:3790
 msgid "Type:"
@@ -1872,7 +1872,7 @@ msgstr "打印設定"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3700 src/slic3r/GUI/GCodeViewer.cpp:3726 src/slic3r/GUI/GUI.cpp:339 src/slic3r/GUI/Plater.cpp:819 src/slic3r/GUI/Tab.cpp:1967 src/slic3r/GUI/Tab.cpp:1968
 msgid "Filament"
-msgstr "線材料"
+msgstr "線材"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3739
 msgid "Estimated printing times"
@@ -4165,7 +4165,7 @@ msgstr "寬度"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:221 src/slic3r/GUI/Tab.cpp:2013
 msgid "Fan speed"
-msgstr "風扇轉速"
+msgstr "風扇速速"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:222 src/slic3r/GUI/Tab.cpp:1988
 msgid "Temperature"
@@ -4209,7 +4209,7 @@ msgstr "頂部實心填充"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:246 src/libslic3r/ExtrusionEntity.cpp:337 src/libslic3r/ExtrusionEntity.cpp:366
 msgid "Bridge infill"
-msgstr "橋樑填充"
+msgstr "橋接填充"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:247 src/libslic3r/ExtrusionEntity.cpp:338 src/libslic3r/ExtrusionEntity.cpp:368 src/libslic3r/PrintConfig.cpp:1321
 msgid "Gap fill"
@@ -6131,7 +6131,7 @@ msgstr "（包括線軸）"
 
 #: src/slic3r/GUI/Plater.cpp:1411 src/libslic3r/PrintConfig.cpp:1068 src/libslic3r/PrintConfig.cpp:3408 src/libslic3r/PrintConfig.cpp:3409
 msgid "Cost"
-msgstr "費用"
+msgstr "整軸線價格"
 
 #: src/slic3r/GUI/Plater.cpp:1429
 msgid "normal mode"
@@ -6706,11 +6706,11 @@ msgstr "選擇新預設或重置預設時，始終詢問未儲存的預設變更
 
 #: src/slic3r/GUI/Preferences.cpp:249 src/slic3r/GUI/UnsavedChangesDialog.cpp:895
 msgid "Ask for unsaved changes in presets when creating new project"
-msgstr "創建新項目時詢問預設中未儲存的變更"
+msgstr "建立新項目時詢問預設中未儲存的變更"
 
 #: src/slic3r/GUI/Preferences.cpp:251
 msgid "Always ask for unsaved changes in presets when creating new project"
-msgstr "創建新項目時始終詢問未儲存的預設變更"
+msgstr "建立新項目時始終詢問未儲存的預設變更"
 
 #: src/slic3r/GUI/Preferences.cpp:258
 msgid "Associate .gcode files to PrusaSlicer G-code Viewer"
@@ -6738,7 +6738,7 @@ msgstr "如果啟用，PrusaSlicer 將在上一次關閉時的位置打開"
 
 #: src/slic3r/GUI/Preferences.cpp:295
 msgid "Clear Undo / Redo stack on new project"
-msgstr "清除新項目上的撤消/重做堆疊"
+msgstr "清除新項目上的取消/重做堆疊"
 
 #: src/slic3r/GUI/Preferences.cpp:297
 msgid "Clear Undo / Redo stack on new project or when an existing project is loaded."
@@ -7527,7 +7527,7 @@ msgstr "從系統預設中分離"
 
 #: src/slic3r/GUI/Tab.cpp:1311
 msgid "A copy of the current system preset will be created, which will be detached from the system preset."
-msgstr "將創建當前系統預設的副本，它將與系統預設分離。"
+msgstr "將建立當前系統預設的副本，它將與系統預設分離。"
 
 #: src/slic3r/GUI/Tab.cpp:1312
 msgid "The current custom preset will be detached from the parent system preset."
@@ -8258,7 +8258,7 @@ msgstr "儲存"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:898
 msgid "You will not be asked about the unsaved changes in presets the next time you create new project"
-msgstr "下次創建新項目時，不會詢問您預設中未儲存的變更"
+msgstr "下次建立新項目時，不會詢問您預設中未儲存的變更"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:899
 msgid "You will not be asked about the unsaved changes in presets the next time you switch a preset"
@@ -8452,7 +8452,7 @@ msgid ""
 msgstr ""
 "您想安裝它嗎？\n"
 "\n"
-"請注意，將首先創建一個完整的設定快照。如果新版本出現問題，可以隨時恢復它。\n"
+"請注意，將首先建立一個完整的設定快照。如果新版本出現問題，可以隨時恢復它。\n"
 "\n"
 "更新的設定包："
 
@@ -8488,7 +8488,7 @@ msgid ""
 msgstr ""
 "%s 現在將開始更新。否則將無法啟動。\n"
 "\n"
-"請注意，將首先創建一個完整的設定快照。如果新版本出現問題，可以隨時恢復它。\n"
+"請注意，將首先建立一個完整的設定快照。如果新版本出現問題，可以隨時恢復它。\n"
 "\n"
 "更新的設定包："
 
@@ -8540,7 +8540,7 @@ msgid ""
 msgstr ""
 "%s 現在使用更新的設定結構。\n"
 "\n"
-"引入了所謂的“系統預設”，其中包含各種打印機的內建預設設定。這些系統預設無法修改，相反的，使用者現在可以創建自己的預設，繼承其中一個系統預設的設定。\n"
+"引入了所謂的“系統預設”，其中包含各種打印機的內建預設設定。這些系統預設無法修改，相反的，使用者現在可以建立自己的預設，繼承其中一個系統預設的設定。\n"
 "繼承預設可以從其父級繼承特定值或使用自定義值覆蓋它。\n"
 "\n"
 "請繼續執行隨後的 %s 以設定新預設並選擇是否啟用自動預設更新。"
@@ -9569,7 +9569,7 @@ msgstr "°"
 
 #: src/libslic3r/PrintConfig.cpp:484
 msgid "Bridges fan speed"
-msgstr "橋接風扇速度"
+msgstr "打印橋接時風扇的速度"
 
 #: src/libslic3r/PrintConfig.cpp:485
 msgid "This fan speed is enforced during all bridges and overhangs."
@@ -9913,7 +9913,7 @@ msgstr "如果啟用，風扇將永遠不會被停用，並且至少會以最低
 
 #: src/libslic3r/PrintConfig.cpp:879
 msgid "Enable fan if layer print time is below"
-msgstr "如果層打印時間低於啟用風扇的話"
+msgstr "如果單層打印時間低於啟用風扇的話"
 
 #: src/libslic3r/PrintConfig.cpp:880
 msgid "If layer print time is estimated below this number of seconds, fan will be enabled and its speed will be calculated by interpolating the minimum and maximum speeds."
@@ -9925,7 +9925,7 @@ msgstr "大約秒"
 
 #: src/libslic3r/PrintConfig.cpp:889 src/libslic3r/PrintConfig.cpp:3362
 msgid "Color"
-msgstr "顏色"
+msgstr "線材顏色"
 
 #: src/libslic3r/PrintConfig.cpp:895
 msgid "Filament notes"
@@ -10051,7 +10051,7 @@ msgstr "請在此輸入您的線材直徑。這個需要良好的精度，因此
 
 #: src/libslic3r/PrintConfig.cpp:1024 src/libslic3r/PrintConfig.cpp:3401 src/libslic3r/PrintConfig.cpp:3402
 msgid "Density"
-msgstr "密度"
+msgstr "線材密度"
 
 #: src/libslic3r/PrintConfig.cpp:1025
 msgid "Enter your filament density here. This is only for statistical information. A decent way is to weigh a known length of filament and compute the ratio of the length to volume. Better is to calculate the volume directly through displacement."
@@ -10067,7 +10067,7 @@ msgstr "線材類型"
 
 #: src/libslic3r/PrintConfig.cpp:1034
 msgid "The filament material type for use in custom G-codes."
-msgstr "用於自訂 G-codes 的線材料類型。"
+msgstr "用於自訂 G-codes 的線材類型。"
 
 #: src/libslic3r/PrintConfig.cpp:1062
 msgid "Soluble material"
@@ -10087,7 +10087,7 @@ msgstr "成本/kg"
 
 #: src/libslic3r/PrintConfig.cpp:1075
 msgid "Spool weight"
-msgstr "線軸重量"
+msgstr "整軸線的重量"
 
 #: src/libslic3r/PrintConfig.cpp:1076
 msgid ""
@@ -11157,7 +11157,7 @@ msgstr "外圍的圈數.如果設定了最小擠出長度，/,那麼圈數必須
 
 #: src/libslic3r/PrintConfig.cpp:2310
 msgid "Slow down if layer print time is below"
-msgstr "如果單層打印時間低於這個時則降低速度"
+msgstr "如果單層打印時間低於這個設定值則降低速度"
 
 #: src/libslic3r/PrintConfig.cpp:2311
 msgid "If layer print time is estimated below this number of seconds, print moves speed will be scaled down to extend duration to this value."
