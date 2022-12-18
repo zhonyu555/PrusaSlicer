@@ -188,7 +188,7 @@ public:
 	}
 
 	WipeTowerWriter& extrude_explicit(const Vec2f &dest, float e, float f = 0.f, bool record_length = false, bool limit_volumetric_flow = true)
-		{ return extrude_explicit(dest.x(), dest.y(), e, f, record_length); }
+		{ return extrude_explicit(dest.x(), dest.y(), e, f, record_length, limit_volumetric_flow); }
 
 	// Travel to a new XY position. f=0 means use the current value.
 	WipeTowerWriter& travel(float x, float y, float f = 0.f)
@@ -510,6 +510,8 @@ WipeTower::WipeTower(const PrintConfig& config, const std::vector<std::vector<fl
     m_wipe_tower_width(float(config.wipe_tower_width)),
     m_wipe_tower_rotation_angle(float(config.wipe_tower_rotation_angle)),
     m_wipe_tower_brim_width(float(config.wipe_tower_brim_width)),
+    m_speed(float(config.wipe_tower_speed)),
+    m_wipe_starting_speed(config.wipe_tower_wipe_starting_speed),
     m_y_shift(0.f),
     m_z_pos(0.f),
     m_bridging(float(config.wipe_tower_bridging)),
@@ -519,13 +521,16 @@ WipeTower::WipeTower(const PrintConfig& config, const std::vector<std::vector<fl
     m_current_tool(initial_tool),
     wipe_volumes(wiping_matrix)
 {
+    // Wipe starting speed defaults to wipe_tower_speed.
+    if (m_wipe_starting_speed == 0.f) {
+        m_wipe_starting_speed = m_speed;
+    }
+
     // Read absolute value of first layer speed, if given as percentage,
-    // it is taken over following default. Speeds from config are not
-    // easily accessible here.
-    const float default_speed = 60.f;
-    m_first_layer_speed = config.get_abs_value("first_layer_speed", default_speed);
-    if (m_first_layer_speed == 0.f) // just to make sure autospeed doesn't break it.
-        m_first_layer_speed = default_speed / 2.f;
+    // it is taken over wipe_tower_speed.
+    m_first_layer_speed = config.get_abs_value("first_layer_speed", m_speed);
+    if (m_first_layer_speed == 0.f)
+        m_first_layer_speed = m_speed;
 
     // If this is a single extruder MM printer, we will use all the SE-specific config values.
     // Otherwise, the defaults will be used to turn off the SE stuff.
@@ -1006,11 +1011,12 @@ void WipeTower::toolchange_Wipe(
     //   the ordered volume, even if it means violating the box. This can later be removed and simply
     // wipe until the end of the assigned area.
 
-	float x_to_wipe = volume_to_length(wipe_volume, m_perimeter_width, m_layer_height);
+	const float x_wipe_target = volume_to_length(wipe_volume, m_perimeter_width, m_layer_height);
+    float x_wiped = 0.f;
 	float dy = m_extra_spacing*m_perimeter_width;
 
-    const float target_speed = is_first_layer() ? m_first_layer_speed * 60.f : 4800.f;
-    float wipe_speed = 0.33f * target_speed;
+    const float target_speed = (is_first_layer() ? m_first_layer_speed : m_speed) * 60.f;
+    float wipe_speed = (m_wipe_starting_speed < target_speed ? m_wipe_starting_speed : target_speed) * 60.f;
 
     // if there is less than 2.5*m_perimeter_width to the edge, advance straightaway (there is likely a blob anyway)
     if ((m_left_to_right ? xr-writer.x() : writer.x()-xl) < 2.5f*m_perimeter_width) {
@@ -1020,14 +1026,15 @@ void WipeTower::toolchange_Wipe(
     
     // now the wiping itself:
 	for (int i = 0; true; ++i)	{
-		if (i!=0) {
+        //const float wipe_speed = starting_speed + ((target_speed - starting_speed) * x_wiped / x_wipe_target);
+        if (i!=0) {
             if      (wipe_speed < 0.34f * target_speed) wipe_speed = 0.375f * target_speed;
             else if (wipe_speed < 0.377 * target_speed) wipe_speed = 0.458f * target_speed;
             else if (wipe_speed < 0.46f * target_speed) wipe_speed = 0.875f * target_speed;
             else wipe_speed = std::min(target_speed, wipe_speed + 50.f);
 		}
 
-		float traversed_x = writer.x();
+		const float x_start = writer.x();
 		if (m_left_to_right)
             writer.extrude(xr - (i % 4 == 0 ? 0 : 1.5f*m_perimeter_width), writer.y(), wipe_speed);
 		else
@@ -1036,9 +1043,9 @@ void WipeTower::toolchange_Wipe(
         if (writer.y()+float(EPSILON) > cleaning_box.lu.y()-0.5f*m_perimeter_width)
             break;		// in case next line would not fit
 
-		traversed_x -= writer.x();
-        x_to_wipe -= std::abs(traversed_x);
-		if (x_to_wipe < WT_EPSILON) {
+		const float traversed_x = x_start - writer.x();
+        x_wiped += std::abs(traversed_x);
+		if ((x_wiped + WT_EPSILON) >= x_wipe_target) {
             writer.travel(m_left_to_right ? xl + 1.5f*m_perimeter_width : xr - 1.5f*m_perimeter_width, writer.y(), 7200);
 			break;
 		}
@@ -1078,7 +1085,7 @@ WipeTower::ToolChangeResult WipeTower::finish_layer()
 
 	// Slow down on the 1st layer.
     bool first_layer = is_first_layer();
-    float feedrate = first_layer ? m_first_layer_speed * 60.f : 2900.f;
+    float feedrate = first_layer ? m_first_layer_speed * 60.f : m_speed * 60.f;
 	float current_depth = m_layer_info->depth - m_layer_info->toolchanges_depth();
     box_coordinates fill_box(Vec2f(m_perimeter_width, m_layer_info->depth-(current_depth-m_perimeter_width)),
                              m_wipe_tower_width - 2 * m_perimeter_width, current_depth-m_perimeter_width);

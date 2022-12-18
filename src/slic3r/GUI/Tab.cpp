@@ -1638,6 +1638,8 @@ void TabPrint::build()
         optgroup->append_single_option_line("wipe_tower_bridging");
         optgroup->append_single_option_line("wipe_tower_no_sparse_layers");
         optgroup->append_single_option_line("single_extruder_multi_material_priming");
+        optgroup->append_single_option_line("wipe_tower_speed");
+        optgroup->append_single_option_line("wipe_tower_wipe_starting_speed");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("interface_shells");

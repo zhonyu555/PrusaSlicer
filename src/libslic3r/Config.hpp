@@ -380,7 +380,7 @@ public:
     void set(const ConfigOption *rhs) override
     {
         if (rhs->type() != this->type())
-            throw ConfigurationError("ConfigOptionVector: Assigning an incompatible type");
+           throw ConfigurationError("ConfigOptionVector: Assigning an incompatible type");
         assert(dynamic_cast<const ConfigOptionVector<T>*>(rhs));
         this->values = static_cast<const ConfigOptionVector<T>*>(rhs)->values;
     }

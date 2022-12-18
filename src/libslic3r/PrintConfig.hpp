@@ -782,6 +782,8 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionFloat,              wipe_tower_rotation_angle))
     ((ConfigOptionFloat,              wipe_tower_brim_width))
     ((ConfigOptionFloat,              wipe_tower_bridging))
+    ((ConfigOptionFloat,              wipe_tower_speed))
+    ((ConfigOptionFloat,              wipe_tower_wipe_starting_speed))
     ((ConfigOptionFloats,             wiping_volumes_matrix))
     ((ConfigOptionFloats,             wiping_volumes_extruders))
     ((ConfigOptionFloat,              z_offset))

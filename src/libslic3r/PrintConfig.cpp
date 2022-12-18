@@ -3042,6 +3042,20 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(10.));
 
+    def = this->add("wipe_tower_speed", coFloat);
+    def->label = L("Speed");
+    def->tooltip = L("Printing speed of the wipe tower. Capped by filament_max_volumetric_speed (if set).");
+    def->sidetext = L("mm/s");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(80.));
+
+    def = this->add("wipe_tower_wipe_starting_speed", coFloat);
+    def->label = L("Wipe starting speed");
+    def->tooltip = L("Start of the wiping speed ramp up. Set to 0 to disable.");
+    def->sidetext = L("mm/s");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(26.));
+
     def = this->add("xy_size_compensation", coFloat);
     def->label = L("XY Size Compensation");
     def->category = L("Advanced");
