@@ -1254,6 +1254,15 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     m_placeholder_parser.set("has_wipe_tower", has_wipe_tower);
     m_placeholder_parser.set("has_single_extruder_multi_material_priming", has_wipe_tower && print.config().single_extruder_multi_material_priming);
     m_placeholder_parser.set("total_toolchanges", std::max(0, print.wipe_tower_data().number_of_toolchanges)); // Check for negative toolchanges (single extruder mode) and set to 0 (no tool change).
+    // Placeholder with list of tools used in print. Useful for MMU setup & checking prior to starting print
+    std::string tools_used = "";
+    for (unsigned int extruder_id : print.extruders()) {
+        if (print.wipe_tower_data().used_filament[extruder_id] > 0) {
+            if (tools_used.size() > 0)
+                tools_used += ",";
+            tools_used += std::to_string(extruder_id);
+        }
+    }
     {
         BoundingBoxf bbox(print.config().bed_shape.values);
         m_placeholder_parser.set("print_bed_min",  new ConfigOptionFloats({ bbox.min.x(), bbox.min.y() }));
