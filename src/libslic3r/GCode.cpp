@@ -1263,6 +1263,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
             tools_used += std::to_string(extruder_id);
         }
     }
+    m_placeholder_parser.set("tools_used", tools_used);
     {
         BoundingBoxf bbox(print.config().bed_shape.values);
         m_placeholder_parser.set("print_bed_min",  new ConfigOptionFloats({ bbox.min.x(), bbox.min.y() }));
