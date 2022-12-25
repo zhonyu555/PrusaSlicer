@@ -1185,12 +1185,22 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     bool         has_wipe_tower      = false;
     std::vector<const PrintInstance*> 					print_object_instances_ordering;
     std::vector<const PrintInstance*>::const_iterator 	print_object_instance_sequential_active;
+    std::vector<unsigned int> referenced_extruders;
     if (print.config().complete_objects.value) {
         // Order object instances for sequential print.
         print_object_instances_ordering = sort_object_instances_by_model_order(print);
 //        print_object_instances_ordering = sort_object_instances_by_max_z(print);
         // Find the 1st printing object, find its tool ordering and the initial extruder ID.
         print_object_instance_sequential_active = print_object_instances_ordering.begin();
+        // Look at all objects to collect all the referenced tools for placeholder
+        for (; print_object_instance_sequential_active != print_object_instances_ordering.end(); ++ print_object_instance_sequential_active) {
+            tool_ordering = ToolOrdering(*(*print_object_instance_sequential_active)->print_object, initial_extruder_id);
+            for (unsigned int extruder_id : tool_ordering.all_extruders()) {
+                if (std::find(referenced_extruders.begin(), referenced_extruders.end(), extruder_id) == referenced_extruders.end()) {
+                    if (extruder_id >=0 ) referenced_extruders.push_back(extruder_id);
+                }
+            }
+        }
         for (; print_object_instance_sequential_active != print_object_instances_ordering.end(); ++ print_object_instance_sequential_active) {
             tool_ordering = ToolOrdering(*(*print_object_instance_sequential_active)->print_object, initial_extruder_id);
             if ((initial_extruder_id = tool_ordering.first_extruder()) != static_cast<unsigned int>(-1))
@@ -1254,18 +1264,18 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     m_placeholder_parser.set("has_wipe_tower", has_wipe_tower);
     m_placeholder_parser.set("has_single_extruder_multi_material_priming", has_wipe_tower && print.config().single_extruder_multi_material_priming);
     m_placeholder_parser.set("total_toolchanges", std::max(0, print.wipe_tower_data().number_of_toolchanges)); // Check for negative toolchanges (single extruder mode) and set to 0 (no tool change).
-    // Placeholder with list of tools used in print. Useful for MMU setup & checking prior to starting print
-    std::string tools_used = "";
-    if (has_wipe_tower) {
-        for (unsigned int extruder_id : print.extruders()) {
-            if (print.wipe_tower_data().used_filament[extruder_id] > 0) {
-                if (tools_used.size() > 0)
-                    tools_used += ",";
-                tools_used += std::to_string(extruder_id);
-            }
+    {
+        // Placeholder with list of tools referenced in actual 'Tx' tool changes. Useful for MMU setup & checking prior to starting print
+        std::string referenced_tools = "";
+        if (!print.config().complete_objects.value)
+            referenced_extruders = print.tool_ordering().all_extruders(); // Non sequential printing: Tools already cached in Print object
+        for (unsigned int extruder_id : referenced_extruders) {
+            if (referenced_tools.size() > 0) referenced_tools += ",";
+            referenced_tools += std::to_string(extruder_id);
         }
+        if (referenced_tools == "0") referenced_tools = ""; // Slicer does not emit T0 when just the default tool
+        m_placeholder_parser.set("referenced_tools", referenced_tools);
     }
-    m_placeholder_parser.set("tools_used", tools_used); // Empty string if no tools explicitly defined
     {
         BoundingBoxf bbox(print.config().bed_shape.values);
         m_placeholder_parser.set("print_bed_min",  new ConfigOptionFloats({ bbox.min.x(), bbox.min.y() }));
