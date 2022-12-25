@@ -4,6 +4,7 @@
 #include "MultiMaterialSegmentation.hpp"
 #include "Print.hpp"
 #include "ClipperUtils.hpp"
+#include "ZDither.hpp"
 
 #include <boost/log/trivial.hpp>
 
@@ -46,18 +47,29 @@ static std::vector<ExPolygons> slice_volume(
     const MeshSlicingParamsEx     &params,
     const std::function<void()>   &throw_on_cancel_callback)
 {
-    std::vector<ExPolygons> layers;
-    if (! zs.empty()) {
-        indexed_triangle_set its = volume.mesh().its;
-        if (its.indices.size() > 0) {
-            MeshSlicingParamsEx params2 { params };
-            params2.trafo = params2.trafo * volume.get_matrix();
-            if (params2.trafo.rotation().determinant() < 0.)
-                its_flip_triangles(its);
-            layers = slice_mesh_ex(its, zs, params2, throw_on_cancel_callback);
-            throw_on_cancel_callback();
-        }
+    indexed_triangle_set its = volume.mesh().its;
+    if (zs.empty() || its.indices.size() == 0)
+        return std::vector<ExPolygons>();
+    
+    MeshSlicingParamsEx params2{params};
+    params2.trafo = params2.trafo * volume.get_matrix();
+    if (params2.trafo.rotation().determinant() < 0.) 
+        its_flip_triangles(its);
+    std::vector<ExPolygons>  layers  = slice_mesh_ex(its, zs, params2, throw_on_cancel_callback);
+    /*
+    std::vector<ExPolygons5> layers5 = z_dither(its, zs, params2, layers, throw_on_cancel_callback);
+    // It is not quite clear what is the best way to incorporate z-dithering into the rest of PrusaSlicer.
+    // I would need some developer assistance. 
+    // The code below is an aid in debugging
+    // Make new output vector<ExPolygons> and let vector destructors release layers and layers3
+    std::vector<ExPolygons> out;
+    out.reserve(layers5.size());
+    for (int i = 0; i < layers5.size(); i++) {
+        // To visualize ditherUp[0] while in development
+        out.push_back(ExPolygons(layers5[i].ditherUp[0].empty() ? layers5[i].whole : layers5[i].ditherUp[0]));
     }
+    */
+    throw_on_cancel_callback();
     return layers;
 }
 
@@ -141,6 +153,8 @@ static std::vector<VolumeSlices> slice_volumes_inner(
     params_base.extra_offset   = 0;
     params_base.trafo          = object_trafo;
     params_base.resolution     = print_config.resolution.value;
+    const std::vector<double> &diameters = print_config.nozzle_diameter.values;
+    params_base.nozzle_diameter = float(*std::min_element(diameters.begin(), diameters.end()));
 
     switch (print_object_config.slicing_mode.value) {
     case SlicingMode::Regular:    params_base.mode = MeshSlicingParams::SlicingMode::Regular; break;

@@ -260,6 +260,8 @@ set(SLIC3R_SOURCES
     TriangleSelector.cpp
     TriangleSelector.hpp
     MTUtils.hpp
+    ZDither.hpp
+    ZDither.cpp
     Zipper.hpp
     Zipper.cpp
     MinAreaBoundingBox.hpp

@@ -11,6 +11,41 @@ namespace Slic3r {
 class ExPolygon;
 using ExPolygons = std::vector<ExPolygon>;
 
+struct ExPolygons5
+{
+    ExPolygons5()                         = default;
+    ExPolygons5(const ExPolygons5 &other) = default;
+    ExPolygons5(ExPolygons5 &&other)      = default;
+    explicit ExPolygons5(ExPolygons main) : whole(main) {};
+    ExPolygons5 &operator=(const ExPolygons5 &other) = default;
+    ExPolygons5 &operator=(ExPolygons5 &&other) = default;
+    // z-dithering reduces stair-step appearance of layers of low-slope surfaces by splitting
+    // each layer into up to 5 regions of different thinkness deposited from different heights.
+    ExPolygons whole;           // Most of the layer made without z-dithering potentialy reduced near
+                                // low sloped surfaces
+    ExPolygons ditherUp[2];     // Upto two regions near upward facing surface. May be absent.
+                                // ditherUp[0] - deposited on top of previous layer, 0.25 layer height
+                                // ditherUp[1] - deposited on top of ditherUp[0], 0.5 layer height
+    ExPolygons ditherDn[2];     // Upto two regions near downward facing surface. May be absent.
+                                // ditherDn[0] - deposited from the height of next layer bottom, 0.25 layer height
+                                // ditherDn[1] - deposited from the height of ditherDn[0] bottom, 0.5 layer height
+                                // In actual priting ditherDn[1] should be printed before ditherDn[0]
+    bool         empty() const
+    {
+        return whole.empty() && ditherUp[0].empty() && ditherUp[1].empty() &&
+            ditherDn[0].empty() && ditherDn[1].empty();
+    }
+    void         clear()
+    {
+        whole.clear();
+        ditherUp[0].clear();
+        ditherUp[1].clear();
+        ditherDn[0].clear();
+        ditherDn[1].clear();
+    }
+};
+
+
 class ExPolygon
 {
 public:
