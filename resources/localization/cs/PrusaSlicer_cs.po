@@ -7717,7 +7717,7 @@ msgstr "Poznámka: Je vyžadována verze Repetier alespoň 0.90.0."
 
 #: src/slic3r/GUI/SavePresetDialog.cpp:137
 msgid "Note: This preset will be replaced after saving"
-msgstr "Upozornění: Taoto přednastavení bude po uložení nahrazeno"
+msgstr "Upozornění: Tato přednastavení bude po uložení nahrazeno"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1197
 msgid "Note: some shortcuts work in (non)editing mode only."
