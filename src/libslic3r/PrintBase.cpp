@@ -70,8 +70,8 @@ std::string PrintBase::output_filename(const std::string &format, const std::str
     PlaceholderParser::update_timestamp(cfg);
     this->update_object_placeholders(cfg, default_ext);
     if (! filename_base.empty()) {
-		cfg.set_key_value("input_filename", new ConfigOptionString(filename_base + default_ext));
-		cfg.set_key_value("input_filename_base", new ConfigOptionString(filename_base));
+		cfg.set_key_value("project_filename", new ConfigOptionString(filename_base + default_ext));
+		cfg.set_key_value("project_filename_base", new ConfigOptionString(filename_base));
     }
     try {
 		boost::filesystem::path filename = format.empty() ?
