@@ -242,6 +242,9 @@ private:
     // Bounding box of a single full instance selection, in local coordinates, with no instance scaling applied.
     // Modifiers are taken in account
     std::optional<BoundingBoxf3> m_full_unscaled_instance_local_bounding_box;
+    // Bounding box aligned to the axis of the currently selected reference system (World/Object/Part)
+    // and transform to place and orient it in world coordinates
+    std::optional<std::pair<BoundingBoxf3, Transform3d>> m_bounding_box_in_current_reference_system;
 #endif // ENABLE_WORLD_COORDINATE
 
 #if ENABLE_RENDER_SELECTION_CENTER
@@ -253,7 +256,6 @@ private:
 #endif // ENABLE_WORLD_COORDINATE
     GLModel m_arrow;
     GLModel m_curved_arrow;
-#if ENABLE_LEGACY_OPENGL_REMOVAL
     GLModel m_box;
     struct Planes
     {
@@ -261,7 +263,6 @@ private:
         std::array<GLModel, 2> models;
     };
     Planes m_planes;
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     float m_scale_factor;
 
@@ -302,7 +303,7 @@ public:
     void set_deserialized(EMode mode, const std::vector<std::pair<size_t, size_t>> &volumes_and_instances);
 
     // Update the selection based on the new instance IDs.
-	void instances_changed(const std::vector<size_t> &instance_ids_selected);
+    void instances_changed(const std::vector<size_t> &instance_ids_selected);
     // Update the selection based on the map from old indices to new indices after m_volumes changed.
     // If the current selection is by instance, this call may select newly added volumes, if they belong to already selected instances.
     void volumes_changed(const std::vector<size_t> &map_volume_old_to_new);
@@ -320,6 +321,8 @@ public:
     bool is_single_volume() const { return m_type == SingleVolume; }
     bool is_multiple_volume() const { return m_type == MultipleVolume; }
     bool is_any_volume() const { return is_single_volume() || is_multiple_volume(); }
+    bool is_any_connector() const;
+    bool is_any_cut_volume() const;
     bool is_mixed() const { return m_type == Mixed; }
     bool is_from_single_instance() const { return get_instance_idx() != -1; }
     bool is_from_single_object() const;
@@ -328,12 +331,16 @@ public:
 #if ENABLE_WORLD_COORDINATE
     bool is_single_volume_or_modifier() const { return is_single_volume() || is_single_modifier(); }
 #endif // ENABLE_WORLD_COORDINATE
+    bool is_single_volume_instance() const { return is_single_full_instance() && m_list.size() == 1; }
+    bool is_single_text() const;
 
     bool contains_volume(unsigned int volume_idx) const { return m_list.find(volume_idx) != m_list.end(); }
     // returns true if the selection contains all the given indices
     bool contains_all_volumes(const std::vector<unsigned int>& volume_idxs) const;
     // returns true if the selection contains at least one of the given indices
     bool contains_any_volume(const std::vector<unsigned int>& volume_idxs) const;
+    // returns true if the selection contains any sinking volume
+    bool contains_sinking_volumes(bool ignore_modifiers = true) const;
     // returns true if the selection contains all and only the given indices
     bool matches(const std::vector<unsigned int>& volume_idxs) const;
 
@@ -361,6 +368,7 @@ public:
     const IndicesList& get_volume_idxs() const { return m_list; }
     const GLVolume* get_volume(unsigned int volume_idx) const;
     const GLVolume* get_first_volume() const { return get_volume(*m_list.begin()); }
+    GLVolume* get_volume(unsigned int volume_idx);
 
     const ObjectIdxsToInstanceIdxsMap& get_content() const { return m_cache.content; }
 
@@ -380,10 +388,15 @@ public:
     // Bounding box of a single full instance selection, in world coordinates.
     // Modifiers are taken in account
     const BoundingBoxf3& get_full_scaled_instance_bounding_box() const;
-
     // Bounding box of a single full instance selection, in local coordinates, with no instance scaling applied.
     // Modifiers are taken in account
     const BoundingBoxf3& get_full_unscaled_instance_local_bounding_box() const;
+    // Returns the bounding box aligned to the axes of the currently selected reference system (World/Object/Part)
+    // and the transform to place and orient it in world coordinates
+    const std::pair<BoundingBoxf3, Transform3d>& get_bounding_box_in_current_reference_system() const;
+    // Returns the bounding box aligned to the axes of the given reference system
+    // and the transform to place and orient it in world coordinates
+    std::pair<BoundingBoxf3, Transform3d> get_bounding_box_in_reference_system(ECoordinatesType type) const;
 #endif // ENABLE_WORLD_COORDINATE
 
     void setup_cache();
@@ -397,11 +410,12 @@ public:
     void flattening_rotate(const Vec3d& normal);
     void scale(const Vec3d& scale, TransformationType transformation_type);
     void scale_to_fit_print_volume(const BuildVolume& volume);
-    void mirror(Axis axis);
 #if ENABLE_WORLD_COORDINATE
     void scale_and_translate(const Vec3d& scale, const Vec3d& translation, TransformationType transformation_type);
+    void mirror(Axis axis, TransformationType transformation_type);
     void reset_skew();
 #else
+    void mirror(Axis axis);
     void translate(unsigned int object_idx, const Vec3d& displacement);
 #endif // ENABLE_WORLD_COORDINATE
     void translate(unsigned int object_idx, unsigned int instance_idx, const Vec3d& displacement);
@@ -440,6 +454,10 @@ public:
     // returns the list of idxs of the volumes contained in the given list but not in the selection
     std::vector<unsigned int> get_unselected_volume_idxs_from(const std::vector<unsigned int>& volume_idxs) const;
 
+#if ENABLE_WORLD_COORDINATE_DEBUG
+    void render_debug_window() const;
+#endif // ENABLE_WORLD_COORDINATE_DEBUG
+
 private:
     void update_valid();
     void update_type();
@@ -454,33 +472,24 @@ private:
         m_bounding_box.reset();
         m_unscaled_instance_bounding_box.reset(); m_scaled_instance_bounding_box.reset();
         m_full_unscaled_instance_bounding_box.reset(); m_full_scaled_instance_bounding_box.reset();
-        m_full_unscaled_instance_local_bounding_box.reset();;
+        m_full_unscaled_instance_local_bounding_box.reset();
+        m_bounding_box_in_current_reference_system.reset();
     }
 #else
     void set_bounding_boxes_dirty() { m_bounding_box.reset(); m_unscaled_instance_bounding_box.reset(); m_scaled_instance_bounding_box.reset(); }
 #endif // ENABLE_WORLD_COORDINATE
     void render_synchronized_volumes();
-#if ENABLE_LEGACY_OPENGL_REMOVAL
 #if ENABLE_WORLD_COORDINATE
     void render_bounding_box(const BoundingBoxf3& box, const Transform3d& trafo, const ColorRGB& color);
 #else
     void render_bounding_box(const BoundingBoxf3& box, const ColorRGB& color);
 #endif // ENABLE_WORLD_COORDINATE
-#else
     void render_selected_volumes() const;
     void render_bounding_box(const BoundingBoxf3& box, float* color) const;
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-#if ENABLE_GL_SHADERS_ATTRIBUTES
     void render_sidebar_position_hints(const std::string& sidebar_field, GLShaderProgram& shader, const Transform3d& matrix);
     void render_sidebar_rotation_hints(const std::string& sidebar_field, GLShaderProgram& shader, const Transform3d& matrix);
     void render_sidebar_scale_hints(const std::string& sidebar_field, GLShaderProgram& shader, const Transform3d& matrix);
     void render_sidebar_layers_hints(const std::string& sidebar_field, GLShaderProgram& shader);
-#else
-    void render_sidebar_position_hints(const std::string& sidebar_field);
-    void render_sidebar_rotation_hints(const std::string& sidebar_field);
-    void render_sidebar_scale_hints(const std::string& sidebar_field);
-    void render_sidebar_layers_hints(const std::string& sidebar_field);
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
 
 public:
     enum class SyncRotationType {
@@ -505,8 +514,10 @@ private:
     void paste_objects_from_clipboard();
 
 #if ENABLE_WORLD_COORDINATE
+    void transform_instance_relative_world(GLVolume& volume, const VolumeCache& volume_data, TransformationType transformation_type,
+        const Transform3d& transform, const Vec3d& world_pivot);
     void transform_volume_relative(GLVolume& volume, const VolumeCache& volume_data, TransformationType transformation_type,
-        const Transform3d& transform);
+        const Transform3d& transform, const Vec3d& world_pivot);
 #endif // ENABLE_WORLD_COORDINATE
 };
 

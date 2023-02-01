@@ -351,10 +351,20 @@ Transform3d rotation_transform(const Vec3d& rotation)
     return transform;
 }
 
+void scale_transform(Transform3d& transform, double scale)
+{
+    return scale_transform(transform, scale * Vec3d::Ones());
+}
+
 void scale_transform(Transform3d& transform, const Vec3d& scale)
 {
     transform = Transform3d::Identity();
     transform.scale(scale);
+}
+
+Transform3d scale_transform(double scale)
+{
+    return scale_transform(scale * Vec3d::Ones());
 }
 
 Transform3d scale_transform(const Vec3d& scale)
@@ -364,46 +374,17 @@ Transform3d scale_transform(const Vec3d& scale)
     return transform;
 }
 
-Vec3d extract_euler_angles(const Eigen::Matrix<double, 3, 3, Eigen::DontAlign>& rotation_matrix)
+Vec3d extract_rotation(const Eigen::Matrix<double, 3, 3, Eigen::DontAlign>& rotation_matrix)
 {
-    // reference: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-    Vec3d angles1 = Vec3d::Zero();
-    Vec3d angles2 = Vec3d::Zero();
-    if (std::abs(std::abs(rotation_matrix(2, 0)) - 1.0) < 1e-5) {
-        angles1.z() = 0.0;
-        if (rotation_matrix(2, 0) < 0.0) { // == -1.0
-            angles1.y() = 0.5 * double(PI);
-            angles1.x() = angles1.z() + ::atan2(rotation_matrix(0, 1), rotation_matrix(0, 2));
-        }
-        else { // == 1.0
-            angles1.y() = - 0.5 * double(PI);
-            angles1.x() = - angles1.y() + ::atan2(- rotation_matrix(0, 1), - rotation_matrix(0, 2));
-        }
-        angles2 = angles1;
-    }
-    else {
-        angles1.y() = -::asin(rotation_matrix(2, 0));
-        const double inv_cos1 = 1.0 / ::cos(angles1.y());
-        angles1.x() = ::atan2(rotation_matrix(2, 1) * inv_cos1, rotation_matrix(2, 2) * inv_cos1);
-        angles1.z() = ::atan2(rotation_matrix(1, 0) * inv_cos1, rotation_matrix(0, 0) * inv_cos1);
-
-        angles2.y() = double(PI) - angles1.y();
-        const double inv_cos2 = 1.0 / ::cos(angles2.y());
-        angles2.x() = ::atan2(rotation_matrix(2, 1) * inv_cos2, rotation_matrix(2, 2) * inv_cos2);
-        angles2.z() = ::atan2(rotation_matrix(1, 0) * inv_cos2, rotation_matrix(0, 0) * inv_cos2);
-    }
-
-    // The following euristic is the best found up to now (in the sense that it works fine with the greatest number of edge use-cases)
-    // but there are other use-cases were it does not
-    // We need to improve it
-    const double min_1 = angles1.cwiseAbs().minCoeff();
-    const double min_2 = angles2.cwiseAbs().minCoeff();
-    const bool use_1 = (min_1 < min_2) || (is_approx(min_1, min_2) && (angles1.norm() <= angles2.norm()));
-
-    return use_1 ? angles1 : angles2;
+    // The extracted "rotation" is a triplet of numbers such that Geometry::rotation_transform
+    // returns the original transform. Because of the chosen order of rotations, the triplet
+    // is not equivalent to Euler angles in the usual sense.
+    Vec3d angles = rotation_matrix.eulerAngles(2,1,0);
+    std::swap(angles(0), angles(2));
+    return angles;
 }
 
-Vec3d extract_euler_angles(const Transform3d& transform)
+Vec3d extract_rotation(const Transform3d& transform)
 {
     // use only the non-translational part of the transform
     Eigen::Matrix<double, 3, 3, Eigen::DontAlign> m = transform.matrix().block(0, 0, 3, 3);
@@ -411,16 +392,16 @@ Vec3d extract_euler_angles(const Transform3d& transform)
     m.col(0).normalize();
     m.col(1).normalize();
     m.col(2).normalize();
-    return extract_euler_angles(m);
+    return extract_rotation(m);
 }
 
 #if ENABLE_WORLD_COORDINATE
 Transform3d Transformation::get_offset_matrix() const
 {
-    return assemble_transform(get_offset());
+    return translation_transform(get_offset());
 }
 
-static Transform3d extract_rotation(const Transform3d& trafo)
+static Transform3d extract_rotation_matrix(const Transform3d& trafo)
 {
     Matrix3d rotation;
     Matrix3d scale;
@@ -449,17 +430,36 @@ static bool contains_skew(const Transform3d& trafo)
     Matrix3d rotation;
     Matrix3d scale;
     trafo.computeRotationScaling(&rotation, &scale);
-    return !scale.isDiagonal();
+
+    if (scale.isDiagonal())
+      return false;
+    
+    if (scale.determinant() >= 0.0)
+      return true;
+
+    // the matrix contains mirror
+    const Matrix3d ratio = scale.cwiseQuotient(trafo.matrix().block<3,3>(0,0));
+
+    auto check_skew = [&ratio](int i, int j, bool& skew) {
+      if (!std::isnan(ratio(i, j)) && !std::isnan(ratio(j, i)))
+        skew |= std::abs(ratio(i, j) * ratio(j, i) - 1.0) > EPSILON;
+    };
+
+    bool has_skew = false;
+    check_skew(0, 1, has_skew);
+    check_skew(0, 2, has_skew);
+    check_skew(1, 2, has_skew);
+    return has_skew;
 }
 
 Vec3d Transformation::get_rotation() const
 {
-    return extract_euler_angles(extract_rotation(m_matrix));
+    return extract_rotation(extract_rotation_matrix(m_matrix));
 }
 
 Transform3d Transformation::get_rotation_matrix() const
 {
-    return extract_rotation(m_matrix);
+    return extract_rotation_matrix(m_matrix);
 }
 #else
 bool Transformation::Flags::needs_update(bool dont_translate, bool dont_rotate, bool dont_scale, bool dont_mirror) const
@@ -522,7 +522,7 @@ void Transformation::set_rotation(Axis axis, double rotation)
 
 #if ENABLE_WORLD_COORDINATE
     auto [curr_rotation, scale] = extract_rotation_scale(m_matrix);
-    Vec3d angles = extract_euler_angles(curr_rotation);
+    Vec3d angles = extract_rotation(curr_rotation);
     angles[axis] = rotation;
 
     const Vec3d offset = get_offset();
@@ -540,12 +540,16 @@ void Transformation::set_rotation(Axis axis, double rotation)
 Vec3d Transformation::get_scaling_factor() const
 {
     const Transform3d scale = extract_scale(m_matrix);
-    return { scale(0, 0), scale(1, 1), scale(2, 2) };
+    return { std::abs(scale(0, 0)), std::abs(scale(1, 1)), std::abs(scale(2, 2)) };
 }
 
 Transform3d Transformation::get_scaling_factor_matrix() const
 {
-    return extract_scale(m_matrix);
+    Transform3d scale = extract_scale(m_matrix);
+    scale(0, 0) = std::abs(scale(0, 0));
+    scale(1, 1) = std::abs(scale(1, 1));
+    scale(2, 2) = std::abs(scale(2, 2));
+    return scale;
 }
 #endif // ENABLE_WORLD_COORDINATE
 
@@ -555,7 +559,7 @@ void Transformation::set_scaling_factor(const Vec3d& scaling_factor)
     assert(scaling_factor.x() > 0.0 && scaling_factor.y() > 0.0 && scaling_factor.z() > 0.0);
 
     const Vec3d offset = get_offset();
-    m_matrix = extract_rotation(m_matrix) * scale_transform(scaling_factor);
+    m_matrix = extract_rotation_matrix(m_matrix) * scale_transform(scaling_factor);
     m_matrix.translation() = offset;
 #else
     set_scaling_factor(X, scaling_factor.x());
@@ -568,6 +572,7 @@ void Transformation::set_scaling_factor(Axis axis, double scaling_factor)
 {
 #if ENABLE_WORLD_COORDINATE
     assert(scaling_factor > 0.0);
+
     auto [rotation, scale] = extract_rotation_scale(m_matrix);
     scale(axis, axis) = scaling_factor;
 
@@ -591,8 +596,11 @@ Vec3d Transformation::get_mirror() const
 
 Transform3d Transformation::get_mirror_matrix() const
 {
-    const Vec3d scale = get_scaling_factor();
-    return scale_transform({ scale.x() / std::abs(scale.x()), scale.y() / std::abs(scale.y()), scale.z() / std::abs(scale.z()) });
+    Transform3d scale = extract_scale(m_matrix);
+    scale(0, 0) = scale(0, 0) / std::abs(scale(0, 0));
+    scale(1, 1) = scale(1, 1) / std::abs(scale(1, 1));
+    scale(2, 2) = scale(2, 2) / std::abs(scale(2, 2));
+    return scale;
 }
 #endif // ENABLE_WORLD_COORDINATE
 
@@ -608,13 +616,17 @@ void Transformation::set_mirror(const Vec3d& mirror)
             copy(i) /= abs_mirror(i);
     }
 
-    const Vec3d curr_scale = get_scaling_factor();
-    const Vec3d signs = curr_scale.cwiseProduct(copy);
-    set_scaling_factor({
-        signs.x() < 0.0 ? std::abs(curr_scale.x()) * copy.x() : curr_scale.x(),
-        signs.y() < 0.0 ? std::abs(curr_scale.y()) * copy.y() : curr_scale.y(),
-        signs.z() < 0.0 ? std::abs(curr_scale.z()) * copy.z() : curr_scale.z()
-        });
+    auto [rotation, scale] = extract_rotation_scale(m_matrix);
+    const Vec3d curr_scales = { scale(0, 0), scale(1, 1), scale(2, 2) };
+    const Vec3d signs = curr_scales.cwiseProduct(copy);
+
+    if (signs[0] < 0.0) scale(0, 0) = -scale(0, 0);
+    if (signs[1] < 0.0) scale(1, 1) = -scale(1, 1);
+    if (signs[2] < 0.0) scale(2, 2) = -scale(2, 2);
+
+    const Vec3d offset = get_offset();
+    m_matrix = rotation * scale;
+    m_matrix.translation() = offset;
 #else
     set_mirror(X, mirror.x());
     set_mirror(Y, mirror.y());
@@ -631,9 +643,15 @@ void Transformation::set_mirror(Axis axis, double mirror)
         mirror /= abs_mirror;
 
 #if ENABLE_WORLD_COORDINATE
-    const double curr_scale = get_scaling_factor(axis);
+    auto [rotation, scale] = extract_rotation_scale(m_matrix);
+    const double curr_scale = scale(axis, axis);
     const double sign = curr_scale * mirror;
-    set_scaling_factor(axis, sign < 0.0 ? std::abs(curr_scale) * mirror : curr_scale);
+
+    if (sign < 0.0) scale(axis, axis) = -scale(axis, axis);
+
+    const Vec3d offset = get_offset();
+    m_matrix = rotation * scale;
+    m_matrix.translation() = offset;
 #else
     if (m_mirror(axis) != mirror) {
         m_mirror(axis) = mirror;
@@ -676,7 +694,7 @@ void Transformation::set_from_transform(const Transform3d& transform)
     m3x3.col(2).normalize();
 
     // rotation
-    set_rotation(extract_euler_angles(m3x3));
+    set_rotation(extract_rotation(m3x3));
 
     // forces matrix recalculation matrix
     m_matrix = get_matrix();
@@ -710,7 +728,7 @@ void Transformation::reset_skew()
 
     const double average_scale = std::cbrt(scale(0, 0) * scale(1, 1) * scale(2, 2));
 
-    scale(0, 0) = average_scale;
+    scale(0, 0) = is_left_handed() ? -average_scale : average_scale;
     scale(1, 1) = average_scale;
     scale(2, 2) = average_scale;
 
@@ -737,7 +755,6 @@ Transform3d Transformation::get_matrix_no_scaling_factor() const
 {
     Transformation copy(*this);
     copy.reset_scaling_factor();
-    copy.reset_mirror();
     return copy.get_matrix();
 }
 #else
@@ -806,7 +823,7 @@ Transformation Transformation::volume_to_bed_transformation(const Transformation
         for (int i = 0; i < 3; ++i)
             scale(i) = pts.col(i).dot(qs.col(i)) / pts.col(i).dot(pts.col(i));
 
-        out.set_rotation(Geometry::extract_euler_angles(volume_rotation_trafo));
+        out.set_rotation(Geometry::extract_rotation(volume_rotation_trafo));
         out.set_scaling_factor(Vec3d(std::abs(scale.x()), std::abs(scale.y()), std::abs(scale.z())));
         out.set_mirror(Vec3d(scale.x() > 0 ? 1. : -1, scale.y() > 0 ? 1. : -1, scale.z() > 0 ? 1. : -1));
     }
@@ -855,18 +872,15 @@ Eigen::Quaterniond rotation_xyz_diff(const Vec3d &rot_xyz_from, const Vec3d &rot
 }
 
 // This should only be called if it is known, that the two rotations only differ in rotation around the Z axis.
-double rotation_diff_z(const Vec3d &rot_xyz_from, const Vec3d &rot_xyz_to)
+double rotation_diff_z(const Transform3d &trafo_from, const Transform3d &trafo_to)
 {
-    const Eigen::AngleAxisd angle_axis(rotation_xyz_diff(rot_xyz_from, rot_xyz_to));
-    const Vec3d& axis  = angle_axis.axis();
-    const double angle = angle_axis.angle();
-#ifndef NDEBUG
-    if (std::abs(angle) > 1e-8) {
-        assert(std::abs(axis.x()) < 1e-8);
-        assert(std::abs(axis.y()) < 1e-8);
-    }
-#endif /* NDEBUG */
-    return (axis.z() < 0) ? -angle : angle;
+    auto  m  = trafo_to.linear() * trafo_from.linear().inverse();
+    assert(std::abs(m.determinant() - 1) < EPSILON);
+    Vec3d vx = m * Vec3d(1., 0., 0);
+    // Verify that the linear part of rotation from trafo_from to trafo_to rotates around Z and is unity.
+    assert(std::abs(std::hypot(vx.x(), vx.y()) - 1.) < 1e-5);
+    assert(std::abs(vx.z()) < 1e-5);
+    return atan2(vx.y(), vx.x());
 }
 
 }} // namespace Slic3r::Geometry

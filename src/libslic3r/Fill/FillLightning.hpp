@@ -14,7 +14,7 @@ class Generator;
 struct GeneratorDeleter { void operator()(Generator *p); };
 using  GeneratorPtr = std::unique_ptr<Generator, GeneratorDeleter>;
 
-GeneratorPtr build_generator(const PrintObject &print_object, const std::function<void()> &throw_on_cancel_callback);
+GeneratorPtr build_generator(const PrintObject &print_object, const coordf_t fill_density, const std::function<void()> &throw_on_cancel_callback);
 
 class Filler : public Slic3r::Fill
 {
@@ -22,6 +22,7 @@ public:
     ~Filler() override = default;
 
     Generator   *generator { nullptr };
+    size_t       num_raft_layers { 0 };
 protected:
     Fill* clone() const override { return new Filler(*this); }
 

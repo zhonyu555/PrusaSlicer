@@ -1,7 +1,6 @@
 #include "ArrangeJob.hpp"
 
 #include "libslic3r/BuildVolume.hpp"
-#include "libslic3r/MTUtils.hpp"
 #include "libslic3r/Model.hpp"
 
 #include "slic3r/GUI/Plater.hpp"
@@ -13,6 +12,8 @@
 #include "slic3r/GUI/format.hpp"
 
 #include "libnest2d/common.hpp"
+
+#include <numeric>
 
 namespace Slic3r { namespace GUI {
 
@@ -166,13 +167,20 @@ void ArrangeJob::process(Ctl &ctl)
 {
     static const auto arrangestr = _u8L("Arranging");
 
+    arrangement::ArrangeParams params;
+    Points bedpts;
+    ctl.call_on_main_thread([this, &params, &bedpts]{
+           prepare();
+           params = get_arrange_params(m_plater);
+           bedpts = get_bed_shape(*m_plater->config());
+    }).wait();
+
+    auto count  = unsigned(m_selected.size() + m_unprintable.size());
+
+    if (count == 0) // Should be taken care of by plater, but doesn't hurt
+        return;
+
     ctl.update_status(0, arrangestr);
-    ctl.call_on_main_thread([this]{ prepare(); }).wait();;
-
-    arrangement::ArrangeParams params = get_arrange_params(m_plater);
-
-    auto   count  = unsigned(m_selected.size() + m_unprintable.size());
-    Points bedpts = get_bed_shape(*m_plater->config());
 
     params.stopcondition = [&ctl]() { return ctl.was_canceled(); };
 
@@ -239,7 +247,9 @@ void ArrangeJob::finalize(bool canceled, std::exception_ptr &eptr) {
     
     // Move the unprintable items to the last virtual bed.
     for (ArrangePolygon &ap : m_unprintable) {
-        ap.bed_idx += beds + 1;
+        if (ap.bed_idx >= 0)
+            ap.bed_idx += beds + 1;
+
         ap.apply();
     }
 
@@ -286,6 +296,7 @@ arrangement::ArrangeParams get_arrange_params(Plater *p)
     arrangement::ArrangeParams params;
     params.allow_rotations  = settings.enable_rotation;
     params.min_obj_distance = scaled(settings.distance);
+    params.min_bed_distance = scaled(settings.distance_from_bed);
 
     return params;
 }

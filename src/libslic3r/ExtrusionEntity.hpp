@@ -2,6 +2,7 @@
 #define slic3r_ExtrusionEntity_hpp_
 
 #include "libslic3r.h"
+#include "ExtrusionRole.hpp"
 #include "Polygon.hpp"
 #include "Polyline.hpp"
 
@@ -15,65 +16,6 @@ class ExPolygon;
 using ExPolygons = std::vector<ExPolygon>;
 class ExtrusionEntityCollection;
 class Extruder;
-
-// Each ExtrusionRole value identifies a distinct set of { extruder, speed }
-enum ExtrusionRole : uint8_t {
-    erNone,
-    erPerimeter,
-    erExternalPerimeter,
-    erOverhangPerimeter,
-    erInternalInfill,
-    erSolidInfill,
-    erTopSolidInfill,
-    erIroning,
-    erBridgeInfill,
-    erGapFill,
-    erSkirt,
-    erSupportMaterial,
-    erSupportMaterialInterface,
-    erWipeTower,
-    erCustom,
-    // Extrusion role for a collection with multiple extrusion roles.
-    erMixed,
-    erCount
-};
-
-// Special flags describing loop
-enum ExtrusionLoopRole {
-    elrDefault,
-    elrContourInternalPerimeter,
-    elrSkirt,
-};
-
-
-inline bool is_perimeter(ExtrusionRole role)
-{
-    return role == erPerimeter
-        || role == erExternalPerimeter
-        || role == erOverhangPerimeter;
-}
-
-inline bool is_infill(ExtrusionRole role)
-{
-    return role == erBridgeInfill
-        || role == erInternalInfill
-        || role == erSolidInfill
-        || role == erTopSolidInfill
-        || role == erIroning;
-}
-
-inline bool is_solid_infill(ExtrusionRole role)
-{
-    return role == erBridgeInfill
-        || role == erSolidInfill
-        || role == erTopSolidInfill
-        || role == erIroning;
-}
-
-inline bool is_bridge(ExtrusionRole role) {
-    return role == erBridgeInfill
-        || role == erOverhangPerimeter;
-}
 
 class ExtrusionEntity
 {
@@ -108,9 +50,6 @@ public:
     virtual Polylines as_polylines() const { Polylines dst; this->collect_polylines(dst); return dst; }
     virtual double length() const = 0;
     virtual double total_volume() const = 0;
-
-    static std::string role_to_string(ExtrusionRole role);
-    static ExtrusionRole string_to_role(const std::string_view role);
 };
 
 typedef std::vector<ExtrusionEntity*> ExtrusionEntitiesPtr;
@@ -179,6 +118,16 @@ private:
     ExtrusionRole m_role;
 };
 
+class ExtrusionPathOriented : public ExtrusionPath
+{
+public:
+    ExtrusionPathOriented(ExtrusionRole role, double mm3_per_mm, float width, float height) : ExtrusionPath(role, mm3_per_mm, width, height) {}
+    ExtrusionEntity* clone() const override { return new ExtrusionPathOriented(*this); }
+    // Create a new object, initialize it with this object using the move semantics.
+    ExtrusionEntity* clone_move() override { return new ExtrusionPathOriented(std::move(*this)); }
+    virtual bool can_reverse() const override { return false; }
+};
+
 typedef std::vector<ExtrusionPath> ExtrusionPaths;
 
 // Single continuous extrusion path, possibly with varying extrusion thickness, extrusion height or bridging / non bridging.
@@ -207,7 +156,7 @@ public:
     size_t size() const { return this->paths.size(); }
     bool empty() const { return this->paths.empty(); }
     double length() const override;
-    ExtrusionRole role() const override { return this->paths.empty() ? erNone : this->paths.front().role(); }
+    ExtrusionRole role() const override { return this->paths.empty() ? ExtrusionRole::None : this->paths.front().role(); }
     // Produce a list of 2D polygons covered by the extruded paths, offsetted by the extrusion width.
     // Increase the offset by scaled_epsilon to achieve an overlap, so a union will produce no gaps.
     void polygons_covered_by_width(Polygons &out, const float scaled_epsilon) const override;
@@ -257,14 +206,19 @@ public:
     const Point& last_point() const override { assert(this->first_point() == this->paths.back().polyline.points.back()); return this->first_point(); }
     Polygon polygon() const;
     double length() const override;
-    bool split_at_vertex(const Point &point);
-    void split_at(const Point &point, bool prefer_non_overhang);
-    std::pair<size_t, Point> get_closest_path_and_point(const Point& point, bool prefer_non_overhang) const;
+    bool split_at_vertex(const Point &point, const double scaled_epsilon = scaled<double>(0.001));
+    void split_at(const Point &point, bool prefer_non_overhang, const double scaled_epsilon = scaled<double>(0.001));
+    struct ClosestPathPoint {
+        size_t path_idx;
+        size_t segment_idx;
+        Point  foot_pt;
+    };
+    ClosestPathPoint get_closest_path_and_point(const Point& point, bool prefer_non_overhang) const;
     void clip_end(double distance, ExtrusionPaths* paths) const;
     // Test, whether the point is extruded by a bridging flow.
     // This used to be used to avoid placing seams on overhangs, but now the EdgeGrid is used instead.
     bool has_overhang_point(const Point &point) const;
-    ExtrusionRole role() const override { return this->paths.empty() ? erNone : this->paths.front().role(); }
+    ExtrusionRole role() const override { return this->paths.empty() ? ExtrusionRole::None : this->paths.front().role(); }
     ExtrusionLoopRole loop_role() const { return m_loop_role; }
     // Produce a list of 2D polygons covered by the extruded paths, offsetted by the extrusion width.
     // Increase the offset by scaled_epsilon to achieve an overlap, so a union will produce no gaps.
@@ -288,8 +242,6 @@ public:
             append(dst, p.polyline.points);
     }
     double total_volume() const override { double volume =0.; for (const auto& path : paths) volume += path.total_volume(); return volume; }
-
-    //static inline std::string role_to_string(ExtrusionLoopRole role);
 
 #ifndef NDEBUG
 	bool validate() const {
@@ -325,12 +277,12 @@ inline void extrusion_paths_append(ExtrusionPaths &dst, Polylines &&polylines, E
     polylines.clear();
 }
 
-inline void extrusion_entities_append_paths(ExtrusionEntitiesPtr &dst, const Polylines &polylines, ExtrusionRole role, double mm3_per_mm, float width, float height)
+inline void extrusion_entities_append_paths(ExtrusionEntitiesPtr &dst, const Polylines &polylines, ExtrusionRole role, double mm3_per_mm, float width, float height, bool can_reverse = true)
 {
     dst.reserve(dst.size() + polylines.size());
     for (const Polyline &polyline : polylines)
         if (polyline.is_valid()) {
-            ExtrusionPath *extrusion_path = new ExtrusionPath(role, mm3_per_mm, width, height);
+            ExtrusionPath* extrusion_path = can_reverse ? new ExtrusionPath(role, mm3_per_mm, width, height) : new ExtrusionPathOriented(role, mm3_per_mm, width, height);
             dst.push_back(extrusion_path);
             extrusion_path->polyline = polyline;
         }
