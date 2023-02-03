@@ -1678,7 +1678,7 @@ void GLGizmoCut3D::render_cut_plane_input_window(CutConnectors &connectors)
             reset_cut_plane();
         m_imgui->disabled_end();
 
-        m_imgui->disabled_begin(!m_keep_upper || !m_keep_lower);
+        m_imgui->disabled_begin(!m_keep_upper || !m_keep_lower || m_as_parts);
             if (m_imgui->button(_L("Add/Edit connectors")))
                 set_connectors_editing(true);
         m_imgui->disabled_end();
@@ -1692,7 +1692,7 @@ void GLGizmoCut3D::render_cut_plane_input_window(CutConnectors &connectors)
                 label_width = width;
         }
         
-        auto render_part_action_line = [this, label_width, connectors](const wxString& label, const wxString& suffix, bool& keep_part, bool& place_on_cut_part, bool& rotate_part) {
+        auto render_part_action_line = [this, label_width, connectors](const wxString& label, const wxString& suffix, bool& keep_part, bool& as_parts, bool& place_on_cut_part, bool& rotate_part) {
             bool keep = true;
             ImGui::AlignTextToFramePadding();
             m_imgui->text(label);
@@ -1700,23 +1700,40 @@ void GLGizmoCut3D::render_cut_plane_input_window(CutConnectors &connectors)
             ImGui::SameLine(label_width);
 
             m_imgui->disabled_begin(!connectors.empty());
-                m_imgui->checkbox(_L("Keep") + suffix, connectors.empty() ? keep_part : keep);
+                keep_part = keep_part || as_parts;
+                if (m_imgui->checkbox(_L("Keep") + suffix, connectors.empty() ? keep_part : keep))
+                    as_parts = false;
+            m_imgui->disabled_end();
+
+            ImGui::SameLine();
+
+            m_imgui->disabled_begin(!keep_part || !connectors.empty());
+                as_parts = connectors.empty() && as_parts;
+                if (m_imgui->checkbox(_L("As part") + suffix, as_parts)) {
+                    keep_part = keep_part || as_parts;
+                    rotate_part = false;
+                    place_on_cut_part = false;
+                }
             m_imgui->disabled_end();
 
             ImGui::SameLine();
 
             m_imgui->disabled_begin(!keep_part);
-                if (m_imgui->checkbox(_L("Place on cut") + suffix, place_on_cut_part))
+                if (m_imgui->checkbox(_L("Place on cut") + suffix, place_on_cut_part)) {
+                    as_parts = false;
                     rotate_part = false;
+                }
                 ImGui::SameLine();
-                if (m_imgui->checkbox(_L("Flip") + suffix, rotate_part))
+                if (m_imgui->checkbox(_L("Flip") + suffix, rotate_part)) {
+                    as_parts = false;
                     place_on_cut_part = false;
+                }
             m_imgui->disabled_end();
         };
 
         m_imgui->text(_L("After cut") + ": ");
-        render_part_action_line( _L("Upper part"), "##upper", m_keep_upper, m_place_on_cut_upper, m_rotate_upper);
-        render_part_action_line( _L("Lower part"), "##lower", m_keep_lower, m_place_on_cut_lower, m_rotate_lower);
+        render_part_action_line( _L("Upper part"), "##upper", m_keep_upper, m_as_parts, m_place_on_cut_upper, m_rotate_upper);
+        render_part_action_line( _L("Lower part"), "##lower", m_keep_lower, m_as_parts, m_place_on_cut_lower, m_rotate_lower);
     }
 
     ImGui::Separator();
@@ -2094,6 +2111,7 @@ void GLGizmoCut3D::perform_cut(const Selection& selection)
         plater->cut(object_idx, instance_idx, translation_transform(cut_center_offset) * m_rotation_m,
                     only_if(has_connectors ? true : m_keep_upper, ModelObjectCutAttribute::KeepUpper) |
                     only_if(has_connectors ? true : m_keep_lower, ModelObjectCutAttribute::KeepLower) |
+                    only_if(has_connectors ? false : m_as_parts, ModelObjectCutAttribute::KeepAsParts) |
                     only_if(m_place_on_cut_upper, ModelObjectCutAttribute::PlaceOnCutUpper) |
                     only_if(m_place_on_cut_lower, ModelObjectCutAttribute::PlaceOnCutLower) |
                     only_if(m_rotate_upper, ModelObjectCutAttribute::FlipUpper) |

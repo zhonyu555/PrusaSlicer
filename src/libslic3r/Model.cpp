@@ -1469,18 +1469,20 @@ void ModelObject::process_solid_part_cut(ModelVolume* volume, const Transform3d&
     {
         indexed_triangle_set upper_its, lower_its;
         cut_mesh(mesh.its, 0.0f, &upper_its, &lower_its);
-        if (attributes.has(ModelObjectCutAttribute::KeepUpper))
+        if (attributes.has(ModelObjectCutAttribute::KeepUpper) || attributes.has(ModelObjectCutAttribute::KeepAsParts))
             upper_mesh = TriangleMesh(upper_its);
-        if (attributes.has(ModelObjectCutAttribute::KeepLower))
+        if (attributes.has(ModelObjectCutAttribute::KeepLower) || attributes.has(ModelObjectCutAttribute::KeepAsParts))
             lower_mesh = TriangleMesh(lower_its);
     }
 
     // Add required cut parts to the objects
 
-    if (attributes.has(ModelObjectCutAttribute::KeepUpper))
+    if (attributes.has(ModelObjectCutAttribute::KeepAsParts))
+        add_cut_volume(upper_mesh, lower, volume, cut_matrix);
+    else if (attributes.has(ModelObjectCutAttribute::KeepUpper))
         add_cut_volume(upper_mesh, upper, volume, cut_matrix);
 
-    if (attributes.has(ModelObjectCutAttribute::KeepLower) && !lower_mesh.empty()) {
+    if ((attributes.has(ModelObjectCutAttribute::KeepLower) && !lower_mesh.empty()) || attributes.has(ModelObjectCutAttribute::KeepAsParts)) {
         add_cut_volume(lower_mesh, lower, volume, cut_matrix);
 
         // Compute the displacement (in instance coordinates) to be applied to place the upper parts
