@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-04 13:59+0200\n"
+"PO-Revision-Date: 2023-02-04 19:58+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -605,7 +605,7 @@ msgstr ""
 "La tour de nettoyage prend actuellement en charge les supports non solubles "
 "seulement\n"
 "si ils sont imprimés avec l'extrudeur actuel sans déclencher un changement "
-"d'outil.\n"
+"d'extrudeur.\n"
 "(support_material_extruder et support_material_interface_extruder doivent "
 "être réglés sur 0)."
 
@@ -813,7 +813,7 @@ msgstr "Tous"
 #: src/slic3r/GUI/Plater.cpp:592 src/slic3r/GUI/Preferences.cpp:556
 #: src/libslic3r/PrintConfig.cpp:1351
 msgid "None"
-msgstr "Aucun"
+msgstr "Aucune"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:513
 #, possible-c-format, possible-boost-format
@@ -1563,7 +1563,7 @@ msgid ""
 "Set ruler mode\n"
 "or Set extruder sequence for the entire print"
 msgstr ""
-"Sauter à la hauteur %s\n"
+"Aller à la hauteur %s\n"
 "Définir le mode règle\n"
 "ou Définir la séquence d'extrusion pour toute l'impression"
 
@@ -1575,7 +1575,7 @@ msgid ""
 "Jump to height %s\n"
 "or Set ruler mode"
 msgstr ""
-"Sauter à la hauteur %s\n"
+"Aller à la hauteur %s\n"
 "ou Définir le mode règle"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1465
@@ -1812,7 +1812,7 @@ msgstr "Supprimer le changement de couleur"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2082
 msgid "Delete tool change"
-msgstr "Supprimer le changement d'outil"
+msgstr "Supprimer le changement d'extrudeur"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2083
 msgid "Delete pause print"
@@ -1824,7 +1824,7 @@ msgstr "Supprimer le G-code personnalisé"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2094 src/slic3r/GUI/DoubleSlider.cpp:2324
 msgid "Jump to height"
-msgstr "Sauter à la hauteur"
+msgstr "Aller à la hauteur"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2099
 msgid "Hide ruler"
@@ -1954,7 +1954,7 @@ msgstr ""
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2605
 msgid "Do you want to delete all saved tool changes?"
-msgstr "Voulez-vous supprimer tous les changements d'outils enregistrés ?"
+msgstr "Voulez-vous supprimer tous les changements d'extrudeurs enregistrés ?"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2607
 msgid ""
@@ -1962,8 +1962,8 @@ msgid ""
 "changes for whole print."
 msgstr ""
 "Les dernières données de changement de couleur ont été enregistrées pour une "
-"impression multi-extrudeur avec des changements d'outils pour l'impression "
-"entière."
+"impression multi-extrudeur avec des changements d'extrudeurs pour "
+"l'impression entière."
 
 #: src/slic3r/GUI/DoubleSlider.cpp:2608
 msgid "Your current changes will delete all saved extruder (tool) changes."
@@ -2346,7 +2346,7 @@ msgstr "Chargement du \"%1%\""
 
 #: src/slic3r/GUI/GCodeViewer.cpp:343
 msgid "Tool position"
-msgstr "Position de l'outil"
+msgstr "Position de la buse"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:1547
 msgid "Generating toolpaths"
@@ -2424,7 +2424,7 @@ msgstr "Débit volumétrique (mm³/s)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3577
 msgid "Layer time (linear)"
-msgstr "Durée de la couche (linéaire)"
+msgstr "Temps de couche (linéaire)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3578
 msgid "Layer time (logarithmic)"
@@ -2550,7 +2550,7 @@ msgstr "Jointures"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:4087
 msgid "Tool changes"
-msgstr "Changements d'outils"
+msgstr "changements d'extrudeurs"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:4091
 msgid "Color changes"
@@ -2566,7 +2566,7 @@ msgstr "G-codes personnalisés"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:4103
 msgid "Center of gravity"
-msgstr "Centre de gravitéCentre de gravité"
+msgstr "Centre de gravité"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:4108
 msgid "Shells"
@@ -2574,7 +2574,7 @@ msgstr "Coques"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:4113
 msgid "Tool marker"
-msgstr "Marqueur d'outil"
+msgstr "Afficher Buse"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:185 src/slic3r/GUI/GLCanvas3D.cpp:4757
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:71
@@ -2805,11 +2805,11 @@ msgstr "Coller"
 #: src/slic3r/GUI/GLCanvas3D.cpp:4670 src/slic3r/GUI/GUI_Factories.cpp:1231
 #: src/slic3r/GUI/GUI_Factories.cpp:1255 src/slic3r/GUI/GUI_Factories.cpp:1266
 msgid "Add instance"
-msgstr "Ajouter l'instance"
+msgstr "Ajouter une copie"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4681 src/slic3r/GUI/GUI_Factories.cpp:1234
 msgid "Remove instance"
-msgstr "Supprimer l'instance"
+msgstr "Supprimer une copie"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:4694
 msgid "Split to objects"
@@ -3162,7 +3162,7 @@ msgstr "Edition du Gadget de Coupe"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:595
 msgid "Emboss"
-msgstr "Gaufrage"
+msgstr "Texte en relief"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:858
 msgid "ERROR: Wait until ends or Cancel process."
@@ -3191,12 +3191,12 @@ msgstr "Plaquer sur surface"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:955
 msgid "Char gap"
-msgstr "Écart caractères"
+msgstr "Espace caractère"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:956
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:1574
 msgid "Line gap"
-msgstr "Écart lignes"
+msgstr "Espace ligne"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:957
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:1572
@@ -3620,7 +3620,7 @@ msgstr "Distance entre les lettres"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:3177
 msgid "Revert gap between lines"
-msgstr "Inverser l'écart entre les lignes"
+msgstr "Inverser l'espace entre les lignes"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:3178
 msgid "Distance between lines"
@@ -3666,7 +3666,7 @@ msgstr "Sélectionnez dans la collection True Type."
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:3315
 msgid "Set text to face camera"
-msgstr "Régler le texte face à la caméra"
+msgstr "Orienter le texte face à la caméra"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:3322
 msgid "Use camera direction for text orientation"
@@ -3712,7 +3712,7 @@ msgstr "Quitter dans le Gadget de Bossage"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.hpp:83
 msgid "Embossing actions"
-msgstr "Actions de gaufrage"
+msgstr "Actions Texte en relief"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.cpp:37
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:66
@@ -5524,7 +5524,7 @@ msgstr "Réparer avec Netfabb"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:799
 msgid "Export as STL/OBJ"
-msgstr "Exporter en tant que STL/OBJ"
+msgstr "Exporter en STL/OBJ"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:810
 msgid "Reload the selected volumes from disk"
@@ -5560,19 +5560,19 @@ msgstr ""
 
 #: src/slic3r/GUI/GUI_Factories.cpp:921 src/slic3r/GUI/Plater.cpp:6407
 msgid "Convert from imperial units"
-msgstr "Convertir à partir des unités impériales"
+msgstr "Convertir en mètre"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:922 src/slic3r/GUI/Plater.cpp:6408
 msgid "Revert conversion from imperial units"
-msgstr "Annuler la conversion des unités impériales"
+msgstr "Annuler la conversion en mètre"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:923 src/slic3r/GUI/Plater.cpp:6409
 msgid "Convert from meters"
-msgstr "Convertir à partir de mètres"
+msgstr "Convertir en Pouce"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:924 src/slic3r/GUI/Plater.cpp:6409
 msgid "Revert conversion from meters"
-msgstr "Rétablir la conversion des mètres"
+msgstr "Annuler la conversion en Pouce"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:945 src/slic3r/GUI/GUI_ObjectList.cpp:2284
 #: src/libslic3r/PrintConfig.cpp:4742
@@ -5654,19 +5654,19 @@ msgstr "Scinder l'objet sélectionné"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:1231
 msgid "Add one more instance of the selected object"
-msgstr "Ajouter une instance supplémentaire de l'objet sélectionné"
+msgstr "Ajouter une copie supplémentaire de l'objet sélectionné"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:1234
 msgid "Remove one instance of the selected object"
-msgstr "Supprime une instance de l'objet sélectionné"
+msgstr "Supprime une copie de l'objet sélectionné"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:1237
 msgid "Set number of instances"
-msgstr "Définir le nombre d'instances"
+msgstr "Définir le nombre de copies"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:1237
 msgid "Change the number of instances of the selected object"
-msgstr "Modifie le nombre d'instances de l'objet sélectionné"
+msgstr "Modifie le nombre de copies de l'objet sélectionné"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:1241
 msgid "Fill bed with instances"
@@ -5813,7 +5813,7 @@ msgstr "Renommer le Sous-objet"
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1307
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4583
 msgid "Instances to Separated Objects"
-msgstr "Instances vers les Objets Séparés"
+msgstr "Copies vers les Objets Séparés"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1313
 msgid "Volumes in Object reordered"
@@ -5909,7 +5909,7 @@ msgstr "Supprimer les Réglages"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2025
 msgid "Delete All Instances from Object"
-msgstr "Supprimer Toutes les Instances depuis l'Objet"
+msgstr "Supprimer Toutes les Copies depuis l'Objet"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2041
 msgid "Delete Height Range"
@@ -5966,15 +5966,15 @@ msgstr "Supprimer le sous-objet"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2140
 msgid "Last instance of an object cannot be deleted."
-msgstr "La dernière instance d'un objet ne peut être supprimée."
+msgstr "La dernière copie d'un objet ne peut être supprimée."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2144
 msgid "Instance cannot be deleted from cut object."
-msgstr "L'instance ne peut pas être supprimée de l'objet coupé."
+msgstr "La copie ne peut pas être supprimée de l'objet coupé."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2148
 msgid "Delete Instance"
-msgstr "Supprimer l'Instance"
+msgstr "Supprimer la Copie"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2172
 msgid ""
@@ -6031,7 +6031,7 @@ msgstr "Manipulation d'une pièce"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2819
 msgid "Instance manipulation"
-msgstr "Manipulation d'instance"
+msgstr "Manipulation de copie"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2827
 msgid "Height ranges"
@@ -6097,7 +6097,7 @@ msgstr "Sélection-Ajouter depuis la liste"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4132
 msgid "Object or Instance"
-msgstr "Objet ou Instance"
+msgstr "Objet ou Copie"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4133
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4325
@@ -6213,17 +6213,17 @@ msgstr "Définir non-Imprimable"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4986
 msgid "Set Printable Instance"
-msgstr "Définir une Instance Imprimable"
+msgstr "Définir une Copie Imprimable"
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:4986
 msgid "Set Unprintable Instance"
-msgstr "Définir une Instance non-Imprimable"
+msgstr "Définir une Copie non-Imprimable"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:61
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:96
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:1123
 msgid "World coordinates"
-msgstr "Les coordonnées mondiales"
+msgstr "Coordonnées absolues"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:62
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:97
@@ -6551,7 +6551,7 @@ msgstr "Il n'existe pas de surface valable pour la projection de texte."
 
 #: src/slic3r/GUI/Jobs/EmbossJob.cpp:823
 msgid "Issue during embossing the text."
-msgstr "Problème lors du gaufrage du texte."
+msgstr "Problème lors du plaquage du texte."
 
 #: src/slic3r/GUI/Jobs/RotoptimizeJob.hpp:22
 msgid "Best surface quality"
@@ -6776,7 +6776,7 @@ msgstr "Vue caméra"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:127
 msgid "Show/Hide object/instance labels"
-msgstr "Afficher/Masquer les labels de l'objet/instance"
+msgstr "Afficher/Masquer les labels de l'objet/copie"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:130
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:132 src/slic3r/GUI/Preferences.cpp:57
@@ -6796,11 +6796,11 @@ msgstr "Commandes"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:143
 msgid "Add Instance of the selected object"
-msgstr "Ajouter une Instance à l'objet sélectionné"
+msgstr "Ajouter une Copie à l'objet sélectionné"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:144
 msgid "Remove Instance of the selected object"
-msgstr "Supprimer l'instance de l'objet sélectionné"
+msgstr "Supprimer la Copie de l'objet sélectionné"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:145
 msgid ""
@@ -6933,7 +6933,7 @@ msgstr "Gadget FDM pour la jointure peinte"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:165
 msgid "Gizmo Multi Material painting"
-msgstr "Gadget pour la peinture Multi Materière"
+msgstr "Gadget pour la peinture Multi-Matière"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:166
 msgid "Gizmo Text emboss / engrave"
@@ -7803,7 +7803,7 @@ msgstr "Afficher les &Labels"
 
 #: src/slic3r/GUI/MainFrame.cpp:1513
 msgid "Show object/instance labels in 3D scene"
-msgstr "Afficher les labels de l'objet /instance dans la scène 3D"
+msgstr "Afficher les labels de l'objet /copie dans la scène 3D"
 
 #: src/slic3r/GUI/MainFrame.cpp:1516
 msgid "Show Legen&d"
@@ -8253,7 +8253,7 @@ msgstr "Enfouissement"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:110
 msgid "Instances"
-msgstr "Instances"
+msgstr "Copies"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:114
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:275
@@ -8261,7 +8261,7 @@ msgstr "Instances"
 #, possible-c-format, possible-boost-format
 #, c-format, boost-format
 msgid "Instance %d"
-msgstr "Instance %d"
+msgstr "Copie %d"
 
 #: src/slic3r/GUI/ObjectDataViewModel.cpp:121 src/slic3r/GUI/Tab.cpp:4803
 #: src/slic3r/GUI/Tab.cpp:4940
@@ -9176,7 +9176,7 @@ msgstr "Supprimer les Objets Sélectionnés"
 
 #: src/slic3r/GUI/Plater.cpp:6278
 msgid "Increase Instances"
-msgstr "Augmenter les Instances"
+msgstr "Augmenter les Copies"
 
 #: src/slic3r/GUI/Plater.cpp:6312
 msgid "Decrease Instances"
@@ -10498,7 +10498,7 @@ msgstr "Sélection-Ajouter Instance"
 
 #: src/slic3r/GUI/Selection.cpp:309
 msgid "Selection-Remove Instance"
-msgstr "Sélection-Supprimer l'Instance"
+msgstr "Sélection-Supprimer la Copie"
 
 #: src/slic3r/GUI/Selection.cpp:406
 msgid "Selection-Add All"
@@ -10954,7 +10954,7 @@ msgstr "Mots-clés réservés trouvés dans"
 
 #: src/slic3r/GUI/Tab.cpp:1879
 msgid "Filament Overrides"
-msgstr "Réglages dérogatoires du Filament"
+msgstr "Réglages rétraction du Filament"
 
 #: src/slic3r/GUI/Tab.cpp:1880 src/slic3r/GUI/Tab.cpp:2825
 msgid "Retraction"
@@ -11008,8 +11008,8 @@ msgstr "Paramètres de la tour de nettoyage"
 #: src/slic3r/GUI/Tab.cpp:2025
 msgid "Toolchange parameters with single extruder MM printers"
 msgstr ""
-"Paramètres de changement d'outil pour les imprimantes multi-matériaux mono-"
-"extrudeur"
+"Paramètres de changement d'extrudeur pour les imprimantes multi-matériaux "
+"mono-extrudeur"
 
 #: src/slic3r/GUI/Tab.cpp:2038
 msgid "Ramming settings"
@@ -11103,7 +11103,7 @@ msgstr "G-Code après changement de couche"
 #: src/slic3r/GUI/Tab.cpp:2437 src/libslic3r/GCode.cpp:658
 #: src/libslic3r/PrintConfig.cpp:2984
 msgid "Tool change G-code"
-msgstr "G-code de changement d'outil"
+msgstr "G-code de changement d'extrudeur"
 
 #: src/slic3r/GUI/Tab.cpp:2447 src/libslic3r/GCode.cpp:659
 msgid "Between objects G-code (for sequential printing)"
@@ -11206,14 +11206,14 @@ msgstr "Position (pour les imprimantes multi-extrudeurs)"
 
 #: src/slic3r/GUI/Tab.cpp:2828
 msgid "Only lift Z"
-msgstr "Lever Z seulement"
+msgstr "Décaler le Z seulement"
 
 #: src/slic3r/GUI/Tab.cpp:2841
 msgid ""
 "Retraction when tool is disabled (advanced settings for multi-extruder "
 "setups)"
 msgstr ""
-"Rétractation lorsque l'outil est désactivé (réglages avancés pour les "
+"Rétraction lorsque l'outil est désactivé (réglages avancés pour les "
 "configurations multi-extrudeurs)"
 
 #: src/slic3r/GUI/Tab.cpp:2898 src/slic3r/GUI/Tab.cpp:2907
@@ -11231,9 +11231,9 @@ msgid ""
 "Shall I disable it in order to enable Firmware Retraction?"
 msgstr ""
 "L'option Nettoyage n'est pas disponible lorsque vous utilisez le mode "
-"Rétractation du Firmware.\n"
+"Rétraction du Firmware.\n"
 "\n"
-"Voulez-vous que je la désactive pour permettre la Rétractation du Firmware ?"
+"Voulez-vous que je la désactive pour permettre la Rétraction du Firmware ?"
 
 #: src/slic3r/GUI/Tab.cpp:3074
 msgid "Firmware Retraction"
@@ -12175,10 +12175,10 @@ msgid ""
 "jams, extruder wheel grinding into filament etc."
 msgstr ""
 "L'Expulsion décrit l'extrusion rapide qui a lieu juste avant un changement "
-"d'outil sur une imprimante MM à extrudeur unique. Le but est de donner une "
-"forme correcte au filament déchargé afin qu'il n'empêche pas l'insertion du "
-"nouveau filament et puisse être réinséré lui-même plus tard. Cette phase est "
-"importante et  des matériaux différents peuvent nécessiter des vitesses "
+"d'extrudeur sur une imprimante MM à extrudeur unique. Le but est de donner "
+"une forme correcte au filament déchargé afin qu'il n'empêche pas l'insertion "
+"du nouveau filament et puisse être réinséré lui-même plus tard. Cette phase "
+"est importante et  des matériaux différents peuvent nécessiter des vitesses "
 "d'extrusion différentes pour obtenir la bonne forme. De ce fait, les débits "
 "d'extrusion pendant l'expulsion sont ajustables.\n"
 "\n"
@@ -13070,7 +13070,7 @@ msgid ""
 msgstr ""
 "A l'heure actuelle la Tour de Nettoyage ne tolère les supports non-solubles "
 " que s'ils sont imprimés avec l'extrudeur en cours d'utilisation sans "
-"déclencher un changement d'outil. (support_material_extruder de même que "
+"déclencher un changement d'extrudeur. (support_material_extruder de même que "
 "support_material_interface_extruder doivent être réglés sur 0)."
 
 #: src/libslic3r/Print.cpp:665
@@ -13131,35 +13131,35 @@ msgstr "Alerte en cas de besoin de soutien"
 
 #: src/libslic3r/Print.cpp:1131
 msgid "long bridging extrusions"
-msgstr "extrusions à long pont"
+msgstr " extrusions à long pont"
 
 #: src/libslic3r/Print.cpp:1132
 msgid "floating bridge anchors"
-msgstr "ancrages pour ponts flottants"
+msgstr " ancrages pour ponts flottants"
 
 #: src/libslic3r/Print.cpp:1135
 msgid "collapsing overhang"
-msgstr "surplomb qui s'effondre"
+msgstr " surplomb qui s'effondre"
 
 #: src/libslic3r/Print.cpp:1137
 msgid "loose extrusions"
-msgstr "extrusions lâches"
+msgstr " extrusions lâches"
 
 #: src/libslic3r/Print.cpp:1140
 msgid "low bed adhesion"
-msgstr "faible adhérence au plateau"
+msgstr " faible adhérence au plateau"
 
 #: src/libslic3r/Print.cpp:1141
 msgid "floating object part"
-msgstr "partie d'objet flottant"
+msgstr " partie d'objet flottant"
 
 #: src/libslic3r/Print.cpp:1142
 msgid "thin fragile section"
-msgstr "section mince et fragile"
+msgstr " section mince et fragile"
 
 #: src/libslic3r/Print.cpp:1178
 msgid "Detected print stability issues"
-msgstr "Détection de problèmes de stabilité d'impression"
+msgstr "Détection de problèmes d'impression"
 
 #: src/libslic3r/Print.cpp:1193
 msgid "Object"
@@ -13794,7 +13794,7 @@ msgstr "Bordure extérieure et intérieure"
 
 #: src/libslic3r/PrintConfig.cpp:601
 msgid "Brim separation gap"
-msgstr "Écart de séparation de la bordure"
+msgstr "Espace de séparation de la bordure"
 
 #: src/libslic3r/PrintConfig.cpp:603
 msgid ""
@@ -13995,7 +13995,7 @@ msgid ""
 "in extruder order."
 msgstr ""
 "Cette procédure de fin est insérée à la fin d'un fichier de sortie, avant le "
-"gcode de fin de l'imprimante (et avant tout changement d'outil de ce "
+"gcode de fin de l'imprimante (et avant tout changement d'extrudeur de ce "
 "filament dans le cas des imprimantes multimatériaux). Notez que vous pouvez "
 "utiliser des variables génériques pour tous les réglages PrusaSlicer. Si "
 "vous avez des extrudeurs multiples, le gcode est traité dans l'ordre des "
@@ -14042,7 +14042,7 @@ msgstr "Lignes monotones"
 
 #: src/libslic3r/PrintConfig.cpp:782 src/libslic3r/PrintConfig.cpp:1230
 msgid "Aligned Rectilinear"
-msgstr "Rectiligne Aligné"
+msgstr "Zig Zag"
 
 #: src/libslic3r/PrintConfig.cpp:783 src/libslic3r/PrintConfig.cpp:1236
 #: src/libslic3r/PrintConfig.cpp:2812
@@ -14055,11 +14055,11 @@ msgstr "Courbe de Hilbert"
 
 #: src/libslic3r/PrintConfig.cpp:785 src/libslic3r/PrintConfig.cpp:1241
 msgid "Archimedean Chords"
-msgstr "Accords d'Archimède"
+msgstr "Spirale d'Archimède"
 
 #: src/libslic3r/PrintConfig.cpp:786 src/libslic3r/PrintConfig.cpp:1242
 msgid "Octagram Spiral"
-msgstr "Spirale Octagramme"
+msgstr "Spirale Etoilée"
 
 #: src/libslic3r/PrintConfig.cpp:794
 msgid "Bottom fill pattern"
@@ -14371,8 +14371,9 @@ msgid ""
 "original dimensions."
 msgstr ""
 "Temps d'attente nécessaire après que le filament ait été déchargé.  Peut "
-"aider à obtenir des changements d'outils fiables avec des matériaux flexible "
-"qui ont besoin de plus de temps pour revenir à leurs dimensions originales."
+"aider à obtenir des changements d'extrudeurs fiables avec des matériaux "
+"flexible qui ont besoin de plus de temps pour revenir à leurs dimensions "
+"originales."
 
 #: src/libslic3r/PrintConfig.cpp:1021
 msgid "Number of cooling moves"
@@ -14408,8 +14409,8 @@ msgid ""
 "object, Slic3r will always prime this amount of material into the wipe tower "
 "to produce successive infill or sacrificial object extrusions reliably."
 msgstr ""
-"Après un changement d'outil, la position exacte dans la buse du filament qui "
-"vient d'être chargé peut ne pas être connue, et la pression du filament "
+"Après un changement d'extrudeur, la position exacte dans la buse du filament "
+"qui vient d'être chargé peut ne pas être connue, et la pression du filament "
 "n'est probablement pas encore stable. Avant de purger la tête d'impression "
 "dans un remplissage ou un objet sacrificiel, Slic3r va toujours utiliser "
 "cette quantité de matériau dans la tour de nettoyage pour produire un "
@@ -14440,7 +14441,7 @@ msgid ""
 "added to the total print time by the G-code time estimator."
 msgstr ""
 "Temps nécessaire pour que le Firmware de l'imprimante (ou la Multi Material "
-"Unit 2.0) charge un filament au cours d'un changement d'outils (lorsqu'il "
+"Unit 2.0) charge un filament au cours d'un changement d'extrudeur (lorsqu'il "
 "exécute le T code). Ce temps est ajouté au temps total d'impression par "
 "l'estimateur de temps du G-code."
 
@@ -14467,9 +14468,9 @@ msgid ""
 "added to the total print time by the G-code time estimator."
 msgstr ""
 "Temps nécessaire pour que le Firmware de l'imprimante (ou la Multi Material "
-"Unit 2.0) décharge un filament au cours d'un changement d'outils (lorsqu'il "
-"exécute le T code). Ce temps est ajouté au temps total d'impression par "
-"l'estimateur de temps du G-code."
+"Unit 2.0) décharge un filament au cours d'un changement d'extrudeur "
+"(lorsqu'il exécute le T code). Ce temps est ajouté au temps total "
+"d'impression par l'estimateur de temps du G-code."
 
 #: src/libslic3r/PrintConfig.cpp:1081
 msgid ""
@@ -14626,7 +14627,7 @@ msgstr "Support Cubique"
 
 #: src/libslic3r/PrintConfig.cpp:1245
 msgid "Lightning"
-msgstr "Lightning"
+msgstr "Eclair"
 
 #: src/libslic3r/PrintConfig.cpp:1250
 msgid ""
@@ -14639,7 +14640,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1258
 msgid "First object layer over raft interface"
-msgstr "Première couche d'objet sur l'interface du raft"
+msgstr "Première couche d'objet sur l'interface du radeau"
 
 #: src/libslic3r/PrintConfig.cpp:1259
 msgid ""
@@ -14648,9 +14649,9 @@ msgid ""
 "layer of object above raft interface."
 msgstr ""
 "Il s'agit de l'accélération que votre imprimante utilisera pour la première "
-"couche d'objet au-dessus de l'interface du raft. Définissez zéro pour "
+"couche d'objet au-dessus de l'interface du radeau. Définissez zéro pour "
 "désactiver le contrôle d'accélération pour la première couche de l'objet au-"
-"dessus de l'interface du raft."
+"dessus de l'interface du radeau."
 
 #: src/libslic3r/PrintConfig.cpp:1268
 msgid "First layer bed temperature"
@@ -14707,7 +14708,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1312
 msgid "Speed of object first layer over raft interface"
-msgstr "Vitesse de la première couche de l'objet sur l'interface du raft"
+msgstr "Vitesse de la première couche de l'objet sur l'interface du radeau"
 
 #: src/libslic3r/PrintConfig.cpp:1313
 msgid ""
@@ -14718,7 +14719,7 @@ msgid ""
 msgstr ""
 "Si exprimée avec une valeur absolue en mm/s, cette vitesse sera appliquée à "
 "tous les mouvements d'impression de la première couche d'objet au-dessus de "
-"l'interface du raft, quel que soit leur type. Si exprimée comme un "
+"l'interface du radeau, quel que soit leur type. Si exprimée comme un "
 "pourcentage (par exemple 40%), cela modulera la vitesse par défaut."
 
 #: src/libslic3r/PrintConfig.cpp:1323
@@ -15173,7 +15174,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1679
 msgid "Supports remaining times"
-msgstr "Temps de support restant"
+msgstr "Temps restant"
 
 #: src/libslic3r/PrintConfig.cpp:1680
 msgid ""
@@ -15820,14 +15821,14 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2204
 msgid "Retract amount before wipe"
-msgstr "Quantité de rétractation avant essuyage"
+msgstr "Quantité de rétraction avant essuyage"
 
 #: src/libslic3r/PrintConfig.cpp:2205
 msgid ""
 "With bowden extruders, it may be wise to do some amount of quick retract "
 "before doing the wipe movement."
 msgstr ""
-"Avec les extrudeurs bowden, il est conseillé d'effectuer une rétractation "
+"Avec les extrudeurs bowden, il est conseillé d'effectuer une rétraction "
 "rapide avant de réaliser le mouvement de nettoyage."
 
 #: src/libslic3r/PrintConfig.cpp:2212
@@ -15836,7 +15837,7 @@ msgstr "Rétracter lors des changements de couche"
 
 #: src/libslic3r/PrintConfig.cpp:2213
 msgid "This flag enforces a retraction whenever a Z move is done."
-msgstr "Cette option active la rétractation lors d'un déplacement sur l'axe Z."
+msgstr "Cette option active la rétraction lors d'un déplacement sur l'axe Z."
 
 #: src/libslic3r/PrintConfig.cpp:2218 src/libslic3r/PrintConfig.cpp:2226
 msgid "Length"
@@ -15852,13 +15853,13 @@ msgid ""
 "amount (the length is measured on raw filament, before it enters the "
 "extruder)."
 msgstr ""
-"Lorsque la rétractation est déclenchée, le filament est tiré en arrière de "
-"la longueur indiquée (la longueur est mesurée sur le filament brut, avant "
-"qu'il entre dans l'extrudeur)."
+"Lorsque la rétraction est déclenchée, le filament est tiré en arrière de la "
+"longueur indiquée (la longueur est mesurée sur le filament brut, avant qu'il "
+"entre dans l'extrudeur)."
 
 #: src/libslic3r/PrintConfig.cpp:2227
 msgid "Retraction Length (Toolchange)"
-msgstr "Longueur de Rétractation (changement d'outil)"
+msgstr "Longueur de rétraction (changement d'extrudeur)"
 
 #: src/libslic3r/PrintConfig.cpp:2228
 msgid ""
@@ -15866,13 +15867,13 @@ msgid ""
 "by the specified amount (the length is measured on raw filament, before it "
 "enters the extruder)."
 msgstr ""
-"Lorsque la rétractation est déclenchée avant un changement d'outil, le "
+"Lorsque la rétraction est déclenchée avant un changement d'extrudeur, le "
 "filament est retiré de la longueur indiquée (la longueur est mesurée sur le "
 "filament brut, avant qu'il entre dans l'extrudeur)."
 
 #: src/libslic3r/PrintConfig.cpp:2236
 msgid "Lift Z"
-msgstr "Levage de l'axe Z"
+msgstr "Décalage de l'axe Z"
 
 #: src/libslic3r/PrintConfig.cpp:2237
 msgid ""
@@ -15890,7 +15891,7 @@ msgstr "Au-delà de Z"
 
 #: src/libslic3r/PrintConfig.cpp:2245
 msgid "Only lift Z above"
-msgstr "Lever Z seulement au-dessus de"
+msgstr "Décaler Z seulement au-dessus de"
 
 #: src/libslic3r/PrintConfig.cpp:2246
 msgid ""
@@ -15898,10 +15899,10 @@ msgid ""
 "specified absolute Z. You can tune this setting for skipping lift on the "
 "first layers."
 msgstr ""
-"Si vous indiquez une valeur positive, le levage de l'axe Z ne sera déclenché "
-"qu'à partir de la valeur absolue indiquée pour l'axe Z. Vous pouvez "
-"modifier ce réglage pour éviter le levage de l'axe Z sur les premières "
-"couches."
+"Si vous indiquez une valeur positive, le décalage de l'axe Z ne sera "
+"déclenché qu'à partir de la valeur absolue indiquée pour l'axe Z. Vous "
+"pouvez modifier ce réglage pour éviter le décalage de l'axe Z sur les "
+"premières couches."
 
 #: src/libslic3r/PrintConfig.cpp:2253
 msgid "Below Z"
@@ -15909,7 +15910,7 @@ msgstr "En-deçà de Z"
 
 #: src/libslic3r/PrintConfig.cpp:2254
 msgid "Only lift Z below"
-msgstr "Lever Z seulement en-dessous de"
+msgstr "Décaler l'axe Z seulement en-dessous de"
 
 #: src/libslic3r/PrintConfig.cpp:2255
 msgid ""
@@ -15917,9 +15918,10 @@ msgid ""
 "specified absolute Z. You can tune this setting for limiting lift to the "
 "first layers."
 msgstr ""
-"Si vous indiquez une valeur positive, le levage de l'axe Z ne sera déclenché "
-"que jusqu'à la valeur absolue indiquée pour l'axe Z. Vous pouvez modifier "
-"ce réglage pour limiter le levage de l'axe Z aux premières couches."
+"Si vous indiquez une valeur positive, le décalage de l'axe Z ne sera "
+"déclenché que jusqu'à la valeur absolue indiquée pour l'axe Z. Vous pouvez "
+"modifier ce réglage pour limiter le décalage de l'axe Z aux premières "
+"couches."
 
 #: src/libslic3r/PrintConfig.cpp:2263 src/libslic3r/PrintConfig.cpp:2271
 msgid "Extra length on restart"
@@ -15930,7 +15932,7 @@ msgid ""
 "When the retraction is compensated after the travel move, the extruder will "
 "push this additional amount of filament. This setting is rarely needed."
 msgstr ""
-"Lorsque la rétractation est compensée après un déplacement, l'extruder "
+"Lorsque la rétraction est compensée après un déplacement, l'extruder "
 "exprimera cette quantité de filament en plus. Ce réglage est rarement "
 "nécessaire."
 
@@ -15939,12 +15941,12 @@ msgid ""
 "When the retraction is compensated after changing tool, the extruder will "
 "push this additional amount of filament."
 msgstr ""
-"Lorsque la rétractation est compensée après un changement d'outil, "
+"Lorsque la rétraction est compensée après un changement d'extrudeur, "
 "l'extrudeur exprimera cette quantité de filament en plus."
 
 #: src/libslic3r/PrintConfig.cpp:2279 src/libslic3r/PrintConfig.cpp:2280
 msgid "Retraction Speed"
-msgstr "Vitesse de Rétractation"
+msgstr "Vitesse de rétraction"
 
 #: src/libslic3r/PrintConfig.cpp:2281
 msgid "The speed for retractions (it only applies to the extruder motor)."
@@ -15961,9 +15963,9 @@ msgid ""
 "applies to the extruder motor). If left to zero, the retraction speed is "
 "used."
 msgstr ""
-"La vitesse de chargement d'un filament dans l'extrudeur après une "
-"rétractation (ne s'applique qu'au moteur de l'extrudeur). Si cette valeur "
-"reste sur zéro, la vitesse de rétraction est utilisée."
+"La vitesse de chargement d'un filament dans l'extrudeur après une rétraction "
+"(ne s'applique qu'au moteur de l'extrudeur). Si cette valeur reste sur "
+"zéro, la vitesse de rétraction est utilisée."
 
 #: src/libslic3r/PrintConfig.cpp:2296
 msgid "Seam position"
@@ -16267,15 +16269,15 @@ msgid ""
 "extruders, the gcode is processed in extruder order."
 msgstr ""
 "Cette procédure de départ est insérée au début, après n'importe quel gcode "
-"de départ de l'imprimante (et après n'importe quel changement d'outil pour "
-"ce filament dans le cas des imprimantes multi-matériaux). Ceci est utilisé "
-"pour supplanter les réglages d'un filament spécifique. Si PrusaSlicer "
-"détecte M104, M109, M140 ou M190 dans vos codes personnalisés, de telles "
-"commandes ne seront pas ajoutées automatiquement de sorte que vous restez "
-"libre de personnaliser l'ordre des commandes de chauffe et autres actions "
-"personnalisées. Notez que vous pouvez utiliser des variables génériques pour "
-"les tous les paramètres PrusaSlicer, donc vous pouvez utiliser une commande "
-"\"M109 S[first_layer_temperature]\" où vous voulez."
+"de départ de l'imprimante (et après n'importe quel changement d'extrudeur "
+"pour ce filament dans le cas des imprimantes multi-matériaux). Ceci est "
+"utilisé pour supplanter les réglages d'un filament spécifique. Si "
+"PrusaSlicer détecte M104, M109, M140 ou M190 dans vos codes personnalisés, "
+"de telles commandes ne seront pas ajoutées automatiquement de sorte que vous "
+"restez libre de personnaliser l'ordre des commandes de chauffe et autres "
+"actions personnalisées. Notez que vous pouvez utiliser des variables "
+"génériques pour les tous les paramètres PrusaSlicer, donc vous pouvez "
+"utiliser une commande \"M109 S[first_layer_temperature]\" où vous voulez."
 
 #: src/libslic3r/PrintConfig.cpp:2522
 msgid "Color change G-code"
@@ -16295,7 +16297,7 @@ msgstr "Ce G-code sera utilisé comme code personnalisé"
 
 #: src/libslic3r/PrintConfig.cpp:2549
 msgid "Single Extruder Multi Material"
-msgstr "Multi Material à extrudeur unique"
+msgstr "Multi-Matière à extrudeur unique"
 
 #: src/libslic3r/PrintConfig.cpp:2550
 msgid "The printer multiplexes filaments into a single hot end."
@@ -16325,10 +16327,10 @@ msgid ""
 "with the print."
 msgstr ""
 "Si elle est activée, la tour de nettoyage ne sera pas imprimée sur des "
-"couches sans changement d'outil. Sur les couches avec un changement d'outil, "
-"l'extrudeur se déplacera vers le bas pour imprimer la tour de nettoyage. "
-"C'est à l'utilisateur de s'assurer qu'il n'y a pas de collision avec "
-"l'impression."
+"couches sans changement d'extrudeur. Sur les couches avec un changement "
+"d'extrudeur, l'extrudeur se déplacera vers le bas pour imprimer la tour de "
+"nettoyage. C'est à l'utilisateur de s'assurer qu'il n'y a pas de collision "
+"avec l'impression."
 
 #: src/libslic3r/PrintConfig.cpp:2569
 msgid "Slice gap closing radius"
@@ -16867,14 +16869,14 @@ msgid ""
 "will emit no other such command. It is therefore possible to script custom "
 "behaviour both before and after the toolchange."
 msgstr ""
-"Ce code personnalisé est inséré avant chaque changement d'outil. Les "
+"Ce code personnalisé est inséré avant chaque changement d'extrudeur. Les "
 "variables d'espace réservé pour tous les paramètres PrusaSlicer ainsi que "
 "{toolchange_z}, {previous_extruder} et {next_extruder} peuvent être "
-"utilisées. Lorsqu'une commande de changement d'outil qui change pour le bon "
-"extrudeur correct est incluse (telle que T{next_extruder}), PrusaSlicer "
+"utilisées. Lorsqu'une commande de changement d'extrudeur qui change pour le "
+"bon extrudeur correct est incluse (telle que T{next_extruder}), PrusaSlicer "
 "n'émettra aucune autre commande de ce type. Il est donc possible de scripter "
 "un comportement personnalisé à la fois avant et après le changement "
-"d'outil."
+"d'extrudeur."
 
 #: src/libslic3r/PrintConfig.cpp:2996 src/libslic3r/PrintConfig.cpp:3009
 msgid "Top solid infill"
@@ -17017,7 +17019,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:3094
 msgid "Wipe while retracting"
-msgstr "Nettoyer lors des rétractions"
+msgstr "Essuyer lors des rétractions"
 
 #: src/libslic3r/PrintConfig.cpp:3095
 msgid ""
@@ -17033,8 +17035,8 @@ msgid ""
 "changes. Extrude the excess material into the wipe tower."
 msgstr ""
 "Les imprimantes multi-matériaux peuvent avoir besoin de préparer ou de "
-"purger leurs extrudeurs lors d'un changement d'outil. Extruder le matériau "
-"en excès dans la tour de nettoyage."
+"purger leurs extrudeurs lors d'un changement d'extrudeur. Extruder le "
+"matériau en excès dans la tour de nettoyage."
 
 #: src/libslic3r/PrintConfig.cpp:3108
 msgid "Purging volumes - load/unload volumes"
@@ -17109,7 +17111,7 @@ msgid ""
 "lowers the amount of waste but may result in longer print time  due to "
 "additional travel moves."
 msgstr ""
-"La purge après le changement d'outil sera effectuée à l'intérieur des "
+"La purge après le changement d'extrudeur sera effectuée à l'intérieur des "
 "remplissages de cet objet. Cela réduit la quantité de déchets mais peut "
 "entraîner des temps d'impression plus longs à cause des mouvements de "
 "déplacement supplémentaires."
@@ -17124,10 +17126,10 @@ msgid ""
 "that would otherwise end up in the wipe tower and decrease print time. "
 "Colours of the objects will be mixed as a result."
 msgstr ""
-"L'objet sera utilisé pour purger la buse après un changement d'outil pour "
-"économiser du matériau qui finirait normalement dans la tour de nettoyage et "
-"raccourcirait le temps d'impression. Par conséquent, les couleurs de "
-"l'objet seront mélangées."
+"L'objet sera utilisé pour purger la buse après un changement d'extrudeur "
+"pour économiser du matériau qui finirait normalement dans la tour de "
+"nettoyage et raccourcirait le temps d'impression. Par conséquent, les "
+"couleurs de l'objet seront mélangées."
 
 #: src/libslic3r/PrintConfig.cpp:3177
 msgid "Maximal bridging distance"
@@ -18514,10 +18516,10 @@ msgstr ""
 #: resources/data/hints.ini: [hint:Set number of instances]
 msgid "Set number of instances\nDid you know that you can right-click a model and set an exact number of instances instead of copy-pasting it several times?"
 msgstr ""
-"Définir le nombre d'instances\n"
+"Définir le nombre de copies\n"
 "Saviez-vous que vous pouvez cliquer avec le bouton droit sur un modèle et "
-"définir un nombre exact d'instances au lieu de le copier-coller plusieurs "
-"fois ?"
+"définir un nombre exact de copies au lieu de le copier-coller plusieurs fois "
+"?"
 
 #: resources/data/hints.ini: [hint:Combine infill]
 msgid "Combine infill\nDid you know that you can print the infill with a higher layer height compared to perimeters to save print time using the setting<a>Combine infill every</a>."
@@ -18709,11 +18711,10 @@ msgstr ""
 #: resources/data/hints.ini: [hint:Lightning infill]
 msgid "Lightning infill\nDid you know that you can use the Lightning infill to support only the top surfaces, save a lot of the filament, and decrease the print time? Read more in the documentation."
 msgstr ""
-"Remplissage Lightning\n"
-"Saviez-vous que vous pouvez utiliser le remplissage Lightning pour ne "
-"supporter que les surfaces supérieures, économiser une grande partie du "
-"filament et réduire le temps d'impression ? Apprenez-en plus dans la "
-"documentation."
+"Remplissage Eclair\n"
+"Saviez-vous que vous pouvez utiliser le remplissage Eclair pour ne supporter "
+"que les surfaces supérieures, économiser une grande partie du filament et "
+"réduire le temps d'impression ? Apprenez-en plus dans la documentation."
 
 #: resources/data/hints.ini: [hint:Fullscreen mode]
 msgid "Fullscreen mode\nDid you know that you can switch PrusaSlicer to fullscreen mode? Use the <b>F11</b> hotkey."
@@ -18753,6 +18754,10 @@ msgstr ""
 "Saviez-vous que vous pouvez ajouter des étiquettes de texte personnalisées à "
 "vos modèles ou même utiliser le texte comme modificateur ? Pour en savoir "
 "plus, consultez la documentation."
+
+#: src
+msgid "Legend"
+msgstr "Légende"
 
 #, c-format, boost-format
 #~ msgid "%s - Drop project file"
