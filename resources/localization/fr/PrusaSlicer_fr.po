@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-04 19:58+0200\n"
+"PO-Revision-Date: 2023-02-04 22:31+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -7352,7 +7352,7 @@ msgstr "Vue Isométrique"
 #: src/slic3r/GUI/MainFrame.cpp:1201 src/libslic3r/PrintConfig.cpp:3024
 #: src/libslic3r/PrintConfig.cpp:3033
 msgid "Top"
-msgstr "Haut"
+msgstr "Dessus"
 
 #: src/slic3r/GUI/MainFrame.cpp:1201
 msgid "Top View"
@@ -15719,7 +15719,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2127
 msgid "Raft contact Z distance"
-msgstr "Distance Z de contact du raft"
+msgstr "Distance Z de contact du radeau"
 
 #: src/libslic3r/PrintConfig.cpp:2129
 msgid ""
@@ -15730,11 +15730,11 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2136
 msgid "Raft expansion"
-msgstr "Agrandissement du raft"
+msgstr "Agrandissement du radeau"
 
 #: src/libslic3r/PrintConfig.cpp:2138
 msgid "Expansion of the raft in XY plane for better stability."
-msgstr "Expansion du raft dans le plan XY pour une meilleure stabilité."
+msgstr "Expansion du radeau dans le plan XY pour une meilleure stabilité."
 
 #: src/libslic3r/PrintConfig.cpp:2145
 msgid "First layer density"
@@ -15753,7 +15753,7 @@ msgid ""
 "Expansion of the first raft or support layer to improve adhesion to print "
 "bed."
 msgstr ""
-"Expansion de la première couches du raft ou des supports pour améliorer "
+"Expansion de la première couches du radeau ou des supports pour améliorer "
 "l'adhérence au plateau d'impression."
 
 #: src/libslic3r/PrintConfig.cpp:2164
@@ -16396,7 +16396,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2607
 msgid "XY separation between an object and its support"
-msgstr "Séparation XY entre un objet et ses supports"
+msgstr "Distance XY entre pièce et supports"
 
 #: src/libslic3r/PrintConfig.cpp:2609
 msgid ""
@@ -16447,7 +16447,7 @@ msgstr "0 (soluble)"
 
 #: src/libslic3r/PrintConfig.cpp:2649
 msgid "0.1 (detachable)"
-msgstr "0,1 (détachable)"
+msgstr "0.1 (détachable)"
 
 #: src/libslic3r/PrintConfig.cpp:2650
 msgid "0.2 (detachable)"
@@ -16503,7 +16503,7 @@ msgid ""
 "The extruder to use when printing support material, raft and skirt (1+, 0 to "
 "use the current extruder to minimize tool changes)."
 msgstr ""
-"L'extrudeur à utiliser pour imprimer des supports, du raft ou des contours "
+"L'extrudeur à utiliser pour imprimer des supports, du radeau ou des contours "
 "(1+,0 pour utiliser l'extrudeur actuel et limiter les changements d'outil)."
 
 #: src/libslic3r/PrintConfig.cpp:2697
