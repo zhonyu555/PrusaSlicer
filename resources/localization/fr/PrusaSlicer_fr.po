@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-04 13:42+0200\n"
+"PO-Revision-Date: 2023-02-04 13:59+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -2432,7 +2432,7 @@ msgstr "Temps de couche (logarithmique)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3579
 msgid "Tool"
-msgstr "Outil"
+msgstr "Extrudeuse"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3580
 msgid "Color Print"
@@ -10008,6 +10008,36 @@ msgstr "Pour les autres couches, le ventilateur sera désactivé."
 msgid "Fan will be turned off."
 msgstr "Le ventilateur sera désactivé."
 
+#: src/slic3r/GUI/GUI_Preview.cpp:240 src/libslic3r/ExtrusionEntity.cpp:331
+#: src/libslic3r/ExtrusionEntity.cpp:354
+msgid "External perimeter"
+msgstr "Périmètre externe"
+
+#: src/slic3r/GUI/GUI_Preview.cpp:248 src/libslic3r/ExtrusionEntity.cpp:339
+#: src/libslic3r/ExtrusionEntity.cpp:370
+msgid "Skirt/Brim"
+msgstr "Jupe/Bordure"
+
+msgid "Overhang perimeter"
+msgstr "Périmètre en surplomb"
+
+msgid "Perimeter"
+msgstr "Périmètre"
+
+#: src/slic3r/GUI/GUI_Preview.cpp:242 src/libslic3r/ExtrusionEntity.cpp:333
+#: src/libslic3r/ExtrusionEntity.cpp:358
+msgid "Internal infill"
+msgstr "Remplissage interne"
+
+#: src/slic3r/GUI/GUI_Preview.cpp:246 src/libslic3r/ExtrusionEntity.cpp:337
+#: src/libslic3r/ExtrusionEntity.cpp:366
+msgid "Bridge infill"
+msgstr "Remplissage du pont"
+
+#: src/libslic3r/PrintConfig.cpp:505
+msgid "Bridges"
+msgstr "Ponts"
+
 #: src/slic3r/GUI/PresetHints.cpp:170
 msgid "external perimeters"
 msgstr "périmètres externes"
@@ -12198,7 +12228,7 @@ msgstr "chargé"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:354
 msgid "Tool #"
-msgstr "Outil #"
+msgstr "Extrudeuse #"
 
 #: src/slic3r/GUI/WipeTowerDialog.cpp:363
 msgid ""
@@ -16132,7 +16162,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2431 src/libslic3r/PrintConfig.cpp:2443
 msgid "Solid infill"
-msgstr "Remplissage plein"
+msgstr "Couche pleine"
 
 #: src/libslic3r/PrintConfig.cpp:2433
 msgid ""
@@ -16329,7 +16359,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2586
 msgid "Regular"
-msgstr "Ordinaire"
+msgstr "Normal"
 
 #: src/libslic3r/PrintConfig.cpp:2587
 msgid "Even-odd"
@@ -16848,7 +16878,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2996 src/libslic3r/PrintConfig.cpp:3009
 msgid "Top solid infill"
-msgstr "Remplissage plein supérieur"
+msgstr "Couche pleine supérieur"
 
 #: src/libslic3r/PrintConfig.cpp:2998
 msgid ""
@@ -18527,7 +18557,7 @@ msgstr ""
 #: resources/data/hints.ini: [hint:Solid infill threshold area]
 msgid "Solid infill threshold area\nDid you know that you can make parts of your model with a small cross-section be filled with solid infill automatically? Set the<a>Solid infill threshold area</a>. (Expert mode only.)"
 msgstr ""
-"Zone de seuil de remplissage pleine\n"
+"Zone de seuil de remplissage plein\n"
 "Saviez-vous que vous pouvez remplir automatiquement des parties de votre "
 "modèle avec une petite section transversale avec un remplissage plein ? "
 "Définissez la <a>zone de seuil de remplissage plein</a>. (Mode expert "
@@ -18703,7 +18733,7 @@ msgstr ""
 #: resources/data/hints.ini: [hint:Cut tool]
 msgid "Cut tool\nDid you know that you can cut a model at any angle and even create aligning pins with the updated Cut tool? Learn more in the documentation."
 msgstr ""
-"Outil de coupe\n"
+"Outil découpe\n"
 "Saviez-vous que vous pouvez couper un modèle à n'importe quel angle et même "
 "créer des broches d'alignement avec l'outil Cut mis à jour ? Pour en savoir "
 "plus, consultez la documentation."
@@ -18875,12 +18905,6 @@ msgstr ""
 
 #~ msgid "Options"
 #~ msgstr "Options"
-
-#~ msgid "Overhang perimeter"
-#~ msgstr "Périmètre en surplomb"
-
-#~ msgid "Perimeter"
-#~ msgstr "Périmètre"
 
 #, boost-format
 #~ msgid ""
