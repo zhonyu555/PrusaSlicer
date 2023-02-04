@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-04 22:31+0200\n"
+"PO-Revision-Date: 2023-02-04 23:10+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -15742,7 +15742,7 @@ msgstr "Densité de la première couche"
 
 #: src/libslic3r/PrintConfig.cpp:2147
 msgid "Density of the first raft or support layer."
-msgstr "Densité de la premières couche de raft ou de support."
+msgstr "Densité de la première couche du radeau ou de support."
 
 #: src/libslic3r/PrintConfig.cpp:2155
 msgid "First layer expansion"
@@ -15753,7 +15753,7 @@ msgid ""
 "Expansion of the first raft or support layer to improve adhesion to print "
 "bed."
 msgstr ""
-"Expansion de la première couches du radeau ou des supports pour améliorer "
+"Expansion de la première couche du radeau ou des supports pour améliorer "
 "l'adhérence au plateau d'impression."
 
 #: src/libslic3r/PrintConfig.cpp:2164
@@ -16437,7 +16437,7 @@ msgid ""
 "this to 0 will also prevent Slic3r from using bridge flow and speed for the "
 "first object layer."
 msgstr ""
-"Distance verticale entre l'objet et l'intercalaire du support. Régler cette "
+"Distance verticale entre l'objet et l’interface du support. Régler cette "
 "valeur sur zéro empêchera Slic3r d'utiliser la vitesse et le débit des ponts "
 "pour la première couche de l'objet."
 
@@ -16464,7 +16464,7 @@ msgid ""
 "be used for both top and bottom contact Z distances."
 msgstr ""
 "La distance verticale entre la surface supérieure de l'objet et l'interface "
-"du matériau de support. Si elle est défini sur zéro, "
+"du matériau de support. Si elle est définie sur zéro, "
 "support_material_contact_distance sera utilisé pour les distances Z de "
 "contact supérieur et inférieur."
 
@@ -16592,9 +16592,9 @@ msgid ""
 "For snug supports, the support regions will be merged using morphological "
 "closing operation. Gaps smaller than the closing radius will be filled in."
 msgstr ""
-"Pour des supports bien ajustés, les régions de support seront fusionnées à "
-"l'aide d'une opération de fermeture morphologique. Les espaces plus petits "
-"que le rayon de fermeture seront comblés."
+"Pour les supports ajustés, les régions de support seront fusionnées à l'aide "
+"d'une opération de fermeture morphologique. Les espaces plus petits que le "
+"rayon de fermeture seront comblés."
 
 #: src/libslic3r/PrintConfig.cpp:2767
 msgid "Interface pattern spacing"
@@ -16754,7 +16754,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2903
 msgid "Tree Support Tip Diameter"
-msgstr "Diamètre de la pointe du support arborecent"
+msgstr "Diamètre de la pointe du support arborescent"
 
 #: src/libslic3r/PrintConfig.cpp:2905
 msgid "The diameter of the top of the tip of the branches of tree support."
@@ -16804,8 +16804,8 @@ msgstr ""
 "Règle la densité de la structure de support utilisée pour générer les "
 "extrémités des branches. Une valeur plus élevée permet d'obtenir de "
 "meilleurs surplombs, mais les supports sont plus difficiles à enlever. "
-"Utilisez Support Roof pour des valeurs très élevées ou assurez-vous que la "
-"densité des supports est également élevée au sommet."
+"Utilisez des couches d'interface pour des valeurs très élevées ou assurez-"
+"vous que la densité des supports est également élevée au sommet."
 
 #: src/libslic3r/PrintConfig.cpp:2947
 msgid ""
