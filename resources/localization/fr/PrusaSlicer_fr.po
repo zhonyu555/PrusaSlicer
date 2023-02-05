@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-04 23:10+0200\n"
+"PO-Revision-Date: 2023-02-05 14:10+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -3042,7 +3042,7 @@ msgstr "Style"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:1569
 msgid "Depth ratio"
-msgstr "Ratio de profondeur"
+msgstr "Profondeur"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:1587
 msgid "Confirm connectors"
@@ -3179,11 +3179,11 @@ msgstr "Police de caractères"
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:945
 #: src/libslic3r/PrintConfig.cpp:868
 msgid "Height"
-msgstr "Hauteur"
+msgstr "Taille"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:946
 msgid "Depth"
-msgstr "Profondeur"
+msgstr "Hauteur"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:954
 msgid "Use surface"
@@ -3257,7 +3257,7 @@ msgstr "Avertissement : Aucune police n'est sélectionnée. Sélectionnez en une
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:1452
 msgid "advanced"
-msgstr "avancé"
+msgstr "Avancé"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:1516
 msgid "Fix settings possition"
@@ -3388,7 +3388,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:2152
 msgid "Subtracted"
-msgstr "Soustraire"
+msgstr "Soustrait"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:2158
 msgid "Click to change part type into negative volume."
@@ -5213,7 +5213,7 @@ msgstr "PrusaSlicer : Ouvrir le lien hypertexte"
 
 #: src/slic3r/GUI/GUI_App.cpp:3263 src/slic3r/GUI/Preferences.cpp:596
 msgid "Suppress to open hyperlink in browser"
-msgstr "Supprimer pour ouvrir l'hyperlien dans le navigateur"
+msgstr "Supprimer l'ouverture d'hyperlien dans le navigateur"
 
 #: src/slic3r/GUI/GUI_App.cpp:3265 src/slic3r/GUI/Plater.cpp:1739
 msgid "PrusaSlicer will remember your choice."
@@ -5568,11 +5568,11 @@ msgstr "Annuler la conversion en mètre"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:923 src/slic3r/GUI/Plater.cpp:6409
 msgid "Convert from meters"
-msgstr "Convertir en Pouce"
+msgstr "Convertir en pouce"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:924 src/slic3r/GUI/Plater.cpp:6409
 msgid "Revert conversion from meters"
-msgstr "Annuler la conversion en Pouce"
+msgstr "Annuler la conversion en pouce"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:945 src/slic3r/GUI/GUI_ObjectList.cpp:2284
 #: src/libslic3r/PrintConfig.cpp:4742
@@ -6675,7 +6675,7 @@ msgstr "Enregistrer le projet (3mf)"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:89
 msgid "Save project as (3mf)"
-msgstr "Enregistrer le projet en (3mf)"
+msgstr "Enregistrer le projet sous (3mf)"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:90
 msgid "(Re)slice"
@@ -6877,7 +6877,7 @@ msgstr "Mouvement dans l'espace de la caméra"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:154
 msgid "Page Up"
-msgstr "Page Up"
+msgstr "Page Haut"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:154
 msgid "Rotate selection 45 degrees CCW"
@@ -6887,7 +6887,7 @@ msgstr ""
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:155
 msgid "Page Down"
-msgstr "Page Down"
+msgstr "Page Bas"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:155
 msgid "Rotate selection 45 degrees CW"
@@ -7006,34 +7006,34 @@ msgstr ""
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:191
 msgid "Gizmo move: Press to snap by 1mm"
-msgstr "Gadget de déplacement : Appuyez pour des pas de 1 mm"
+msgstr "Gadget déplacement : Appuyez pour des pas de 1 mm"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:192
 msgid "Gizmo scale: Press to snap by 5%"
-msgstr "Gadget de redimensionnement: Appuyez pour des pas de 5%"
+msgstr "Gadget redimensionnement : Appuyez pour des pas de 5%"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:193
 msgid "Gizmo scale: Scale selection to fit print volume"
 msgstr ""
-"Gadget de redimensionnement : redimensionner la sélection pour remplir le "
+"Gadget redimensionnement : redimensionner la sélection pour remplir le "
 "volume d'impression"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:194
 msgid "Gizmo scale: Press to activate one direction scaling"
 msgstr ""
-"Gadget de redimensionnement: Appuyez pour activer le redimensionnement dans "
+"Gadget redimensionnement : Appuyez pour activer le redimensionnement dans "
 "une direction"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:195
 msgid "Gizmo scale: Press to scale selected objects around their own center"
 msgstr ""
-"Gadget de redimensionnement: Appuyez pour mettre redimensionner les objets "
+"Gadget redimensionnement : Appuyez pour mettre redimensionner les objets "
 "sélectionnés autour de leur propre centre"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:196
 msgid "Gizmo rotate: Press to rotate selected objects around their own center"
 msgstr ""
-"Gadget rotation: Appuyez pour faire pivoter les objets sélectionnés autour "
+"Gadget rotation : Appuyez pour faire pivoter les objets sélectionnés autour "
 "de leur propre centre"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:199
@@ -7044,7 +7044,7 @@ msgstr "Gadgets"
 msgid ""
 "The following shortcuts are applicable when the specified gizmo is active"
 msgstr ""
-"Les raccourcis suivants s'appliquent lorsque le gizmo spécifié est actif"
+"Les raccourcis suivants s'appliquent lorsque le gadget spécifié est actif"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:202
 msgid "Set selected items as Printable/Unprintable"
@@ -7143,7 +7143,7 @@ msgid ""
 "Press to speed up 5 times while moving thumb\n"
 "with arrow keys or mouse wheel"
 msgstr ""
-"Appuyez pour accélérer 5 fois tout en déplaçant le pouce\n"
+"Appuyez pour accélérer 5 fois tout en déplaçant le curseur\n"
 "avec les touches fléchées ou la molette de la souris"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:249
@@ -9368,7 +9368,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Preferences.cpp:320
 msgid "Suppress \" Template \" filament presets"
-msgstr "Suppression des \" Modèles \"dans le réglage des filaments"
+msgstr "Suppression des \" Modèles \" dans le réglage des filaments"
 
 #: src/slic3r/GUI/Preferences.cpp:321
 msgid ""
@@ -9664,7 +9664,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Preferences.cpp:527
 msgid "Show non-manifold edges"
-msgstr "Montrer les bords des non-manifolds"
+msgstr "Montrer les bords non-manifolds"
 
 #: src/slic3r/GUI/Preferences.cpp:528
 msgid "If enabled, shows non-manifold edges."
@@ -9672,7 +9672,7 @@ msgstr "Si activé, montre les arêtes non-manifold."
 
 #: src/slic3r/GUI/Preferences.cpp:532
 msgid "Allow automatically color change"
-msgstr "Permet de changer automatiquement de couleur"
+msgstr "Permet de changer automatiquement la couleur"
 
 #: src/slic3r/GUI/Preferences.cpp:533
 msgid ""
@@ -10667,6 +10667,14 @@ msgstr "Enregistrer l'état actuel %s"
 #, possible-c-format, possible-boost-format
 msgid "Rename current %s"
 msgstr "Renommer l'état %s actuel"
+
+#: 
+msgid "Rename current style."
+msgstr "Renommer style courant."
+
+#: 
+msgid "Rename current style"
+msgstr "Renommer style courant"
 
 #: src/slic3r/GUI/Tab.cpp:170
 msgid "Delete this preset"
@@ -14804,7 +14812,7 @@ msgid ""
 "perimeters and infill."
 msgstr ""
 "Permet de combler les espaces entre les périmètres et entre les périmètres "
-"et remplissage les plus intérieurs."
+"internes et le remplissage."
 
 #: src/libslic3r/PrintConfig.cpp:1385
 msgid "Gap fill"
