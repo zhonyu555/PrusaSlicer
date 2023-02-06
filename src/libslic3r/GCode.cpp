@@ -2860,8 +2860,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
     std::vector<ProcessedPoint> new_points{};
     if (this->m_config.enable_dynamic_overhang_speeds && !this->on_first_layer() && path.role().is_perimeter()) {
         new_points     = m_extrusion_quality_estimator.estimate_extrusion_quality(path, m_config.overhang_overlap_levels,
-                                                                                  m_config.dynamic_overhang_speeds,
-                                                                                  m_config.get_abs_value("external_perimeter_speed"), speed);
+                                                                                  m_config.dynamic_overhang_speeds, speed);
         variable_speed = std::any_of(new_points.begin(), new_points.end(), [speed](const ProcessedPoint &p) { return p.speed != speed; });
     }
 
@@ -2916,19 +2915,21 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             + float_to_string_decimal_point(m_last_height) + "\n";
     }
 
-    std::string comment;
+    std::string cooling_marker_setspeed_comments;
     if (m_enable_cooling_markers) {
         if (path.role().is_bridge())
             gcode += ";_BRIDGE_FAN_START\n";
         else
-            comment = ";_EXTRUDE_SET_SPEED";
+            // NOTE: THIS TAG IS ALSO USED BY PRESSURE EQUALIZER
+            // so it knows which extrusions are eligible for flow modification 
+            cooling_marker_setspeed_comments = ";_EXTRUDE_SET_SPEED";
         if (path.role() == ExtrusionRole::ExternalPerimeter)
-            comment += ";_EXTERNAL_PERIMETER";
+            cooling_marker_setspeed_comments += ";_EXTERNAL_PERIMETER";
     }
 
     if (!variable_speed) {
         // F is mm per minute.
-        gcode += m_writer.set_speed(F, "", comment);
+        gcode += m_writer.set_speed(F, "", cooling_marker_setspeed_comments);
         double path_length = 0.;
         std::string comment;
         if (m_config.gcode_comments) {
@@ -2946,13 +2947,13 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             prev = p;
         }
     } else {
-        std::string comment;
+        std::string comment = "";
         if (m_config.gcode_comments) {
-            comment = description;
+            comment += description;
             comment += description_bridge;
         }
         double last_set_speed = new_points[0].speed * 60.0;
-        gcode += m_writer.set_speed(last_set_speed, "", comment);
+        gcode += m_writer.set_speed(last_set_speed, "", cooling_marker_setspeed_comments);
         Vec2d prev = this->point_to_gcode_quantized(new_points[0].p);
         for (size_t i = 1; i < new_points.size(); i++) {
             const ProcessedPoint& processed_point = new_points[i];
@@ -2962,7 +2963,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             prev = p;
             double new_speed = processed_point.speed * 60.0;
             if (last_set_speed != new_speed) {
-                gcode += m_writer.set_speed(new_speed, "", comment);
+                gcode += m_writer.set_speed(new_speed, "", cooling_marker_setspeed_comments);
                 last_set_speed = new_speed;
             }
         }
