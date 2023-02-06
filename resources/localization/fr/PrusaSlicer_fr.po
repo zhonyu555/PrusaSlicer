@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-06 12:56+0200\n"
+"PO-Revision-Date: 2023-02-06 18:36+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -993,7 +993,7 @@ msgstr "Mises à jour"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1291
 msgid "Check for application updates"
-msgstr "Vérifier les mises-à-jour de l'application"
+msgstr "Vérifier les mises à jour de l'application"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1295
 #, possible-c-format, possible-boost-format
@@ -1025,7 +1025,7 @@ msgid ""
 "When a new preset version becomes available it is offered at application "
 "startup."
 msgstr ""
-"Si activé, %s télécharge les mises à jours des préréglages système intégrés "
+"Si activé, %s télécharge les mises à jour des préréglages système intégrés "
 "en arrière-plan. Ces mises à jour sont téléchargées dans un répertoire "
 "temporaire séparé. Lorsqu'une nouvelle version de préréglages est "
 "disponible, elle est proposée au démarrage de l'application."
@@ -3205,7 +3205,7 @@ msgstr "Gras"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:958
 msgid "Skew ratio"
-msgstr "Rapport d'inclinaison"
+msgstr "Rapport inclinaison"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:959
 msgid "Z-move"
@@ -5045,7 +5045,7 @@ msgstr "Vérifier les mises à jour de configuration"
 
 #: src/slic3r/GUI/GUI_App.cpp:2393
 msgid "Check for Application Updates"
-msgstr "Vérifier les mises-à-jour de l'application"
+msgstr "Vérifier les mises à jour de l'application"
 
 #: src/slic3r/GUI/GUI_App.cpp:2393
 msgid "Check for new version of application"
@@ -15852,7 +15852,7 @@ msgstr "Longueur"
 
 #: src/libslic3r/PrintConfig.cpp:2219
 msgid "Retraction Length"
-msgstr "Longueur de Rétractation"
+msgstr "Longueur de Rétraction"
 
 #: src/libslic3r/PrintConfig.cpp:2220
 msgid ""
@@ -15957,8 +15957,7 @@ msgstr "Vitesse de rétraction"
 
 #: src/libslic3r/PrintConfig.cpp:2281
 msgid "The speed for retractions (it only applies to the extruder motor)."
-msgstr ""
-"La vitesse des rétractations (ne s'applique qu'au moteur de l'extrudeur)."
+msgstr "La vitesse des Rétractions (ne s'applique qu'au moteur de l'extrudeur)."
 
 #: src/libslic3r/PrintConfig.cpp:2287 src/libslic3r/PrintConfig.cpp:2288
 msgid "Deretraction Speed"
@@ -16975,8 +16974,8 @@ msgid ""
 "handle the retraction. This is only supported in recent Marlin."
 msgstr ""
 "Ce réglage expérimental utilise les commandes G10 et G11 pour laisser le "
-"firmware gérer la rétractation. Utilisable seulement par les versions "
-"récentes de Marlin."
+"firmware gérer la Rétraction. Utilisable seulement par les versions récentes "
+"de Marlin."
 
 #: src/libslic3r/PrintConfig.cpp:3069
 msgid "Use relative E distances"
@@ -17034,7 +17033,7 @@ msgid ""
 "This flag will move the nozzle while retracting to minimize the possible "
 "blob on leaky extruders."
 msgstr ""
-"Cette option déplace la buse lors des rétractations, limitant ainsi "
+"Cette option déplace la buse lors des Rétractions, limitant ainsi "
 "l'apparition d'amas sur les extrudeurs ayant tendance à couler."
 
 #: src/libslic3r/PrintConfig.cpp:3102
