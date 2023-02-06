@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-05 14:10+0200\n"
+"PO-Revision-Date: 2023-02-06 12:56+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -13490,7 +13490,7 @@ msgstr "HTTP digest"
 
 #: src/libslic3r/PrintConfig.cpp:411
 msgid "Avoid crossing curled overhangs (Experimental)"
-msgstr "Évitez de traverser les surplombs courbés (Expérimental)"
+msgstr "Éviter de traverser les surplombs courbés (Expérimental)"
 
 #: src/libslic3r/PrintConfig.cpp:412
 msgid ""
@@ -13499,7 +13499,7 @@ msgid ""
 "cause a crash with the nozzle. This feature slows down both the print and "
 "the G-code generation."
 msgstr ""
-"Planifiez les déplacements de manière à ce que l'extrudeuse évite les zones "
+"Planifie les déplacements de manière à ce que l'extrudeuse évite les zones "
 "où le filament peut être enroulé. Cela se produit principalement sur les "
 "porte-à-faux arrondis plus raides et peut provoquer un crash avec la buse. "
 "Cette fonctionnalité ralentit à la fois l'impression et la génération du "
@@ -13522,7 +13522,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:427
 msgid "Avoid crossing perimeters - Max detour length"
-msgstr "Éviter de croiser les périmètres - Longueur de détour maximum"
+msgstr "Éviter de traverser les périmètres - Longueur de détour maximum"
 
 #: src/libslic3r/PrintConfig.cpp:429
 msgid ""
@@ -13769,7 +13769,7 @@ msgid ""
 "raft_first_layer_expansion)."
 msgstr ""
 "La largeur horizontale de la bordure qui sera imprimée autour de chaque "
-"objet sur la première couche. Lorsqu'un raft est utilisé, aucune bordure "
+"objet sur la première couche. Lorsqu'un radeau est utilisé, aucune bordure "
 "n'est générée (utilisez raft_first_layer_expansion)."
 
 #: src/libslic3r/PrintConfig.cpp:585
@@ -15157,8 +15157,7 @@ msgstr "Débit"
 #: src/libslic3r/PrintConfig.cpp:1641
 msgid "Percent of a flow rate relative to object's normal layer height."
 msgstr ""
-"Pourcentage d'un débit par rapport à la hauteur de couche normale de "
-"l'objet."
+"Pourcentage d'un débit par rapport à la valeur de couche normale de l'objet."
 
 #: src/libslic3r/PrintConfig.cpp:1649
 msgid "Spacing between ironing passes"
@@ -15997,15 +15996,16 @@ msgstr "Aligné"
 
 #: src/libslic3r/PrintConfig.cpp:2312
 msgid "Staggered inner seams"
-msgstr "Coutures intérieures décalées"
+msgstr "Jointures intérieures décalées"
 
 #: src/libslic3r/PrintConfig.cpp:2313
 msgid ""
 "This option causes the inner seams to be shifted backwards based on their "
 "depth, forming a zigzag pattern."
 msgstr ""
-"Cette option fait en sorte que les coutures intérieures soient décalées vers "
-"l'arrière en fonction de leur profondeur, formant ainsi un motif en zigzag."
+"Cette option fait en sorte que les jointures intérieures soient décalées "
+"vers l'arrière en fonction de leur profondeur, formant ainsi un motif en "
+"zigzag."
 
 #: src/libslic3r/PrintConfig.cpp:2320
 msgid "Direction"
