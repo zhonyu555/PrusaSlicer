@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-01-31 11:12+0100\n"
-"PO-Revision-Date: 2023-02-06 18:36+0200\n"
+"PO-Revision-Date: 2023-02-07 10:08+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -415,7 +415,8 @@ msgstr ""
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:572
 msgid "Choose an STL file to import bed model from:"
-msgstr "Choisissez un fichier STL à partir duquel importer le modèle de lit :"
+msgstr ""
+"Choisissez un fichier STL à partir duquel importer le modèle de plateau :"
 
 #: src/slic3r/GUI/BedShapeDialog.hpp:96 src/slic3r/GUI/ConfigWizard.cpp:1731
 msgid "Bed Shape"
@@ -1288,8 +1289,8 @@ msgid ""
 "Enter the bed temperature needed for getting your filament to stick to your "
 "heated bed."
 msgstr ""
-"Entrez la température du lit nécessaire pour que votre filament colle à "
-"votre lit chauffant."
+"Entrez la température du plateau nécessaire pour que votre filament colle à "
+"votre plateau chauffant."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1933
 msgid ""
@@ -1297,7 +1298,7 @@ msgid ""
 "no heated bed."
 msgstr ""
 "La règle générale est 60 °C pour le PLA et 110 °C pour l'ABS. Laissez à zéro "
-"si vous n'avez pas de lit chauffant."
+"si vous n'avez pas de plateau chauffant."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1936
 msgid "Bed Temperature:"
@@ -6949,7 +6950,7 @@ msgstr "Changer le type d'appareil photo (perspective, orthographique)"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:169
 msgid "Zoom to Bed"
-msgstr "Zoomer sur le Lit"
+msgstr "Zoomer sur le Plateau"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:170
 msgid ""
@@ -11401,7 +11402,7 @@ msgstr "Voulez-vous vraiment supprimer toutes les substitutions ?"
 msgid ""
 "Machine limits will be emitted to G-code and used to estimate print time."
 msgstr ""
-"Les limites de la machine seront émises dans le G-code et utilisées pour "
+"Les limites de la machine seront écrites dans le G-code et utilisées pour "
 "estimer le temps d'impression."
 
 #: src/slic3r/GUI/Tab.cpp:4522
@@ -11410,7 +11411,7 @@ msgid ""
 "estimate print time, which may therefore not be accurate as the printer may "
 "apply a different set of machine limits."
 msgstr ""
-"Les limites de la machine NE seront PAS émises dans le G-code, mais elles "
+"Les limites de la machine NE seront PAS écrites dans le G-code, mais elles "
 "seront utilisées pour estimer le temps d'impression, ce qui peut donc ne pas "
 "être précis car l'imprimante peut appliquer un ensemble différent de "
 "limites de la machine."
@@ -13344,7 +13345,7 @@ msgstr "Texture du plateau personnalisée"
 
 #: src/libslic3r/PrintConfig.cpp:271
 msgid "Bed custom model"
-msgstr "Modèle personnalisé de lit"
+msgstr "Modèle personnalisé de plateau"
 
 #: src/libslic3r/PrintConfig.cpp:276
 msgid "Elephant foot compensation"
@@ -15218,7 +15219,7 @@ msgstr "Comment appliquer les limites de la machine"
 
 #: src/libslic3r/PrintConfig.cpp:1702
 msgid "Emit to G-code"
-msgstr "Émettre en G-code"
+msgstr "Écrire dans G-code"
 
 #: src/libslic3r/PrintConfig.cpp:1703
 msgid "Use for time estimate"
@@ -16171,7 +16172,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2431 src/libslic3r/PrintConfig.cpp:2443
 msgid "Solid infill"
-msgstr "Couche pleine"
+msgstr "Remplissage plein"
 
 #: src/libslic3r/PrintConfig.cpp:2433
 msgid ""
@@ -16253,15 +16254,15 @@ msgid ""
 "you can use placeholder variables for all PrusaSlicer settings, so you can "
 "put a \"M109 S[first_layer_temperature]\" command wherever you want."
 msgstr ""
-"Cette procédure de départ est insérée au début, après que le lit a atteint "
-"la température ciblée et que l'extrudeur vient de commencer à chauffer, et "
-"avant que l'extrudeur ait terminé de chauffer. Si PrusaSlicer détecte M104 "
-"ou M190 dans votre code personnalisé, de telles commandes ne seront pas "
-"ajoutées automatiquement de sorte que vous restez libre de personnaliser "
-"l'ordre des commandes de chauffe et autres actions personnalisées. Notez que "
-"vous pouvez utiliser des variables génériques pour les tous les paramètres "
-"PrusaSlicer, donc vous pouvez utiliser une commande \"M109 "
-"S[first_layer_temperature]\" où vous voulez."
+"Cette procédure de départ est insérée au début, après que le plateau a "
+"atteint la température ciblée et que l'extrudeur vient de commencer à "
+"chauffer, et avant que l'extrudeur ait terminé de chauffer. Si PrusaSlicer "
+"détecte M104 ou M190 dans votre code personnalisé, de telles commandes ne "
+"seront pas ajoutées automatiquement de sorte que vous restez libre de "
+"personnaliser l'ordre des commandes de chauffe et autres actions "
+"personnalisées. Notez que vous pouvez utiliser des variables génériques pour "
+"les tous les paramètres PrusaSlicer, donc vous pouvez utiliser une commande "
+"\"M109 S[first_layer_temperature]\" où vous voulez."
 
 #: src/libslic3r/PrintConfig.cpp:2506
 msgid ""
@@ -16320,7 +16321,7 @@ msgid ""
 "print bed at the start of the print."
 msgstr ""
 "Si ceci est activé, tous les extrudeurs qui impriment seront positionnés sur "
-"la bordure avant du lit d'impression au début de l'impression."
+"la bordure avant du plateau d'impression au début de l'impression."
 
 #: src/libslic3r/PrintConfig.cpp:2561
 msgid "No sparse layers (EXPERIMENTAL)"
@@ -16887,7 +16888,7 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2996 src/libslic3r/PrintConfig.cpp:3009
 msgid "Top solid infill"
-msgstr "Couche pleine supérieur"
+msgstr "Remplissage plein supérieur"
 
 #: src/libslic3r/PrintConfig.cpp:2998
 msgid ""
@@ -17387,9 +17388,9 @@ msgid ""
 "bed. The weight is the sum of the lenghts of all branches emanating from the "
 "endpoint."
 msgstr ""
-"Poids maximal des sous-arbres qui se terminent sur le modèle au lieu du lit "
-"d'impression. Le poids est la somme des longueurs de toutes les branches "
-"émanant de l'extrémité."
+"Poids maximal des sous-arbres qui se terminent sur le modèle au lieu du "
+"plateau d'impression. Le poids est la somme des longueurs de toutes les "
+"branches émanant de l'extrémité."
 
 #: src/libslic3r/PrintConfig.cpp:3432
 msgid "Pillar connection mode"
@@ -17620,7 +17621,7 @@ msgid ""
 "If the print area exceeds the specified value, \n"
 "then a slow tilt will be used, otherwise - a fast tilt"
 msgstr ""
-"Pourcentage de la zone du lit.\n"
+"Pourcentage de la zone du plateau.\n"
 "Si la zone d'impression excède la valeur spécifiée,\n"
 "alors une inclinaison lente sera appliquée, sinon - une inclinaison rapide"
 
@@ -17905,8 +17906,8 @@ msgid ""
 "The slope of the pad wall relative to the bed plane. 90 degrees means "
 "straight walls."
 msgstr ""
-"La pente de la paroi du socle par rapport au plan du lit. 90 degrés donne "
-"des murs droits."
+"La pente de la paroi du socle par rapport au plan du plateau. 90 degrés "
+"donne des murs droits."
 
 #: src/libslic3r/PrintConfig.cpp:4014
 msgid "Create pad around object and ignore the support elevation"
