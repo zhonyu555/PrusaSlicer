@@ -9407,7 +9407,7 @@ msgstr ""
 #: src/slic3r/GUI/GUI_App.cpp:3110 src/slic3r/GUI/Plater.cpp:1738
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:906
 msgid "PrusaSlicer: Don't ask me again"
-msgstr "PrusaSlicer: Již se znavu neptat"
+msgstr "PrusaSlicer: Již se znovu neptat"
 
 #: src/slic3r/GUI/GUI_App.cpp:3099 src/slic3r/GUI/GUI_App.cpp:3122
 msgid "PrusaSlicer: Open hyperlink"
