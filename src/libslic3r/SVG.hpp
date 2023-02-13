@@ -72,8 +72,8 @@ public:
     void draw(const ClipperLib::Path  &polygon, double scale, std::string fill = "grey", coordf_t stroke_width = 0);
     void draw(const ClipperLib::Paths &polygons, double scale, std::string fill = "grey", coordf_t stroke_width = 0);
 
-    void draw_text(const Point &pt, const char *text, const char *color);
-    void draw_legend(const Point &pt, const char *text, const char *color);
+    void draw_text(const Point &pt, const char *text, const char *color, coordf_t font_size = 20.f);
+    void draw_legend(const Point &pt, const char *text, const char *color, coordf_t font_size = 10.f);
 
     void Close();
     
@@ -167,9 +167,9 @@ public:
         { export_expolygons(path.c_str(), expolygons_with_attributes); }
 
 private:
-    static float    to_svg_coord(float x) throw() { return unscale<float>(x) * 10.f; }
-    static float    to_svg_x(float x) throw() { return to_svg_coord(x); }
-    float           to_svg_y(float x) const throw() { return flipY ? this->height - to_svg_coord(x) : to_svg_coord(x); }
+    static float to_svg_coord(float x) throw();
+    static float to_svg_x(float x) throw() { return to_svg_coord(x); }
+           float to_svg_y(float x) const throw() { return flipY ? this->height - to_svg_coord(x) : to_svg_coord(x); }
 };
 
 }

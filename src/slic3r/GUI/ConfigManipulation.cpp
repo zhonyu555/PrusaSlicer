@@ -7,6 +7,7 @@
 #include "libslic3r/PresetBundle.hpp"
 #include "MsgDialog.hpp"
 
+#include <string>
 #include <wx/msgdlg.h>
 
 namespace Slic3r {
@@ -218,10 +219,15 @@ void ConfigManipulation::update_print_fff_config(DynamicPrintConfig* config, con
 void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
 {
     bool have_perimeters = config->opt_int("perimeters") > 0;
-    for (auto el : { "extra_perimeters", "ensure_vertical_shell_thickness", "thin_walls", "overhangs",
-                    "seam_position", "external_perimeters_first", "external_perimeter_extrusion_width",
-                    "perimeter_speed", "small_perimeter_speed", "external_perimeter_speed" })
+    for (auto el : { "extra_perimeters","extra_perimeters_on_overhangs", "ensure_vertical_shell_thickness", "thin_walls", "overhangs",
+                    "seam_position","staggered_inner_seams", "external_perimeters_first", "external_perimeter_extrusion_width",
+                    "perimeter_speed", "small_perimeter_speed", "external_perimeter_speed", "enable_dynamic_overhang_speeds", "overhang_overlap_levels", "dynamic_overhang_speeds" })
         toggle_field(el, have_perimeters);
+
+    for (size_t i = 0; i < 4; i++) {
+        toggle_field("overhang_overlap_levels#" + std::to_string(i), config->opt_bool("enable_dynamic_overhang_speeds"));
+        toggle_field("dynamic_overhang_speeds#" + std::to_string(i), config->opt_bool("enable_dynamic_overhang_speeds"));
+    }
 
     bool have_infill = config->option<ConfigOptionPercent>("fill_density")->value > 0;
     // infill_extruder uses the same logic as in Print::extruders()
@@ -315,8 +321,20 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
                      "wipe_tower_bridging", "wipe_tower_no_sparse_layers", "single_extruder_multi_material_priming" })
         toggle_field(el, have_wipe_tower);
 
+    toggle_field("avoid_crossing_curled_overhangs", !config->opt_bool("avoid_crossing_perimeters"));
+    toggle_field("avoid_crossing_perimeters", !config->opt_bool("avoid_crossing_curled_overhangs"));
+
     bool have_avoid_crossing_perimeters = config->opt_bool("avoid_crossing_perimeters");
     toggle_field("avoid_crossing_perimeters_max_detour", have_avoid_crossing_perimeters);
+
+    bool have_arachne = config->opt_enum<PerimeterGeneratorType>("perimeter_generator") == PerimeterGeneratorType::Arachne;
+    toggle_field("wall_transition_length", have_arachne);
+    toggle_field("wall_transition_filter_deviation", have_arachne);
+    toggle_field("wall_transition_angle", have_arachne);
+    toggle_field("wall_distribution_count", have_arachne);
+    toggle_field("min_feature_size", have_arachne);
+    toggle_field("min_bead_width", have_arachne);
+    toggle_field("thin_walls", !have_arachne);
 }
 
 void ConfigManipulation::update_print_sla_config(DynamicPrintConfig* config, const bool is_global_config/* = false*/)
@@ -352,21 +370,47 @@ void ConfigManipulation::update_print_sla_config(DynamicPrintConfig* config, con
 void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
 {
     bool supports_en = config->opt_bool("supports_enable");
+    sla::SupportTreeType treetype = config->opt_enum<sla::SupportTreeType>("support_tree_type");
+    bool is_default_tree = treetype == sla::SupportTreeType::Default;
+    bool is_branching_tree = treetype == sla::SupportTreeType::Branching;
 
-    toggle_field("support_head_front_diameter", supports_en);
-    toggle_field("support_head_penetration", supports_en);
-    toggle_field("support_head_width", supports_en);
-    toggle_field("support_pillar_diameter", supports_en);
-    toggle_field("support_small_pillar_diameter_percent", supports_en);
-    toggle_field("support_max_bridges_on_pillar", supports_en);
-    toggle_field("support_pillar_connection_mode", supports_en);
-    toggle_field("support_buildplate_only", supports_en);
-    toggle_field("support_base_diameter", supports_en);
-    toggle_field("support_base_height", supports_en);
-    toggle_field("support_base_safety_distance", supports_en);
-    toggle_field("support_critical_angle", supports_en);
-    toggle_field("support_max_bridge_length", supports_en);
-    toggle_field("support_max_pillar_link_distance", supports_en);
+    toggle_field("support_tree_type", supports_en);
+
+    toggle_field("support_head_front_diameter", supports_en && is_default_tree);
+    toggle_field("support_head_penetration", supports_en && is_default_tree);
+    toggle_field("support_head_width", supports_en && is_default_tree);
+    toggle_field("support_pillar_diameter", supports_en && is_default_tree);
+    toggle_field("support_small_pillar_diameter_percent", supports_en && is_default_tree);
+    toggle_field("support_max_bridges_on_pillar", supports_en && is_default_tree);
+    toggle_field("support_pillar_connection_mode", supports_en && is_default_tree);
+    toggle_field("support_buildplate_only", supports_en && is_default_tree);
+    toggle_field("support_base_diameter", supports_en && is_default_tree);
+    toggle_field("support_base_height", supports_en && is_default_tree);
+    toggle_field("support_base_safety_distance", supports_en && is_default_tree);
+    toggle_field("support_critical_angle", supports_en && is_default_tree);
+    toggle_field("support_max_bridge_length", supports_en && is_default_tree);
+    toggle_field("support_enforcers_only", supports_en);
+    toggle_field("support_max_pillar_link_distance", supports_en && is_default_tree);
+    toggle_field("support_pillar_widening_factor", false);
+    toggle_field("support_max_weight_on_model", false);
+
+    toggle_field("branchingsupport_head_front_diameter", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_head_penetration", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_head_width", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_pillar_diameter", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_small_pillar_diameter_percent", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_max_bridges_on_pillar", false);
+    toggle_field("branchingsupport_pillar_connection_mode", false);
+    toggle_field("branchingsupport_buildplate_only", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_base_diameter", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_base_height", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_base_safety_distance", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_critical_angle", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_max_bridge_length", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_max_pillar_link_distance", false);
+    toggle_field("branchingsupport_pillar_widening_factor", supports_en && is_branching_tree);
+    toggle_field("branchingsupport_max_weight_on_model", supports_en && is_branching_tree);
+
     toggle_field("support_points_density_relative", supports_en);
     toggle_field("support_points_minimal_distance", supports_en);
 
@@ -383,7 +427,8 @@ void ConfigManipulation::toggle_print_sla_options(DynamicPrintConfig* config)
 
     bool zero_elev = config->opt_bool("pad_around_object") && pad_en;
 
-    toggle_field("support_object_elevation", supports_en && !zero_elev);
+    toggle_field("support_object_elevation", supports_en && is_default_tree && !zero_elev);
+    toggle_field("branchingsupport_object_elevation", supports_en && is_branching_tree && !zero_elev);
     toggle_field("pad_object_gap", zero_elev);
     toggle_field("pad_around_object_everywhere", zero_elev);
     toggle_field("pad_object_connector_stride", zero_elev);

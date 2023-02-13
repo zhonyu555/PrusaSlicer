@@ -80,8 +80,12 @@ static std::string get_key(const std::string& opt_key, Preset::Type type)
 
 void OptionsSearcher::append_options(DynamicPrintConfig* config, Preset::Type type)
 {
-    auto emplace = [this, type](const std::string key, const wxString& label)
+    auto emplace = [this, type](std::string key, const wxString& label, int id = -1)
     {
+        if (id >= 0)
+            // ! It's very important to use "#". opt_key#n is a real option key used in GroupAndCategory
+            key += "#" + std::to_string(id);
+
         const GroupAndCategory& gc = groups_and_categories[key];
         if (gc.group.IsEmpty() || gc.category.IsEmpty())
             return;
@@ -89,9 +93,13 @@ void OptionsSearcher::append_options(DynamicPrintConfig* config, Preset::Type ty
         wxString suffix;
         wxString suffix_local;
         if (gc.category == "Machine limits") {
-            suffix = key.back()=='1' ? L("Stealth") : L("Normal");
+            suffix = id == 1 ? L("Stealth") : L("Normal");
             suffix_local = " " + _(suffix);
             suffix = " " + suffix;
+        }
+        else if (gc.group == "Dynamic overhang speed" && id >= 0) {
+            suffix = " " + std::to_string(id+1);
+            suffix_local = suffix;
         }
 
         if (!label.IsEmpty())
@@ -109,7 +117,7 @@ void OptionsSearcher::append_options(DynamicPrintConfig* config, Preset::Type ty
 
         int cnt = 0;
 
-        if ( (type == Preset::TYPE_SLA_MATERIAL || type == Preset::TYPE_PRINTER) && opt_key != "bed_shape" && opt_key != "thumbnails")
+        if ( type != Preset::TYPE_FILAMENT && !PresetCollection::is_independent_from_extruder_number_option(opt_key) )
             switch (config->option(opt_key)->type())
             {
             case coInts:	change_opt_key<ConfigOptionInts		>(opt_key, config, cnt);	break;
@@ -118,6 +126,7 @@ void OptionsSearcher::append_options(DynamicPrintConfig* config, Preset::Type ty
             case coStrings:	change_opt_key<ConfigOptionStrings	>(opt_key, config, cnt);	break;
             case coPercents:change_opt_key<ConfigOptionPercents	>(opt_key, config, cnt);	break;
             case coPoints:	change_opt_key<ConfigOptionPoints	>(opt_key, config, cnt);	break;
+            case coFloatsOrPercents:	change_opt_key<ConfigOptionFloatsOrPercents	>(opt_key, config, cnt);	break;
             default:		break;
             }
 
@@ -128,8 +137,7 @@ void OptionsSearcher::append_options(DynamicPrintConfig* config, Preset::Type ty
             emplace(key, label);
         else
             for (int i = 0; i < cnt; ++i)
-                // ! It's very important to use "#". opt_key#n is a real option key used in GroupAndCategory
-                emplace(key + "#" + std::to_string(i), label);
+                emplace(key, label, i);
     }
 }
 
@@ -594,8 +602,6 @@ void SearchDialog::ProcessSelection(wxDataViewItem selection)
 
 void SearchDialog::OnInputText(wxCommandEvent&)
 {
-    search_line->SetInsertionPointEnd();
-
     wxString input_string = search_line->GetValue();
     if (input_string == default_string)
         input_string.Clear();
@@ -720,11 +726,8 @@ void SearchDialog::msw_rescale()
 {
     const int& em = em_unit();
 
-    search_list_model->msw_rescale();
     search_list->GetColumn(SearchListModel::colIcon      )->SetWidth(3  * em);
     search_list->GetColumn(SearchListModel::colMarkedText)->SetWidth(45 * em);
-
-    msw_buttons_rescale(this, em, { wxID_CANCEL });
 
     const wxSize& size = wxSize(40 * em, 30 * em);
     SetMinSize(size);
@@ -743,7 +746,7 @@ void SearchDialog::on_sys_color_changed()
 #endif
 
     // msw_rescale updates just icons, so use it
-    search_list_model->msw_rescale();
+    search_list_model->sys_color_changed();
 
     Refresh();
 }
@@ -776,10 +779,10 @@ void SearchListModel::Prepend(const std::string& label)
     RowPrepended();
 }
 
-void SearchListModel::msw_rescale()
+void SearchListModel::sys_color_changed()
 {
     for (ScalableBitmap& bmp : m_icon)
-        bmp.msw_rescale();
+        bmp.sys_color_changed();
 }
 
 wxString SearchListModel::GetColumnType(unsigned int col) const 
@@ -795,7 +798,7 @@ void SearchListModel::GetValueByRow(wxVariant& variant,
     switch (col)
     {
     case colIcon: 
-        variant << m_icon[m_values[row].second].bmp();
+        variant << m_icon[m_values[row].second].bmp().GetBitmapFor(m_icon[m_values[row].second].parent());
         break;
     case colMarkedText:
         variant = m_values[row].first;

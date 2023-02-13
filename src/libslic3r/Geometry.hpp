@@ -366,18 +366,20 @@ void rotation_transform(Transform3d& transform, const Vec3d& rotation);
 Transform3d rotation_transform(const Vec3d& rotation);
 
 // Sets the given transform by assembling the given scale factors
+void scale_transform(Transform3d& transform, double scale);
 void scale_transform(Transform3d& transform, const Vec3d& scale);
 
 // Returns the transform obtained by assembling the given scale factors
+Transform3d scale_transform(double scale);
 Transform3d scale_transform(const Vec3d& scale);
 
 // Returns the euler angles extracted from the given rotation matrix
 // Warning -> The matrix should not contain any scale or shear !!!
-Vec3d extract_euler_angles(const Eigen::Matrix<double, 3, 3, Eigen::DontAlign>& rotation_matrix);
+Vec3d extract_rotation(const Eigen::Matrix<double, 3, 3, Eigen::DontAlign>& rotation_matrix);
 
 // Returns the euler angles extracted from the given affine transform
 // Warning -> The transform should not contain any shear !!!
-Vec3d extract_euler_angles(const Transform3d& transform);
+Vec3d extract_rotation(const Transform3d& transform);
 
 class Transformation
 {
@@ -434,6 +436,8 @@ public:
 
     const Vec3d& get_rotation() const { return m_rotation; }
     double get_rotation(Axis axis) const { return m_rotation(axis); }
+
+    Transform3d get_rotation_matrix() const { return rotation_transform(get_rotation()); }
 #endif // ENABLE_WORLD_COORDINATE
 
     void set_rotation(const Vec3d& rotation);
@@ -452,6 +456,8 @@ public:
 #else
     const Vec3d& get_scaling_factor() const { return m_scaling_factor; }
     double get_scaling_factor(Axis axis) const { return m_scaling_factor(axis); }
+
+    Transform3d get_scaling_factor_matrix() const { return scale_transform(get_scaling_factor()); }
 #endif // ENABLE_WORLD_COORDINATE
 
     void set_scaling_factor(const Vec3d& scaling_factor);
@@ -464,8 +470,7 @@ public:
     Transform3d get_mirror_matrix() const;
 
     bool is_left_handed() const {
-        const Vec3d mirror = get_mirror();
-        return mirror.x() * mirror.y() * mirror.z() < 0.0;
+        return m_matrix.linear().determinant() < 0;
     }
 #else
     bool is_scaling_uniform() const { return std::abs(m_scaling_factor.x() - m_scaling_factor.y()) < 1e-8 && std::abs(m_scaling_factor.x() - m_scaling_factor.z()) < 1e-8; }
@@ -541,7 +546,7 @@ extern Transform3d transform3d_from_string(const std::string& transform_str);
 extern Eigen::Quaterniond rotation_xyz_diff(const Vec3d &rot_xyz_from, const Vec3d &rot_xyz_to);
 // Rotation by Z to align rot_xyz_from to rot_xyz_to.
 // This should only be called if it is known, that the two rotations only differ in rotation around the Z axis.
-extern double rotation_diff_z(const Vec3d &rot_xyz_from, const Vec3d &rot_xyz_to);
+extern double rotation_diff_z(const Transform3d &trafo_from, const Transform3d &trafo_to);
 
 // Is the angle close to a multiple of 90 degrees?
 inline bool is_rotation_ninety_degrees(double a)
@@ -556,6 +561,30 @@ inline bool is_rotation_ninety_degrees(double a)
 inline bool is_rotation_ninety_degrees(const Vec3d &rotation)
 {
     return is_rotation_ninety_degrees(rotation.x()) && is_rotation_ninety_degrees(rotation.y()) && is_rotation_ninety_degrees(rotation.z());
+}
+
+template <class Tout = double, class Tin>
+std::pair<Tout, Tout> dir_to_spheric(const Vec<3, Tin> &n, Tout norm = 1.)
+{
+    Tout z       = n.z();
+    Tout r       = norm;
+    Tout polar   = std::acos(z / r);
+    Tout azimuth = std::atan2(n(1), n(0));
+    return {polar, azimuth};
+}
+
+template <class T = double>
+Vec<3, T> spheric_to_dir(double polar, double azimuth)
+{
+    return {T(std::cos(azimuth) * std::sin(polar)),
+            T(std::sin(azimuth) * std::sin(polar)), T(std::cos(polar))};
+}
+
+template <class T = double, class Pair>
+Vec<3, T> spheric_to_dir(const Pair &v)
+{
+    double plr = std::get<0>(v), azm = std::get<1>(v);
+    return spheric_to_dir<T>(plr, azm);
 }
 
 } } // namespace Slicer::Geometry

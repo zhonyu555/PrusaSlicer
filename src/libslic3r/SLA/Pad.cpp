@@ -1,6 +1,6 @@
 #include <libslic3r/SLA/Pad.hpp>
 #include <libslic3r/SLA/SpatIndex.hpp>
-#include <libslic3r/SLA/BoostAdapter.hpp>
+#include <libslic3r/BoostAdapter.hpp>
 //#include <libslic3r/SLA/Contour3D.hpp>
 #include <libslic3r/TriangleMeshSlicer.hpp>
 
@@ -204,7 +204,7 @@ public:
     void add(const ExPolygon &ep)
     {
         m_polys.emplace_back(ep);
-        m_index.insert(BoundingBox{ep}, unsigned(m_index.size()));
+        m_index.insert(get_extents(ep), unsigned(m_index.size()));
     }
 
     // Check an arbitrary polygon for intersection with the indexed polygons

@@ -86,7 +86,7 @@ void read_used_binary(std::vector<std::string>& ids)
 		BOOST_LOG_TRIVIAL(warning) << "Failed to load to hints.cereal. File does not exists. " << path.string();
 		return;
 	}
-	boost::nowide::ifstream file(path.string());
+	boost::nowide::ifstream file(path.string(), std::ios::binary);
 	cereal::BinaryInputArchive archive(file);
 	HintsCerealData cd;
 	try
@@ -444,7 +444,7 @@ void HintDatabase::load_hints_from_file(const boost::filesystem::path& path)
 					};
 					m_loaded_hints.emplace_back(hint_data);
 				} else if (dict["hypertext_type"] == "menubar") {
-					wxString menu(_("&" + dict["hypertext_menubar_menu_name"]));
+					wxString menu(_(dict["hypertext_menubar_menu_name"]));
 					wxString item(_(dict["hypertext_menubar_item_name"]));
 					HintData	hint_data{ id_string, text1, weight, was_displayed, hypertext_text, follow_text, disabled_tags, enabled_tags, true, documentation_link, [menu, item]() { wxGetApp().mainframe->open_menubar_item(menu, item); } };
 					m_loaded_hints.emplace_back(hint_data);

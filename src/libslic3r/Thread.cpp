@@ -4,6 +4,9 @@
 #else
 	// any posix system
 	#include <pthread.h>
+	#ifdef __APPLE__
+		#include <pthread/qos.h>
+	#endif // __APPLE__
 #endif
 
 #include <atomic>
@@ -203,7 +206,7 @@ void name_tbb_thread_pool_threads_set_locale()
 	const size_t nthreads_hw = tbb::this_task_arena::max_concurrency();
 	size_t       nthreads    = nthreads_hw;
 
-#ifdef SLIC3R_PROFILE
+#if 0
 	// Shiny profiler is not thread safe, thus disable parallelization.
 	disable_multi_threading();
 	nthreads = 1;
@@ -239,6 +242,28 @@ void name_tbb_thread_pool_threads_set_locale()
                 set_c_locales();
     		}
         });
+}
+
+void set_current_thread_qos()
+{
+#ifdef __APPLE__
+	// OSX specific: Set Quality of Service to "user initiated", so that the threads will be scheduled to high performance
+	// cores if available.
+	pthread_set_qos_class_self_np(QOS_CLASS_USER_INITIATED, 0);
+#endif // __APPLE__
+}
+
+void TBBLocalesSetter::on_scheduler_entry(bool is_worker)
+{
+//    static std::atomic<int> cnt = 0;
+//    std::cout << "TBBLocalesSetter Entering " << cnt ++ << " ID " << std::this_thread::get_id() << "\n";
+    if (bool& is_locales_sets = m_is_locales_sets.local(); !is_locales_sets) {
+        // Set locales of the worker thread to "C".
+        set_c_locales();
+        // OSX specific: Elevate QOS on Apple Silicon.
+        set_current_thread_qos();
+        is_locales_sets = true;
+    }
 }
 
 }

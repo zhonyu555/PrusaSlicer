@@ -1,3 +1,4 @@
+#include "ExPolygon.hpp"
 #include "Layer.hpp"
 #include "BridgeDetector.hpp"
 #include "ClipperUtils.hpp"
@@ -43,30 +44,41 @@ Flow LayerRegion::bridging_flow(FlowRole role) const
     }
 }
 
-// Fill in layerm->fill_surfaces by trimming the layerm->slices by the cummulative layerm->fill_surfaces.
+// Fill in layerm->fill_surfaces by trimming the layerm->slices by layerm->fill_expolygons.
 void LayerRegion::slices_to_fill_surfaces_clipped()
 {
-    // Note: this method should be idempotent, but fill_surfaces gets modified 
-    // in place. However we're now only using its boundaries (which are invariant)
-    // so we're safe. This guarantees idempotence of prepare_infill() also in case
-    // that combine_infill() turns some fill_surface into VOID surfaces.
     // Collect polygons per surface type.
-    std::array<SurfacesPtr, size_t(stCount)> by_surface;
-    for (Surface &surface : this->slices.surfaces)
+    std::array<std::vector<const Surface*>, size_t(stCount)> by_surface;
+    for (const Surface &surface : this->slices())
         by_surface[size_t(surface.surface_type)].emplace_back(&surface);
     // Trim surfaces by the fill_boundaries.
-    this->fill_surfaces.surfaces.clear();
+    m_fill_surfaces.surfaces.clear();
     for (size_t surface_type = 0; surface_type < size_t(stCount); ++ surface_type) {
-        const SurfacesPtr &this_surfaces = by_surface[surface_type];
+        const std::vector<const Surface*> &this_surfaces = by_surface[surface_type];
         if (! this_surfaces.empty())
-            this->fill_surfaces.append(intersection_ex(this_surfaces, this->fill_expolygons), SurfaceType(surface_type));
+            m_fill_surfaces.append(intersection_ex(this_surfaces, this->fill_expolygons()), SurfaceType(surface_type));
     }
 }
 
-void LayerRegion::make_perimeters(const SurfaceCollection &slices, SurfaceCollection* fill_surfaces)
+// Produce perimeter extrusions, gap fill extrusions and fill polygons for input slices.
+void LayerRegion::make_perimeters(
+    // Input slices for which the perimeters, gap fills and fill expolygons are to be generated.
+    const SurfaceCollection                                &slices,
+    // Ranges of perimeter extrusions and gap fill extrusions per suface, referencing
+    // newly created extrusions stored at this LayerRegion.
+    std::vector<std::pair<ExtrusionRange, ExtrusionRange>> &perimeter_and_gapfill_ranges,
+    // All fill areas produced for all input slices above.
+    ExPolygons                                             &fill_expolygons,
+    // Ranges of fill areas above per input slice.
+    std::vector<ExPolygonRange>                            &fill_expolygons_ranges)
 {
-    this->perimeters.clear();
-    this->thin_fills.clear();
+    m_perimeters.clear();
+    m_thin_fills.clear();
+
+    perimeter_and_gapfill_ranges.reserve(perimeter_and_gapfill_ranges.size() + slices.size());
+    // There may be more expolygons produced per slice, thus this reserve is conservative.
+    fill_expolygons.reserve(fill_expolygons.size() + slices.size());
+    fill_expolygons_ranges.reserve(fill_expolygons_ranges.size() + slices.size());
 
     const PrintConfig       &print_config  = this->layer()->object()->print()->config();
     const PrintRegionConfig &region_config = this->region().config();
@@ -76,32 +88,55 @@ void LayerRegion::make_perimeters(const SurfaceCollection &slices, SurfaceCollec
         (this->layer()->id() >= size_t(region_config.bottom_solid_layers.value) &&
          this->layer()->print_z >= region_config.bottom_solid_min_thickness - EPSILON);
 
-    PerimeterGenerator g(
-        // input:
-        &slices,
+    PerimeterGenerator::Parameters params(
         this->layer()->height,
+        int(this->layer()->id()),
         this->flow(frPerimeter),
-        &region_config,
-        &this->layer()->object()->config(),
-        &print_config,
-        spiral_vase,
-        
-        // output:
-        &this->perimeters,
-        &this->thin_fills,
-        fill_surfaces
+        this->flow(frExternalPerimeter),
+        this->bridging_flow(frPerimeter),
+        this->flow(frSolidInfill),
+        region_config,
+        this->layer()->object()->config(),
+        print_config,
+        spiral_vase
     );
-    
-    if (this->layer()->lower_layer != nullptr)
-        // Cummulative sum of polygons over all the regions.
-        g.lower_slices = &this->layer()->lower_layer->lslices;
-    
-    g.layer_id              = (int)this->layer()->id();
-    g.ext_perimeter_flow    = this->flow(frExternalPerimeter);
-    g.overhang_flow         = this->bridging_flow(frPerimeter);
-    g.solid_infill_flow     = this->flow(frSolidInfill);
-    
-    g.process();
+
+    // Cummulative sum of polygons over all the regions.
+    const ExPolygons *lower_slices = this->layer()->lower_layer ? &this->layer()->lower_layer->lslices : nullptr;
+    // Cache for offsetted lower_slices
+    Polygons          lower_layer_polygons_cache;
+
+    for (const Surface &surface : slices) {
+        auto perimeters_begin      = uint32_t(m_perimeters.size());
+        auto gap_fills_begin       = uint32_t(m_thin_fills.size());
+        auto fill_expolygons_begin = uint32_t(fill_expolygons.size());
+        if (this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase)
+            PerimeterGenerator::process_arachne(
+                // input:
+                params,
+                surface,
+                lower_slices,
+                lower_layer_polygons_cache,
+                // output:
+                m_perimeters,
+                m_thin_fills,
+                fill_expolygons);
+        else
+            PerimeterGenerator::process_classic(
+                // input:
+                params,
+                surface,
+                lower_slices,
+                lower_layer_polygons_cache,
+                // output:
+                m_perimeters,
+                m_thin_fills,
+                fill_expolygons);
+        perimeter_and_gapfill_ranges.emplace_back(
+            ExtrusionRange{ perimeters_begin, uint32_t(m_perimeters.size()) }, 
+            ExtrusionRange{ gap_fills_begin,  uint32_t(m_thin_fills.size()) });
+        fill_expolygons_ranges.emplace_back(ExtrusionRange{ fill_expolygons_begin, uint32_t(fill_expolygons.size()) });
+    }
 }
 
 //#define EXTERNAL_SURFACES_OFFSET_PARAMETERS ClipperLib::jtMiter, 3.
@@ -128,7 +163,7 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
     // Internal surfaces, not grown.
     Surfaces                    internal;
     // Areas, where an infill of various types (top, bottom, bottom bride, sparse, void) could be placed.
-    Polygons                    fill_boundaries = to_polygons(this->fill_expolygons);
+    Polygons                    fill_boundaries = to_polygons(this->fill_expolygons());
     Polygons  					lower_layer_covered_tmp;
 
     // Collect top surfaces and internal surfaces.
@@ -138,7 +173,7 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
     {
         // Voids are sparse infills if infill rate is zero.
         Polygons voids;
-        for (const Surface &surface : this->fill_surfaces.surfaces) {
+        for (const Surface &surface : this->fill_surfaces()) {
             if (surface.is_top()) {
                 // Collect the top surfaces, inflate them and trim them by the bottom surfaces.
                 // This gives the priority to bottom surfaces.
@@ -280,6 +315,27 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
                 // would get merged into a single one while they need different directions
                 // also, supply the original expolygon instead of the grown one, because in case
                 // of very thin (but still working) anchors, the grown expolygon would go beyond them
+                double custom_angle = Geometry::deg2rad(this->region().config().bridge_angle.value);
+                if (custom_angle > 0.0) {
+                    bridges[idx_last].bridge_angle = custom_angle;
+                } else {
+                    auto [bridging_dir, unsupported_dist] = detect_bridging_direction(to_polygons(initial), to_polygons(lower_layer->lslices));
+                    bridges[idx_last].bridge_angle = PI + std::atan2(bridging_dir.y(), bridging_dir.x());
+
+                    // #if 1
+                    //     coordf_t    stroke_width = scale_(0.06);
+                    //     BoundingBox bbox         = get_extents(initial);
+                    //     bbox.offset(scale_(1.));
+                    //     ::Slic3r::SVG
+                    //     svg(debug_out_path(("bridge"+std::to_string(bridges[idx_last].bridge_angle)+"_"+std::to_string(this->layer()->bottom_z())).c_str()),
+                    //     bbox);
+
+                    //     svg.draw(initial, "cyan");
+                    //     svg.draw(to_lines(lower_layer->lslices), "green", stroke_width);
+                    // #endif
+                }
+
+                /*
                 BridgeDetector bd(initial, lower_layer->lslices, this->bridging_flow(frInfill).scaled_width());
                 #ifdef SLIC3R_DEBUG
                 printf("Processing bridge at layer %zu:\n", this->layer()->id());
@@ -289,13 +345,14 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
                     bridges[idx_last].bridge_angle = bd.angle;
                     if (this->layer()->object()->has_support()) {
 //                        polygons_append(this->bridged, bd.coverage());
-                        append(this->unsupported_bridge_edges, bd.unsupported_edges());
+                        append(m_unsupported_bridge_edges, bd.unsupported_edges());
                     }
 				} else if (custom_angle > 0) {
 					// Bridge was not detected (likely it is only supported at one side). Still it is a surface filled in
 					// using a bridging flow, therefore it makes sense to respect the custom bridging direction.
 					bridges[idx_last].bridge_angle = custom_angle;
 				}
+                */
                 // without safety offset, artifacts are generated (GH #2494)
                 surfaces_append(bottom, union_safety_offset_ex(grown), bridges[idx_last]);
             }
@@ -362,7 +419,7 @@ void LayerRegion::process_external_surfaces(const Layer *lower_layer, const Poly
         surfaces_append(new_surfaces, std::move(new_expolys), s1);
     }
     
-    this->fill_surfaces.surfaces = std::move(new_surfaces);
+    m_fill_surfaces.surfaces = std::move(new_surfaces);
 
 #ifdef SLIC3R_DEBUG_SLICE_PROCESSING
     export_region_fill_surfaces_to_svg_debug("3_process_external_surfaces-final");
@@ -383,13 +440,15 @@ void LayerRegion::prepare_fill_surfaces()
     bool spiral_vase = this->layer()->object()->print()->config().spiral_vase;
 
     // if no solid layers are requested, turn top/bottom surfaces to internal
+    // For Lightning infill, infill_only_where_needed is ignored because both
+    // do a similar thing, and their combination doesn't make much sense.
     if (! spiral_vase && this->region().config().top_solid_layers == 0) {
-        for (Surface &surface : this->fill_surfaces.surfaces)
+        for (Surface &surface : m_fill_surfaces)
             if (surface.is_top())
-                surface.surface_type = this->layer()->object()->config().infill_only_where_needed ? stInternalVoid : stInternal;
+                surface.surface_type = this->layer()->object()->config().infill_only_where_needed && this->region().config().fill_pattern != ipLightning ? stInternalVoid : stInternal;
     }
     if (this->region().config().bottom_solid_layers == 0) {
-        for (Surface &surface : this->fill_surfaces.surfaces)
+        for (Surface &surface : m_fill_surfaces)
             if (surface.is_bottom()) // (surface.surface_type == stBottom)
                 surface.surface_type = stInternal;
     }
@@ -398,7 +457,7 @@ void LayerRegion::prepare_fill_surfaces()
     if (! spiral_vase && this->region().config().fill_density.value > 0) {
         // scaling an area requires two calls!
         double min_area = scale_(scale_(this->region().config().solid_infill_below_area.value));
-        for (Surface &surface : this->fill_surfaces.surfaces)
+        for (Surface &surface : m_fill_surfaces)
             if (surface.surface_type == stInternal && surface.area() <= min_area)
                 surface.surface_type = stInternalSolid;
     }
@@ -418,38 +477,38 @@ double LayerRegion::infill_area_threshold() const
 void LayerRegion::trim_surfaces(const Polygons &trimming_polygons)
 {
 #ifndef NDEBUG
-    for (const Surface &surface : this->slices.surfaces)
+    for (const Surface &surface : this->slices())
         assert(surface.surface_type == stInternal);
 #endif /* NDEBUG */
-	this->slices.set(intersection_ex(this->slices.surfaces, trimming_polygons), stInternal);
+	m_slices.set(intersection_ex(this->slices().surfaces, trimming_polygons), stInternal);
 }
 
 void LayerRegion::elephant_foot_compensation_step(const float elephant_foot_compensation_perimeter_step, const Polygons &trimming_polygons)
 {
 #ifndef NDEBUG
-    for (const Surface &surface : this->slices.surfaces)
+    for (const Surface &surface : this->slices())
         assert(surface.surface_type == stInternal);
 #endif /* NDEBUG */
-    Polygons tmp = intersection(this->slices.surfaces, trimming_polygons);
-    append(tmp, diff(this->slices.surfaces, opening(this->slices.surfaces, elephant_foot_compensation_perimeter_step)));
-    this->slices.set(union_ex(tmp), stInternal);
+    Polygons tmp = intersection(this->slices().surfaces, trimming_polygons);
+    append(tmp, diff(this->slices().surfaces, opening(this->slices().surfaces, elephant_foot_compensation_perimeter_step)));
+    m_slices.set(union_ex(tmp), stInternal);
 }
 
 void LayerRegion::export_region_slices_to_svg(const char *path) const
 {
     BoundingBox bbox;
-    for (Surfaces::const_iterator surface = this->slices.surfaces.begin(); surface != this->slices.surfaces.end(); ++surface)
-        bbox.merge(get_extents(surface->expolygon));
+    for (const Surface &surface : this->slices())
+        bbox.merge(get_extents(surface.expolygon));
     Point legend_size = export_surface_type_legend_to_svg_box_size();
     Point legend_pos(bbox.min(0), bbox.max(1));
     bbox.merge(Point(std::max(bbox.min(0) + legend_size(0), bbox.max(0)), bbox.max(1) + legend_size(1)));
 
     SVG svg(path, bbox);
     const float transparency = 0.5f;
-    for (Surfaces::const_iterator surface = this->slices.surfaces.begin(); surface != this->slices.surfaces.end(); ++surface)
-        svg.draw(surface->expolygon, surface_type_to_color_name(surface->surface_type), transparency);
-    for (Surfaces::const_iterator surface = this->fill_surfaces.surfaces.begin(); surface != this->fill_surfaces.surfaces.end(); ++surface)
-        svg.draw(surface->expolygon.lines(), surface_type_to_color_name(surface->surface_type));
+    for (const Surface &surface : this->slices())
+        svg.draw(surface.expolygon, surface_type_to_color_name(surface.surface_type), transparency);
+    for (const Surface &surface : this->fill_surfaces())
+        svg.draw(surface.expolygon.lines(), surface_type_to_color_name(surface.surface_type));
     export_surface_type_legend_to_svg(svg, legend_pos);
     svg.Close();
 }
@@ -465,15 +524,15 @@ void LayerRegion::export_region_slices_to_svg_debug(const char *name) const
 void LayerRegion::export_region_fill_surfaces_to_svg(const char *path) const
 {
     BoundingBox bbox;
-    for (Surfaces::const_iterator surface = this->fill_surfaces.surfaces.begin(); surface != this->fill_surfaces.surfaces.end(); ++surface)
-        bbox.merge(get_extents(surface->expolygon));
+    for (const Surface &surface : this->fill_surfaces())
+        bbox.merge(get_extents(surface.expolygon));
     Point legend_size = export_surface_type_legend_to_svg_box_size();
     Point legend_pos(bbox.min(0), bbox.max(1));
     bbox.merge(Point(std::max(bbox.min(0) + legend_size(0), bbox.max(0)), bbox.max(1) + legend_size(1)));
 
     SVG svg(path, bbox);
     const float transparency = 0.5f;
-    for (const Surface &surface : this->fill_surfaces.surfaces) {
+    for (const Surface &surface : this->fill_surfaces()) {
         svg.draw(surface.expolygon, surface_type_to_color_name(surface.surface_type), transparency);
         svg.draw_outline(surface.expolygon, "black", "blue", scale_(0.05)); 
     }

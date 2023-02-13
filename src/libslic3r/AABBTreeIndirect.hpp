@@ -84,6 +84,13 @@ public:
 	template<typename SourceNode>
 	void build(std::vector<SourceNode> &&input)
 	{
+		this->build_modify_input(input);
+        input.clear();
+	}
+
+	template<typename SourceNode>
+	void build_modify_input(std::vector<SourceNode> &input)
+	{
         if (input.empty())
 			clear();
 		else {
@@ -91,7 +98,6 @@ public:
             m_nodes.assign(next_highest_power_of_2(input.size()) * 2 - 1, Node());
             build_recursive(input, 0, 0, input.size() - 1);
 		}
-        input.clear();
 	}
 
 	const std::vector<Node>& 	nodes() const { return m_nodes; }
@@ -513,7 +519,7 @@ namespace detail {
 		const VectorType					 origin;
 
 		inline VectorType closest_point_to_origin(size_t primitive_index,
-		        ScalarType& squared_distance){
+		        ScalarType& squared_distance) const {
 		    const auto &triangle = this->faces[primitive_index];
 		    VectorType closest_point = closest_point_to_triangle<VectorType>(origin,
 		            this->vertices[triangle(0)].template cast<ScalarType>(),
@@ -606,6 +612,37 @@ namespace detail {
 		}
 		return up_sqr_d;
 	}
+
+    template<typename IndexedPrimitivesDistancerType, typename Scalar>
+    static inline void indexed_primitives_within_distance_squared_recurisve(const IndexedPrimitivesDistancerType &distancer,
+                                                                            size_t                                node_idx,
+                                                                            Scalar                                squared_distance_limit,
+                                                                            std::vector<size_t>                  &found_primitives_indices)
+    {
+        const auto &node = distancer.tree.node(node_idx);
+        assert(node.is_valid());
+        if (node.is_leaf()) {
+            Scalar sqr_dist;
+            distancer.closest_point_to_origin(node.idx, sqr_dist);
+            if (sqr_dist < squared_distance_limit) { found_primitives_indices.push_back(node.idx); }
+        } else {
+            size_t      left_node_idx  = node_idx * 2 + 1;
+            size_t      right_node_idx = left_node_idx + 1;
+            const auto &node_left      = distancer.tree.node(left_node_idx);
+            const auto &node_right     = distancer.tree.node(right_node_idx);
+            assert(node_left.is_valid());
+            assert(node_right.is_valid());
+
+            if (node_left.bbox.squaredExteriorDistance(distancer.origin) < squared_distance_limit) {
+                indexed_primitives_within_distance_squared_recurisve(distancer, left_node_idx, squared_distance_limit,
+                                                                     found_primitives_indices);
+            }
+            if (node_right.bbox.squaredExteriorDistance(distancer.origin) < squared_distance_limit) {
+                indexed_primitives_within_distance_squared_recurisve(distancer, right_node_idx, squared_distance_limit,
+                                                                     found_primitives_indices);
+            }
+        }
+    }
 
 } // namespace detail
 
@@ -793,6 +830,33 @@ inline bool is_any_triangle_in_radius(
     return hit_point.allFinite();
 }
 
+// Returns all triangles within the given radius limit
+template<typename VertexType, typename IndexedFaceType, typename TreeType, typename VectorType>
+inline std::vector<size_t> all_triangles_in_radius(
+        // Indexed triangle set - 3D vertices.
+        const std::vector<VertexType> 		&vertices,
+        // Indexed triangle set - triangular faces, references to vertices.
+        const std::vector<IndexedFaceType> 	&faces,
+        // AABBTreeIndirect::Tree over vertices & faces, bounding boxes built with the accuracy of vertices.
+        const TreeType 						&tree,
+        // Point to which the distances on the indexed triangle set is searched for.
+        const VectorType					&point,
+        //Square of maximum distance in which triangles are searched for
+        typename VectorType::Scalar max_distance_squared)
+{
+    auto distancer = detail::IndexedTriangleSetDistancer<VertexType, IndexedFaceType, TreeType, VectorType>
+            { vertices, faces, tree, point };
+
+	if(tree.empty())
+	{
+		return {};
+	}
+
+	std::vector<size_t> found_triangles{};
+	detail::indexed_primitives_within_distance_squared_recurisve(distancer, size_t(0), max_distance_squared, found_triangles);
+	return found_triangles;
+}
+
 
 // Traverse the tree and return the index of an entity whose bounding box
 // contains a given point. Returns size_t(-1) when the point is outside.
@@ -856,29 +920,35 @@ template<class G> auto within(const G &g) { return Within<G>{g}; }
 
 namespace detail {
 
+// Returns true in case traversal should continue,
+// returns false if traversal should stop (for example if the first hit was found).
 template<int Dims, typename T, typename Pred, typename Fn>
-void traverse_recurse(const Tree<Dims, T> &tree,
+bool traverse_recurse(const Tree<Dims, T> &tree,
                       size_t               idx,
                       Pred &&              pred,
                       Fn &&                callback)
 {
     assert(tree.node(idx).is_valid());
 
-    if (!pred(tree.node(idx))) return;
+    if (!pred(tree.node(idx))) 
+    	// Continue traversal.
+    	return true;
 
     if (tree.node(idx).is_leaf()) {
-        callback(tree.node(idx));
+    	// Callback returns true to continue traversal, false to stop traversal.
+        return callback(tree.node(idx));
     } else {
 
         // call this with left and right node idx:
-        auto trv = [&](size_t idx) {
-            traverse_recurse(tree, idx, std::forward<Pred>(pred),
-                             std::forward<Fn>(callback));
+        auto trv = [&](size_t idx) -> bool {
+            return traverse_recurse(tree, idx, std::forward<Pred>(pred),
+                                    std::forward<Fn>(callback));
         };
 
         // Left / right child node index.
-        trv(Tree<Dims, T>::left_child_idx(idx));
-        trv(Tree<Dims, T>::right_child_idx(idx));
+        // Returns true if both children allow the traversal to continue.
+        return trv(Tree<Dims, T>::left_child_idx(idx)) &&
+        	   trv(Tree<Dims, T>::right_child_idx(idx));
     }
 }
 
@@ -888,6 +958,7 @@ void traverse_recurse(const Tree<Dims, T> &tree,
 // traverse(tree, intersecting(QueryBox), [](size_t face_idx) {
 //      /* ... */
 // });
+// Callback shall return true to continue traversal, false if it wants to stop traversal, for example if it found the answer.
 template<int Dims, typename T, typename Predicate, typename Fn>
 void traverse(const Tree<Dims, T> &tree, Predicate &&pred, Fn &&callback)
 {

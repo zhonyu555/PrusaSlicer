@@ -144,7 +144,7 @@ std::string BackgroundSlicingProcess::output_filepath_for_project(const boost::f
 void BackgroundSlicingProcess::process_fff()
 {
 	assert(m_print == m_fff_print);
-    m_print->process();
+	m_print->process();
 	wxCommandEvent evt(m_event_slicing_completed_id);
 	// Post the Slicing Finished message for the G-code viewer to update.
 	// Passing the timestamp 
@@ -196,6 +196,12 @@ void BackgroundSlicingProcess::thread_proc()
 	set_current_thread_name("slic3r_BgSlcPcs");
     name_tbb_thread_pool_threads_set_locale();
 
+    // Set "C" locales and enforce OSX QoS level on all threads entering an arena.
+    // The cost of the callback is quite low: The callback is called once per thread
+    // entering a parallel loop and the callback is guarded with a thread local
+    // variable to be executed just once.
+	TBBLocalesSetter setter;
+
 	assert(m_print != nullptr);
 	assert(m_print == m_fff_print || m_print == m_sla_print);
 	std::unique_lock<std::mutex> lck(m_mutex);
@@ -230,6 +236,9 @@ void BackgroundSlicingProcess::thread_proc()
 				(m_state == STATE_CANCELED) ? SlicingProcessCompletedEvent::Cancelled :
 				exception ? SlicingProcessCompletedEvent::Error : SlicingProcessCompletedEvent::Finished, exception);
         	wxQueueEvent(GUI::wxGetApp().mainframe->m_plater, evt.Clone());
+        	// Cancelled by the user, not internally, thus cleanup() was not called yet.
+        	// Otherwise cleanup() is called from Print::apply()
+        	m_print->cleanup();
         }
 	    m_print->restart();
 		lck.unlock();
@@ -723,7 +732,7 @@ void BackgroundSlicingProcess::prepare_upload()
         
         ThumbnailsList thumbnails = this->render_thumbnails(
         	ThumbnailsParams{current_print()->full_print_config().option<ConfigOptionPoints>("thumbnails")->values, true, true, true, true});
-        m_sla_print->export_print(source_path.string(),thumbnails, m_upload_job.upload_data.upload_path.string());
+        m_sla_print->export_print(source_path.string(),thumbnails, m_upload_job.upload_data.upload_path.filename().string());
     }
 
     m_print->set_status(100, (boost::format(_utf8(L("Scheduling upload to `%1%`. See Window -> Print Host Upload Queue"))) % m_upload_job.printhost->get_host()).str());

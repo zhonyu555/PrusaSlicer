@@ -10,6 +10,16 @@
 #include "ButtonsDescription.hpp"
 #include "OG_CustomCtrl.hpp"
 #include "GLCanvas3D.hpp"
+#include "ConfigWizard_private.hpp"
+
+#include <boost/dll/runtime_symbol_info.hpp>
+
+#ifdef WIN32
+#include <wx/msw/registry.h>
+#endif // WIN32
+#ifdef __linux__
+#include "DesktopIntegrationDialog.hpp"
+#endif //__linux__
 
 namespace Slic3r {
 
@@ -79,10 +89,31 @@ void PreferencesDialog::show(const std::string& highlight_opt_key /*= std::strin
 	m_custom_toolbar_size		= atoi(get_app_config()->get("custom_toolbar_size").c_str());
 	m_use_custom_toolbar_size	= get_app_config()->get("use_custom_toolbar_size") == "1";
 
+	// set Field for notify_release to its value
+	if (m_optgroup_gui && m_optgroup_gui->get_field("notify_release") != nullptr) {
+		boost::any val = s_keys_map_NotifyReleaseMode.at(wxGetApp().app_config->get("notify_release"));
+		m_optgroup_gui->get_field("notify_release")->set_value(val, false);
+	}
+	
+
 	if (wxGetApp().is_editor()) {
-		// update colors for color pickers
+		auto app_config = get_app_config();
+
+		downloader->set_path_name(app_config->get("url_downloader_dest"));
+		downloader->allow(!app_config->has("downloader_url_registered") || app_config->get("downloader_url_registered") == "1");
+
+		for (const std::string& opt_key : {"suppress_hyperlinks", "downloader_url_registered"})
+			m_optgroup_other->set_value(opt_key, app_config->get(opt_key) == "1");
+
+		// update colors for color pickers of the labels
 		update_color(m_sys_colour, wxGetApp().get_label_clr_sys());
 		update_color(m_mod_colour, wxGetApp().get_label_clr_modified());
+
+		// update color pickers for mode palette
+		const auto palette = wxGetApp().get_mode_palette(); 
+		std::vector<wxColourPickerCtrl*> color_pickres = {m_mode_simple, m_mode_advanced, m_mode_expert};
+		for (size_t mode = 0; mode < color_pickres.size(); ++mode)
+			update_color(color_pickres[mode], palette[mode]);
 	}
 
 	this->ShowModal();
@@ -160,6 +191,25 @@ static void append_enum_option( std::shared_ptr<ConfigOptionsGroup> optgroup,
 	wxGetApp().sidebar().get_searcher().add_key(opt_key, Preset::TYPE_PREFERENCES, optgroup->config_category(), L("Preferences"));
 }
 
+static void append_string_option(std::shared_ptr<ConfigOptionsGroup> optgroup,
+									const std::string& opt_key,
+									const std::string& label,
+									const std::string& tooltip,
+									const std::string& def_val,
+									ConfigOptionMode mode = comSimple)
+{
+	ConfigOptionDef def = { opt_key, coString };
+	def.label = label;
+	def.tooltip = tooltip;
+	def.mode = mode;
+	def.set_default_value(new ConfigOptionString{ def_val });
+	Option option(def, opt_key);
+	optgroup->append_single_option_line(option);
+
+	// fill data to the Search Dialog
+	wxGetApp().sidebar().get_searcher().add_key(opt_key, Preset::TYPE_PREFERENCES, optgroup->config_category(), L("Preferences"));
+}
+
 static void append_preferences_option_to_searcer(std::shared_ptr<ConfigOptionsGroup> optgroup,
 												const std::string& opt_key,
 												const wxString& label)
@@ -223,6 +273,14 @@ void PreferencesDialog::build()
 				"as they\'re loaded in order to save time when exporting G-code."),
 			app_config->get("background_processing") == "1");
 
+		append_bool_option(m_optgroup_general, "alert_when_supports_needed", 
+			L("Alert when supports needed"),
+			L("If this is enabled, Slic3r will raise alerts when it detects "
+				"issues in the sliced object, that can be resolved with supports (and brim). "
+				"Examples of such issues are floating object parts, unsupported extrusions and low bed adhesion."),
+			app_config->get("alert_when_supports_needed") == "1");
+
+
 		m_optgroup_general->append_separator();
 
 		// Please keep in sync with ConfigWizard
@@ -258,6 +316,11 @@ void PreferencesDialog::build()
 			L("Suppress \" - default - \" presets in the Print / Filament / Printer selections once there are any other valid presets available."),
 			app_config->get("no_defaults") == "1");
 
+		append_bool_option(m_optgroup_general, "no_templates",
+			L("Suppress \" Template \" filament presets"),
+			L("Suppress \" Template \" filament presets in configuration wizard and sidebar visibility."),
+			app_config->get("no_templates") == "1");
+
 		append_bool_option(m_optgroup_general, "show_incompatible_presets",
 			L("Show incompatible print and filament presets"),
 			L("When checked, the print and filament presets are shown in the preset editor "
@@ -267,8 +330,14 @@ void PreferencesDialog::build()
 		m_optgroup_general->append_separator();
 
 		append_bool_option(m_optgroup_general, "show_drop_project_dialog",
+#if 1 // #ysFIXME_delete_after_test_of_6377
+			L("Show load project dialog"),
+			L("When checked, whenever dragging and dropping a project file on the application or open it from a browser, "
+			  "shows a dialog asking to select the action to take on the file to load."),
+#else
 			L("Show drop project dialog"),
 			L("When checked, whenever dragging and dropping a project file on the application, shows a dialog asking to select the action to take on the file to load."),
+#endif
 			app_config->get("show_drop_project_dialog") == "1");
 
 		append_bool_option(m_optgroup_general, "single_instance",
@@ -417,9 +486,9 @@ void PreferencesDialog::build()
 			return;
 		}
 
-		if (opt_key == "suppress_hyperlinks")
+/*		if (opt_key == "suppress_hyperlinks")
 			m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "";
-		else
+		else*/
 			m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "0";
 	};
 
@@ -434,14 +503,14 @@ void PreferencesDialog::build()
 			L("Show sidebar collapse/expand button"),
 			L("If enabled, the button for the collapse sidebar will be appeared in top right corner of the 3D Scene"),
 			app_config->get("show_collapse_button") == "1");
-
+/*
 		append_bool_option(m_optgroup_gui, "suppress_hyperlinks",
 			L("Suppress to open hyperlink in browser"),
 			L("If enabled, PrusaSlicer will not open a hyperlinks in your browser."),
 			//L("If enabled, the descriptions of configuration parameters in settings tabs wouldn't work as hyperlinks. "
 			//  "If disabled, the descriptions of configuration parameters in settings tabs will work as hyperlinks."),
 			app_config->get("suppress_hyperlinks") == "1");
-
+*/
 		append_bool_option(m_optgroup_gui, "color_mapinulation_panel",
 			L("Use colors for axes values in Manipulation panel"),
 			L("If enabled, the axes names and axes values will be colorized according to the axes colors. "
@@ -454,12 +523,15 @@ void PreferencesDialog::build()
 			  "If disabled, you can reorder Model Parts, Negative Volumes and Modifiers. But one of the model parts have to be on the first place."),
 			app_config->get("order_volumes") == "1");
 
-#if ENABLE_SHOW_NON_MANIFOLD_EDGES
 		append_bool_option(m_optgroup_gui, "non_manifold_edges",
 			L("Show non-manifold edges"),
 			L("If enabled, shows non-manifold edges."),
 			app_config->get("non_manifold_edges") == "1");
-#endif // ENABLE_SHOW_NON_MANIFOLD_EDGES
+
+		append_bool_option(m_optgroup_gui, "allow_auto_color_change",
+			L("Allow automatically color change"),
+			L("If enabled, related notification will be shown, when sliced object looks like a logo or a sign."),
+			app_config->get("allow_auto_color_change") == "1");
 
 #ifdef _MSW_DARK_MODE
 		append_bool_option(m_optgroup_gui, "tabs_as_menu",
@@ -503,6 +575,38 @@ void PreferencesDialog::build()
 
 		create_settings_mode_widget();
 		create_settings_text_color_widget();
+		create_settings_mode_color_widget();
+
+		m_optgroup_other = create_options_tab(_L("Other"), tabs);
+		m_optgroup_other->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
+
+			if (auto it = m_values.find(opt_key); it != m_values.end() && opt_key != "url_downloader_dest") {
+				m_values.erase(it); // we shouldn't change value, if some of those parameters were selected, and then deselected
+				return;
+			}
+
+			if (opt_key == "suppress_hyperlinks")
+				m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "";
+			else
+				m_values[opt_key] = boost::any_cast<bool>(value) ? "1" : "0";
+		};
+
+
+		append_bool_option(m_optgroup_other, "suppress_hyperlinks",
+			L("Suppress to open hyperlink in browser"),
+			L("If enabled, PrusaSlicer will not open a hyperlinks in your browser."),
+			//L("If enabled, the descriptions of configuration parameters in settings tabs wouldn't work as hyperlinks. "
+			//  "If disabled, the descriptions of configuration parameters in settings tabs will work as hyperlinks."),
+			app_config->get("suppress_hyperlinks") == "1");
+		
+		append_bool_option(m_optgroup_other, "downloader_url_registered",
+			L("Allow downloads from Printables.com"),
+			L("If enabled, PrusaSlicer will allow to download from Printables.com"),
+			app_config->get("downloader_url_registered") == "1");
+
+		activate_options_tab(m_optgroup_other);
+
+		create_downloader_path_sizer();
 
 #if ENABLE_ENVIRONMENT_MAP
 		// Add "Render" tab
@@ -577,7 +681,7 @@ std::vector<ConfigOptionsGroup*> PreferencesDialog::optgroups()
 {
 	std::vector<ConfigOptionsGroup*> out;
 	out.reserve(4);
-	for (ConfigOptionsGroup* opt : { m_optgroup_general.get(), m_optgroup_camera.get(), m_optgroup_gui.get()
+	for (ConfigOptionsGroup* opt : { m_optgroup_general.get(), m_optgroup_camera.get(), m_optgroup_gui.get(), m_optgroup_other.get()
 #ifdef _WIN32
 		, m_optgroup_dark_mode.get()
 #endif // _WIN32
@@ -604,6 +708,19 @@ void PreferencesDialog::update_ctrls_alignment()
 
 void PreferencesDialog::accept(wxEvent&)
 {
+	if(wxGetApp().is_editor()) {
+		if (const auto it = m_values.find("downloader_url_registered"); it != m_values.end())
+			downloader->allow(it->second == "1");
+		if (!downloader->on_finish())
+			return;
+#ifdef __linux__
+		if( downloader->get_perform_registration_linux()) 
+			DesktopIntegrationDialog::perform_desktop_integration(true);
+#endif // __linux__
+	}
+
+	bool update_filament_sidebar = (m_values.find("no_templates") != m_values.end());
+
 	std::vector<std::string> options_to_recreate_GUI = { "no_defaults", "tabs_as_menu", "sys_menu_enabled" };
 
 	for (const std::string& option : options_to_recreate_GUI) {
@@ -627,7 +744,7 @@ void PreferencesDialog::accept(wxEvent&)
 		}
 	}
 
-    auto app_config = get_app_config();
+	auto app_config = get_app_config();
 
 	m_seq_top_layer_only_changed = false;
 	if (auto it = m_values.find("seq_top_layer_only"); it != m_values.end())
@@ -657,6 +774,7 @@ void PreferencesDialog::accept(wxEvent&)
 	if (wxGetApp().is_editor()) {
 		wxGetApp().set_label_clr_sys(m_sys_colour->GetColour());
 		wxGetApp().set_label_clr_modified(m_mod_colour->GetColour());
+		wxGetApp().set_mode_palette(m_mode_palette);
 	}
 
 	EndModal(wxID_OK);
@@ -672,6 +790,9 @@ void PreferencesDialog::accept(wxEvent&)
 	
 	wxGetApp().update_ui_from_settings();
 	clear_cache();
+
+	if (update_filament_sidebar)
+		wxGetApp().plater()->sidebar().update_presets(Preset::Type::TYPE_FILAMENT);
 }
 
 void PreferencesDialog::revert(wxEvent&)
@@ -727,7 +848,7 @@ void PreferencesDialog::revert(wxEvent&)
 			continue;
 		}
 
-		for (auto opt_group : { m_optgroup_general, m_optgroup_camera, m_optgroup_gui
+		for (auto opt_group : { m_optgroup_general, m_optgroup_camera, m_optgroup_gui, m_optgroup_other
 #ifdef _WIN32
 			, m_optgroup_dark_mode
 #endif // _WIN32
@@ -753,12 +874,8 @@ void PreferencesDialog::msw_rescale()
 {
 	for (ConfigOptionsGroup* og : this->optgroups())
 		og->msw_rescale();
-#ifdef _WIN32
-	m_optgroup_dark_mode->msw_rescale();
-#endif //_WIN32
-#if ENABLE_ENVIRONMENT_MAP
-	m_optgroup_render->msw_rescale();
-#endif // ENABLE_ENVIRONMENT_MAP
+
+	update_ctrls_alignment();
 
     msw_buttons_rescale(this, em_unit(), { wxID_OK, wxID_CANCEL });
 
@@ -925,7 +1042,7 @@ void PreferencesDialog::create_settings_text_color_widget()
 	m_blinkers[opt_key] = new BlinkingBitmap(parent);
 
 	wxSizer* stb_sizer = new wxStaticBoxSizer(stb, wxVERTICAL);
-	ButtonsDescription::FillSizerWithTextColorDescriptions(stb_sizer, parent, &m_sys_colour, &m_mod_colour);
+	GUI_Descriptions::FillSizerWithTextColorDescriptions(stb_sizer, parent, &m_sys_colour, &m_mod_colour);
 
 	auto sizer = new wxBoxSizer(wxHORIZONTAL);
 	sizer->Add(m_blinkers[opt_key], 0, wxRIGHT, 2);
@@ -936,6 +1053,52 @@ void PreferencesDialog::create_settings_text_color_widget()
 	append_preferences_option_to_searcer(m_optgroup_gui, opt_key, title);
 }
 
+void PreferencesDialog::create_settings_mode_color_widget()
+{
+	wxWindow* parent = m_optgroup_gui->parent();
+
+	wxString title = L("Mode markers");
+	wxStaticBox* stb = new wxStaticBox(parent, wxID_ANY, _(title));
+	wxGetApp().UpdateDarkUI(stb);
+	if (!wxOSX) stb->SetBackgroundStyle(wxBG_STYLE_PAINT);
+
+	std::string opt_key = "mode_markers";
+	m_blinkers[opt_key] = new BlinkingBitmap(parent);
+
+	wxSizer* stb_sizer = new wxStaticBoxSizer(stb, wxVERTICAL);
+
+    // Mode color markers description
+	m_mode_palette = wxGetApp().get_mode_palette();
+	GUI_Descriptions::FillSizerWithModeColorDescriptions(stb_sizer, parent, { &m_mode_simple, &m_mode_advanced, &m_mode_expert }, m_mode_palette);
+
+	auto sizer = new wxBoxSizer(wxHORIZONTAL);
+	sizer->Add(m_blinkers[opt_key], 0, wxRIGHT, 2);
+	sizer->Add(stb_sizer, 1, wxALIGN_CENTER_VERTICAL);
+
+	m_optgroup_gui->sizer->Add(sizer, 0, wxEXPAND | wxTOP, em_unit());
+
+	append_preferences_option_to_searcer(m_optgroup_gui, opt_key, title);
+}
+
+void PreferencesDialog::create_downloader_path_sizer()
+{
+	wxWindow* parent = m_optgroup_other->parent();
+
+	wxString title = L("Download path");
+	std::string opt_key = "url_downloader_dest";
+	m_blinkers[opt_key] = new BlinkingBitmap(parent);
+
+	downloader = new DownloaderUtils::Worker(parent);
+
+	auto sizer = new wxBoxSizer(wxHORIZONTAL);
+	sizer->Add(m_blinkers[opt_key], 0, wxRIGHT, 2);
+	sizer->Add(downloader, 1, wxALIGN_CENTER_VERTICAL);
+
+	m_optgroup_other->sizer->Add(sizer, 0, wxEXPAND | wxTOP, em_unit());
+
+	append_preferences_option_to_searcer(m_optgroup_other, opt_key, title);
+}
+
 void PreferencesDialog::init_highlighter(const t_config_option_key& opt_key)
 {
 	if (m_blinkers.find(opt_key) != m_blinkers.end())
@@ -944,7 +1107,7 @@ void PreferencesDialog::init_highlighter(const t_config_option_key& opt_key)
 			return;
 		}
 
-	for (auto opt_group : { m_optgroup_general, m_optgroup_camera, m_optgroup_gui
+	for (auto opt_group : { m_optgroup_general, m_optgroup_camera, m_optgroup_gui, m_optgroup_other
 #ifdef _WIN32
 		, m_optgroup_dark_mode
 #endif // _WIN32

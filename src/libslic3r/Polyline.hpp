@@ -10,14 +10,13 @@
 namespace Slic3r {
 
 class Polyline;
-class ThickPolyline;
+struct ThickPolyline;
 typedef std::vector<Polyline> Polylines;
 typedef std::vector<ThickPolyline> ThickPolylines;
 
 class Polyline : public MultiPoint {
 public:
     Polyline() = default;
-    ~Polyline() override = default;
     Polyline(const Polyline &other) : MultiPoint(other.points) {}
     Polyline(Polyline &&other) : MultiPoint(std::move(other.points)) {}
     Polyline(std::initializer_list<Point> list) : MultiPoint(list) {}
@@ -61,9 +60,13 @@ public:
         }
     }
   
-    const Point& last_point() const override { return this->points.back(); }
+    Point& operator[](Points::size_type idx) { return this->points[idx]; }
+    const Point& operator[](Points::size_type idx) const { return this->points[idx]; }
+
+    double length() const;
+    const Point& last_point() const { return this->points.back(); }
     const Point& leftmost_point() const;
-    Lines lines() const override;
+    Lines lines() const;
 
     void clip_end(double distance);
     void clip_start(double distance);
@@ -154,24 +157,50 @@ const Point& leftmost_point(const Polylines &polylines);
 
 bool remove_degenerate(Polylines &polylines);
 
-class ThickPolyline : public Polyline {
-public:
-    ThickPolyline() : endpoints(std::make_pair(false, false)) {}
+// Returns index of a segment of a polyline and foot point of pt on polyline.
+std::pair<int, Point> foot_pt(const Points &polyline, const Point &pt);
+
+struct ThickPolyline {
+    ThickPolyline() = default;
     ThickLines thicklines() const;
+
+    const Point& first_point()  const { return this->points.front(); }
+    const Point& last_point()   const { return this->points.back(); }
+    bool         is_valid()     const { return this->points.size() >= 2; }
+    double       length()       const { return Slic3r::length(this->points); }
+
+    void         clear() { this->points.clear(); this->width.clear(); }
+
     void reverse() {
-        Polyline::reverse();
+        std::reverse(this->points.begin(), this->points.end());
         std::reverse(this->width.begin(), this->width.end());
         std::swap(this->endpoints.first, this->endpoints.second);
     }
 
-    std::vector<coordf_t> width;
-    std::pair<bool,bool>  endpoints;
+    void clip_end(double distance);
+
+    Points                  points;
+    std::vector<coordf_t>   width;
+    std::pair<bool,bool>    endpoints { false, false };
 };
+
+inline ThickPolylines to_thick_polylines(Polylines &&polylines, const coordf_t width)
+{
+    ThickPolylines out;
+    out.reserve(polylines.size());
+    for (Polyline &polyline : polylines) {
+        out.emplace_back();
+        out.back().width.assign((polyline.points.size() - 1) * 2, width);
+        out.back().points = std::move(polyline.points);
+    }
+    return out;
+}
 
 class Polyline3 : public MultiPoint3
 {
 public:
-    virtual Lines3 lines() const;
+    double length() const;
+    Lines3 lines() const;
 };
 
 typedef std::vector<Polyline3> Polylines3;
