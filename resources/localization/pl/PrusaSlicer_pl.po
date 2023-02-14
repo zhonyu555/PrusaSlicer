@@ -1,5 +1,10 @@
 msgid ""
 msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -7,7 +12,7 @@ msgstr ""
 "Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n%10 >= 2 && n%10 <=4 && (n"
 "%100 < 12 || n%100 > 14)) ? 1 : ((n%10 == 0 || n%10 == 1 || (n%10 >= 5 && n"
 "%10 <=9)) || (n%100 >= 12 && n%100 <= 14)) ? 2 : 3);\n"
-"X-Generator: Prusalator\n"
+"X-Generator: Poedit 3.2.2\n"
 
 #: src/slic3r/GUI/Tab.cpp:4772
 #, boost-format
@@ -5847,7 +5852,7 @@ msgid ""
 "proportionally decreasing speed between %2%%% and %3%%%."
 msgstr ""
 "Jeśli szacowany czas jest wyższy, ale poniżej ~%1%s, wentylator będzie "
-"pracował z proporcjonalnie zmniejszaną prędkością poniędzy %2%%% a %3%%%."
+"pracował z proporcjonalnie zmniejszaną prędkością pomiędzy %2%%% a %3%%%."
 
 #: src/libslic3r/PrintConfig.cpp:1237
 msgid ""
@@ -16201,6 +16206,7 @@ msgid_plural "%ld bytes"
 msgstr[0] "%ld bajt"
 msgstr[1] "%ld bajty"
 msgstr[2] "%ld bajtów"
+msgstr[3] ""
 
 #: ../src/html/helpwnd.cpp:1033
 #, c-format
@@ -20518,6 +20524,7 @@ msgid_plural "Last repeated message (\"%s\", %u times) wasn't output"
 msgstr[0] "Last repeated message (\"%s\", %lu time) wasn't output"
 msgstr[1] "Last repeated message (\"%s\", %lu times) wasn't output"
 msgstr[2] "Last repeated message (\"%s\", %lu times) wasn't output"
+msgstr[3] ""
 
 #: ../src/common/paper.cpp:103
 msgid "Ledger, 17 x 11 in"
@@ -22756,6 +22763,7 @@ msgid_plural "The previous message repeated %u times."
 msgstr[0] "Poprzedni komunikat powtórzył się %lu raz."
 msgstr[1] "Poprzedni komunikat powtórzył się %lu razy."
 msgstr[2] "Poprzedni komunikat powtórzył się %lu razy."
+msgstr[3] ""
 
 #: ../src/common/log.cpp:270
 msgid "The previous message repeated once."
