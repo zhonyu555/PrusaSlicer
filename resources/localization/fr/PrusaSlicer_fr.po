@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-02-15 12:12+0100\n"
-"PO-Revision-Date: 2023-02-18 12:41+0200\n"
+"PO-Revision-Date: 2023-02-18 13:06+0200\n"
 "Last-Translator: 5axes <5axes@free.fr>\n"
 "Language-Team: 5axes\n"
 "Language: fr\n"
@@ -4129,7 +4129,7 @@ msgstr "Modifier l'échelle"
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:820
 #: src/libslic3r/PrintConfig.cpp:4660
 msgid "Scale"
-msgstr "Redimensionner"
+msgstr "Echelle"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoMeasure.cpp:1362
 msgctxt "Verb"
@@ -6395,7 +6395,7 @@ msgstr "Déplacement (relatif) [Absolu]"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:818
 msgid "Translate"
-msgstr "Traduire"
+msgstr "Translation"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:894
 msgid ""
