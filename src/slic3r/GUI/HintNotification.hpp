@@ -72,10 +72,11 @@ public:
 	HintNotification(const NotificationData& n, NotificationIDProvider& id_provider, wxEvtHandler* evt_handler, bool new_hint)
 		: PopNotification(n, id_provider, evt_handler)
 	{
-		retrieve_data(new_hint);
+		retrieve_data(new_hint, true);
 	}
 	virtual void	init() override;
 	void			open_next() { retrieve_data(); }
+	void            update_hint(const NotificationData& n, bool constructuctor_call);
 protected:
 	virtual void	set_next_window_size(ImGuiWrapper& imgui) override;
 	virtual void	count_spaces() override;
@@ -101,7 +102,7 @@ protected:
 								const float win_size_x, const float win_size_y,
 								const float win_pos_x, const float win_pos_y);
 	// recursion counter -1 tells to retrieve same hint as last time
-	void			retrieve_data(bool new_hint = true);
+	void			retrieve_data(bool new_hint = true, bool constructuctor_call = false);
 	void			open_documentation();
 
 	bool						m_has_hint_data { false };

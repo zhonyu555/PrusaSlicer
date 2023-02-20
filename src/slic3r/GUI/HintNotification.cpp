@@ -1040,7 +1040,7 @@ void NotificationManager::HintNotification::open_documentation()
 		launch_browser_if_allowed(m_documentation_link);
 	}
 }
-void NotificationManager::HintNotification::retrieve_data(bool new_hint/* = true*/)
+void NotificationManager::HintNotification::retrieve_data(bool new_hint/* = true*/, bool constructuctor_call/* = false*/)
 {
     HintData* hint_data = HintDatabase::get_instance().get_hint(new_hint);
 	if (hint_data == nullptr)
@@ -1060,8 +1060,20 @@ void NotificationManager::HintNotification::retrieve_data(bool new_hint/* = true
 		m_runtime_disable    = hint_data->runtime_disable;
 		m_documentation_link = hint_data->documentation_link;
         m_has_hint_data      = true;
-		update(nd);
+		update_hint(nd, constructuctor_call);
     }
+}
+void NotificationManager::HintNotification::update_hint(const NotificationData& n, bool constructuctor_call)
+{
+	m_text1 = n.text1;
+	m_hypertext = n.hypertext;
+	m_text2 = n.text2;
+	// This call to init was crashing PS. See issue #9780.
+	// When Hint notification is created in GuiApp::post_init, it is possible, that imgui was not initialized yet. 
+	// This happens if first idle event is recieved earlier then focus event. Which seems to be happening on some MacOS Ventura 13.1+.
+	// This condition should prevent it. 
+	if (!constructuctor_call)
+		init();
 }
 } //namespace Slic3r 
 } //namespace GUI 
