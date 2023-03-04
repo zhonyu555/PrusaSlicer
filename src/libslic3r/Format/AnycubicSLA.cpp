@@ -22,6 +22,8 @@
 #define CFG_DELAY_BEFORE_EXPOSURE "DELAY_BEFORE_EXPOSURE"
 #define CFG_BOTTOM_LIFT_SPEED "BOTTOM_LIFT_SPEED"
 #define CFG_BOTTOM_LIFT_DISTANCE "BOTTOM_LIFT_DISTANCE"
+#define CFG_ANTIALIASING "ANTIALIASING"
+
 
 #define PREV_W 224
 #define PREV_H 168
@@ -174,6 +176,7 @@ public:
         add(CFG_DELAY_BEFORE_EXPOSURE, coFloat);
         add(CFG_BOTTOM_LIFT_DISTANCE, coFloat);
         add(CFG_BOTTOM_LIFT_SPEED, coFloat);
+        add(CFG_ANTIALIASING, coInt);
     }
 };
 
@@ -313,6 +316,13 @@ void fill_header(anycubicsla_format_header &h,
     h.per_layer_override = 0;
 
     // TODO - expose these variables to the UI rather than using material notes
+    if (mat_cfg.has(CFG_ANTIALIASING)) {
+        h.antialiasing = get_cfg_value_i(mat_cfg, CFG_ANTIALIASING);
+        crop_value(h.antialiasing, (uint32_t) 0, (uint32_t) 1);
+    } else {
+        h.antialiasing = 1;
+    }
+
     h.delay_before_exposure_s = get_cfg_value_f(mat_cfg, CFG_DELAY_BEFORE_EXPOSURE, 0.5f);
     crop_value(h.delay_before_exposure_s, 0.0f, 1000.0f);
 
