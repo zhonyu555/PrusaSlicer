@@ -2,7 +2,7 @@
 
 #include "SL1.hpp"
 #include "SL1_SVG.hpp"
-#include "pwmx.hpp"
+#include "AnycubicSLA.hpp"
 
 #include "libslic3r/libslic3r.h"
 
@@ -29,10 +29,7 @@ static const std::map<std::string, ArchiveEntry> REGISTERED_ARCHIVES {
         "SL2",
         { "sl2",  [] (const auto &cfg) { return std::make_unique<SL1_SVGArchive>(cfg); } }
     },
-    {
-        "pwmx",
-        { "pwmx", [] (const auto &cfg) { return std::make_unique<PwmxArchive>(cfg); } }
-    }
+    ANYCUBIC_SLA_FORMAT("pwmx", "Photon Mono X"),
 };
 
 std::unique_ptr<SLAArchiveWriter>

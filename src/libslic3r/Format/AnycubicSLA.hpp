@@ -7,11 +7,14 @@
 
 #include "libslic3r/PrintConfig.hpp"
 
+#define ANYCUBIC_SLA_FORMAT(FILEFORMAT, NAME) \
+    { FILEFORMAT, { FILEFORMAT, [] (const auto &cfg) { return std::make_unique<AnycubicSLAArchive>(cfg); } } }
+
 namespace Slic3r {
 
-class PwmxArchive: public SLAArchiveWriter {
+class AnycubicSLAArchive: public SLAArchiveWriter {
     SLAPrinterConfig m_cfg;
-    
+
 protected:
     std::unique_ptr<sla::RasterBase> create_raster() const override;
     sla::RasterEncoder get_encoder() const override;
@@ -21,9 +24,9 @@ protected:
 
 public:
     
-    PwmxArchive() = default;
-    explicit PwmxArchive(const SLAPrinterConfig &cfg): m_cfg(cfg) {}
-    explicit PwmxArchive(SLAPrinterConfig &&cfg): m_cfg(std::move(cfg)) {}
+    AnycubicSLAArchive() = default;
+    explicit AnycubicSLAArchive(const SLAPrinterConfig &cfg): m_cfg(cfg) {}
+    explicit AnycubicSLAArchive(SLAPrinterConfig &&cfg): m_cfg(std::move(cfg)) {}
 
     void export_print(const std::string     fname,
                       const SLAPrint       &print,
