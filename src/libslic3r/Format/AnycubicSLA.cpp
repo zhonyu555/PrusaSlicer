@@ -87,14 +87,14 @@ using ConfMap = std::map<std::string, std::string>;
 typedef struct anycubicsla_format_intro
 {
     char          tag[12];
-    std::uint32_t version;  // value 1
-    std::uint32_t area_num; // unknown - usually 4
+    std::uint32_t version;  // value 1 (also known as 515, 516 and 517)
+    std::uint32_t area_num; // Number of tables - usually 4
     std::uint32_t header_data_offset;
-    std::float_t  intro24; // unknown - usually 0
+    std::uint32_t software_data_offset; // unused in version 1
     std::uint32_t preview_data_offset;
-    std::float_t  intro32; // unknown
+    std::uint32_t layer_color_offset; // unused in version 1
     std::uint32_t layer_data_offset;
-    std::float_t  intro40; // unknown
+    std::uint32_t extra_data_offset; // unused here (only used in version 516)
     std::uint32_t image_data_offset;
 } anycubicsla_format_intro;
 
@@ -121,7 +121,7 @@ typedef struct anycubicsla_format_header
     std::uint32_t per_layer_override; // ? unknown meaning ?
     std::uint32_t print_time_s;
     std::uint32_t transition_layer_count;
-    std::uint32_t unknown; // ? usually 0 ?
+    std::uint32_t transition_layer_type; // usually 0
 
 } anycubicsla_format_header;
 
@@ -418,11 +418,11 @@ static void anycubicsla_write_intro(std::ofstream &out, anycubicsla_format_intro
     anycubicsla_write_int32(out, i.version);
     anycubicsla_write_int32(out, i.area_num);
     anycubicsla_write_int32(out, i.header_data_offset);
-    anycubicsla_write_int32(out, i.intro24);
+    anycubicsla_write_int32(out, i.software_data_offset);
     anycubicsla_write_int32(out, i.preview_data_offset);
-    anycubicsla_write_int32(out, i.intro32);
+    anycubicsla_write_int32(out, i.layer_color_offset);
     anycubicsla_write_int32(out, i.layer_data_offset);
-    anycubicsla_write_int32(out, i.intro40);
+    anycubicsla_write_int32(out, i.extra_data_offset);
     anycubicsla_write_int32(out, i.image_data_offset);
 }
 
@@ -449,7 +449,7 @@ static void anycubicsla_write_header(std::ofstream &out, anycubicsla_format_head
     anycubicsla_write_int32(out, h.per_layer_override);
     anycubicsla_write_int32(out, h.print_time_s);
     anycubicsla_write_int32(out, h.transition_layer_count);
-    anycubicsla_write_int32(out, h.unknown);
+    anycubicsla_write_int32(out, h.transition_layer_type);
 }
 
 static void anycubicsla_write_preview(std::ofstream &out, anycubicsla_format_preview &p)
@@ -496,7 +496,9 @@ void AnycubicSLAArchive::export_print(const std::string     fname,
     std::vector<uint8_t>      layer_images;
     std::uint32_t             image_offset;
 
-    intro.version             = 1;
+    assert(m_version == ANYCUBIC_SLA_FORMAT_VERSION_1);
+
+    intro.version             = m_version;
     intro.area_num            = 4;
     intro.header_data_offset  = sizeof(intro);
     intro.preview_data_offset = sizeof(intro) + sizeof(header);

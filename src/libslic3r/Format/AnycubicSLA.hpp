@@ -7,13 +7,22 @@
 
 #include "libslic3r/PrintConfig.hpp"
 
+#define ANYCUBIC_SLA_FORMAT_VERSION_1     1
+#define ANYCUBIC_SLA_FORMAT_VERSION_515 515
+#define ANYCUBIC_SLA_FORMAT_VERSION_516 516
+#define ANYCUBIC_SLA_FORMAT_VERSION_517 517
+
+#define ANYCUBIC_SLA_FORMAT_VERSIONED(FILEFORMAT, NAME, VERSION) \
+    { FILEFORMAT, { FILEFORMAT, [] (const auto &cfg) { return std::make_unique<AnycubicSLAArchive>(cfg, VERSION); } } }
+
 #define ANYCUBIC_SLA_FORMAT(FILEFORMAT, NAME) \
-    { FILEFORMAT, { FILEFORMAT, [] (const auto &cfg) { return std::make_unique<AnycubicSLAArchive>(cfg); } } }
+    ANYCUBIC_SLA_FORMAT_VERSIONED(FILEFORMAT, NAME, ANYCUBIC_SLA_FORMAT_VERSION_1)
 
 namespace Slic3r {
 
 class AnycubicSLAArchive: public SLAArchiveWriter {
     SLAPrinterConfig m_cfg;
+    uint16_t m_version;
 
 protected:
     std::unique_ptr<sla::RasterBase> create_raster() const override;
@@ -25,8 +34,15 @@ protected:
 public:
     
     AnycubicSLAArchive() = default;
-    explicit AnycubicSLAArchive(const SLAPrinterConfig &cfg): m_cfg(cfg) {}
-    explicit AnycubicSLAArchive(SLAPrinterConfig &&cfg): m_cfg(std::move(cfg)) {}
+    explicit AnycubicSLAArchive(const SLAPrinterConfig &cfg):
+        m_cfg(cfg), m_version(ANYCUBIC_SLA_FORMAT_VERSION_1) {}
+    explicit AnycubicSLAArchive(SLAPrinterConfig &&cfg):
+        m_cfg(std::move(cfg)), m_version(ANYCUBIC_SLA_FORMAT_VERSION_1) {}
+
+    explicit AnycubicSLAArchive(const SLAPrinterConfig &cfg, uint16_t version):
+        m_cfg(cfg), m_version(version) {}
+    explicit AnycubicSLAArchive(SLAPrinterConfig &&cfg, uint16_t version):
+        m_cfg(std::move(cfg)), m_version(version) {}
 
     void export_print(const std::string     fname,
                       const SLAPrint       &print,
