@@ -29,7 +29,9 @@ static const std::map<std::string, ArchiveEntry> REGISTERED_ARCHIVES {
         "SL2",
         { "sl2",  [] (const auto &cfg) { return std::make_unique<SL1_SVGArchive>(cfg); } }
     },
+    ANYCUBIC_SLA_FORMAT("pwmo", "Photon Mono"),
     ANYCUBIC_SLA_FORMAT("pwmx", "Photon Mono X"),
+    ANYCUBIC_SLA_FORMAT("pwms", "Photon Mono SE"),
 };
 
 std::unique_ptr<SLAArchiveWriter>
