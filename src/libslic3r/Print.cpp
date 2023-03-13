@@ -66,6 +66,11 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "between_objects_gcode",
         "bridge_acceleration",
         "bridge_fan_speed",
+        "enable_dynamic_fan_speeds",
+        "overhang_fan_speed_0",
+        "overhang_fan_speed_1",
+        "overhang_fan_speed_2",
+        "overhang_fan_speed_3",
         "colorprint_heights",
         "cooling",
         "default_acceleration",
@@ -74,6 +79,7 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "duplicate_distance",
         "end_gcode",
         "end_filament_gcode",
+        "external_perimeter_acceleration",
         "extrusion_axis",
         "extruder_clearance_height",
         "extruder_clearance_radius",
@@ -125,10 +131,12 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "retract_speed",
         "single_extruder_multi_material_priming",
         "slowdown_below_layer_time",
+        "solid_infill_acceleration",
         "standby_temperature_delta",
         "start_gcode",
         "start_filament_gcode",
         "toolchange_gcode",
+        "top_solid_infill_acceleration",
         "thumbnails",
         "thumbnails_format",
         "use_firmware_retraction",
@@ -511,7 +519,7 @@ std::string Print::validate(std::string* warning) const
         const PrintObject &print_object = *m_objects[print_object_idx];
         //FIXME It is quite expensive to generate object layers just to get the print height!
         if (auto layers = generate_object_layers(print_object.slicing_parameters(), layer_height_profile(print_object_idx));
-            ! layers.empty() && layers.back() > this->config().max_print_height) {
+            ! layers.empty() && layers.back() > this->config().max_print_height + EPSILON) {
             return L("The print is taller than the maximum allowed height. You might want to reduce the size of your model"
                      " or change current print settings and retry.");
         }
@@ -653,10 +661,10 @@ std::string Print::validate(std::string* warning) const
                            "If support is to be printed with the current extruder (support_material_extruder == 0 or support_material_interface_extruder == 0), "
                            "all nozzles have to be of the same diameter.");
                 }
-                if (this->has_wipe_tower()) {
+                if (this->has_wipe_tower() && object->config().support_material_style != smsOrganic) {
     				if (object->config().support_material_contact_distance == 0) {
     					// Soluble interface
-    					if (object->config().support_material_contact_distance == 0 && ! object->config().support_material_synchronize_layers)
+    					if (! object->config().support_material_synchronize_layers)
     						return L("For the Wipe Tower to work with the soluble supports, the support layers need to be synchronized with the object layers.");
     				} else {
     					// Non-soluble interface
@@ -1204,7 +1212,7 @@ void Print::alert_when_supports_needed()
         for (const auto &obj : objects_isssues) {
             for (const auto &issue : obj.second) {
                 po_by_support_issues[issue].push_back(obj.first);
-                if (issue.first == SupportSpotsGenerator::SupportPointCause::SeparationFromBed){
+                if (issue.first == SupportSpotsGenerator::SupportPointCause::SeparationFromBed && !obj.first->has_brim()){
                     recommend_brim = true;
                 }
             }
@@ -1235,7 +1243,9 @@ void Print::alert_when_supports_needed()
             }
         }
 
-        message += "\n" + L("Consider enabling supports") + (recommend_brim ? (" " + L("and/or brim")) : "") + ".";
+        bool brim_or_supp = recommend_brim && po_by_support_issues.size() < 2;
+        auto brim_part = " " + (brim_or_supp ? L("or") : L("and")) + " " + L("brim");
+        message += "\n" + L("Consider enabling supports") + (recommend_brim ? brim_part : "") + ".";
 
         if (objects_isssues.size() > 0) {
             this->active_step_add_warning(PrintStateBase::WarningLevel::NON_CRITICAL, message);

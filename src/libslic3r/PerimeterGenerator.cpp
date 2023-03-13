@@ -433,10 +433,12 @@ static ClipperLib_Z::Paths clip_extrusion(const ClipperLib_Z::Path &subject, con
     clipper.AddPath(subject, ClipperLib_Z::ptSubject, false);
     clipper.AddPaths(clip, ClipperLib_Z::ptClip, true);
 
-    ClipperLib_Z::PolyTree clipped_polytree;
     ClipperLib_Z::Paths    clipped_paths;
-    clipper.Execute(clipType, clipped_polytree, ClipperLib_Z::pftNonZero, ClipperLib_Z::pftNonZero);
-    ClipperLib_Z::PolyTreeToPaths(clipped_polytree, clipped_paths);
+    {
+        ClipperLib_Z::PolyTree clipped_polytree;
+        clipper.Execute(clipType, clipped_polytree, ClipperLib_Z::pftNonZero, ClipperLib_Z::pftNonZero);
+        ClipperLib_Z::PolyTreeToPaths(std::move(clipped_polytree), clipped_paths);
+    }
 
     // Clipped path could contain vertices from the clip with a Z coordinate equal to zero.
     // For those vertices, we must assign value based on the subject.
@@ -754,7 +756,7 @@ ExtrusionPaths sort_and_connect_extra_perimeters(const std::vector<ExtrusionPath
             std::unordered_set<Pidx, PidxHash> current_dependencies{};
             if (shell > 0) {
                 for (const auto &prev_path : dependencies[shell - 1]) {
-                    if (paths_touch(get_path(current_path), get_path(prev_path.first), extrusion_spacing * 2.0)) {
+                    if (paths_touch(get_path(current_path), get_path(prev_path.first), extrusion_spacing * 1.5f)) {
                         current_dependencies.insert(prev_path.first);
                     };
                 }
@@ -1041,12 +1043,6 @@ std::tuple<std::vector<ExtrusionPaths>, Polygons> generate_extra_perimeters_over
 #endif
                     break;
                 }
-            }
-            Polylines perimeter = intersection_pl(to_polylines(perimeter_polygon), shrinked_overhang_to_cover);
-            if (!perimeter.empty()) {
-                overhang_region.emplace_back();
-                extrusion_paths_append(overhang_region.back(), perimeter, ExtrusionRole::OverhangPerimeter, overhang_flow.mm3_per_mm(),
-                                       overhang_flow.width(), overhang_flow.height());
             }
 
             perimeter_polygon = expand(perimeter_polygon, 0.5 * overhang_flow.scaled_spacing());

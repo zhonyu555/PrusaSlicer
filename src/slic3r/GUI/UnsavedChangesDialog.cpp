@@ -1056,27 +1056,6 @@ bool UnsavedChangesDialog::save(PresetCollection* dependent_presets, bool show_s
     return true;
 }
 
-wxString get_string_from_enum(const std::string& opt_key, const DynamicPrintConfig& config, bool is_infill = false)
-{
-    const ConfigOptionDef& def = config.def()->options.at(opt_key);
-    const std::vector<std::string>& names = def.enum_labels.empty() ? def.enum_values : def.enum_labels;
-    int val = config.option(opt_key)->getInt();
-
-    // Each infill doesn't use all list of infill declared in PrintConfig.hpp.
-    // So we should "convert" val to the correct one
-    if (is_infill) {
-        for (auto key_val : *def.enum_keys_map)
-            if (int(key_val.second) == val) {
-                auto it = std::find(def.enum_values.begin(), def.enum_values.end(), key_val.first);
-                if (it == def.enum_values.end())
-                    return "";
-                return from_u8(_utf8(names[it - def.enum_values.begin()]));
-            }
-        return _L("Undef");
-    }
-    return from_u8(_utf8(names[val]));
-}
-
 static size_t get_id_from_opt_key(std::string opt_key)
 {
     int pos = opt_key.find("#");
@@ -1214,11 +1193,8 @@ static wxString get_string_value(std::string opt_key, const DynamicPrintConfig& 
         return out;
     }
     case coEnum: {
-        return get_string_from_enum(opt_key, config, 
-            opt_key == "top_fill_pattern" ||
-            opt_key == "bottom_fill_pattern" ||
-            opt_key == "fill_pattern" ||
-            opt_key == "support_material_style");
+        auto opt = config.option_def(opt_key)->enum_def->enum_to_label(config.option(opt_key)->getInt());
+        return opt.has_value() ? _(from_u8(*opt)) : _L("Undef");
     }
     case coPoints: {
         if (opt_key == "bed_shape") {
@@ -1617,7 +1593,7 @@ void DiffPresetDialog::create_buttons()
     });
     m_transfer_btn->Bind(wxEVT_ENTER_WINDOW, [this, show_in_bottom_info](wxMouseEvent& e) {
         show_in_bottom_info(_L("Transfer the selected options from left preset to the right.\n"
-                            "Note: New modified presets will be selected in setting stabs after close this dialog."), e); });
+                            "Note: New modified presets will be selected in settings tabs after close this dialog."), e); });
 
     // Save
     m_save_btn = new ScalableButton(this, wxID_ANY, "save", _L("Save"), wxDefaultSize, wxDefaultPosition, wxBORDER_DEFAULT, 24);

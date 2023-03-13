@@ -2246,13 +2246,13 @@ void GCodeViewer::load_shells(const Print& print)
 
     if (wxGetApp().preset_bundle->printers.get_edited_preset().printer_technology() == ptFFF) {
         // adds wipe tower's volume
-        const double max_z = print.objects()[0]->model_object()->get_model()->bounding_box().max(2);
+        const double max_z = print.objects()[0]->model_object()->get_model()->max_z();
         const PrintConfig& config = print.config();
         const size_t extruders_count = config.nozzle_diameter.size();
         if (extruders_count > 1 && config.wipe_tower && !config.complete_objects) {
-            const float depth = print.wipe_tower_data(extruders_count).depth;
-            const float brim_width = print.wipe_tower_data(extruders_count).brim_width;
-
+            const WipeTowerData& wipe_tower_data = print.wipe_tower_data(extruders_count);
+            const float depth = wipe_tower_data.depth;
+            const float brim_width = wipe_tower_data.brim_width;
             m_shells.volumes.load_wipe_tower_preview(config.wipe_tower_x, config.wipe_tower_y, config.wipe_tower_width, depth, max_z, config.wipe_tower_rotation_angle,
                 !print.is_step_done(psWipeTower), brim_width);
         }
@@ -2373,7 +2373,7 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
     statistics->models_instances_size = 0;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
 
-    const bool top_layer_only = get_app_config()->get("seq_top_layer_only") == "1";
+    const bool top_layer_only = get_app_config()->get_bool("seq_top_layer_only");
 
     SequentialView::Endpoints global_endpoints = { m_moves_count , 0 };
     SequentialView::Endpoints top_layer_endpoints = global_endpoints;
@@ -3221,7 +3221,7 @@ void GCodeViewer::render_legend(float& legend_height)
     const float icon_size = ImGui::GetTextLineHeight();
     const float percent_bar_size = 2.0f * ImGui::GetTextLineHeight();
 
-    bool imperial_units = wxGetApp().app_config->get("use_inches") == "1";
+    bool imperial_units = wxGetApp().app_config->get_bool("use_inches");
 
     auto append_item = [icon_size, percent_bar_size, &imgui, imperial_units](EItemType type, const ColorRGBA& color, const std::string& label,
         bool visible = true, const std::string& time = "", float percent = 0.0f, float max_percent = 0.0f, const std::array<float, 4>& offsets = { 0.0f, 0.0f, 0.0f, 0.0f },

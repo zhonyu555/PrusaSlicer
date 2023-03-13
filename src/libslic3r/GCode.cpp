@@ -1,3 +1,4 @@
+#include "Config.hpp"
 #include "libslic3r.h"
 #include "GCode/ExtrusionProcessor.hpp"
 #include "I18N.hpp"
@@ -24,6 +25,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <math.h>
+#include <string>
 #include <string_view>
 
 #include <boost/algorithm/string.hpp>
@@ -229,6 +231,8 @@ namespace Slic3r {
         float wipe_tower_rotation = tcr.priming ? 0.f : alpha;
 
         std::string tcr_rotated_gcode = post_process_wipe_tower_moves(tcr, wipe_tower_offset, wipe_tower_rotation);
+
+        gcode += gcodegen.writer().unlift(); // Make sure there is no z-hop (in most cases, there isn't).
 
         double current_z = gcodegen.writer().get_position().z();
         if (z == -1.) // in case no specific z was provided, print at current_z pos
@@ -1001,18 +1005,6 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
             std::sort(zs.begin(), zs.end());
             m_layer_count += (unsigned int)(object->instances().size() * (std::unique(zs.begin(), zs.end()) - zs.begin()));
         }
-    } else {
-        // Print all objects with the same print_z together.
-        std::vector<coordf_t> zs;
-        for (auto object : print.objects()) {
-            zs.reserve(zs.size() + object->layers().size() + object->support_layers().size());
-            for (auto layer : object->layers())
-                zs.push_back(layer->print_z);
-            for (auto layer : object->support_layers())
-                zs.push_back(layer->print_z);
-        }
-        std::sort(zs.begin(), zs.end());
-        m_layer_count = (unsigned int)(std::unique(zs.begin(), zs.end()) - zs.begin());
     }
     print.throw_if_canceled();
 
@@ -1029,6 +1021,10 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         print.config().max_volumetric_extrusion_rate_slope_negative.value > 0)
         m_pressure_equalizer = make_unique<PressureEqualizer>(print.config());
     m_enable_extrusion_role_markers = (bool)m_pressure_equalizer;
+
+    if (print.config().avoid_crossing_curled_overhangs){
+        this->m_avoid_crossing_curled_overhangs.init_bed_shape(get_bed_shape(print.config()));
+    }
 
     // Write information on the generator.
     file.write_format("; %s\n\n", Slic3r::header_slic3r_generated().c_str());
@@ -1136,6 +1132,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         this->set_extruders(tool_ordering.all_extruders());
         // Order object instances using a nearest neighbor search.
         print_object_instances_ordering = chain_print_object_instances(print);
+        m_layer_count = tool_ordering.layer_tools().size();
     }
     if (initial_extruder_id == (unsigned int)-1) {
         // Nothing to print!
@@ -1192,7 +1189,7 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
         m_placeholder_parser.set("first_layer_print_size", new ConfigOptionFloats({ bbox.size().x(), bbox.size().y() }));
 
         std::vector<unsigned char> is_extruder_used(print.config().nozzle_diameter.size(), 0);
-        for (unsigned int extruder_id : print.extruders())
+        for (unsigned int extruder_id : tool_ordering.all_extruders())
             is_extruder_used[extruder_id] = true;
         m_placeholder_parser.set("is_extruder_used", new ConfigOptionBools(is_extruder_used));
     }
@@ -2105,8 +2102,12 @@ LayerResult GCode::process_layer(
     if (this->config().avoid_crossing_curled_overhangs) {
         m_avoid_crossing_curled_overhangs.clear();
         for (const ObjectLayerToPrint &layer_to_print : layers) {
-            m_avoid_crossing_curled_overhangs.add_obstacles(layer_to_print.object_layer, Point(scaled(this->origin())));
-            m_avoid_crossing_curled_overhangs.add_obstacles(layer_to_print.support_layer, Point(scaled(this->origin())));
+            if (layer_to_print.object() == nullptr)
+                continue;
+            for (const auto &instance : layer_to_print.object()->instances()) {
+                m_avoid_crossing_curled_overhangs.add_obstacles(layer_to_print.object_layer, instance.shift);
+                m_avoid_crossing_curled_overhangs.add_obstacles(layer_to_print.support_layer, instance.shift);
+            }
         }
     }
 
@@ -2246,29 +2247,24 @@ void GCode::process_layer_single_object(
     if (! print_wipe_extrusions && layer_to_print.support_layer != nullptr)
         if (const SupportLayer &support_layer = *layer_to_print.support_layer; ! support_layer.support_fills.entities.empty()) {
             ExtrusionRole   role               = support_layer.support_fills.role();
-            bool            has_support        = role == ExtrusionRole::Mixed || role == ExtrusionRole::SupportMaterial;
-            bool            has_interface      = role == ExtrusionRole::Mixed || role == ExtrusionRole::SupportMaterialInterface;
+            bool            has_support        = role.is_mixed() || role.is_support_base();
+            bool            has_interface      = role.is_mixed() || role.is_support_interface();
             // Extruder ID of the support base. -1 if "don't care".
             unsigned int    support_extruder   = print_object.config().support_material_extruder.value - 1;
             // Shall the support be printed with the active extruder, preferably with non-soluble, to avoid tool changes?
-            bool            support_dontcare   = print_object.config().support_material_extruder.value == 0;
+            bool            support_dontcare   = support_extruder == std::numeric_limits<unsigned int>::max();
             // Extruder ID of the support interface. -1 if "don't care".
             unsigned int    interface_extruder = print_object.config().support_material_interface_extruder.value - 1;
             // Shall the support interface be printed with the active extruder, preferably with non-soluble, to avoid tool changes?
-            bool            interface_dontcare = print_object.config().support_material_interface_extruder.value == 0;
+            bool            interface_dontcare = interface_extruder == std::numeric_limits<unsigned int>::max();
             if (support_dontcare || interface_dontcare) {
                 // Some support will be printed with "don't care" material, preferably non-soluble.
                 // Is the current extruder assigned a soluble filament?
-                unsigned int dontcare_extruder = layer_tools.extruders.front();
-                if (print.config().filament_soluble.get_at(dontcare_extruder)) {
-                    // The last extruder printed on the previous layer extrudes soluble filament.
-                    // Try to find a non-soluble extruder on the same layer.
-                    for (unsigned int extruder_id : layer_tools.extruders)
-                        if (! print.config().filament_soluble.get_at(extruder_id)) {
-                            dontcare_extruder = extruder_id;
-                            break;
-                        }
-                }
+                auto it_nonsoluble = std::find_if(layer_tools.extruders.begin(), layer_tools.extruders.end(), 
+                    [&soluble = std::as_const(print.config().filament_soluble)](unsigned int extruder_id) { return ! soluble.get_at(extruder_id); });
+                // There should be a non-soluble extruder available.
+                assert(it_nonsoluble != layer_tools.extruders.end());
+                unsigned int dontcare_extruder = it_nonsoluble == layer_tools.extruders.end() ? layer_tools.extruders.front() : *it_nonsoluble;
                 if (support_dontcare)
                     support_extruder = dontcare_extruder;
                 if (interface_dontcare)
@@ -2282,7 +2278,7 @@ void GCode::process_layer_single_object(
                 m_object_layer_over_raft = false;
                 gcode += this->extrude_support(
                     // support_extrusion_role is ExtrusionRole::SupportMaterial, ExtrusionRole::SupportMaterialInterface or ExtrusionRole::Mixed for all extrusion paths.
-                    support_layer.support_fills.chained_path_from(m_last_pos, has_support ? (has_interface ? ExtrusionRole::Mixed : ExtrusionRole::SupportMaterial) : ExtrusionRole::SupportMaterialInterface));
+                    support_layer.support_fills.chained_path_from(m_last_pos, extrude_support ? (extrude_interface ? ExtrusionRole::Mixed : ExtrusionRole::SupportMaterial) : ExtrusionRole::SupportMaterialInterface));
             }
         }
 
@@ -2796,8 +2792,14 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             acceleration = m_config.first_layer_acceleration_over_raft.value;
         } else if (m_config.bridge_acceleration.value > 0 && path.role().is_bridge()) {
             acceleration = m_config.bridge_acceleration.value;
+        } else if (m_config.top_solid_infill_acceleration > 0 && path.role() == ExtrusionRole::TopSolidInfill) {
+            acceleration = m_config.top_solid_infill_acceleration.value;
+        } else if (m_config.solid_infill_acceleration > 0 && path.role().is_solid_infill()) {
+            acceleration = m_config.solid_infill_acceleration.value;
         } else if (m_config.infill_acceleration.value > 0 && path.role().is_infill()) {
             acceleration = m_config.infill_acceleration.value;
+        } else if (m_config.external_perimeter_acceleration > 0 && path.role().is_external_perimeter()) {
+            acceleration = m_config.external_perimeter_acceleration.value;
         } else if (m_config.perimeter_acceleration.value > 0 && path.role().is_perimeter()) {
             acceleration = m_config.perimeter_acceleration.value;
         } else {
@@ -2856,13 +2858,36 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
         );
     }
 
-    bool                        variable_speed = false;
+    bool                        variable_speed_or_fan_speed = false;
     std::vector<ProcessedPoint> new_points{};
-    if (this->m_config.enable_dynamic_overhang_speeds && !this->on_first_layer() && path.role().is_perimeter()) {
-        new_points     = m_extrusion_quality_estimator.estimate_extrusion_quality(path, m_config.overhang_overlap_levels,
-                                                                                  m_config.dynamic_overhang_speeds,
-                                                                                  m_config.get_abs_value("external_perimeter_speed"), speed);
-        variable_speed = std::any_of(new_points.begin(), new_points.end(), [speed](const ProcessedPoint &p) { return p.speed != speed; });
+    if ((this->m_config.enable_dynamic_overhang_speeds || this->config().enable_dynamic_fan_speeds.get_at(m_writer.extruder()->id())) &&
+        !this->on_first_layer() && path.role().is_perimeter()) {
+        std::vector<std::pair<int, ConfigOptionFloatOrPercent>> overhangs_with_speeds = {{100, ConfigOptionFloatOrPercent{speed, false}}};
+        if (this->m_config.enable_dynamic_overhang_speeds) {
+            overhangs_with_speeds = {{0, m_config.overhang_speed_0},
+                                     {25, m_config.overhang_speed_1},
+                                     {50, m_config.overhang_speed_2},
+                                     {75, m_config.overhang_speed_3},
+                                     {100, ConfigOptionFloatOrPercent{speed, false}}};
+        }
+
+        std::vector<std::pair<int, ConfigOptionInts>> overhang_w_fan_speeds = {{100, ConfigOptionInts{0}}};
+        if (this->m_config.enable_dynamic_fan_speeds.get_at(m_writer.extruder()->id())) {
+            overhang_w_fan_speeds = {{0, m_config.overhang_fan_speed_0},
+                                     {25, m_config.overhang_fan_speed_1},
+                                     {50, m_config.overhang_fan_speed_2},
+                                     {75, m_config.overhang_fan_speed_3},
+                                     {100, ConfigOptionInts{0}}};
+        }
+
+        double external_perim_reference_speed = std::min(m_config.get_abs_value("external_perimeter_speed"),
+                                                         std::min(EXTRUDER_CONFIG(filament_max_volumetric_speed) / path.mm3_per_mm,
+                                                                  m_config.max_volumetric_speed.value / path.mm3_per_mm));
+        new_points = m_extrusion_quality_estimator.estimate_extrusion_quality(path, overhangs_with_speeds, overhang_w_fan_speeds,
+                                                                              m_writer.extruder()->id(), external_perim_reference_speed,
+                                                                              speed);
+        variable_speed_or_fan_speed = std::any_of(new_points.begin(), new_points.end(),
+                                                  [speed](const ProcessedPoint &p) { return p.speed != speed || p.fan_speed != 0; });
     }
 
     double F = speed * 60;  // convert mm/sec to mm/min
@@ -2916,19 +2941,20 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             + float_to_string_decimal_point(m_last_height) + "\n";
     }
 
-    std::string comment;
+    std::string cooling_marker_setspeed_comments;
     if (m_enable_cooling_markers) {
-        if (path.role().is_bridge())
+        if (path.role().is_bridge() &&
+            (!path.role().is_perimeter() || !this->config().enable_dynamic_fan_speeds.get_at(m_writer.extruder()->id())))
             gcode += ";_BRIDGE_FAN_START\n";
         else
-            comment = ";_EXTRUDE_SET_SPEED";
+            cooling_marker_setspeed_comments = ";_EXTRUDE_SET_SPEED";
         if (path.role() == ExtrusionRole::ExternalPerimeter)
-            comment += ";_EXTERNAL_PERIMETER";
+            cooling_marker_setspeed_comments += ";_EXTERNAL_PERIMETER";
     }
 
-    if (!variable_speed) {
+    if (!variable_speed_or_fan_speed) {
         // F is mm per minute.
-        gcode += m_writer.set_speed(F, "", comment);
+        gcode += m_writer.set_speed(F, "", cooling_marker_setspeed_comments);
         double path_length = 0.;
         std::string comment;
         if (m_config.gcode_comments) {
@@ -2946,26 +2972,33 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             prev = p;
         }
     } else {
-        std::string comment;
+        std::string marked_comment;
         if (m_config.gcode_comments) {
-            comment = description;
-            comment += description_bridge;
+            marked_comment = description;
+            marked_comment += description_bridge;
         }
-        double last_set_speed = new_points[0].speed * 60.0;
-        gcode += m_writer.set_speed(last_set_speed, "", comment);
+        double last_set_speed     = new_points[0].speed * 60.0;
+        double last_set_fan_speed = new_points[0].fan_speed;
+        gcode += m_writer.set_speed(last_set_speed, "", cooling_marker_setspeed_comments);
+        gcode += ";_SET_FAN_SPEED" + std::to_string(int(last_set_fan_speed)) + "\n";
         Vec2d prev = this->point_to_gcode_quantized(new_points[0].p);
         for (size_t i = 1; i < new_points.size(); i++) {
-            const ProcessedPoint& processed_point = new_points[i];
-            Vec2d p = this->point_to_gcode_quantized(processed_point.p);
-            const double line_length = (p - prev).norm();
-            gcode += m_writer.extrude_to_xy(p, e_per_mm * line_length, comment);
-            prev = p;
+            const ProcessedPoint &processed_point = new_points[i];
+            Vec2d                 p               = this->point_to_gcode_quantized(processed_point.p);
+            const double          line_length     = (p - prev).norm();
+            gcode += m_writer.extrude_to_xy(p, e_per_mm * line_length, marked_comment);
+            prev             = p;
             double new_speed = processed_point.speed * 60.0;
             if (last_set_speed != new_speed) {
-                gcode += m_writer.set_speed(new_speed, "", comment);
+                gcode += m_writer.set_speed(new_speed, "", cooling_marker_setspeed_comments);
                 last_set_speed = new_speed;
             }
+            if (last_set_fan_speed != processed_point.fan_speed) {
+                last_set_fan_speed = processed_point.fan_speed;
+                gcode += ";_SET_FAN_SPEED" + std::to_string(int(last_set_fan_speed)) + "\n";
+            }
         }
+        gcode += ";_RESET_FAN_SPEED\n";
     }
 
     if (m_enable_cooling_markers)

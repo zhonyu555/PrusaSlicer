@@ -166,6 +166,7 @@ public:
     void load_project();
     void load_project(const wxString& filename);
     void add_model(bool imperial_units = false);
+    void import_zip_archive();
     void import_sl1_archive();
     void extract_config_from_project();
     void load_gcode();
@@ -249,9 +250,9 @@ public:
     void reset_with_confirm();
     bool delete_object_from_model(size_t obj_idx);
     void remove_selected();
-    void increase_instances(size_t num = 1);
-    void decrease_instances(size_t num = 1);
-    void set_number_of_copies(/*size_t num*/);
+    void increase_instances(size_t num = 1, int obj_idx = -1);
+    void decrease_instances(size_t num = 1, int obj_idx = -1);
+    void set_number_of_copies();
     void fill_bed_with_instances();
     bool is_selection_empty() const;
     void scale_selection_to_fit_print_volume();
@@ -273,7 +274,7 @@ public:
     void reslice_FFF_until_step(PrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
     void reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
 
-    void clear_before_change_mesh(int obj_idx);
+    void clear_before_change_mesh(int obj_idx, const std::string &notification_msg);
     void changed_mesh(int obj_idx);
 
     void changed_object(int obj_idx);
@@ -330,7 +331,6 @@ public:
     GLCanvas3D* get_current_canvas3D();
     
     void arrange();
-    void find_new_position(const ModelInstancePtrs  &instances);
 
     void set_current_canvas_as_dirty();
     void unbind_canvas_event_handlers();
@@ -350,7 +350,7 @@ public:
     bool can_delete() const;
     bool can_delete_all() const;
     bool can_increase_instances() const;
-    bool can_decrease_instances() const;
+    bool can_decrease_instances(int obj_idx = -1) const;
     bool can_set_instance_to_object() const;
     bool can_fix_through_netfabb() const;
     bool can_simplify() const;
@@ -505,6 +505,16 @@ public:
     ~SuppressBackgroundProcessingUpdate();
 private:
     bool m_was_scheduled;
+};
+
+class PlaterAfterLoadAutoArrange
+{
+    bool m_enabled{ false };
+
+public:
+    PlaterAfterLoadAutoArrange();
+    ~PlaterAfterLoadAutoArrange();
+    void disable() { m_enabled = false; }
 };
 
 } // namespace GUI

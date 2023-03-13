@@ -1427,7 +1427,6 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Quality (slower slicing)"));
         optgroup->append_single_option_line("extra_perimeters", category_path + "extra-perimeters-if-needed");
         optgroup->append_single_option_line("extra_perimeters_on_overhangs", category_path + "extra-perimeters-on-overhangs");
-        optgroup->append_single_option_line("ensure_vertical_shell_thickness", category_path + "ensure-vertical-shell-thickness");
         optgroup->append_single_option_line("avoid_crossing_curled_overhangs", category_path + "avoid-crossing-curled-overhangs");
         optgroup->append_single_option_line("avoid_crossing_perimeters", category_path + "avoid-crossing-perimeters");
         optgroup->append_single_option_line("avoid_crossing_perimeters_max_detour", category_path + "avoid_crossing_perimeters_max_detour");
@@ -1526,7 +1525,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("dont_support_bridges", category_path + "dont-support-bridges");
         optgroup->append_single_option_line("support_material_synchronize_layers", category_path + "synchronize-with-object-layers");
 
-        optgroup = page->new_optgroup(L("Tree supports"));
+        optgroup = page->new_optgroup(L("Organic supports"));
         optgroup->append_single_option_line("support_tree_angle", category_path + "tree_angle");
         optgroup->append_single_option_line("support_tree_angle_slow", category_path + "tree_angle_slow");
         optgroup->append_single_option_line("support_tree_branch_diameter", category_path + "tree_branch_diameter");
@@ -1549,18 +1548,11 @@ void TabPrint::build()
         optgroup->append_single_option_line("ironing_speed");
 
         optgroup = page->new_optgroup(L("Dynamic overhang speed"));
-        auto append_option_line = [](ConfigOptionsGroupShp optgroup, std::string opt_key) {
-            auto option = optgroup->get_option(opt_key, 0);
-            auto line   = Line{option.opt.full_label, ""};
-            line.append_option(option);
-            line.append_option(optgroup->get_option(opt_key, 1));
-            line.append_option(optgroup->get_option(opt_key, 2));
-            line.append_option(optgroup->get_option(opt_key, 3));
-            optgroup->append_line(line);
-        };
         optgroup->append_single_option_line("enable_dynamic_overhang_speeds");
-	    append_option_line(optgroup,"overhang_overlap_levels");
-        append_option_line(optgroup,"dynamic_overhang_speeds");
+        optgroup->append_single_option_line("overhang_speed_0");
+        optgroup->append_single_option_line("overhang_speed_1");
+        optgroup->append_single_option_line("overhang_speed_2");
+        optgroup->append_single_option_line("overhang_speed_3");
 
         optgroup = page->new_optgroup(L("Speed for non-print moves"));
         optgroup->append_single_option_line("travel_speed");
@@ -1571,7 +1563,10 @@ void TabPrint::build()
         optgroup->append_single_option_line("first_layer_speed_over_raft");
 
         optgroup = page->new_optgroup(L("Acceleration control (advanced)"));
+        optgroup->append_single_option_line("external_perimeter_acceleration");
         optgroup->append_single_option_line("perimeter_acceleration");
+        optgroup->append_single_option_line("top_solid_infill_acceleration");
+        optgroup->append_single_option_line("solid_infill_acceleration");
         optgroup->append_single_option_line("infill_acceleration");
         optgroup->append_single_option_line("bridge_acceleration");
         optgroup->append_single_option_line("first_layer_acceleration");
@@ -1637,9 +1632,6 @@ void TabPrint::build()
         optgroup->append_single_option_line("gcode_resolution");
         optgroup->append_single_option_line("xy_size_compensation");
         optgroup->append_single_option_line("elefant_foot_compensation", "elephant-foot-compensation_114487");
-
-        optgroup = page->new_optgroup(L("Other"));
-        optgroup->append_single_option_line("clip_multipart_objects");
 
         optgroup = page->new_optgroup(L("Arachne perimeter generator"));
         optgroup->append_single_option_line("wall_transition_angle");
@@ -1729,9 +1721,7 @@ void TabPrint::update_description_lines()
         if (m_post_process_explanation) {
             m_post_process_explanation->SetText(
                 _L("Post processing scripts shall modify G-code file in place."));
-#ifndef __linux__
             m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
-#endif // __linux__
         }
         // upadte G-code substitutions from the current configuration
         {
@@ -1996,6 +1986,13 @@ void TabFilament::build()
         optgroup->append_single_option_line("disable_fan_first_layers", category_path + "fan-settings");
         optgroup->append_single_option_line("full_fan_speed_layer", category_path + "fan-settings");
 
+        optgroup = page->new_optgroup(L("Dynamic fan speeds"), 25);
+        optgroup->append_single_option_line("enable_dynamic_fan_speeds", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_0", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_1", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_2", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_3", category_path + "dynamic-fan-speeds");
+
         optgroup = page->new_optgroup(L("Cooling thresholds"), 25);
         optgroup->append_single_option_line("fan_below_layer_time", category_path + "cooling-thresholds");
         optgroup->append_single_option_line("slowdown_below_layer_time", category_path + "cooling-thresholds");
@@ -2148,6 +2145,11 @@ void TabFilament::toggle_options()
 
         for (auto el : { "min_fan_speed", "disable_fan_first_layers", "full_fan_speed_layer" })
             toggle_option(el, fan_always_on);
+
+        bool dynamic_fan_speeds = m_config->opt_bool("enable_dynamic_fan_speeds", 0);
+        for (int i = 0; i < 4; i++) {
+        toggle_option("overhang_fan_speed_"+std::to_string(i),dynamic_fan_speeds);
+        }
     }
 
     if (m_active_page->title() == "Filament Overrides")

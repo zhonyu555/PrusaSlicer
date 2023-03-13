@@ -463,6 +463,7 @@ public:
 //        float distance_sla       = 6.;
         float accuracy           = 0.65f; // Unused currently
         bool  enable_rotation    = false;
+        int   alignment          = 0;
     };
 
 private:
@@ -549,8 +550,10 @@ private:
 
     PrinterTechnology current_printer_technology() const;
 
+    bool is_arrange_alignment_enabled() const;
+
     template<class Self>
-    static auto & get_arrange_settings(Self *self) {
+    static auto & get_arrange_settings_ref(Self *self) {
         PrinterTechnology ptech = self->current_printer_technology();
 
         auto *ptr = &self->m_arrange_settings_fff;
@@ -568,8 +571,22 @@ private:
         return *ptr;
     }
 
-    ArrangeSettings &get_arrange_settings() { return get_arrange_settings(this); }
+public:
+    ArrangeSettings get_arrange_settings() const {
+        const ArrangeSettings &settings = get_arrange_settings_ref(this);
+        ArrangeSettings ret = settings;
+        if (&settings == &m_arrange_settings_fff_seq_print) {
+            ret.distance = std::max(ret.distance,
+                                    float(min_object_distance(*m_config)));
+        }
 
+        if (!is_arrange_alignment_enabled())
+            ret.alignment = -1;
+
+        return ret;
+    }
+
+private:
     void load_arrange_settings();
 
     class SequentialPrintClearance
@@ -711,6 +728,10 @@ public:
 
     bool                                get_use_clipping_planes() const { return m_use_clipping_planes; }
     const std::array<ClippingPlane, 2> &get_clipping_planes() const { return m_clipping_planes; };
+
+    void set_use_color_clip_plane(bool use) { m_volumes.set_use_color_clip_plane(use); }
+    void set_color_clip_plane(const Vec3d& cp_normal, double offset) { m_volumes.set_color_clip_plane(cp_normal, offset); }
+    void set_color_clip_plane_colors(const std::array<ColorRGBA, 2>& colors) { m_volumes.set_color_clip_plane_colors(colors); }
 
     void refresh_camera_scene_box();
 
@@ -896,17 +917,6 @@ public:
 
     void highlight_toolbar_item(const std::string& item_name);
     void highlight_gizmo(const std::string& gizmo_name);
-
-    ArrangeSettings get_arrange_settings() const {
-        const ArrangeSettings &settings = get_arrange_settings(this);
-        ArrangeSettings ret = settings;
-        if (&settings == &m_arrange_settings_fff_seq_print) {
-            ret.distance = std::max(ret.distance,
-                                    float(min_object_distance(*m_config)));
-        }
-
-        return ret;
-    }
 
     // Timestamp for FPS calculation and notification fade-outs.
     static int64_t timestamp_now() {

@@ -901,7 +901,7 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
                                                                   params)) {
                                 if (bridge.support_point_generated.has_value()) {
                                     reckon_new_support_point(*bridge.support_point_generated, create_support_point_position(bridge.b),
-                                                             -EPSILON, Vec2f::Zero());
+                                                             float(-EPSILON), Vec2f::Zero());
                                 }
                             }
                         }
@@ -916,7 +916,7 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
                                                                                          params);
                     for (const ExtrusionLine &perim : perims) {
                         if (perim.support_point_generated.has_value()) {
-                            reckon_new_support_point(*perim.support_point_generated, create_support_point_position(perim.b), -EPSILON,
+                            reckon_new_support_point(*perim.support_point_generated, create_support_point_position(perim.b), float(-EPSILON),
                                                      Vec2f::Zero());
                         }
                         if (perim.is_external_perimeter()) {
@@ -954,7 +954,7 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
             float unchecked_dist = params.min_distance_between_support_points + 1.0f;
 
             for (const ExtrusionLine &line : current_slice_ext_perims_lines) {
-                if ((unchecked_dist + line.len < params.min_distance_between_support_points && line.curled_up_height < 0.3f) ||
+                if ((unchecked_dist + line.len < params.min_distance_between_support_points && line.curled_up_height < params.curling_tolerance_limit) ||
                     line.len < EPSILON) {
                     unchecked_dist += line.len;
                 } else {
@@ -1043,6 +1043,7 @@ void estimate_supports_malformations(SupportLayerPtrs &layers, float flow_width,
     AABBTreeLines::LinesDistancer<ExtrusionLine> prev_layer_lines{};
 
     for (SupportLayer *l : layers) {
+        l->malformed_lines.clear();
         std::vector<ExtrusionLine> current_layer_lines;
 
         for (const ExtrusionEntity *extrusion : l->support_fills.flatten().entities) {
@@ -1077,14 +1078,14 @@ void estimate_supports_malformations(SupportLayerPtrs &layers, float flow_width,
         }
 
         for (const ExtrusionLine &line : current_layer_lines) {
-            if (line.curled_up_height > 0.3f) {
+            if (line.curled_up_height > params.curling_tolerance_limit) {
                 l->malformed_lines.push_back(Line{Point::new_scale(line.a), Point::new_scale(line.b)});
             }
         }
 
 #ifdef DEBUG_FILES
         for (const ExtrusionLine &line : current_layer_lines) {
-            if (line.curled_up_height > 0.3f) {
+            if (line.curled_up_height > params.curling_tolerance_limit) {
                 Vec3f color = value_to_rgbf(-EPSILON, l->height * params.max_curled_height_factor, line.curled_up_height);
                 fprintf(debug_file, "v %f %f %f  %f %f %f\n", line.b[0], line.b[1], l->print_z, color[0], color[1], color[2]);
             }
@@ -1114,6 +1115,7 @@ void estimate_malformations(LayerPtrs &layers, const Params &params)
     LD prev_layer_lines{};
 
     for (Layer *l : layers) {
+        l->malformed_lines.clear();
         std::vector<Linef> boundary_lines = l->lower_layer != nullptr ? to_unscaled_linesf(l->lower_layer->lslices) : std::vector<Linef>();
         AABBTreeLines::LinesDistancer<Linef> prev_layer_boundary{std::move(boundary_lines)};
         std::vector<ExtrusionLine>           current_layer_lines;
@@ -1150,14 +1152,14 @@ void estimate_malformations(LayerPtrs &layers, const Params &params)
         }
 
         for (const ExtrusionLine &line : current_layer_lines) {
-            if (line.curled_up_height > 0.3f) {
+            if (line.curled_up_height > params.curling_tolerance_limit) {
                 l->malformed_lines.push_back(Line{Point::new_scale(line.a), Point::new_scale(line.b)});
             }
         }
 
 #ifdef DEBUG_FILES
         for (const ExtrusionLine &line : current_layer_lines) {
-            if (line.curled_up_height > 0.3f) {
+            if (line.curled_up_height > params.curling_tolerance_limit) {
                 Vec3f color = value_to_rgbf(-EPSILON, l->height * params.max_curled_height_factor, line.curled_up_height);
                 fprintf(debug_file, "v %f %f %f  %f %f %f\n", line.b[0], line.b[1], l->print_z, color[0], color[1], color[2]);
             }

@@ -385,8 +385,10 @@ void GLVolume::render()
     GLShaderProgram* shader = GUI::wxGetApp().get_current_shader();
     if (shader == nullptr)
         return;
+    
+    const bool is_left_handed = this->is_left_handed();
 
-    if (this->is_left_handed())
+    if (is_left_handed)
         glsafe(::glFrontFace(GL_CW));
     glsafe(::glCullFace(GL_BACK));
 
@@ -395,7 +397,7 @@ void GLVolume::render()
     else
         model.render(this->tverts_range);
 
-    if (this->is_left_handed())
+    if (is_left_handed)
         glsafe(::glFrontFace(GL_CCW));
 }
 
@@ -491,6 +493,9 @@ int GLVolumeCollection::load_wipe_tower_preview(
     if (height == 0.0f)
         height = 0.1f;
 
+    static const float brim_height = 0.2f;
+    const float scaled_brim_height = brim_height / height;
+
     TriangleMesh mesh;
     ColorRGBA color = ColorRGBA::DARK_YELLOW();
 
@@ -503,8 +508,6 @@ int GLVolumeCollection::load_wipe_tower_preview(
         // Too narrow tower would interfere with the teeth. The estimate is not precise anyway.
         depth = std::max(depth, 10.f);
         float min_width = 30.f;
-
-        const float scaled_brim_height = 0.2f / height;
 
         // We'll now create the box with jagged edge. y-coordinates of the pre-generated model
         // are shifted so that the front edge has y=0 and centerline of the back edge has y=depth:
@@ -551,6 +554,10 @@ int GLVolumeCollection::load_wipe_tower_preview(
         // central parts generator
         auto generate_central = [&]() {
             const std::vector<Vec3f> vertices = {
+                // this part is not watertight to avoid to have different geometries for the cases 
+                // brim_width < 10.0 
+                // brim_width == 10.0 
+                // brim_width > 10.0 
                 { 38.453f, -(depth + brim_width), 0.0f },
                 { 61.547f, -(depth + brim_width), 0.0f },
                 { 38.453f, -(depth + brim_width), scaled_brim_height },
@@ -560,33 +567,33 @@ int GLVolumeCollection::load_wipe_tower_preview(
                 { 38.453f, -depth, 1.0f },
                 { 61.547f, -depth, 1.0f },
                 { 38.453f, 0.0f, 1.0f },
-                { 38.453f + 0.57735f * brim_width, brim_width, 1.0f },
                 { 44.2265f, 10.0f, 1.0f },
-                { 50.0f - 0.57735f * brim_width, brim_width, 1.0f },
                 { 50.0f, 0.0f, 1.0f },
                 { 55.7735f, -10.0f, 1.0f },
                 { 61.547f, 0.0f, 1.0f },
                 { 38.453f, 0.0f, scaled_brim_height },
-                { 38.453f, brim_width, scaled_brim_height },
-                { 38.453f + 0.57735f * brim_width, brim_width, scaled_brim_height },
-                { 50.0f - 0.57735f * brim_width, brim_width, scaled_brim_height },
+                { 44.2265f, 10.0f, scaled_brim_height },
                 { 50.0f, 0.0f, scaled_brim_height },
                 { 55.7735f, -10.0f, scaled_brim_height },
                 { 61.547f, 0.0f, scaled_brim_height },
+                { 38.453f, 0.0f, 0.0f },
+                { 44.2265f, 10.0f, 0.0f },
+                { 50.0f, 0.0f, 0.0f },
+                { 55.7735f, -10.0f, 0.0f },
+                { 61.547f, 0.0f, 0.0f },
+                { 38.453f, brim_width, scaled_brim_height },
                 { 61.547f, brim_width, scaled_brim_height },
                 { 38.453f, brim_width, 0.0f },
-                { 38.453f + 0.57735f * brim_width, brim_width, 0.0f },
-                { 44.2265f, 10.0f, 0.0f },
-                { 50.0f - 0.57735f * brim_width, brim_width, 0.0f },
-                { 61.547f, brim_width, 0.0f }
+                { 61.547f, brim_width, 0.0f },
             };
 
             const std::vector<Vec3i> triangles = {
-                { 0, 1, 3 }, { 0, 3, 2 }, { 2, 3, 5 }, { 2, 5, 4 }, { 4, 5, 7 }, { 4, 7, 6 }, { 7, 14, 13 }, { 7, 13, 6 },
-                { 6, 13, 12 }, { 6, 12, 8 }, { 8, 12, 11 }, { 8, 11, 9 }, { 9, 11, 10 }, { 18, 19, 22 }, { 22, 19, 21 }, { 19, 20, 21 },
-                { 15, 17, 16 }, { 17, 15, 8 }, { 17, 8, 9 }, { 21, 13, 14 }, { 21, 20, 13 }, { 20, 19, 12 }, { 20, 12, 13 }, { 19, 18, 11 },
-                { 19, 11, 12 }, { 27, 26, 18 }, { 27, 18, 22 }, { 26, 25, 18 }, { 18, 25, 11 }, { 11, 25, 10 }, { 25, 24, 17 }, { 25, 17, 9 },
-                { 25, 9, 10 }, { 24, 23, 16 }, { 24, 16, 17 }, { 1, 26, 27 }, { 1, 23, 26 }, { 1, 0, 23 }, { 0, 23, 24 }, { 24, 25, 26 }
+                { 0, 1, 3 }, { 0, 3, 2 }, { 2, 3, 5 }, { 2, 5, 4 }, { 4, 5, 7 }, { 4, 7, 6 },
+                { 6, 7, 11 }, { 6, 11, 10 }, { 6, 10, 8 }, { 8, 10, 9 }, { 11, 7, 12 }, { 14, 13, 8 },
+                { 14, 8, 9 }, { 19, 18, 13 }, { 19, 13, 14 }, { 15, 14, 9 }, { 15, 9, 10 }, { 20, 19, 14 },
+                { 20, 14, 15 }, { 16, 15, 10 }, { 16, 10, 11 }, { 21, 20, 15 }, { 21, 15, 16 }, { 17, 16, 11 },
+                { 17, 11, 12 }, { 22, 21, 16 }, { 22, 16, 17 }, { 15, 16, 17 }, { 13, 15, 23 }, { 15, 17, 24 },
+                { 15, 24, 23 }, { 26, 25, 23 }, { 26, 23, 24 }, { 0, 25, 1 }, { 1, 25, 26 }, { 20, 18, 19 }
             };
 
             indexed_triangle_set its;
@@ -612,7 +619,7 @@ int GLVolumeCollection::load_wipe_tower_preview(
         // We have the mesh ready. It has one tooth and width of min_width. We will now
         // append several of these together until we are close to the required width
         // of the block. Than we can scale it precisely.
-        size_t n = std::max(1, int(width / min_width)); // How many shall be merged?
+        const size_t n = std::max(1, int(width / min_width)); // How many shall be merged?
         for (size_t i = 0; i < n; ++i) {
             mesh.merge(tooth_mesh);
             tooth_mesh.translate(100.0f, 0.0f, 0.0f);
@@ -693,8 +700,13 @@ int GLVolumeCollection::load_wipe_tower_preview(
         mesh.merge(TriangleMesh(std::move(data)));
         mesh.scale(Vec3f(width / (n * 100.0f), 1.0f, height)); // Scaling to proper width
     }
-    else
-        mesh = make_cube(width, depth, height);
+    else {
+        mesh = make_cube(width, depth, height - brim_height);
+        mesh.translate(0.0f, 0.0f, brim_height);
+        TriangleMesh brim_mesh = make_cube(width + 2.0f * brim_width, depth + 2.0f * brim_width, brim_height);
+        brim_mesh.translate(-brim_width, -brim_width, 0.0f);
+        mesh.merge(brim_mesh);
+    }
 
     volumes.emplace_back(new GLVolume(color));
     GLVolume& v = *volumes.back();
@@ -793,6 +805,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
         glsafe(::glDisable(GL_CULL_FACE));
 
     for (GLVolumeWithIdAndZ& volume : to_render) {
+        const Transform3d& world_matrix = volume.first->world_matrix();
         volume.first->set_render_color(true);
 
         // render sinking contours of non-hovered volumes
@@ -811,17 +824,21 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
 
         shader->set_uniform("z_range", m_z_range);
         shader->set_uniform("clipping_plane", m_clipping_plane);
+        shader->set_uniform("use_color_clip_plane", m_use_color_clip_plane);
+        shader->set_uniform("color_clip_plane", m_color_clip_plane);
+        shader->set_uniform("uniform_color_clip_plane_1", m_color_clip_plane_colors[0]);
+        shader->set_uniform("uniform_color_clip_plane_2", m_color_clip_plane_colors[1]);
         shader->set_uniform("print_volume.type", static_cast<int>(m_print_volume.type));
         shader->set_uniform("print_volume.xy_data", m_print_volume.data);
         shader->set_uniform("print_volume.z_data", m_print_volume.zs);
-        shader->set_uniform("volume_world_matrix", volume.first->world_matrix());
+        shader->set_uniform("volume_world_matrix", world_matrix);
         shader->set_uniform("slope.actived", m_slope.active && !volume.first->is_modifier && !volume.first->is_wipe_tower);
-        shader->set_uniform("slope.volume_world_normal_matrix", static_cast<Matrix3f>(volume.first->world_matrix().matrix().block(0, 0, 3, 3).inverse().transpose().cast<float>()));
+        shader->set_uniform("slope.volume_world_normal_matrix", static_cast<Matrix3f>(world_matrix.matrix().block(0, 0, 3, 3).inverse().transpose().cast<float>()));
         shader->set_uniform("slope.normal_z", m_slope.normal_z);
 
 #if ENABLE_ENVIRONMENT_MAP
         unsigned int environment_texture_id = GUI::wxGetApp().plater()->get_environment_texture_id();
-        bool use_environment_texture = environment_texture_id > 0 && GUI::wxGetApp().app_config->get("use_environment_map") == "1";
+        bool use_environment_texture = environment_texture_id > 0 && GUI::wxGetApp().app_config->get_bool("use_environment_map");
         shader->set_uniform("use_environment_tex", use_environment_texture);
         if (use_environment_texture)
             glsafe(::glBindTexture(GL_TEXTURE_2D, environment_texture_id));
@@ -829,7 +846,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
         glcheck();
 
         volume.first->model.set_color(volume.first->render_color);
-        const Transform3d model_matrix = volume.first->world_matrix();
+        const Transform3d model_matrix = world_matrix;
         shader->set_uniform("view_model_matrix", view_matrix * model_matrix);
         shader->set_uniform("projection_matrix", projection_matrix);
         const Matrix3d view_normal_matrix = view_matrix.matrix().block(0, 0, 3, 3) * model_matrix.matrix().block(0, 0, 3, 3).inverse().transpose();
@@ -866,7 +883,7 @@ void GLVolumeCollection::render(GLVolumeCollection::ERenderType type, bool disab
     shader->stop_using();
     if (edges_shader != nullptr) {
         edges_shader->start_using();
-        if (m_show_non_manifold_edges && GUI::wxGetApp().app_config->get("non_manifold_edges") == "1") {
+        if (m_show_non_manifold_edges && GUI::wxGetApp().app_config->get_bool("non_manifold_edges")) {
             for (GLVolumeWithIdAndZ& volume : to_render) {
                 volume.first->render_non_manifold_edges();
             }
