@@ -2854,7 +2854,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
         // cap speed with max_volumetric_speed anyway (even if user is not using autospeed)
         speed = std::min(
             speed,
-            EXTRUDER_CONFIG(filament_max_volumetric_speed) / path.mm3_per_mm
+            EXTRUDER_CONFIG(filament_max_volumetric_speed) / (path.mm3_per_mm * EXTRUDER_CONFIG(extrusion_multiplier))
         );
     }
 
