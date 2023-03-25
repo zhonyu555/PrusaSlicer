@@ -904,7 +904,7 @@ void WipeTower::toolchange_Unload(
 
     // Cooling:
     const int& number_of_moves = m_filpar[m_current_tool].cooling_moves;
-    if (m_semm && number_of_moves > 0) {
+    if (m_semm && number_of_moves > 0 && m_cooling_tube_length != 0.f) {
         const float& initial_speed = m_filpar[m_current_tool].cooling_initial_speed;
         const float& final_speed   = m_filpar[m_current_tool].cooling_final_speed;
 
@@ -922,7 +922,7 @@ void WipeTower::toolchange_Unload(
         }
     }
 
-    if (m_semm) {
+    if (m_semm && m_cooling_tube_length != 0.f && m_cooling_tube_retraction != 0.f) {
         // let's wait is necessary:
         writer.wait(m_filpar[m_current_tool].delay);
         // we should be at the beginning of the cooling tube again - let's move to parking position:
