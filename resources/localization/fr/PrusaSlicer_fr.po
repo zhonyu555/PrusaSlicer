@@ -312,7 +312,7 @@ msgstr "au-dessus"
 
 #: src/libslic3r/PrintConfig.cpp:2211
 msgid "Above Z"
-msgstr "Au-delà de Z"
+msgstr "Au dessus de Z"
 
 #: src/slic3r/GUI/Tab.cpp:1603
 msgid "Acceleration control (advanced)"
@@ -1504,7 +1504,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Preferences.cpp:137
 msgid "Background processing"
-msgstr "Tâche en arrière plan"
+msgstr "Découper automatiquement en arrière-plan"
 
 #: src/slic3r/GUI/Jobs/EmbossJob.cpp:593
 msgid "Bad object to create volume."
@@ -1590,7 +1590,7 @@ msgstr "Sous l'objet"
 
 #: src/libslic3r/PrintConfig.cpp:2220
 msgid "Below Z"
-msgstr "En-deçà de Z"
+msgstr "En dessous de Z"
 
 #: src/slic3r/GUI/Jobs/RotoptimizeJob.hpp:21
 msgid "Best surface quality"
@@ -2072,7 +2072,7 @@ msgstr "Modifier le mode de l'application"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:158
 msgid "Change camera type (perspective, orthographic)"
-msgstr "Changer le type d'appareil photo (perspective, orthographique)"
+msgstr "Changer le type de vue (perspective, orthographique)"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoHollow.cpp:667
 msgid "Change drainage hole diameter"
@@ -2366,7 +2366,7 @@ msgstr "Dissocier les objets multi-pièces"
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:31
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:49
 msgid "Clipping of view"
-msgstr "Le plan de découpage"
+msgstr "Vue en coupe"
 
 #: src/slic3r/GUI/FirmwareDialog.cpp:862
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:310
@@ -3172,15 +3172,15 @@ msgid ""
 "Custom supports, seams and multimaterial painting were removed after repairing "
 "the mesh."
 msgstr ""
-"Les supports personnalisés, les jointures et la peinture multimatériaux ont été "
-"retirés après réparation du maillage."
+"Les supports, jointures et peinture multi-matériaux personnalisés ont été "
+"supprimés après réparation du maillage."
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSimplify.cpp:543
 msgid ""
 "Custom supports, seams and multimaterial painting were removed after "
 "simplifying the mesh."
 msgstr ""
-"Les supports et jointures personnalisés et la peinture multi-matériaux ont été "
+"Les supports, jointures et peinture multi-matériaux personnalisés ont été "
 "supprimés après simplification du maillage."
 
 #: src/slic3r/GUI/GUI_ObjectList.cpp:2179 src/slic3r/GUI/Plater.cpp:3131
@@ -3188,7 +3188,7 @@ msgid ""
 "Custom supports, seams and multimaterial painting were removed after splitting "
 "the object."
 msgstr ""
-"Les supports et coutures personnalisés et la peinture multi-matériaux ont été "
+"Les supports, jointures et peinture multi-matériaux personnalisés ont été "
 "supprimés après le découpage de l'objet."
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1471
@@ -3805,9 +3805,8 @@ msgid ""
 "Disables retraction when the travel path does not exceed the upper layer's "
 "perimeters (and thus any ooze will be probably invisible)."
 msgstr ""
-"Désactiver la rétraction lorsque le chemin de déplacement ne franchit pas les "
-"périmètres des couches supérieures (et donc les coulures seront probablement "
-"invisibles)."
+"Désactiver la rétraction lorsque le trajet ne franchit pas les périmètres des "
+"couches supérieures (et donc les coulures seront probablement invisibles)."
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:871
 msgid "Discard"
@@ -4517,7 +4516,7 @@ msgstr "Accès aux Supports peints"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.hpp:23
 msgid "Entering Seam painting"
-msgstr "Accès à la peinture de jointure"
+msgstr "Accès à la peinture des joints"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.hpp:67
 msgid "Entering SLA support points"
@@ -5194,7 +5193,7 @@ msgstr ""
 #: src/slic3r/GUI/Plater.cpp:5794
 #, boost-format
 msgid "Failed to unzip file to %1%: %2% "
-msgstr "Impossible de décompresser le fichier vers %1%:%2%"
+msgstr "Impossible de décompresser le fichier vers %1%: %2%"
 
 #: src/slic3r/GUI/Tab.cpp:2015
 msgid "Fan settings"
@@ -5231,7 +5230,7 @@ msgstr ""
 "pour la couche \"disable_fan_first_layers\" jusqu'au maximum pour la couche "
 "\"full_fan_speed_layer\". \"full_fan_speed_layer\" sera ignorée si inférieure à "
 "\"disable_fan_first_layers\", auquel cas le ventilateur fonctionnera à la "
-"vitesse maximum autorisée pour la couche \"disable_fan_first_layers\" +1. "
+"vitesse maximum autorisée pour la couche \"disable_fan_first_layers\" +1."
 
 #: src/slic3r/GUI/PresetHints.cpp:57
 #, boost-format
@@ -5511,11 +5510,11 @@ msgstr "Image du firmware :"
 
 #: src/slic3r/GUI/Tab.cpp:3014
 msgid "Firmware Retraction"
-msgstr "Rétraction du Firmware"
+msgstr "Rétraction du firmware"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1357
 msgid "Firmware Type"
-msgstr "Type de Firmware"
+msgstr "Type de firmware"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoEmboss.cpp:2362
 msgid "First Add style to list."
@@ -5789,7 +5788,7 @@ msgstr ""
 
 #: src/slic3r/GUI/Plater.cpp:434 src/slic3r/GUI/Plater.cpp:564
 msgid "For support enforcers only"
-msgstr "Seulement pour les générateurs de supports"
+msgstr "Seulement les supports peints/forcés"
 
 #. TRN Description for "WHITE BULLET"
 #: src/slic3r/GUI/Tab.cpp:4334
@@ -5887,7 +5886,7 @@ msgid ""
 msgstr ""
 "Mode plein écran\n"
 "Saviez-vous que vous pouvez basculer PrusaSlicer en mode plein écran ? Utilisez "
-"le raccourci clavier <b>F11.</b>"
+"le raccourci clavier <b>F11</b>."
 
 #: src/slic3r/GUI/GUI_Factories.cpp:130 src/libslic3r/PrintConfig.cpp:1283
 #: src/libslic3r/PrintConfig.cpp:1284 src/libslic3r/PrintConfig.cpp:1299
@@ -6118,7 +6117,7 @@ msgstr "Déplacement du gizmo : appuyez pour des pas de 1 mm"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:156
 msgid "Gizmo Multi Material painting"
-msgstr "Gizmo pour la peinture Multi Material"
+msgstr "Gizmo pour la peinture Multi-Matériaux"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:151
 msgid "Gizmo Place face on bed"
@@ -6839,8 +6838,8 @@ msgstr "Si activé, des conseils utiles sont affichés au démarrage."
 msgid ""
 "If enabled, use perspective camera. If not enabled, use orthographic camera."
 msgstr ""
-"Si activé, utilise la l'appareil photo en perspective. Si n'est pas activé, "
-"utilise l'appareil photo en vue orthographique."
+"Si activé, utilise la vue en perspective. Si non activé, utilise la vue "
+"orthographique."
 
 #: src/slic3r/GUI/Preferences.cpp:401
 msgid ""
@@ -7857,11 +7856,11 @@ msgstr "Sortie de la peinture multimatériaux"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoFdmSupports.hpp:23
 msgid "Leaving Paint-on supports"
-msgstr "Laisser les Supports peints"
+msgstr "Sortie de la peinture des supports"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.hpp:24
 msgid "Leaving Seam painting"
-msgstr "Laisser la Peinture de jointure"
+msgstr "Sortie de la peinture des joints"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.hpp:68
 msgid "Leaving SLA support points"
@@ -7889,7 +7888,7 @@ msgstr "Bouton gauche de la souris"
 
 #: src/slic3r/GUI/GLCanvas3D.cpp:227
 msgid "Left mouse button:"
-msgstr "Bouton gauche de souris :"
+msgstr "Bouton gauche de la souris :"
 
 #: src/slic3r/GUI/UnsavedChangesDialog.cpp:1520
 msgid "Left Preset Value"
@@ -8133,7 +8132,7 @@ msgstr "Charger une forme depuis un STL..."
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:56
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:85
 msgid "Local coordinates"
-msgstr "Coordonnées locaux"
+msgstr "Coordonnées locales"
 
 #: src/slic3r/GUI/Tab.cpp:4321
 msgid "LOCKED LOCK"
@@ -8520,7 +8519,7 @@ msgstr "Vitesse d'impression maximale"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:78
 msgid "max PrusaSlicer version"
-msgstr "Version maximum de PrusaSlicer"
+msgstr "version maximum de PrusaSlicer"
 
 #: src/libslic3r/PrintConfig.cpp:1842
 msgid "Max volumetric slope negative"
@@ -8782,7 +8781,7 @@ msgstr "L'épaisseur minimale de la coque supérieure est de %1% mm."
 
 #: src/libslic3r/PrintConfig.cpp:2164
 msgid "Minimum travel after retraction"
-msgstr "Trajet minimal après une rétraction"
+msgstr "Trajet minimal après rétraction"
 
 #: src/libslic3r/PrintConfig.cpp:1749
 msgid "Minimum travel feedrate"
@@ -8809,7 +8808,7 @@ msgstr "Vitesse d'impression minimale"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:76
 msgid "min PrusaSlicer version"
-msgstr "Version minimum de PrusaSlicer"
+msgstr "version minimum de PrusaSlicer"
 
 #: src/slic3r/GUI/GUI_Factories.cpp:885
 msgid "Mirror"
@@ -9108,7 +9107,7 @@ msgstr "Déplacer le curseur actif vers le Haut"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1224
 msgid "Move clipping plane"
-msgstr "Déplacer le plan de coupe"
+msgstr "Déplacer la vue en coupe"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:867
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:1213
@@ -9207,7 +9206,7 @@ msgid ""
 "these files to represent a single object having multiple parts?"
 msgstr ""
 "Plusieurs fichiers ont été chargés pour une impression multi-matériaux.\n"
-"Au lieu de les considérer en tant que plusieurs objets, dois-je considérer\n"
+"Au lieu de les considérer en tant que plusieurs objets, considérer\n"
 "ces fichiers en tant que un seul objet ayant plusieurs pièces ?"
 
 #: src/slic3r/GUI/BonjourDialog.cpp:240
@@ -9565,12 +9564,10 @@ msgid "Note, that the selected preset will be renamed in this printer too."
 msgid_plural ""
 "Note, that the selected preset will be renamed in these printers too."
 msgstr[0] ""
-"{\n"
-"  Notez que le préréglage sélectionné sera également renommé pour cette "
-"imprimante.\n"
-"  Notez que le préréglage sélectionné sera également renommé pour ces "
-"imprimantes."
+"Notez que le préréglage sélectionné sera également renommé pour cette "
+"imprimante."
 msgstr[1] ""
+"Notez que le préréglage sélectionné sera également renommé pour ces imprimantes."
 
 #: src/slic3r/GUI/Tab.cpp:3743
 msgid ""
@@ -10764,7 +10761,7 @@ msgid ""
 msgstr ""
 "Caméra perspective\n"
 "Saviez-vous que vous pouvez utiliser la touche <b>K</b> pour basculer "
-"rapidement entre une caméra orthographique et une caméra perspective ?"
+"rapidement entre une vue orthographique et une vue en perspective ?"
 
 #: src/slic3r/GUI/GUI.cpp:342 src/slic3r/GUI/PhysicalPrinterDialog.cpp:157
 msgid "Physical Printer"
@@ -12202,7 +12199,7 @@ msgstr "Réinitialiser"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSlaSupports.cpp:1225
 msgid "Reset clipping plane"
-msgstr "Réinitialiser le plan de coupe"
+msgstr "Réinitialiser la vue en coupe"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:1740
 msgid "Reset cut"
@@ -12287,7 +12284,7 @@ msgstr "Restaurer la position de la fenêtre au démarrage"
 
 #: src/libslic3r/PrintConfig.cpp:2171
 msgid "Retract amount before wipe"
-msgstr "Quantité de rétractation avant essuyage"
+msgstr "Quantité de rétraction avant essuyage"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3614 src/slic3r/GUI/Tab.cpp:1870
 #: src/slic3r/GUI/Tab.cpp:2812
@@ -12303,11 +12300,11 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2186
 msgid "Retraction Length"
-msgstr "Longueur de Rétractation"
+msgstr "Longueur de rétraction"
 
 #: src/libslic3r/PrintConfig.cpp:2194
 msgid "Retraction Length (Toolchange)"
-msgstr "Longueur de Rétractation (changement d'outil)"
+msgstr "Longueur de rétraction (changement d'outil)"
 
 #: src/slic3r/GUI/GCodeViewer.cpp:3669 src/slic3r/GUI/GUI_Preview.cpp:1051
 msgid "Retractions"
@@ -12315,13 +12312,13 @@ msgstr "Rétractions"
 
 #: src/libslic3r/PrintConfig.cpp:2246 src/libslic3r/PrintConfig.cpp:2247
 msgid "Retraction Speed"
-msgstr "Vitesse de Rétractation"
+msgstr "Vitesse de rétraction"
 
 #: src/slic3r/GUI/Tab.cpp:2828
 msgid ""
 "Retraction when tool is disabled (advanced settings for multi-extruder setups)"
 msgstr ""
-"Rétractation lorsque l'outil est désactivé (réglages avancés pour les "
+"Rétraction lorsque l'outil est désactivé (réglages avancés pour les "
 "configurations multi-extrudeurs)"
 
 #: src/libslic3r/PrintConfig.cpp:2179
@@ -12420,7 +12417,7 @@ msgstr "Vue Droite"
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:578
 #: src/libslic3r/PrintConfig.cpp:4532
 msgid "Rotate"
-msgstr "Pivoter"
+msgstr "Rotation"
 
 #: src/libslic3r/PrintConfig.cpp:4537
 msgid "Rotate around X"
@@ -12734,7 +12731,7 @@ msgstr "%s - Déposer le fichier de projet"
 
 #: src/slic3r/GUI/Gizmos/GLGizmoSeam.cpp:52
 msgid "Seam painting"
-msgstr "Peinture de jointure"
+msgstr "Placement des jointures"
 
 #: src/libslic3r/PrintConfig.cpp:2263
 msgid "Seam position"
@@ -13474,25 +13471,23 @@ msgstr "Famille %s"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:167
 msgid "Shall I adjust those settings for supports?"
-msgstr "Dois-je ajuster ces paramètres pour les supports ?"
+msgstr "Ajuster ces paramètres pour les supports ?"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:90
 msgid "Shall I adjust those settings in order to enable Spiral Vase?"
-msgstr "Dois-je ajuster ces réglages afin d'activer le Vase Spirale ?"
+msgstr "Ajuster ces réglages afin d'activer le Vase Spirale ?"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:125
 msgid "Shall I adjust those settings in order to enable the Wipe Tower?"
-msgstr "Dois-je ajuster ces réglages afin d'activer la tour de Nettoyage ?"
+msgstr "Ajuster ces réglages afin d'activer la tour de Nettoyage ?"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:198
 msgid "Shall I switch to rectilinear fill pattern?"
-msgstr "Dois-je passer au motif de remplissage rectiligne?"
+msgstr "Passer au motif de remplissage rectiligne?"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:145
 msgid "Shall I synchronize support layers in order to enable the Wipe Tower?"
-msgstr ""
-"Dois-je synchroniser les couches de support afin d'activer la Tour de "
-"Nettoyage ?"
+msgstr "Synchroniser les couches de support afin d'activer la Tour de Nettoyage ?"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:104 src/slic3r/GUI/BedShapeDialog.cpp:179
 #: src/slic3r/GUI/GUI_ObjectList.cpp:1701
@@ -14738,8 +14733,8 @@ msgid ""
 "Successfully unmounted. The device %s(%s) can now be safely removed from the "
 "computer."
 msgstr ""
-"Démonté avec succès. Le périphérique %s(% s) peut maintenant être retiré en "
-"toute sécurité de l'ordinateur."
+"Retiré avec succès. Le périphérique %s(%s) peut maintenant être retiré en toute "
+"sécurité de l'ordinateur."
 
 #: src/slic3r/GUI/PresetHints.cpp:181
 msgid "support"
@@ -15707,12 +15702,11 @@ msgid ""
 msgid_plural ""
 "The physical printers below are based on the preset, you are going to rename."
 msgstr[0] ""
-"{\n"
-"  \"one\": \"L'imprimante physique ci-dessous est basée sur le préréglage que "
-"vous allez renommer.\",\n"
-"  \"other\": \"Les imprimantes physiques ci-dessous sont basées sur le "
-"préréglage que vous allez renommer.\" }"
+"L'imprimante physique ci-dessous est basée sur le préréglage que vous allez "
+"renommer."
 msgstr[1] ""
+"Les imprimantes physiques ci-dessous sont basées sur le préréglage que vous "
+"allez renommer."
 
 #: src/libslic3r/PrintConfig.cpp:529
 msgid ""
@@ -16034,13 +16028,13 @@ msgid ""
 "The speed for loading of a filament into extruder after retraction (it only "
 "applies to the extruder motor). If left to zero, the retraction speed is used."
 msgstr ""
-"La vitesse de chargement d'un filament dans l'extrudeur après une rétractation "
+"La vitesse de chargement d'un filament dans l'extrudeur après une rétraction "
 "(ne s'applique qu'au moteur de l'extrudeur). Si cette valeur reste sur zéro, la "
 "vitesse de rétraction est utilisée."
 
 #: src/libslic3r/PrintConfig.cpp:2248
 msgid "The speed for retractions (it only applies to the extruder motor)."
-msgstr "La vitesse des rétractations (ne s'applique qu'au moteur de l'extrudeur)."
+msgstr "La vitesse des rétractions (ne s'applique qu'au moteur de l'extrudeur)."
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:82
 msgid ""
@@ -16133,9 +16127,9 @@ msgid ""
 "Shall I disable it in order to enable Firmware Retraction?"
 msgstr ""
 "L'option Nettoyage n'est pas disponible lorsque vous utilisez le mode "
-"Rétractation du Firmware.\n"
+"Rétraction du firmware.\n"
 "\n"
-"Voulez-vous que je la désactive pour permettre la Rétractation du Firmware ?"
+"Voulez-vous désactiver pour permettre la Rétraction du firmware ?"
 
 #: src/libslic3r/Print.cpp:501
 msgid ""
@@ -16415,8 +16409,8 @@ msgid ""
 "the retraction. This is only supported in recent Marlin."
 msgstr ""
 "Ce réglage expérimental utilise les commandes G10 et G11 pour laisser le "
-"firmware gérer la rétractation. Utilisable seulement par les versions récentes "
-"de Marlin."
+"firmware gérer la rétraction. Supporté seulement par les versions récentes de "
+"Marlin."
 
 #: src/libslic3r/PrintConfig.cpp:2970
 msgid ""
@@ -16556,15 +16550,15 @@ msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:2180
 msgid "This flag enforces a retraction whenever a Z move is done."
-msgstr "Cette option active la rétractation lors d'un déplacement sur l'axe Z."
+msgstr "Cette option active la rétraction lors d'un déplacement sur l'axe Z."
 
 #: src/libslic3r/PrintConfig.cpp:2988
 msgid ""
 "This flag will move the nozzle while retracting to minimize the possible blob "
 "on leaky extruders."
 msgstr ""
-"Cette option déplace la buse lors des rétractations, limitant ainsi "
-"l'apparition d'amas sur les extrudeurs ayant tendance à couler."
+"Cette option déplace la buse lors des rétractions, limitant ainsi l'apparition "
+"d'amas sur les extrudeurs ayant tendance à couler."
 
 #: src/libslic3r/PrintConfig.cpp:2483
 msgid "This G-code will be used as a code for the color change"
@@ -17048,7 +17042,7 @@ msgid ""
 "filament during a tool change (when executing the T code). This time is added "
 "to the total print time by the G-code time estimator."
 msgstr ""
-"Temps nécessaire pour que le Firmware de l'imprimante (ou la Multi Material "
+"Temps nécessaire pour que le firmware de l'imprimante (ou la Multi Material "
 "Unit 2.0) charge un filament au cours d'un changement d'outils (lorsqu'il "
 "exécute le T code). Ce temps est ajouté au temps total d'impression par "
 "l'estimateur de temps du G-code."
@@ -17059,7 +17053,7 @@ msgid ""
 "filament during a tool change (when executing the T code). This time is added "
 "to the total print time by the G-code time estimator."
 msgstr ""
-"Temps nécessaire pour que le Firmware de l'imprimante (ou la Multi Material "
+"Temps nécessaire pour que le firmware de l'imprimante (ou la Multi Material "
 "Unit 2.0) décharge un filament au cours d'un changement d'outils (lorsqu'il "
 "exécute le T code). Ce temps est ajouté au temps total d'impression par "
 "l'estimateur de temps du G-code."
@@ -17333,12 +17327,12 @@ msgstr "Transférer les valeurs de gauche à droite"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:577
 msgid "Translate"
-msgstr "Traduire"
+msgstr "Déplacer"
 
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:744
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:793
 msgid "Translate (relative) [World]"
-msgstr "Translater (relatif) [Monde]"
+msgstr "Déplacer (relatif) [Monde]"
 
 #: src/slic3r/GUI/Mouse3DController.cpp:472
 #: src/slic3r/GUI/Mouse3DController.cpp:493
@@ -17839,7 +17833,7 @@ msgstr "Utiliser un socle"
 
 #: src/slic3r/GUI/Preferences.cpp:319
 msgid "Use perspective camera"
-msgstr "Utiliser l'appareil photo en perspective"
+msgstr "Utilise la vue en perspective"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:25 src/libslic3r/PrintConfig.cpp:340
 msgid "User"
@@ -18218,16 +18212,16 @@ msgid ""
 "the specified amount (the length is measured on raw filament, before it enters "
 "the extruder)."
 msgstr ""
-"Lorsque la rétractation est déclenchée avant un changement d'outil, le filament "
-"est retiré de la longueur indiquée (la longueur est mesurée sur le filament "
-"brut, avant qu'il entre dans l'extrudeur)."
+"Lorsque la rétraction est déclenchée avant un changement d'outil, le filament "
+"est tiré de la longueur indiquée (la longueur est mesurée sur le filament brut, "
+"avant qu'il entre dans l'extrudeur)."
 
 #: src/libslic3r/PrintConfig.cpp:2187
 msgid ""
 "When retraction is triggered, filament is pulled back by the specified amount "
 "(the length is measured on raw filament, before it enters the extruder)."
 msgstr ""
-"Lorsque la rétractation est déclenchée, le filament est tiré en arrière de la "
+"Lorsque la rétraction est déclenchée, le filament est tiré en arrière de la "
 "longueur indiquée (la longueur est mesurée sur le filament brut, avant qu'il "
 "entre dans l'extrudeur)."
 
@@ -18260,17 +18254,16 @@ msgid ""
 "When the retraction is compensated after changing tool, the extruder will push "
 "this additional amount of filament."
 msgstr ""
-"Lorsque la rétractation est compensée après un changement d'outil, l'extrudeur "
-"exprimera cette quantité de filament en plus."
+"Lorsque la rétraction est compensée après un changement d'outil, l'extrudeur "
+"pousse cette quantité supplémentaire de filament."
 
 #: src/libslic3r/PrintConfig.cpp:2231
 msgid ""
 "When the retraction is compensated after the travel move, the extruder will "
 "push this additional amount of filament. This setting is rarely needed."
 msgstr ""
-"Lorsque la rétractation est compensée après un déplacement, l'extruder "
-"exprimera cette quantité de filament en plus. Ce réglage est rarement "
-"nécessaire."
+"Lorsque la rétraction est compensée après un déplacement, l'extruder pousse "
+"cette quantité additionnelle de filament. Ce réglage est rarement nécessaire."
 
 #: src/libslic3r/PrintConfig.cpp:3140
 msgid ""
@@ -18456,8 +18449,8 @@ msgid ""
 "With bowden extruders, it may be wise to do some amount of quick retract before "
 "doing the wipe movement."
 msgstr ""
-"Avec les extrudeurs bowden, il est conseillé d'effectuer une rétractation "
-"rapide avant de réaliser le mouvement de nettoyage."
+"Avec les extrudeurs bowden, il est conseillé d'effectuer une rétraction rapide "
+"avant de réaliser le mouvement de nettoyage."
 
 #: src/libslic3r/PrintConfig.cpp:2316
 msgid ""
@@ -18482,7 +18475,7 @@ msgstr "Avec une enveloppe autour du support"
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:55
 #: src/slic3r/GUI/GUI_ObjectManipulation.cpp:84
 msgid "World coordinates"
-msgstr "Les coordonnées mondiales"
+msgstr "Coordonnées globales"
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:100
 msgid ""
@@ -18792,7 +18785,7 @@ msgid ""
 msgstr ""
 "Vous serez informé de la nouvelle version après le démarrage de la manière "
 "suivante : Tous = version régulière et versions alpha / bêta. Version "
-"officielle uniquement = version régulière"
+"officielle uniquement = version régulière."
 
 #: src/slic3r/GUI/GUI_App.cpp:3108
 msgid "You will not be asked about it again on hyperlinks hovering."
@@ -24228,7 +24221,7 @@ msgstr "Pages"
 #. TRANSLATORS: System cursor name
 #: ../src/propgrid/advprops.cpp:1765
 msgid "Paint Brush"
-msgstr "Brosse à peinture"
+msgstr "Pinceau"
 
 #: ../src/generic/prntdlgg.cpp:602 ../src/generic/prntdlgg.cpp:801
 #: ../src/generic/prntdlgg.cpp:842 ../src/generic/prntdlgg.cpp:855
