@@ -9053,7 +9053,7 @@ msgstr "prix/bouteille"
 
 #: src/libslic3r/PrintConfig.cpp:1074
 msgid "money/kg"
-msgstr "argent/kg"
+msgstr "prix/kg"
 
 #: src/libslic3r/PrintConfig.cpp:729
 msgid "Monotonic"
