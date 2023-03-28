@@ -1460,6 +1460,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("infill_anchor_max", category_path + "fill-pattern");
         optgroup->append_single_option_line("top_fill_pattern", category_path + "top-fill-pattern");
         optgroup->append_single_option_line("bottom_fill_pattern", category_path + "bottom-fill-pattern");
+        optgroup->append_single_option_line("solid_fill_pattern", category_path + "solid-fill-pattern");
 
         optgroup = page->new_optgroup(L("Ironing"));
         category_path = "ironing_177488#";

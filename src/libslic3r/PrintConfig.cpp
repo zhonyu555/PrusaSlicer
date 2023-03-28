@@ -822,16 +822,24 @@ void PrintConfigDef::init_fff_params()
     });
 
     // solid_fill_pattern is an obsolete equivalent to top_fill_pattern/bottom_fill_pattern.
-    def->aliases = { "solid_fill_pattern", "external_fill_pattern" };
+    def->aliases = { "external_fill_pattern" };
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("bottom_fill_pattern", coEnum);
     def->label = L("Bottom fill pattern");
     def->category = L("Infill");
     def->tooltip = L("Fill pattern for bottom infill. This only affects the bottom external visible layer, and not its adjacent solid shells.");
-    def->cli = "bottom-fill-pattern|external-fill-pattern|solid-fill-pattern";
+    def->cli = "bottom-fill-pattern|external-fill-pattern";
     def->enum_def = Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone());
     def->aliases = def_top_fill_pattern->aliases;
+    def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
+
+    def = this->add("solid_fill_pattern", coEnum);
+    def->label = L("Solid fill pattern");
+    def->category = L("Infill");
+    def->tooltip = L("Fill pattern for solid infill. This only affects the invisible top/bottom adjacent solid shells.");
+    def->cli = "solid-fill-pattern";
+    def->enum_def = Slic3r::clonable_ptr<Slic3r::ConfigOptionEnumDef>(def_top_fill_pattern->enum_def->clone());
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
