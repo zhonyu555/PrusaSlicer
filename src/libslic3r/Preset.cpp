@@ -465,7 +465,7 @@ static std::vector<std::string> s_Preset_print_options {
     "extruder_clearance_height", "gcode_comments", "gcode_label_objects", "output_filename_format", "post_process", "gcode_substitutions", "perimeter_extruder",
     "infill_extruder", "solid_infill_extruder", "support_material_extruder", "support_material_interface_extruder",
     "ooze_prevention", "standby_temperature_delta", "interface_shells", "extrusion_width", "first_layer_extrusion_width",
-    "perimeter_extrusion_width", "external_perimeter_extrusion_width", "infill_extrusion_width", "solid_infill_extrusion_width",
+    "perimeter_extrusion_width", "perimeter_extrusion_width_even_layers", "external_perimeter_extrusion_width", "external_perimeter_extrusion_width_even_layers", "infill_extrusion_width", "infill_extrusion_width_even_layers", "solid_infill_extrusion_width", "solid_infill_extrusion_width_even_layers",
     "top_infill_extrusion_width", "support_material_extrusion_width", "infill_overlap", "infill_anchor", "infill_anchor_max", "bridge_flow_ratio",
     "elefant_foot_compensation", "xy_size_compensation", "resolution", "gcode_resolution", "arc_fitting",
     "wipe_tower", "wipe_tower_x", "wipe_tower_y",

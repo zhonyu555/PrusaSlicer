@@ -893,6 +893,17 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
+    def = this->add("external_perimeter_extrusion_width_even_layers", coFloat);
+    def->label = L("External perimeters even layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("External perimeter change on even layers. It overlaps perimeters border and increase interlayer strength. "
+                   "Choose value about ±40-60% of layer height and opposite sign to internal perimeters and soild infill change.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max =  0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("external_perimeter_speed", coFloatOrPercent);
     def->label = L("External perimeters");
     def->category = L("Speed");
@@ -1632,6 +1643,17 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
+    def = this->add("infill_extrusion_width_even_layers", coFloat);
+    def->label = L("Infill even layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("Infill change on even layers. It overlaps perimeters border and increase with interlayer strength. Has meaning only for 100% concentric infill. "
+        "Choose value about ±40-60% of layer height.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max = 0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("infill_first", coBool);
     def->label = L("Infill before perimeters");
     def->tooltip = L("This option will switch the print order of perimeters and infill, making the latter first.");
@@ -2150,6 +2172,17 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
 
+    def = this->add("perimeter_extrusion_width_even_layers", coFloat);
+    def->label = L("Perimeters even layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("Perimeter change on even layers. It overlaps perimeters border and increase with interlayer strength. "
+                   "Choose value about ±40-60% of layer height.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max = 0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("perimeter_speed", coFloat);
     def->label = L("Perimeters");
     def->category = L("Speed");
@@ -2571,6 +2604,17 @@ void PrintConfigDef::init_fff_params()
     def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
+
+    def = this->add("solid_infill_extrusion_width_even_layers", coFloat);
+    def->label = L("Solid infill even layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("Solid infill change on even layers. It overlaps perimeters border and increase with interlayer strength. Could be useful for concentric infill. "
+                   "Choose value about ±40-60% of layer height.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max = 0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("solid_infill_speed", coFloatOrPercent);
     def->label = L("Solid infill");

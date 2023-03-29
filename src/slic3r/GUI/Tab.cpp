@@ -1673,6 +1673,11 @@ void TabPrint::build()
         optgroup->append_single_option_line("solid_infill_extrusion_width");
         optgroup->append_single_option_line("top_infill_extrusion_width");
         optgroup->append_single_option_line("support_material_extrusion_width");
+        optgroup->append_separator();
+        optgroup->append_single_option_line("perimeter_extrusion_width_even_layers");
+        optgroup->append_single_option_line("external_perimeter_extrusion_width_even_layers");
+        optgroup->append_single_option_line("infill_extrusion_width_even_layers");
+        optgroup->append_single_option_line("solid_infill_extrusion_width_even_layers");
 
         optgroup = page->new_optgroup(L("Overlap"));
         optgroup->append_single_option_line("infill_overlap");

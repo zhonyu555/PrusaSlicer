@@ -612,6 +612,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionEnum<InfillPattern>,  top_fill_pattern))
     ((ConfigOptionEnum<InfillPattern>,  bottom_fill_pattern))
     ((ConfigOptionFloatOrPercent,       external_perimeter_extrusion_width))
+    ((ConfigOptionFloat,                external_perimeter_extrusion_width_even_layers))
     ((ConfigOptionFloatOrPercent,       external_perimeter_speed))
     ((ConfigOptionBool,                 enable_dynamic_overhang_speeds))
     ((ConfigOptionFloatOrPercent,       overhang_speed_0))
@@ -633,6 +634,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloatOrPercent,       infill_anchor_max))
     ((ConfigOptionInt,                  infill_extruder))
     ((ConfigOptionFloatOrPercent,       infill_extrusion_width))
+    ((ConfigOptionFloat,                infill_extrusion_width_even_layers))
     ((ConfigOptionInt,                  infill_every_layers))
     ((ConfigOptionFloatOrPercent,       infill_overlap))
     ((ConfigOptionFloat,                infill_speed))
@@ -646,6 +648,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                 overhangs))
     ((ConfigOptionInt,                  perimeter_extruder))
     ((ConfigOptionFloatOrPercent,       perimeter_extrusion_width))
+    ((ConfigOptionFloat,                perimeter_extrusion_width_even_layers))
     ((ConfigOptionFloat,                perimeter_speed))
     // Total number of perimeters.
     ((ConfigOptionInt,                  perimeters))
@@ -653,6 +656,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                solid_infill_below_area))
     ((ConfigOptionInt,                  solid_infill_extruder))
     ((ConfigOptionFloatOrPercent,       solid_infill_extrusion_width))
+    ((ConfigOptionFloat,                solid_infill_extrusion_width_even_layers))
     ((ConfigOptionInt,                  solid_infill_every_layers))
     ((ConfigOptionFloatOrPercent,       solid_infill_speed))
     // Detect thin walls.

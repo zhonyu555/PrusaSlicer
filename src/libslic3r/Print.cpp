@@ -891,6 +891,7 @@ Flow Print::brim_flow() const
     return Flow::new_from_config_width(
         frPerimeter,
 		width,
+        0,
         (float)m_config.nozzle_diameter.get_at(m_print_regions.front()->config().perimeter_extruder-1),
 		(float)this->skirt_first_layer_height());
 }
@@ -911,6 +912,7 @@ Flow Print::skirt_flow() const
     return Flow::new_from_config_width(
         frPerimeter,
 		width,
+        0,
 		(float)m_config.nozzle_diameter.get_at(m_objects.front()->config().support_material_extruder-1),
 		(float)this->skirt_first_layer_height());
 }

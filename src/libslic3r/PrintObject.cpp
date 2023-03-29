@@ -713,6 +713,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "extra_perimeters_on_overhangs"
             || opt_key == "first_layer_extrusion_width"
             || opt_key == "perimeter_extrusion_width"
+            || opt_key == "perimeter_extrusion_width_even_layers"
             || opt_key == "infill_overlap"
             || opt_key == "external_perimeters_first"
             || opt_key == "arc_fitting") {
@@ -816,6 +817,7 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "infill_extruder"
             || opt_key == "solid_infill_extruder"
             || opt_key == "infill_extrusion_width"
+            || opt_key == "infill_extrusion_width_even_layers"
             || opt_key == "bridge_angle") {
             steps.emplace_back(posPrepareInfill);
         } else if (
@@ -841,12 +843,15 @@ bool PrintObject::invalidate_state_by_config_options(
                 is_approx(new_density->value, 0.) || is_approx(new_density->value, 100.))
                 steps.emplace_back(posPerimeters);
             steps.emplace_back(posPrepareInfill);
-        } else if (opt_key == "solid_infill_extrusion_width") {
+        } else if (
+               opt_key == "solid_infill_extrusion_width"
+            || opt_key == "solid_infill_extrusion_width_even_layers") {
             // This value is used for calculating perimeter - infill overlap, thus perimeters need to be recalculated.
             steps.emplace_back(posPerimeters);
             steps.emplace_back(posPrepareInfill);
         } else if (
                opt_key == "external_perimeter_extrusion_width"
+            || opt_key == "external_perimeter_extrusion_width_even_layers"
             || opt_key == "perimeter_extruder"
             || opt_key == "fuzzy_skin"
             || opt_key == "fuzzy_skin_thickness"

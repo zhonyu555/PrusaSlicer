@@ -219,7 +219,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
 {
     bool have_perimeters = config->opt_int("perimeters") > 0;
     for (auto el : { "extra_perimeters","extra_perimeters_on_overhangs", "thin_walls", "overhangs",
-                    "seam_position","staggered_inner_seams", "external_perimeters_first", "external_perimeter_extrusion_width",
+                    "seam_position","staggered_inner_seams", "external_perimeters_first", "external_perimeter_extrusion_width", "external_perimeter_extrusion_width_even_layers",
                     "perimeter_speed", "small_perimeter_speed", "external_perimeter_speed", "enable_dynamic_overhang_speeds"})
         toggle_field(el, have_perimeters);
 
@@ -242,10 +242,10 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     bool has_solid_infill 		 = has_top_solid_infill || has_bottom_solid_infill;
     // solid_infill_extruder uses the same logic as in Print::extruders()
     for (auto el : { "top_fill_pattern", "bottom_fill_pattern", "infill_first", "solid_infill_extruder",
-                    "solid_infill_extrusion_width", "solid_infill_speed" })
+                    "solid_infill_extrusion_width", "solid_infill_extrusion_width_even_layers", "solid_infill_speed" })
         toggle_field(el, has_solid_infill);
 
-    for (auto el : { "fill_angle", "bridge_angle", "infill_extrusion_width",
+    for (auto el : { "fill_angle", "bridge_angle", "infill_extrusion_width", "infill_extrusion_width_even_layers",
                     "infill_speed", "bridge_speed" })
         toggle_field(el, have_infill || has_solid_infill);
 
@@ -305,6 +305,7 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("support_material_synchronize_layers", have_support_soluble);
 
     toggle_field("perimeter_extrusion_width", have_perimeters || have_skirt || have_brim);
+    toggle_field("perimeter_extrusion_width_even_layers", have_perimeters);
     toggle_field("support_material_extruder", have_support_material || have_skirt);
     toggle_field("support_material_speed", have_support_material || have_brim || have_skirt);
 
