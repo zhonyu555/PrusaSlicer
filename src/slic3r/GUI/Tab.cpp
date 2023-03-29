@@ -1620,10 +1620,24 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Extrusion width"));
         optgroup->append_single_option_line("extrusion_width");
         optgroup->append_single_option_line("first_layer_extrusion_width");
-        optgroup->append_single_option_line("perimeter_extrusion_width");
-        optgroup->append_single_option_line("external_perimeter_extrusion_width");
+
+        line = { "Perimeters", "" };
+        line.append_option(optgroup->get_option("perimeter_extrusion_width"));
+        line.append_option(optgroup->get_option("perimeter_extrusion_width_odd"));
+        optgroup->append_line(line);
+
+        line = { "External perimeters", "" };
+        line.append_option(optgroup->get_option("external_perimeter_extrusion_width"));
+        line.append_option(optgroup->get_option("external_perimeter_extrusion_width_odd"));
+        optgroup->append_line(line);
+
         optgroup->append_single_option_line("infill_extrusion_width");
-        optgroup->append_single_option_line("solid_infill_extrusion_width");
+
+        line = { "Solid infill", "" };
+        line.append_option(optgroup->get_option("solid_infill_extrusion_width"));
+        line.append_option(optgroup->get_option("solid_infill_extrusion_width_odd"));
+        optgroup->append_line(line);
+
         optgroup->append_single_option_line("top_infill_extrusion_width");
         optgroup->append_single_option_line("support_material_extrusion_width");
 

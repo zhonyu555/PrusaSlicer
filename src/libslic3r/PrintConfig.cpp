@@ -835,7 +835,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionEnum<InfillPattern>(ipMonotonic));
 
     def = this->add("external_perimeter_extrusion_width", coFloatOrPercent);
-    def->label = L("External perimeters");
+    def->label = L("");
     def->category = L("Extrusion Width");
     def->tooltip = L("Set this to a non-zero value to set a manual extrusion width for external perimeters. "
                    "If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. "
@@ -845,6 +845,16 @@ void PrintConfigDef::init_fff_params()
     def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
+
+    def = this->add("external_perimeter_extrusion_width_odd", coFloat);
+    def->label = L("Odd layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("External perimeter change (+/-) on odd layers. It overlaps perimeters border and help with interlayer strength.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max =  0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("external_perimeter_speed", coFloatOrPercent);
     def->label = L("External perimeters");
@@ -2041,7 +2051,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionInt(1));
 
     def = this->add("perimeter_extrusion_width", coFloatOrPercent);
-    def->label = L("Perimeters");
+    def->label = L("");
     def->category = L("Extrusion Width");
     def->tooltip = L("Set this to a non-zero value to set a manual extrusion width for perimeters. "
                    "You may want to use thinner extrudates to get more accurate surfaces. "
@@ -2053,6 +2063,17 @@ void PrintConfigDef::init_fff_params()
     def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
+
+    def = this->add("perimeter_extrusion_width_odd", coFloat);
+    def->label = L("Odd layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("Perimeter change on odd layers (+/-). It overlaps perimeters border and help with interlayer strength. "
+                   "You may set it to 'external perimeters delta/number of internal perimeters' to keep vertical shell thickness constant.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max = 0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("perimeter_speed", coFloat);
     def->label = L("Perimeters");
@@ -2430,7 +2451,7 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionInt(0));
 
     def = this->add("solid_infill_extrusion_width", coFloatOrPercent);
-    def->label = L("Solid infill");
+    def->label = L("");
     def->category = L("Extrusion Width");
     def->tooltip = L("Set this to a non-zero value to set a manual extrusion width for infill for solid surfaces. "
                    "If left zero, default extrusion width will be used if set, otherwise 1.125 x nozzle diameter will be used. "
@@ -2440,6 +2461,16 @@ void PrintConfigDef::init_fff_params()
     def->max_literal = 50;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloatOrPercent(0, false));
+
+    def = this->add("solid_infill_extrusion_width_odd", coFloat);
+    def->label = L("Odd layers delta");
+    def->category = L("Extrusion Width");
+    def->tooltip = L("Solid infill change on odd layers (+/-). Could be useful for infill going the same direction each layer, like concentric or Acrhimedean chords.");
+    def->sidetext = L("mm");
+    def->min = -0.3f;
+    def->max = 0.3f;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("solid_infill_speed", coFloatOrPercent);
     def->label = L("Solid infill");

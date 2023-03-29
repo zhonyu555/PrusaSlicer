@@ -574,6 +574,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionEnum<InfillPattern>,  top_fill_pattern))
     ((ConfigOptionEnum<InfillPattern>,  bottom_fill_pattern))
     ((ConfigOptionFloatOrPercent,       external_perimeter_extrusion_width))
+    ((ConfigOptionFloat,                external_perimeter_extrusion_width_odd))
     ((ConfigOptionFloatOrPercent,       external_perimeter_speed))
     ((ConfigOptionBool,                 enable_dynamic_overhang_speeds))
     ((ConfigOptionFloatOrPercent,       overhang_speed_0))
@@ -608,6 +609,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                 overhangs))
     ((ConfigOptionInt,                  perimeter_extruder))
     ((ConfigOptionFloatOrPercent,       perimeter_extrusion_width))
+    ((ConfigOptionFloat,                perimeter_extrusion_width_odd))
     ((ConfigOptionFloat,                perimeter_speed))
     // Total number of perimeters.
     ((ConfigOptionInt,                  perimeters))
@@ -615,6 +617,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                solid_infill_below_area))
     ((ConfigOptionInt,                  solid_infill_extruder))
     ((ConfigOptionFloatOrPercent,       solid_infill_extrusion_width))
+    ((ConfigOptionFloat,                solid_infill_extrusion_width_odd))
     ((ConfigOptionInt,                  solid_infill_every_layers))
     ((ConfigOptionFloatOrPercent,       solid_infill_speed))
     // Detect thin walls.

@@ -18,22 +18,26 @@ unsigned int PrintRegion::extruder(FlowRole role) const
     return extruder;
 }
 
-Flow PrintRegion::flow(const PrintObject &object, FlowRole role, double layer_height, bool first_layer) const
+Flow PrintRegion::flow(const PrintObject &object, FlowRole role, double layer_height, int layer_id) const
 {
     const PrintConfig          &print_config = object.print()->config();
     ConfigOptionFloatOrPercent  config_width;
+    float width_delta = 0;
     // Get extrusion width from configuration.
     // (might be an absolute value, or a percent value, or zero for auto)
-    if (first_layer && print_config.first_layer_extrusion_width.value > 0) {
+    if (layer_id == 0 && print_config.first_layer_extrusion_width.value > 0) {
         config_width = print_config.first_layer_extrusion_width;
     } else if (role == frExternalPerimeter) {
         config_width = m_config.external_perimeter_extrusion_width;
+        width_delta  = m_config.external_perimeter_extrusion_width_odd;
     } else if (role == frPerimeter) {
         config_width = m_config.perimeter_extrusion_width;
+        width_delta  = m_config.perimeter_extrusion_width_odd;
     } else if (role == frInfill) {
         config_width = m_config.infill_extrusion_width;
     } else if (role == frSolidInfill) {
         config_width = m_config.solid_infill_extrusion_width;
+        width_delta  = m_config.solid_infill_extrusion_width_odd;
     } else if (role == frTopSolidInfill) {
         config_width = m_config.top_infill_extrusion_width;
     } else {
@@ -42,11 +46,15 @@ Flow PrintRegion::flow(const PrintObject &object, FlowRole role, double layer_he
 
     if (config_width.value == 0)
         config_width = object.config().extrusion_width;
-    
+
+    //even layer, reset delta
+    if (layer_id == 0 || layer_id % 2 == 1)
+        width_delta = 0;
+
     // Get the configured nozzle_diameter for the extruder associated to the flow role requested.
     // Here this->extruder(role) - 1 may underflow to MAX_INT, but then the get_at() will follback to zero'th element, so everything is all right.
     auto nozzle_diameter = float(print_config.nozzle_diameter.get_at(this->extruder(role) - 1));
-    return Flow::new_from_config_width(role, config_width, nozzle_diameter, float(layer_height));
+    return Flow::new_from_config_width(role, config_width, width_delta, nozzle_diameter, float(layer_height));
 }
 
 coordf_t PrintRegion::nozzle_dmr_avg(const PrintConfig &print_config) const
