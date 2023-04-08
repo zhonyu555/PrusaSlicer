@@ -2750,6 +2750,7 @@ void PrintConfigDef::init_fff_params()
     def->set_enum_values(ConfigOptionDef::GUIType::f_enum_open, {
         { "0",      L("0 (soluble)") },
         { "0.1",    L("0.1 (detachable)") },
+        { "0.15",   L("0.15 (detachable)") },
         { "0.2",    L("0.2 (detachable)") }
     });
     def->mode = comAdvanced;
