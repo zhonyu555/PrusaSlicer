@@ -1072,7 +1072,7 @@ void Print::_make_skirt()
     // TODO: use each extruder's own flow
     double first_layer_height = this->skirt_first_layer_height();
     Flow   flow = this->skirt_flow();
-    float  spacing = flow.spacing();
+    float  spacing = flow.spacing() + m_config.skirt_distance.value;
     double mm3_per_mm = flow.mm3_per_mm();
     
     std::vector<size_t> extruders;
