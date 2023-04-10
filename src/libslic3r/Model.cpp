@@ -889,7 +889,6 @@ const BoundingBoxf3& ModelObject::bounding_box_exact() const
     if (! m_bounding_box_exact_valid) {
         m_bounding_box_exact_valid = true;
         m_min_max_z_valid = true;
-        BoundingBoxf3 raw_bbox = this->raw_mesh_bounding_box();
         m_bounding_box_exact.reset();
         for (size_t i = 0; i < this->instances.size(); ++ i)
             m_bounding_box_exact.merge(this->instance_bounding_box(i));
@@ -1031,11 +1030,7 @@ const BoundingBoxf3& ModelObject::raw_bounding_box() const
         if (this->instances.empty())
             throw Slic3r::InvalidArgument("Can't call raw_bounding_box() with no instances");
 
-#if ENABLE_WORLD_COORDINATE
         const Transform3d inst_matrix = this->instances.front()->get_transformation().get_matrix_no_offset();
-#else
-        const Transform3d& inst_matrix = this->instances.front()->get_transformation().get_matrix(true);
-#endif // ENABLE_WORLD_COORDINATE
         for (const ModelVolume *v : this->volumes)
             if (v->is_model_part())
                 m_raw_bounding_box.merge(v->mesh().transformed_bounding_box(inst_matrix * v->get_matrix()));
@@ -1047,14 +1042,10 @@ const BoundingBoxf3& ModelObject::raw_bounding_box() const
 BoundingBoxf3 ModelObject::instance_bounding_box(size_t instance_idx, bool dont_translate) const
 {
     BoundingBoxf3 bb;
-#if ENABLE_WORLD_COORDINATE
     const Transform3d inst_matrix = dont_translate ?
         this->instances[instance_idx]->get_transformation().get_matrix_no_offset() :
         this->instances[instance_idx]->get_transformation().get_matrix();
 
-#else
-    const Transform3d& inst_matrix = this->instances[instance_idx]->get_transformation().get_matrix(dont_translate);
-#endif // ENABLE_WORLD_COORDINATE
     for (ModelVolume *v : this->volumes) {
         if (v->is_model_part())
             bb.merge(v->mesh().transformed_bounding_box(inst_matrix * v->get_matrix()));
@@ -1309,7 +1300,7 @@ indexed_triangle_set ModelObject::get_connector_mesh(CutConnectorAttributes conn
     if (connector_attributes.style == CutConnectorStyle::Prism)
         connector_mesh = its_make_cylinder(1.0, 1.0, (2 * PI / sectorCount));
     else if (connector_attributes.type == CutConnectorType::Plug)
-        connector_mesh = its_make_cone(1.0, 1.0, (2 * PI / sectorCount));
+        connector_mesh = its_make_frustum(1.0, 1.0, (2 * PI / sectorCount));
     else
         connector_mesh = its_make_frustum_dowel(1.0, 1.0, sectorCount);
 
@@ -1396,6 +1387,25 @@ void ModelObject::clone_for_cut(ModelObject** obj)
     (*obj)->sla_points_status = sla::PointsStatus::NoPoints;
     (*obj)->clear_volumes();
     (*obj)->input_file.clear();
+}
+
+bool ModelVolume::is_the_only_one_part() const 
+{
+    if (m_type != ModelVolumeType::MODEL_PART)
+        return false;
+    if (object == nullptr)
+        return false;
+    for (const ModelVolume *v : object->volumes) {
+        if (v == nullptr)
+            continue;
+        // is this volume?
+        if (v->id() == this->id())
+            continue;
+        // exist another model part in object?
+        if (v->type() == ModelVolumeType::MODEL_PART)
+            return false;
+    }
+    return true;
 }
 
 void ModelVolume::reset_extra_facets()
@@ -1501,7 +1511,7 @@ void ModelObject::process_connector_cut(ModelVolume* volume, const Transform3d& 
 
         // Perform cut
         TriangleMesh upper_mesh, lower_mesh;
-        process_volume_cut(volume, instance_matrix, cut_matrix, attributes, upper_mesh, lower_mesh);
+        process_volume_cut(volume, Transform3d::Identity(), cut_matrix, attributes, upper_mesh, lower_mesh);
 
         // add small Z offset to better preview
         upper_mesh.translate((-0.05 * Vec3d::UnitZ()).cast<float>());
@@ -1670,17 +1680,7 @@ ModelObjectPtrs ModelObject::cut(size_t instance, const Transform3d& cut_matrix,
     // in the transformation matrix and not applied to the mesh transform.
 
     // const auto instance_matrix = instances[instance]->get_matrix(true);
-#if ENABLE_WORLD_COORDINATE
     const auto instance_matrix = instances[instance]->get_transformation().get_matrix_no_offset();
-#else
-    const auto instance_matrix = assemble_transform(
-        Vec3d::Zero(),  // don't apply offset
-        instances[instance]->get_rotation(),
-        instances[instance]->get_scaling_factor(),
-        instances[instance]->get_mirror()
-    );
-#endif // ENABLE_WORLD_COORDINATE
-
     const Transformation cut_transformation = Transformation(cut_matrix);
     const Transform3d inverse_cut_matrix    = cut_transformation.get_rotation_matrix().inverse() * translation_transform(-1. * cut_transformation.get_offset());
 
@@ -1822,11 +1822,7 @@ void ModelObject::split(ModelObjectPtrs* new_objects)
                 new_vol->config.set_key_value("extruder", new ConfigOptionInt(0));
 
             for (ModelInstance* model_instance : new_object->instances) {
-#if ENABLE_WORLD_COORDINATE
-                Vec3d shift = model_instance->get_transformation().get_matrix_no_offset() * new_vol->get_offset();
-#else
-                Vec3d shift = model_instance->get_transformation().get_matrix(true) * new_vol->get_offset();
-#endif // ENABLE_WORLD_COORDINATE
+                const Vec3d shift = model_instance->get_transformation().get_matrix_no_offset() * new_vol->get_offset();
                 model_instance->set_offset(model_instance->get_offset() + shift);
             }
 
@@ -1867,13 +1863,7 @@ void ModelObject::bake_xy_rotation_into_meshes(size_t instance_idx)
 {
     assert(instance_idx < this->instances.size());
 
-	const Geometry::Transformation reference_trafo = this->instances[instance_idx]->get_transformation();
-#if !ENABLE_WORLD_COORDINATE
-    if (Geometry::is_rotation_ninety_degrees(reference_trafo.get_rotation()))
-        // nothing to do, scaling in the world coordinate space is possible in the representation of Geometry::Transformation.
-        return;
-#endif // !ENABLE_WORLD_COORDINATE
-
+    const Geometry::Transformation reference_trafo = this->instances[instance_idx]->get_transformation();
     bool   left_handed        = reference_trafo.is_left_handed();
     bool   has_mirrorring     = ! reference_trafo.get_mirror().isApprox(Vec3d(1., 1., 1.));
     bool   uniform_scaling    = std::abs(reference_trafo.get_scaling_factor().x() - reference_trafo.get_scaling_factor().y()) < EPSILON &&
@@ -1890,7 +1880,6 @@ void ModelObject::bake_xy_rotation_into_meshes(size_t instance_idx)
 
     // Adjust the meshes.
     // Transformation to be applied to the meshes.
-#if ENABLE_WORLD_COORDINATE
     Geometry::Transformation reference_trafo_mod = reference_trafo;
     reference_trafo_mod.reset_offset();
     if (uniform_scaling)
@@ -1898,9 +1887,6 @@ void ModelObject::bake_xy_rotation_into_meshes(size_t instance_idx)
     if (!has_mirrorring)
         reference_trafo_mod.reset_mirror();
     Eigen::Matrix3d mesh_trafo_3x3 = reference_trafo_mod.get_matrix().matrix().block<3, 3>(0, 0);
-#else
-    Eigen::Matrix3d mesh_trafo_3x3           = reference_trafo.get_matrix(true, false, uniform_scaling, ! has_mirrorring).matrix().block<3, 3>(0, 0);
-#endif // ENABLE_WORLD_COORDINATE
     Transform3d     volume_offset_correction = this->instances[instance_idx]->get_transformation().get_matrix().inverse() * reference_trafo.get_matrix();
     for (ModelVolume *model_volume : this->volumes) {
         const Geometry::Transformation volume_trafo = model_volume->get_transformation();
@@ -1910,7 +1896,6 @@ void ModelObject::bake_xy_rotation_into_meshes(size_t instance_idx)
                                            std::abs(volume_trafo.get_scaling_factor().x() - volume_trafo.get_scaling_factor().z()) < EPSILON;
         double volume_new_scaling_factor = volume_uniform_scaling ? volume_trafo.get_scaling_factor().x() : 1.;
         // Transform the mesh.
-#if ENABLE_WORLD_COORDINATE
         Geometry::Transformation volume_trafo_mod = volume_trafo;
         volume_trafo_mod.reset_offset();
         if (volume_uniform_scaling)
@@ -1918,11 +1903,8 @@ void ModelObject::bake_xy_rotation_into_meshes(size_t instance_idx)
         if (!volume_has_mirrorring)
             volume_trafo_mod.reset_mirror();
         Eigen::Matrix3d volume_trafo_3x3 = volume_trafo_mod.get_matrix().matrix().block<3, 3>(0, 0);
-#else
-        Matrix3d volume_trafo_3x3 = volume_trafo.get_matrix(true, false, volume_uniform_scaling, !volume_has_mirrorring).matrix().block<3, 3>(0, 0);
-#endif // ENABLE_WORLD_COORDINATE
         // Following method creates a new shared_ptr<TriangleMesh>
-		model_volume->transform_this_mesh(mesh_trafo_3x3 * volume_trafo_3x3, left_handed != volume_left_handed);
+        model_volume->transform_this_mesh(mesh_trafo_3x3 * volume_trafo_3x3, left_handed != volume_left_handed);
         // Reset the rotation, scaling and mirroring.
         model_volume->set_rotation(Vec3d(0., 0., 0.));
         model_volume->set_scaling_factor(Vec3d(volume_new_scaling_factor, volume_new_scaling_factor, volume_new_scaling_factor));
@@ -1941,11 +1923,7 @@ double ModelObject::get_instance_min_z(size_t instance_idx) const
     double min_z = DBL_MAX;
 
     const ModelInstance* inst = instances[instance_idx];
-#if ENABLE_WORLD_COORDINATE
     const Transform3d mi = inst->get_matrix_no_offset();
-#else
-    const Transform3d& mi = inst->get_matrix(true);
-#endif // ENABLE_WORLD_COORDINATE
 
     for (const ModelVolume* v : volumes) {
         if (!v->is_model_part())
@@ -1966,11 +1944,7 @@ double ModelObject::get_instance_max_z(size_t instance_idx) const
     double max_z = -DBL_MAX;
 
     const ModelInstance* inst = instances[instance_idx];
-#if ENABLE_WORLD_COORDINATE
     const Transform3d mi = inst->get_matrix_no_offset();
-#else
-    const Transform3d& mi = inst->get_matrix(true);
-#endif // ENABLE_WORLD_COORDINATE
 
     for (const ModelVolume* v : volumes) {
         if (!v->is_model_part())
@@ -2410,29 +2384,17 @@ void ModelVolume::convert_from_meters()
 
 void ModelInstance::transform_mesh(TriangleMesh* mesh, bool dont_translate) const
 {
-#if ENABLE_WORLD_COORDINATE
     mesh->transform(dont_translate ? get_matrix_no_offset() : get_matrix());
-#else
-    mesh->transform(get_matrix(dont_translate));
-#endif // ENABLE_WORLD_COORDINATE
 }
 
 BoundingBoxf3 ModelInstance::transform_bounding_box(const BoundingBoxf3 &bbox, bool dont_translate) const
 {
-#if ENABLE_WORLD_COORDINATE
     return bbox.transformed(dont_translate ? get_matrix_no_offset() : get_matrix());
-#else
-    return bbox.transformed(get_matrix(dont_translate));
-#endif // ENABLE_WORLD_COORDINATE
 }
 
 Vec3d ModelInstance::transform_vector(const Vec3d& v, bool dont_translate) const
 {
-#if ENABLE_WORLD_COORDINATE
     return dont_translate ? get_matrix_no_offset() * v : get_matrix() * v;
-#else
-    return get_matrix(dont_translate) * v;
-#endif // ENABLE_WORLD_COORDINATE
 }
 
 void ModelInstance::transform_polygon(Polygon* polygon) const
