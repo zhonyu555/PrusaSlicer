@@ -5997,7 +5997,7 @@ msgstr ""
 
 #: src/slic3r/GUI/GUI_Factories.cpp:471
 msgid "Gallery"
-msgstr "Gallerie"
+msgstr "Galerie"
 
 #: src/slic3r/GUI/GUI_Preview.cpp:247 src/libslic3r/ExtrusionEntity.cpp:338
 #: src/libslic3r/ExtrusionEntity.cpp:368 src/libslic3r/PrintConfig.cpp:1325
