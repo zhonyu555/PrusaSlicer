@@ -35,6 +35,7 @@ void midslice_zs(const indexed_triangle_set &mesh,
     float              layerHeightMax = 0;
 
     for (auto i = 0; i < n_zs - 1; i++) {
+        // This may be a bit inaccurate if layer heights vary, but will still be an improvement.
         candidate_zs[i] = (zs[i + 1] + zs[i]) / 2;
         layerHeight[i]  = zs[i + 1] - zs[i];
         layerHeightMax  = std::max(layerHeight[i], layerHeightMax);
@@ -45,7 +46,7 @@ void midslice_zs(const indexed_triangle_set &mesh,
     upwrd_mididx->assign(n_zs, -1);
     dnwrd_mididx->assign(n_zs, -1);
 
-    float nDia = 1.0; // Cooficient to avoid cutting layers with too vertical triangles (see below)
+    float nDia = 1.0; // Cooficient to avoid cutting expolys with too vertical triangles (see below)
     // With nozzle_diameter = 0.4 and layer_height = 0.25
     // nDia = 1.5 results in slopes below 22.5 degrees; nDia = 1 results in slopes under 32 degrees
     // nDia = 0.7 - 42 degrees; nDia = 0.5 51.4 degrees
@@ -66,19 +67,19 @@ void midslice_zs(const indexed_triangle_set &mesh,
 
          int start = std::lower_bound(candidate_zs.begin(), candidate_zs.end(), z_min - eps) - candidate_zs.begin();
 
-         for (auto i = start; i < candidate_zs.size() && candidate_zs[i] < z_max + eps; i++) {
+         for (auto cc = start; cc < candidate_zs.size() && candidate_zs[cc] < z_max + eps; cc++) {
             // Ignore facets that are too vertical to fit nDia nozzles at layer height
-            if (nozzle_diameter * sqrt(1 - norm[2] * norm[2]) * nDia < fabs(norm[2]) * layerHeight[i]) {
+            if (nozzle_diameter * sqrt(1 - norm[2] * norm[2]) * nDia < fabs(norm[2]) * layerHeight[cc]) {
                 if (norm[2] > 0)
-                    upwrd_mididx->at(i) = i;
+                    upwrd_mididx->at(cc) = cc;
                 else
-                    dnwrd_mididx->at(i) = i;
+                    dnwrd_mididx->at(cc) = cc;
             }
         }
     }
 
     if (std::all_of(upwrd_mididx->begin(), upwrd_mididx->end(), [](int idx) { return idx == -1; }) &&
-        std::all_of(dnwrd_mididx->begin(), dnwrd_mididx->end(), [](int idx) { return idx = -1; }))
+        std::all_of(dnwrd_mididx->begin(), dnwrd_mididx->end(), [](int idx) { return idx == -1; }))
         return;
 
     // Retrn mid_zs which will contribute to z-dithering
@@ -93,15 +94,17 @@ void midslice_zs(const indexed_triangle_set &mesh,
     return;
 }
 
-std::vector<ExPolygons5> apply_z_dither(const std::vector<ExPolygons> &layers,
-                                        const std::vector<ExPolygons> &layers_mid,
-                                        const std::vector<int> &       upwrd_mididx,
-                                        const std::vector<int> &       dnwrd_mididx)
+std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys,
+                                       std::vector<ExPolygons> &expolys_mid,
+                                       const std::vector<int> & upwrd_mididx,
+                                       const std::vector<int> & dnwrd_mididx,
+                                       std::vector<SubLayers> * sublayers)
 {
-    std::vector<ExPolygons5> layers5;
-    layers5.resize(layers.size());
+    sublayers->clear();
+    sublayers->resize(expolys.size());
+    std::vector<ExPolygons> out(expolys.size());
 
-    for (auto ll = 0; ll < layers.size(); ll++) {
+    for (auto ll = 0; ll < expolys.size(); ll++) {
         // idx0 - bottom of layer, idx1 - top of layer
         int  upwrd_idx0  = ll > 0 ? upwrd_mididx[ll - 1] : -1;
         int  dnwrd_idx0  = ll > 0 ? dnwrd_mididx[ll - 1] : -1;
@@ -111,56 +114,73 @@ std::vector<ExPolygons5> apply_z_dither(const std::vector<ExPolygons> &layers,
         auto useMidCut = [](int idx) { return idx != -1; };
 
         if (!useMidCut(upwrd_idx0) && !useMidCut(dnwrd_idx0) && !useMidCut(upwrd_idx1) && !useMidCut(dnwrd_idx1)) {
-            layers5[ll] = ExPolygons5(ExPolygons(layers[ll]));
+            out[ll] = std::move(expolys[ll]);
+            continue;
         } else {
-            layers5[ll] = ExPolygons5();
+            ExPolygons bottom, middleUp, middleDn, top;
+
             if (useMidCut(upwrd_idx0) || useMidCut(upwrd_idx1)) {
-                layers5[ll].ditherUp[0] = std::move(
-                    diff_ex(useMidCut(upwrd_idx0) ? layers_mid[upwrd_idx0] : layers[ll],
-                            useMidCut(upwrd_idx1) ? layers_mid[upwrd_idx1] : layers[ll]));
+                bottom = std::move(
+                    diff_ex(useMidCut(upwrd_idx0) ? expolys_mid[upwrd_idx0] : expolys[ll],
+                            useMidCut(upwrd_idx1) ? expolys_mid[upwrd_idx1] : expolys[ll]));
             }
             if (useMidCut(upwrd_idx1)) {
-                layers5[ll].ditherUp[1] = std::move(diff_ex(layers[ll], layers_mid[upwrd_idx1]));
+                middleUp = std::move(diff_ex(expolys[ll], expolys_mid[upwrd_idx1]));
             }
 
             if (useMidCut(dnwrd_idx0) || useMidCut(dnwrd_idx1)) {
-                layers5[ll].ditherDn[0] = std::move(
-                    diff_ex(useMidCut(dnwrd_idx1) ? layers_mid[dnwrd_idx1] : layers[ll],
-                            useMidCut(dnwrd_idx0) ? layers_mid[dnwrd_idx0] : layers[ll]));
+                top = std::move(
+                    diff_ex(useMidCut(dnwrd_idx1) ? expolys_mid[dnwrd_idx1] : expolys[ll],
+                            useMidCut(dnwrd_idx0) ? expolys_mid[dnwrd_idx0] : expolys[ll]));
             }
             if (useMidCut(dnwrd_idx0)) {
-                layers5[ll].ditherDn[1] = std::move(diff_ex(layers[ll], layers_mid[dnwrd_idx0]));
+                middleDn = std::move(diff_ex(expolys[ll], expolys_mid[dnwrd_idx0]));
             }
 
+            ExPolygons whole;
             if (useMidCut(upwrd_idx1) && useMidCut(dnwrd_idx0))
-                layers5[ll].whole = std::move(intersection_ex(layers_mid[dnwrd_idx0], layers_mid[upwrd_idx1]));
+                whole = std::move(intersection_ex(expolys_mid[dnwrd_idx0], expolys_mid[upwrd_idx1]));
             else if (useMidCut(upwrd_idx1))
-                layers5[ll].whole = std::move(intersection_ex(layers[ll], layers_mid[upwrd_idx1]));
+                whole = std::move(intersection_ex(expolys[ll], expolys_mid[upwrd_idx1]));
             else if (useMidCut(dnwrd_idx0))
-                layers5[ll].whole = std::move(intersection_ex(layers[ll], layers_mid[dnwrd_idx0]));
-            else
-                layers5[ll].whole = ExPolygons(layers[ll]);
+                whole = std::move(intersection_ex(expolys[ll], expolys_mid[dnwrd_idx0]));
+            else {
+                out[ll] = std::move(expolys[ll]);
+                continue;
+            }
+            out[ll] = std::move(whole);
+            if (bottom.empty() != middleUp.empty() || middleDn.empty() != top.empty()) {
+                BOOST_LOG_TRIVIAL(error)
+                    << "z-dithering: internal error";
+            } else {
+                sublayers->at(ll).bottom_ = std::move(bottom);
+                sublayers->at(ll).halfUp_ = std::move(middleUp);
+                sublayers->at(ll).halfDn_ = std::move(middleDn);
+                sublayers->at(ll).top_    = std::move(top);
+            }
         }
     }
-    return layers5;
+    return out;
 }
-std::vector<ExPolygons5> z_dither(const indexed_triangle_set &   mesh,
-                                  const std::vector<float> &     zs,
-                                  const MeshSlicingParamsEx &    params,
-                                  const std::vector<ExPolygons> &layers,
-                                  const std::function<void()> &  throw_on_cancel_callback)
+
+
+std::vector<ExPolygons> z_dither(const indexed_triangle_set &mesh,
+                                 const std::vector<float> &zs,
+                                 const MeshSlicingParamsEx &params,
+                                 std::vector<ExPolygons> &    expolys,
+                                 std::vector<SubLayers> *     sublayers,
+                                 const std::function<void()> &throw_on_cancel_callback)
 {
     std::vector<float> mid_zs;
     std::vector<int>   upwrd_mididx;
     std::vector<int>   dnwrd_mididx;
     midslice_zs(mesh, zs, params.trafo, params.nozzle_diameter, &mid_zs, &upwrd_mididx, &dnwrd_mididx);
     if (!mid_zs.empty()) {
-        std::vector<ExPolygons> layers_mid = slice_mesh_ex(mesh, mid_zs, params, throw_on_cancel_callback);
-        return apply_z_dither(layers, layers_mid, upwrd_mididx, dnwrd_mididx);
+        std::vector<ExPolygons> expolys_mid = slice_mesh_ex(mesh, mid_zs, params, throw_on_cancel_callback);
+        return apply_z_dither(expolys, expolys_mid, upwrd_mididx, dnwrd_mididx, sublayers);
     } else {
-        std::vector<ExPolygons5> layers5;
-        for (auto i = 0; i < layers.size(); i++) { layers5.push_back(ExPolygons5((layers[i]))); };
-        return layers5;
+        *sublayers = std::vector<SubLayers>(expolys.size());
+        return expolys;
     }
 }
 
