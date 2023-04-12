@@ -33,6 +33,7 @@ class PrintHostQueueDialog;
 class Plater;
 class MainFrame;
 class PreferencesDialog;
+class GalleryDialog;
 
 enum QuickSlice
 {
@@ -106,6 +107,7 @@ class MainFrame : public DPIFrame
     bool can_delete() const;
     bool can_delete_all() const;
     bool can_reslice() const;
+    void bind_diff_dialog();
 
     // MenuBar items changeable in respect to printer technology 
     enum MenuItems
@@ -137,15 +139,17 @@ protected:
     virtual void on_sys_color_changed() override;
 
 public:
-    MainFrame();
+    MainFrame(const int font_point_size);
     ~MainFrame() = default;
 
     void update_layout();
+    void update_mode_markers();
 
 	// Called when closing the application and when switching the application language.
 	void 		shutdown();
 
     Plater*     plater() { return m_plater; }
+    GalleryDialog* gallery_dialog();
 
     void        update_title();
 
@@ -207,6 +211,7 @@ public:
     PreferencesDialog*    preferences_dialog { nullptr };
     PrintHostQueueDialog* m_printhost_queue_dlg;
 //    std::shared_ptr<ProgressStatusBar>  m_statusbar;
+    GalleryDialog*        m_gallery_dialog{ nullptr };
 
 #ifdef __APPLE__
     std::unique_ptr<wxTaskBarIcon> m_taskbar_icon;

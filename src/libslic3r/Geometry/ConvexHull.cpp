@@ -116,6 +116,18 @@ Polygon convex_hull(const ExPolygons &expolygons)
     return convex_hull(pp);
 }
 
+Polygon convex_hulll(const Polylines &polylines)
+{
+    Points pp;
+    size_t sz = 0;
+    for (const auto &polyline : polylines)
+        sz += polyline.points.size();
+    pp.reserve(sz);
+    for (const auto &polyline : polylines)
+        pp.insert(pp.end(), polyline.points.begin(), polyline.points.end());
+    return convex_hull(pp);
+}
+
 namespace rotcalip {
 
 using int256_t = boost::multiprecision::int256_t;
@@ -386,7 +398,7 @@ bool inside_convex_polygon(const std::pair<std::vector<Vec2d>, std::vector<Vec2d
         // At min x.
         assert(pt.x() == it_bottom->x());
         assert(pt.x() == it_top->x());
-        assert(it_bottom->y() <= pt.y() <= it_top->y());
+        assert(it_bottom->y() <= pt.y() && pt.y() <= it_top->y());
         return pt.y() >= it_bottom->y() && pt.y() <= it_top->y();
     }
 

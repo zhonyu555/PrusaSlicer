@@ -84,6 +84,7 @@ public:
     void update_reslice_btn_tooltip() const;
     void msw_rescale();
     void sys_color_changed();
+    void update_mode_markers();
     void search();
     void jump_to_option(size_t selected);
     void jump_to_option(const std::string& opt_key, Preset::Type type, const std::wstring& category);
@@ -151,6 +152,8 @@ public:
     void render_project_state_debug_window() const;
 #endif // ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
 
+    bool is_project_temp() const;
+
     Sidebar& sidebar();
     const Model& model() const;
     Model& model();
@@ -163,6 +166,7 @@ public:
     void load_project();
     void load_project(const wxString& filename);
     void add_model(bool imperial_units = false);
+    void import_zip_archive();
     void import_sl1_archive();
     void extract_config_from_project();
     void load_gcode();
@@ -174,8 +178,10 @@ public:
     // To be called when providing a list of files to the GUI slic3r on command line.
     std::vector<size_t> load_files(const std::vector<std::string>& input_files, bool load_model = true, bool load_config = true, bool imperial_units = false);
     // to be called on drag and drop
-    bool load_files(const wxArrayString& filenames);
+    bool load_files(const wxArrayString& filenames, bool delete_after_load = false);
     void check_selected_presets_visibility(PrinterTechnology loaded_printer_technology);
+
+    bool preview_zip_archive(const boost::filesystem::path& input_file);
 
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 
@@ -225,10 +231,8 @@ public:
     bool are_view3D_labels_shown() const;
     void show_view3D_labels(bool show);
 
-#if ENABLE_PREVIEW_LAYOUT
     bool is_legend_shown() const;
     void show_legend(bool show);
-#endif // ENABLE_PREVIEW_LAYOUT
 
     bool is_sidebar_collapsed() const;
     void collapse_sidebar(bool show);
@@ -244,18 +248,18 @@ public:
     void remove(size_t obj_idx);
     void reset();
     void reset_with_confirm();
-    void delete_object_from_model(size_t obj_idx);
+    bool delete_object_from_model(size_t obj_idx);
     void remove_selected();
-    void increase_instances(size_t num = 1);
-    void decrease_instances(size_t num = 1);
-    void set_number_of_copies(/*size_t num*/);
+    void increase_instances(size_t num = 1, int obj_idx = -1);
+    void decrease_instances(size_t num = 1, int obj_idx = -1);
+    void set_number_of_copies();
     void fill_bed_with_instances();
     bool is_selection_empty() const;
     void scale_selection_to_fit_print_volume();
     void convert_unit(ConversionType conv_type);
     void toggle_layers_editing(bool enable);
 
-    void cut(size_t obj_idx, size_t instance_idx, coordf_t z, ModelObjectCutAttributes attributes);
+    void cut(size_t obj_idx, size_t instance_idx, const Transform3d& cut_matrix, ModelObjectCutAttributes attributes);
 
     void export_gcode(bool prefer_removable);
     void export_stl_obj(bool extended = false, bool selection_only = false);
@@ -268,11 +272,9 @@ public:
     void export_toolpaths_to_obj() const;
     void reslice();
     void reslice_FFF_until_step(PrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
-    void reslice_SLA_supports(const ModelObject &object, bool postpone_error_messages = false);
-    void reslice_SLA_hollowing(const ModelObject &object, bool postpone_error_messages = false);
     void reslice_SLA_until_step(SLAPrintObjectStep step, const ModelObject &object, bool postpone_error_messages = false);
 
-    void clear_before_change_mesh(int obj_idx);
+    void clear_before_change_mesh(int obj_idx, const std::string &notification_msg);
     void changed_mesh(int obj_idx);
 
     void changed_object(int obj_idx);
@@ -314,6 +316,7 @@ public:
 
     void update_menus();
     void show_action_buttons(const bool is_ready_to_slice) const;
+    void show_action_buttons() const;
 
     wxString get_project_filename(const wxString& extension = wxEmptyString) const;
     void set_project_filename(const wxString& filename);
@@ -328,7 +331,6 @@ public:
     GLCanvas3D* get_current_canvas3D();
     
     void arrange();
-    void find_new_position(const ModelInstancePtrs  &instances);
 
     void set_current_canvas_as_dirty();
     void unbind_canvas_event_handlers();
@@ -348,7 +350,7 @@ public:
     bool can_delete() const;
     bool can_delete_all() const;
     bool can_increase_instances() const;
-    bool can_decrease_instances() const;
+    bool can_decrease_instances(int obj_idx = -1) const;
     bool can_set_instance_to_object() const;
     bool can_fix_through_netfabb() const;
     bool can_simplify() const;
@@ -390,9 +392,6 @@ public:
     const GLToolbar& get_collapse_toolbar() const;
     GLToolbar& get_collapse_toolbar();
 
-#if !ENABLE_PREVIEW_LAYOUT
-    void update_preview_bottom_toolbar();
-#endif // !ENABLE_PREVIEW_LAYOUT
     void update_preview_moves_slider();
     void enable_preview_moves_slider(bool enable);
 
@@ -404,6 +403,7 @@ public:
 
 	void set_bed_shape() const;
     void set_bed_shape(const Pointfs& shape, const double max_print_height, const std::string& custom_texture, const std::string& custom_model, bool force_as_custom = false) const;
+    void set_default_bed_shape() const;
 
     NotificationManager * get_notification_manager();
     const NotificationManager * get_notification_manager() const;
@@ -458,9 +458,7 @@ public:
     void toggle_render_statistic_dialog();
     bool is_render_statistic_dialog_visible() const;
 
-#if ENABLE_PREVIEW_LAYOUT
     void set_keep_current_preview_type(bool value);
-#endif // ENABLE_PREVIEW_LAYOUT
 
 	// Wrapper around wxWindow::PopupMenu to suppress error messages popping out while tracking the popup menu.
 	bool PopupMenu(wxMenu *menu, const wxPoint& pos = wxDefaultPosition);
@@ -469,6 +467,7 @@ public:
     // get same Plater/ObjectList menus
     wxMenu* object_menu();
     wxMenu* part_menu();
+    wxMenu* text_part_menu();
     wxMenu* sla_object_menu();
     wxMenu* default_menu();
     wxMenu* instance_menu();
@@ -506,6 +505,16 @@ public:
     ~SuppressBackgroundProcessingUpdate();
 private:
     bool m_was_scheduled;
+};
+
+class PlaterAfterLoadAutoArrange
+{
+    bool m_enabled{ false };
+
+public:
+    PlaterAfterLoadAutoArrange();
+    ~PlaterAfterLoadAutoArrange();
+    void disable() { m_enabled = false; }
 };
 
 } // namespace GUI

@@ -2,12 +2,8 @@
 #define slic3r_GLGizmoFlatten_hpp_
 
 #include "GLGizmoBase.hpp"
-#if ENABLE_LEGACY_OPENGL_REMOVAL
 #include "slic3r/GUI/GLModel.hpp"
-#else
-#include "slic3r/GUI/3DScene.hpp"
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-
+#include "slic3r/GUI/MeshUtils.hpp"
 
 namespace Slic3r {
 
@@ -23,15 +19,14 @@ class GLGizmoFlatten : public GLGizmoBase
 
 private:
 
+    GLModel arrow;
+
     struct PlaneData {
         std::vector<Vec3d> vertices; // should be in fact local in update_planes()
-#if ENABLE_LEGACY_OPENGL_REMOVAL
-        GLModel vbo;
-#else
-        GLIndexedVertexArray vbo;
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
+        PickingModel vbo;
         Vec3d normal;
         float area;
+        int picking_id{ -1 };
     };
 
     // This holds information to decide whether recalculation is necessary:
@@ -41,10 +36,9 @@ private:
     Vec3d m_first_instance_mirror;
 
     std::vector<PlaneData> m_planes;
+    std::vector<std::shared_ptr<SceneRaycasterItem>> m_planes_casters;
     bool m_mouse_left_down = false; // for detection left_up of this gizmo
-    bool m_planes_valid = false;
     const ModelObject* m_old_model_object = nullptr;
-    std::vector<const Transform3d*> instances_matrices;
 
     void update_planes();
     bool is_plane_update_necessary() const;
@@ -67,7 +61,8 @@ protected:
     std::string on_get_name() const override;
     bool on_is_activable() const override;
     void on_render() override;
-    void on_render_for_picking() override;
+    virtual void on_register_raycasters_for_picking() override;
+    virtual void on_unregister_raycasters_for_picking() override;
     void on_set_state() override;
     CommonGizmosDataID on_get_requirements() const override;
 };

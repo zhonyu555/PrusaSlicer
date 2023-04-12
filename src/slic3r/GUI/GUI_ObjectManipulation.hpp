@@ -5,9 +5,7 @@
 
 #include "GUI_ObjectSettings.hpp"
 #include "GUI_ObjectList.hpp"
-#if ENABLE_WORLD_COORDINATE
 #include "GUI_Geometry.hpp"
-#endif // ENABLE_WORLD_COORDINATE
 #include "libslic3r/Point.hpp"
 #include <float.h>
 
@@ -60,9 +58,9 @@ public:
     void                set_value(const wxString& new_value);
     void                kill_focus(ObjectManipulation *parent);
 
-#if ENABLE_WORLD_COORDINATE
     const std::string&  get_full_opt_name() const { return m_full_opt_name; }
-#endif // ENABLE_WORLD_COORDINATE
+
+    bool                has_opt_key(const std::string& key) { return m_opt_key == key; }
 
 private:
     double              get_value();
@@ -85,6 +83,7 @@ private:
         Vec3d scale;
         Vec3d scale_rounded;
         Vec3d size;
+        Vec3d size_inches;
         Vec3d size_rounded;
 
         wxString move_label_string;
@@ -122,66 +121,43 @@ private:
     // Non-owning pointers to the reset buttons, so we can hide and show them.
     ScalableButton* m_reset_scale_button{ nullptr };
     ScalableButton* m_reset_rotation_button{ nullptr };
-#if ENABLE_WORLD_COORDINATE
     ScalableButton* m_reset_skew_button{ nullptr };
-#endif // ENABLE_WORLD_COORDINATE
     ScalableButton* m_drop_to_bed_button{ nullptr };
 
     wxCheckBox*     m_check_inch {nullptr};
 
-    // Mirroring buttons and their current state
-    enum MirrorButtonState {
-        mbHidden,
-        mbShown,
-        mbActive
-    };
-    std::array<std::pair<ScalableButton*, MirrorButtonState>, 3> m_mirror_buttons;
+    std::array<ScalableButton*, 3> m_mirror_buttons;
 
     // Bitmaps for the mirroring buttons.
     ScalableBitmap m_mirror_bitmap_on;
-    ScalableBitmap m_mirror_bitmap_off;
-    ScalableBitmap m_mirror_bitmap_hidden;
 
     // Needs to be updated from OnIdle?
     bool            m_dirty = false;
     // Cached labels for the delayed update, not localized!
     std::string     m_new_move_label_string;
-	std::string     m_new_rotate_label_string;
-	std::string     m_new_scale_label_string;
+    std::string     m_new_rotate_label_string;
+    std::string     m_new_scale_label_string;
     Vec3d           m_new_position;
     Vec3d           m_new_rotation;
     Vec3d           m_new_scale;
     Vec3d           m_new_size;
     bool            m_new_enabled {true};
     bool            m_uniform_scale {true};
-#if ENABLE_WORLD_COORDINATE
     ECoordinatesType m_coordinates_type{ ECoordinatesType::World };
-#else
-    // Does the object manipulation panel work in World or Local coordinates?
-    bool            m_world_coordinates = true;
-#endif // ENABLE_WORLD_COORDINATE
     LockButton*     m_lock_bnt{ nullptr };
     choice_ctrl*    m_word_local_combo { nullptr };
 
     ScalableBitmap  m_manifold_warning_bmp;
-    wxStaticBitmap* m_fix_throught_netfab_bitmap;
+    wxStaticBitmap* m_fix_throught_netfab_bitmap{ nullptr };
+    wxStaticBitmap* m_mirror_warning_bitmap{ nullptr };
 
-#if ENABLE_WORLD_COORDINATE
     // Currently focused editor (nullptr if none)
     ManipulationEditor* m_focused_editor{ nullptr };
-#else
-#ifndef __APPLE__
-    // Currently focused editor (nullptr if none)
-    ManipulationEditor* m_focused_editor {nullptr};
-#endif // __APPLE__
-#endif // ENABLE_WORLD_COORDINATE
 
     wxFlexGridSizer* m_main_grid_sizer;
     wxFlexGridSizer* m_labels_grid_sizer;
 
-#if ENABLE_WORLD_COORDINATE
     wxStaticText* m_skew_label{ nullptr };
-#endif // ENABLE_WORLD_COORDINATE
 
     // sizers, used for msw_rescale
     wxBoxSizer*     m_word_local_combo_sizer;
@@ -196,6 +172,10 @@ public:
     void        Show(const bool show) override;
     bool        IsShown() override;
     void        UpdateAndShow(const bool show) override;
+    void        Enable(const bool enadle = true);
+    void        Disable() { Enable(false); }
+    void        DisableScale();
+    void        DisableUnuniformScale();
     void        update_ui_from_settings();
     bool        use_colors() { return m_use_colors; }
 
@@ -205,17 +185,12 @@ public:
 
     void        set_uniform_scaling(const bool use_uniform_scale);
     bool        get_uniform_scaling() const { return m_uniform_scale; }
-#if ENABLE_WORLD_COORDINATE
+
     void             set_coordinates_type(ECoordinatesType type);
-    ECoordinatesType get_coordinates_type() const { return m_coordinates_type; }
+    ECoordinatesType get_coordinates_type() const;
     bool             is_world_coordinates() const { return m_coordinates_type == ECoordinatesType::World; }
     bool             is_instance_coordinates() const { return m_coordinates_type == ECoordinatesType::Instance; }
     bool             is_local_coordinates() const { return m_coordinates_type == ECoordinatesType::Local; }
-#else
-    // Does the object manipulation panel work in World or Local coordinates?
-    void        set_world_coordinates(const bool world_coordinates) { m_world_coordinates = world_coordinates; this->UpdateAndShow(true); }
-    bool        get_world_coordinates() const { return m_world_coordinates; }
-#endif // ENABLE_WORLD_COORDINATE
 
     void reset_cache() { m_cache.reset(); }
 #ifndef __APPLE__
@@ -231,22 +206,16 @@ public:
     void sys_color_changed();
     void on_change(const std::string& opt_key, int axis, double new_value);
     void set_focused_editor(ManipulationEditor* focused_editor) {
-#if ENABLE_WORLD_COORDINATE
         m_focused_editor = focused_editor;
-#else
-#ifndef __APPLE__
-        m_focused_editor = focused_editor;
-#endif // __APPLE__        
-#endif // ENABLE_WORLD_COORDINATE
     }
 
-#if ENABLE_WORLD_COORDINATE
     ManipulationEditor* get_focused_editor() { return m_focused_editor; }
-#endif // ENABLE_WORLD_COORDINATE
 
-#if ENABLE_WORLD_COORDINATE
     static wxString coordinate_type_str(ECoordinatesType type);
-#endif // ENABLE_WORLD_COORDINATE
+
+#if ENABLE_OBJECT_MANIPULATION_DEBUG
+    void render_debug_window();
+#endif // ENABLE_OBJECT_MANIPULATION_DEBUG
 
 private:
     void reset_settings_value();
@@ -263,11 +232,9 @@ private:
     void change_scale_value(int axis, double value);
     void change_size_value(int axis, double value);
     void do_scale(int axis, const Vec3d &scale) const;
-#if ENABLE_WORLD_COORDINATE
     void do_size(int axis, const Vec3d& scale) const;
 
     void set_coordinates_type(const wxString& type_string);
-#endif // ENABLE_WORLD_COORDINATE
 };
 
 }}

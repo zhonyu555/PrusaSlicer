@@ -27,6 +27,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/GLShader.hpp    
     GUI/GLCanvas3D.hpp
     GUI/GLCanvas3D.cpp
+    GUI/SceneRaycaster.hpp
+    GUI/SceneRaycaster.cpp	
     GUI/OpenGLManager.hpp
     GUI/OpenGLManager.cpp
     GUI/Selection.hpp
@@ -37,6 +39,10 @@ set(SLIC3R_GUI_SOURCES
     GUI/Gizmos/GLGizmosCommon.hpp
     GUI/Gizmos/GLGizmoBase.cpp
     GUI/Gizmos/GLGizmoBase.hpp
+    GUI/Gizmos/GLGizmoSlaBase.cpp
+    GUI/Gizmos/GLGizmoSlaBase.hpp	
+    GUI/Gizmos/GLGizmoEmboss.cpp
+    GUI/Gizmos/GLGizmoEmboss.hpp
     GUI/Gizmos/GLGizmoMove.cpp
     GUI/Gizmos/GLGizmoMove.hpp
     GUI/Gizmos/GLGizmoRotate.cpp
@@ -61,6 +67,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/Gizmos/GLGizmoSimplify.hpp
     GUI/Gizmos/GLGizmoMmuSegmentation.cpp
     GUI/Gizmos/GLGizmoMmuSegmentation.hpp
+    GUI/Gizmos/GLGizmoMeasure.cpp
+    GUI/Gizmos/GLGizmoMeasure.hpp
     GUI/GLSelectionRectangle.cpp
     GUI/GLSelectionRectangle.hpp
     GUI/GLModel.hpp
@@ -89,6 +97,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/GUI_Geometry.hpp
     GUI/I18N.cpp
     GUI/I18N.hpp
+    GUI/IconManager.cpp
+    GUI/IconManager.hpp
     GUI/MainFrame.cpp
     GUI/MainFrame.hpp
     GUI/Plater.cpp
@@ -135,6 +145,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/CoordAxes.hpp
     GUI/Camera.cpp
     GUI/Camera.hpp
+    GUI/CameraUtils.cpp
+    GUI/CameraUtils.hpp
     GUI/wxExtensions.cpp
     GUI/wxExtensions.hpp
     GUI/ExtruderSequenceDialog.cpp
@@ -147,6 +159,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/RemovableDriveManager.hpp
     GUI/SendSystemInfoDialog.cpp
     GUI/SendSystemInfoDialog.hpp
+    GUI/SurfaceDrag.cpp
+    GUI/SurfaceDrag.hpp
     GUI/BonjourDialog.cpp
     GUI/BonjourDialog.hpp
     GUI/ButtonsDescription.cpp
@@ -181,6 +195,12 @@ set(SLIC3R_GUI_SOURCES
     GUI/Jobs/PlaterWorker.hpp
     GUI/Jobs/ArrangeJob.hpp
     GUI/Jobs/ArrangeJob.cpp
+    GUI/Jobs/CreateFontNameImageJob.cpp
+    GUI/Jobs/CreateFontNameImageJob.hpp
+    GUI/Jobs/CreateFontStyleImagesJob.cpp
+    GUI/Jobs/CreateFontStyleImagesJob.hpp
+    GUI/Jobs/EmbossJob.cpp
+    GUI/Jobs/EmbossJob.hpp
     GUI/Jobs/RotoptimizeJob.hpp
     GUI/Jobs/RotoptimizeJob.cpp
     GUI/Jobs/FillBedJob.hpp
@@ -218,6 +238,12 @@ set(SLIC3R_GUI_SOURCES
     GUI/DesktopIntegrationDialog.hpp
     GUI/HintNotification.cpp
     GUI/HintNotification.hpp
+    GUI/FileArchiveDialog.cpp
+    GUI/FileArchiveDialog.hpp
+    GUI/Downloader.cpp
+    GUI/Downloader.hpp
+    GUI/DownloaderFileGet.cpp
+    GUI/DownloaderFileGet.hpp
     Utils/AppUpdater.cpp
     Utils/AppUpdater.hpp
     Utils/Http.cpp
@@ -228,8 +254,14 @@ set(SLIC3R_GUI_SOURCES
     Utils/OctoPrint.hpp
     Utils/Duet.cpp
     Utils/Duet.hpp
+    Utils/EmbossStyleManager.cpp
+    Utils/EmbossStyleManager.hpp
+    Utils/EmbossStylesSerializable.cpp
+    Utils/EmbossStylesSerializable.hpp
     Utils/FlashAir.cpp
     Utils/FlashAir.hpp
+    Utils/FontConfigHelp.cpp
+    Utils/FontConfigHelp.hpp
     Utils/AstroBox.cpp
     Utils/AstroBox.hpp
     Utils/Repetier.cpp
@@ -242,7 +274,8 @@ set(SLIC3R_GUI_SOURCES
     Utils/PresetUpdater.hpp
     Utils/Process.cpp
     Utils/Process.hpp
-    Utils/Profile.hpp
+    Utils/RaycastManager.cpp
+    Utils/RaycastManager.hpp
     Utils/UndoRedo.cpp
     Utils/UndoRedo.hpp
     Utils/HexFile.cpp
@@ -253,7 +286,11 @@ set(SLIC3R_GUI_SOURCES
     Utils/MKS.hpp
     Utils/WinRegistry.cpp
     Utils/WinRegistry.hpp
+    Utils/WxFontUtils.cpp
+    Utils/WxFontUtils.hpp
 )
+
+find_package(NanoSVG REQUIRED)
 
 if (APPLE)
     list(APPEND SLIC3R_GUI_SOURCES
@@ -279,7 +316,7 @@ endforeach()
 
 encoding_check(libslic3r_gui)
 
-target_link_libraries(libslic3r_gui libslic3r avrdude libcereal imgui GLEW::GLEW OpenGL::GL hidapi libcurl ${wxWidgets_LIBRARIES})
+target_link_libraries(libslic3r_gui libslic3r avrdude libcereal imgui GLEW::GLEW OpenGL::GL hidapi libcurl ${wxWidgets_LIBRARIES} NanoSVG::nanosvg NanoSVG::nanosvgrast)
 
 if (MSVC)
     target_link_libraries(libslic3r_gui Setupapi.lib)
@@ -305,5 +342,8 @@ endif ()
 if (UNIX AND NOT APPLE)
     find_package(GTK${SLIC3R_GTK} REQUIRED)
     target_include_directories(libslic3r_gui PRIVATE ${GTK${SLIC3R_GTK}_INCLUDE_DIRS})
-    target_link_libraries(libslic3r_gui ${GTK${SLIC3R_GTK}_LIBRARIES})
+    target_link_libraries(libslic3r_gui ${GTK${SLIC3R_GTK}_LIBRARIES} fontconfig)
 endif ()
+
+# Add a definition so that we can tell we are compiling slic3r.
+target_compile_definitions(libslic3r_gui PRIVATE SLIC3R_CURRENTLY_COMPILING_GUI_MODULE)
