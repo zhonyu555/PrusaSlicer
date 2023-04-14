@@ -392,7 +392,7 @@ protected:
     friend std::vector<Layer*> new_layers(PrintObject*, const std::vector<coordf_t>&);
     friend std::string fix_slicing_errors(LayerPtrs&, const std::function<void()>&);
     // Create dithering layer. bottom & top >= 0 and <= 1
-    friend Layer *make_dither_layer(Layer *refLayer, double bottom, double top);
+    friend Layer *make_dithered_layer(Layer *refLayer, double bottom, double top);
 
     Layer(size_t id, PrintObject *object, coordf_t height, coordf_t print_z, coordf_t slice_z) :
         upper_layer(nullptr), lower_layer(nullptr), 

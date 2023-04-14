@@ -260,8 +260,6 @@ static std::vector<PrintObjectRegions::LayerRangeRegions>::const_iterator layer_
 }
 
 static std::vector<std::vector<ExPolygons>> slices_to_regions(
-    const PrintConfig                                        &print_config,
-    const PrintObject                                        &print_object,
     ModelVolumePtrs                                           model_volumes,
     const PrintObjectRegions                                 &print_object_regions,
     const std::vector<float>                                 &zs,
@@ -569,7 +567,11 @@ void PrintObject::slice()
         [this](const tbb::blocked_range<size_t> &range) {
             for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
                 m_print->throw_if_canceled();
-                Layer::build_up_down_graph(*m_layers[layer_idx - 1], *m_layers[layer_idx]);
+                Layer &above = *m_layers[layer_idx];
+                Layer &below = *m_layers[next_layer_index(layer_idx, true)];
+                if (above.dithered == below.dithered) {
+                    Layer::build_up_down_graph(below, above);
+                }
             }
         });
     if (m_layers.empty())
@@ -703,7 +705,7 @@ void apply_mm_segmentation(PrintObject &print_object, ThrowOnCancel throw_on_can
         });
 }
 
-Layer *make_dither_layer(Layer *refLayer, double bottom, double top)
+Layer *make_dithered_layer(Layer *refLayer, double bottom, double top)
 {
     coordf_t height  = refLayer->height;
     coordf_t hi      = refLayer->slice_z + height / 2;
@@ -751,7 +753,7 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                         [&ll](VolumeSublayers &v_sub) {
                             return !v_sub.sublayers[ll].bottom_.empty();
                         })) {
-            newLayer[0]              = make_dither_layer(original[ll], 0., 0.25);
+            newLayer[0]              = make_dithered_layer(original[ll], 0., 0.25);
             newLayer[0]->lower_layer = original[ll]->lower_layer;
             merge_sublayers_to_slices(volume_slices, volume_sublayers, 0, ll, resulting.size());
             resulting.push_back(newLayer[0]);
@@ -760,7 +762,7 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                         [&ll](VolumeSublayers &v_sub) {
                             return !v_sub.sublayers[ll].halfUp_.empty();
                         })) {
-            newLayer[1]              = make_dither_layer(original[ll], 0.25, 0.75);
+            newLayer[1]              = make_dithered_layer(original[ll], 0.25, 0.75);
             newLayer[1]->lower_layer = newLayer[0]; // must be != nullptr
             newLayer[0]->upper_layer = newLayer[1];
             merge_sublayers_to_slices(volume_slices, volume_sublayers, 1, ll, resulting.size());
@@ -770,7 +772,7 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                         [&ll](VolumeSublayers &v_sub) {
                             return !v_sub.sublayers[ll].halfDn_.empty();
                         })) {
-            newLayer[2]              = make_dither_layer(original[ll], 0.25, 0.75);
+            newLayer[2]              = make_dithered_layer(original[ll], 0.25, 0.75);
             merge_sublayers_to_slices(volume_slices, volume_sublayers, 2, ll, resulting.size());
             resulting.push_back(newLayer[2]);
         }
@@ -778,7 +780,7 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                         [&ll](VolumeSublayers &v_sub) {
                             return !v_sub.sublayers[ll].top_.empty();
                         })) {
-            newLayer[3]              = make_dither_layer(original[ll], 0.75, 1.);
+            newLayer[3]              = make_dithered_layer(original[ll], 0.75, 1.);
             newLayer[3]->upper_layer = original[ll]->upper_layer;
             newLayer[3]->lower_layer = newLayer[2]; // must be != nullptr
             newLayer[2]->upper_layer = newLayer[3];
@@ -819,15 +821,8 @@ void PrintObject::slice_volumes()
 
     std::vector<float>                   slice_zs      = zs_from_layers(m_layers, true);
     std::vector<VolumeSublayers> volume_sublayers;
-    std::vector<VolumeSlices> volume_slices = slice_volumes_inner(
-        print->config(),
-        this->config(),
-        this->trafo_centered(),
-        this->model_object()->volumes,
-        m_shared_regions->layer_ranges,
-        slice_zs,
-        &volume_sublayers,
-        throw_on_cancel_callback);
+    std::vector<VolumeSlices> volume_slices = slice_volumes_inner(print->config(), this->config(), this->trafo_centered(),
+        this->model_object()->volumes, m_shared_regions->layer_ranges, slice_zs, &volume_sublayers, throw_on_cancel_callback);
 
     if (this->config().z_dither) {
         m_layers = add_dithering_layers(m_layers, volume_slices, volume_sublayers);
@@ -841,14 +836,8 @@ void PrintObject::slice_volumes()
         slice_zs = zs_from_layers(m_layers, false);
     }
 
-    std::vector<std::vector<ExPolygons>> region_slices = slices_to_regions(
-        print->config(),
-        *this,
-        this->model_object()->volumes,
-        *m_shared_regions,
-        slice_zs,
-        std::move(volume_slices),
-        throw_on_cancel_callback);
+    std::vector<std::vector<ExPolygons>> region_slices = slices_to_regions(this->model_object()->volumes, *m_shared_regions, slice_zs,
+                                                                            std::move(volume_slices), throw_on_cancel_callback);
 
     for (size_t region_id = 0; region_id < region_slices.size(); ++ region_id) {
         std::vector<ExPolygons> &by_layer = region_slices[region_id];
@@ -978,7 +967,8 @@ std::vector<Polygons> PrintObject::slice_support_volumes(const ModelVolumeType m
     std::vector<Polygons> slices;
     if (it_volume != it_volume_end) {
         // Found at least a single support volume of model_volume_type.
-        std::vector<float> zs = zs_from_layers(this->layers(), true);   // exclude ditthered layers
+        // Exclude z of ditthered layers. Do we need to improve this?
+        std::vector<float> zs = zs_from_layers(this->layers(), true);   
         size_t             num_layers = this->layers().size();
         std::vector<char>  merge_layers;
         bool               merge = false;

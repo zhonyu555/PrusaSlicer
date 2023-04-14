@@ -690,10 +690,9 @@ std::vector<std::pair<coordf_t, GCode::ObjectsLayerToPrint>> GCode::collect_laye
         // Assign an average print_z to the set of layers with nearly equal print_z.
         merged.first = 0.5 * (ordering[i].print_z + ordering[j - 1].print_z);
 		// z-dithering may result in 2 layers from the same object in merged
-        merged.second.assign(print.objects().size(), ObjectLayerToPrint());
         for (; i < j; ++ i) {
             const OrderingItem& oi = ordering[i];
-            merged.second.emplace_back(std::move(per_object[oi.object_idx][oi.layer_idx]);
+            merged.second.emplace_back(std::move(per_object[oi.object_idx][oi.layer_idx]));
         }
         layers_to_print.emplace_back(std::move(merged));
     }

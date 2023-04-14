@@ -540,9 +540,9 @@ std::string Print::validate(std::string* warning) const
 
     if (m_default_object_config.z_dither) {
         if (m_default_region_config.infill_every_layers > 1)
-            return L("Z-dither slicing option is not compatible with option to combine infills of multiple layers.");
+            return _u8L("Z-dither slicing option is not compatible with option to combine infills of multiple layers.");
         if (extruders.size() > 1) // Is there a better way to check for a possibility of multimaterial printing?
-            return L("Z-dither slicing option is currently not supported for printers with multiple extruders.");
+            return _u8L("Z-dither slicing option is currently not supported for printers with multiple extruders.");
     }
 
     if (this->has_wipe_tower() && ! m_objects.empty()) {
