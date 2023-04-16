@@ -11056,7 +11056,7 @@ msgstr ""
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:495
 msgid "App update"
-msgstr ""
+msgstr "프로그램 "
 
 #: src/slic3r/GUI/UpdateDialogs.cpp:500
 #, c-format, boost-format
