@@ -3926,7 +3926,6 @@ void PrintConfigDef::init_sla_params()
     def->mode = comSimple;
     def->set_default_value(new ConfigOptionEnum(sla::SupportTreeType::Default));
 
-    
     init_sla_support_params("");
     init_sla_support_params("branching");
 

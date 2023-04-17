@@ -104,10 +104,11 @@ std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys,
     sublayers->resize(expolys.size());
     std::vector<ExPolygons> out(expolys.size());
 
-    for (auto ll = 0; ll < expolys.size(); ll++) {
+    out[0] = std::move(expolys[0]);     // Do not make sublayers of first layer
+    for (auto ll = 1; ll < expolys.size(); ll++) {
         // idx0 - bottom of layer, idx1 - top of layer
-        int  upwrd_idx0  = ll > 0 ? upwrd_mididx[ll - 1] : -1;
-        int  dnwrd_idx0  = ll > 0 ? dnwrd_mididx[ll - 1] : -1;
+        int  upwrd_idx0  = upwrd_mididx[ll - 1];
+        int  dnwrd_idx0  = dnwrd_mididx[ll - 1];
         int  upwrd_idx1  = upwrd_mididx[ll];
         int  dnwrd_idx1  = dnwrd_mididx[ll];
 
