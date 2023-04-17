@@ -758,7 +758,14 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
         }
     };
 
-    for (size_t layer_idx = 0; layer_idx < po->layer_count(); ++layer_idx) {
+    // Skip over dithered layers
+    assert(!po->get_layer(0)->dithered);
+    auto next_layer_index = [&po](size_t layer_idx) {
+        const Layer *upper_layer = po->get_layer(layer_idx)->upper_layer;
+        return upper_layer != nullptr ? upper_layer->id() : po->layer_count();
+    };
+
+    for (size_t layer_idx = 0; layer_idx < po->layer_count(); layer_idx = next_layer_index(layer_idx)) {
         cancel_func();
         const Layer *layer                 = po->get_layer(layer_idx);
         float        bottom_z              = layer->bottom_z();
@@ -844,7 +851,7 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
             SliceConnection           &weakest_conn = prev_slice_idx_to_weakest_connection[slice_idx];
 
             std::vector<Linef> boundary_lines;
-            for (const auto &link : slice.overlaps_below) { 
+            for (const auto &link : slice.overlaps_below) {
                 auto ls = to_unscaled_linesf({layer->lower_layer->lslices[link.slice_idx]});
                 boundary_lines.insert(boundary_lines.end(), ls.begin(), ls.end());
             }
@@ -944,8 +951,8 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject *po,
                 //                       get_extents(scaledl));
                 //     svg.draw(scaledl, "red", scale_(0.4));
                 //     svg.draw(perimsl, "blue", scale_(0.25));
-                    
-                    
+
+
                 //     svg.Close();
                 // }
             }
@@ -1121,7 +1128,7 @@ void estimate_malformations(LayerPtrs &layers, const Params &params)
         std::vector<ExtrusionLine>           current_layer_lines;
         for (const LayerRegion *layer_region : l->regions()) {
             for (const ExtrusionEntity *extrusion : layer_region->perimeters().flatten().entities) {
-                
+
                 if (!extrusion->role().is_external_perimeter()) continue;
 
                 Points extrusion_pts;

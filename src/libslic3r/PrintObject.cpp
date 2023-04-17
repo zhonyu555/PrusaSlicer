@@ -283,6 +283,7 @@ void PrintObject::prepare_infill()
     // Decide what surfaces are to be filled.
     // Here the stTop / stBottomBridge / stBottom infill is turned to just stInternal if zero top / bottom infill layers are configured.
     // Also tiny stInternal surfaces are turned to stInternalSolid.
+
     BOOST_LOG_TRIVIAL(info) << "Preparing fill surfaces..." << log_memory_info();
     for (auto *layer : m_layers) {
         for (auto *region : layer->m_regions) {
@@ -1737,8 +1738,8 @@ void PrintObject::bridge_over_infill()
         std::vector<size_t> layers_to_generate_infill;
 		for (const auto &pair : surfaces_by_layer) {
             assert(pair.first > 0);
-            infill_lines[pair.first - 1] = {};
-            layers_to_generate_infill.push_back(pair.first - 1);
+            infill_lines[next_layer_index(pair.first, true)] = {};
+            layers_to_generate_infill.push_back(next_layer_index(pair.first, true));
         }
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, layers_to_generate_infill.size()), [po = static_cast<const PrintObject *>(this),
@@ -2167,7 +2168,7 @@ void PrintObject::bridge_over_infill()
                 total_fill_area   = closing(total_fill_area, SCALED_EPSILON);
                 expansion_area    = closing(expansion_area, SCALED_EPSILON);
                 expansion_area    = intersection(expansion_area, deep_infill_area);
-                Polylines anchors = intersection_pl(infill_lines[lidx - 1], shrink(expansion_area, spacing));
+                Polylines anchors = intersection_pl(infill_lines[po->next_layer_index(lidx,true)], shrink(expansion_area, spacing));
 
 #ifdef DEBUG_BRIDGE_OVER_INFILL
                 debug_draw(std::to_string(lidx) + "_" + std::to_string(cluster_idx) + "_" + std::to_string(job_idx) + "_" + "_total_area",

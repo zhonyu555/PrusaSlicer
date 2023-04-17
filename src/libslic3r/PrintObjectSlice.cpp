@@ -413,7 +413,7 @@ static std::vector<std::vector<ExPolygons>> slices_to_regions(
                                 }
                             }
                         if (merged)
-                        // to handle region overlaps. Indeed, one may intentionally let the regions overlap to produce crossing perimeters 
+                        // to handle region overlaps. Indeed, one may intentionally let the regions overlap to produce crossing perimeters
                             expolygons = closing_ex(expolygons, float(scale_(EPSILON)));
                         slices_by_region[temp_slices[i].region_id][z_idx] = std::move(expolygons);
                         i = j;
@@ -469,7 +469,7 @@ std::string fix_slicing_errors(LayerPtrs &layers, const std::function<void()> &t
                     // Collect outer contours and holes from the valid layers above & below.
                     Polygons outer;
                     outer.reserve(
-                        ((upper_surfaces == nullptr) ? 0 : upper_surfaces->size()) + 
+                        ((upper_surfaces == nullptr) ? 0 : upper_surfaces->size()) +
                         ((lower_surfaces == nullptr) ? 0 : lower_surfaces->size()));
                     size_t num_holes = 0;
                     if (upper_surfaces)
@@ -565,15 +565,21 @@ void PrintObject::slice()
     tbb::parallel_for(
         tbb::blocked_range<size_t>(1, m_layers.size()),
         [this](const tbb::blocked_range<size_t> &range) {
-            for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
-                m_print->throw_if_canceled();
-                Layer &above = *m_layers[layer_idx];
-                Layer &below = *m_layers[next_layer_index(layer_idx, true)];
-                if (above.dithered == below.dithered) {
-                    Layer::build_up_down_graph(below, above);
-                }
+        for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++layer_idx) {
+            m_print->throw_if_canceled();
+            // Layer::build_up_down_graph and subsequent support stability checks
+            // appear to get in trouble when multiple layers point to the same
+            // above/below layer as happens in case of z-dithering. For now I just avoid
+            // mixing dithered and non-dithered layers in the same graph.
+            Layer *above = m_layers[layer_idx];
+            Layer *below = above->lower_layer;
+            if (below != nullptr && above->dithered == below->dithered) {
+                Layer::build_up_down_graph(*below, *above);
             }
+            // Layer::build_up_down_graph(*m_layers[layer_idx - 1], *m_layers[layer_idx]);
+        }
         });
+       // });
     if (m_layers.empty())
         throw Slic3r::SlicingError("No layers were detected. You might want to repair your STL file(s) or check their size or thickness and retry.\n");
     this->set_done(posSlice);
@@ -968,7 +974,7 @@ std::vector<Polygons> PrintObject::slice_support_volumes(const ModelVolumeType m
     if (it_volume != it_volume_end) {
         // Found at least a single support volume of model_volume_type.
         // Exclude z of ditthered layers. Do we need to improve this?
-        std::vector<float> zs = zs_from_layers(this->layers(), true);   
+        std::vector<float> zs = zs_from_layers(this->layers(), true);
         size_t             num_layers = this->layers().size();
         std::vector<char>  merge_layers;
         bool               merge = false;
