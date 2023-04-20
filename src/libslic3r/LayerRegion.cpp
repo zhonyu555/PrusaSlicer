@@ -45,7 +45,7 @@ Flow LayerRegion::bridging_flow(FlowRole role, bool force_thick_bridges) const
 
     // If extrusion_width * layer_height > nozzle_diameter ^ 2 * Pi/4, "normal" flow can get much higher than the rounded flow
     // In that case, bridges based on normal_flow would become thicker (and unusable) than with round_flow
-    // So, return rounded_flow to ensure that bridges are indeed thinner thick_bridges is disabled
+    // So, return rounded_flow to ensure that bridges are indeed thinner if thick_bridges is disabled
     if ((print_object.config().thick_bridges || force_thick_bridges) && (round_flow.mm3_per_mm() > normal_flow.mm3_per_mm()))
         return round_flow;
     else
