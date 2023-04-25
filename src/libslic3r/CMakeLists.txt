@@ -106,6 +106,8 @@ set(SLIC3R_SOURCES
     Format/3mf.hpp
     Format/AMF.cpp
     Format/AMF.hpp
+    Format/ctb.hpp
+    Format/ctb.cpp
     Format/OBJ.cpp
     Format/OBJ.hpp
     Format/objparser.cpp
