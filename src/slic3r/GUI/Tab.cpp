@@ -4804,6 +4804,16 @@ void TabSLAMaterial::build()
     optgroup = page->new_optgroup(L("Exposure"));
     optgroup->append_single_option_line("exposure_time");
     optgroup->append_single_option_line("initial_exposure_time");
+    optgroup->append_single_option_line("bot_light_off_time");
+    optgroup->append_single_option_line("light_off_time");
+    optgroup->append_single_option_line("bot_lift_distance");
+    optgroup->append_single_option_line("lift_distance");
+    optgroup->append_single_option_line("bot_lift_speed");
+    optgroup->append_single_option_line("lift_speed");
+    optgroup->append_single_option_line("bot_retract_speed");
+    optgroup->append_single_option_line("retract_speed");
+    optgroup->append_single_option_line("bot_light_intensity");
+    optgroup->append_single_option_line("light_intensity");
 
     optgroup = page->new_optgroup(L("Corrections"));
     auto line = Line{ m_config->def()->get("material_correction")->full_label, "" };

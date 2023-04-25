@@ -3742,6 +3742,76 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(15));
 
+    def = this->add("light_off_time", coFloat);
+    def->label = L("Normal layers light off time");
+    def->tooltip = L("Normal layers light off time");
+    def->sidetext = L("s");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(2));
+
+    def = this->add("bot_light_off_time", coFloat);
+    def->label = L("Bottom layers light off time");
+    def->tooltip = L("Bottom layers light off time");
+    def->sidetext = L("s");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(3));
+
+    def = this->add("bot_lift_distance", coFloat);
+    def->label = L("Bottom layers lift distance");
+    def->tooltip = L("Bottom layers lift distance");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(8));
+
+    def = this->add("lift_distance", coFloat);
+    def->label = L("Normal layers lift distance");
+    def->tooltip = L("Normal layers lift distance");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(8));
+
+    def = this->add("bot_lift_speed", coFloat);
+    def->label = L("Bottom layers lift speed");
+    def->tooltip = L("Bottom layers lift speed");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(45));
+
+    def = this->add("lift_speed", coFloat);
+    def->label = L("Normal layers lift speed");
+    def->tooltip = L("Normal layers lift speed");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(45));
+
+    def = this->add("retract_speed", coFloat);
+    def->label = L("Normal layers retract speed");
+    def->tooltip = L("Normal layers retract speed");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(45));
+
+    def = this->add("bot_retract_speed", coFloat);
+    def->label = L("Bottom layers retract speed");
+    def->tooltip = L("Bottom layers retract speed");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(45));
+
+    def = this->add("bot_light_intensity", coPercent);
+    def->label = L("Bottom layers light intensity");
+    def->tooltip = L("Bottom layers light_intensity");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionPercent(100));
+
+    def = this->add("light_intensity", coPercent);
+    def->label = L("Normal layers light intensity");
+    def->tooltip = L("Normal layers light_intensity");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionPercent(100));
+
     def = this->add("material_correction", coFloats);
     def->full_label = L("Correction for expansion");
     def->tooltip  = L("Correction for expansion");
