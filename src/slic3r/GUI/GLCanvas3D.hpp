@@ -157,9 +157,7 @@ wxDECLARE_EVENT(EVT_GLCANVAS_INSTANCE_MOVED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_FORCE_UPDATE, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_WIPETOWER_MOVED, Vec3dEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_INSTANCE_ROTATED, SimpleEvent);
-#if ENABLE_WORLD_COORDINATE
 wxDECLARE_EVENT(EVT_GLCANVAS_RESET_SKEW, SimpleEvent);
-#endif // ENABLE_WORLD_COORDINATE
 wxDECLARE_EVENT(EVT_GLCANVAS_INSTANCE_SCALED, SimpleEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_WIPETOWER_ROTATED, Vec3dEvent);
 wxDECLARE_EVENT(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, Event<bool>);
@@ -290,6 +288,8 @@ class GLCanvas3D
         float object_max_z() const { return m_object_max_z; }
 
         std::string get_tooltip(const GLCanvas3D& canvas) const;
+
+        std::pair<SlicingParameters, const std::vector<double>> get_layers_height_data();
 
     private:
         bool is_initialized() const;
@@ -463,6 +463,7 @@ public:
 //        float distance_sla       = 6.;
         float accuracy           = 0.65f; // Unused currently
         bool  enable_rotation    = false;
+        int   alignment          = 0;
     };
 
 private:
@@ -549,8 +550,10 @@ private:
 
     PrinterTechnology current_printer_technology() const;
 
+    bool is_arrange_alignment_enabled() const;
+
     template<class Self>
-    static auto & get_arrange_settings(Self *self) {
+    static auto & get_arrange_settings_ref(Self *self) {
         PrinterTechnology ptech = self->current_printer_technology();
 
         auto *ptr = &self->m_arrange_settings_fff;
@@ -568,8 +571,22 @@ private:
         return *ptr;
     }
 
-    ArrangeSettings &get_arrange_settings() { return get_arrange_settings(this); }
+public:
+    ArrangeSettings get_arrange_settings() const {
+        const ArrangeSettings &settings = get_arrange_settings_ref(this);
+        ArrangeSettings ret = settings;
+        if (&settings == &m_arrange_settings_fff_seq_print) {
+            ret.distance = std::max(ret.distance,
+                                    float(min_object_distance(*m_config)));
+        }
 
+        if (!is_arrange_alignment_enabled())
+            ret.alignment = -1;
+
+        return ret;
+    }
+
+private:
     void load_arrange_settings();
 
     class SequentialPrintClearance
@@ -752,11 +769,7 @@ public:
 
     void update_volumes_colors_by_extruder();
 
-#if ENABLE_WORLD_COORDINATE
     bool is_dragging() const { return m_gizmos.is_dragging() || (m_moving && !m_mouse.scene_position.isApprox(m_mouse.drag.start_position_3D)); }
-#else
-    bool is_dragging() const { return m_gizmos.is_dragging() || m_moving; }
-#endif // ENABLE_WORLD_COORDINATE
 
     void render();
     // printable_only == false -> render also non printable volumes as grayed
@@ -826,9 +839,7 @@ public:
     void do_rotate(const std::string& snapshot_type);
     void do_scale(const std::string& snapshot_type);
     void do_mirror(const std::string& snapshot_type);
-#if ENABLE_WORLD_COORDINATE
     void do_reset_skew(const std::string& snapshot_type);
-#endif // ENABLE_WORLD_COORDINATE
 
     void update_gizmos_on_off_state();
     void reset_all_gizmos() { m_gizmos.reset_all_states(); }
@@ -901,17 +912,6 @@ public:
     void highlight_toolbar_item(const std::string& item_name);
     void highlight_gizmo(const std::string& gizmo_name);
 
-    ArrangeSettings get_arrange_settings() const {
-        const ArrangeSettings &settings = get_arrange_settings(this);
-        ArrangeSettings ret = settings;
-        if (&settings == &m_arrange_settings_fff_seq_print) {
-            ret.distance = std::max(ret.distance,
-                                    float(min_object_distance(*m_config)));
-        }
-
-        return ret;
-    }
-
     // Timestamp for FPS calculation and notification fade-outs.
     static int64_t timestamp_now() {
 #ifdef _WIN32
@@ -952,6 +952,8 @@ public:
 
     void apply_retina_scale(Vec2d &screen_coordinate) const;
 
+    std::pair<SlicingParameters, const std::vector<double>> get_layers_height_data(int object_id);
+
 private:
     bool _is_shown_on_screen() const;
 
@@ -974,7 +976,8 @@ private:
     void _picking_pass();
     void _rectangular_selection_picking_pass();
     void _render_background();
-    void _render_bed(const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom, bool show_axes);
+    void _render_bed(const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom);
+    void _render_bed_axes();
     void _render_bed_for_picking(const Transform3d& view_matrix, const Transform3d& projection_matrix, bool bottom);
     void _render_objects(GLVolumeCollection::ERenderType type);
     void _render_gcode();
@@ -1056,7 +1059,20 @@ private:
     float get_overlay_window_width() { return LayersEditing::get_overlay_window_width(); }
 };
 
-const ModelVolume * get_model_volume(const GLVolume &v, const Model &model);
+const ModelVolume *get_model_volume(const GLVolume &v, const Model &model);
+const ModelVolume *get_model_volume(const ObjectID &volume_id, const ModelObjectPtrs &objects);
+ModelVolume *get_model_volume(const GLVolume &v, const ModelObjectPtrs &objects);
+ModelVolume *get_model_volume(const GLVolume &v, const ModelObject &object);
+
+GLVolume *get_first_hovered_gl_volume(const GLCanvas3D &canvas);
+GLVolume *get_selected_gl_volume(const GLCanvas3D &canvas);
+
+ModelObject *get_model_object(const GLVolume &gl_volume, const Model &model);
+ModelObject *get_model_object(const GLVolume &gl_volume, const ModelObjectPtrs &objects);
+
+ModelInstance *get_model_instance(const GLVolume &gl_volume, const Model &model);
+ModelInstance *get_model_instance(const GLVolume &gl_volume, const ModelObjectPtrs &objects);
+ModelInstance *get_model_instance(const GLVolume &gl_volume, const ModelObject &object);
 
 } // namespace GUI
 } // namespace Slic3r

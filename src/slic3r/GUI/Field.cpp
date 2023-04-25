@@ -175,24 +175,20 @@ void Field::on_back_to_sys_value()
 
 wxString Field::get_tooltip_text(const wxString& default_string)
 {
-	wxString tooltip_text("");
-	wxString tooltip = _(m_opt.tooltip);
-    edit_tooltip(tooltip);
+    if (m_opt.tooltip.empty())
+        return "";
 
     std::string opt_id = m_opt_id;
-    auto hash_pos = opt_id.find("#");
+    auto hash_pos = opt_id.find('#');
     if (hash_pos != std::string::npos) {
         opt_id.replace(hash_pos, 1,"[");
         opt_id += "]";
     }
 
-	if (tooltip.length() > 0)
-        tooltip_text = tooltip + "\n" + _(L("default value")) + "\t: " +
+	return from_u8(m_opt.tooltip) + "\n" + _L("default value") + "\t: " +
         (boost::iends_with(opt_id, "_gcode") ? "\n" : "") + default_string +
         (boost::iends_with(opt_id, "_gcode") ? "" : "\n") +
-        _(L("parameter name")) + "\t: " + opt_id;
-
-	return tooltip_text;
+        _L("parameter name") + "\t: " + opt_id;
 }
 
 bool Field::is_matched(const std::string& string, const std::string& pattern)
@@ -230,7 +226,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
             }
 
 			wxString label = m_opt.full_label.empty() ? _(m_opt.label) : _(m_opt.full_label);
-            show_error(m_parent, from_u8((boost::format(_utf8(L("%s doesn't support percentage"))) % label).str()));
+            show_error(m_parent, format_wxstr(_L("%s doesn't support percentage"), label));
 			set_value(double_to_string(m_opt.min), true);
 			m_value = double(m_opt.min);
 			break;
@@ -303,7 +299,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
             // Workaroud to avoid of using of the % for first layer height
             // see https://github.com/prusa3d/PrusaSlicer/issues/7418
             wxString label = m_opt.full_label.empty() ? _(m_opt.label) : _(m_opt.full_label);
-            show_error(m_parent, from_u8((boost::format(_utf8(L("%s doesn't support percentage"))) % label).str()));
+            show_error(m_parent, format_wxstr(_L("%s doesn't support percentage"), label));
             const wxString stVal = double_to_string(0.01, 2);
             set_value(stVal, true);
             m_value = into_u8(stVal);;
@@ -345,9 +341,10 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
 
                 const std::string sidetext = m_opt.sidetext.rfind("mm/s") != std::string::npos ? "mm/s" : "mm";
                 const wxString stVal = double_to_string(val, 2);
-                const wxString msg_text = from_u8((boost::format(_utf8(L("Do you mean %s%% instead of %s %s?\n"
-                    "Select YES if you want to change this value to %s%%, \n"
-                    "or NO if you are sure that %s %s is a correct value."))) % stVal % stVal % sidetext % stVal % stVal % sidetext).str());
+                // TRN %1% = Value, %2% = units
+                const wxString msg_text = format_wxstr(_L("Do you mean %1%%% instead of %1% %2%?\n"
+                    "Select YES if you want to change this value to %1%%%, \n"
+                    "or NO if you are sure that %1% %2% is a correct value."), stVal, sidetext);
                 WarningDialog dialog(m_parent, msg_text, _L("Parameter validation") + ": " + m_opt_id, wxYES | wxNO);
                 if ((!infill_anchors || val > 100) && dialog.ShowModal() == wxID_YES) {
                     set_value(from_u8((boost::format("%s%%") % stVal).str()), false/*true*/);
@@ -602,11 +599,11 @@ void TextCtrl::propagate_value()
     if (m_opt.nullable && val != na_value())
         m_last_meaningful_value = val;
 
-	if (!is_defined_input_value<wxTextCtrl>(window, m_opt.type) )
-		// on_kill_focus() cause a call of OptionsGroup::reload_config(),
-		// Thus, do it only when it's really needed (when undefined value was input)
+    if (!is_defined_input_value<wxTextCtrl>(window, m_opt.type) )
+        // on_kill_focus() cause a call of OptionsGroup::reload_config(),
+        // Thus, do it only when it's really needed (when undefined value was input)
         on_kill_focus();
-	else if (value_was_changed())
+    else if (value_was_changed())
         on_change_field();
 }
 
@@ -935,8 +932,8 @@ boost::any& SpinCtrl::get_value()
     if (spin->GetTextValue() == na_value(true))
         return m_value;
 
-	int value = spin->GetValue();
-	return m_value = value;
+    int value = spin->GetValue();
+    return m_value = value;
 }
 
 void SpinCtrl::propagate_value()
@@ -950,7 +947,7 @@ void SpinCtrl::propagate_value()
 
     if (tmp_value == UNDEF_VALUE) {
         on_kill_focus();
-	} else {
+    } else {
 #ifdef __WXOSX__
         // check input value for minimum
         if (m_opt.min > 0 && tmp_value < m_opt.min) {
@@ -992,7 +989,6 @@ void Choice::BUILD() {
 
 	choice_ctrl* temp;
     if (m_opt.gui_type != ConfigOptionDef::GUIType::undefined 
-        && m_opt.gui_type != ConfigOptionDef::GUIType::select_open 
         && m_opt.gui_type != ConfigOptionDef::GUIType::select_close) {
         m_is_editable = true;
         temp = new choice_ctrl(m_parent, wxID_ANY, wxString(""), wxDefaultPosition, size, 0, nullptr, wxTE_PROCESS_ENTER);
@@ -1156,7 +1152,7 @@ void Choice::set_value(const std::string& value, bool change_event)  //! Redunda
         field->SetSelection(*opt);
     else
         field->SetValue(value);
-	m_disable_change_event = false;
+    m_disable_change_event = false;
 }
 
 void Choice::set_value(const boost::any& value, bool change_event)

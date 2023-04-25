@@ -420,7 +420,7 @@ MeshErrorsInfo ObjectList::get_mesh_errors_info(const int obj_idx, const int vol
     const ModelObject* object = (*m_objects)[obj_idx];
     if (vol_idx != -1 && vol_idx >= int(object->volumes.size())) {
         if (sidebar_info)
-            *sidebar_info = _L("Wrong volume index ");
+            *sidebar_info = _L("Wrong volume index") + " ";
         return { {}, {} }; // hide tooltip
     }
 
@@ -1603,11 +1603,7 @@ void ObjectList::load_modifier(const wxArrayString& input_files, ModelObject& mo
     // First (any) GLVolume of the selected instance. They all share the same instance matrix.
     const GLVolume* v = selection.get_first_volume();
     const Geometry::Transformation inst_transform = v->get_instance_transformation();
-#if ENABLE_WORLD_COORDINATE
     const Transform3d inv_inst_transform = inst_transform.get_matrix_no_offset().inverse();
-#else
-    const Transform3d inv_inst_transform = inst_transform.get_matrix(true).inverse();
-#endif // ENABLE_WORLD_COORDINATE
     const Vec3d instance_offset = v->get_instance_offset();
 
     for (size_t i = 0; i < input_files.size(); ++i) {
@@ -1655,15 +1651,9 @@ void ObjectList::load_modifier(const wxArrayString& input_files, ModelObject& mo
             new_volume->source.mesh_offset = model.objects.front()->volumes.front()->source.mesh_offset;
 
         if (from_galery) {
-#if ENABLE_WORLD_COORDINATE
             // Transform the new modifier to be aligned with the print bed.
             new_volume->set_transformation(v->get_instance_transformation().get_matrix_no_offset().inverse());
             const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
-#else
-            // Transform the new modifier to be aligned with the print bed.
-            const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
-            new_volume->set_transformation(Geometry::Transformation::volume_to_bed_transformation(inst_transform, mesh_bb));
-#endif // ENABLE_WORLD_COORDINATE
             // Set the modifier position.
             // Translate the new modifier to be pickable: move to the left front corner of the instance's bounding box, lift to print bed.
             const Vec3d offset = Vec3d(instance_bb.max.x(), instance_bb.min.y(), instance_bb.min.z()) + 0.5 * mesh_bb.size() - instance_offset;
@@ -1732,15 +1722,9 @@ void ObjectList::load_generic_subobject(const std::string& type_name, const Mode
 
     // First (any) GLVolume of the selected instance. They all share the same instance matrix.
     const GLVolume* v = selection.get_first_volume();
-#if ENABLE_WORLD_COORDINATE
     // Transform the new modifier to be aligned with the print bed.
     new_volume->set_transformation(v->get_instance_transformation().get_matrix_no_offset().inverse());
     const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
-#else
-    // Transform the new modifier to be aligned with the print bed.
-    const BoundingBoxf3 mesh_bb = new_volume->mesh().bounding_box();
-    new_volume->set_transformation(Geometry::Transformation::volume_to_bed_transformation(v->get_instance_transformation(), mesh_bb));
-#endif // ENABLE_WORLD_COORDINATE
     // Set the modifier position.
     Vec3d offset;
     if (type_name == "Slab") {
@@ -1752,11 +1736,7 @@ void ObjectList::load_generic_subobject(const std::string& type_name, const Mode
         // Translate the new modifier to be pickable: move to the left front corner of the instance's bounding box, lift to print bed.
         offset = Vec3d(instance_bb.max.x(), instance_bb.min.y(), instance_bb.min.z()) + 0.5 * mesh_bb.size() - v->get_instance_offset();
     }
-#if ENABLE_WORLD_COORDINATE
     new_volume->set_offset(v->get_instance_transformation().get_matrix_no_offset().inverse() * offset);
-#else
-    new_volume->set_offset(v->get_instance_transformation().get_matrix(true).inverse() * offset);
-#endif // ENABLE_WORLD_COORDINATE
 
     const wxString name = _L("Generic") + "-" + _(type_name);
     new_volume->name = into_u8(name);
@@ -1796,10 +1776,8 @@ void ObjectList::load_shape_object(const std::string& type_name)
     BoundingBoxf3 bb;
     TriangleMesh mesh = create_mesh(type_name, bb);
     load_mesh_object(mesh, _u8L("Shape") + "-" + type_name);
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     if (!m_objects->empty())
         m_objects->back()->volumes.front()->source.is_from_builtin_objects = true;
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
     wxGetApp().mainframe->update_title();
 }
 
@@ -1842,6 +1820,7 @@ void ObjectList::load_mesh_object(
     const TextConfiguration *text_config /* = nullptr*/,
     const Transform3d *      transformation /* = nullptr*/)
 {   
+    PlaterAfterLoadAutoArrange plater_after_load_auto_arrange;
     // Add mesh to model as a new object
     Model& model = wxGetApp().plater()->model();
 
@@ -2060,13 +2039,12 @@ bool ObjectList::del_from_cut_object(bool is_cut_connector, bool is_model_part/*
                                is_model_part      ? _L("Delete solid part from object which is a part of cut") :
                                is_negative_volume ? _L("Delete negative volume from object which is a part of cut") : "";
                              
-    const wxString msg_end   = is_cut_connector   ? ("\n" + _L("To save cut correspondence you can delete all connectors from all related objects.")) : "";
+    const wxString msg_end   = is_cut_connector   ? ("\n" + _L("To save cut information you can delete all connectors from all related objects.")) : "";
 
     InfoDialog dialog(wxGetApp().plater(), title,
-                      _L("This action will break a cut correspondence.\n"
-                         "After that PrusaSlicer can't guarantee model consistency.\n"
-                         "\n"
-                         "To manipulate with solid parts or negative volumes you have to invalidate cut infornation first." + msg_end ),
+                      _L("This action will break a cut information.\n"
+                         "After that PrusaSlicer can't guarantee model consistency.") + "\n\n" +
+                      _L("To manipulate with solid parts or negative volumes you have to invalidate cut infornation first." + msg_end ),
                       false, buttons_style | wxCANCEL_DEFAULT | wxICON_WARNING);
 
     dialog.SetButtonLabel(wxID_YES, _L("Invalidate cut info"));
@@ -2175,6 +2153,10 @@ void ObjectList::split()
 
     take_snapshot(_(L("Split to Parts")));
 
+    // Before splitting volume we have to remove all custom supports, seams, and multimaterial painting.
+    wxGetApp().plater()->clear_before_change_mesh(obj_idx, _u8L("Custom supports, seams and multimaterial painting were "
+                                                                "removed after splitting the object."));
+
     volume->split(nozzle_dmrs_cnt);
 
     (*m_objects)[obj_idx]->input_file.clear();
@@ -2186,6 +2168,10 @@ void ObjectList::split()
     changed_object(obj_idx);
     // update printable state for new volumes on canvas3D
     wxGetApp().plater()->canvas3D()->update_instance_printable_state_for_object(obj_idx);
+
+    // After removing custom supports, seams, and multimaterial painting, we have to update info about the object to remove information about
+    // custom supports, seams, and multimaterial painting in the right panel.
+    wxGetApp().obj_list()->update_info_items(obj_idx);
 }
 
 void ObjectList::merge(bool to_multipart_object)
@@ -2681,6 +2667,8 @@ void ObjectList::part_selection_changed()
     bool disable_ss_manipulation {false};
     bool disable_ununiform_scale {false};
 
+    ECoordinatesType coordinates_type = wxGetApp().obj_manipul()->get_coordinates_type();
+
     const auto item = GetSelection();
 
     GLGizmosManager& gizmos_mgr = wxGetApp().plater()->canvas3D()->get_gizmos_manager();
@@ -2697,6 +2685,7 @@ void ObjectList::part_selection_changed()
 
         if (selection.is_single_full_object()) {
             og_name = _L("Object manipulation");
+            coordinates_type = ECoordinatesType::World;
             update_and_show_manipulations = true;
 
             obj_idx             = selection.get_object_idx();
@@ -2706,6 +2695,7 @@ void ObjectList::part_selection_changed()
         }
         else {
             og_name = _L("Group manipulation");
+            coordinates_type = ECoordinatesType::World;
 
             // don't show manipulation panel for case of all Object's parts selection 
             update_and_show_manipulations = !selection.is_single_full_instance();
@@ -2761,6 +2751,8 @@ void ObjectList::part_selection_changed()
              || type == itInfo) {
                 og_name = _L("Object manipulation");
                 m_config = &object->config;
+                if (!scene_selection().is_single_full_instance() || coordinates_type > ECoordinatesType::Instance)
+                    coordinates_type = ECoordinatesType::World;
                 update_and_show_manipulations = true;
 
                 if (type == itInfo) {
@@ -2838,6 +2830,8 @@ void ObjectList::part_selection_changed()
 
     if (update_and_show_manipulations) {
         wxGetApp().obj_manipul()->get_og()->set_name(" " + og_name + " ");
+        if (wxGetApp().obj_manipul()->get_coordinates_type() != coordinates_type)
+            wxGetApp().obj_manipul()->set_coordinates_type(coordinates_type);
 
         if (item) {
             wxGetApp().obj_manipul()->update_item_name(m_objects_model->GetName(item));
@@ -2869,7 +2863,6 @@ void ObjectList::part_selection_changed()
     Sidebar& panel = wxGetApp().sidebar();
     panel.Freeze();
 
-#if ENABLE_WORLD_COORDINATE
     std::string opt_key;
     if (m_selected_object_id >= 0) {
         const ManipulationEditor* const editor = wxGetApp().obj_manipul()->get_focused_editor();
@@ -2877,9 +2870,6 @@ void ObjectList::part_selection_changed()
             opt_key = editor->get_full_opt_name();
     }
     wxGetApp().plater()->canvas3D()->handle_sidebar_focus_event(opt_key, !opt_key.empty());
-#else
-    wxGetApp().plater()->canvas3D()->handle_sidebar_focus_event("", false);
-#endif // ENABLE_WORLD_COORDINATE
     wxGetApp().plater()->canvas3D()->enable_moving(enable_manipulation); // ysFIXME
     wxGetApp().obj_manipul() ->UpdateAndShow(update_and_show_manipulations);
     wxGetApp().obj_settings()->UpdateAndShow(update_and_show_settings);
@@ -2932,6 +2922,16 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selectio
 {
     if (obj_idx >= m_objects->size())
         return;
+
+    wxDataViewItemArray sels;
+    if (!selections) {
+        GetSelections(sels);
+        for (wxDataViewItem item : sels)
+            if (item.IsOk() && m_objects_model->GetItemType(item) == itVolume) {
+                selections = &sels;
+                break;
+            }
+    }
 
     const ModelObject* model_object = (*m_objects)[obj_idx];
     wxDataViewItem item_obj = m_objects_model->GetItemById(obj_idx);
@@ -3698,11 +3698,7 @@ void ObjectList::update_selections()
                 return;
             sels.Add(m_objects_model->GetItemById(selection.get_object_idx()));
         }
-#if ENABLE_WORLD_COORDINATE
         else if (selection.is_single_volume_or_modifier()) {
-#else
-        else if (selection.is_single_volume() || selection.is_any_modifier()) {
-#endif // ENABLE_WORLD_COORDINATE
             const auto gl_vol = selection.get_first_volume();
             if (m_objects_model->GetVolumeIdByItem(m_objects_model->GetParent(item)) == gl_vol->volume_idx())
                 return;
@@ -4682,7 +4678,8 @@ void ObjectList::fix_through_netfabb()
             msg += "\n";
         }
 
-        plater->clear_before_change_mesh(obj_idx);
+        plater->clear_before_change_mesh(obj_idx, _u8L("Custom supports, seams and multimaterial painting were "
+                                                       "removed after repairing the mesh."));
         std::string res;
         if (!fix_model_by_win10_sdk_gui(*(object(obj_idx)), vol_idx, progress_dlg, msg, res))
             return false;

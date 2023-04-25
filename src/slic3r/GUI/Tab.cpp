@@ -7,6 +7,7 @@
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
+#include "libslic3r/GCodeWriter.hpp"
 
 #include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
@@ -163,9 +164,10 @@ void Tab::create_preset_tab()
     add_scaled_button(panel, &m_btn_hide_incompatible_presets, "flag_green");
 
     m_btn_compare_preset->SetToolTip(_L("Compare this preset with some another"));
-    // TRN "Save current Settings"
-    m_btn_save_preset->SetToolTip(from_u8((boost::format(_utf8(L("Save current %s"))) % m_title).str()));
-    m_btn_rename_preset->SetToolTip(from_u8((boost::format(_utf8(L("Rename current %s"))) % m_title).str()));
+    // TRN Settings Tabs: Tooltip for save button: "Settings"
+    m_btn_save_preset->SetToolTip(format_wxstr(_L("Save current %s"), m_title));
+    // TRN Settings Tabs: Tooltip for rename button: "Settings"
+    m_btn_rename_preset->SetToolTip(format_wxstr(_L("Rename current %1%"), m_title));
     m_btn_rename_preset->Hide();
     m_btn_delete_preset->SetToolTip(_(L("Delete this preset")));
     m_btn_delete_preset->Hide();
@@ -263,6 +265,7 @@ void Tab::create_preset_tab()
     // tree
     m_treectrl = new wxTreeCtrl(panel, wxID_ANY, wxDefaultPosition, wxSize(20 * m_em_unit, -1),
         wxTR_NO_BUTTONS | wxTR_HIDE_ROOT | wxTR_SINGLE | wxTR_NO_LINES | wxBORDER_SUNKEN | wxWANTS_CHARS);
+    m_treectrl->SetFont(wxGetApp().normal_font());
     m_left_sizer->Add(m_treectrl, 1, wxEXPAND);
     // Index of the last icon inserted into m_treectrl
     m_icon_count = -1;
@@ -1119,10 +1122,11 @@ void Tab::update_wiping_button_visibility() {
         return; // ys_FIXME
     bool wipe_tower_enabled = dynamic_cast<ConfigOptionBool*>(  (m_preset_bundle->prints.get_edited_preset().config  ).option("wipe_tower"))->value;
     bool multiple_extruders = dynamic_cast<ConfigOptionFloats*>((m_preset_bundle->printers.get_edited_preset().config).option("nozzle_diameter"))->values.size() > 1;
+    bool single_extruder_multi_material = dynamic_cast<ConfigOptionBool*>((m_preset_bundle->printers.get_edited_preset().config).option("single_extruder_multi_material"))->value;
 
     auto wiping_dialog_button = wxGetApp().sidebar().get_wiping_dialog_button();
     if (wiping_dialog_button) {
-        wiping_dialog_button->Show(wipe_tower_enabled && multiple_extruders);
+        wiping_dialog_button->Show(wipe_tower_enabled && multiple_extruders && single_extruder_multi_material);
         wiping_dialog_button->GetParent()->Layout();
     }
 }
@@ -1427,7 +1431,6 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Quality (slower slicing)"));
         optgroup->append_single_option_line("extra_perimeters", category_path + "extra-perimeters-if-needed");
         optgroup->append_single_option_line("extra_perimeters_on_overhangs", category_path + "extra-perimeters-on-overhangs");
-        optgroup->append_single_option_line("ensure_vertical_shell_thickness", category_path + "ensure-vertical-shell-thickness");
         optgroup->append_single_option_line("avoid_crossing_curled_overhangs", category_path + "avoid-crossing-curled-overhangs");
         optgroup->append_single_option_line("avoid_crossing_perimeters", category_path + "avoid-crossing-perimeters");
         optgroup->append_single_option_line("avoid_crossing_perimeters_max_detour", category_path + "avoid_crossing_perimeters_max_detour");
@@ -1468,7 +1471,7 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Reducing printing time"));
         category_path = "infill_42#";
         optgroup->append_single_option_line("infill_every_layers", category_path + "combine-infill-every-x-layers");
-        optgroup->append_single_option_line("infill_only_where_needed", category_path + "only-infill-where-needed");
+        // optgroup->append_single_option_line("infill_only_where_needed", category_path + "only-infill-where-needed");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("solid_infill_every_layers", category_path + "solid-infill-every-x-layers");
@@ -1532,6 +1535,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("support_tree_branch_diameter", category_path + "tree_branch_diameter");
         optgroup->append_single_option_line("support_tree_branch_diameter_angle", category_path + "tree_branch_diameter_angle");
         optgroup->append_single_option_line("support_tree_tip_diameter", category_path + "tree_tip_diameter");
+        optgroup->append_single_option_line("support_tree_branch_distance", category_path + "tree_branch_distance");
         optgroup->append_single_option_line("support_tree_top_rate", category_path + "tree_top_rate");
 
     page = add_options_page(L("Speed"), "time");
@@ -1549,18 +1553,11 @@ void TabPrint::build()
         optgroup->append_single_option_line("ironing_speed");
 
         optgroup = page->new_optgroup(L("Dynamic overhang speed"));
-        auto append_option_line = [](ConfigOptionsGroupShp optgroup, std::string opt_key) {
-            auto option = optgroup->get_option(opt_key, 0);
-            auto line   = Line{option.opt.full_label, ""};
-            line.append_option(option);
-            line.append_option(optgroup->get_option(opt_key, 1));
-            line.append_option(optgroup->get_option(opt_key, 2));
-            line.append_option(optgroup->get_option(opt_key, 3));
-            optgroup->append_line(line);
-        };
         optgroup->append_single_option_line("enable_dynamic_overhang_speeds");
-	    append_option_line(optgroup,"overhang_overlap_levels");
-        append_option_line(optgroup,"dynamic_overhang_speeds");
+        optgroup->append_single_option_line("overhang_speed_0");
+        optgroup->append_single_option_line("overhang_speed_1");
+        optgroup->append_single_option_line("overhang_speed_2");
+        optgroup->append_single_option_line("overhang_speed_3");
 
         optgroup = page->new_optgroup(L("Speed for non-print moves"));
         optgroup->append_single_option_line("travel_speed");
@@ -1579,6 +1576,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("bridge_acceleration");
         optgroup->append_single_option_line("first_layer_acceleration");
         optgroup->append_single_option_line("first_layer_acceleration_over_raft");
+        optgroup->append_single_option_line("travel_acceleration");
         optgroup->append_single_option_line("default_acceleration");
 
         optgroup = page->new_optgroup(L("Autospeed (advanced)"));
@@ -1609,6 +1607,8 @@ void TabPrint::build()
         optgroup->append_single_option_line("wipe_tower_rotation_angle");
         optgroup->append_single_option_line("wipe_tower_brim_width");
         optgroup->append_single_option_line("wipe_tower_bridging");
+        optgroup->append_single_option_line("wipe_tower_cone_angle");
+        optgroup->append_single_option_line("wipe_tower_extra_spacing");
         optgroup->append_single_option_line("wipe_tower_no_sparse_layers");
         optgroup->append_single_option_line("single_extruder_multi_material_priming");
 
@@ -1994,6 +1994,13 @@ void TabFilament::build()
         optgroup->append_single_option_line("disable_fan_first_layers", category_path + "fan-settings");
         optgroup->append_single_option_line("full_fan_speed_layer", category_path + "fan-settings");
 
+        optgroup = page->new_optgroup(L("Dynamic fan speeds"), 25);
+        optgroup->append_single_option_line("enable_dynamic_fan_speeds", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_0", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_1", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_2", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_3", category_path + "dynamic-fan-speeds");
+
         optgroup = page->new_optgroup(L("Cooling thresholds"), 25);
         optgroup->append_single_option_line("fan_below_layer_time", category_path + "cooling-thresholds");
         optgroup->append_single_option_line("slowdown_below_layer_time", category_path + "cooling-thresholds");
@@ -2146,6 +2153,11 @@ void TabFilament::toggle_options()
 
         for (auto el : { "min_fan_speed", "disable_fan_first_layers", "full_fan_speed_layer" })
             toggle_option(el, fan_always_on);
+
+        bool dynamic_fan_speeds = m_config->opt_bool("enable_dynamic_fan_speeds", 0);
+        for (int i = 0; i < 4; i++) {
+        toggle_option("overhang_fan_speed_"+std::to_string(i),dynamic_fan_speeds);
+        }
     }
 
     if (m_active_page->title() == "Filament Overrides")
@@ -2249,6 +2261,12 @@ void TabPrinter::build_print_host_upload_group(Page* page)
                                        description_line_text);
     };
     optgroup->append_line(line);
+}
+
+static wxString get_info_klipper_string()
+{
+    return _L("Emitting machine limits to G-code is not supported with Klipper G-code flavor.\n"
+              "The option was switched to \"Use for time estimate\".");
 }
 
 void TabPrinter::build_fff()
@@ -2368,13 +2386,41 @@ void TabPrinter::build_fff()
                     }
                 }
                 if (opt_key == "gcode_flavor") {
-                    const int flavor = boost::any_cast<int>(value);
-                    bool supports_travel_acceleration = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfRepRapFirmware));
-                    bool supports_min_feedrates       = (flavor == int(gcfMarlinFirmware) || flavor == int(gcfMarlinLegacy));
+                    const GCodeFlavor flavor = static_cast<GCodeFlavor>(boost::any_cast<int>(value));
+                    bool supports_travel_acceleration = GCodeWriter::supports_separate_travel_acceleration(flavor);
+                    bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
                     if (supports_travel_acceleration != m_supports_travel_acceleration || supports_min_feedrates != m_supports_min_feedrates) {
                         m_rebuild_kinematics_page = true;
                         m_supports_travel_acceleration = supports_travel_acceleration;
                         m_supports_min_feedrates = supports_min_feedrates;
+                    }
+
+                    const bool is_emit_to_gcode = m_config->option("machine_limits_usage")->getInt() == static_cast<int>(MachineLimitsUsage::EmitToGCode);
+                    if ((flavor == gcfKlipper && is_emit_to_gcode) || (!m_supports_min_feedrates && m_use_silent_mode)) {
+                        DynamicPrintConfig new_conf = *m_config;
+                        wxString msg;
+
+                        if (flavor == gcfKlipper && is_emit_to_gcode) {
+                            msg = get_info_klipper_string();
+
+                            auto machine_limits_usage = static_cast<ConfigOptionEnum<MachineLimitsUsage>*>(m_config->option("machine_limits_usage")->clone());
+                            machine_limits_usage->value = MachineLimitsUsage::TimeEstimateOnly;
+                            new_conf.set_key_value("machine_limits_usage", machine_limits_usage);
+                        }
+
+                        if (!m_supports_min_feedrates && m_use_silent_mode) {
+                            if (!msg.IsEmpty())
+                                msg += "\n\n";
+                            msg += _L("Stealth mode for machine limits to G-code is not supported with selected G-code flavor.\n"
+                                      "The Stealth mode was suppressed.");
+
+                            auto silent_mode = static_cast<ConfigOptionBool*>(m_config->option("silent_mode")->clone());
+                            silent_mode->value = false;
+                            new_conf.set_key_value("silent_mode", silent_mode);
+                        }
+
+                        InfoDialog(parent(), _L("G-code flavor is switched"), msg).ShowModal();
+                        load_config(new_conf);
                     }
                 }
                 build_unregular_pages();
@@ -2401,6 +2447,9 @@ void TabPrinter::build_fff()
         option.opt.is_code = true;
         option.opt.height = 3 * gcode_field_height;//150;
         optgroup->append_single_option_line(option);
+
+        optgroup = page->new_optgroup(L("Start G-Code options"));
+        optgroup->append_single_option_line("autoemit_temperature_commands");
 
         optgroup = page->new_optgroup(L("End G-code"), 0);
         optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
@@ -2620,6 +2669,27 @@ PageShp TabPrinter::build_kinematics_page()
         };
         optgroup->append_line(line);
     }
+
+    optgroup->m_on_change = [this](const t_config_option_key& opt_key, boost::any value)
+    {
+        if (opt_key == "machine_limits_usage" &&
+            static_cast<MachineLimitsUsage>(boost::any_cast<int>(value)) == MachineLimitsUsage::EmitToGCode &&
+            static_cast<GCodeFlavor>(m_config->option("gcode_flavor")->getInt()) == gcfKlipper)
+        {
+            DynamicPrintConfig new_conf = *m_config;
+
+            auto machine_limits_usage = static_cast<ConfigOptionEnum<MachineLimitsUsage>*>(m_config->option("machine_limits_usage")->clone());
+            machine_limits_usage->value = MachineLimitsUsage::TimeEstimateOnly;
+
+            new_conf.set_key_value("machine_limits_usage", machine_limits_usage);
+
+            InfoDialog(parent(), wxEmptyString, get_info_klipper_string()).ShowModal();
+            load_config(new_conf);
+        }
+
+        update_dirty();
+        update();
+    };
 
     if (m_use_silent_mode) {
         // Legend for OptionsGroups
@@ -2857,7 +2927,7 @@ void TabPrinter::build_unregular_pages(bool from_initial_build/* = false*/)
 {
     size_t		n_before_extruders = 2;			//	Count of pages before Extruder pages
     auto        flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
-    bool		show_mach_limits = (flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
+    bool		show_mach_limits = (flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware || flavor == gcfKlipper);
 
     /* ! Freeze/Thaw in this function is needed to avoid call OnPaint() for erased pages
      * and be cause of application crash, when try to change Preset in moment,
@@ -3093,7 +3163,8 @@ void TabPrinter::toggle_options()
     if (m_active_page->title() == "Machine limits" && m_machine_limits_description_line) {
         assert(flavor == gcfMarlinLegacy
             || flavor == gcfMarlinFirmware
-            || flavor == gcfRepRapFirmware);
+            || flavor == gcfRepRapFirmware
+            || flavor == gcfKlipper);
 		const auto *machine_limits_usage = m_config->option<ConfigOptionEnum<MachineLimitsUsage>>("machine_limits_usage");
 		bool enabled = machine_limits_usage->value != MachineLimitsUsage::Ignore;
         bool silent_mode = m_config->opt_bool("silent_mode");
@@ -3751,7 +3822,7 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
     }
 
     if (name.empty()) {
-        SavePresetDialog dlg(m_parent, m_type, detach ? _u8L("Detached") : "", from_template);
+        SavePresetDialog dlg(m_parent, { m_type }, detach ? _u8L("Detached") : "", from_template);
         if (dlg.ShowModal() != wxID_OK)
             return;
         name = dlg.get_name();
@@ -3862,7 +3933,7 @@ void Tab::rename_preset()
 
     // get new name
 
-    SavePresetDialog dlg(m_parent, m_type, true, msg);
+    SavePresetDialog dlg(m_parent, m_type, msg);
     if (dlg.ShowModal() != wxID_OK)
         return;
 
@@ -3917,8 +3988,7 @@ void Tab::delete_preset()
 {
     auto current_preset = m_presets->get_selected_preset();
     // Don't let the user delete the ' - default - ' configuration.
-    std::string action = current_preset.is_external ? _utf8(L("remove")) : _utf8(L("delete"));
-    // TRN  remove/delete
+    wxString action = current_preset.is_external ? _L("remove") : _L("delete");
 
     PhysicalPrinterCollection& physical_printers = m_preset_bundle->physical_printers;
     wxString msg;
@@ -3962,13 +4032,14 @@ void Tab::delete_preset()
                                         "Note, that these printers will be deleted after deleting the selected preset.", ph_printers_only.size()) + "\n\n";
             }
         }
-    
+
+        // TRN "remove/delete"
         msg += from_u8((boost::format(_u8L("Are you sure you want to %1% the selected preset?")) % action).str());
     }
 
-    action = current_preset.is_external ? _utf8(L("Remove")) : _utf8(L("Delete"));
-    // TRN  Remove/Delete
-    wxString title = from_u8((boost::format(_utf8(L("%1% Preset"))) % action).str());  //action + _(L(" Preset"));
+    action = current_preset.is_external ? _L("Remove") : _L("Delete");
+    // TRN Settings Tabs: Button in toolbar: "Remove/Delete"
+    wxString title = format_wxstr(_L("%1% Preset"), action);
     if (current_preset.is_default ||
         //wxID_YES != wxMessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
         wxID_YES != MessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
@@ -4054,7 +4125,7 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
     deps.checkbox = new wxCheckBox(parent, wxID_ANY, _(L("All")));
     deps.checkbox->SetFont(Slic3r::GUI::wxGetApp().normal_font());
     wxGetApp().UpdateDarkUI(deps.checkbox, false, true);
-    deps.btn = new ScalableButton(parent, wxID_ANY, "printer", from_u8((boost::format(" %s %s") % _utf8(L("Set")) % std::string(dots.ToUTF8())).str()),
+    deps.btn = new ScalableButton(parent, wxID_ANY, "printer", format_wxstr(" %s %s", _L("Set"), dots),
                                   wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
     deps.btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
     deps.btn->SetSize(deps.btn->GetBestSize());
@@ -4502,6 +4573,8 @@ bool Tab::validate_custom_gcodes()
         if (!opt_group->is_activated())
             break;
         std::string key = opt_group->opt_map().begin()->first;
+        if (key == "autoemit_temperature_commands")
+            continue;
         valid &= validate_custom_gcode(opt_group->title, boost::any_cast<std::string>(opt_group->get_value(key)));
         if (!valid)
             break;
@@ -5027,9 +5100,9 @@ void TabSLAPrint::update_description_lines()
             {
                 bool elev = !m_config->opt_bool("pad_enable") || !m_config->opt_bool("pad_around_object");
                 m_support_object_elevation_description_line->SetText(elev ? "" :
-                    from_u8((boost::format(_u8L("\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
-                        "To enable \"%1%\", please switch off \"%2%\""))
-                        % _L("Object elevation") % _L("Pad around object") % _L("Pad")).str()));
+                    format_wxstr(_L("\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
+                        "To enable \"%1%\", please switch off \"%2%\"")
+                        , _L("Object elevation"), _L("Pad around object"), _L("Pad")));
             }
         }
     }

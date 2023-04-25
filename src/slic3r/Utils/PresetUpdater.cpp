@@ -399,7 +399,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 				std::string name(stat.m_filename);
 				if (stat.m_uncomp_size > 0) {
 					std::string buffer((size_t)stat.m_uncomp_size, 0);
-					mz_bool res = mz_zip_reader_extract_file_to_mem(&archive, stat.m_filename, (void*)buffer.data(), (size_t)stat.m_uncomp_size, 0);
+					mz_bool res = mz_zip_reader_extract_to_mem(&archive, stat.m_file_index, (void*)buffer.data(), (size_t)stat.m_uncomp_size, 0);
 					if (res == 0) {
 						BOOST_LOG_TRIVIAL(error) << "Failed to unzip " << stat.m_filename;
 						continue;
@@ -1168,7 +1168,7 @@ void PresetUpdater::slic3r_update_notify()
 
 static bool reload_configs_update_gui()
 {
-	wxString header = _L("Configuration Updates causes a loss of preset modification.\n"
+	wxString header = _L("Configuration Update will cause the preset modification to be lost.\n"
 						 "So, check unsaved changes and save them if necessary.");
 	if (!GUI::wxGetApp().check_and_save_current_preset_changes(_L("Updating"), header, false ))
 		return false;

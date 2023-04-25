@@ -18,6 +18,7 @@ void FillBedJob::prepare()
     m_selected.clear();
     m_unselected.clear();
     m_bedpts.clear();
+    m_min_bed_inset = 0.;
 
     m_object_idx = m_plater->get_selected_object_idx();
     if (m_object_idx == -1)
@@ -29,7 +30,7 @@ void FillBedJob::prepare()
     m_selected.reserve(model_object->instances.size());
     for (ModelInstance *inst : model_object->instances)
         if (inst->printable) {
-            ArrangePolygon ap = get_arrange_poly(PtrWrapper{inst}, m_plater);
+            ArrangePolygon ap = get_arrange_poly(inst, m_plater);
             // Existing objects need to be included in the result. Only
             // the needed amount of object will be added, no more.
             ++ap.priority;
@@ -101,23 +102,39 @@ void FillBedJob::prepare()
     for (auto &p : m_unselected)
         if (p.bed_idx > 0)
             p.translation(X) -= p.bed_idx * stride;
+
+    coord_t min_offset = 0;
+    for (auto &ap : m_selected) {
+        min_offset = std::max(ap.inflation, min_offset);
+    }
+
+    if (m_plater->printer_technology() == ptSLA) {
+        // Apply the max offset for all the objects
+        for (auto &ap : m_selected) {
+            ap.inflation = min_offset;
+        }
+    } else { // it's fff, brims only need to be minded from bed edges
+        for (auto &ap : m_selected) {
+            ap.inflation = 0;
+        }
+        m_min_bed_inset = min_offset;
+    }
 }
 
 void FillBedJob::process(Ctl &ctl)
 {
     auto statustxt = _u8L("Filling bed");
-    ctl.call_on_main_thread([this] { prepare(); }).wait();
+    arrangement::ArrangeParams params;
+    ctl.call_on_main_thread([this, &params] {
+           prepare();
+           params = get_arrange_params(m_plater);
+           coord_t min_inset = get_skirt_offset(m_plater) + m_min_bed_inset;
+           params.min_bed_distance = std::max(params.min_bed_distance, min_inset);
+    }).wait();
     ctl.update_status(0, statustxt);
 
-    if (m_object_idx == -1 || m_selected.empty()) return;
-
-    const GLCanvas3D::ArrangeSettings &settings =
-        static_cast<const GLCanvas3D*>(m_plater->canvas3D())->get_arrange_settings();
-
-    arrangement::ArrangeParams params;
-    params.allow_rotations  = settings.enable_rotation;
-    params.min_obj_distance = scaled(settings.distance);
-    params.min_bed_distance = scaled(settings.distance_from_bed);
+    if (m_object_idx == -1 || m_selected.empty())
+        return;
 
     bool do_stop = false;
     params.stopcondition = [&ctl, &do_stop]() {

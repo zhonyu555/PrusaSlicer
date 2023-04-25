@@ -9,6 +9,7 @@
 #include <future>
 #include <boost/algorithm/string.hpp>
 #include <boost/optional.hpp>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/log/trivial.hpp>
@@ -53,15 +54,17 @@
 #include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/miniz_extension.hpp"
 
+// For stl export
+#include "libslic3r/CSGMesh/ModelToCSGMesh.hpp"
+#include "libslic3r/CSGMesh/PerformCSGMeshBooleans.hpp"
+
 #include "GUI.hpp"
 #include "GUI_App.hpp"
 #include "GUI_ObjectList.hpp"
 #include "GUI_ObjectManipulation.hpp"
 #include "GUI_ObjectLayers.hpp"
 #include "GUI_Utils.hpp"
-#if ENABLE_WORLD_COORDINATE
 #include "GUI_Geometry.hpp"
-#endif // ENABLE_WORLD_COORDINATE
 #include "GUI_Factories.hpp"
 #include "wxExtensions.hpp"
 #include "MainFrame.hpp"
@@ -829,6 +832,7 @@ Sidebar::Sidebar(Plater *parent)
                 wxRIGHT, margin_5);
 #else
                 wxBOTTOM, 1);
+                (void)margin_5; // supress unused capture warning
 #endif // __WXGTK3__
         } else {
             sizer_filaments->Add(combo_and_btn_sizer, 0, wxEXPAND |
@@ -1375,7 +1379,7 @@ void Sidebar::update_sliced_info_sizer()
             wxString t_est = std::isnan(ps.estimated_print_time) ? "N/A" : get_time_dhms(float(ps.estimated_print_time));
             p->sliced_info->SetTextAndShow(siEstimatedTime, t_est, _L("Estimated printing time") + ":");
 
-            p->plater->get_notification_manager()->set_slicing_complete_print_time(_utf8("Estimated printing time: ") + boost::nowide::narrow(t_est), p->plater->is_sidebar_collapsed());
+            p->plater->get_notification_manager()->set_slicing_complete_print_time(_u8L("Estimated printing time") + ": " + boost::nowide::narrow(t_est), p->plater->is_sidebar_collapsed());
 
             // Hide non-SLA sliced info parameters
             p->sliced_info->SetTextAndShow(siFilament_m, "N/A");
@@ -1465,7 +1469,7 @@ void Sidebar::update_sliced_info_sizer()
                     new_label += format_wxstr("\n   - %1%", _L("normal mode"));
                     info_text += format_wxstr("\n%1%", short_time(ps.estimated_normal_print_time));
 
-                    p->plater->get_notification_manager()->set_slicing_complete_print_time(_utf8("Estimated printing time: ") + ps.estimated_normal_print_time, p->plater->is_sidebar_collapsed());
+                    p->plater->get_notification_manager()->set_slicing_complete_print_time(_u8L("Estimated printing time") + ": " + ps.estimated_normal_print_time, p->plater->is_sidebar_collapsed());
 
                 }
                 if (ps.estimated_silent_print_time != "N/A") {
@@ -1542,10 +1546,8 @@ void Sidebar::update_mode()
 
     wxWindowUpdateLocker noUpdates(this);
 
-#if ENABLE_WORLD_COORDINATE
     if (m_mode == comSimple)
         p->object_manipulation->set_coordinates_type(ECoordinatesType::World);
-#endif // ENABLE_WORLD_COORDINATE
 
     p->object_list->get_sizer()->Show(m_mode > comSimple);
 
@@ -2015,7 +2017,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
         "brim_width", "brim_separation", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
-        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width",
+        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_cone_angle", "wipe_tower_extra_spacing",
         "extruder_colour", "filament_colour", "material_colour", "max_print_height", "printer_model", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
         "layer_height", "first_layer_height", "min_layer_height", "max_layer_height",
@@ -2111,9 +2113,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         view3D_canvas->Bind(EVT_GLCANVAS_WIPETOWER_MOVED, &priv::on_wipetower_moved, this);
         view3D_canvas->Bind(EVT_GLCANVAS_WIPETOWER_ROTATED, &priv::on_wipetower_rotated, this);
         view3D_canvas->Bind(EVT_GLCANVAS_INSTANCE_ROTATED, [this](SimpleEvent&) { update(); });
-#if ENABLE_WORLD_COORDINATE
         view3D_canvas->Bind(EVT_GLCANVAS_RESET_SKEW, [this](SimpleEvent&) { update(); });
-#endif // ENABLE_WORLD_COORDINATE
         view3D_canvas->Bind(EVT_GLCANVAS_INSTANCE_SCALED, [this](SimpleEvent&) { update(); });
         view3D_canvas->Bind(EVT_GLCANVAS_ENABLE_ACTION_BUTTONS, [this](Event<bool>& evt) { this->sidebar->enable_buttons(evt.data); });
         view3D_canvas->Bind(EVT_GLCANVAS_UPDATE_GEOMETRY, &priv::on_update_geometry, this);
@@ -2250,7 +2250,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         this->q->load_files(input_files);
     });
   
-    this->q->Bind(EVT_START_DOWNLOAD_OTHER_INSTANCE, [this](StartDownloadOtherInstanceEvent& evt) {
+    this->q->Bind(EVT_START_DOWNLOAD_OTHER_INSTANCE, [](StartDownloadOtherInstanceEvent& evt) {
         BOOST_LOG_TRIVIAL(trace) << "Received url from other instance event.";
         wxGetApp().mainframe->Raise();
         for (size_t i = 0; i < evt.data.size(); ++i) {
@@ -2342,8 +2342,8 @@ void Plater::priv::collapse_sidebar(bool collapse)
 
     // Now update the tooltip in the toolbar.
     std::string new_tooltip = collapse
-                              ? _utf8(L("Expand sidebar"))
-                              : _utf8(L("Collapse sidebar"));
+                              ? _u8L("Expand sidebar")
+                              : _u8L("Collapse sidebar");
     new_tooltip += " [Shift+Tab]";
     int id = collapse_toolbar.get_item_id("collapse_sidebar");
     collapse_toolbar.set_tooltip(id, new_tooltip);
@@ -2438,6 +2438,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     if (input_files.empty()) { return std::vector<size_t>(); }
 
     auto *nozzle_dmrs = config->opt<ConfigOptionFloats>("nozzle_diameter");
+
+    PlaterAfterLoadAutoArrange plater_after_load_auto_arrange;
 
     bool one_by_one = input_files.size() == 1 || printer_technology == ptSLA || nozzle_dmrs->values.size() <= 1;
     if (! one_by_one) {
@@ -2683,7 +2685,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                         instance->set_offset(-model_object->origin_translation);
                     }
                 }
-                model_object->ensure_on_bed(is_project_file);
+                if (!model_object->instances.empty())
+                  model_object->ensure_on_bed(is_project_file);
             }
 
             if (one_by_one) {
@@ -2697,6 +2700,9 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     new_model->add_object(*model_object);
                 }
             }
+
+            if (is_project_file)
+                plater_after_load_auto_arrange.disable();
         }
     }
 
@@ -3026,8 +3032,8 @@ bool Plater::priv::delete_object_from_model(size_t obj_idx)
     ModelObject* obj = model.objects[obj_idx];
     if (obj->is_cut()) {
         InfoDialog dialog(q, _L("Delete object which is a part of cut object"), 
-                             _L("You try to delete an object which is a part of a cut object.\n"
-                                "This action will break a cut correspondence.\n"
+                             _L("You try to delete an object which is a part of a cut object.") + "\n" + 
+                                _L("This action will break a cut information.\n"
                                 "After that PrusaSlicer can't guarantee model consistency"), 
                                 false, wxYES | wxCANCEL | wxCANCEL_DEFAULT | wxICON_WARNING);
         dialog.SetButtonLabel(wxID_YES, _L("Delete object"));
@@ -3127,6 +3133,10 @@ void Plater::priv::split_object()
     Model new_model = model;
     ModelObject* current_model_object = new_model.objects[obj_idx];
 
+    // Before splitting object we have to remove all custom supports, seams, and multimaterial painting.
+    wxGetApp().plater()->clear_before_change_mesh(obj_idx, _u8L("Custom supports, seams and multimaterial painting were "
+                                                                "removed after splitting the object."));
+
     wxBusyCursor wait;
     ModelObjectPtrs new_objects;
     current_model_object->split(&new_objects);
@@ -3149,6 +3159,8 @@ void Plater::priv::split_object()
         // causing original positions not to be kept
         std::vector<size_t> idxs = load_model_objects(new_objects);
 
+        // clear previosli selection
+        get_selection().clear();
         // select newly added objects
         for (size_t idx : idxs)
         {
@@ -3516,7 +3528,7 @@ bool Plater::priv::replace_volume_with_stl(int object_idx, int volume_idx, const
     ModelObject* old_model_object = model.objects[object_idx];
     ModelVolume* old_volume = old_model_object->volumes[volume_idx];
 
-    bool sinking = old_model_object->bounding_box().min.z() < SINKING_Z_THRESHOLD;
+    bool sinking = old_model_object->min_z() < SINKING_Z_THRESHOLD;
 
     ModelObject* new_model_object = new_model.objects.front();
     old_model_object->add_volume(*new_model_object->volumes.front());
@@ -3526,11 +3538,7 @@ bool Plater::priv::replace_volume_with_stl(int object_idx, int volume_idx, const
     new_volume->set_type(old_volume->type());
     new_volume->set_material_id(old_volume->material_id());
     new_volume->set_transformation(old_volume->get_transformation());
-#if ENABLE_WORLD_COORDINATE
     new_volume->translate(new_volume->get_transformation().get_matrix_no_offset() * (new_volume->source.mesh_offset - old_volume->source.mesh_offset));
-#else
-    new_volume->translate(new_volume->get_transformation().get_matrix(true) * (new_volume->source.mesh_offset - old_volume->source.mesh_offset));
-#endif // ENABLE_WORLD_COORDINATE
     assert(!old_volume->source.is_converted_from_inches || !old_volume->source.is_converted_from_meters);
     if (old_volume->source.is_converted_from_inches)
         new_volume->convert_from_imperial_units();
@@ -3605,7 +3613,6 @@ void Plater::priv::replace_with_stl()
     }
 }
 
-#if ENABLE_RELOAD_FROM_DISK_REWORK
 static std::vector<std::pair<int, int>> reloadable_volumes(const Model& model, const Selection& selection)
 {
     std::vector<std::pair<int, int>> ret;
@@ -3626,11 +3633,9 @@ static std::vector<std::pair<int, int>> reloadable_volumes(const Model& model, c
     }
     return ret;
 }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
 
 void Plater::priv::reload_from_disk()
 {
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     // collect selected reloadable ModelVolumes
     std::vector<std::pair<int, int>> selected_volumes = reloadable_volumes(model, get_selection());
 
@@ -3641,47 +3646,13 @@ void Plater::priv::reload_from_disk()
     std::sort(selected_volumes.begin(), selected_volumes.end(), [](const std::pair<int, int>& v1, const std::pair<int, int>& v2) {
         return (v1.first < v2.first) || (v1.first == v2.first && v1.second < v2.second);
         });
+
     selected_volumes.erase(std::unique(selected_volumes.begin(), selected_volumes.end(), [](const std::pair<int, int>& v1, const std::pair<int, int>& v2) {
         return (v1.first == v2.first) && (v1.second == v2.second); }), selected_volumes.end());
-#else
-    Plater::TakeSnapshot snapshot(q, _L("Reload from disk"));
-
-    const Selection& selection = get_selection();
-
-    if (selection.is_wipe_tower())
-        return;
-
-    // struct to hold selected ModelVolumes by their indices
-    struct SelectedVolume
-    {
-        int object_idx;
-        int volume_idx;
-
-        // operators needed by std::algorithms
-        bool operator < (const SelectedVolume& other) const { return object_idx < other.object_idx || (object_idx == other.object_idx && volume_idx < other.volume_idx); }
-        bool operator == (const SelectedVolume& other) const { return object_idx == other.object_idx && volume_idx == other.volume_idx; }
-    };
-    std::vector<SelectedVolume> selected_volumes;
-
-    // collects selected ModelVolumes
-    const std::set<unsigned int>& selected_volumes_idxs = selection.get_volume_idxs();
-    for (unsigned int idx : selected_volumes_idxs) {
-        const GLVolume* v = selection.get_volume(idx);
-        int v_idx = v->volume_idx();
-        if (v_idx >= 0) {
-            int o_idx = v->object_idx();
-            if (0 <= o_idx && o_idx < (int)model.objects.size())
-                selected_volumes.push_back({ o_idx, v_idx });
-        }
-    }
-    std::sort(selected_volumes.begin(), selected_volumes.end());
-    selected_volumes.erase(std::unique(selected_volumes.begin(), selected_volumes.end()), selected_volumes.end());
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
 
     // collects paths of files to load
     std::vector<fs::path> input_paths;
     std::vector<fs::path> missing_input_paths;
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     std::vector<std::pair<fs::path, fs::path>> replace_paths;
     for (auto [obj_idx, vol_idx] : selected_volumes) {
         const ModelObject* object = model.objects[obj_idx];
@@ -3705,37 +3676,6 @@ void Plater::priv::reload_from_disk()
                 missing_input_paths.push_back(volume->source.input_file);
         }
     }
-#else
-    std::vector<fs::path> replace_paths;
-    for (const SelectedVolume& v : selected_volumes) {
-        const ModelObject* object = model.objects[v.object_idx];
-        const ModelVolume* volume = object->volumes[v.volume_idx];
-
-        if (!volume->source.input_file.empty()) {
-            if (fs::exists(volume->source.input_file))
-                input_paths.push_back(volume->source.input_file);
-            else {
-                // searches the source in the same folder containing the object
-                bool found = false;
-                if (!object->input_file.empty()) {
-                    fs::path object_path = fs::path(object->input_file).remove_filename();
-                    if (!object_path.empty()) {
-                        object_path /= fs::path(volume->source.input_file).filename();
-                        const std::string source_input_file = object_path.string();
-                        if (fs::exists(source_input_file)) {
-                            input_paths.push_back(source_input_file);
-                            found = true;
-                        }
-                    }
-                }
-                if (!found)
-                    missing_input_paths.push_back(volume->source.input_file);
-            }
-        }
-        else if (!object->input_file.empty() && volume->is_model_part() && !volume->name.empty() && !volume->source.is_from_builtin_objects)
-            missing_input_paths.push_back(volume->name);
-    }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
 
     std::sort(missing_input_paths.begin(), missing_input_paths.end());
     missing_input_paths.erase(std::unique(missing_input_paths.begin(), missing_input_paths.end()), missing_input_paths.end());
@@ -3779,11 +3719,8 @@ void Plater::priv::reload_from_disk()
             //wxMessageDialog dlg(q, message, wxMessageBoxCaptionStr, wxYES_NO | wxYES_DEFAULT | wxICON_QUESTION);
             MessageDialog dlg(q, message, wxMessageBoxCaptionStr, wxYES_NO | wxYES_DEFAULT | wxICON_QUESTION);
             if (dlg.ShowModal() == wxID_YES)
-#if ENABLE_RELOAD_FROM_DISK_REWORK
                 replace_paths.emplace_back(search, sel_filename_path);
-#else
-                replace_paths.emplace_back(sel_filename_path);
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
+
             missing_input_paths.pop_back();
         }
     }
@@ -3794,9 +3731,7 @@ void Plater::priv::reload_from_disk()
     std::sort(replace_paths.begin(), replace_paths.end());
     replace_paths.erase(std::unique(replace_paths.begin(), replace_paths.end()), replace_paths.end());
 
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     Plater::TakeSnapshot snapshot(q, _L("Reload from disk"));
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
 
     std::vector<wxString> fail_list;
 
@@ -3826,12 +3761,11 @@ void Plater::priv::reload_from_disk()
         }
 
         // update the selected volumes whose source is the current file
-#if ENABLE_RELOAD_FROM_DISK_REWORK
         for (auto [obj_idx, vol_idx] : selected_volumes) {
             ModelObject* old_model_object = model.objects[obj_idx];
             ModelVolume* old_volume = old_model_object->volumes[vol_idx];
 
-            bool sinking = old_model_object->bounding_box().min.z() < SINKING_Z_THRESHOLD;
+            bool sinking = old_model_object->min_z() < SINKING_Z_THRESHOLD;
 
             bool has_source = !old_volume->source.input_file.empty() && boost::algorithm::iequals(fs::path(old_volume->source.input_file).filename().string(), fs::path(path).filename().string());
             bool has_name = !old_volume->name.empty() && boost::algorithm::iequals(old_volume->name, fs::path(path).filename().string());
@@ -3885,19 +3819,12 @@ void Plater::priv::reload_from_disk()
                 new_volume->config.apply(old_volume->config);
                 new_volume->set_type(old_volume->type());
                 new_volume->set_material_id(old_volume->material_id());
-#if ENABLE_WORLD_COORDINATE
                 new_volume->set_transformation(
                     old_volume->get_transformation().get_matrix() *
                     old_volume->source.transform.get_matrix_no_offset() *
                     Geometry::translation_transform(new_volume->source.mesh_offset - old_volume->source.mesh_offset) *
                     new_volume->source.transform.get_matrix_no_offset().inverse()
                     );
-#else
-                new_volume->set_transformation(Geometry::assemble_transform(old_volume->source.transform.get_offset()) *
-                                               old_volume->get_transformation().get_matrix(true) *
-                                               old_volume->source.transform.get_matrix(true));
-                new_volume->translate(new_volume->get_transformation().get_matrix(true) * (new_volume->source.mesh_offset - old_volume->source.mesh_offset));
-#endif // ENABLE_WORLD_COORDINATE
                 new_volume->source.object_idx = old_volume->source.object_idx;
                 new_volume->source.volume_idx = old_volume->source.volume_idx;
                 assert(!old_volume->source.is_converted_from_inches || !old_volume->source.is_converted_from_meters);
@@ -3917,106 +3844,16 @@ void Plater::priv::reload_from_disk()
                 wxGetApp().obj_list()->update_item_error_icon(obj_idx, vol_idx);
             }
         }
-#else
-        for (const SelectedVolume& sel_v : selected_volumes) {
-            ModelObject* old_model_object = model.objects[sel_v.object_idx];
-            ModelVolume* old_volume = old_model_object->volumes[sel_v.volume_idx];
-
-            bool sinking = old_model_object->bounding_box().min.z() < SINKING_Z_THRESHOLD;
-
-            bool has_source = !old_volume->source.input_file.empty() && boost::algorithm::iequals(fs::path(old_volume->source.input_file).filename().string(), fs::path(path).filename().string());
-            bool has_name = !old_volume->name.empty() && boost::algorithm::iequals(old_volume->name, fs::path(path).filename().string());
-            if (has_source || has_name) {
-                int new_volume_idx = -1;
-                int new_object_idx = -1;
-                bool match_found = false;
-                // take idxs from the matching volume
-                if (has_source && old_volume->source.object_idx < int(new_model.objects.size())) {
-                    const ModelObject* obj = new_model.objects[old_volume->source.object_idx];
-                    if (old_volume->source.volume_idx < int(obj->volumes.size())) {
-                        if (obj->volumes[old_volume->source.volume_idx]->name == old_volume->name) {
-                            new_volume_idx = old_volume->source.volume_idx;
-                            new_object_idx = old_volume->source.object_idx;
-                            match_found = true;
-                        }
-                    }
-                }
-
-                if (!match_found && has_name) {
-                    // take idxs from the 1st matching volume
-                    for (size_t o = 0; o < new_model.objects.size(); ++o) {
-                        ModelObject* obj = new_model.objects[o];
-                        bool found = false;
-                        for (size_t v = 0; v < obj->volumes.size(); ++v) {
-                            if (obj->volumes[v]->name == old_volume->name) {
-                                new_volume_idx = (int)v;
-                                new_object_idx = (int)o;
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found)
-                            break;
-                    }
-                }
-
-                if (new_object_idx < 0 || int(new_model.objects.size()) <= new_object_idx) {
-                    fail_list.push_back(from_u8(has_source ? old_volume->source.input_file : old_volume->name));
-                    continue;
-                }
-                ModelObject* new_model_object = new_model.objects[new_object_idx];
-                if (new_volume_idx < 0 || int(new_model_object->volumes.size()) <= new_volume_idx) {
-                    fail_list.push_back(from_u8(has_source ? old_volume->source.input_file : old_volume->name));
-                    continue;
-                }
-
-                old_model_object->add_volume(*new_model_object->volumes[new_volume_idx]);
-                ModelVolume* new_volume = old_model_object->volumes.back();
-                new_volume->set_new_unique_id();
-                new_volume->config.apply(old_volume->config);
-                new_volume->set_type(old_volume->type());
-                new_volume->set_material_id(old_volume->material_id());
-                new_volume->set_transformation(old_volume->get_transformation());
-                new_volume->translate(new_volume->get_transformation().get_matrix(true) * (new_volume->source.mesh_offset - old_volume->source.mesh_offset));
-                new_volume->source.object_idx = old_volume->source.object_idx;
-                new_volume->source.volume_idx = old_volume->source.volume_idx;
-                assert(! old_volume->source.is_converted_from_inches || ! old_volume->source.is_converted_from_meters);
-                if (old_volume->source.is_converted_from_inches)
-                    new_volume->convert_from_imperial_units();
-                else if (old_volume->source.is_converted_from_meters)
-                    new_volume->convert_from_meters();
-                std::swap(old_model_object->volumes[sel_v.volume_idx], old_model_object->volumes.back());
-                old_model_object->delete_volume(old_model_object->volumes.size() - 1);
-                if (!sinking)
-                    old_model_object->ensure_on_bed();
-                old_model_object->sort_volumes(get_config_bool("order_volumes"));
-
-                sla::reproject_points_and_holes(old_model_object);
-            }
-        }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
     }
 
     busy.reset();
 
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     for (auto [src, dest] : replace_paths) {
         for (auto [obj_idx, vol_idx] : selected_volumes) {
             if (boost::algorithm::iequals(model.objects[obj_idx]->volumes[vol_idx]->source.input_file, src.string()))
                 replace_volume_with_stl(obj_idx, vol_idx, dest, "");
         }
     }
-#else
-    for (size_t i = 0; i < replace_paths.size(); ++i) {
-        const auto& path = replace_paths[i].string();
-        for (const SelectedVolume& sel_v : selected_volumes) {
-//            ModelObject* old_model_object = model.objects[sel_v.object_idx];
-//            ModelVolume* old_volume = old_model_object->volumes[sel_v.volume_idx];
-//            bool has_source = !old_volume->source.input_file.empty() && boost::algorithm::iequals(fs::path(old_volume->source.input_file).filename().string(), fs::path(path).filename().string());
-            replace_volume_with_stl(sel_v.object_idx, sel_v.volume_idx, path, "");
-        }
-    }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
 
     if (!fail_list.empty()) {
         wxString message = _L("Unable to reload:") + "\n";
@@ -4402,7 +4239,7 @@ void Plater::priv::on_process_completed(SlicingProcessCompletedEvent &evt)
     }
     if (evt.cancelled()) {
 //        this->statusbar()->set_status_text(_L("Cancelled"));
-        this->notification_manager->set_slicing_progress_canceled(_utf8("Slicing Cancelled."));
+        this->notification_manager->set_slicing_progress_canceled(_u8L("Slicing Cancelled."));
     }
 
     this->sidebar->show_sliced_info_sizer(evt.success());
@@ -4516,11 +4353,7 @@ void Plater::priv::on_right_click(RBtnEvent& evt)
             const bool is_some_full_instances = selection.is_single_full_instance() || 
                                                 selection.is_single_full_object() || 
                                                 selection.is_multiple_full_instance();
-#if ENABLE_WORLD_COORDINATE
             const bool is_part = selection.is_single_volume_or_modifier() && ! selection.is_any_connector();
-#else
-            const bool is_part = selection.is_single_volume() || selection.is_single_modifier();
-#endif // ENABLE_WORLD_COORDINATE
             if (is_some_full_instances)
                 menu = printer_technology == ptSLA ? menus.sla_object_menu() : menus.object_menu();
             else if (is_part)
@@ -4709,7 +4542,7 @@ bool Plater::priv::init_view_toolbar()
 
     item.name = "3D";
     item.icon_filename = "editor.svg";
-    item.tooltip = _utf8(L("3D editor view")) + " [" + GUI::shortkey_ctrl_prefix() + "5]";
+    item.tooltip = _u8L("3D editor view") + " [" + GUI::shortkey_ctrl_prefix() + "5]";
     item.sprite_id = 0;
     item.left.action_callback = [this]() { if (this->q != nullptr) wxPostEvent(this->q, SimpleEvent(EVT_GLVIEWTOOLBAR_3D)); };
     if (!view_toolbar.add_item(item))
@@ -4717,7 +4550,7 @@ bool Plater::priv::init_view_toolbar()
 
     item.name = "Preview";
     item.icon_filename = "preview.svg";
-    item.tooltip = _utf8(L("Preview")) + " [" + GUI::shortkey_ctrl_prefix() + "6]";
+    item.tooltip = _u8L("Preview") + " [" + GUI::shortkey_ctrl_prefix() + "6]";
     item.sprite_id = 1;
     item.left.action_callback = [this]() { if (this->q != nullptr) wxPostEvent(this->q, SimpleEvent(EVT_GLVIEWTOOLBAR_PREVIEW)); };
     if (!view_toolbar.add_item(item))
@@ -4812,17 +4645,13 @@ bool Plater::priv::layers_height_allowed() const
         return false;
 
     int obj_idx = get_selected_object_idx();
-    return 0 <= obj_idx && obj_idx < (int)model.objects.size() && model.objects[obj_idx]->bounding_box().max.z() > SINKING_Z_THRESHOLD &&
+    return 0 <= obj_idx && obj_idx < (int)model.objects.size() && model.objects[obj_idx]->max_z() > SINKING_Z_THRESHOLD &&
         config->opt_bool("variable_layer_height") && view3D->is_layers_editing_allowed();
 }
 
 bool Plater::priv::can_mirror() const
 {
-#if ENABLE_WORLD_COORDINATE
     return !sidebar->obj_list()->has_selected_cut_object();
-#else
-    return !sidebar->obj_list()->has_selected_cut_object() && get_selection().is_from_single_instance();
-#endif // ENABLE_WORLD_COORDINATE
 }
 
 
@@ -4836,41 +4665,12 @@ bool Plater::priv::can_reload_from_disk() const
     if (sidebar->obj_list()->has_selected_cut_object())
         return false;
 
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     // collect selected reloadable ModelVolumes
     std::vector<std::pair<int, int>> selected_volumes = reloadable_volumes(model, get_selection());
     // nothing to reload, return
     if (selected_volumes.empty())
         return false;
-#else
-    // struct to hold selected ModelVolumes by their indices
-    struct SelectedVolume
-    {
-        int object_idx;
-        int volume_idx;
 
-        // operators needed by std::algorithms
-        bool operator < (const SelectedVolume& other) const { return (object_idx < other.object_idx) || ((object_idx == other.object_idx) && (volume_idx < other.volume_idx)); }
-        bool operator == (const SelectedVolume& other) const { return (object_idx == other.object_idx) && (volume_idx == other.volume_idx); }
-    };
-    std::vector<SelectedVolume> selected_volumes;
-
-    const Selection& selection = get_selection();
-
-    // collects selected ModelVolumes
-    const std::set<unsigned int>& selected_volumes_idxs = selection.get_volume_idxs();
-    for (unsigned int idx : selected_volumes_idxs) {
-        const GLVolume* v = selection.get_volume(idx);
-        int v_idx = v->volume_idx();
-        if (v_idx >= 0) {
-            int o_idx = v->object_idx();
-            if (0 <= o_idx && o_idx < (int)model.objects.size())
-                selected_volumes.push_back({ o_idx, v_idx });
-        }
-    }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
-
-#if ENABLE_RELOAD_FROM_DISK_REWORK
     std::sort(selected_volumes.begin(), selected_volumes.end(), [](const std::pair<int, int>& v1, const std::pair<int, int>& v2) {
         return (v1.first < v2.first) || (v1.first == v2.first && v1.second < v2.second);
         });
@@ -4882,21 +4682,7 @@ bool Plater::priv::can_reload_from_disk() const
     for (auto [obj_idx, vol_idx] : selected_volumes) {
         paths.push_back(model.objects[obj_idx]->volumes[vol_idx]->source.input_file);
     }
-#else
-    std::sort(selected_volumes.begin(), selected_volumes.end());
-    selected_volumes.erase(std::unique(selected_volumes.begin(), selected_volumes.end()), selected_volumes.end());
 
-    // collects paths of files to load
-    std::vector<fs::path> paths;
-    for (const SelectedVolume& v : selected_volumes) {
-        const ModelObject* object = model.objects[v.object_idx];
-        const ModelVolume* volume = object->volumes[v.volume_idx];
-        if (!volume->source.input_file.empty())
-            paths.push_back(volume->source.input_file);
-        else if (!object->input_file.empty() && !volume->name.empty() && !volume->source.is_from_builtin_objects)
-            paths.push_back(volume->name);
-    }
-#endif // ENABLE_RELOAD_FROM_DISK_REWORK
     std::sort(paths.begin(), paths.end());
     paths.erase(std::unique(paths.begin(), paths.end()), paths.end());
 
@@ -4973,7 +4759,7 @@ bool Plater::priv::can_increase_instances() const
     if (q->canvas3D()->get_gizmos_manager().get_current_type() == GLGizmosManager::Emboss) return false;
 
     const auto obj_idxs = get_selection().get_object_idxs();
-    return !obj_idxs.empty() && !sidebar->obj_list()->has_selected_cut_object();
+    return !obj_idxs.empty() && !get_selection().is_wipe_tower() && !sidebar->obj_list()->has_selected_cut_object();
 }
 
 bool Plater::priv::can_decrease_instances(int obj_idx /*= -1*/) const
@@ -4984,7 +4770,16 @@ bool Plater::priv::can_decrease_instances(int obj_idx /*= -1*/) const
 
     if (obj_idx < 0)
         obj_idx = get_selected_object_idx();
-    return (0 <= obj_idx) && (obj_idx < (int)model.objects.size()) && 
+
+    if (obj_idx < 0) {
+        if (const auto obj_ids = get_selection().get_object_idxs(); !obj_ids.empty())
+            for (const size_t obj_id : obj_ids)
+                if (can_decrease_instances(obj_id))
+                    return true;
+        return false;
+    }
+
+    return  obj_idx < (int)model.objects.size() && 
             (model.objects[obj_idx]->instances.size() > 1) &&
             !sidebar->obj_list()->has_selected_cut_object();
 }
@@ -5465,6 +5260,17 @@ void Plater::add_model(bool imperial_units/* = false*/)
         wxGetApp().mainframe->update_title();
 }
 
+void Plater::import_zip_archive()
+{
+   wxString input_file;
+   wxGetApp().import_zip(this, input_file);
+   if (input_file.empty())
+       return;
+
+   fs::path path = into_path(input_file);
+   preview_zip_archive(path);
+}
+
 void Plater::import_sl1_archive()
 {
     auto &w = get_ui_job_worker();
@@ -5611,7 +5417,7 @@ protected:
 
 LoadProjectsDialog::LoadProjectsDialog(const std::vector<fs::path>& paths)
     : DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY,
-        from_u8((boost::format(_utf8(L("%s - Multiple projects file"))) % SLIC3R_APP_NAME).str()), wxDefaultPosition,
+        format_wxstr(_L("%1% - Multiple projects file"), SLIC3R_APP_NAME), wxDefaultPosition,
         wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
     SetFont(wxGetApp().normal_font());
@@ -5731,97 +5537,100 @@ bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)
         mz_zip_zero_struct(&archive);
 
         if (!open_zip_reader(&archive, archive_path.string())) {
-            std::string err_msg = GUI::format(_utf8("Loading of a zip archive on path %1% has failed."), archive_path.string());
+            std::string err_msg = GUI::format(_u8L("Loading of a zip archive on path %1% has failed."), archive_path.string());
             throw Slic3r::FileIOError(err_msg);
         }
-
         mz_uint num_entries = mz_zip_reader_get_num_files(&archive);
-
         mz_zip_archive_file_stat stat;
-
-        std::vector<fs::path> selected_paths;
-
+        // selected_paths contains paths and its uncompressed size. The size is used to distinguish between files with same path.
+        std::vector<std::pair<fs::path, size_t>> selected_paths;
         FileArchiveDialog dlg(static_cast<wxWindow*>(wxGetApp().mainframe), &archive, selected_paths);
         if (dlg.ShowModal() == wxID_OK)
-        {
+        {      
             std::string archive_path_string = archive_path.string();
             archive_path_string = archive_path_string.substr(0, archive_path_string.size() - 4);
-
             fs::path archive_dir(wxStandardPaths::Get().GetTempDir().utf8_str().data());
+           
+            for (auto& path_w_size : selected_paths) {
+                const fs::path& path = path_w_size.first;
+                size_t size = path_w_size.second;
+                // find path in zip archive
+                for (mz_uint i = 0; i < num_entries; ++i) {
+                    if (mz_zip_reader_file_stat(&archive, i, &stat)) {
+                        if (size != stat.m_uncomp_size) // size must fit
+                            continue;
+                        wxString wname = boost::nowide::widen(stat.m_filename);
+                        std::string name = boost::nowide::narrow(wname);
+                        fs::path archive_path(name);
 
-            for (mz_uint i = 0; i < num_entries; ++i) {
-                if (mz_zip_reader_file_stat(&archive, i, &stat)) {
-                    wxString wname = boost::nowide::widen(stat.m_filename);
-                    std::string name = GUI::format(wname);
-                    fs::path archive_path(name);
+                        std::string extra(1024, 0);
+                        size_t extra_size = mz_zip_reader_get_filename_from_extra(&archive, i, extra.data(), extra.size());
+                        if (extra_size > 0) {
+                            archive_path = fs::path(extra.substr(0, extra_size));
+                            name = archive_path.string();
+                        }
 
-                    std::string extra(1024, 0);
-                    size_t extra_size = mz_zip_reader_get_filename_from_extra(&archive, i, extra.data(), extra.size());
-                    if (extra_size > 0) {
-                        archive_path = fs::path(extra.substr(0, extra_size));
-                        name = archive_path.string();
-                    }
+                        if (archive_path.empty())
+                            continue;
+                        if (path != archive_path) 
+                            continue;
+                        // decompressing
+                        try
+                        {
+                            std::replace(name.begin(), name.end(), '\\', '/');
+                            // rename if file exists
+                            std::string filename = path.filename().string();
+                            std::string extension = boost::filesystem::extension(path);
+                            std::string just_filename = filename.substr(0, filename.size() - extension.size());
+                            std::string final_filename = just_filename;
 
-                    if (archive_path.empty())
-                        continue;
-                    for (const auto& path : selected_paths) {
-                        if (path == archive_path) {
-                            try
+                            size_t version = 0;
+                            while (fs::exists(archive_dir / (final_filename + extension)))
                             {
-                                std::replace(name.begin(), name.end(), '\\', '/');
-                                // rename if file exists
-                                std::string filename = path.filename().string();
-                                std::string extension = boost::filesystem::extension(path);
-                                std::string just_filename = filename.substr(0, filename.size() - extension.size());
-                                std::string final_filename = just_filename;
-
-                                size_t version = 0;
-                                while (fs::exists(archive_dir / (final_filename + extension)))
-                                {
-                                    ++version;
-                                    final_filename = just_filename + "(" + std::to_string(version) + ")";
-                                }
-                                filename = final_filename + extension;
-                                fs::path final_path = archive_dir / filename;
-
-                                std::string buffer((size_t)stat.m_uncomp_size, 0);
-                                mz_bool res = mz_zip_reader_extract_file_to_mem(&archive, stat.m_filename, (void*)buffer.data(), (size_t)stat.m_uncomp_size, 0);
-                                if (res == 0) {
-                                    wxString error_log = GUI::format_wxstr(_L("Failed to unzip file to %1%: %2% "), final_path.string(), mz_zip_get_error_string(mz_zip_get_last_error(&archive)));
-                                    BOOST_LOG_TRIVIAL(error) << error_log;
-                                    show_error(nullptr, error_log);
-                                    continue;
-                                }
-                                fs::fstream file(final_path, std::ios::out | std::ios::binary | std::ios::trunc);
-                                file.write(buffer.c_str(), buffer.size());
-                                file.close();
-                                if (!fs::exists(final_path)) {
-                                    wxString error_log = GUI::format_wxstr(_L("Failed to find unzipped file at %1%. Unzipping of file has failed."), final_path.string());
-                                    BOOST_LOG_TRIVIAL(error) << error_log;
-                                    show_error(nullptr, error_log);
-                                    continue;
-                                }
-                                BOOST_LOG_TRIVIAL(info) << "Unzipped " << final_path;
-
-                                if (!boost::algorithm::iends_with(filename, ".3mf") && !boost::algorithm::iends_with(filename, ".amf")) {
-                                    non_project_paths.emplace_back(final_path);
-                                    continue;
-                                }
-                                // if 3mf - read archive headers to find project file
-                                if ((boost::algorithm::iends_with(filename, ".3mf") && !is_project_3mf(final_path.string())) ||
-                                    (boost::algorithm::iends_with(filename, ".amf") && !boost::algorithm::iends_with(filename, ".zip.amf"))) {
-                                    non_project_paths.emplace_back(final_path);
-                                    continue;
-                                }
-
-                                project_paths.emplace_back(final_path);
+                                ++version;
+                                final_filename = just_filename + "(" + std::to_string(version) + ")";
                             }
-                            catch (const std::exception& e)
-                            {
-                                // ensure the zip archive is closed and rethrow the exception
-                                close_zip_reader(&archive);
-                                throw Slic3r::FileIOError(e.what());
+                            filename = final_filename + extension;
+                            fs::path final_path = archive_dir / filename;
+                            std::string buffer((size_t)stat.m_uncomp_size, 0);
+                            // Decompress action. We already has correct file index in stat structure. 
+                            mz_bool res = mz_zip_reader_extract_to_mem(&archive, stat.m_file_index, (void*)buffer.data(), (size_t)stat.m_uncomp_size, 0);
+                            if (res == 0) {
+                                wxString error_log = GUI::format_wxstr(_L("Failed to unzip file to %1%: %2% "), final_path.string(), mz_zip_get_error_string(mz_zip_get_last_error(&archive)));
+                                BOOST_LOG_TRIVIAL(error) << error_log;
+                                show_error(nullptr, error_log);
+                                break;
                             }
+                            // write buffer to file
+                            fs::fstream file(final_path, std::ios::out | std::ios::binary | std::ios::trunc);
+                            file.write(buffer.c_str(), buffer.size());
+                            file.close();
+                            if (!fs::exists(final_path)) {
+                                wxString error_log = GUI::format_wxstr(_L("Failed to find unzipped file at %1%. Unzipping of file has failed."), final_path.string());
+                                BOOST_LOG_TRIVIAL(error) << error_log;
+                                show_error(nullptr, error_log);
+                                break;
+                            }
+                            BOOST_LOG_TRIVIAL(info) << "Unzipped " << final_path;
+                            if (!boost::algorithm::iends_with(filename, ".3mf") && !boost::algorithm::iends_with(filename, ".amf")) {
+                                non_project_paths.emplace_back(final_path);
+                                break;
+                            }
+                            // if 3mf - read archive headers to find project file
+                            if ((boost::algorithm::iends_with(filename, ".3mf") && !is_project_3mf(final_path.string())) ||
+                                (boost::algorithm::iends_with(filename, ".amf") && !boost::algorithm::iends_with(filename, ".zip.amf"))) {
+                                non_project_paths.emplace_back(final_path);
+                                break;
+                            }
+
+                            project_paths.emplace_back(final_path);
+                            break;
+                        }
+                        catch (const std::exception& e)
+                        {
+                            // ensure the zip archive is closed and rethrow the exception
+                            close_zip_reader(&archive);
+                            throw Slic3r::FileIOError(e.what());
                         }
                     }
                 }
@@ -5997,9 +5806,7 @@ protected:
 
 ProjectDropDialog::ProjectDropDialog(const std::string& filename)
     : DPIDialog(static_cast<wxWindow*>(wxGetApp().mainframe), wxID_ANY,
-// #ysFIXME_delete_after_test_of_6377
-//        from_u8((boost::format(_utf8(L("%s - Drop project file"))) % SLIC3R_APP_NAME).str()), wxDefaultPosition,
-        from_u8((boost::format(_utf8(L("%s - Load project file"))) % SLIC3R_APP_NAME).str()), wxDefaultPosition,
+        format_wxstr("%1% - %2%", SLIC3R_APP_NAME, _L("Load project file")), wxDefaultPosition,
         wxDefaultSize, wxDEFAULT_DIALOG_STYLE)
 {
     SetFont(wxGetApp().normal_font());
@@ -6107,7 +5914,7 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
         std::string filename = (*it).filename().string();
         if (boost::algorithm::iends_with(filename, ".3mf") || boost::algorithm::iends_with(filename, ".amf")) {
             ProjectDropDialog::LoadType load_type = ProjectDropDialog::LoadType::Unknown;
-//            if (!model().objects.empty()) { // #ysFIXME_delete_after_test_of_6377
+            {
                 if ((boost::algorithm::iends_with(filename, ".3mf") && !is_project_3mf(it->string())) ||
                     (boost::algorithm::iends_with(filename, ".amf") && !boost::algorithm::iends_with(filename, ".zip.amf")))
                     load_type = ProjectDropDialog::LoadType::LoadGeometry;
@@ -6124,11 +5931,7 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
                         load_type = static_cast<ProjectDropDialog::LoadType>(std::clamp(std::stoi(wxGetApp().app_config->get("drop_project_action")),
                             static_cast<int>(ProjectDropDialog::LoadType::OpenProject), static_cast<int>(ProjectDropDialog::LoadType::LoadConfig)));
                 }
-/* // #ysFIXME_delete_after_test_of_6377
             }
-            else
-                load_type = ProjectDropDialog::LoadType::OpenProject;
-*/
 
             if (load_type == ProjectDropDialog::LoadType::Unknown)
                 return false;
@@ -6250,6 +6053,13 @@ void Plater::increase_instances(size_t num, int obj_idx/* = -1*/)
     if (obj_idx < 0)
         obj_idx = p->get_selected_object_idx();
 
+    if (obj_idx < 0) {
+        if (const auto obj_idxs = get_selection().get_object_idxs(); !obj_idxs.empty())
+            for (const size_t obj_id : obj_idxs)
+                increase_instances(1, int(obj_id));
+        return;
+    }
+
     ModelObject* model_object = p->model.objects[obj_idx];
     ModelInstance* model_instance = model_object->instances.back();
 
@@ -6284,6 +6094,13 @@ void Plater::decrease_instances(size_t num, int obj_idx/* = -1*/)
 
     if (obj_idx < 0)
         obj_idx = p->get_selected_object_idx();
+
+    if (obj_idx < 0) {
+        if (const auto obj_ids = get_selection().get_object_idxs(); !obj_ids.empty())
+            for (const size_t obj_id : obj_ids)
+                decrease_instances(1, int(obj_id));
+        return;
+    }
 
     ModelObject* model_object = p->model.objects[obj_idx];
     if (model_object->instances.size() > num) {
@@ -6544,14 +6361,34 @@ void Plater::export_stl_obj(bool extended, bool selection_only)
         return;
 
     // Following lambda generates a combined mesh for export with normals pointing outwards.
-    auto mesh_to_export_fff = [](const ModelObject& mo, int instance_id) {
+    auto mesh_to_export_fff = [this](const ModelObject& mo, int instance_id) {
         TriangleMesh mesh;
-        for (const ModelVolume* v : mo.volumes)
-            if (v->is_model_part()) {
-                TriangleMesh vol_mesh(v->mesh());
-                vol_mesh.transform(v->get_matrix(), true);
-                mesh.merge(vol_mesh);
-            }
+
+        std::vector<csg::CSGPart> csgmesh;
+        csgmesh.reserve(2 * mo.volumes.size());
+        csg::model_to_csgmesh(mo, Transform3d::Identity(), std::back_inserter(csgmesh),
+                              csg::mpartsPositive | csg::mpartsNegative | csg::mpartsDoSplits);
+
+        if (csg::check_csgmesh_booleans(range(csgmesh)) == csgmesh.end()) {
+            try {
+                auto cgalm = csg::perform_csgmesh_booleans(range(csgmesh));
+                mesh = MeshBoolean::cgal::cgal_to_triangle_mesh(*cgalm);
+            } catch (...) {}
+        }
+
+        if (mesh.empty()) {
+            get_notification_manager()->push_plater_error_notification(
+                _u8L("Unable to perform boolean operation on model meshes. "
+                     "Only positive parts will be exported."));
+
+            for (const ModelVolume* v : mo.volumes)
+                if (v->is_model_part()) {
+                    TriangleMesh vol_mesh(v->mesh());
+                    vol_mesh.transform(v->get_matrix(), true);
+                    mesh.merge(vol_mesh);
+                }
+        }
+
         if (instance_id == -1) {
             TriangleMesh vols_mesh(mesh);
             mesh = TriangleMesh();
@@ -6664,9 +6501,9 @@ void Plater::export_stl_obj(bool extended, bool selection_only)
         }
     }
 
-    if (path.EndsWith(".stl"))
+    if (path.Lower().EndsWith(".stl"))
         Slic3r::store_stl(path_u8.c_str(), &mesh, true);
-    else if (path.EndsWith(".obj"))
+    else if (path.Lower().EndsWith(".obj"))
         Slic3r::store_obj(path_u8.c_str(), &mesh);
 //    p->statusbar()->set_status_text(format_wxstr(_L("STL file exported to %s"), path));
 }
@@ -6909,18 +6746,19 @@ void Plater::send_gcode()
         upload_job.printhost->get_groups(groups);
     }
     // PrusaLink specific: Query the server for the list of file groups.
-    wxArrayString storage;
+    wxArrayString storage_paths;
+    wxArrayString storage_names;
     {
         wxBusyCursor wait;
         try {
-            upload_job.printhost->get_storage(storage);
+            upload_job.printhost->get_storage(storage_paths, storage_names);
         } catch (const Slic3r::IOError& ex) {
             show_error(this, ex.what(), false);
             return;
         }
     }
 
-    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups, storage);
+    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups, storage_paths, storage_names);
     if (dlg.ShowModal() == wxID_OK) {
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.post_action = dlg.post_action();
@@ -7338,7 +7176,7 @@ bool Plater::set_printer_technology(PrinterTechnology printer_technology)
     return ret;
 }
 
-void Plater::clear_before_change_mesh(int obj_idx)
+void Plater::clear_before_change_mesh(int obj_idx, const std::string &notification_msg)
 {
     ModelObject* mo = model().objects[obj_idx];
 
@@ -7356,8 +7194,7 @@ void Plater::clear_before_change_mesh(int obj_idx)
         get_notification_manager()->push_notification(
                     NotificationType::CustomSupportsAndSeamRemovedAfterRepair,
                     NotificationManager::NotificationLevel::PrintInfoNotificationLevel,
-                    _u8L("Custom supports, seams and multimaterial painting were "
-                         "removed after repairing the mesh."));
+                    notification_msg);
 //                    _u8L("Undo the repair"),
 //                    [this, snapshot_time](wxEvtHandler*){
 //                        // Make sure the snapshot is still available and that
@@ -7409,7 +7246,7 @@ void Plater::changed_objects(const std::vector<size_t>& object_idxs)
 
     for (size_t obj_idx : object_idxs) {
         if (obj_idx < p->model.objects.size()) {
-            if (p->model.objects[obj_idx]->bounding_box().min.z() >= SINKING_Z_THRESHOLD)
+            if (p->model.objects[obj_idx]->min_z() >= SINKING_Z_THRESHOLD)
                 // re - align to Z = 0
                 p->model.objects[obj_idx]->ensure_on_bed();
         }
@@ -7753,6 +7590,20 @@ SuppressBackgroundProcessingUpdate::SuppressBackgroundProcessingUpdate() :
 SuppressBackgroundProcessingUpdate::~SuppressBackgroundProcessingUpdate()
 {
     wxGetApp().plater()->schedule_background_process(m_was_scheduled);
+}
+
+PlaterAfterLoadAutoArrange::PlaterAfterLoadAutoArrange()
+{
+    Plater* plater = wxGetApp().plater();
+    m_enabled = plater->model().objects.empty() &&
+                plater->printer_technology() == ptFFF &&
+                plater->fff_print().config().printer_model.value == "XL";
+}
+
+PlaterAfterLoadAutoArrange::~PlaterAfterLoadAutoArrange()
+{
+    if (m_enabled)
+        wxGetApp().plater()->arrange();
 }
 
 }}    // namespace Slic3r::GUI

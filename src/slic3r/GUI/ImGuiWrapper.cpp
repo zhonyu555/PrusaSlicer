@@ -1082,7 +1082,7 @@ void ImGuiWrapper::search_list(const ImVec2& size_, bool (*items_getter)(int, co
         // The press on Esc key invokes editing of InputText (removes last changes)
         // So we should save previous value...
         std::string str = search_str;
-        ImGui::InputTextEx("", NULL, search_str, 40, search_size, ImGuiInputTextFlags_AutoSelectAll, NULL, NULL);
+        ImGui::InputTextEx("", NULL, search_str, 240, search_size, ImGuiInputTextFlags_AutoSelectAll, NULL, NULL);
         edited = ImGui::IsItemEdited();
         if (edited)
             hovered_id = 0;
@@ -1369,6 +1369,10 @@ bool ImGuiWrapper::slider_optional_int(const char         *label,
     } else return false;
 }
 
+void ImGuiWrapper::left_inputs() { 
+    ImGui::ClearActiveID(); 
+}
+
 std::string ImGuiWrapper::trunc(const std::string &text,
                                 float              width,
                                 const char *       tail)
@@ -1507,6 +1511,17 @@ void ImGuiWrapper::draw(
         ImVec2 p2(point.x(), point.y());
         draw_list->AddLine(p1, p2, color, thickness);
         prev_point = &point;
+    }
+}
+
+void ImGuiWrapper::draw_cross_hair(const ImVec2 &position, float radius, ImU32 color, int num_segments, float thickness) {
+    auto draw_list = ImGui::GetOverlayDrawList();
+    draw_list->AddCircle(position, radius, color, num_segments, thickness);
+    auto dirs = {ImVec2{0, 1}, ImVec2{1, 0}, ImVec2{0, -1}, ImVec2{-1, 0}};
+    for (const ImVec2 &dir : dirs) {
+        ImVec2 start(position.x + dir.x * 0.5 * radius, position.y + dir.y * 0.5 * radius);
+        ImVec2 end(position.x + dir.x * 1.5 * radius, position.y + dir.y * 1.5 * radius);
+        draw_list->AddLine(start, end, color, thickness);
     }
 }
 
@@ -2056,7 +2071,11 @@ const char* ImGuiWrapper::clipboard_get(void* user_data)
     const char* res = "";
 
     if (wxTheClipboard->Open()) {
-        if (wxTheClipboard->IsSupported(wxDF_TEXT)) {
+        if (wxTheClipboard->IsSupported(wxDF_TEXT)
+#if wxUSE_UNICODE
+        || wxTheClipboard->IsSupported(wxDF_UNICODETEXT)
+#endif // wxUSE_UNICODE
+            ) {
             wxTextDataObject data;
             wxTheClipboard->GetData(data);
 
