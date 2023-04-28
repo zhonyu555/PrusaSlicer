@@ -36,7 +36,7 @@
 
 #define LAYER_SIZE_ESTIMATE (32 * 1024)
 
-#define PAGE_SIZE 4_294_967_296;
+#define PAGE_SIZE 4294967296; // 4G
 
 namespace Slic3r {
 

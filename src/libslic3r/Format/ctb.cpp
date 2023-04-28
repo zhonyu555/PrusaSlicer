@@ -442,7 +442,8 @@ void CtbSLAArchive::export_print(const std::string     fname,
         const uint32_t C_LAYER_DATA_OFFSETS = sizeof(ctb_format_layer_data) * 2 + sizeof(ctb_format_layer_data_ex);
         size_t i = 0;
         for (const sla::EncodedRaster &rst : m_layers) {
-            layer_data.page_num                     = 0;    // TODO: FIXME
+            layer_data.page_num = layer_data.data_offset + sizeof(ctb_format_layer_data) * \
+                                  layer_count * header.anti_alias_level / PAGE_SIZE;    // I'm not 100% sure if I did this correctly
 
             ctb_format_layer_data layer_data;
             layer_data.data_offset += C_LAYER_DATA_OFFSETS;
@@ -472,17 +473,14 @@ void CtbSLAArchive::export_print(const std::string     fname,
                 layer_data_ex.light_pwm               = header      .pwm_level;
             }
             ctb_write_layer_data(out, layer_data);
+            ctb_write_layer_data(out, layer_data);
             ctb_write_layer_data_ex(out, layer_data_ex);
             // add the rle encoded layer image into the buffer
-            const char* img_start = reinterpret_cast<const char*>(rst.data());
-            const char* img_end = img_start + rst.size();
-            std::copy(img_start, img_end, std::back_inserter(layer_images));
+            out << rst.data();
             layer_data.data_offset += layer_data.data_size;
-            layer_data.pos_z       += 0.01f; // TODO: FIXME
+            layer_data.pos_z       += header.layer_height; // TODO: FIXME
             i++;
         }
-        const char* img_buffer = reinterpret_cast<const char*>(layer_images.data());
-        out.write(img_buffer, layer_images.size());
         out.close();
     } catch(std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << e.what();
