@@ -3876,6 +3876,13 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
+    def = this->add("bot_retract_speed", coFloat);
+    def->label = L("Bottom layers retract speed");
+    def->tooltip = L("Bottom layers retract speed");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(45));
+
     def = this->add("retract_speed", coFloat);
     def->label = L("Normal layers retract speed");
     def->tooltip = L("Normal layers retract speed");
@@ -3883,12 +3890,42 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
-    def = this->add("bot_retract_speed", coFloat);
-    def->label = L("Bottom layers retract speed");
-    def->tooltip = L("Bottom layers retract speed");
-    def->sidetext = L("mm/m");
+    def = this->add("bot_light_intensity", coPercent);
+    def->label = L("Bottom layers light intensity");
+    def->tooltip = L("Bottom layers light_intensity");
+    def->sidetext = L("%");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(45));
+    def->set_default_value(new ConfigOptionPercent(100));
+
+    def = this->add("light_intensity", coPercent);
+    def->label = L("Normal layers light intensity");
+    def->tooltip = L("Normal layers light_intensity");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionPercent(100));
+
+    def = this->add("rest_time_after_lift", coFloat);
+    def->label = L("Rest time after lifting the build plate");
+    def->tooltip = L("Rest time after lifting the build plate");
+    def->sidetext = L("s");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(1));
+
+    def = this->add("rest_time_after_lift2", coFloat);
+    def->label = L("Rest time after lifting the build plate");
+    def->tooltip = L("Rest time after lifting the build plate");
+    def->sidetext = L("s");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(1));
+
+    def = this->add("rest_time_after_retract", coFloat);
+    def->label = L("Rest time after retracting the build plate");
+    def->tooltip = L("Rest time after retracting the build plate");
+    def->sidetext = L("s");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(1));
+
+
 
     // TSMC
     def = this->add("tsmc_bot_lift_distance", coFloat);
@@ -3932,42 +3969,6 @@ void PrintConfigDef::init_sla_params()
     def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
-
-    def = this->add("bot_light_intensity", coPercent);
-    def->label = L("Bottom layers light intensity");
-    def->tooltip = L("Bottom layers light_intensity");
-    def->sidetext = L("%");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionPercent(100));
-
-    def = this->add("light_intensity", coPercent);
-    def->label = L("Normal layers light intensity");
-    def->tooltip = L("Normal layers light_intensity");
-    def->sidetext = L("%");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionPercent(100));
-
-    def = this->add("rest_time_after_lift", coFloat);
-    def->label = L("Rest time after lifting the build plate");
-    def->tooltip = L("Rest time after lifting the build plate");
-    def->sidetext = L("s");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(1));
-
-    def = this->add("rest_time_after_lift2", coFloat);
-    def->label = L("Rest time after lifting the build plate");
-    def->tooltip = L("Rest time after lifting the build plate");
-    def->sidetext = L("s");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(1));
-
-    def = this->add("rest_time_after_retract", coFloat);
-    def->label = L("Rest time after retracting the build plate");
-    def->tooltip = L("Rest time after retracting the build plate");
-    def->sidetext = L("s");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(1));
-
 
     def = this->add("material_correction", coFloats);
     def->full_label = L("Correction for expansion");
