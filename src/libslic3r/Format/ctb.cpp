@@ -178,8 +178,8 @@ void fill_header(ctb_format_header          &h,
     h.print_params_offset        = h.small_preview_offset + sizeof(Slic3r::ctb_format_preview) + sizeof(Slic3r::ctb_preview_data_small);
     h.print_params_size          = sizeof(Slic3r::ctb_format_print_params);
     h.anti_alias_level           = 1;
-    h.pwm_level                  = get_cfg_value<uint16_t>(cfg, "light_intensity") ; // TODO: Figure out if these need to be multiplied by 255
-    h.bot_pwm_level              = get_cfg_value<uint16_t>(cfg, "bot_light_intensity");
+    h.pwm_level                  = get_cfg_value<uint16_t>(cfg, "light_intensity") * 255 / 100; // TODO: Figure out if these need to be multiplied by 255
+    h.bot_pwm_level              = get_cfg_value<uint16_t>(cfg, "bot_light_intensity") * 255 / 100;
     h.encryption_key             = 0;
     h.slicer_info_offset         = h.print_params_offset + h.print_params_size;
     h.slicer_info_size           = sizeof(Slic3r::ctb_format_slicer_info);
@@ -189,7 +189,7 @@ void fill_header(ctb_format_header          &h,
     print_params.bot_lift_speed       = get_cfg_value<float_t>(cfg, "bot_lift_speed");
     print_params.lift_height          = get_cfg_value<float_t>(cfg, "lift_distance");
     print_params.lift_speed           = get_cfg_value<float_t>(cfg, "lift_speed");
-    print_params.retract_speed        = get_cfg_value<float_t>(cfg, "retract_speed");
+    print_params.retract_speed        = get_cfg_value<float_t>(cfg, "sla_retract_speed");
     print_params.resin_volume_ml           = get_cfg_value<float_t>(cfg, "bottle_volume");
     print_params.resin_mass_g              = get_cfg_value<float_t>(cfg, "bottle_weight") * 1000.0f;
     print_params.resin_cost                = get_cfg_value<float_t>(cfg, "bottle_cost");
@@ -206,7 +206,7 @@ void fill_header(ctb_format_header          &h,
     slicer_info.lift_height2             = get_cfg_value<float_t>(cfg, "tsmc_lift_height");
     slicer_info.lift_speed2              = get_cfg_value<float_t>(cfg, "tsmc_lift_speed");
     slicer_info.retract_height2          = get_cfg_value<float_t>(cfg, "tsmc_retract_height");
-    slicer_info.retract_speed2           = get_cfg_value<float_t>(cfg, "tsmc_retract_speed");
+    slicer_info.retract_speed2           = get_cfg_value<float_t>(cfg, "tsmc_sla_retract_speed");
     slicer_info.rest_time_after_lift     = get_cfg_value<float_t>(cfg, "rest_time_after_lift");
     slicer_info.machine_name_size        = 0;
     slicer_info.anti_alias_flag          = 0; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
@@ -226,16 +226,17 @@ void fill_header(ctb_format_header          &h,
     slicer_info.machine_name_offset      = slicer_info.print_params_v4_offset - sizeof(slicer_info.machine_name);
     h.layer_table_offset         = slicer_info.print_params_v4_offset + sizeof(Slic3r::ctb_format_print_params_v4) + sizeof(Slic3r::ctb_format_print_params_v4_2);
 
-    print_params_v4.bot_retract_speed       = get_cfg_value<float_t>(cfg, "");
-    print_params_v4.bot_retract_speed2      = get_cfg_value<float_t>(cfg, "");
-    print_params_v4.zero_pad1               = get_cfg_value<uint32_t>(cfg, "");
+    print_params_v4.bot_retract_speed       = get_cfg_value<float_t>(cfg, "sla_bot_retract_speed");
+    print_params_v4.bot_retract_speed2      = get_cfg_value<float_t>(cfg, "tsmc_sla_bot_retract_speed");
+    print_params_v4.zero_pad1               = 0;
     print_params_v4.four1                   = 4;
     print_params_v4.zero_pad2               = 0;
     print_params_v4.four2                   = 4;
-    print_params_v4.rest_time_after_retract = get_cfg_value<float_t>(cfg, "");
-    print_params_v4.rest_time_after_lift    = get_cfg_value<float_t>(cfg, "");
-    print_params_v4.rest_time_before_lift   = get_cfg_value<float_t>(cfg, "");
-    print_params_v4.bot_retract_height2     = get_cfg_value<float_t>(cfg, "");
+    print_params_v4.rest_time_after_retract = slicer_info.rest_time_after_retract;
+    print_params_v4.rest_time_after_lift    = slicer_info.rest_time_after_lift;
+    print_params_v4.rest_time_before_lift   = get_cfg_value<float_t>(cfg, "rest_time_before_lift");
+    // Is this the same as bot_lift_dist2?
+    print_params_v4.bot_retract_height2     = slicer_info.bot_lift_dist2;
     print_params_v4.unknown1                = 2955.996;
     print_params_v4.unknown2                = 73470;
     print_params_v4.unknown3                = 5;
@@ -260,7 +261,7 @@ void fill_header(ctb_format_header          &h,
     h.print_time = (h.bot_layer_count * h.bot_exposure) +
                      ((layer_count - h.bot_layer_count) *
                       h.exposure) +
-                     (layer_count * h.lift_dist / h.retract_speed) +
+                     (layer_count * h.lift_dist / h.) +
                      (layer_count * h.lift_height / h.lift_speed) +
                      (layer_count * h.delay_before_exposure_s);
     */
