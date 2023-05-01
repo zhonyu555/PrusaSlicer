@@ -161,11 +161,11 @@ void fill_header(ctb_format_header          &h,
     h.bed_size_y                 = bed_shape[2][1];
     h.bed_size_z                 = get_cfg_value<float_t>(cfg, "max_print_height");
     h.zero_pad                   = 0;
-    h.overall_height             = get_cfg_value<float_t> (cfg, ""); // model height // FIXME
     h.layer_height               = get_cfg_value<float_t> (cfg, "layer_height");
+    h.overall_height             = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
     h.exposure                   = get_cfg_value<float_t> (cfg, "exposure_time");
     h.bot_exposure               = get_cfg_value<float_t> (cfg, "initial_exposure_time");
-    h.light_off_delay            = get_cfg_value<float_t> (cfg, "light_off_time"); // ADDME
+    h.light_off_delay            = get_cfg_value<float_t> (cfg, "light_off_time");
     h.bot_layer_count            = get_cfg_value<uint32_t> (cfg, "faded_layers");
     h.res_x                      = get_cfg_value<uint32_t> (cfg, "display_pixels_x");
     h.res_y                      = get_cfg_value<uint32_t> (cfg, "display_pixels_y");
