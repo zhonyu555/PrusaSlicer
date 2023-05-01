@@ -4883,8 +4883,8 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("lift_distance");
     optgroup->append_single_option_line("bot_lift_speed");
     optgroup->append_single_option_line("lift_speed");
-    optgroup->append_single_option_line("bot_retract_speed");
-    optgroup->append_single_option_line("retract_speed");
+    optgroup->append_single_option_line("sla_bot_retract_speed");
+    optgroup->append_single_option_line("sla_retract_speed");
     optgroup->append_single_option_line("bot_light_intensity");
     optgroup->append_single_option_line("light_intensity");
     optgroup->append_single_option_line("rest_time_after_lift");
@@ -4896,8 +4896,8 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("tsmc_lift_distance");
     optgroup->append_single_option_line("tsmc_bot_lift_speed");
     optgroup->append_single_option_line("tsmc_lift_speed");
-    optgroup->append_single_option_line("tsmc_retract_speed");
-    optgroup->append_single_option_line("tsmc_bot_retract_speed");
+    optgroup->append_single_option_line("tsmc_sla_retract_speed");
+    optgroup->append_single_option_line("tsmc_sla_bot_retract_speed");
 
     optgroup = page->new_optgroup(L("Corrections"));
     auto line = Line{ m_config->def()->get("material_correction")->full_label, "" };

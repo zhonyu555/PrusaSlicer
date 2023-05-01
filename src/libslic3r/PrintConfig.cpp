@@ -3876,14 +3876,14 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
-    def = this->add("bot_retract_speed", coFloat);
+    def = this->add("sla_bot_retract_speed", coFloat);
     def->label = L("Bottom layers retract speed");
     def->tooltip = L("Bottom layers retract speed");
     def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
-    def = this->add("retract_speed", coFloat);
+    def = this->add("sla_retract_speed", coFloat);
     def->label = L("Normal layers retract speed");
     def->tooltip = L("Normal layers retract speed");
     def->sidetext = L("mm/m");
@@ -3956,14 +3956,14 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
-    def = this->add("tsmc_retract_speed", coFloat);
+    def = this->add("tsmc_sla_retract_speed", coFloat);
     def->label = L("Normal layers second stage retract speed");
     def->tooltip = L("Normal layers second stage retract speed");
     def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
-    def = this->add("tsmc_bot_retract_speed", coFloat);
+    def = this->add("tsmc_sla_bot_retract_speed", coFloat);
     def->label = L("Bottom layers second stage retract speed");
     def->tooltip = L("Bottom layers second stage retract speed");
     def->sidetext = L("mm/m");
