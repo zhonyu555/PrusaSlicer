@@ -3,6 +3,7 @@
 #include "SL1.hpp"
 #include "SL1_SVG.hpp"
 #include "AnycubicSLA.hpp"
+#include "ctb.hpp"
 
 #include "libslic3r/libslic3r.h"
 
@@ -36,6 +37,7 @@ static const std::map<std::string, ArchiveEntry> REGISTERED_ARCHIVES {
     ANYCUBIC_SLA_FORMAT("pwmo", "Photon Mono"),
     ANYCUBIC_SLA_FORMAT("pwmx", "Photon Mono X"),
     ANYCUBIC_SLA_FORMAT("pwms", "Photon Mono SE"),
+    CTB_SLA_FORMAT("ctb"),
 };
 
 std::unique_ptr<SLAArchiveWriter>
