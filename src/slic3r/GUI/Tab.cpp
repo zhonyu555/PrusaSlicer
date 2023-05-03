@@ -4891,7 +4891,7 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("rest_time_after_lift2");
     optgroup->append_single_option_line("rest_time_after_retract");
 
-    optgroup = page->new_optgroup(L("Two-Stage Motor Contol"));
+    optgroup = page->new_optgroup(L("Two-Stage Motor Control"));
     optgroup->append_single_option_line("tsmc_bot_lift_distance");
     optgroup->append_single_option_line("tsmc_lift_distance");
     optgroup->append_single_option_line("tsmc_bot_lift_speed");
