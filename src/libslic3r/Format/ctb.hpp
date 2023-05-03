@@ -5,6 +5,7 @@
 #include "SLA/RasterBase.hpp"
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PrintConfig.hpp"
+#include "libslic3r/Config.hpp"
 #include "libslic3r/Zipper.hpp"
 #include "SLAArchiveWriter.hpp"
 #include "SLAArchiveReader.hpp"
@@ -18,17 +19,13 @@
 #include <boost/log/trivial.hpp>
 #include <boost/pfr/core.hpp>
 
-#define TAG_INTRO "ANYCUBIC\0\0\0\0"
-#define TAG_HEADER "HEADER\0\0\0\0\0\0"
-#define TAG_PREVIEW "PREVIEW\0\0\0\0\0"
-#define TAG_LAYERS "LAYERDEF\0\0\0\0"
+#define CTB_SLA_FORMAT_VERSION_4 4
 
-#define CFG_LIFT_DISTANCE "LIFT_DISTANCE"
-#define CFG_LIFT_SPEED "LIFT_SPEED"
-#define CFG_RETRACT_SPEED "RETRACT_SPEED"
-#define CFG_DELAY_BEFORE_EXPOSURE "DELAY_BEFORE_EXPOSURE"
-#define CFG_BOTTOM_LIFT_SPEED "BOTTOM_LIFT_SPEED"
-#define CFG_BOTTOM_LIFT_DISTANCE "BOTTOM_LIFT_DISTANCE"
+#define CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, VERSION) \
+    { FILEFORMAT, { FILEFORMAT, [] (const auto &cfg) { return std::make_unique<CtbSLAArchive>(cfg, VERSION); } } }
+
+#define CTB_SLA_FORMAT(FILEFORMAT) \
+    CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, CTB_SLA_FORMAT_VERSION_4)
 
 #define PREV_W 224
 #define PREV_H 168
@@ -39,8 +36,6 @@
 #define PAGE_SIZE 4294967296; // 4G
 
 namespace Slic3r {
-
-using ConfMap = std::map<std::string, std::string>;
 
 typedef struct ctb_format_header
 {
@@ -87,8 +82,11 @@ typedef struct ctb_format_preview
 } ctb_format_preview;
 
 // raw image data in BGR565 format FIXME
-std::uint8_t ctb_preview_data_large[PREV_W * PREV_H * 2];
-std::uint8_t ctb_preview_data_small[PREV_W * PREV_H * 2];
+typedef struct ctb_preview_data
+{
+    std::uint8_t large[PREV_W * PREV_H * 2];
+    std::uint8_t small[PREV_W * PREV_H * 2];
+} ctb_preview_data;
 
 typedef struct ctb_format_print_params
 {
@@ -196,25 +194,6 @@ typedef struct ctb_format_layer_data_ex
     std::float_t  rest_time_after_retract;
     std::float_t  light_pwm;
 } ctb_format_layer_data_ex;
-
-struct CtbRasterEncoder
-{
-    sla::EncodedRaster operator()(const void *ptr, size_t w, size_t h, size_t num_components);
-} CtbRasterEncoder;
-
-class CtbFormatSLAConfigDef : public ConfigDef
-{
-public:
-    CtbFormatSLAConfigDef()
-    {
-        add(CFG_LIFT_DISTANCE, coFloat);
-        add(CFG_LIFT_SPEED, coFloat);
-        add(CFG_RETRACT_SPEED, coFloat);
-        add(CFG_DELAY_BEFORE_EXPOSURE, coFloat);
-        add(CFG_BOTTOM_LIFT_DISTANCE, coFloat);
-        add(CFG_BOTTOM_LIFT_SPEED, coFloat);
-    }
-};
 
 class CtbSLAArchive: public SLAArchiveWriter {
     SLAPrinterConfig m_cfg;
