@@ -69,6 +69,8 @@ T get_cfg_value(const DynamicConfig &cfg,
                 ret = (T)opt->getInt();
             else if (opt->type() == Slic3r::ConfigOptionType::coFloat)
                 ret = (T)opt->getFloat();
+            //else if (opt->type() == Slic3r::ConfigOptionType::coPoints)
+            //    ret = (T)opt->values;
         }
     }
 
@@ -93,54 +95,93 @@ void fill_preview(ctb_format_preview &large_preview,
                   ctb_preview_data   &preview_images,
                   const ThumbnailsList &thumbnails)
 {
-    large_preview.size_x = PREV_W; // TODO: FIXME
-    large_preview.size_y = PREV_H; // TODO: FIXME
-    large_preview.image_len    = sizeof(preview_images.large);
+    large_preview.size_x = L_PREV_W;
+    large_preview.size_y = L_PREV_H;
     large_preview.zero_pad1 = 0;
     large_preview.zero_pad2 = 0;
     large_preview.zero_pad3 = 0;
     large_preview.zero_pad4 = 0;
 
-    small_preview.size_x = PREV_W; // TODO: FIXME
-    small_preview.size_y = PREV_H; // TODO: FIXME
-    small_preview.image_len    = sizeof(preview_images.small);
+    small_preview.size_x = S_PREV_W;
+    small_preview.size_y = S_PREV_H;
     small_preview.zero_pad1 = 0;
     small_preview.zero_pad2 = 0;
     small_preview.zero_pad3 = 0;
     small_preview.zero_pad4 = 0;
 
-    std::memset(&preview_images, 0 , sizeof(Slic3r::ctb_preview_data));
-    if (!thumbnails.empty()) {
-        std::uint32_t dst_index;
+    preview_images.large.reserve(L_PREV_W * L_PREV_H * 4);
+    preview_images.small.reserve(S_PREV_W * S_PREV_H * 4);
+    auto vec_data = &preview_images.large;
+    std::uint32_t width = L_PREV_W;
+    uint16_t rep = 0;
+    std::uint32_t prev_pixel{};
+
+    std::uint32_t dst_index = 0;
+    auto rle = [&]()
+    {
+        if (rep == 0) {
+			return;
+		} else if (rep == 1) {
+			vec_data->push_back((prev_pixel & ~RGB565_REPEAT_MASK) & 0xFF);
+			vec_data->push_back((prev_pixel >> 8) & 0xFF);
+		} else if (rep == 2) {
+			for (int i = 0; i < 2; i++) {
+				vec_data->push_back((prev_pixel & ~RGB565_REPEAT_MASK) & 0xFF);
+				vec_data->push_back((prev_pixel >> 8) & 0xFF);
+			}
+		} else {
+			vec_data->push_back((prev_pixel | RGB565_REPEAT_MASK) & 0xFF);
+			vec_data->push_back((prev_pixel >> 8) & 0xFF);
+			vec_data->push_back((rep - 1) & 0xFF);
+			vec_data->push_back((((rep - 1) | 0x3000) >> 8) & 0xFF);
+		}
+	};
+
+    for (auto thumb : thumbnails) {
+        dst_index = 0;
         std::uint32_t i = 0;
         size_t len;
         size_t pixel_x = 0;
-        auto t = thumbnails[0]; //use the first thumbnail
-        len = t.pixels.size();
-        //sanity check
-        if (len != PREV_W * PREV_H * 4)  {
-            printf("incorrect thumbnail size. expected %ix%i\n", PREV_W, PREV_H);
-            return;
-        }
+        auto l_thumb = thumbnails[0]; //use the first thumbnail
+        len = l_thumb.pixels.size();
         // rearrange pixels: they seem to be stored from bottom to top.
-        dst_index = (PREV_W * (PREV_H - 1) * 2);
+        // Convert to RGB565 and do RLE Encoding
+        //dst_index = std::size(preview_images.small) - 1;
+        // convert to BGRA565
+        rep = 0;
+
         while (i < len) {
             std::uint32_t pixel;
-            std::uint32_t r = t.pixels[i++];
-            std::uint32_t g = t.pixels[i++];
-            std::uint32_t b = t.pixels[i++];
+            std::uint32_t r = l_thumb.pixels[i++];
+            std::uint32_t g = l_thumb.pixels[i++];
+            std::uint32_t b = l_thumb.pixels[i++];
             i++; // Alpha
             // convert to BGRA565
             pixel = ((b >> 3) << 11) | ((g >>2) << 5) | (r >> 3);
-            preview_images.large[dst_index++] = pixel & 0xFF;
-            preview_images.large[dst_index++] = (pixel >> 8) & 0xFF;
+
+            if (pixel == prev_pixel) {
+                rep++;
+                if(rep == RLE_ENCODING_LIMIT) {
+                    rle();
+                    rep = 0;
+                }
+            } else {
+                rle();
+                prev_pixel = pixel;
+                rep = 1;
+            }
+
             pixel_x++;
-            if (pixel_x == PREV_W) {
+            if (pixel_x == width) {
                 pixel_x = 0;
-                dst_index -= (PREV_W * 4);
+                dst_index -= (width * 4);
             }
         }
+        width = S_PREV_W;
+        vec_data = &preview_images.small;
     }
+    large_preview.image_len    = preview_images.large.size();
+    small_preview.image_len    = preview_images.small.size();
 }
 
 void fill_header(ctb_format_header          &h,
@@ -159,12 +200,12 @@ void fill_header(ctb_format_header          &h,
     // v2 MAGIC- 0x12FD0019 (cddlp magic number)
     // v3 MAGIC- 0x12FD0086 (ctb magic number- might be the same for v4)
     // v4 MAGIC- 0x12FD0106 (might be the v3 magic number)
-    h.magic                      = 0x12FD0106;
+    h.magic                      = 0x12FD0086;
     // Version matches the CTB version
     h.version                    = 4;
-    Points bed_shape             = get_cfg_value<Points>(cfg, "bed_shape");
-    h.bed_size_x                 = bed_shape[2][0];
-    h.bed_size_y                 = bed_shape[2][1];
+    Points bed_shape             = Slic3r::get_bed_shape(cfg);
+    h.bed_size_x                 = get_cfg_value<float_t>(cfg, "display_height");
+    h.bed_size_y                 = get_cfg_value<float_t>(cfg, "display_width");
     h.bed_size_z                 = get_cfg_value<float_t>(cfg, "max_print_height");
     h.zero_pad                   = 0;
     h.layer_height               = get_cfg_value<float_t> (cfg, "layer_height");
@@ -178,16 +219,13 @@ void fill_header(ctb_format_header          &h,
     h.large_preview_offset       = sizeof(Slic3r::ctb_format_header);
     // Layer table offset is set below after the v4 params offset is created
     h.layer_count                = layer_count;
-    h.small_preview_offset       = h.large_preview_offset + sizeof(Slic3r::ctb_format_preview) + sizeof(Slic3r::ctb_preview_data::large);
     h.print_time                 = stats.estimated_print_time;
     h.projector_type             = 1;  // check for normal or mirrored- 0/1 respectively- LCD printers are "mirrored" for this purpose
-    h.print_params_offset        = h.small_preview_offset + sizeof(Slic3r::ctb_format_preview) + sizeof(Slic3r::ctb_preview_data::small);
-    h.print_params_size          = sizeof(Slic3r::ctb_format_print_params);
+	h.print_params_size          = sizeof(Slic3r::ctb_format_print_params);
     h.anti_alias_level           = 1;
     h.pwm_level                  = get_cfg_value<uint16_t>(cfg, "light_intensity") * 255 / 100; // TODO: Figure out if these need to be multiplied by 255
     h.bot_pwm_level              = get_cfg_value<uint16_t>(cfg, "bot_light_intensity") * 255 / 100;
     h.encryption_key             = 0;
-    h.slicer_info_offset         = h.print_params_offset + h.print_params_size;
     h.slicer_info_size           = sizeof(Slic3r::ctb_format_slicer_info);
     //h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
 
@@ -224,13 +262,9 @@ void fill_header(ctb_format_header          &h,
     slicer_info.rest_time_after_retract  = get_cfg_value<float_t>(cfg, "rest_time_after_retract");
     slicer_info.rest_time_after_lift2    = get_cfg_value<float_t>(cfg, "rest_time_after_lift2");
     slicer_info.transition_layer_count   = get_cfg_value<uint32_t>(cfg, "faded_layers");
-    slicer_info.print_params_v4_offset   = h.slicer_info_offset + sizeof(Slic3r::ctb_format_slicer_info);
-    slicer_info.zero_pad2                = 0;
+	slicer_info.zero_pad2                = 0;
     slicer_info.zero_pad3                = 0;
     slicer_info.machine_name          = "RANDOM NAME";
-
-    slicer_info.machine_name_offset      = slicer_info.print_params_v4_offset - sizeof(slicer_info.machine_name);
-    h.layer_table_offset         = slicer_info.print_params_v4_offset + sizeof(Slic3r::ctb_format_print_params_v4) + sizeof(Slic3r::ctb_format_print_params_v4_2);
 
     print_params_v4.bot_retract_speed       = get_cfg_value<float_t>(cfg, "sla_bot_retract_speed");
     print_params_v4.bot_retract_speed2      = get_cfg_value<float_t>(cfg, "tsmc_sla_bot_retract_speed");
@@ -317,7 +351,7 @@ sla::RasterEncoder CtbSLAArchive::get_encoder() const
 template <typename T>
 static void ctb_write_out(std::ofstream &out, T val)
 {
-    for(size_t i = 0; i < (sizeof(T) / 8); i++) {
+    for(size_t i = 0; i < sizeof(T); i++) {
         char i1 = (val & 0xFF);
         out.write((const char *) &i1, 1);
         val = val >> 8;
@@ -332,16 +366,14 @@ static void ctb_write_out(std::ofstream &out, std::float_t val)
 
 static void ctb_write_out(std::ofstream &out, std::string val)
 {
-    //char *c_str = new char[val.length() + 1];
-    //val.c_str();
-    out << val;
+    out.write(val.c_str(), val.length());
 }
 
 //template <typename T>
 static void ctb_write_header(std::ofstream &out, ctb_format_header &h)
 {
     boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
+        ctb_write_out(out, *&x);
     });
 }
 
@@ -417,25 +449,31 @@ void CtbSLAArchive::export_print(const std::string     fname,
 {
     std::uint32_t layer_count = m_layers.size();
 
-    ctb_format_header          header = {};
-    ctb_format_preview         large_preview = {};
-    ctb_format_preview         small_preview = {};
-    ctb_preview_data           preview_images = {};
-    ctb_format_print_params    print_params = {};
-    ctb_format_slicer_info     slicer_info = {};
-    ctb_format_print_params_v4 print_params_v4 = {};
-    ctb_format_print_params_v4_2 print_params_v4_2 = {};
-    ctb_format_layer_data      layer_data = {};
-    ctb_format_layer_data_ex   layer_data_ex = {};
+    ctb_format_header          header{};
+    ctb_format_preview         large_preview{};
+    ctb_format_preview         small_preview{};
+    ctb_preview_data           preview_images{};
+    ctb_format_print_params    print_params{};
+    ctb_format_slicer_info     slicer_info{};
+    ctb_format_print_params_v4 print_params_v4{};
+    ctb_format_print_params_v4_2 print_params_v4_2{};
+    ctb_format_layer_data      layer_data{};
+    ctb_format_layer_data_ex   layer_data_ex{};
     std::vector<uint8_t>       layer_images;
 
     fill_header(header, print_params, slicer_info, print_params_v4, print, layer_count);
+	fill_preview(large_preview, small_preview, preview_images, thumbnails);
+
+	header.small_preview_offset        = header.large_preview_offset + sizeof(Slic3r::ctb_format_preview) + preview_images.large.size();
+    header.print_params_offset         = header.small_preview_offset + sizeof(Slic3r::ctb_format_preview) + preview_images.small.size();
+	header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
+    slicer_info.print_params_v4_offset = header.slicer_info_offset + sizeof(Slic3r::ctb_format_slicer_info);
+    slicer_info.machine_name_offset    = slicer_info.print_params_v4_offset - sizeof(slicer_info.machine_name);
+    header.layer_table_offset = slicer_info.print_params_v4_offset + sizeof(Slic3r::ctb_format_print_params_v4) + sizeof(Slic3r::ctb_format_print_params_v4_2);
 
     print_params_v4.disclaimer_offset       = layer_data.data_offset - sizeof(print_params_v4_2.disclaimer_text);
-
-    large_preview.image_offset = header.small_preview_offset - sizeof(Slic3r::ctb_preview_data::large);
-    small_preview.image_offset = header.print_params_offset - sizeof(Slic3r::ctb_preview_data::small);
-    fill_preview(large_preview, small_preview, preview_images, thumbnails);
+	large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
+    small_preview.image_offset = header.print_params_offset - preview_images.small.size();
 
     layer_data.pos_z                        = 0.0f;
     layer_data.data_offset                  = header.layer_table_offset;
@@ -496,9 +534,9 @@ void CtbSLAArchive::export_print(const std::string     fname,
             ctb_write_layer_data(out, layer_data);
             ctb_write_layer_data_ex(out, layer_data_ex);
             // add the rle encoded layer image into the buffer
-            out << rst.data();
+            out.write(reinterpret_cast<const char*>(rst.data()), rst.size());
             layer_data.data_offset += layer_data.data_size;
-            layer_data.pos_z       += header.layer_height; // TODO: FIXME
+            layer_data.pos_z       += header.layer_height;
             i++;
         }
         out.close();

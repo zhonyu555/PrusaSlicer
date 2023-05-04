@@ -27,9 +27,14 @@
 #define CTB_SLA_FORMAT(FILEFORMAT) \
     CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, CTB_SLA_FORMAT_VERSION_4)
 
-#define PREV_W 224
-#define PREV_H 168
+#define L_PREV_W 224
+#define L_PREV_H 168
+#define S_PREV_W 224
+#define S_PREV_H 168
 #define PREV_DPI 42
+
+#define RLE_ENCODING_LIMIT 0xFFF
+#define RGB565_REPEAT_MASK 0x20
 
 #define LAYER_SIZE_ESTIMATE (32 * 1024)
 
@@ -81,11 +86,11 @@ typedef struct ctb_format_preview
     std::uint32_t zero_pad4 = 0;
 } ctb_format_preview;
 
-// raw image data in BGR565 format FIXME
+// raw image data in RGB565 format
 typedef struct ctb_preview_data
 {
-    std::uint8_t large[PREV_W * PREV_H * 2];
-    std::uint8_t small[PREV_W * PREV_H * 2];
+    std::vector<std::uint8_t> large;
+    std::vector<std::uint8_t> small;
 } ctb_preview_data;
 
 typedef struct ctb_format_print_params
