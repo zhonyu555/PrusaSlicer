@@ -1081,6 +1081,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                       tsmc_lift_distance))
     ((ConfigOptionFloat,                       tsmc_bot_lift_speed))
     ((ConfigOptionFloat,                       tsmc_lift_speed))
+    ((ConfigOptionFloat,                       tsmc_retract_height))
     ((ConfigOptionFloat,                       tsmc_sla_bot_retract_speed))
     ((ConfigOptionFloat,                       tsmc_sla_retract_speed))
     ((ConfigOptionFloats,                      material_correction))

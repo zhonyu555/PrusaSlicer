@@ -3933,21 +3933,21 @@ void PrintConfigDef::init_sla_params()
     def->tooltip = L("Bottom layers second stage lift distance");
     def->sidetext = L("mm");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(8));
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("tsmc_lift_distance", coFloat);
     def->label = L("Normal layers second stage lift distance");
     def->tooltip = L("Normal layers second stage lift distance");
     def->sidetext = L("mm");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(8));
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("tsmc_bot_lift_speed", coFloat);
     def->label = L("Bottom layers second stage lift speed");
     def->tooltip = L("Bottom layers second stage lift speed");
     def->sidetext = L("mm/m");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(45));
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("tsmc_lift_speed", coFloat);
     def->label = L("Normal layers second stage lift speed");
@@ -3961,14 +3961,21 @@ void PrintConfigDef::init_sla_params()
     def->tooltip = L("Normal layers second stage retract speed");
     def->sidetext = L("mm/m");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(45));
+    def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("tsmc_retract_height", coFloat);
+    def->label = L("Normal layers second stage retract height");
+    def->tooltip = L("Normal layers second stage retract height");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("tsmc_sla_bot_retract_speed", coFloat);
     def->label = L("Bottom layers second stage retract speed");
     def->tooltip = L("Bottom layers second stage retract speed");
     def->sidetext = L("mm/m");
     def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(45));
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("material_correction", coFloats);
     def->full_label = L("Correction for expansion");
