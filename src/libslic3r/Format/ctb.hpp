@@ -66,7 +66,7 @@ typedef struct ctb_format_header
     std::uint32_t projector_type;
     std::uint32_t print_params_offset;
     std::uint32_t print_params_size;
-    std::uint32_t anti_alias_level;
+    std::uint32_t antialias_level;
     std::uint16_t pwm_level;
     std::uint16_t bot_pwm_level;
     std::uint32_t encryption_key;
@@ -135,7 +135,6 @@ typedef struct ctb_format_slicer_info
     std::uint32_t print_params_v4_offset;
     std::uint32_t zero_pad2 = 0;
     std::uint32_t zero_pad3 = 0;
-    std::string   machine_name;
 } ctb_format_slicer_info;
 
 // ADDME!
@@ -162,11 +161,6 @@ typedef struct ctb_format_print_params_v4
     std::uint32_t disclaimer_offset;
     std::uint32_t disclaimer_len = 320; // pretty much always going to be 320
 } ctb_print_params_v4;
-
-typedef struct ctb_format_print_params_v4_2 {
-    std::uint8_t  reserved[384] = {0};
-    std::string   disclaimer_text = "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, reverse engineer, lease, assign, or sublicense the said programs or codes.";
-} ctb_format_print_params_v4_2;
 
 typedef struct ctb_format_layer_data
 {
