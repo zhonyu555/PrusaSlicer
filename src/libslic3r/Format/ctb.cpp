@@ -500,16 +500,15 @@ void CtbSLAArchive::export_print(const std::string     fname,
     header.print_params_offset         = header.small_preview_offset + \
                                          get_struct_size(small_preview) + \
                                          preview_images.small.size();
-    slicer_info.machine_name_offset    = header.print_params_offset + header.print_params_size;
-    header.slicer_info_offset          = slicer_info.machine_name_offset + machine_name.length();
-    slicer_info.print_params_v4_offset = header.slicer_info_offset + \
-                                         get_struct_size(slicer_info);
-    header.layer_table_offset = slicer_info.print_params_v4_offset + \
-                                get_struct_size(print_params_v4) + \
-                                reserved_size + \
+    header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
+    slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
+    slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + \
+                                         machine_name.length();
+    print_params_v4.disclaimer_offset  = slicer_info.print_params_v4_offset + reserved_size + \
+                                         get_struct_size(print_params_v4);
+    header.layer_table_offset = print_params_v4.disclaimer_offset + \
                                 disclaimer_text.length();
 
-    print_params_v4.disclaimer_offset       = layer_data.data_offset - disclaimer_text.length();
     large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
     small_preview.image_offset = header.print_params_offset - preview_images.small.size();
 
@@ -579,12 +578,12 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
             ctb_write_layer_data(out, layer_data);
             ctb_write_layer_data_ex(out, layer_data_ex);
+            out.write(reinterpret_cast<const char*>(rst.data()), rst.size());
 
             out.seekp(curr_pos);
             ctb_write_layer_data(out, layer_data);
 
             // add the rle encoded layer image into the buffer
-            out.write(reinterpret_cast<const char*>(rst.data()), rst.size());
             layer_data_offset += layer_data.data_size;
             layer_data.pos_z  += header.layer_height;
             i++;
