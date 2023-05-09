@@ -4871,30 +4871,36 @@ void TabSLAMaterial::build()
         wxGetApp().sidebar().Layout();
     };
 
-    auto create_tsmc = [&optgroup](std::string option_name) {
+    optgroup = page->new_optgroup(L("Bottom Layers"));
+    auto create_tsmc = [](auto &optgroup, std::string option_name) {
         auto option = optgroup->get_option(option_name);
         Line line = { option.opt.full_label, "" };
         line.append_option(option);
         line.append_option(optgroup->get_option("tsmc_" + option_name));
         optgroup->append_line(line);
-        optgroup->append_single_option_line(option_name);
     };
-
-    optgroup = page->new_optgroup(L("Bottom Layers"));
     optgroup->append_single_option_line("initial_exposure_time");
     optgroup->append_single_option_line("bot_light_off_time");
-    create_tsmc("bot_lift_distance");
-    create_tsmc("bot_lift_speed");
-    create_tsmc("sla_bot_retract_speed");
+
+    //optgroup->append_single_option_line("bot_lift_distance");
+    //optgroup->append_single_option_line("bot_lift_speed");
+    //optgroup->append_single_option_line("sla_bot_retract_speed");
+    create_tsmc(optgroup, "bot_lift_distance");
+    create_tsmc(optgroup, "bot_lift_speed");
+    create_tsmc(optgroup, "sla_bot_retract_speed");
     optgroup->append_single_option_line("bot_light_intensity");
 
     optgroup = page->new_optgroup(L("Layers"));
     optgroup->append_single_option_line("exposure_time");
     optgroup->append_single_option_line("initial_layer_height");
     optgroup->append_single_option_line("light_off_time");
-    create_tsmc("lift_distance");
-    create_tsmc("lift_speed");
-    create_tsmc("sla_retract_speed");
+    //optgroup->append_single_option_line("lift_distance");
+    //optgroup->append_single_option_line("lift_speed");
+    //optgroup->append_single_option_line("sla_retract_speed");
+    create_tsmc(optgroup, "lift_distance");
+    create_tsmc(optgroup, "lift_speed");
+    create_tsmc(optgroup, "sla_retract_speed");
+
     optgroup->append_single_option_line("light_intensity");
     optgroup->append_single_option_line("rest_time_after_lift");
     optgroup->append_single_option_line("rest_time_after_lift2");
