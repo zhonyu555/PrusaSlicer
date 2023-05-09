@@ -7,18 +7,47 @@
 
 namespace Slic3r {
 
-static void ctb_get_pixel_span(const std::uint8_t* ptr, const std::uint8_t* end,
-                               std::uint8_t& pixel, size_t& span_len)
+static void ctb_get_pixel_val(std::uint8_t pixel, uint32_t run_len, std::vector<uint8_t> *dst)
 {
-    size_t max_len;
+    if (run_len == 0) {
+        return;
+    }
 
-    span_len = 0;
-    pixel = (*ptr) & 0xF0;
-    // the maximum length of the span depends on the pixel color
-    max_len = (pixel == 0 || pixel == 0xF0) ? 0xFFF : 0xF;
-    while (ptr < end && span_len < max_len && ((*ptr) & 0xF0) == pixel) {
-        span_len++;
-        ptr++;
+    if (run_len > 1) {
+        pixel |= 0x80;
+    }
+    dst->push_back(pixel);
+
+    if (run_len <= 1) {
+        return;
+    } 
+    
+    if (run_len <= 0x7f) {
+        dst->push_back((uint8_t)run_len);
+        return;
+    }
+
+    if (run_len <= 0x3fff)
+    {
+        dst->push_back((uint8_t)((run_len >> 8) | 0x80));
+        dst->push_back((uint8_t)run_len);
+        return;
+    }
+
+    if (run_len <= 0x1fffff)
+    {
+        dst->push_back((uint8_t)((run_len >> 16) | 0xc0));
+        dst->push_back((uint8_t)(run_len >> 8));
+        dst->push_back((uint8_t)run_len);
+        return;
+    }
+
+    if (run_len <= 0xfffffff)
+    {
+        dst->push_back((uint8_t)((run_len >> 24) | 0xe0));
+        dst->push_back((uint8_t)(run_len >> 16));
+        dst->push_back((uint8_t)(run_len >> 8));
+        dst->push_back((uint8_t)run_len);
     }
 }
 
@@ -27,29 +56,26 @@ struct CTBRasterEncoder {
                                                 size_t num_components)
     {
         std::vector<uint8_t> dst;
-        size_t               span_len;
-        std::uint8_t         pixel;
+        uint32_t             run_len = 0;
+        std::uint8_t         pixel = 0xFF;
         auto                 size = w * h * num_components;
         dst.reserve(size);
 
         const std::uint8_t *src = reinterpret_cast<const std::uint8_t *>(ptr);
         const std::uint8_t *src_end = src + size;
         while (src < src_end) {
-            ctb_get_pixel_span(src, src_end, pixel, span_len);
-            src += span_len;
-            // fully transparent of fully opaque pixel
-            if (pixel == 0 || pixel == 0xF0) {
-                pixel = pixel | (span_len >> 8);
-                std::copy(&pixel, (&pixel) + 1, std::back_inserter(dst));
-                pixel = span_len & 0xFF;
-                std::copy(&pixel, (&pixel) + 1, std::back_inserter(dst));
+            uint8_t tmp_pixel = (*src) >> 1;
+            if (tmp_pixel == pixel) {
+                run_len++;
+            } else {
+                ctb_get_pixel_val(pixel, run_len, &dst);
+                pixel = tmp_pixel;
+                run_len = 1;
             }
-            // antialiased pixel
-            else {
-                pixel = pixel | span_len;
-                std::copy(&pixel, (&pixel) + 1, std::back_inserter(dst));
-            }
+            src++;
         }
+        ctb_get_pixel_val(pixel, run_len, &dst);
+        dst.shrink_to_fit();
 
         return sla::EncodedRaster(std::move(dst), "ctb");
     }
@@ -389,8 +415,8 @@ static void ctb_write_out(std::ofstream &out, std::string val)
     out.write(val.c_str(), val.length());
 }
 
-//template <typename T>
-static void ctb_write_header(std::ofstream &out, ctb_format_header &h)
+template <typename T>
+static void ctb_write_section(std::ofstream &out, T &h)
 {
     boost::pfr::for_each_field(h, [&out](auto &x) {
         ctb_write_out(out, *&x);
@@ -417,27 +443,6 @@ static void ctb_write_preview(std::ofstream &out, ctb_format_preview &large,
     }
 }
 
-static void ctb_write_print_params(std::ofstream &out, ctb_format_print_params &h)
-{
-    boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
-    });
-}
-
-static void ctb_write_slicer_info(std::ofstream &out, ctb_format_slicer_info &h)
-{
-    boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
-    });
-}
-
-static void ctb_write_print_params_v4(std::ofstream &out, ctb_format_print_params_v4 &h)
-{
-    boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
-    });
-}
-
 static void ctb_write_print_disclaimer(std::ofstream &out, int reserved_size, std::string disclaimer)
 {
     // Garbage data is too big for boost's for_each_field
@@ -447,22 +452,6 @@ static void ctb_write_print_disclaimer(std::ofstream &out, int reserved_size, st
 
     ctb_write_out(out, disclaimer);
 }
-
-static void ctb_write_layer_data(std::ofstream &out, ctb_format_layer_data &h)
-{
-    boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
-    });
-}
-
-static void ctb_write_layer_data_ex(std::ofstream &out, ctb_format_layer_data_ex &h)
-{
-    boost::pfr::for_each_field(h, [&out](auto &x) {
-        ctb_write_out(out, x);
-    });
-}
-
-
 
 void CtbSLAArchive::export_print(const std::string     fname,
                                const SLAPrint       &print,
@@ -525,12 +514,12 @@ void CtbSLAArchive::export_print(const std::string     fname,
         // open the file and write the contents
         std::ofstream out;
         out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
-        ctb_write_header(out, header);
+        ctb_write_section(out, header);
         ctb_write_preview(out, large_preview, small_preview, preview_images);
-        ctb_write_print_params(out, print_params);
-        ctb_write_slicer_info(out, slicer_info);
+        ctb_write_section(out, print_params);
+        ctb_write_section(out, slicer_info);
         ctb_write_out(out, machine_name);
-        ctb_write_print_params_v4(out, print_params_v4);
+        ctb_write_section(out, print_params_v4);
         ctb_write_print_disclaimer(out, reserved_size, disclaimer_text);
 
         //layers
@@ -576,12 +565,12 @@ void CtbSLAArchive::export_print(const std::string     fname,
                                      get_struct_size(layer_data_ex) + \
                                      layer_data.data_size;
 
-            ctb_write_layer_data(out, layer_data);
-            ctb_write_layer_data_ex(out, layer_data_ex);
-            out.write(reinterpret_cast<const char*>(rst.data()), rst.size());
+            ctb_write_section(out, layer_data);
+            ctb_write_section(out, layer_data_ex);
+            out.write((const char *)rst.data(), rst.size());
 
             out.seekp(curr_pos);
-            ctb_write_layer_data(out, layer_data);
+            ctb_write_section(out, layer_data);
 
             // add the rle encoded layer image into the buffer
             layer_data_offset += layer_data.data_size;
