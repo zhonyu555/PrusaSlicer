@@ -884,7 +884,7 @@ void Bonjour::priv::lookup_perform()
 			interfaces.emplace_back(std::move(addr));
 		}
 		// create ipv4 socket for each interface
-		// each will send to querry to for both ipv4 and ipv6
+		// each will send to query to for both ipv4 and ipv6
 		for (const auto& intrfc : interfaces) 		
 			sockets.emplace_back(new LookupSocket(txt_keys, service, service_dn, protocol, replyfn, BonjourRequest::MCAST_IP4, intrfc, io_service));
 	} else {
@@ -904,7 +904,7 @@ void Bonjour::priv::lookup_perform()
 			interfaces.emplace_back(std::move(addr));
 		}
 		// create ipv6 socket for each interface
-		// each will send to querry to for both ipv4 and ipv6
+		// each will send to query to for both ipv4 and ipv6
 		for (const auto& intrfc : interfaces)
 			sockets.emplace_back(new LookupSocket(txt_keys, service, service_dn, protocol, replyfn, BonjourRequest::MCAST_IP6, intrfc, io_service));
 		if (interfaces.empty())
@@ -978,7 +978,7 @@ void Bonjour::priv::resolve_perform()
 			interfaces.emplace_back(addr);
 		}
 		// create ipv4 socket for each interface
-		// each will send to querry to for both ipv4 and ipv6
+		// each will send to query to for both ipv4 and ipv6
 		for (const auto& intrfc : interfaces)
 			sockets.emplace_back(new ResolveSocket(hostname, reply_callback, BonjourRequest::MCAST_IP4, intrfc, io_service));
 	} else {
@@ -997,7 +997,7 @@ void Bonjour::priv::resolve_perform()
 			interfaces.emplace_back(addr);
 		}
 		// create ipv6 socket for each interface
-		// each will send to querry to for both ipv4 and ipv6
+		// each will send to query to for both ipv4 and ipv6
 		for (const auto& intrfc : interfaces) 
 			sockets.emplace_back(new ResolveSocket(hostname, reply_callback, BonjourRequest::MCAST_IP6, intrfc, io_service));
 		if (interfaces.empty())
