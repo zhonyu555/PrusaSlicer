@@ -97,12 +97,12 @@ static ModelVolume *get_volume(ModelObjectPtrs &objects, const ObjectID &volume_
 static OrthoProject create_projection_for_cut(Transform3d tr, double shape_scale, const std::pair<float, float> &z_range);
 
 /// <summary>
-/// Create transformation for emboss Cutted surface
+/// Create transformation for emboss Cut surface
 /// </summary>
 /// <param name="is_outside">True .. raise, False .. engrave</param>
 /// <param name="emboss">Depth of embossing</param>
 /// <param name="tr">Text voliume transformation inside object</param>
-/// <param name="cut">Cutted surface from model</param>
+/// <param name="cut">Cut surface from model</param>
 /// <returns>Projection</returns>
 static OrthoProject3d create_emboss_projection(bool is_outside, float emboss, Transform3d tr, SurfaceCut &cut);
 

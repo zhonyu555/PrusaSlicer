@@ -15,7 +15,7 @@
 ///                     - Same meaning of color as constrained
 /// {N} .. Order of cutted Area of Interestmodel from model surface
 /// model_AOIs/{M}/cutAOI{N}.obj - Extracted Area of interest from corefined model
-/// model_AOIs/{M}/outline{N}.obj - Outline of Cutted Area
+/// model_AOIs/{M}/outline{N}.obj - Outline of Cut Area
 /// {O} .. Order number of patch
 /// patches/patch{O}.off
 /// result.obj - Merged result its
@@ -241,7 +241,7 @@ void create_reduce_map(ReductionMap &reduction_map, const CutMesh &meshes);
 // Patch made by Cut area of interest from model
 // connected faces(triangles) and outlines(halfEdges) for one surface cut
 using CutAOI = std::pair<std::vector<FI>, std::vector<HI>>;
-// vector of Cutted Area of interest cutted from one CGAL model
+// vector of Cut Area of interest cutted from one CGAL model
 using CutAOIs = std::vector<CutAOI>;
 // vector of CutAOIs for each model
 using VCutAOIs = std::vector<CutAOIs>;
@@ -337,7 +337,7 @@ public:
 /// Differenciate other models
 /// </summary>
 /// <param name="cuts">Patches from meshes</param>
-/// <param name="cut_models">Source points for Cutted AOIs
+/// <param name="cut_models">Source points for Cut AOIs
 /// NOTE: Create Reduction map as mesh property - clean on end</param>
 /// <param name="models">Original models without cut modifications
 /// used for differenciation
@@ -435,7 +435,7 @@ VDistances calc_distances(const SurfacePatches &patches,
 /// <param name="shapes">Vector of letters</param>
 /// <param name="start">Pivot for start projection in 2d</param>
 /// <param name="s2i">Convert index to addresss inside of shape</param>
-/// <param name="patches">Cutted parts from surface</param>
+/// <param name="patches">Cut parts from surface</param>
 /// <returns>Closest distance projection indexed by points in shapes(see s2i)</returns>
 ProjectionDistances choose_best_distance(
     const VDistances       &distances,
@@ -1230,7 +1230,7 @@ void collect_surface_data(std::queue<FI>  &process,
 /// Create areas from mesh surface
 /// </summary>
 /// <param name="mesh">Model</param>
-/// <param name="shapes">Cutted shapes</param>
+/// <param name="shapes">Cut shapes</param>
 /// <param name="face_type_map">Define Triangles of interest.
 /// Edge between inside / outside.
 /// NOTE: Not const because it need to flag proccessed faces</param>
@@ -2721,7 +2721,7 @@ using BBS = std::vector<BoundingBoxf3>;
 /// <summary>
 /// Create bounding boxes for AOI
 /// </summary>
-/// <param name="cuts">Cutted AOI from models</param>
+/// <param name="cuts">Cut AOI from models</param>
 /// <param name="cut_models">Source points of cuts</param>
 /// <returns>Bounding boxes</returns>
 BBS create_bbs(const VCutAOIs &cuts, const CutMeshes &cut_models);
