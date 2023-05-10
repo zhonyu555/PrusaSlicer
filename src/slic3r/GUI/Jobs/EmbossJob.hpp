@@ -181,7 +181,7 @@ struct CreateSurfaceVolumeData : public DataBase, public SurfaceVolumeData{
 };
 
 /// <summary>
-/// Cut surface from object and create cutted volume
+/// Cut surface from object and create cut volume
 /// Should not be stopped
 /// </summary>
 class CreateSurfaceVolumeJob : public Job

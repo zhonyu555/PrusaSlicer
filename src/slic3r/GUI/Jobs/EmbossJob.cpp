@@ -112,7 +112,7 @@ static OrthoProject3d create_emboss_projection(bool is_outside, float emboss, Tr
 /// <param name="input1">(can't be const - cache of font)</param>
 /// <param name="input2">SurfaceVolume data</param>
 /// <param name="was_canceled">Check to interrupt execution</param>
-/// <returns>Extruded object from cuted surace</returns>
+/// <returns>Extruded object from cut surface</returns>
 static TriangleMesh cut_surface(/*const*/ DataBase &input1, const SurfaceVolumeData &input2, std::function<bool()> was_canceled);
 
 static void create_message(const std::string &message); // only in finalize
