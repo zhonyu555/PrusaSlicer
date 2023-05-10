@@ -2949,9 +2949,9 @@ void GLGizmoEmboss::draw_advanced()
     }
     m_imgui->disabled_end();
 
-    // slider for Clock-wise angle in degress
+    // slider for Clock-wise angle in degrees
     // stored angle is optional CCW and in radians
-    // Convert stored value to degress
+    // Convert stored value to degrees
     // minus create clock-wise roation from CCW
     const std::optional<float> &angle_opt = m_style_manager.get_font_prop().angle;
     float angle = angle_opt.has_value() ? *angle_opt: 0.f;
