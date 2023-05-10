@@ -293,7 +293,7 @@ private:
     bool m_keep_up = true;
 
     // current selected volume 
-    // NOTE: Be carefull could be uninitialized (removed from Model)
+    // NOTE: Be careful could be uninitialized (removed from Model)
     ModelVolume *m_volume;
 
     // When work with undo redo stack there could be situation that 

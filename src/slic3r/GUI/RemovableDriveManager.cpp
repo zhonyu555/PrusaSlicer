@@ -86,7 +86,7 @@ int eject_alt(const std::wstring& volume_access_path)
 		return 1;
 	}
 	DWORD deviceControlRetVal(0);
-	//these 3 commands should eject device safely but they dont, the device does disappear from file explorer but the "device was safely remove" notification doesnt trigger.
+	//these 3 commands should eject device safely but they dont, the device does disappear from file explorer but the "device was safely remove" notification doesn't trigger.
 	//sd cards does  trigger WM_DEVICECHANGE messege, usb drives dont
 	BOOL e1 = DeviceIoControl(handle, FSCTL_LOCK_VOLUME, nullptr, 0, nullptr, 0, &deviceControlRetVal, nullptr);
 	BOOST_LOG_TRIVIAL(debug) << "FSCTL_LOCK_VOLUME " << e1 << " ; " << deviceControlRetVal << " ; " << GetLastError();
@@ -592,7 +592,7 @@ void RemovableDriveManager::eject_drive()
 			return;
 		}
 		DWORD deviceControlRetVal(0);
-		//these 3 commands should eject device safely but they dont, the device does disappear from file explorer but the "device was safely remove" notification doesnt trigger.
+		//these 3 commands should eject device safely but they dont, the device does disappear from file explorer but the "device was safely remove" notification doesn't trigger.
 		//sd cards does  trigger WM_DEVICECHANGE messege, usb drives dont
 		BOOL e1 = DeviceIoControl(handle, FSCTL_LOCK_VOLUME, nullptr, 0, nullptr, 0, &deviceControlRetVal, nullptr);
 		BOOST_LOG_TRIVIAL(error) << "FSCTL_LOCK_VOLUME " << e1 << " ; " << deviceControlRetVal << " ; " << GetLastError();
@@ -711,7 +711,7 @@ namespace search_for_drives_internal
 			for (size_t i = 0; i < globbuf.gl_pathc; ++ i)
 				inspect_file(globbuf.gl_pathv[i], parent_path, out);
 		} else {
-			//if error - path probably doesnt exists so function just exits
+			//if error - path probably doesn't exists so function just exits
 			//std::cout<<"glob error "<< error<< "\n";
 		}
 		globfree(&globbuf);

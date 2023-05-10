@@ -410,7 +410,7 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
 
 // Names of categories is save in English always. We translate them only for UI.
 // But category "Extruder n" can't be translated regularly (using _()), so
-// just for this category we should splite the title and translate "Extruder" word separately
+// just for this category we should split the title and translate "Extruder" word separately
 wxString Tab::translate_category(const wxString& title, Preset::Type preset_type)
 {
     if (preset_type == Preset::TYPE_PRINTER && title.Contains("Extruder ")) {
@@ -858,7 +858,7 @@ void Tab::update_tab_ui()
     m_presets_choice->update();
 }
 
-// Load a provied DynamicConfig into the tab, modifying the active preset.
+// Load a provided DynamicConfig into the tab, modifying the active preset.
 // This could be used for example by setting a Wipe Tower position by interactive manipulation in the 3D view.
 void Tab::load_config(const DynamicPrintConfig& config)
 {

@@ -587,8 +587,8 @@ struct ConfigWizard::priv
                                   // PrinterPickers state.
     Materials filaments;          // Holds available filament presets and their types & vendors
     Materials sla_materials;      // Ditto for SLA materials
-    PresetAliases aliases_fff;    // Map of aliase to preset names
-    PresetAliases aliases_sla;    // Map of aliase to preset names
+    PresetAliases aliases_fff;    // Map of aliases to preset names
+    PresetAliases aliases_sla;    // Map of aliases to preset names
     std::unique_ptr<DynamicPrintConfig> custom_config;           // Backing for custom printer definition
     bool any_fff_selected;        // Used to decide whether to display Filaments page
     bool any_sla_selected;        // Used to decide whether to display SLA Materials page

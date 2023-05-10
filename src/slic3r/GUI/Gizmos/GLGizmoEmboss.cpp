@@ -242,7 +242,7 @@ static bool draw_button(const IconManager::VIcons& icons, IconType type, bool di
 /// Apply camera direction for emboss direction
 /// </summary>
 /// <param name="camera">Define view vector</param>
-/// <param name="canvas">Containe Selected Model to modify</param>
+/// <param name="canvas">Contain Selected Model to modify</param>
 /// <returns>True when apply change otherwise false</returns>
 static bool apply_camera_dir(const Camera &camera, GLCanvas3D &canvas);
 
@@ -535,7 +535,7 @@ void GLGizmoEmboss::on_render_input_window(float x, float y, float bottom_limit)
         return;
     }
 
-    // Not known situation when could happend this is only for sure
+    // Not known situation when could happened this is only for sure
     if (!m_is_unknown_font && !m_style_manager.is_active_font())
         create_notification_not_valid_font("No active font in style. Select correct one.");
     else if (!m_is_unknown_font && !m_style_manager.get_wx_font().IsOk())
@@ -868,7 +868,7 @@ EmbossStyles GLGizmoEmboss::create_default_styles()
                 return true;        
         }
 
-        // Check that exsit valid TrueType Font for wx font
+        // Check that exist valid TrueType Font for wx font
         return WxFontUtils::create_font_file(wx_font) == nullptr;
         }),styles.end()
     );
@@ -1572,7 +1572,7 @@ void GLGizmoEmboss::init_face_names(Facenames &face_names)
 
         wxFont wx_font(wxFontInfo().FaceName(name).Encoding(encoding));
         //*
-        // Faster chech if wx_font is loadable but not 100%
+        // Faster check if wx_font is loadable but not 100%
         // names could contain not loadable font
         if (!WxFontUtils::can_load(wx_font)) return false;
 
@@ -3244,7 +3244,7 @@ void GLGizmoEmboss::create_notification_not_valid_font(
 }
 
 void GLGizmoEmboss::create_notification_not_valid_font(const std::string &text) {
-    // not necessary, but for sure that old notification doesnt exist
+    // not necessary, but for sure that old notification doesn't exist
     if (m_is_unknown_font)
         remove_notification_not_valid_font();
     m_is_unknown_font = true;
@@ -3544,7 +3544,7 @@ bool priv::apply_camera_dir(const Camera &camera, GLCanvas3D &canvas) {
 
     Vec3d emboss_dir(0., 0., -1.);
 
-    // check wether cam_dir is already used
+    // check whether cam_dir is already used
     if (is_approx(cam_dir_tr, emboss_dir)) return false;
 
     assert(sel.get_volume_idxs().size() == 1);

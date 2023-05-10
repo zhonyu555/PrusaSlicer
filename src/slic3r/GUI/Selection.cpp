@@ -2321,7 +2321,7 @@ void Selection::render_sidebar_layers_hints(const std::string& sidebar_field, GL
 
     const BoundingBoxf3& box = get_bounding_box();
 
-    // view dependend order of rendering to keep correct transparency
+    // view dependent order of rendering to keep correct transparency
     const bool camera_on_top = wxGetApp().plater()->get_camera().is_looking_downward();
     const float z1 = camera_on_top ? min_z : max_z;
     const float z2 = camera_on_top ? max_z : min_z;

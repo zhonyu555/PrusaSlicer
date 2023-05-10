@@ -130,7 +130,7 @@ public:
     /// Update volume - change object_id
     /// </summary>
     /// <param name="canceled">Was process canceled.
-    /// NOTE: Be carefull it doesn't care about
+    /// NOTE: Be careful it doesn't care about
     /// time between finished process and started finalize part.</param>
     /// <param name="">unused</param>
     void finalize(bool canceled, std::exception_ptr &eptr) override;

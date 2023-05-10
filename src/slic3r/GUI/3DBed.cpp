@@ -143,7 +143,7 @@ BoundingBoxf3 Bed3D::calc_extended_bounding_box() const
 {
     BoundingBoxf3 out { m_build_volume.bounding_volume() };
     const Vec3d size = out.size();
-    // ensures that the bounding box is set as defined or the following calls to merge() will not work as intented
+    // ensures that the bounding box is set as defined or the following calls to merge() will not work as intended
     if (size.x() > 0.0 && size.y() > 0.0 && !out.defined)
         out.defined = true;
     // Reset the build volume Z, we don't want to zoom to the top of the build volume if it is empty.

@@ -1073,7 +1073,7 @@ void GLGizmoCut3D::dragging_grabber_z(const GLGizmoBase::UpdateData &data)
     Vec3d starting_vec = m_rotation_m * Vec3d::UnitZ();
     if (starting_vec.norm() != 0.0) {
         const Vec3d mouse_dir = data.mouse_ray.unit_vector();
-        // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
+        // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing through the starting position
         // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebraic form
         // in our case plane normal and ray direction are the same (orthogonal view)
         // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal

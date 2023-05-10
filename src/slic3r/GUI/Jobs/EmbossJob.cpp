@@ -630,7 +630,7 @@ void priv::create_volume(
 
     plater->take_snapshot(_L("Add Emboss text Volume"));
 
-    // NOTE: be carefull add volume also center mesh !!!
+    // NOTE: be careful add volume also center mesh !!!
     // So first add simple shape(convex hull is also calculated)
     ModelVolume *volume = obj->add_volume(make_cube(1., 1., 1.), type);
 

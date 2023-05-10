@@ -137,7 +137,7 @@ bool contains_path_dir(const std::string& p, const std::string& dir_name)
         //BOOST_LOG_TRIVIAL(debug) << path.string() << " " << std::oct << boost::filesystem::status(path).permissions();
         return true; //boost::filesystem::status(path).permissions() & boost::filesystem::owner_write;
     } else
-        BOOST_LOG_TRIVIAL(debug) << path.string() << " doesnt exists";
+        BOOST_LOG_TRIVIAL(debug) << path.string() << " doesn't exists";
     return false;
 }
 // Creates directory in path if not exists yet

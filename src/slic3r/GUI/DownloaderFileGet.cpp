@@ -137,7 +137,7 @@ void FileGet::priv::get_perform()
 		std::string extension = boost::filesystem::extension(dest_path);
 		std::string just_filename = m_filename.substr(0, m_filename.size() - extension.size());
 		std::string final_filename = just_filename;
-        // Find unsed filename 
+        // Find unused filename 
 		try {
 			size_t version = 0;
 			while (boost::filesystem::exists(m_dest_folder / (final_filename + extension)) || boost::filesystem::exists(m_dest_folder / (final_filename + extension + "." + std::to_string(get_current_pid()) + ".download")))

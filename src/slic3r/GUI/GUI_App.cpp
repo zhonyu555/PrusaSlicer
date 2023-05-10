@@ -3289,7 +3289,7 @@ bool GUI_App::open_browser_with_warning_dialog(const wxString& url, wxWindow* pa
 {
     bool launch = true;
 
-    // warning dialog containes a "Remember my choice" checkbox
+    // warning dialog contains a "Remember my choice" checkbox
     std::string option_key = "suppress_hyperlinks";
     if (force_remember_choice || app_config->get(option_key).empty()) {
         if (app_config->get(option_key).empty()) {
@@ -3313,7 +3313,7 @@ bool GUI_App::open_browser_with_warning_dialog(const wxString& url, wxWindow* pa
         if (launch)
             launch = !app_config->get_bool(option_key);
     }
-    // warning dialog doesn't containe a "Remember my choice" checkbox
+    // warning dialog doesn't contain a "Remember my choice" checkbox
     // and will be shown only when "Suppress to open hyperlink in browser" is ON.
     else if (app_config->get_bool(option_key)) {
         MessageDialog dialog(parent, _L("Open hyperlink in default browser?"), _L("PrusaSlicer: Open hyperlink"), wxICON_QUESTION | wxYES_NO);

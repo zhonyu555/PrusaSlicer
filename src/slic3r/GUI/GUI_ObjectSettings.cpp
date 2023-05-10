@@ -209,7 +209,7 @@ void ObjectSettings::update_config_values(ModelConfig* config)
 
     auto load_config = [this, config, &main_config]()
     {
-        /* Additional check for overrided options.
+        /* Additional check for overridden options.
          * There is a case, when some options should to be added, 
          * to avoid check loop in the next configuration update
          */

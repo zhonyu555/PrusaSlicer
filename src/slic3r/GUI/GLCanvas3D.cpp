@@ -3303,7 +3303,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                     // side view -> move selected volumes orthogonally to camera view direction
                     const Linef3 ray = mouse_ray(pos);
                     const Vec3d dir = ray.unit_vector();
-                    // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
+                    // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing through the starting position
                     // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebraic form
                     // in our case plane normal and ray direction are the same (orthogonal view)
                     // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal

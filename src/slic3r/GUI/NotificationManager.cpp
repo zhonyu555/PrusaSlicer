@@ -811,7 +811,7 @@ void NotificationManager::ExportFinishedNotification::render_eject_button(ImGuiW
 			imgui.text(_u8L("Eject drive") + " " + GUI::shortkey_ctrl_prefix() + "T");
 			ImGui::EndTooltip();
 			ImGui::PopStyleColor();
-			// somehow the tooltip wont show if the render doesnt run twice
+			// somehow the tooltip wont show if the render doesn't run twice
 			if (m_hover_once) {
 				wxGetApp().plater()->get_current_canvas3D()->schedule_extra_frame(0);
 				m_hover_once = false;
@@ -902,7 +902,7 @@ void NotificationManager::ProgressBarNotification::render_text(ImGuiWrapper& img
 		assert(m_text1.size() >= m_endlines[0]  || m_text1.size() >= m_endlines[1]);
 		if(m_endlines[0] > m_text1.size() || m_endlines[1] > m_text1.size())
 			return;
-		// two lines text (what doesnt fit, wont show), one line bar
+		// two lines text (what doesn't fit, wont show), one line bar
 		ImGui::SetCursorPosX(m_left_indentation);
 		ImGui::SetCursorPosY(m_line_height / 4);
 		imgui.text(m_text1.substr(0, m_endlines[0]).c_str());
@@ -1410,7 +1410,7 @@ void NotificationManager::PrintHostUploadNotification::complete_with_warning()
 
 void NotificationManager::PrintHostUploadNotification::render_text(ImGuiWrapper& imgui,const float win_size_x, const float win_size_y,const float win_pos_x, const float win_pos_y) 
 {
-	// If not completed, the text rendering is very similar to progressbar notification except it doesnt use m_multiline to decide.
+	// If not completed, the text rendering is very similar to progressbar notification except it doesn't use m_multiline to decide.
 	// If completed, whole text is part of m_text_1 and is rendered by PopNotification function.
 
 	if (m_uj_state != UploadJobState::PB_COMPLETED && m_uj_state != UploadJobState::PB_COMPLETED_WITH_WARNING) {
@@ -1420,7 +1420,7 @@ void NotificationManager::PrintHostUploadNotification::render_text(ImGuiWrapper&
 			assert(m_text1.size() >= m_endlines[0] || m_text1.size() >= m_endlines[1]);
 			if (m_endlines[0] > m_text1.size() || m_endlines[1] > m_text1.size())
 				return;
-			// two lines text (what doesnt fit, wont show), one line bar
+			// two lines text (what doesn't fit, wont show), one line bar
 			ImGui::SetCursorPosX(m_left_indentation);
 			ImGui::SetCursorPosY(m_line_height / 4);
 			imgui.text(m_text1.substr(0, m_endlines[0]).c_str());
@@ -2658,7 +2658,7 @@ void NotificationManager::progress_indicator_set_progress(int pr)
 	for (std::unique_ptr<PopNotification>& notification : m_pop_notifications) {
 		if (notification->get_type() == NotificationType::ProgressIndicator) {
 			dynamic_cast<ProgressIndicatorNotification*>(notification.get())->set_progress(pr);
-			// Ask for rendering - needs to be done on every progress. Calls to here doesnt trigger IDLE event or rendering. 
+			// Ask for rendering - needs to be done on every progress. Calls to here doesn't trigger IDLE event or rendering. 
 			wxGetApp().plater()->get_current_canvas3D()->schedule_extra_frame(100);
 			return;
 		}

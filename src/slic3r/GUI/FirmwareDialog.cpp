@@ -230,7 +230,7 @@ void FirmwareDialog::priv::find_serial_ports()
 
 void FirmwareDialog::priv::fit_no_shrink()
 {
-	// Ensure content fits into window and window is not shrinked
+	// Ensure content fits into window and window is not shrunk
 	const auto old_size = q->GetSize();
 	q->Layout();
 	q->Fit();

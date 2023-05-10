@@ -323,7 +323,7 @@ public:
 
 // returt FALSE, if fixing was canceled
 // fix_result is empty, if fixing finished successfully
-// fix_result containes a message if fixing failed 
+// fix_result contains a message if fixing failed 
 bool fix_model_by_win10_sdk_gui(ModelObject &model_object, int volume_idx, wxProgressDialog& progress_dialog, const wxString& msg_header, std::string& fix_result)
 {
     std::mutex mtx;

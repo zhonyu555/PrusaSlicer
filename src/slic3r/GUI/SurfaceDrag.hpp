@@ -24,7 +24,7 @@ struct SurfaceDrag
     // Start dragging text transformations to world
     Transform3d world;
 
-    // Invers transformation of text volume instance
+    // Inverse transformation of text volume instance
     // Help convert world transformation to instance space
     Transform3d instance_inv;
 

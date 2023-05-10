@@ -199,7 +199,7 @@ public:
     PrintIndicator  IsPrintable() const             { return m_printable; }
     void            UpdateExtruderAndColorIcon(wxString extruder = "");
 
-    // use this function only for childrens
+    // use this function only for children
     void AssignAllVal(ObjectDataViewModelNode& from_node)
     {
         // ! Don't overwrite other values because of equality of this values for all children --

@@ -146,7 +146,7 @@ public:
 
 	// Timestamp of the active snapshot. One of the snapshots of this->snapshots() shall have Snapshot::timestamp equal to this->active_snapshot_time().
 	// The active snapshot may be a special placeholder "@@@ Topmost @@@" indicating an uncaptured current state,
-	// or the active snapshot may be an active state to which the application state was undoed or redoed.
+	// or the active snapshot may be an active state to which the application state was undone or redone.
 	size_t active_snapshot_time() const;
 	const Snapshot& active_snapshot() const { return this->snapshot(this->active_snapshot_time()); }
 	// Temporary snapshot is active if the topmost snapshot is active and it has not been captured yet.

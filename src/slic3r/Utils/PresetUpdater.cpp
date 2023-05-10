@@ -353,7 +353,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 
 	// Download profiles archive zip
 	// dk: Do we want to return here on error? Or skip archive dwnld and unzip and work with previous run state cache / vendor? I think return.
-	// Any error here also doesnt show any info in UI. Do we want maybe notification?
+	// Any error here also doesn't show any info in UI. Do we want maybe notification?
 	fs::path archive_path(cache_path / "vendor_indices.zip");
 	if (index_archive_url.empty()) {
 		BOOST_LOG_TRIVIAL(error) << "Downloading profile archive failed - url has no value.";
@@ -507,7 +507,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 
 		if (vendor.config_version >= recommended) { continue; }
 
-		// vendors that are checked here, doesnt need to be checked again later
+		// vendors that are checked here, doesn't need to be checked again later
 		if (archive_it != vendors_with_status.end())
 			archive_it->second = VendorStatus::NEW_VERSION;
 
@@ -810,7 +810,7 @@ Updates PresetUpdater::priv::get_config_updates(const Semver &old_slic3r_version
 		auto bundle_path_idx = vendor_path / idx.path().filename();
 
 		if (! fs::exists(bundle_path)) {
-			BOOST_LOG_TRIVIAL(info) << format("Confing bundle not installed for vendor %1%, skipping: ", idx.vendor());
+			BOOST_LOG_TRIVIAL(info) << format("Config bundle not installed for vendor %1%, skipping: ", idx.vendor());
 			continue;
 		}
 

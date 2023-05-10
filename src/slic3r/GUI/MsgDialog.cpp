@@ -178,7 +178,7 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
 #endif // __WXGTK__
     }
 
-    // if message containes the table
+    // if message contains the table
     if (msg.Contains("<tr>")) {
         int lines = msg.Freq('\n') + 1;
         int pos = 0;

@@ -205,7 +205,7 @@ public:
     /// <param name="position">Center of cross hair</param>
     /// <param name="radius">Circle radius</param>
     /// <param name="color">Color of symbol</param>
-    /// <param name="num_segments">Precission of circle</param>
+    /// <param name="num_segments">Precision of circle</param>
     /// <param name="thickness">Thickness of Line in symbol</param>
     static void draw_cross_hair(const ImVec2 &position,
                                 float         radius       = 16.f,
