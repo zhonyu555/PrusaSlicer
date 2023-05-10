@@ -282,7 +282,7 @@ bool ImGuiWrapper::update_key_data(wxKeyEvent &evt)
         const auto   key   = evt.GetUnicodeKey();
 
         // Release BackSpace, Delete, ... when miss wxEVT_KEY_UP event
-        // Already Fixed at begining of new frame
+        // Already Fixed at beginning of new frame
         // unsigned int key_u = static_cast<unsigned int>(key);
         //if (key_u >= 0 && key_u < IM_ARRAYSIZE(io.KeysDown) && io.KeysDown[key_u]) { 
         //    io.KeysDown[key_u] = false;
@@ -333,7 +333,7 @@ void ImGuiWrapper::new_frame()
             io.KeyMods &= ~key.first;
     }
 
-    // Not sure if it is neccessary
+    // Not sure if it is necessary
     // values from 33 to 126 are reserved for the standard ASCII characters
     for (size_t i = 33; i <= 126; ++i) { 
         wxKeyCode keycode = static_cast<wxKeyCode>(i);
@@ -1641,7 +1641,7 @@ void ImGuiWrapper::init_font(bool compress)
     if (font == nullptr) {
         font = io.Fonts->AddFontDefault();
         if (font == nullptr) {
-            throw Slic3r::RuntimeError("ImGui: Could not load deafult font");
+            throw Slic3r::RuntimeError("ImGui: Could not load default font");
         }
     }
 

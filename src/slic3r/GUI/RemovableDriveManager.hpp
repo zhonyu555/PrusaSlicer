@@ -58,7 +58,7 @@ public:
 	// Deregister OSX notifications.
 	void 		shutdown();
 
-	// Returns path to a removable media if it exists, prefering the input path.
+	// Returns path to a removable media if it exists, preferring the input path.
 	std::string get_removable_drive_path(const std::string &path);
 	bool        is_path_on_removable_drive(const std::string &path) { return this->get_removable_drive_path(path) == path; }
 

@@ -6,7 +6,7 @@
 
 static void eject_callback(DADiskRef disk, DADissenterRef dissenter, void *context)
 {
-    NSLog(@"eject successfull");
+    NSLog(@"eject successful");
 }
 
 static void unmount_callback(DADiskRef disk, DADissenterRef dissenter, void *context)
@@ -42,7 +42,7 @@ static void unmount_callback(DADiskRef disk, DADissenterRef dissenter, void *con
 
 -(NSArray*) list_dev
 {
-    // DEPRICATED:
+    // DEPRECATED:
     //NSArray* devices = [[NSWorkspace sharedWorkspace] mountedRemovableMedia];
 	//return devices;
     

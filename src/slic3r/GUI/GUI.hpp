@@ -79,9 +79,9 @@ boost::filesystem::path	into_path(const wxString &str);
 
 // Display an About dialog
 extern void about();
-// Ask the destop to open the datadir using the default file explorer.
+// Ask the desktop to open the datadir using the default file explorer.
 extern void desktop_open_datadir_folder();
-// Ask the destop to open the directory specified by path using the default file explorer.
+// Ask the desktop to open the directory specified by path using the default file explorer.
 void desktop_open_folder(const boost::filesystem::path& path);
 
 #ifdef __linux__
@@ -92,7 +92,7 @@ void desktop_execute_get_result(wxString command, wxArrayString& output);
 #endif // __linux__
 
 #ifdef _WIN32
-// Call CreateProcessW to start external proccess on path
+// Call CreateProcessW to start external process on path
 // returns true on success
 // path should contain path to the process
 // cmd_opt can be empty or contain command line options. Example: L"/silent"

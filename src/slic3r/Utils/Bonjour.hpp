@@ -81,7 +81,7 @@ public:
 	// lookup all devices by given TxtKeys
 	// each correct reply is passed back in ReplyFn, finishes with CompleteFn
 	Ptr lookup();
-	// performs resolving of hostname into vector of ip adresses passed back by ResolveFn
+	// performs resolving of hostname into vector of ip addresses passed back by ResolveFn
 	// needs set_hostname and on_resolve to be called before.
 	Ptr resolve();
 	// resolve on the current thread
@@ -265,7 +265,7 @@ protected:
 	{
 		requests.clear();
 		// BonjourRequest::make_A / AAAA is now implemented to add .local correctly after the hostname.
-			// If that is unsufficient, we need to change make_A / AAAA and pass full hostname.
+			// If that is insufficient, we need to change make_A / AAAA and pass full hostname.
 		std::string trimmed_hostname = hostname;
 		if (size_t dot_pos = trimmed_hostname.find_first_of('.'); dot_pos != std::string::npos)
 			trimmed_hostname = trimmed_hostname.substr(0, dot_pos);

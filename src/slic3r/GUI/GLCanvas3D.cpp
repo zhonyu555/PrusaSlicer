@@ -138,7 +138,7 @@ void GLCanvas3D::LayersEditing::select_object(const Model &model, int object_id)
 {
     const ModelObject *model_object_new = (object_id >= 0) ? model.objects[object_id] : nullptr;
     // Maximum height of an object changes when the object gets rotated or scaled.
-    // Changing maximum height of an object will invalidate the layer heigth editing profile.
+    // Changing maximum height of an object will invalidate the layer height editing profile.
     // m_model_object->bounding_box() is cached, therefore it is cheap even if this method is called frequently.
     const float new_max_z = (model_object_new == nullptr) ? 0.0f : static_cast<float>(model_object_new->max_z());
     if (m_model_object != model_object_new || this->last_object_id != object_id || m_object_max_z != new_max_z ||
@@ -245,7 +245,7 @@ void GLCanvas3D::LayersEditing::render_overlay(const GLCanvas3D& canvas)
     ImGui::AlignTextToFramePadding();
     imgui.text(_L("Keep min"));
     ImGui::SameLine();
-    if (ImGui::GetCursorPosX() < widget_align)  // because of line lenght after localization
+    if (ImGui::GetCursorPosX() < widget_align)  // because of line length after localization
         ImGui::SetCursorPosX(widget_align);
 
     ImGui::PushItemWidth(imgui.get_style_scaling() * 120.0f);
@@ -2873,7 +2873,7 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
 void GLCanvas3D::on_mouse_wheel(wxMouseEvent& evt)
 {
 #ifdef WIN32
-    // Try to filter out spurious mouse wheel events comming from 3D mouse.
+    // Try to filter out spurious mouse wheel events coming from 3D mouse.
     if (wxGetApp().plater()->get_mouse3d_controller().process_mouse_wheel())
         return;
 #endif
@@ -2953,14 +2953,14 @@ void GLCanvas3D::on_render_timer(wxTimerEvent& evt)
 }
 
 
-void GLCanvas3D::schedule_extra_frame(int miliseconds)
+void GLCanvas3D::schedule_extra_frame(int milliseconds)
 {
     // Schedule idle event right now
-    if (miliseconds == 0)
+    if (milliseconds == 0)
     {
         // We want to wakeup idle evnt but most likely this is call inside render cycle so we need to wait
         if (m_in_render)
-            miliseconds = 33;
+            milliseconds = 33;
         else {
             m_dirty = true;
             wxWakeUpIdle();
@@ -2970,12 +2970,12 @@ void GLCanvas3D::schedule_extra_frame(int miliseconds)
     int remaining_time = m_render_timer.GetInterval();
     // Timer is not running
     if (!m_render_timer.IsRunning()) {
-        m_render_timer.StartOnce(miliseconds);
-    // Timer is running - restart only if new period is shorter than remaning period
+        m_render_timer.StartOnce(milliseconds);
+    // Timer is running - restart only if new period is shorter than remaining period
     } else {
-        if (miliseconds + 20 < remaining_time) {
+        if (milliseconds + 20 < remaining_time) {
             m_render_timer.Stop(); 
-            m_render_timer.StartOnce(miliseconds);
+            m_render_timer.StartOnce(milliseconds);
         }
     }
 }
@@ -3304,7 +3304,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                     const Linef3 ray = mouse_ray(pos);
                     const Vec3d dir = ray.unit_vector();
                     // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
-                    // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebric form
+                    // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebraic form
                     // in our case plane normal and ray direction are the same (orthogonal view)
                     // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal
                     const Vec3d inters = ray.a + (m_mouse.drag.start_position_3D - ray.a).dot(dir) / dir.squaredNorm() * dir;
@@ -3478,7 +3478,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
     else
         evt.Skip();
 
-    // Detection of doubleclick on text to open emboss edit window
+    // Detection of double-click on text to open emboss edit window
     auto type = m_gizmos.get_current_type();
     if (evt.LeftDClick() && !m_hover_volume_idxs.empty() && 
         (type == GLGizmosManager::EType::Undefined ||

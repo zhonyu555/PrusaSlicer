@@ -15,7 +15,7 @@ public:
     static std::string cooling_description(const Preset &preset);
     
     // Produce a textual description of the maximum flow achived for the current configuration
-    // (the current printer, filament and print settigns).
+    // (the current printer, filament and print settings).
     // This description will be useful for getting a gut feeling for the maximum volumetric
     // print speed achievable with the extruder.
     static std::string maximum_volumetric_flow_description(const PresetBundle &preset_bundle);

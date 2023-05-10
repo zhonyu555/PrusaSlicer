@@ -39,8 +39,8 @@ namespace {
 		std::string msg;
 		bool res = GUI::create_process(path, std::wstring(), msg);
 		if (!res) {
-			std::string full_message = GUI::format(_u8L("Running downloaded instaler of %1% has failed:\n%2%"), SLIC3R_APP_NAME, msg);
-			BOOST_LOG_TRIVIAL(error) << full_message; // lm: maybe UI error msg?  // dk: bellow. (maybe some general show error evt would be better?)
+			std::string full_message = GUI::format(_u8L("Running downloaded installer of %1% has failed:\n%2%"), SLIC3R_APP_NAME, msg);
+			BOOST_LOG_TRIVIAL(error) << full_message; // lm: maybe UI error msg?  // dk: below. (maybe some general show error evt would be better?)
 			wxCommandEvent* evt = new wxCommandEvent(EVT_SLIC3R_APP_DOWNLOAD_FAILED);
 			evt->SetString(full_message);
 			GUI::wxGetApp().QueueEvent(evt);
@@ -461,7 +461,7 @@ void AppUpdater::priv::parse_version_string(const std::string& body)
 	GUI::wxGetApp().QueueEvent(evt);
 }
 
-#if 0 //lm:is this meant to be ressurected? //dk: it is code that parses PrusaSlicer.version2 in 2.4.0, It was deleted from PresetUpdater.cpp and I would keep it here for possible reference.
+#if 0 //lm:is this meant to be resurrected? //dk: it is code that parses PrusaSlicer.version2 in 2.4.0, It was deleted from PresetUpdater.cpp and I would keep it here for possible reference.
 void AppUpdater::priv::parse_version_string_old(const std::string& body) const
 {
 

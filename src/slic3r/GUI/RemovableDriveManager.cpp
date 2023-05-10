@@ -264,7 +264,7 @@ bool get_handle_from_devinst(DEVINST devinst, HANDLE& handle)
 	dev_id_wstr = std::regex_replace(dev_id_wstr, std::wregex(L"$"), L"#", std::regex_constants::format_first_only);
 	
 	// guid
-	wchar_t			guid_wchar[64];//guid is 32 chars+4 hyphens+2 paranthesis+null => 64 should be more than enough
+	wchar_t			guid_wchar[64];//guid is 32 chars+4 hyphens+2 parenthesis+null => 64 should be more than enough
 	StringFromGUID2(GUID_DEVINTERFACE_USB_HUB, guid_wchar, 64);
 	dev_id_wstr.append(guid_wchar);
 
@@ -344,7 +344,7 @@ bool is_card_reader(HDEVINFO h_dev_info, SP_DEVINFO_DATA& spdd)
 	}
 	num_language_IDs			= (supported_languages_string->StringDescriptor->bLength - 2) / 2;
 	language_IDs				= (USHORT*)&supported_languages_string->StringDescriptor->bString[0];
-	// Get configration string.
+	// Get configuration string.
 	if (GetStringDescriptors(handle, usb_port_number, configuration_descriptor->iConfiguration, num_language_IDs, language_IDs, supported_languages_string, configuration_string) == E_FAIL) {
 		BOOST_LOG_TRIVIAL(warning) << "is_card_reader failed: Couldn't get configuration string descriptor.";
 		return false;
@@ -470,7 +470,7 @@ int eject_inner(const std::string& path)
 		return 1;
 	}
 
-	// get the drive type which is required to match the device numbers correctely
+	// get the drive type which is required to match the device numbers correctly
 	UINT drive_type = GetDriveTypeW(root_path.c_str());
 
 	// get the dos device name (like \device\floppy0) to decide if it's a floppy or not
@@ -794,7 +794,7 @@ void RemovableDriveManager::eject_drive()
 	{
 		//std::cout<<"Ejecting "<<(*it).name<<" from "<< correct_path<<"\n";
 		// there is no usable command in c++ so terminal command is used instead
-		// but neither triggers "succesful safe removal messege"
+		// but neither triggers "successful safe removal messege"
 		
 		BOOST_LOG_TRIVIAL(info) << "Ejecting started";
 		boost::process::ipstream istd_err;
@@ -802,7 +802,7 @@ void RemovableDriveManager::eject_drive()
 #if __APPLE__		
 			boost::process::search_path("diskutil"), "eject", correct_path.c_str(), (boost::process::std_out & boost::process::std_err) > istd_err);
 		//Another option how to eject at mac. Currently not working.
-		//used insted of system() command;
+		//used instead of system() command;
 		//this->eject_device(correct_path);
 #else
     		boost::process::search_path("umount"), correct_path.c_str(), (boost::process::std_out & boost::process::std_err) > istd_err);
@@ -817,7 +817,7 @@ void RemovableDriveManager::eject_drive()
 		bool success = false;
 		if (ec) {
             // The wait call can fail, as it did in https://github.com/prusa3d/PrusaSlicer/issues/5507
-            // It can happen even in cases where the eject is sucessful, but better report it as failed.
+            // It can happen even in cases where the eject is successful, but better report it as failed.
             // We did not find a way to reliably retrieve the exit code of the process.
 			BOOST_LOG_TRIVIAL(error) << "boost::process::child::wait() failed during Ejection. State of Ejection is unknown. Error code: " << ec.value();
 		} else {

@@ -44,7 +44,7 @@ public:
 
     // Launched when the job is finished on the UI thread.
     // If the job was cancelled, the first parameter will have a true value.
-    // Exceptions occuring in process() are redirected from the worker thread
+    // Exceptions occurring in process() are redirected from the worker thread
     // into the main (UI) thread. This method receives the exception and can
     // handle it properly. Assign nullptr to this second argument before
     // function return to prevent further action. Leaving it with a non-null

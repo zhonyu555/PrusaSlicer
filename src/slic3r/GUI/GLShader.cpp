@@ -84,8 +84,8 @@ bool GLShaderProgram::init_from_texts(const std::string& name, const ShaderSourc
         case EShaderType::Vertex:         { return "vertex"; }
         case EShaderType::Fragment:       { return "fragment"; }
         case EShaderType::Geometry:       { return "geometry"; }
-        case EShaderType::TessEvaluation: { return "tesselation evaluation"; }
-        case EShaderType::TessControl:    { return "tesselation control"; }
+        case EShaderType::TessEvaluation: { return "tessellation evaluation"; }
+        case EShaderType::TessControl:    { return "tessellation control"; }
         case EShaderType::Compute:        { return "compute"; }
         default:                          { return "unknown"; }
         }

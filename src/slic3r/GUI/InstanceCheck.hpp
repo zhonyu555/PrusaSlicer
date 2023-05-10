@@ -64,7 +64,7 @@ public:
 
 	//finds paths to models in message(= command line arguments, first should be prusaSlicer executable)
 	//and sends them to plater via LoadFromOtherInstanceEvent
-	//security of messages: from message all existing paths are proccesed to load model 
+	//security of messages: from message all existing paths are processed to load model 
 	//						win32 - anybody who has hwnd can send message.
 	//						mac - anybody who posts notification with name:@"OtherPrusaSlicerTerminating"
 	//						linux - instrospectable on dbus

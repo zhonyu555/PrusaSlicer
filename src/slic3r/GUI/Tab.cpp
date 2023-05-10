@@ -462,7 +462,7 @@ void Tab::OnActivate()
 #ifdef _MSW_DARK_MODE
     // Because of DarkMode we use our own Notebook (inherited from wxSiplebook) instead of wxNotebook
     // And it looks like first Layout of the page doesn't update a size of the m_presets_choice
-    // So we have to set correct size explicitely
+    // So we have to set correct size explicitly
     if (wxSize ok_sz = wxSize(35 * m_em_unit, m_presets_choice->GetBestSize().y);
         ok_sz != m_presets_choice->GetSize()) {
         m_presets_choice->SetMinSize(ok_sz);
@@ -1731,7 +1731,7 @@ void TabPrint::update_description_lines()
                 _L("Post processing scripts shall modify G-code file in place."));
             m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
         }
-        // upadte G-code substitutions from the current configuration
+        // update G-code substitutions from the current configuration
         {
             m_subst_manager.update_from_config();
             if (m_del_all_substitutions_btn)
@@ -3626,7 +3626,7 @@ void Tab::clear_pages()
     // invalidated highlighter, if any exists
     m_highlighter.invalidate();
     m_page_sizer->Clear(true);
-    // clear pages from the controlls
+    // clear pages from the controls
     for (auto p : m_pages)
         p->clear();
 
@@ -3692,7 +3692,7 @@ bool Tab::tree_sel_change_delayed()
 {
     // There is a bug related to Ubuntu overlay scrollbars, see https://github.com/prusa3d/PrusaSlicer/issues/898 and https://github.com/prusa3d/PrusaSlicer/issues/952.
     // The issue apparently manifests when Show()ing a window with overlay scrollbars while the UI is frozen. For this reason,
-    // we will Thaw the UI prematurely on Linux. This means destroing the no_updates object prematurely.
+    // we will Thaw the UI prematurely on Linux. This means destroying the no_updates object prematurely.
 #ifdef __linux__
     std::unique_ptr<wxWindowUpdateLocker> no_updates(new wxWindowUpdateLocker(this));
 #else
@@ -3880,7 +3880,7 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
         wxGetApp().plater()->force_filament_colors_update();
 
     {
-        // Profile compatiblity is updated first when the profile is saved.
+        // Profile compatibility is updated first when the profile is saved.
         // Update profile selection combo boxes at the depending tabs to reflect modifications in profile compatibility.
         std::vector<Preset::Type> dependent;
         switch (m_type) {
@@ -4692,7 +4692,7 @@ void Page::update_visibility(ConfigOptionMode mode, bool update_contolls_visibil
     bool ret_val = false;
     for (auto group : m_optgroups) {
         ret_val = (update_contolls_visibility     ? 
-                   group->update_visibility(mode) :  // update visibility for all controlls in group
+                   group->update_visibility(mode) :  // update visibility for all controls in group
                    group->is_visible(mode)           // just detect visibility for the group
                    ) || ret_val;
     }

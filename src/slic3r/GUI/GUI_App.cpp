@@ -612,7 +612,7 @@ static GUID GUID_DEVINTERFACE_HID = { 0x4D1E55B2, 0xF16F, 0x11CF, 0x88, 0xCB, 0x
 static void register_win32_device_notification_event()
 {
     wxWindow::MSWRegisterMessageHandler(WM_DEVICECHANGE, [](wxWindow *win, WXUINT /* nMsg */, WXWPARAM wParam, WXLPARAM lParam) {
-        // Some messages are sent to top level windows by default, some messages are sent to only registered windows, and we explictely register on MainFrame only.
+        // Some messages are sent to top level windows by default, some messages are sent to only registered windows, and we explicitly register on MainFrame only.
         auto main_frame = dynamic_cast<MainFrame*>(win);
         auto plater = (main_frame == nullptr) ? nullptr : main_frame->plater();
         if (plater == nullptr)
@@ -649,7 +649,7 @@ static void register_win32_device_notification_event()
     });
 
     wxWindow::MSWRegisterMessageHandler(MainFrame::WM_USER_MEDIACHANGED, [](wxWindow *win, WXUINT /* nMsg */, WXWPARAM wParam, WXLPARAM lParam) {
-        // Some messages are sent to top level windows by default, some messages are sent to only registered windows, and we explictely register on MainFrame only.
+        // Some messages are sent to top level windows by default, some messages are sent to only registered windows, and we explicitly register on MainFrame only.
         auto main_frame = dynamic_cast<MainFrame*>(win);
         auto plater = (main_frame == nullptr) ? nullptr : main_frame->plater();
         if (plater == nullptr)
@@ -767,7 +767,7 @@ void GUI_App::post_init()
             show_substitutions_info(this->init_params->preset_substitutions);
 
 #if 0
-        // Load the cummulative config over the currently active profiles.
+        // Load the cumulative config over the currently active profiles.
         //FIXME if multiple configs are loaded, only the last one will have an effect.
         // We need to decide what to do about loading of separate presets (just print preset, just filament preset etc).
         // As of now only the full configs are supported here.
@@ -842,7 +842,7 @@ void GUI_App::post_init()
     app_config->set("version", SLIC3R_VERSION);
 
 #ifdef _WIN32
-    // Sets window property to mainframe so other instances can indentify it.
+    // Sets window property to mainframe so other instances can identify it.
     OtherInstanceMessageHandler::init_windows_properties(mainframe, m_instance_hash_int);
 #endif //WIN32
 }
@@ -858,7 +858,7 @@ GUI_App::GUI_App(EAppMode mode)
 	, m_other_instance_message_handler(std::make_unique<OtherInstanceMessageHandler>())
     , m_downloader(std::make_unique<Downloader>())
 {
-	//app config initializes early becasuse it is used in instance checking in PrusaSlicer.cpp
+	//app config initializes early because it is used in instance checking in PrusaSlicer.cpp
 	this->init_app_config();
     // init app downloader after path to datadir is set
     m_app_updater = std::make_unique<AppUpdater>();
@@ -1046,7 +1046,7 @@ std::string GUI_App::check_older_app_config(Semver current_version, bool backup)
                 assert(! snapshot_id.empty());
                 app_config->set("on_snapshot", snapshot_id);
             } else
-                BOOST_LOG_TRIVIAL(error) << "Failed to take congiguration snapshot";
+                BOOST_LOG_TRIVIAL(error) << "Failed to take configuration snapshot";
         }
 
         // load app config from older file
@@ -1373,7 +1373,7 @@ bool GUI_App::on_init_inner()
 
         // An ugly solution to GH #5537 in which GUI_App::init_opengl (normally called from events wxEVT_PAINT
         // and wxEVT_SET_FOCUS before GUI_App::post_init is called) wasn't called before GUI_App::post_init and OpenGL wasn't initialized.
-        // Since issue #9774 Where same problem occured on MacOS Ventura, we decided to have this check on MacOS as well.
+        // Since issue #9774 Where same problem occurred on MacOS Ventura, we decided to have this check on MacOS as well.
 
 #if defined(__linux__) || defined(__APPLE__)
         if (!m_post_initialized && m_opengl_initialized) {
@@ -1922,7 +1922,7 @@ void GUI_App::update_ui_from_settings()
 {
     update_label_colours();
 #ifdef _WIN32
-    // Upadte UI colors before Update UI from settings
+    // Update UI colors before Update UI from settings
     if (m_force_colors_update) {
         m_force_colors_update = false;
         mainframe->force_color_changed();
@@ -2693,7 +2693,7 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
 
         auto reset_modifications = [this, is_called_from_configwizard]() {
             if (is_called_from_configwizard)
-                return; // no need to discared changes. It will be done fromConfigWizard closing
+                return; // no need to discarded changes. It will be done fromConfigWizard closing
 
             PrinterTechnology printer_technology = preset_bundle->printers.get_edited_preset().printer_technology();
             for (const Tab* const tab : tabs_list) {
@@ -2718,7 +2718,7 @@ bool GUI_App::check_and_keep_current_preset_changes(const wxString& caption, con
 
                 wxString text = dlg.msg_success_saved_modifications(preset_names_and_types.size());
                 if (!is_called_from_configwizard)
-                    text += "\n\n" + _L("For new project all modifications will be reseted");
+                    text += "\n\n" + _L("For new project all modifications will be reset");
 
                 MessageDialog(nullptr, text).ShowModal();
                 reset_modifications();
@@ -2897,7 +2897,7 @@ void GUI_App::MacOpenURL(const wxString& url)
     if (app_config && !app_config->get_bool("downloader_url_registered"))
     {
         notification_manager()->push_notification(NotificationType::URLNotRegistered);
-        BOOST_LOG_TRIVIAL(error) << "Recieved command to open URL, but it is not allowed in app configuration. URL: " << url;
+        BOOST_LOG_TRIVIAL(error) << "Received command to open URL, but it is not allowed in app configuration. URL: " << url;
         return;
     }
     start_download(boost::nowide::narrow(url));
@@ -3267,7 +3267,7 @@ bool GUI_App::check_updates(const bool verbose)
 		updater_result = preset_updater->config_update(app_config->orig_version(), verbose ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION);
 		if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
 			mainframe->Close();
-            // Applicaiton is closing.
+            // Application is closing.
             return false;
 		}
 		else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {
@@ -3281,7 +3281,7 @@ bool GUI_App::check_updates(const bool verbose)
 	catch (const std::exception & ex) {
 		show_error(nullptr, ex.what());
 	}
-    // Applicaiton will continue.
+    // Application will continue.
     return true;
 }
 

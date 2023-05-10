@@ -31,7 +31,7 @@ static void call_after_if_active(std::function<void()> fn, GUI_App* app = &wxGet
         const GLCanvas3D *canvas = plater->canvas3D();
         if (canvas == nullptr) return;
         const GLGizmosManager &mng = canvas->get_gizmos_manager();
-        // check if simplify is still activ gizmo
+        // check if simplify is still active gizmo
         if (mng.get_current_type() != GLGizmosManager::Simplify) return;
         fn();
     });
@@ -368,7 +368,7 @@ void GLGizmoSimplify::on_render_input_window(float x, float y, float bottom_limi
     if (m_imgui->button(_L("Apply"))) {
         apply_simplify();
     } else if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled) && is_worker_running)
-        ImGui::SetTooltip("%s", _u8L("Can't apply when proccess preview.").c_str());
+        ImGui::SetTooltip("%s", _u8L("Can't apply when process preview.").c_str());
     m_imgui->disabled_end(); // state !settings
 
     // draw progress bar

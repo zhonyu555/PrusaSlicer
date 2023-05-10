@@ -53,7 +53,7 @@ namespace CommonGizmosDataObjects {
     class SupportsClipper;
 }
 
-// Some of the gizmos use the same data that need to be updated ocassionally.
+// Some of the gizmos use the same data that need to be updated occasionally.
 // It is also desirable that the data are not recalculated when the gizmos
 // are just switched, but on the other hand, they should be released when
 // they are not in use by any gizmo anymore.

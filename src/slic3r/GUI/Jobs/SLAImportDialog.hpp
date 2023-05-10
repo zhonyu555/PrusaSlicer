@@ -165,7 +165,7 @@ public:
 
     std::string get_archive_format() const override
     {
-        // TODO: the choosen format is inside the file dialog which is not
+        // TODO: the chosen format is inside the file dialog which is not
         // accessible from the file picker object. The file picker could be
         // changed to a custom file dialog.
         return {};

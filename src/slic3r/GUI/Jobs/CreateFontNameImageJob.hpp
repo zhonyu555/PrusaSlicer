@@ -59,7 +59,7 @@ public:
     /// <summary>
     /// Rasterize text into image (result)
     /// </summary>
-    /// <param name="ctl">Check for cancelation</param>
+    /// <param name="ctl">Check for cancellation</param>
     void process(Ctl &ctl) override;
 
     /// <summary>

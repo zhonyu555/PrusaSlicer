@@ -43,7 +43,7 @@ public:
     wxBitmap* 		load_png(const std::string &bitmap_key, unsigned width = 0, unsigned height = 0, const bool grayscale = false);
 
 	// Parses SVG file from a file, returns SVG image as paths.
-	// And makes replases befor parsing
+	// And makes replases before parsing
 	// replace_map containes old_value->new_value
 	static NSVGimage* nsvgParseFromFileWithReplace(const char* filename, const char* units, float dpi, const std::map<std::string, std::string>& replaces);
 	// Gets a data from SVG file and makes replases

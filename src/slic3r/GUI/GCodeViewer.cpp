@@ -2080,7 +2080,7 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result)
                 const size_t size_elements = i_buffer.size();
                 const size_t size_bytes = size_elements * sizeof(IBufferType);
 
-                // stores index buffer informations into TBuffer
+                // stores index buffer information into TBuffer
                 t_buffer.indices.push_back(IBuffer());
                 IBuffer& ibuf = t_buffer.indices.back();
                 ibuf.count = size_elements;
@@ -3718,7 +3718,7 @@ void GCodeViewer::render_legend(float& legend_height)
         using Times = std::pair<float, float>;
         using TimesList = std::vector<std::pair<CustomGCode::Type, Times>>;
 
-        // helper structure containig the data needed to render the time items
+        // helper structure containing the data needed to render the time items
         struct PartialTime
         {
             enum class EType : unsigned char

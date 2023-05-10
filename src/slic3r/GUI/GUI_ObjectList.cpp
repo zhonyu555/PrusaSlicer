@@ -3424,7 +3424,7 @@ void ObjectList::add_layer_range_after_current(const t_layer_height_range curren
     auto it_range = ranges.find(current_range);
     assert(it_range != ranges.end());
     if (it_range == ranges.end())
-        // This shoudl not happen.
+        // This should not happen.
         return;
 
     auto it_next_range = it_range;
@@ -3514,7 +3514,7 @@ wxString ObjectList::can_add_new_range_after_current(const t_layer_height_range 
     auto it_range = ranges.find(current_range);
     assert(it_range != ranges.end());
     if (it_range == ranges.end())
-        // This shoudl not happen.
+        // This should not happen.
         return "ObjectList assert";
 
     auto it_next_range = it_range;
@@ -4737,7 +4737,7 @@ void ObjectList::fix_through_netfabb()
         msg += "\n\n";
     }
     if (!failed_models.empty()) {
-        msg += _L_PLURAL("Folowing model repair failed", "Folowing models repair failed", failed_models.size()) + ":\n";
+        msg += _L_PLURAL("Following model repair failed", "Following models repair failed", failed_models.size()) + ":\n";
         for (auto& model : failed_models)
             msg += bullet_suf + from_u8(model.first) + ": " + _(model.second);
     }

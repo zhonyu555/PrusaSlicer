@@ -16,7 +16,7 @@ public:
 	DesktopIntegrationDialog &operator=(const DesktopIntegrationDialog &) = delete;
 	~DesktopIntegrationDialog();
 
-	// methods that actually do / undo desktop integration. Static to be accesible from anywhere.
+	// methods that actually do / undo desktop integration. Static to be accessible from anywhere.
 
 	// returns true if path to PrusaSlicer.desktop is stored in App Config and existence of desktop file. 
 	// Does not check if desktop file leads to this binary or existence of icons and viewer desktop file.
@@ -28,7 +28,7 @@ public:
 	// Rewrites if files already existed.
 	// if perform_downloader:
     // Creates Destktop files for PrusaSlicer downloader feature
-	// Regiters PrusaSlicer to start on prusaslicer:// URL
+	// Registers PrusaSlicer to start on prusaslicer:// URL
 	static void perform_desktop_integration();
 	// Deletes Desktop files and icons for both PrusaSlicer and GcodeViewer at paths stored in App Config.
 	static void undo_desktop_intgration();

@@ -181,7 +181,7 @@ void FileGet::priv::get_perform()
 	BOOST_LOG_TRIVIAL(info) << GUI::format("Starting download from %1% to %2%. Temp path is %3%",m_url, dest_path, m_tmp_path);
 
 	FILE* file;
-	// open file for writting
+	// open file for writing
 	if (m_written == 0)
 		file = fopen(temp_path_wstring.c_str(), "wb");
 	else 

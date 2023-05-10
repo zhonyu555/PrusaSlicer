@@ -1,7 +1,7 @@
 #ifndef slic3r_BedShapeDialog_hpp_
 #define slic3r_BedShapeDialog_hpp_
 // The bed shape dialog.
-// The dialog opens from Print Settins tab->Bed Shape : Set...
+// The dialog opens from Print Settings tab->Bed Shape : Set...
 
 #include "GUI_Utils.hpp"
 #include "2DBed.hpp"

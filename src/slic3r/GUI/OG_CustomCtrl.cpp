@@ -208,7 +208,7 @@ wxPoint OG_CustomCtrl::get_pos(const Line& line, Field* field_in/* = nullptr*/)
                 if (!option.sidetext.empty() || opt_group->sidetext_width > 0)
                     h_pos += opt_group->sidetext_width * m_em_unit + m_h_gap;
 
-                if (opt.opt_id != option_set.back().opt_id) //! istead of (opt != option_set.back())
+                if (opt.opt_id != option_set.back().opt_id) //! instead of (opt != option_set.back())
                     h_pos += lround(0.6 * m_em_unit);
             }
             break;
@@ -223,7 +223,7 @@ wxPoint OG_CustomCtrl::get_pos(const Line& line, Field* field_in/* = nullptr*/)
 
 void OG_CustomCtrl::OnPaint(wxPaintEvent&)
 {
-    // case, when custom controll is destroyed but doesn't deleted from the evet loop
+    // case, when custom control is destroyed but doesn't deleted from the evet loop
     if(!this->opt_group->custom_ctrl)
         return;
 
@@ -655,7 +655,7 @@ void OG_CustomCtrl::CtrlLine::render(wxDC& dc, wxCoord v_pos)
         if (!option.sidetext.empty() || ctrl->opt_group->sidetext_width > 0)
             h_pos = draw_text(dc, wxPoint(h_pos, v_pos), _(option.sidetext), nullptr, ctrl->opt_group->sidetext_width * ctrl->m_em_unit);
 
-        if (opt.opt_id != option_set.back().opt_id) //! istead of (opt != option_set.back())
+        if (opt.opt_id != option_set.back().opt_id) //! instead of (opt != option_set.back())
             h_pos += lround(0.6 * ctrl->m_em_unit);
     }
 }

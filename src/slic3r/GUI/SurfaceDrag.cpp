@@ -269,7 +269,7 @@ std::optional<Vec3d> calc_surface_offset(const Selection &selection, RaycastMana
         if (!close_point_opt.has_value())
             return {};
 
-        // It is no neccesary to move with origin by very small value
+        // It is no necessary to move with origin by very small value
         if (close_point_opt->squared_distance < EPSILON)
             return {};
 
@@ -281,7 +281,7 @@ std::optional<Vec3d> calc_surface_offset(const Selection &selection, RaycastMana
         return offset_volume;
     }
 
-    // It is no neccesary to move with origin by very small value
+    // It is no necessary to move with origin by very small value
     const RaycastManager::Hit &hit = *hit_opt;
     if (hit.squared_distance < EPSILON)
         return {};

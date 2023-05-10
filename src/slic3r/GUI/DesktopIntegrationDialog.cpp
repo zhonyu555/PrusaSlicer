@@ -200,7 +200,7 @@ bool create_desktop_file(const std::string& path, const std::string& data)
 }
 } // namespace integratec_desktop_internal
 
-// methods that actually do / undo desktop integration. Static to be accesible from anywhere.
+// methods that actually do / undo desktop integration. Static to be accessible from anywhere.
 bool DesktopIntegrationDialog::is_integrated()
 {
     const AppConfig *app_config = wxGetApp().app_config;
@@ -253,7 +253,7 @@ void DesktopIntegrationDialog::perform_desktop_integration()
     // $XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored. 
     // If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used. 
     // $XDG_DATA_DIRS defines the preference-ordered set of base directories to search for data files in addition to the $XDG_DATA_HOME base directory.
-    // The directories in $XDG_DATA_DIRS should be seperated with a colon ':'.
+    // The directories in $XDG_DATA_DIRS should be separated with a colon ':'.
     // If $XDG_DATA_DIRS is either not set or empty, a value equal to /usr/local/share/:/usr/share/ should be used. 
     std::vector<std::string>target_candidates;
     resolve_path_from_var("XDG_DATA_HOME", target_candidates);
@@ -494,7 +494,7 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
     // $XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored. 
     // If $XDG_DATA_HOME is either not set or empty, a default equal to $HOME/.local/share should be used. 
     // $XDG_DATA_DIRS defines the preference-ordered set of base directories to search for data files in addition to the $XDG_DATA_HOME base directory.
-    // The directories in $XDG_DATA_DIRS should be seperated with a colon ':'.
+    // The directories in $XDG_DATA_DIRS should be separated with a colon ':'.
     // If $XDG_DATA_DIRS is either not set or empty, a value equal to /usr/local/share/:/usr/share/ should be used. 
     std::vector<std::string>target_candidates;
     resolve_path_from_var("XDG_DATA_HOME", target_candidates);

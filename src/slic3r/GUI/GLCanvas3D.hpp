@@ -886,7 +886,7 @@ public:
 
     void request_extra_frame() { m_extra_frame_requested = true; }
     
-    void schedule_extra_frame(int miliseconds);
+    void schedule_extra_frame(int milliseconds);
 
     float get_main_toolbar_height() { return m_main_toolbar.get_height(); }
     int get_main_toolbar_item_id(const std::string& name) const { return m_main_toolbar.get_item_id(name); }

@@ -148,14 +148,14 @@ public:
 
     /// <summary>
     /// Use ImGui internals to unactivate (lose focus) in input.
-    /// When input is activ it can't change value by application.
+    /// When input is active it can't change value by application.
     /// </summary>
     static void left_inputs();
 
     /// <summary>
     /// Truncate text by ImGui draw function to specific width
     /// NOTE 1: ImGui must be initialized
-    /// NOTE 2: Calculation for actual acive imgui font
+    /// NOTE 2: Calculation for actual active imgui font
     /// </summary>
     /// <param name="text">Text to be truncated</param>
     /// <param name="width">Maximal width before truncate</param>
@@ -173,7 +173,7 @@ public:
     static void escape_double_hash(std::string &text);
 
     /// <summary>
-    /// Suggest loacation of dialog window,
+    /// Suggest location of dialog window,
     /// dependent on actual visible thing on platter
     /// like Gizmo menu size, notifications, ...
     /// To be near of polygon interest and not over it.
@@ -182,7 +182,7 @@ public:
     /// <param name="dialog_size">Define width and height of diaog window</param>
     /// <param name="interest">Area of interest. Result should be close to it</param>
     /// <param name="canvas_size">Available space a.k.a GLCanvas3D::get_current_canvas3D()</param>
-    /// <returns>Suggestion for dialog offest</returns>
+    /// <returns>Suggestion for dialog offset</returns>
     static ImVec2 suggest_location(const ImVec2          &dialog_size,
                                    const Slic3r::Polygon &interest,
                                    const ImVec2          &canvas_size);

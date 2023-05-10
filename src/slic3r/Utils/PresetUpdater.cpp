@@ -197,7 +197,7 @@ PresetUpdater::priv::priv()
 	, cancel(false)
 {
 	set_download_prefs(GUI::wxGetApp().app_config);
-	// Install indicies from resources. Only installs those that are either missing or older than in resources.
+	// Install indices from resources. Only installs those that are either missing or older than in resources.
 	check_install_indices();
 	// Load indices from the cache directory.
 	index_db = Index::load_db();
@@ -251,7 +251,7 @@ bool PresetUpdater::priv::get_file(const std::string &url, const fs::path &targe
 	return res;
 }
 
-// Remove leftover paritally downloaded files, if any.
+// Remove leftover partially downloaded files, if any.
 void PresetUpdater::priv::prune_tmps() const
 {
     for (auto &dir_entry : boost::filesystem::directory_iterator(cache_path))
@@ -339,7 +339,7 @@ void PresetUpdater::priv::get_or_copy_missing_resource(const std::string& vendor
 	if (!fs::exists(file_in_vendor.parent_path())) // create vendor_name dir in vendor 
 		fs::create_directory(file_in_vendor.parent_path());
 
-	BOOST_LOG_TRIVIAL(debug) << "Copiing: " << file_in_cache << " to " << file_in_vendor;
+	BOOST_LOG_TRIVIAL(debug) << "Copying: " << file_in_cache << " to " << file_in_vendor;
 	copy_file_fix(file_in_cache, file_in_vendor);
 }
 
@@ -430,7 +430,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 					// TODO: what if unexpected happens here (folder inside zip) - crash! 
 
 					if (name.substr(name.size() - 3) == "idx")
-						vendors_with_status.emplace_back(name.substr(0, name.size() - 4), VendorStatus::IN_ARCHIVE); // asume for now its only in archive - if not, it will change later.
+						vendors_with_status.emplace_back(name.substr(0, name.size() - 4), VendorStatus::IN_ARCHIVE); // assume for now its only in archive - if not, it will change later.
 				}
 			}
 		}
@@ -511,7 +511,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 		if (archive_it != vendors_with_status.end())
 			archive_it->second = VendorStatus::NEW_VERSION;
 
-		// Download recomended ini to cache
+		// Download recommended ini to cache
 		const auto path_in_cache = cache_path / (vendor.id + ".ini");
 		BOOST_LOG_TRIVIAL(info) << "Downloading new bundle for vendor: " << vendor.name;
 		const auto bundle_url = format("%1%/%2%.ini", vendor.config_update_url, recommended.to_string());
@@ -573,14 +573,14 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 			}
 			const auto recommended = recommended_it->config_version;
 			if (!fs::exists(ini_path_in_archive)){
-				// Download recommneded to vendor - we do not have any existing ini file so we have to use hardcoded url.
+				// Download recommended to vendor - we do not have any existing ini file so we have to use hardcoded url.
 				const std::string fixed_url = GUI::wxGetApp().app_config->profile_folder_url();
 				const auto bundle_url = format("%1%/%2%/%3%.ini", fixed_url, vendor.first, recommended.to_string());
 				if (!get_file(bundle_url, ini_path_in_archive))
 					continue;
 			} else {
 				// check existing ini version
-				// then download recommneded to vendor if needed
+				// then download recommended to vendor if needed
 				VendorProfile vp;
 				try {
 					vp = VendorProfile::from_ini(ini_path_in_archive, true);
@@ -659,7 +659,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 			const auto recommended_archive = recommended_it_archive->config_version;
 			
 			if (recommended_archive <= recommended_cache) {
-				// There isn't  more recent recomended version online. This vendor is also not istalled.
+				// There isn't  more recent recommended version online. This vendor is also not istalled.
 				// Thus only .ini is in resources and came with installation.
 				// And we expect all resources are present.
 				continue;
@@ -667,7 +667,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 			
 			// Download new .ini if needed. So next time user runs Wizard, most recent profiles are shown & installed.
 			if (!fs::exists(ini_path_in_archive) || fs::is_empty(ini_path_in_archive)) {
-				// download recommneded to vendor 
+				// download recommended to vendor 
 				const fs::path ini_path_in_rsrc = rsrc_path / (vendor.first + ".ini");
 				if (!fs::exists(ini_path_in_rsrc)) {
 					// THIS SHOULD NOT HAPPEN
@@ -689,7 +689,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 				}
 			} else {
 				// Check existing ini version.
-				// Then download recommneded to vendor if needed.
+				// Then download recommended to vendor if needed.
 				VendorProfile vp;
 				try {
 					vp = VendorProfile::from_ini(ini_path_in_archive, false);
@@ -735,7 +735,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 					return;
 			}
 		} else if (vendor.second == VendorStatus::INSTALLED || vendor.second == VendorStatus::NEW_VERSION) {
-			// Installed vendors need to check that no resource is missing. Do this only for files in vendor folder (not in resorces)
+			// Installed vendors need to check that no resource is missing. Do this only for files in vendor folder (not in resources)
 			// VendorStatus::NEW_VERSION might seem like a mistake here since files are downloaded when preparing update higher in this function. 
 			// But this is a check for ini file in vendor where resources might be still missing since last update.
 			const auto path_in_vendor = vendor_path / (vendor.first + ".ini");
@@ -769,7 +769,7 @@ void PresetUpdater::priv::sync_config(const VendorMap vendors, const std::string
 	}
 }
 
-// Install indicies from resources. Only installs those that are either missing or older than in resources.
+// Install indices from resources. Only installs those that are either missing or older than in resources.
 void PresetUpdater::priv::check_install_indices() const
 {
 	BOOST_LOG_TRIVIAL(info) << "Checking if indices need to be installed from resources...";
@@ -1059,7 +1059,7 @@ bool PresetUpdater::priv::perform_updates(Updates &&updates, bool snapshot) cons
 			for (const auto &name : bundle.obsolete_presets.sla_materials/*filaments*/) { obsolete_remover("sla_material", name); } 
 			for (const auto &name : bundle.obsolete_presets.printers)  { obsolete_remover("printer", name); }
 			
-			// check if any resorces of installed bundle are missing. If so, new ones should be already downloaded at cache/vendor_id/
+			// check if any resources of installed bundle are missing. If so, new ones should be already downloaded at cache/vendor_id/
 			VendorProfile vp;
 			try {
 				vp = VendorProfile::from_ini(update.target, true);
@@ -1121,7 +1121,7 @@ void PresetUpdater::sync(const PresetBundle *preset_bundle)
 	if (!p->enabled_version_check && !p->enabled_config_update) { return; }
 
 	// Copy the whole vendors data for use in the background thread
-	// Unfortunatelly as of C++11, it needs to be copied again
+	// Unfortunately as of C++11, it needs to be copied again
 	// into the closure (but perhaps the compiler can elide this).
 	VendorMap vendors = preset_bundle->vendors;
 	std::string index_archive_url = GUI::wxGetApp().app_config->index_archive_url();

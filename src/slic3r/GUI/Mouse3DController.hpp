@@ -137,7 +137,7 @@ class Mouse3DController
     bool 	            m_params_ui_changed { false };
     mutable std::mutex	m_params_ui_mutex;
 
-    // This is a database of parametes of all 3DConnexion devices ever connected.
+    // This is a database of parameters of all 3DConnexion devices ever connected.
     // This database is loaded from AppConfig on application start and it is stored to AppConfig on application exit.
     // We need to do that as the AppConfig is not thread safe and we need read the parameters on device connect / disconnect,
     // which is now done by a background thread.

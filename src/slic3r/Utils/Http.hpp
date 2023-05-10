@@ -110,7 +110,7 @@ public:
 
 	// Callback called on HTTP request complete
 	Http& on_complete(CompleteFn fn);
-	// Callback called on an error occuring at any stage of the requests: Url parsing, DNS lookup,
+	// Callback called on an error occurring at any stage of the requests: Url parsing, DNS lookup,
 	// TCP connection, HTTP transfer, and finally also when the response indicates an error (status >= 400).
 	// Therefore, a response body may or may not be present.
 	Http& on_error(ErrorFn fn);
@@ -118,7 +118,7 @@ public:
 	// See the `Progress` structure for description of the data passed.
 	// Writing a true-ish value into the cancel reference parameter cancels the request.
 	Http& on_progress(ProgressFn fn);
-	// Callback called after succesful HTTP request (after on_complete callback)
+	// Callback called after successful HTTP request (after on_complete callback)
 	// Called if curl_easy_getinfo resolved just used IP address.
 	Http& on_ip_resolve(IPResolveFn fn);
 
@@ -129,7 +129,7 @@ public:
 	// Cancels a request in progress
 	void cancel();
 
-	// Tells whether current backend supports seting up a CA file using ca_file()
+	// Tells whether current backend supports setting up a CA file using ca_file()
 	static bool ca_file_supported();
 
     // Return empty string on success or error message on fail.

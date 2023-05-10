@@ -485,7 +485,7 @@ wxDataViewItem ObjectDataViewModel::AddSettingsChild(const wxDataViewItem &paren
 
 /* return values:
  * true     => root_node is created and added to the parent_root
- * false    => root node alredy exists
+ * false    => root node already exists
 */
 static bool append_root_node(ObjectDataViewModelNode *parent_node, 
                              ObjectDataViewModelNode **root_node, 

@@ -120,13 +120,13 @@ void draw(const IconManager::Icon &icon,
 bool clickable(const IconManager::Icon &icon, const IconManager::Icon &icon_hover);
 
 /// <summary>
-/// Use icon as button with 3 states activ hover and disabled 
+/// Use icon as button with 3 states active hover and disabled 
 /// </summary>
-/// <param name="activ">Not disabled not hovered image</param>
+/// <param name="active">Not disabled not hovered image</param>
 /// <param name="hover">Hovered image</param>
 /// <param name="disable">Disabled image</param>
 /// <returns>True when click on enabled, otherwise False</returns>
-bool button(const IconManager::Icon &activ, const IconManager::Icon &hover, const IconManager::Icon &disable, bool disabled = false);
+bool button(const IconManager::Icon &active, const IconManager::Icon &hover, const IconManager::Icon &disable, bool disabled = false);
 
 } // namespace Slic3r::GUI
 #endif // slic3r_IconManager_hpp_

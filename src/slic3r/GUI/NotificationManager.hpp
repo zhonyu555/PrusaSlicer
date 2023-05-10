@@ -61,7 +61,7 @@ enum class NotificationType
 	// Contains a hyperlink to execute installation of the new system profiles.
 	PresetUpdateAvailable,
 //	LoadingFailed,
-	// Errors emmited by Print::validate
+	// Errors emitted by Print::validate
 	// difference from Slicing error is that they disappear not grey out at update_background_process
 	ValidateError,
 	// Notification emitted by Print::validate
@@ -115,7 +115,7 @@ enum class NotificationType
 	SimplifySuggestion,
 	// Change of text will change font to similar one on.
 	UnknownFont,
-	// information about netfabb is finished repairing model (blocking proccess)
+	// information about netfabb is finished repairing model (blocking process)
 	NetfabbFinished,
 	// Short meesage to fill space between start and finish of export
 	ExportOngoing,
@@ -138,7 +138,7 @@ public:
 		HintNotificationLevel,
 		// "Good to know" notification, usually but not always with a quick fade-out.		
 		RegularNotificationLevel,
-		// Regular level notifiaction containing info about objects or print. Has Icon.
+		// Regular level notification containing info about objects or print. Has Icon.
 		PrintInfoNotificationLevel,
 		// PrintInfoNotificationLevel with shorter time
 		PrintInfoShortNotificationLevel,
@@ -175,7 +175,7 @@ public:
 	void push_slicing_warning_notification(const std::string& text, bool gray, ObjectID oid, int warning_step);
 	// marks slicing errors as gray
 	void set_all_slicing_errors_gray(bool g);
-	// marks slicing warings as gray
+	// marks slicing warnings as gray
 	void set_all_slicing_warnings_gray(bool g);
 //	void set_slicing_warning_gray(const std::string& text, bool g);
 	// immediately stops showing slicing errors
@@ -267,16 +267,16 @@ public:
 	void close_notification_of_type(const NotificationType type);
 	// Hides warnings in G-code preview. Should be called from plater only when 3d view/ preview is changed
     void set_in_preview(bool preview);
-	// Calls set_in_preview to apply appearing or disappearing of some notificatons;
+	// Calls set_in_preview to apply appearing or disappearing of some notifications;
 	void apply_in_preview() { set_in_preview(m_in_preview); }
-	// Move to left to avoid colision with variable layer height gizmo.
+	// Move to left to avoid collision with variable layer height gizmo.
 	void set_move_from_overlay(bool move) { m_move_from_overlay = move; }
 	// perform update_state on each notification and ask for more frames if needed, return true for render needed
 	bool update_notifications(GLCanvas3D& canvas);
 	// returns number of all notifications shown
 	size_t get_notification_count() const;
 private:
-	// duration 0 means not disapearing
+	// duration 0 means not disappearing
 	struct NotificationData {
 		NotificationType         type;
 		NotificationLevel        level;
@@ -326,7 +326,7 @@ private:
 		PopNotification(const NotificationData &n, NotificationIDProvider &id_provider, wxEvtHandler* evt_handler);
 		virtual ~PopNotification() { if (m_id) m_id_provider.release_id(m_id); }
 		virtual void           render(GLCanvas3D& canvas, float initial_y, bool move_from_overlay, float overlay_width);
-		// close will dissapear notification on next render
+		// close will disappear notification on next render
 		virtual void           close() { m_state = EState::ClosePending; wxGetApp().plater()->get_current_canvas3D()->schedule_extra_frame(0);}
 		// data from newer notification of same type
 		void                   update(const NotificationData& n);
@@ -394,7 +394,7 @@ private:
 
 		int64_t		 	 m_fading_start{ 0LL };
 
-		// first appereance of notification or last hover;
+		// first appearance of notification or last hover;
 		int64_t		 	 m_notification_start;
 		// time to next must-do render
 		int64_t          m_next_render{ std::numeric_limits<int64_t>::max() };
@@ -406,7 +406,7 @@ private:
 		std::string      m_text1;
 		// Clickable text
 		std::string      m_hypertext;
-		// Aditional text after hypertext - currently not used
+		// Additional text after hypertext - currently not used
 		std::string      m_text2;
 
 		// inner variables to position notification window, texts and buttons correctly
@@ -426,7 +426,7 @@ private:
         std::vector<size_t> m_endlines;
 		// endlines for text2
 		std::vector<size_t> m_endlines2;
-		// Gray are f.e. eorrors when its uknown if they are still valid
+		// Gray are f.e. eorrors when its unknown if they are still valid
 		bool             m_is_gray              { false };
 		//if multiline = true, notification is showing all lines(>2)
 		bool             m_multiline            { false };
@@ -650,7 +650,7 @@ private:
 	class SlicingProgressNotification : public ProgressBarNotification
 	{
 	public:
-		// Inner state of notification, Each state changes bahaviour of the notification
+		// Inner state of notification, Each state changes behaviour of the notification
 		enum class SlicingProgressState
 		{
 			SP_NO_SLICING, // hidden
@@ -672,9 +672,9 @@ private:
 		// sets cancel button callback
 		void			    set_cancel_callback(std::function<bool()> callback) { m_cancel_callback = callback; }
 		bool                has_cancel_callback() const { return m_cancel_callback != nullptr; }
-		// sets SlicingProgressState, negative percent means canceled, returns true if state was set succesfully.
+		// sets SlicingProgressState, negative percent means canceled, returns true if state was set successfully.
 		bool				set_progress_state(float percent);
-		// sets SlicingProgressState, percent is used only at progress state. Returns true if state was set succesfully.
+		// sets SlicingProgressState, percent is used only at progress state. Returns true if state was set successfully.
 		bool				set_progress_state(SlicingProgressState state,float percent = 0.f);
 		// sets additional string of print info and puts notification into Completed state.
 		void			    set_print_info(const std::string& info);
@@ -921,7 +921,7 @@ private:
     {NotificationType::URLNotRegistered
 		, NotificationLevel::RegularNotificationLevel
 		, 10
-		, _u8L("PrusaSlicer recieved a download request from Printables.com, but it's not allowed. You can allow it")
+		, _u8L("PrusaSlicer received a download request from Printables.com, but it's not allowed. You can allow it")
 		, _u8L("here.")
 		,  [](wxEvtHandler* evnthndlr) {
 			wxGetApp().open_preferences("downloader_url_registered", "Other");
@@ -930,9 +930,9 @@ private:
 
 			//{NotificationType::NewAppAvailable, NotificationLevel::ImportantNotificationLevel, 20,  _u8L("New version is available."),  _u8L("See Releases page."), [](wxEvtHandler* evnthndlr) {
 			//	wxGetApp().open_browser_with_warning_dialog("https://github.com/prusa3d/PrusaSlicer/releases"); return true; }},
-			//{NotificationType::NewAppAvailable, NotificationLevel::ImportantNotificationLevel, 20,  _u8L("New vesion of PrusaSlicer is available.",  _u8L("Download page.") },
+			//{NotificationType::NewAppAvailable, NotificationLevel::ImportantNotificationLevel, 20,  _u8L("New version of PrusaSlicer is available.",  _u8L("Download page.") },
 			//{NotificationType::LoadingFailed, NotificationLevel::RegularNotificationLevel, 20,  _u8L("Loading of model has Failed") },
-			//{NotificationType::DeviceEjected, NotificationLevel::RegularNotificationLevel, 10,  _u8L("Removable device has been safely ejected")} // if we want changeble text (like here name of device), we need to do it as CustomNotification
+			//{NotificationType::DeviceEjected, NotificationLevel::RegularNotificationLevel, 10,  _u8L("Removable device has been safely ejected")} // if we want changeable text (like here name of device), we need to do it as CustomNotification
 	};
 	
 };

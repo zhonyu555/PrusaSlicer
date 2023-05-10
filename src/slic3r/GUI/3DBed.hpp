@@ -33,7 +33,7 @@ private:
     Type m_type{ Type::Custom };
     std::string m_texture_filename;
     std::string m_model_filename;
-    // Print volume bounding box exteded with axes and model.
+    // Print volume bounding box extended with axes and model.
     BoundingBoxf3 m_extended_bounding_box;
     // Print bed polygon
     ExPolygon m_contour;

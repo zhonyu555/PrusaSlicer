@@ -123,7 +123,7 @@ private:
     void on_error(Event&);
     void on_cancel(Event&);
     void on_info(Event&);
-    // This vector keep adress and filename of uploads. It is used when checking for running uploads during exit.
+    // This vector keep address and filename of uploads. It is used when checking for running uploads during exit.
     std::vector<std::pair<std::string, std::string>> upload_names;
     void save_user_data(int);
     bool load_user_data(int, std::vector<int>&);

@@ -23,7 +23,7 @@
 static constexpr float GAP_WIDTH = 10.0f;
 static constexpr float SPACE_RIGHT_PANEL = 10.0f;
 static constexpr float FADING_OUT_DURATION = 2.0f;
-// Time in Miliseconds after next render when fading out is requested
+// Time in Milliseconds after next render when fading out is requested
 static constexpr int   FADING_OUT_TIMEOUT = 100;
 
 namespace Slic3r {
@@ -198,7 +198,7 @@ void NotificationManager::PopNotification::render(GLCanvas3D& canvas, float init
 	bool bgrnd_color_pop = push_background_color();
 	
 	
-	// name of window indentifies window - has to be unique string
+	// name of window identifies window - has to be unique string
 	if (m_id == 0)
 		m_id = m_id_provider.allocate_id();
 	std::string name = "!!Ntfctn" + std::to_string(m_id);
@@ -407,7 +407,7 @@ void NotificationManager::PopNotification::count_lines()
 			}
 			if (size_of_last_line == 0) // if first line is continuation of previous text, do not add to line count.
 				m_lines_count++;
-			size_of_last_line = 0; // should countain value only for first line (with hypertext) 
+			size_of_last_line = 0; // should contain value only for first line (with hypertext) 
 
 		}
 	}
@@ -1561,7 +1561,7 @@ void NotificationManager::PrintHostUploadNotification::render_cancel_button(ImGu
 	}
 	ImGui::PopStyleColor(5);
 
-	// bellow is version where both close and stop button are rendered next to each other
+	// below is version where both close and stop button are rendered next to each other
 
 	/*
 	ImVec2 win_size(win_size_x, win_size_y);
@@ -1658,7 +1658,7 @@ void NotificationManager::UpdatedItemsInfoNotification::add_type(InfoItemType ty
 	NotificationData data { get_data().type, get_data().level , get_data().duration, text };
 	update(data);
 }
-// Uncomment to have different icon for every type of info, otherwise it will have standart cube with i.
+// Uncomment to have different icon for every type of info, otherwise it will have standard cube with i.
 /*
 void NotificationManager::UpdatedItemsInfoNotification::render_left_sign(ImGuiWrapper& imgui)
 {
@@ -2149,7 +2149,7 @@ void NotificationManager::push_plater_warning_notification(const std::string& te
 
 	auto notification = std::make_unique<NotificationManager::PlaterWarningNotification>(data, m_id_provider, m_evt_handler);
 	push_notification_data(std::move(notification), 0);
-	// dissaper if in preview
+	// disappear if in preview
 	apply_in_preview();
 }
 
@@ -2844,7 +2844,7 @@ bool NotificationManager::update_notifications(GLCanvas3D& canvas)
 
 	// delayed notifications
 	for (auto it = m_waiting_notifications.begin(); it != m_waiting_notifications.end();) {
-		// substract time
+		// subtract time
 		if ((*it).remaining_time > 0)
 			(*it).remaining_time -= time_since_render;
 		if ((*it).remaining_time <= 0) {

@@ -423,7 +423,7 @@ void OptionsGroup::activate_line(Line& line)
                 h_sizer->Add(opt.side_widget(this->ctrl_parent())/*!.target<wxWindow>()*/, 0, wxLEFT | wxALIGN_CENTER_VERTICAL, 1);    //! requires verification
             }
 
-            if (opt.opt_id != option_set.back().opt_id) //! istead of (opt != option_set.back())
+            if (opt.opt_id != option_set.back().opt_id) //! instead of (opt != option_set.back())
                 h_sizer->AddSpacer(6);
         }
     }
@@ -1077,7 +1077,7 @@ void ogStaticText::SetPathEnd(const std::string& link)
 #else
 
     // Workaround: On Linux wxStaticText doesn't receive wxEVT_ENTER(LEAVE)_WINDOW events,
-    // so implement this behaviour trough wxEVT_MOTION events for this control and it's parent
+    // so implement this behaviour through wxEVT_MOTION events for this control and it's parent
     Bind(wxEVT_MOTION, [link, this](wxMouseEvent& event) {
         SetToolTip(OptionsGroup::get_url(!get_app_config()->get_bool("suppress_hyperlinks") ? link : std::string()));
         FocusText(true);

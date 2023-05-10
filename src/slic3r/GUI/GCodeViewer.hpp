@@ -113,7 +113,7 @@ class GCodeViewer
     // batched models:   3 floats -> position.x|position.y|position.z
     struct InstanceVBuffer
     {
-        // ranges used to render only subparts of the intances
+        // ranges used to render only subparts of the instances
         struct Ranges
         {
             struct Range

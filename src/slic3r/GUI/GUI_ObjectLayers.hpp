@@ -43,7 +43,7 @@ public:
                         const wxString& value = wxEmptyString,
                         EditorType type = etUndef,
                         std::function<void(EditorType)>     set_focus_data_fn   = [](EditorType)      {;},
-                        // callback parameters: new value, from enter, dont't update panel UI (when called from edit field's kill focus handler for the PlusMinusButton)
+                        // callback parameters: new value, from enter, don't update panel UI (when called from edit field's kill focus handler for the PlusMinusButton)
                         std::function<bool(coordf_t, bool, bool)> edit_fn       = [](coordf_t, bool, bool) {return false; }
                         );
     ~LayerRangeEditor() {}

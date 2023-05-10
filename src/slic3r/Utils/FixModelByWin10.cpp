@@ -343,7 +343,7 @@ bool fix_model_by_win10_sdk_gui(ModelObject &model_object, int volume_idx, wxPro
 		volumes.emplace_back(model_object.volumes[volume_idx]);
 
 	// Executing the calculation in a background thread, so that the COM context could be created with its own threading model.
-	// (It seems like wxWidgets initialize the COM contex as single threaded and we need a multi-threaded context).
+	// (It seems like wxWidgets initialize the COM context as single threaded and we need a multi-threaded context).
 	bool   success = false;
 	size_t ivolume = 0;
 	auto on_progress = [&mtx, &condition, &ivolume, &volumes, &progress](const char *msg, unsigned prcnt) {

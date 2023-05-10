@@ -370,7 +370,7 @@ void GLGizmoCut3D::put_connectors_on_cut_plane(const Vec3d& cp_normal, double cp
         const Vec3d& instance_offset = mo->instances[m_c->selection_info()->get_active_instance()]->get_offset();
 
         for (auto& connector : connectors) {
-            // convert connetor pos to the world coordinates
+            // convert connector pos to the world coordinates
             Vec3d pos = connector.pos + instance_offset;
             pos[Z] += sla_shift;
             // scalar distance from point to plane along the normal
@@ -1074,7 +1074,7 @@ void GLGizmoCut3D::dragging_grabber_z(const GLGizmoBase::UpdateData &data)
     if (starting_vec.norm() != 0.0) {
         const Vec3d mouse_dir = data.mouse_ray.unit_vector();
         // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
-        // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebric form
+        // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebraic form
         // in our case plane normal and ray direction are the same (orthogonal view)
         // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal
         const Vec3d inters = data.mouse_ray.a + (starting_drag_position - data.mouse_ray.a).dot(mouse_dir) * mouse_dir;

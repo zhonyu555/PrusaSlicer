@@ -405,7 +405,7 @@ void StyleManager::init_style_images(const Vec2i &max_size,
     auto mf = wxGetApp().mainframe;
     // dot per inch for monitor
     int dpi = get_dpi_for_window(mf);
-    // pixel per milimeter
+    // pixel per millimeter
     double ppm = dpi / ObjectManipulation::in_to_mm;
 
     auto &worker = wxGetApp().plater()->get_ui_job_worker();
@@ -433,7 +433,7 @@ float StyleManager::get_imgui_font_size(const FontProp &prop, const FontFile &fi
     const auto  &cn = prop.collection_number;
     unsigned int font_index = (cn.has_value()) ? *cn : 0;
     const auto  &font_info  = file.infos[font_index];
-    // coeficient for convert line height to font size
+    // coefficient for convert line height to font size
     float c1 = (font_info.ascent - font_info.descent + font_info.linegap) /
                (float) font_info.unit_per_em;
 

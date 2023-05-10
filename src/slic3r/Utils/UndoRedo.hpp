@@ -120,7 +120,7 @@ public:
 
 	// Store the current application state onto the Undo / Redo stack, remove all snapshots after m_active_snapshot_time.
     void take_snapshot(const std::string& snapshot_name, const Slic3r::Model& model, const Slic3r::GUI::Selection& selection, const Slic3r::GUI::GLGizmosManager& gizmos, const SnapshotData &snapshot_data);
-    // To be called just after take_snapshot() when leaving a gizmo, inside which small edits like support point add / remove events or paiting actions were allowed.
+    // To be called just after take_snapshot() when leaving a gizmo, inside which small edits like support point add / remove events or painting actions were allowed.
     // Remove all but the last edit between the gizmo enter / leave snapshots.
     void reduce_noisy_snapshots(const std::string& new_name);
 

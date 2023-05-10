@@ -78,7 +78,7 @@ wxButton* MsgDialog::add_button(wxWindowID btn_id, bool set_focus /*= false*/, c
     wxButton* btn = new wxButton(this, btn_id, label);
     if (set_focus) {
         btn->SetFocus();
-        // For non-MSW platforms SetFocus is not enought to use it as default, when the dialog is closed by ENTER
+        // For non-MSW platforms SetFocus is not enough to use it as default, when the dialog is closed by ENTER
         // We have to set this button as the (permanently) default one in its dialog
         // See https://twitter.com/ZMelmed/status/1472678454168539146
         btn->SetDefault();
@@ -169,7 +169,7 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
         // And as a result the em_unit value wasn't created yet
         // So, calculate it from the scale factor of Dialog
 #if defined(__WXGTK__)
-        // Linux specific issue : get_dpi_for_window(this) still doesn't responce to the Display's scale in new wxWidgets(3.1.3).
+        // Linux specific issue : get_dpi_for_window(this) still doesn't response to the Display's scale in new wxWidgets(3.1.3).
         // So, initialize default width_unit according to the width of the one symbol ("m") of the currently active font of this window.
         em = std::max<size_t>(10, parent->GetTextExtent("m").x - 1);
 #else

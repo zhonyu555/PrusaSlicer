@@ -195,7 +195,7 @@ bool Http::priv::ca_file_supported(::CURL *curl)
 	if (::curl_easy_getinfo(curl, CURLINFO_TLS_SSL_PTR, &tls) == CURLE_OK) {
 		if (tls->backend == CURLSSLBACKEND_SCHANNEL || tls->backend == CURLSSLBACKEND_DARWINSSL) {
 			// With Windows and OS X native SSL support, cert files cannot be set
-            // DK: OSX is now not building CURL and links system one, thus we do not know which backend is installed. Still, false will be returned since the ifdef at the begining if this function.
+            // DK: OSX is now not building CURL and links system one, thus we do not know which backend is installed. Still, false will be returned since the ifdef at the beginning if this function.
 			res = false;
 		}
 	}
@@ -375,7 +375,7 @@ void Http::priv::http_perform()
 	if (res != CURLE_OK) {
 		if (res == CURLE_ABORTED_BY_CALLBACK) {
 			if (cancel) {
-				// The abort comes from the request being cancelled programatically
+				// The abort comes from the request being cancelled programmatically
 				Progress dummyprogress(0, 0, 0, 0, std::string());
 				bool cancel = true;
 				if (progressfn) { progressfn(dummyprogress, cancel); }

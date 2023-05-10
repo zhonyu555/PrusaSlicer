@@ -10,7 +10,7 @@ class GLVolume;
 namespace Slic3r::GUI {
 /// <summary>
 /// Help divide camera data and camera functions
-/// This utility work with camera data by static funtions
+/// This utility work with camera data by static functions
 /// </summary>
 class CameraUtils
 {

@@ -712,7 +712,7 @@ void FirmwareDialog::priv::on_avrdude(const wxCommandEvent &evt)
 		// We try to track overall progress here.
 		// Avrdude performs 3 tasks per one memory operation ("-U" arg),
 		// first of which is reading of status data (very short).
-		// We use the timer_pulse during the very first task to indicate intialization
+		// We use the timer_pulse during the very first task to indicate initialization
 		// and then display overall progress during the latter tasks.
 
 		if (progress_tasks_done > 0) {
@@ -734,7 +734,7 @@ void FirmwareDialog::priv::on_avrdude(const wxCommandEvent &evt)
 
 		// Figure out the exit state
 		if (user_cancelled) { complete_kind = AC_USER_CANCELLED; }
-		else if (avrdude->cancelled()) { complete_kind = AC_NONE; } // Ie. cancelled programatically
+		else if (avrdude->cancelled()) { complete_kind = AC_NONE; } // Ie. cancelled programmatically
 		else { complete_kind = evt.GetInt() == 0 ? AC_SUCCESS : AC_FAILURE; }
 
 		flashing_done(complete_kind);

@@ -447,7 +447,7 @@ void Selection::clear()
     if (m_list.empty())
         return;
 
-    // ensure that the volumes get the proper color before next call to render (expecially needed for transparent volumes)
+    // ensure that the volumes get the proper color before next call to render (especially needed for transparent volumes)
     for (unsigned int i : m_list) {
         GLVolume& volume = *(*m_volumes)[i];
         volume.selected = false;
@@ -1020,7 +1020,7 @@ void Selection::flattening_rotate(const Vec3d& normal)
 
 #if !DISABLE_INSTANCES_SYNCH
     // Apply the same transformation also to other instances,
-    // but respect their possibly diffrent z-rotation.
+    // but respect their possibly different z-rotation.
     if (m_mode == Instance)
         synchronize_unselected_instances(SyncRotationType::GENERAL);
 #endif // !DISABLE_INSTANCES_SYNCH

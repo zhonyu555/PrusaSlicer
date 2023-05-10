@@ -1166,7 +1166,7 @@ void StackImpl::release_least_recently_used()
 #else
 			// Rather don't release the last snapshot as it will be very confusing to the user
 			// as of why he cannot jump to the top most state. The Undo / Redo stack maximum size
-			// should be set low enough to accomodate for the top most snapshot.
+			// should be set low enough to accommodate for the top most snapshot.
 			break;
 #endif
 		} else {
