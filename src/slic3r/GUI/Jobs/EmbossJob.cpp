@@ -57,7 +57,7 @@ template<typename Fnc> static TriangleMesh create_mesh(DataBase &input, Fnc was_
 /// <summary>
 /// Create default mesh for embossed text
 /// </summary>
-/// <returns>Not empty model(index trinagle set - its)</returns>
+/// <returns>Not empty model(index triangle set - its)</returns>
 static TriangleMesh create_default_mesh();
 
 /// <summary>
@@ -91,18 +91,18 @@ static ModelVolume *get_volume(ModelObjectPtrs &objects, const ObjectID &volume_
 /// Create projection for cut surface from mesh
 /// </summary>
 /// <param name="tr">Volume transformation in object</param>
-/// <param name="shape_scale">Convert shape to milimeters</param>
+/// <param name="shape_scale">Convert shape to millimeters</param>
 /// <param name="z_range">Bounding box 3d of model volume for projection ranges</param> 
 /// <returns>Orthogonal cut_projection</returns>
 static OrthoProject create_projection_for_cut(Transform3d tr, double shape_scale, const std::pair<float, float> &z_range);
 
 /// <summary>
-/// Create tranformation for emboss Cutted surface
+/// Create transformation for emboss Cut surface
 /// </summary>
 /// <param name="is_outside">True .. raise, False .. engrave</param>
 /// <param name="emboss">Depth of embossing</param>
 /// <param name="tr">Text voliume transformation inside object</param>
-/// <param name="cut">Cutted surface from model</param>
+/// <param name="cut">Cut surface from model</param>
 /// <returns>Projection</returns>
 static OrthoProject3d create_emboss_projection(bool is_outside, float emboss, Transform3d tr, SurfaceCut &cut);
 
@@ -111,8 +111,8 @@ static OrthoProject3d create_emboss_projection(bool is_outside, float emboss, Tr
 /// </summary>
 /// <param name="input1">(can't be const - cache of font)</param>
 /// <param name="input2">SurfaceVolume data</param>
-/// <param name="was_canceled">Check to interupt execution</param>
-/// <returns>Extruded object from cuted surace</returns>
+/// <param name="was_canceled">Check to interrupt execution</param>
+/// <returns>Extruded object from cut surface</returns>
 static TriangleMesh cut_surface(/*const*/ DataBase &input1, const SurfaceVolumeData &input2, std::function<bool()> was_canceled);
 
 static void create_message(const std::string &message); // only in finalize
@@ -299,7 +299,7 @@ CreateSurfaceVolumeJob::CreateSurfaceVolumeJob(CreateSurfaceVolumeData &&input)
 void CreateSurfaceVolumeJob::process(Ctl &ctl) {
     if (!priv::check(m_input)) 
         throw std::runtime_error("Bad input data for CreateSurfaceVolumeJob.");
-    // check cancelation of process
+    // check cancellation of process
     auto was_canceled = [&ctl]() -> bool { return ctl.was_canceled(); };
     m_result = priv::cut_surface(m_input, m_input, was_canceled);
 }
@@ -324,7 +324,7 @@ void UpdateSurfaceVolumeJob::process(Ctl &ctl)
     if (!priv::check(m_input)) 
         throw std::runtime_error("Bad input data for UseSurfaceJob.");
     
-    // check cancelation of process
+    // check cancellation of process
     auto was_canceled = [&ctl, &cancel = m_input.cancel]()->bool {
         if (cancel->load()) return true;
         return ctl.was_canceled();
@@ -338,7 +338,7 @@ void UpdateSurfaceVolumeJob::finalize(bool canceled, std::exception_ptr &eptr)
         return;
 
     // when start using surface it is wanted to move text origin on surface of model
-    // also when repeteadly move above surface result position should match
+    // also when repeatedly move above surface result position should match
     Transform3d *tr = &m_input.text_tr;
     priv::update_volume(std::move(m_result), m_input, tr);
 }
@@ -449,7 +449,7 @@ TriangleMesh priv::try_create_mesh(DataBase &input, Fnc was_canceled)
 template<typename Fnc>
 TriangleMesh priv::create_mesh(DataBase &input, Fnc was_canceled, Job::Ctl& ctl)
 {
-    // It is neccessary to create some shape
+    // It is necessary to create some shape
     // Emboss text window is opened by creation new emboss text object
     TriangleMesh result;
     if (input.font_file.has_value()) {
@@ -620,7 +620,7 @@ void priv::create_volume(
         }   
     }
 
-    // Parent object for text volume was propably removed.
+    // Parent object for text volume was probably removed.
     // Assumption: User know what he does, so text volume is no more needed.
     if (obj == nullptr) 
         return priv::create_message("Bad object to create volume.");
@@ -630,11 +630,11 @@ void priv::create_volume(
 
     plater->take_snapshot(_L("Add Emboss text Volume"));
 
-    // NOTE: be carefull add volume also center mesh !!!
+    // NOTE: be careful add volume also center mesh !!!
     // So first add simple shape(convex hull is also calculated)
     ModelVolume *volume = obj->add_volume(make_cube(1., 1., 1.), type);
 
-    // TODO: Refactor to create better way to not set cube at begining
+    // TODO: Refactor to create better way to not set cube at beginning
     // Revert mesh centering by set mesh after add cube
     volume->set_mesh(std::move(mesh));
     volume->calculate_convex_hull();
@@ -718,7 +718,7 @@ OrthoProject priv::create_projection_for_cut(
 OrthoProject3d priv::create_emboss_projection(
     bool is_outside, float emboss, Transform3d tr, SurfaceCut &cut)
 {
-    // Offset of clossed side to model
+    // Offset of closed side to model
     const float surface_offset = 0.015f; // [in mm]
     float 
         front_move = (is_outside) ? emboss : surface_offset,

@@ -69,7 +69,7 @@ protected:
     /// Rotate by text on dragging rotate grabers
     /// </summary>
     /// <param name="mouse_event">Information about mouse</param>
-    /// <returns>Propagete normaly return false.</returns>
+    /// <returns>Propagete normally return false.</returns>
     bool on_mouse(const wxMouseEvent &mouse_event) override;
 
     bool wants_enter_leave_snapshots() const override { return true; }
@@ -125,7 +125,7 @@ private:
         bool use_inch, const std::optional<float>& scale);
 
     /// <summary>
-    /// Reversible input float with option to restor default value
+    /// Reversible input float with option to restore default value
     /// TODO: make more general, static and move to ImGuiWrapper 
     /// </summary>
     /// <returns>True when value changed otherwise FALSE.</returns>
@@ -223,7 +223,7 @@ private:
     // when true window will appear near to text volume when open
     // When false it opens on last position
     bool m_allow_open_near_volume = false;
-    // setted only when wanted to use - not all the time
+    // set only when wanted to use - not all the time
     std::optional<ImVec2> m_set_window_offset;
 
     // Keep information about stored styles and loaded actual style to compare with
@@ -293,7 +293,7 @@ private:
     bool m_keep_up = true;
 
     // current selected volume 
-    // NOTE: Be carefull could be uninitialized (removed from Model)
+    // NOTE: Be careful could be uninitialized (removed from Model)
     ModelVolume *m_volume;
 
     // When work with undo redo stack there could be situation that 

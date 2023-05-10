@@ -366,8 +366,8 @@ static void add_tabs_as_menu(wxMenuBar* bar, MainFrame* main_frame, wxWindow* ba
         wxMenu* const menu = event.GetMenu();
         if (!menu || menu->GetMenuItemCount() > 0) {
             // If we are here it means that we open regular menu and not a tab used as a menu
-            event.Skip(); // event.Skip() is verry important to next processing of the wxEVT_UPDATE_UI by this menu items.
-                          // If wxEVT_MENU_OPEN will not be pocessed in next event queue then MenuItems of this menu will never caught wxEVT_UPDATE_UI 
+            event.Skip(); // event.Skip() is very important to next processing of the wxEVT_UPDATE_UI by this menu items.
+                          // If wxEVT_MENU_OPEN will not be processed in next event queue then MenuItems of this menu will never caught wxEVT_UPDATE_UI 
                           // and, as a result, "check/radio value" will not be updated
             return;
         }
@@ -1847,9 +1847,9 @@ void MainFrame::repair_stl()
 
 void MainFrame::export_config()
 {
-    // Generate a cummulative configuration for the selected print, filaments and printer.
+    // Generate a cumulative configuration for the selected print, filaments and printer.
     auto config = wxGetApp().preset_bundle->full_config();
-    // Validate the cummulative configuration.
+    // Validate the cumulative configuration.
     auto valid = config.validate();
     if (! valid.empty()) {
         show_error(this, valid);
@@ -1973,7 +1973,7 @@ void MainFrame::load_configbundle(wxString file/* = wxEmptyString, const bool re
     Slic3r::GUI::show_info(this, message, wxString("Info"));
 }
 
-// Load a provied DynamicConfig into the Print / Filament / Printer tabs, thus modifying the active preset.
+// Load a provided DynamicConfig into the Print / Filament / Printer tabs, thus modifying the active preset.
 // Also update the plater with the new presets.
 void MainFrame::load_config(const DynamicPrintConfig& config)
 {

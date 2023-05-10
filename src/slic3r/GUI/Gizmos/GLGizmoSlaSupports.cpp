@@ -190,7 +190,7 @@ void GLGizmoSlaSupports::render_points(const Selection& selection)
         // First decide about the color of the point.
         if (size_t(m_hover_id) == i && m_editing_mode) // ignore hover state unless editing mode is active
             render_color = { 0.f, 1.f, 1.f, 1.f };
-        else { // neigher hover nor picking
+        else { // neither hover nor picking
             bool supports_new_island = m_lock_unique_islands && support_point.is_new_island;
             if (m_editing_mode) {
                 if (point_selected)
@@ -601,7 +601,7 @@ RENDER_AGAIN:
 
         // Following is a nasty way to:
         //  - save the initial value of the slider before one starts messing with it
-        //  - keep updating the head radius during sliding so it is continuosly refreshed in 3D scene
+        //  - keep updating the head radius during sliding so it is continuously refreshed in 3D scene
         //  - take correct undo/redo snapshot after the user is done with moving the slider
         float initial_value = m_new_point_head_diameter;
         m_imgui->slider_float("##head_diameter", &m_new_point_head_diameter, 0.1f, diameter_upper_cap, "%.1f");

@@ -104,7 +104,7 @@ public:
         update_dark_ui(this);
 #endif
 
-        // Linux specific issue : get_dpi_for_window(this) still doesn't responce to the Display's scale in new wxWidgets(3.1.3).
+        // Linux specific issue : get_dpi_for_window(this) still doesn't response to the Display's scale in new wxWidgets(3.1.3).
         // So, calculate the m_em_unit value from the font size, as before
 #if !defined(__WXGTK__)
         m_em_unit = std::max<size_t>(10, 10.0f * m_scale_factor);
@@ -262,7 +262,7 @@ private:
         m_prev_scale_factor = m_scale_factor;
     }
 
-#if 0 //#ifdef _WIN32  // #ysDarkMSW - Allow it when we deside to support the sustem colors for application 
+#if 0 //#ifdef _WIN32  // #ysDarkMSW - Allow it when we decide to support the system colors for application 
     bool HandleSettingChange(WXWPARAM wParam, WXLPARAM lParam) override
     {
         update_dark_ui(this);

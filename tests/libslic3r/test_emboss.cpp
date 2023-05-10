@@ -747,7 +747,7 @@ namespace Slic3r::MeshBoolean::cgal2 {
 /// <param name="source">Input source mesh</param>
 /// <param name="shape">Input 2d shape to cut from surface</param>
 /// <param name="projection">Define transformation from 2d to 3d</param>
-/// <returns>Cutted surface, Its do not represent Volume</returns>
+/// <returns>Cut surface, Its do not represent Volume</returns>
 indexed_triangle_set cut_shape(const indexed_triangle_set &source,
                                const ExPolygon            &shape,
                                const Emboss::IProjection  &projection)
@@ -762,7 +762,7 @@ indexed_triangle_set cut_shape(const indexed_triangle_set &source,
 /// <param name="source">Input source mesh</param>
 /// <param name="shapes">Input 2d shape to cut from surface</param>
 /// <param name="projection">Define transformation from 2d to 3d</param>
-/// <returns>Cutted surface, Its do not represent Volume</returns>
+/// <returns>Cut surface, Its do not represent Volume</returns>
 indexed_triangle_set cut_shape(const indexed_triangle_set &source,
                                const ExPolygons           &shapes,
                                const Emboss::IProjection  &projection)

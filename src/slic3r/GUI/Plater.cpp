@@ -832,7 +832,7 @@ Sidebar::Sidebar(Plater *parent)
                 wxRIGHT, margin_5);
 #else
                 wxBOTTOM, 1);
-                (void)margin_5; // supress unused capture warning
+                (void)margin_5; // suppress unused capture warning
 #endif // __WXGTK3__
         } else {
             sizer_filaments->Add(combo_and_btn_sizer, 0, wxEXPAND |
@@ -1305,7 +1305,7 @@ void Sidebar::show_info_sizer()
         std::vector<int> obj_idxs, vol_idxs;
         wxGetApp().obj_list()->get_selection_indexes(obj_idxs, vol_idxs);
         if (vol_idxs.size() != 1)
-            // Case when this fuction is called between update selection in ObjectList and on Canvas
+            // Case when this function is called between update selection in ObjectList and on Canvas
             // Like after try to delete last solid part in object, the object is selected in ObjectLIst when just a part is still selected on Canvas
             // see https://github.com/prusa3d/PrusaSlicer/issues/7408
             return;
@@ -2483,7 +2483,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
     for (size_t i = 0; i < input_files_size; ++i) {
 #ifdef _WIN32
         auto path = input_files[i];
-        // On Windows, we swap slashes to back slashes, see GH #6803 as read_from_file() does not understand slashes on Windows thus it assignes full path to names of loaded objects.
+        // On Windows, we swap slashes to back slashes, see GH #6803 as read_from_file() does not understand slashes on Windows thus it assigns full path to names of loaded objects.
         path.make_preferred();
 #else // _WIN32
         // Don't make a copy on Posix. Slash is a path separator, back slashes are not accepted as a substitute.
@@ -3028,7 +3028,7 @@ void Plater::priv::remove(size_t obj_idx)
 bool Plater::priv::delete_object_from_model(size_t obj_idx)
 {
     // check if object isn't cut
-    // show warning message that "cut consistancy" will not be supported any more
+    // show warning message that "cut consistency" will not be supported any more
     ModelObject* obj = model.objects[obj_idx];
     if (obj->is_cut()) {
         InfoDialog dialog(q, _L("Delete object which is a part of cut object"), 
@@ -3145,7 +3145,7 @@ void Plater::priv::split_object()
         Slic3r::GUI::warning_catcher(q, _L("The selected object couldn't be split because it contains only one solid part."));
     else
     {
-        // If we splited object which is contain some parts/modifiers then all non-solid parts (modifiers) were deleted
+        // If we split object which is contain some parts/modifiers then all non-solid parts (modifiers) were deleted
         if (current_model_object->volumes.size() > 1 && current_model_object->volumes.size() != new_objects.size())
             notification_manager->push_notification(NotificationType::CustomNotification,
                 NotificationManager::NotificationLevel::PrintInfoNotificationLevel,
@@ -5103,7 +5103,7 @@ void Plater::priv::bring_instance_forward() const
     return;
 #endif //__APPLE__
     if (main_frame == nullptr) {
-        BOOST_LOG_TRIVIAL(debug) << "Couldnt bring instance forward - mainframe is null";
+        BOOST_LOG_TRIVIAL(debug) << "Couldn't bring instance forward - mainframe is null";
         return;
     }
     BOOST_LOG_TRIVIAL(debug) << "prusaslicer window going forward";
@@ -5637,7 +5637,7 @@ bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)
             }
             close_zip_reader(&archive);
             if (non_project_paths.size() + project_paths.size() != selected_paths.size())
-                BOOST_LOG_TRIVIAL(error) << "Decompresing of archive did not retrieve all files. Expected files: " 
+                BOOST_LOG_TRIVIAL(error) << "Decompressing of archive did not retrieve all files. Expected files: " 
                                          << selected_paths.size() 
                                          << " Decopressed files: " 
                                          << non_project_paths.size() + project_paths.size();
@@ -6190,7 +6190,7 @@ void Plater::convert_unit(ConversionType conv_type)
     if (obj_idxs.empty() && volume_idxs.empty())
         return;
 
-    // We will remove object indexes after convertion 
+    // We will remove object indexes after conversion 
     // So, resort object indexes descending to avoid the crash after remove 
     std::sort(obj_idxs.begin(), obj_idxs.end(), std::greater<int>());
 
@@ -6272,7 +6272,7 @@ void Plater::export_gcode(bool prefer_removable)
     // This function is useful for generating file names to be processed by legacy firmwares.
     fs::path default_output_file;
     try {
-        // Update the background processing, so that the placeholder parser will get the correct values for the ouput file template.
+        // Update the background processing, so that the placeholder parser will get the correct values for the output file template.
         // Also if there is something wrong with the current configuration, a pop-up dialog will be shown and the export will not be performed.
         unsigned int state = this->p->update_restart_background_process(false, false);
         if (state & priv::UPDATE_BACKGROUND_PROCESS_INVALID)
@@ -6292,7 +6292,7 @@ void Plater::export_gcode(bool prefer_removable)
     // Get a last save path, either to removable media or to an internal media.
     std::string      		 start_dir 				 = appconfig.get_last_output_dir(default_output_file.parent_path().string(), prefer_removable);
 	if (prefer_removable) {
-		// Returns a path to a removable media if it exists, prefering start_dir. Update the internal removable drives database.
+		// Returns a path to a removable media if it exists, preferring start_dir. Update the internal removable drives database.
 		start_dir = removable_drive_manager.get_removable_drive_path(start_dir);
 		if (start_dir.empty())
 			// Direct user to the last internal media.
@@ -6723,7 +6723,7 @@ void Plater::send_gcode()
     // Obtain default output path
     fs::path default_output_file;
     try {
-        // Update the background processing, so that the placeholder parser will get the correct values for the ouput file template.
+        // Update the background processing, so that the placeholder parser will get the correct values for the output file template.
         // Also if there is something wrong with the current configuration, a pop-up dialog will be shown and the export will not be performed.
         unsigned int state = this->p->update_restart_background_process(false, false);
         if (state & priv::UPDATE_BACKGROUND_PROCESS_INVALID)

@@ -6,7 +6,7 @@
 @goto exit
 
 :error
-@echo ERROR: Status querry for %DIRVERNAME% failed
+@echo ERROR: Status query for %DIRVERNAME% failed
 
 :exit
 

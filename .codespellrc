@@ -1,0 +1,7 @@
+[codespell]
+skip = .git,*.pdf,*.svg,localization,atmel-docs,*.html
+# for now ignore all "misspelled" of size 4 and under, although some
+# are obviously typos
+# Tesselate - internal file name misspelled (no ll)
+# actived,archtype - internal attribute/variable
+ignore-words-list = alle,alow,anid,ans,basf,blok,bu,cach,cant,clen,coud,doen,dota,dout,enew,fo,fro,fron,fuly,gord,grup,ist,larg,leat,lod,lowd,mata,matc,ment,nd,ned,nin,nwe,ot,oter,othe,padd,paht,parm,poit,puls,seh,ser,shal,sie,tabl,te,tha,ther,thes,thie,trys,ture,ue,upto,valu,vave,whe,whih,wich,wiht,wont,tesselate,actived,archtype

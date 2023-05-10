@@ -242,7 +242,7 @@ static bool draw_button(const IconManager::VIcons& icons, IconType type, bool di
 /// Apply camera direction for emboss direction
 /// </summary>
 /// <param name="camera">Define view vector</param>
-/// <param name="canvas">Containe Selected Model to modify</param>
+/// <param name="canvas">Contain Selected Model to modify</param>
 /// <returns>True when apply change otherwise false</returns>
 static bool apply_camera_dir(const Camera &camera, GLCanvas3D &canvas);
 
@@ -260,7 +260,7 @@ void GLGizmoEmboss::create_volume(ModelVolumeType volume_type, const Vec2d& mous
         // Try to cast ray into scene and find object for add volume
         if (!priv::start_create_volume_on_surface_job(emboss_data, volume_type, mouse_pos, gl_volume, m_raycast_manager, m_parent)) {
             // When model is broken. It could appear that hit miss the object.
-            // So add part near by in simmilar manner as right panel do
+            // So add part near by in similar manner as right panel do
             create_volume(volume_type);
         }
     } else {
@@ -301,7 +301,7 @@ void GLGizmoEmboss::create_volume(ModelVolumeType volume_type)
         priv::start_create_object_job(emboss_data, screen_center);
     } else if (!priv::start_create_volume_on_surface_job(emboss_data, volume_type, coor, vol, m_raycast_manager, m_parent)) {
         // in centroid of convex hull is not hit with object
-        // soo create transfomation on border of object
+        // soo create transformation on border of object
         
         // there is no point on surface so no use of surface will be applied
         FontProp &prop = emboss_data.text_configuration.style.prop;
@@ -349,7 +349,7 @@ bool GLGizmoEmboss::on_mouse_for_rotation(const wxMouseEvent &mouse_event)
         // move to range <-M_PI, M_PI>
         priv::to_range_pi_pi(angle);
 
-        // set into activ style
+        // set into active style
         assert(m_style_manager.is_active_font());
         if (m_style_manager.is_active_font()) {
             std::optional<float> angle_opt;
@@ -535,7 +535,7 @@ void GLGizmoEmboss::on_render_input_window(float x, float y, float bottom_limit)
         return;
     }
 
-    // Not known situation when could happend this is only for sure
+    // Not known situation when could happened this is only for sure
     if (!m_is_unknown_font && !m_style_manager.is_active_font())
         create_notification_not_valid_font("No active font in style. Select correct one.");
     else if (!m_is_unknown_font && !m_style_manager.get_wx_font().IsOk())
@@ -662,7 +662,7 @@ void GLGizmoEmboss::on_set_state()
             return;
         }
         reset_volume();
-        // Store order and last activ index into app.ini
+        // Store order and last active index into app.ini
         // TODO: what to do when can't store into file?
         m_style_manager.store_styles_to_app_config(false);
         remove_notification_not_valid_font();
@@ -852,7 +852,7 @@ EmbossStyles GLGizmoEmboss::create_default_styles()
         WxFontUtils::create_emboss_style(wx_font_normal, _u8L("NORMAL")), // wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT)
         WxFontUtils::create_emboss_style(*wxSMALL_FONT, _u8L("SMALL")),  // A font using the wxFONTFAMILY_SWISS family and 2 points smaller than wxNORMAL_FONT.
         WxFontUtils::create_emboss_style(*wxITALIC_FONT, _u8L("ITALIC")), // A font using the wxFONTFAMILY_ROMAN family and wxFONTSTYLE_ITALIC style and of the same size of wxNORMAL_FONT.
-        WxFontUtils::create_emboss_style(*wxSWISS_FONT, _u8L("SWISS")),  // A font identic to wxNORMAL_FONT except for the family used which is wxFONTFAMILY_SWISS.
+        WxFontUtils::create_emboss_style(*wxSWISS_FONT, _u8L("SWISS")),  // A font identical to wxNORMAL_FONT except for the family used which is wxFONTFAMILY_SWISS.
         WxFontUtils::create_emboss_style(wxFont(10, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD), _u8L("MODERN")),        
     };
 
@@ -868,7 +868,7 @@ EmbossStyles GLGizmoEmboss::create_default_styles()
                 return true;        
         }
 
-        // Check that exsit valid TrueType Font for wx font
+        // Check that exist valid TrueType Font for wx font
         return WxFontUtils::create_font_file(wx_font) == nullptr;
         }),styles.end()
     );
@@ -877,7 +877,7 @@ EmbossStyles GLGizmoEmboss::create_default_styles()
     if (!styles.empty())
         return styles;
 
-    // No valid style in defult list
+    // No valid style in default list
     // at least one style must contain loadable font
     wxFont wx_font;
     for (const wxString &face : facenames) {
@@ -920,7 +920,7 @@ void GLGizmoEmboss::set_volume_by_selection()
     // for changed volume notification is NOT valid
     remove_notification_not_valid_font();
 
-    // Do not use focused input value when switch volume(it must swith value)
+    // Do not use focused input value when switch volume(it must switch value)
     if (m_volume != nullptr && 
         m_volume != volume) // when update volume it changed id BUT not pointer
         ImGuiWrapper::left_inputs();
@@ -1049,7 +1049,7 @@ void GLGizmoEmboss::set_volume_by_selection()
 void GLGizmoEmboss::reset_volume()
 {
     if (m_volume == nullptr)
-        return; // already reseted
+        return; // already reset
 
     m_volume = nullptr;
     m_volume_id.id = 0;
@@ -1163,7 +1163,7 @@ bool GLGizmoEmboss::process()
     priv::execute_job(std::move(job));
 #endif // EXECUTE_PROCESS_ON_MAIN_THREAD
 
-    // notification is removed befor object is changed by job
+    // notification is removed before object is changed by job
     remove_notification_not_valid_font();
     return true;
 }
@@ -1202,7 +1202,7 @@ void GLGizmoEmboss::draw_window()
     if (ImGui::Button("add svg")) choose_svg_file();
 #endif //  ALLOW_DEBUG_MODE
 
-    // Setter of indent must be befor disable !!!
+    // Setter of indent must be before disable !!!
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, m_gui_cfg->indent);
     ScopeGuard indent_sc([](){ ImGui::PopStyleVar(/*ImGuiStyleVar_IndentSpacing*/); });
 
@@ -1263,7 +1263,7 @@ void GLGizmoEmboss::draw_window()
             ss << fix.matrix();            
             std::string filename = (m_volume->source.input_file.empty())? "unknown.3mf" :
                                    m_volume->source.input_file + ".3mf";
-            ImGui::SetTooltip("Text configuation contain \n"
+            ImGui::SetTooltip("Text configuration contain \n"
                               "Fix Transformation Matrix \n"
                               "%s\n"
                               "loaded from \"%s\" file.",
@@ -1353,8 +1353,8 @@ void GLGizmoEmboss::draw_text_input()
             append_warning(_u8L("Too small, enlarged font height inside text input."));
     }
     
-    // flag for extend font ranges if neccessary
-    // ranges can't be extend during font is activ(pushed)
+    // flag for extend font ranges if necessary
+    // ranges can't be extend during font is active(pushed)
     std::string range_text;
     float  window_height  = ImGui::GetWindowHeight();
     float  minimal_height = get_minimal_window_size().y;
@@ -1572,7 +1572,7 @@ void GLGizmoEmboss::init_face_names(Facenames &face_names)
 
         wxFont wx_font(wxFontInfo().FaceName(name).Encoding(encoding));
         //*
-        // Faster chech if wx_font is loadable but not 100%
+        // Faster check if wx_font is loadable but not 100%
         // names could contain not loadable font
         if (!WxFontUtils::can_load(wx_font)) return false;
 
@@ -1819,7 +1819,7 @@ void GLGizmoEmboss::draw_font_list()
         ImGui::PushStyleColor(ImGuiCol_TextDisabled, ImGui::GetStyleColorVec4(ImGuiCol_Text));
 
         // Fix clearance of search input,
-        // Sometime happens that search text not disapear after font select
+        // Sometime happens that search text not disappear after font select
         m_face_names.search.clear();
     }
 
@@ -2027,7 +2027,7 @@ void GLGizmoEmboss::draw_model_type()
         if (!sel.IsEmpty()) obj_list->select_item(sel.front());       
 
         // NOTE: on linux, function reorder_volumes_and_get_selection call GLCanvas3D::reload_scene(refresh_immediately = false)
-        // which discard m_volume pointer and set it to nullptr also selection is cleared so gizmo is automaticaly closed
+        // which discard m_volume pointer and set it to nullptr also selection is cleared so gizmo is automatically closed
         auto &mng = m_parent.get_gizmos_manager();
         if (mng.get_current_type() != GLGizmosManager::Emboss)
             mng.open_gizmo(GLGizmosManager::Emboss);
@@ -2212,13 +2212,13 @@ void GLGizmoEmboss::draw_delete_style_button() {
         Plater *plater = wxGetApp().plater();
         bool exist_change = false;
         while (true) {
-            // NOTE: can't use previous loaded activ index -> erase could change index
+            // NOTE: can't use previous loaded active index -> erase could change index
             size_t active_index = m_style_manager.get_style_index();
             next_style_index = (active_index > 0) ? active_index - 1 :
                                                    active_index + 1;
             
             if (next_style_index >= m_style_manager.get_styles().size()) {
-                MessageDialog msg(plater, _L("Can't remove the last exising style."), dialog_title, wxICON_ERROR | wxOK);
+                MessageDialog msg(plater, _L("Can't remove the last existing style."), dialog_title, wxICON_ERROR | wxOK);
                 msg.ShowModal();
                 break;
             }
@@ -2258,7 +2258,7 @@ void GLGizmoEmboss::draw_delete_style_button() {
     }
 }
 
-// FIX IT: it should not change volume position before successfull change
+// FIX IT: it should not change volume position before successful change
 void GLGizmoEmboss::fix_transformation(const FontProp &from,
                                        const FontProp &to)
 {
@@ -2558,7 +2558,7 @@ bool GLGizmoEmboss::rev_input(const std::string  &name,
                               const char         *format,
                               ImGuiInputTextFlags flags)
 {
-    // draw offseted input
+    // draw offsetted input
     auto draw_offseted_input = [&]()->bool{
         float input_offset = m_gui_cfg->input_offset;
         float input_width  = m_gui_cfg->input_width;
@@ -2613,7 +2613,7 @@ bool GLGizmoEmboss::rev_checkbox(const std::string &name,
                                  const bool        *default_value,
                                  const std::string &undo_tooltip)
 {
-    // draw offseted input
+    // draw offsetted input
     auto draw_offseted_input = [&]() -> bool {
         ImGui::SameLine(m_gui_cfg->advanced_input_offset);
         return ImGui::Checkbox(("##" + name).c_str(), &value);
@@ -2875,7 +2875,7 @@ void GLGizmoEmboss::draw_advanced()
         if (!priv::Limits::apply(font_prop.line_gap, priv::limits.line_gap) ||
             !m_volume->text_configuration->style.prop.line_gap.has_value() ||
             m_volume->text_configuration->style.prop.line_gap != font_prop.line_gap) {        
-            // line gap is planed to be stored inside of imgui font atlas
+            // line gap is planned to be stored inside of imgui font atlas
             m_style_manager.clear_imgui_font();
             exist_change = true;
         }
@@ -2949,10 +2949,10 @@ void GLGizmoEmboss::draw_advanced()
     }
     m_imgui->disabled_end();
 
-    // slider for Clock-wise angle in degress
+    // slider for Clock-wise angle in degrees
     // stored angle is optional CCW and in radians
-    // Convert stored value to degress
-    // minus create clock-wise roation from CCW
+    // Convert stored value to degrees
+    // minus create clock-wise rotation from CCW
     const std::optional<float> &angle_opt = m_style_manager.get_font_prop().angle;
     float angle = angle_opt.has_value() ? *angle_opt: 0.f;
     float angle_deg = static_cast<float>(-angle * 180 / M_PI);
@@ -3237,14 +3237,14 @@ void GLGizmoEmboss::create_notification_not_valid_font(
     const std::string &face_name = face_name_opt.value_or(face_name_by_wx.value_or(es.path));
     std::string text =
         GUI::format(_L("Can't load exactly same font(\"%1%\"). "
-                       "Aplication selected a similar one(\"%2%\"). "
+                       "Application selected a similar one(\"%2%\"). "
                        "You have to specify font for enable edit text."),
                     face_name_3mf, face_name);
     create_notification_not_valid_font(text);
 }
 
 void GLGizmoEmboss::create_notification_not_valid_font(const std::string &text) {
-    // not neccessary, but for sure that old notification doesnt exist
+    // not necessary, but for sure that old notification doesn't exist
     if (m_is_unknown_font)
         remove_notification_not_valid_font();
     m_is_unknown_font = true;
@@ -3544,7 +3544,7 @@ bool priv::apply_camera_dir(const Camera &camera, GLCanvas3D &canvas) {
 
     Vec3d emboss_dir(0., 0., -1.);
 
-    // check wether cam_dir is already used
+    // check whether cam_dir is already used
     if (is_approx(cam_dir_tr, emboss_dir)) return false;
 
     assert(sel.get_volume_idxs().size() == 1);

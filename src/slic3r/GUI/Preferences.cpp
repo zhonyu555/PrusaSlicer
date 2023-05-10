@@ -522,7 +522,7 @@ void PreferencesDialog::build()
 
 		append_enum_option<NotifyReleaseMode>(m_optgroup_gui, "notify_release",
 			L("Notify about new releases"),
-			L("You will be notified about new release after startup acordingly: All = Regular release and alpha / beta releases. Release only = regular release."),
+			L("You will be notified about new release after startup accordingly: All = Regular release and alpha / beta releases. Release only = regular release."),
 			new ConfigOptionEnum<NotifyReleaseMode>(static_cast<NotifyReleaseMode>(s_keys_map_NotifyReleaseMode.at(app_config->get("notify_release")))),
 			{ { "all", L("All") },
 			  { "release", L("Release only") },
@@ -737,7 +737,7 @@ void PreferencesDialog::accept(wxEvent&)
 	    }
 	}
 
-#if 0 //#ifdef _WIN32 // #ysDarkMSW - Allow it when we deside to support the sustem colors for application
+#if 0 //#ifdef _WIN32 // #ysDarkMSW - Allow it when we decide to support the system colors for application
 	if (m_values.find("always_dark_color_mode") != m_values.end())
 		wxGetApp().force_sys_colors_update();
 #endif

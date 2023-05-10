@@ -307,7 +307,7 @@ void GLGizmoFlatten::update_planes()
         // In next iterations, the neighbours are not always taken at the middle (to increase the
         // rounding effect at the corners, where we need it most).
         const unsigned int k = 10; // number of iterations
-        const float aggressivity = 0.2f;  // agressivity
+        const float aggressivity = 0.2f;  // aggressivity
         const unsigned int N = polygon.size();
         std::vector<std::pair<unsigned int, unsigned int>> neighbours;
         if (k != 0) {

@@ -176,7 +176,7 @@ size_t Index::load(const boost::filesystem::path &path)
     			if (! svalue.empty())
 					semver = Semver::parse(svalue);
                 if (! semver)
-		    		throw file_parser_error(std::string(key) + " must referece a valid semantic version", path, idx_line);
+		    		throw file_parser_error(std::string(key) + " must reference a valid semantic version", path, idx_line);
                 if (strcmp(key, "min_slic3r_version") == 0)
     				ver.min_slic3r_version = *semver;
                 else

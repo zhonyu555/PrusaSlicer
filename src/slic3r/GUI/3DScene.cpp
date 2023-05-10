@@ -1014,7 +1014,7 @@ static void thick_lines_to_geometry(
     double width_initial = 0.0;
     double bottom_z_initial = 0.0;
 
-    // Reserve for a smooth path. Likley the path will not be that smooth, but better than nothing.
+    // Reserve for a smooth path. Likely the path will not be that smooth, but better than nothing.
     // Allocated 1.5x more data than minimum.
     // Number of indices, not triangles.
     geometry.reserve_more_indices((lines.size() * 8 * 3) * 3 / 2);

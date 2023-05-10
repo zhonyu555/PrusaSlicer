@@ -120,7 +120,7 @@ public:
 
 	// Store the current application state onto the Undo / Redo stack, remove all snapshots after m_active_snapshot_time.
     void take_snapshot(const std::string& snapshot_name, const Slic3r::Model& model, const Slic3r::GUI::Selection& selection, const Slic3r::GUI::GLGizmosManager& gizmos, const SnapshotData &snapshot_data);
-    // To be called just after take_snapshot() when leaving a gizmo, inside which small edits like support point add / remove events or paiting actions were allowed.
+    // To be called just after take_snapshot() when leaving a gizmo, inside which small edits like support point add / remove events or painting actions were allowed.
     // Remove all but the last edit between the gizmo enter / leave snapshots.
     void reduce_noisy_snapshots(const std::string& new_name);
 
@@ -146,7 +146,7 @@ public:
 
 	// Timestamp of the active snapshot. One of the snapshots of this->snapshots() shall have Snapshot::timestamp equal to this->active_snapshot_time().
 	// The active snapshot may be a special placeholder "@@@ Topmost @@@" indicating an uncaptured current state,
-	// or the active snapshot may be an active state to which the application state was undoed or redoed.
+	// or the active snapshot may be an active state to which the application state was undone or redone.
 	size_t active_snapshot_time() const;
 	const Snapshot& active_snapshot() const { return this->snapshot(this->active_snapshot_time()); }
 	// Temporary snapshot is active if the topmost snapshot is active and it has not been captured yet.

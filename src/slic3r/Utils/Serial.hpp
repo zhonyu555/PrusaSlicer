@@ -71,7 +71,7 @@ public:
 	// Write data from a string
 	size_t write_string(const std::string &str);
 
-	// Attempts to reset the line numer and waits until the printer says "ok"
+	// Attempts to reset the line number and waits until the printer says "ok"
 	bool printer_ready_wait(unsigned retries, unsigned timeout);
 
 	// Write Marlin-formatted line, with a line number and a checksum

@@ -708,7 +708,7 @@ RENDER_AGAIN:
 
     // Following is a nasty way to:
     //  - save the initial value of the slider before one starts messing with it
-    //  - keep updating the head radius during sliding so it is continuosly refreshed in 3D scene
+    //  - keep updating the head radius during sliding so it is continuously refreshed in 3D scene
     //  - take correct undo/redo snapshot after the user is done with moving the slider
     if (! m_selection_empty) {
         if (clicked) {

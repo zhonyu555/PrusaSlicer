@@ -92,7 +92,7 @@ public:
 wxString get_wraped_wxString(const wxString& text_in, size_t line_len = 80);
 
 #ifdef _WIN32
-// Generic static line, used intead of wxStaticLine
+// Generic static line, used instead of wxStaticLine
 class StaticLine: public wxTextCtrl
 {
 public:
@@ -109,7 +109,7 @@ public:
 	~StaticLine() {}
 };
 
-// Generic message dialog, used intead of wxMessageDialog
+// Generic message dialog, used instead of wxMessageDialog
 class MessageDialog : public MsgDialog
 {
 public:
@@ -125,7 +125,7 @@ public:
 	virtual ~MessageDialog() = default;
 };
 
-// Generic rich message dialog, used intead of wxRichMessageDialog
+// Generic rich message dialog, used instead of wxRichMessageDialog
 class RichMessageDialog : public MsgDialog
 {
 	wxCheckBox* m_checkBox{ nullptr };

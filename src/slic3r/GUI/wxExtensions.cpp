@@ -195,8 +195,8 @@ wxString wxCheckListBoxComboPopup::GetStringValue() const
 
 wxSize wxCheckListBoxComboPopup::GetAdjustedSize(int minWidth, int prefHeight, int maxHeight)
 {
-    // set width dinamically in dependence of items text
-    // and set height dinamically in dependence of items count
+    // set width dynamically in dependence of items text
+    // and set height dynamically in dependence of items count
 
     wxComboCtrl* cmb = GetComboCtrl();
     if (cmb != nullptr) {
@@ -316,7 +316,7 @@ bool wxDataViewTreeCtrlComboPopup::Create(wxWindow* parent)
 wxSize wxDataViewTreeCtrlComboPopup::GetAdjustedSize(int minWidth, int prefHeight, int maxHeight)
 {
 	// matches owner wxComboCtrl's width
-	// and sets height dinamically in dependence of contained items count
+	// and sets height dynamically in dependence of contained items count
 	wxComboCtrl* cmb = GetComboCtrl();
 	if (cmb != nullptr)
 	{

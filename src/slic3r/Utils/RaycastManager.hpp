@@ -114,7 +114,7 @@ public:
     /// <param name="point">Position in space</param>
     /// <param name="direction">Casted ray direction</param>
     /// <param name="skip">Define which caster will be skipped, null mean no skip</param>
-    /// <returns>Position on surface, normal direction in world coorinate
+    /// <returns>Position on surface, normal direction in world coordinate
     /// + key, to know hitted instance and volume</returns>
     std::optional<Hit> first_hit(const Vec3d &point, const Vec3d &direction, const ISkip *skip = nullptr) const;
 
@@ -160,7 +160,7 @@ struct Camera;
 /// <param name="mouse_pos">Position of mouse on screen</param>
 /// <param name="camera">Projection params</param>
 /// <param name="skip">Define which caster will be skipped, null mean no skip</param>
-/// <returns>Position on surface, normal direction in world coorinate
+/// <returns>Position on surface, normal direction in world coordinate
 /// + key, to know hitted instance and volume</returns>
 std::optional<RaycastManager::Hit> ray_from_camera(const RaycastManager        &raycaster,
                                                    const Vec2d                 &mouse_pos,

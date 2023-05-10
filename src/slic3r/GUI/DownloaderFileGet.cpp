@@ -137,7 +137,7 @@ void FileGet::priv::get_perform()
 		std::string extension = boost::filesystem::extension(dest_path);
 		std::string just_filename = m_filename.substr(0, m_filename.size() - extension.size());
 		std::string final_filename = just_filename;
-        // Find unsed filename 
+        // Find unused filename 
 		try {
 			size_t version = 0;
 			while (boost::filesystem::exists(m_dest_folder / (final_filename + extension)) || boost::filesystem::exists(m_dest_folder / (final_filename + extension + "." + std::to_string(get_current_pid()) + ".download")))
@@ -181,7 +181,7 @@ void FileGet::priv::get_perform()
 	BOOST_LOG_TRIVIAL(info) << GUI::format("Starting download from %1% to %2%. Temp path is %3%",m_url, dest_path, m_tmp_path);
 
 	FILE* file;
-	// open file for writting
+	// open file for writing
 	if (m_written == 0)
 		file = fopen(temp_path_wstring.c_str(), "wb");
 	else 

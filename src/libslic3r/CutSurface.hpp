@@ -33,7 +33,7 @@ struct SurfaceCut : public indexed_triangle_set
 /// 1 .. means use closest to back projection
 /// value from <0, 1>
 /// </param>
-/// <returns>Cutted surface from model</returns>
+/// <returns>Cut surface from model</returns>
 SurfaceCut cut_surface(const ExPolygons                        &shapes,
                        const std::vector<indexed_triangle_set> &models,
                        const Emboss::IProjection               &projection,

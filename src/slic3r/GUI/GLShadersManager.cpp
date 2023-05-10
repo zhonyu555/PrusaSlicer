@@ -25,7 +25,7 @@ std::pair<bool, std::string> GLShadersManager::init()
         m_shaders.push_back(std::make_unique<GLShaderProgram>());
         if (!m_shaders.back()->init_from_files(name, filenames, defines)) {
             error += name + "\n";
-            // if any error happens while initializating the shader, we remove it from the list
+            // if any error happens while initializing the shader, we remove it from the list
             m_shaders.pop_back();
             return false;
         }

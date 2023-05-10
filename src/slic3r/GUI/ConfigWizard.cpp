@@ -138,7 +138,7 @@ BundleMap BundleMap::load()
 
     // Load the other bundles in the datadir/vendor directory
     // and then additionally from datadir/cache/vendor (archive) and resources/profiles.
-    // Should we concider case where archive has older profiles than resources (shouldnt happen)?
+    // Should we consider case where archive has older profiles than resources (shouldn't happen)?
     typedef std::pair<const fs::path&, BundleLocation> DirData;
     std::vector<DirData> dir_list { {vendor_dir, BundleLocation::IN_VENDOR},  {archive_dir, BundleLocation::IN_ARCHIVE},  {rsrc_vendor_dir, BundleLocation::IN_RESOURCES} };
     for ( auto dir : dir_list) {
@@ -1428,7 +1428,7 @@ PageDownloader::PageDownloader(ConfigWizard* parent)
     append_text(format_wxstr(_L(
         "If enabled, %1% registers to start on custom URL on www.printables.com."
         " You will be able to use button with %1% logo to open models in this %1%."
-        " The model will be downloaded into folder you choose bellow."
+        " The model will be downloaded into folder you choose below."
     ), SLIC3R_APP_NAME));
 
 #ifdef __linux__
@@ -2313,7 +2313,7 @@ void ConfigWizard::priv::load_pages()
     index->go_to(former_active);   // Will restore the active item/page if possible
 
     q->Layout();
-// This Refresh() is needed to avoid ugly artifacts after printer selection, when no one vendor was selected from the very beginnig
+// This Refresh() is needed to avoid ugly artifacts after printer selection, when no one vendor was selected from the very beginning
     q->Refresh();
 }
 
@@ -2497,7 +2497,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
         for (const auto &pair : bundles) {
             for (const auto &filament : pair.second.preset_bundle->filaments) {
                 // Check if filament is already added
-                if (filaments.containts(&filament))
+                if (filaments.contains(&filament))
 					continue;
                 // Iterate printers in all bundles
                 for (const auto &printer : pair.second.preset_bundle->printers) {
@@ -2505,7 +2505,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
 						continue;
                     // Filter out inapplicable printers
 					if (is_compatible_with_printer(PresetWithVendorProfile(filament, filament.vendor), PresetWithVendorProfile(printer, printer.vendor))) {
-						if (!filaments.containts(&filament)) {
+						if (!filaments.contains(&filament)) {
 							filaments.push(&filament);
 							if (!filament.alias.empty())
 								aliases_fff[filament.alias].insert(filament.name); 
@@ -2516,7 +2516,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
                 // template filament bundle has no printers - filament would be never added
                 if(pair.second.vendor_profile&& pair.second.vendor_profile->templates_profile && pair.second.preset_bundle->printers.begin() == pair.second.preset_bundle->printers.end())
                 {
-                    if (!filaments.containts(&filament)) {
+                    if (!filaments.contains(&filament)) {
                         filaments.push(&filament);
                         if (!filament.alias.empty())
                             aliases_fff[filament.alias].insert(filament.name);
@@ -2572,7 +2572,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
         for (const auto &pair : bundles) {
             for (const auto &material : pair.second.preset_bundle->sla_materials) {
                 // Check if material is already added
-                if (sla_materials.containts(&material))
+                if (sla_materials.contains(&material))
                 	continue;
                 // Iterate printers in all bundles
 				// For now, we only allow the profiles to be compatible with another profiles inside the same bundle.
@@ -2582,7 +2582,7 @@ void ConfigWizard::priv::update_materials(Technology technology)
                     // Filter out inapplicable printers
                     if (is_compatible_with_printer(PresetWithVendorProfile(material, nullptr), PresetWithVendorProfile(printer, nullptr))) {
                         // Check if material is already added
-                        if(!sla_materials.containts(&material)) {
+                        if(!sla_materials.contains(&material)) {
                             sla_materials.push(&material);
                             if (!material.alias.empty())
                                 aliases_sla[material.alias].insert(material.name);
@@ -2759,7 +2759,7 @@ bool ConfigWizard::priv::on_bnt_finish()
         return false;
     }
     /* When Filaments or Sla Materials pages are activated, 
-     * materials for this pages are automaticaly updated and presets are reloaded.
+     * materials for this pages are automatically updated and presets are reloaded.
      * 
      * But, if _Finish_ button was clicked without activation of those pages 
      * (for example, just some printers were added/deleted), 
@@ -2772,7 +2772,7 @@ bool ConfigWizard::priv::on_bnt_finish()
     if (any_sla_selected)
         page_sla_materials->reload_presets();
 
-	// theres no need to check that filament is selected if we have only custom printer
+	// there's no need to check that filament is selected if we have only custom printer
     if (custom_printer_selected && !any_fff_selected && !any_sla_selected) return true;
     // check, that there is selected at least one filament/material
     return check_and_install_missing_materials(T_ANY);
@@ -3136,7 +3136,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         }
     }
 
-    // if unsaved changes was not cheched till this moment
+    // if unsaved changes was not checked till this moment
     if (!check_unsaved_preset_changes) {
         if ((check_unsaved_preset_changes = !preferred_model.empty())) {
             header = _L("A new Printer was installed and it will be activated.");
@@ -3161,7 +3161,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
     get_first_added_material_preset(AppConfig::SECTION_FILAMENTS, first_added_filament);
     get_first_added_material_preset(AppConfig::SECTION_MATERIALS, first_added_sla_material);
 
-    // if unsaved changes was not cheched till this moment
+    // if unsaved changes was not checked till this moment
     if (!check_unsaved_preset_changes) {
         if ((check_unsaved_preset_changes = !first_added_filament.empty() || !first_added_sla_material.empty())) {
             header = !first_added_filament.empty() ? 
@@ -3219,7 +3219,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
                                     {preferred_model, preferred_variant, first_added_filament, first_added_sla_material});
 
     if (!only_sla_mode && page_custom->custom_wanted() && page_custom->is_valid_profile_name()) {
-        // if unsaved changes was not cheched till this moment
+        // if unsaved changes was not checked till this moment
         if (!check_unsaved_preset_changes && 
             !wxGetApp().check_and_keep_current_preset_changes(caption, _L("Custom printer was installed and it will be activated."), act_btns, &apply_keeped_changes))
             return false;
@@ -3236,7 +3236,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         preset_bundle->load_config_from_wizard(profile_name, *custom_config);
     }
 
-    // Update the selections from the compatibilty.
+    // Update the selections from the compatibility.
     preset_bundle->export_selections(*app_config);
 
     return true;

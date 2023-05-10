@@ -529,7 +529,7 @@ public:
 class TabSLAPrint : public Tab
 {
     // Methods are a vector of method prefix -> method label pairs
-    // method prefix is the prefix whith which all the config values are prefixed
+    // method prefix is the prefix with which all the config values are prefixed
     // for a particular method. The label is the friendly name for the method
     void build_sla_support_params(const std::vector<SamePair<std::string>> &methods,
                                   const Slic3r::GUI::PageShp &page);

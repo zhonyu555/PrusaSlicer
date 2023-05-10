@@ -116,7 +116,7 @@ bool ArchiveViewModel::SetValue(const wxVariant& variant, const wxDataViewItem& 
     ArchiveViewNode* node = static_cast<ArchiveViewNode*>(item.GetID());
     if (col == 0) {
         node->set_toggle(variant.GetBool());
-        // if folder recursivelly check all children
+        // if folder recursively check all children
         for (std::shared_ptr<ArchiveViewNode> child : node->get_children()) {
             SetValue(variant, wxDataViewItem((void*)child.get()), col);
         }

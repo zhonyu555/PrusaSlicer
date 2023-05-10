@@ -290,7 +290,7 @@ public:
 
     virtual bool OnExceptionInMainLoop() override;
     // Calls wxLaunchDefaultBrowser if user confirms in dialog.
-    // Add "Rememeber my choice" checkbox to question dialog, when it is forced or a "suppress_hyperlinks" option has empty value
+    // Add "Remember my choice" checkbox to question dialog, when it is forced or a "suppress_hyperlinks" option has empty value
     bool            open_browser_with_warning_dialog(const wxString& url, wxWindow* parent = nullptr, bool force_remember_choice = true, int flags = 0);
 #ifdef __APPLE__
     void            OSXStoreOpenFiles(const wxArrayString &files) override;
@@ -387,7 +387,7 @@ private:
     void            on_version_read(wxCommandEvent& evt);
     // if the data from version file are already downloaded, shows dialogs to start download of new version of app
     void            app_updater(bool from_user);
-    // inititate read of version file online in separate thread
+    // initiate read of version file online in separate thread
     void            app_version_check(bool from_user);
 
     bool            m_datadir_redefined { false }; 

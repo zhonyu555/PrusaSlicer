@@ -590,7 +590,7 @@ void Preview::update_layers_slider(const std::vector<double>& layers_z, bool kee
                 notif_mngr->apply_in_preview();
                 return true;
             }) )
-                // first object with color chnages is found
+                // first object with color changes is found
                 break;
         }
     }

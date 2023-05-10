@@ -165,15 +165,15 @@ public:
 	    bool                is_active : 1;
 	    // Whether or not to use this volume when applying zoom_to_volumes()
 	    bool                zoom_to_volumes : 1;
-	    // Wheter or not this volume is enabled for outside print volume detection in shader.
+	    // Whether or not this volume is enabled for outside print volume detection in shader.
 	    bool                shader_outside_printer_detection_enabled : 1;
-	    // Wheter or not this volume is outside print volume.
+	    // Whether or not this volume is outside print volume.
 	    bool                is_outside : 1;
-	    // Wheter or not this volume has been generated from a modifier
+	    // Whether or not this volume has been generated from a modifier
 	    bool                is_modifier : 1;
-	    // Wheter or not this volume has been generated from the wipe tower
+	    // Whether or not this volume has been generated from the wipe tower
 	    bool                is_wipe_tower : 1;
-	    // Wheter or not this volume has been generated from an extrusion path
+	    // Whether or not this volume has been generated from an extrusion path
 	    bool                is_extrusion_path : 1;
         // Whether or not always use the volume's own color (not using SELECTED/HOVER/DISABLED/OUTSIDE)
 	    bool                force_native_color : 1;

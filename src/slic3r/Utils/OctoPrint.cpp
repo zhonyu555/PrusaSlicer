@@ -78,7 +78,7 @@ std::string substitute_host(const std::string& orig_addr, std::string sub_addr)
             // Replace the address.
             rc = curl_url_set(hurl, CURLUPART_HOST, sub_addr.c_str(), 0);
             if (rc == CURLUE_OK) {
-                // Extract a string fromt the CURL URL handle.
+                // Extract a string from the CURL URL handle.
                 char *url;
                 rc = curl_url_get(hurl, CURLUPART_URL, &url, 0);
                 if (rc == CURLUE_OK) {

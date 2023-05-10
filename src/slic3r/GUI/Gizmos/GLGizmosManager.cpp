@@ -392,7 +392,7 @@ bool GLGizmosManager::gizmos_toolbar_on_mouse(const wxMouseEvent &mouse_event) {
             mc.exist_tooltip = true;
             update_hover_state(gizmo);
             // at this moment is enebled to process mouse move under gizmo
-            // tools bar e.g. Do not interupt dragging. 
+            // tools bar e.g. Do not interrupt dragging. 
             return false;
         }
         else if (mc.exist_tooltip) {
@@ -425,11 +425,11 @@ bool GLGizmosManager::gizmos_toolbar_on_mouse(const wxMouseEvent &mouse_event) {
         // Check if exist release of event started above toolbar?
         if (mouse_event.Dragging()) {
             if (!selected_gizmo && mc.exist_tooltip) {
-                // dragging out of gizmo let tooltip disapear
+                // dragging out of gizmo let tooltip disappear
                 mc.exist_tooltip = false;
                 update_hover_state(Undefined);
             }
-            // draging start on toolbar so no propagation into scene
+            // dragging start on toolbar so no propagation into scene
             return true;
         }
         else if (mc.left && mouse_event.LeftUp()) {
@@ -817,7 +817,7 @@ void GLGizmosManager::do_render_overlay() const
     for (size_t idx : selectable_idxs) {
         GLGizmoBase* gizmo = m_gizmos[idx].get();
         const unsigned int sprite_id = gizmo->get_sprite_id();
-        // higlighted state needs to be decided first so its highlighting in every other state
+        // highlighted state needs to be decided first so its highlighting in every other state
         const int icon_idx = (m_highlight.first == idx ? (m_highlight.second ? 4 : 5) : (m_current == idx) ? 2 : ((m_hover == idx) ? 1 : (gizmo->is_activable() ? 0 : 3)));
 
         const float u_left   = u_offset + icon_idx * du;
@@ -971,7 +971,7 @@ bool GLGizmosManager::activate_gizmo(EType type)
 
     new_gizmo.register_raycasters_for_picking();
 
-    // sucessful activation of gizmo
+    // successful activation of gizmo
     return true;
 }
 

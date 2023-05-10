@@ -81,7 +81,7 @@ bool GLGizmoScale3D::on_mouse(const wxMouseEvent &mouse_event)
             if (m_starting.ctrl_down) {
                 // constrained scale:
                 // uses the performed scale to calculate the new position of the constrained grabber
-                // and from that calculates the offset (in world coordinates) to be applied to fullfill the constraint
+                // and from that calculates the offset (in world coordinates) to be applied to fulfill the constraint
                 update_render_data();
                 const Vec3d constraint_position = m_grabbers_transform * m_grabbers[constraint_id(m_hover_id)].center;
                 // re-apply the scale because the selection always applies the transformations with respect to the initial state 
@@ -408,8 +408,8 @@ double GLGizmoScale3D::calc_ratio(const UpdateData& data) const
 
     if (len_starting_vec != 0.0) {
         const Vec3d mouse_dir = data.mouse_ray.unit_vector();
-        // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
-        // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebric form
+        // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing through the starting position
+        // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebraic form
         // in our case plane normal and ray direction are the same (orthogonal view)
         // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal
         const Vec3d inters = data.mouse_ray.a + (m_starting.drag_position - data.mouse_ray.a).dot(mouse_dir) * mouse_dir;

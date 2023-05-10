@@ -11,7 +11,7 @@
 namespace Slic3r {
 
 #ifdef __APPLE__
-// implmented at MacUtils.mm
+// implemented at MacUtils.mm
 std::string get_downloads_path_mac();
 #endif //__APPLE__
 

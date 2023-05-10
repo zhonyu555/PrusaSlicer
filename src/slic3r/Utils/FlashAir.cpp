@@ -120,7 +120,7 @@ bool FlashAir::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Error
 			res = boost::icontains(body, "SUCCESS");
 			if (! res) {
 				BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Request completed but no SUCCESS message was received.") % name;
-				error_fn(format_error(body, L("Unknown error occured"), 0));
+				error_fn(format_error(body, L("Unknown error occurred"), 0));
 			}
 		})
 		.perform_sync();
@@ -141,7 +141,7 @@ bool FlashAir::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Error
             res = boost::icontains(body, "SUCCESS");
             if (! res) {
                 BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Request completed but no SUCCESS message was received.") % name;
-                error_fn(format_error(body, L("Unknown error occured"), 0));
+                error_fn(format_error(body, L("Unknown error occurred"), 0));
             }
         })
         .perform_sync();
@@ -157,7 +157,7 @@ bool FlashAir::upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, Error
 			res = boost::icontains(body, "SUCCESS");
 			if (! res) {
 				BOOST_LOG_TRIVIAL(error) << boost::format("%1%: Request completed but no SUCCESS message was received.") % name;
-				error_fn(format_error(body, L("Unknown error occured"), 0));
+				error_fn(format_error(body, L("Unknown error occurred"), 0));
 			}
 		})
 		.on_error([&](std::string body, std::string error, unsigned status) {

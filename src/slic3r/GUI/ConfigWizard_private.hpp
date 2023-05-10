@@ -326,7 +326,7 @@ struct Materials
     void push(const Preset* preset);
     void add_printer(const Preset* preset);
     void clear();
-    bool containts(const Preset* preset) const {
+    bool contains(const Preset* preset) const {
         //return std::find(presets.begin(), presets.end(), preset) != presets.end(); 
         return std::find_if(presets.begin(), presets.end(),
             [preset](const Preset* element) { return element == preset; }) != presets.end();
@@ -587,14 +587,14 @@ struct ConfigWizard::priv
                                   // PrinterPickers state.
     Materials filaments;          // Holds available filament presets and their types & vendors
     Materials sla_materials;      // Ditto for SLA materials
-    PresetAliases aliases_fff;    // Map of aliase to preset names
-    PresetAliases aliases_sla;    // Map of aliase to preset names
+    PresetAliases aliases_fff;    // Map of aliases to preset names
+    PresetAliases aliases_sla;    // Map of aliases to preset names
     std::unique_ptr<DynamicPrintConfig> custom_config;           // Backing for custom printer definition
     bool any_fff_selected;        // Used to decide whether to display Filaments page
     bool any_sla_selected;        // Used to decide whether to display SLA Materials page
     bool custom_printer_selected { false }; // New custom printer is requested
     bool custom_printer_in_bundle { false }; // Older custom printer already exists when wizard starts
-    // Set to true if there are none FFF printers on the main FFF page. If true, only SLA printers are shown (not even custum printers)
+    // Set to true if there are none FFF printers on the main FFF page. If true, only SLA printers are shown (not even custom printers)
     bool only_sla_mode { false };
     bool template_profile_selected { false }; // This bool has one purpose - to tell that template profile should be installed if its not (because it cannot be added to appconfig)
 

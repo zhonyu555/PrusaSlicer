@@ -67,7 +67,7 @@ void msw_rescale_word_local_combo(choice_ctrl* combo)
 #ifdef __WXOSX__
     const wxString selection = combo->GetString(combo->GetSelection());
 
-    /* To correct scaling (set new controll size) of a wxBitmapCombobox
+    /* To correct scaling (set new control size) of a wxBitmapCombobox
      * we need to refill control with new bitmaps. So, in our case :
      * 1. clear control
      * 2. add content
@@ -179,7 +179,7 @@ ObjectManipulation::ObjectManipulation(wxWindow* parent) :
         height = bmp_btn_height;
 #endif //__WXGTK__
 
-    auto add_label = [this, height](wxStaticText** label, const std::string& name, wxSizer* reciver = nullptr)
+    auto add_label = [this, height](wxStaticText** label, const std::string& name, wxSizer* receiver = nullptr)
     {
         *label = new wxStaticText(m_parent, wxID_ANY, _(name) + ":");
         set_font_and_background_style(*label, wxGetApp().normal_font());
@@ -188,7 +188,7 @@ ObjectManipulation::ObjectManipulation(wxWindow* parent) :
         sizer->SetMinSize(wxSize(-1, height));
         sizer->Add(*label, 0, wxALIGN_CENTER_VERTICAL);
       
-        if (reciver)
+        if (receiver)
             reciver->Add(sizer);
         else
             m_labels_grid_sizer->Add(sizer);
@@ -484,7 +484,7 @@ void ObjectManipulation::Show(const bool show)
     if (show) {
         ECoordinatesType coordinates_type = m_coordinates_type;
 
-        // Show the "World Coordinates" / "Local Coordintes" Combo in Advanced / Expert mode only.
+        // Show the "World Coordinates" / "Local Coordinates" Combo in Advanced / Expert mode only.
         const Selection& selection = wxGetApp().plater()->canvas3D()->get_selection();
         bool show_world_local_combo = wxGetApp().get_mode() != comSimple && (selection.is_single_full_instance() || selection.is_single_volume_or_modifier());
         if (selection.is_single_volume_or_modifier() && m_word_local_combo->GetCount() < 3) {

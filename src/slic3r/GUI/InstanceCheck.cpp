@@ -190,7 +190,7 @@ namespace instance_check_internal
 	// On OSX message is passed to other instances to create a new lockfile after deletition.
 	static void delete_lockfile()
 	{
-		//BOOST_LOG_TRIVIAL(debug) << "shuting down with lockfile: " << l_created_lockfile;
+		//BOOST_LOG_TRIVIAL(debug) << "shutting down with lockfile: " << l_created_lockfile;
 		if (s_created_lockfile)
 		{
 			std::string path = data_dir() + "/cache/" + GUI::wxGetApp().get_instance_hash_string() + ".lock";
@@ -509,7 +509,7 @@ void OtherInstanceMessageHandler::handle_message(const std::string& message)
 		boost::filesystem::path p = MessageHandlerInternal::get_path(*it);
 		if (! p.string().empty())
 			paths.emplace_back(p);
-// TODO: There is a misterious slash appearing in recieved msg on windows
+// TODO: There is a mysterious slash appearing in received msg on windows
 #ifdef _WIN32
 		else if (it->rfind("prusaslicer://open/?file=", 0) == 0)
 #else
@@ -654,7 +654,7 @@ void OtherInstanceMessageHandler::listen()
 	    return;
 	}
 
-	// Set callbacks. Unregister function should not be nessary.
+	// Set callbacks. Unregister function should not be necessary.
 	vtable.message_function = MessageHandlerDBusInternal::handle_dbus_object_message;
     vtable.unregister_function = NULL;
 
@@ -682,7 +682,7 @@ void OtherInstanceMessageHandler::listen()
 
 			break;
 		//dispatch should do all the work with incoming messages
-		//second parameter is blocking time that funciton waits for new messages
+		//second parameter is blocking time that function waits for new messages
 		//that is handled here with our own event loop above
 		dbus_connection_read_write_dispatch(conn, 0);
      }

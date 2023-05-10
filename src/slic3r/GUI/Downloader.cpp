@@ -129,7 +129,7 @@ void Downloader::start_download(const std::string& full_url)
 {
 	assert(m_initialized);
 	
-	// TODO: There is a misterious slash appearing in recieved msg on windows
+	// TODO: There is a mysterious slash appearing in received msg on windows
 #ifdef _WIN32
 	if (!boost::starts_with(full_url, "prusaslicer://open/?file=")) {
 #else
@@ -140,7 +140,7 @@ void Downloader::start_download(const std::string& full_url)
 		return;
 	}
     size_t id = get_next_id();
-    // TODO: still same mistery 
+    // TODO: still same mystery 
 #ifdef _WIN32
     std::string escaped_url = FileGet::escape_url(full_url.substr(25));
 #else

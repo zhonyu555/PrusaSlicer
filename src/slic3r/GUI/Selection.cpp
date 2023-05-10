@@ -447,7 +447,7 @@ void Selection::clear()
     if (m_list.empty())
         return;
 
-    // ensure that the volumes get the proper color before next call to render (expecially needed for transparent volumes)
+    // ensure that the volumes get the proper color before next call to render (especially needed for transparent volumes)
     for (unsigned int i : m_list) {
         GLVolume& volume = *(*m_volumes)[i];
         volume.selected = false;
@@ -1020,7 +1020,7 @@ void Selection::flattening_rotate(const Vec3d& normal)
 
 #if !DISABLE_INSTANCES_SYNCH
     // Apply the same transformation also to other instances,
-    // but respect their possibly diffrent z-rotation.
+    // but respect their possibly different z-rotation.
     if (m_mode == Instance)
         synchronize_unselected_instances(SyncRotationType::GENERAL);
 #endif // !DISABLE_INSTANCES_SYNCH
@@ -2321,7 +2321,7 @@ void Selection::render_sidebar_layers_hints(const std::string& sidebar_field, GL
 
     const BoundingBoxf3& box = get_bounding_box();
 
-    // view dependend order of rendering to keep correct transparency
+    // view dependent order of rendering to keep correct transparency
     const bool camera_on_top = wxGetApp().plater()->get_camera().is_looking_downward();
     const float z1 = camera_on_top ? min_z : max_z;
     const float z2 = camera_on_top ? max_z : min_z;

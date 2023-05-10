@@ -427,7 +427,7 @@ void PrintHostQueueDialog::set_state(int idx, JobState state)
         case ST_CANCELLED:  job_list->SetValue(_L("Cancelled"), idx, COL_STATUS); break;
         case ST_COMPLETED:  job_list->SetValue(_L("Completed"), idx, COL_STATUS); break;
     }
-    // This might be ambigous call, but user data needs to be saved time to time
+    // This might be ambiguous call, but user data needs to be saved time to time
     save_user_data(UDT_SIZE | UDT_POSITION | UDT_COLS);
 }
 

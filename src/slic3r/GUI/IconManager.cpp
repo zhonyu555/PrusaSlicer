@@ -192,13 +192,13 @@ bool clickable(const IconManager::Icon &icon, const IconManager::Icon &icon_hove
     return ImGui::IsItemClicked();
 }
 
-bool button(const IconManager::Icon &activ, const IconManager::Icon &hover, const IconManager::Icon &disable, bool disabled)
+bool button(const IconManager::Icon &active, const IconManager::Icon &hover, const IconManager::Icon &disable, bool disabled)
 {
     if (disabled) {
         draw(disable);
         return false;
     }
-    return clickable(activ, hover);
+    return clickable(active, hover);
 }
 
 } // namespace Slic3r::GUI

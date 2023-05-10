@@ -447,7 +447,7 @@ bool GLToolbar::on_mouse(wxMouseEvent& evt, GLCanvas3D& parent)
     // mouse anywhere
     if (!evt.Dragging() && !evt.Leaving() && !evt.Entering() && m_mouse_capture.parent != nullptr) {
         if (m_mouse_capture.any() && (evt.LeftUp() || evt.MiddleUp() || evt.RightUp())) {
-            // prevents loosing selection into the scene if mouse down was done inside the toolbar and mouse up was down outside it,
+            // prevents losing selection into the scene if mouse down was done inside the toolbar and mouse up was down outside it,
             // as when switching between views
             m_mouse_capture.reset();
             return true;

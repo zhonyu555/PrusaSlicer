@@ -356,7 +356,7 @@ bool Mouse3DController::State::apply(const Mouse3DController::Params &params, Ca
 // Load the device parameter database from appconfig. To be called on application startup.
 void Mouse3DController::load_config(const AppConfig &appconfig)
 {
-	// We do not synchronize m_params_by_device with the background thread explicitely 
+	// We do not synchronize m_params_by_device with the background thread explicitly 
 	// as there should be a full memory barrier executed once the background thread is started.
 	m_params_by_device.clear();
 
@@ -388,7 +388,7 @@ void Mouse3DController::load_config(const AppConfig &appconfig)
 // Store the device parameter database back to appconfig. To be called on application closeup.
 void Mouse3DController::save_config(AppConfig &appconfig) const
 {
-	// We do not synchronize m_params_by_device with the background thread explicitely 
+	// We do not synchronize m_params_by_device with the background thread explicitly 
 	// as there should be a full memory barrier executed once the background thread is stopped.
 
     for (const auto &key_value_pair : m_params_by_device) {
@@ -820,7 +820,7 @@ bool Mouse3DController::connect_device()
     // When using 3Dconnexion universal receiver, multiple devices are detected sharing the same vendor_id and product_id.
     // To choose from them the right one we use:
     // On Windows and Mac: usage_page == 1 and usage == 8
-    // On Linux: as usage_page and usage are not defined (see hidapi.h) we try all detected devices until one is succesfully open
+    // On Linux: as usage_page and usage are not defined (see hidapi.h) we try all detected devices until one is successfully open
     // When only a single device is detected, as for wired connections, vendor_id and product_id are enough
 
     // First we count all the valid devices from the enumerated list,
@@ -831,7 +831,7 @@ bool Mouse3DController::connect_device()
     typedef std::map<DeviceIds, DeviceDataList> DetectedDevices;
     DetectedDevices detected_devices;
 #if ENABLE_3DCONNEXION_DEVICES_DEBUG_OUTPUT
-    std::cout << std::endl << "Detected 3D connexion devices:" << std::endl;
+    std::cout << std::endl << "Detected 3D connection devices:" << std::endl;
 #endif // ENABLE_3DCONNEXION_DEVICES_DEBUG_OUTPUT
     while (current != nullptr) {
         unsigned short vendor_id = 0;

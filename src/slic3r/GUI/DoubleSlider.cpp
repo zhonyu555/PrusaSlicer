@@ -742,7 +742,7 @@ wxString Control::get_label(int tick, LabelType label_type/* = ltHeightWithLayer
         return "ErrVal";
 
     // When "Print Settings -> Multiple Extruders -> No sparse layer" is enabled, then "Smart" Wipe Tower is used for wiping.
-    // As a result, each layer with tool changes is splited for min 3 parts: first tool, wiping, second tool ...
+    // As a result, each layer with tool changes is split for min 3 parts: first tool, wiping, second tool ...
     // So, vertical slider have to respect to this case.
     // see https://github.com/prusa3d/PrusaSlicer/issues/6232.
     // m_values contains data for all layer's parts,

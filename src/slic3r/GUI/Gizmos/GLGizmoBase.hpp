@@ -36,7 +36,7 @@ class GLGizmoBase
 {
 public:
     // Starting value for ids to avoid clashing with ids used by GLVolumes
-    // (254 is choosen to leave some space for forward compatibility)
+    // (254 is chosen to leave some space for forward compatibility)
     static const unsigned int BASE_ID = 255 * 255 * 254;
     static const unsigned int GRABBER_ELEMENTS_MAX_COUNT = 7;
 

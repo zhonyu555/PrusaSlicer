@@ -709,7 +709,7 @@ void NotificationManager::HintNotification::count_lines()
 			}
 			if (size_of_last_line == 0) // if first line is continuation of previous text, do not add to line count.
 				m_lines_count++;
-			size_of_last_line = 0; // should countain value only for first line (with hypertext) 
+			size_of_last_line = 0; // should contain value only for first line (with hypertext) 
 			
 		}
 	}
@@ -939,7 +939,7 @@ void NotificationManager::HintNotification::render_preferences_button(ImGuiWrapp
 }
 void NotificationManager::HintNotification::render_right_arrow_button(ImGuiWrapper& imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
-	// Used for debuging
+	// Used for debugging
 
 	ImVec2 win_size(win_size_x, win_size_y);
 	ImVec2 win_pos(win_pos_x, win_pos_y);

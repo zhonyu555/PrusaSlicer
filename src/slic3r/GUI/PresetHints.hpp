@@ -14,8 +14,8 @@ public:
     // Produce a textual description of the cooling logic of a currently active filament.
     static std::string cooling_description(const Preset &preset);
     
-    // Produce a textual description of the maximum flow achived for the current configuration
-    // (the current printer, filament and print settigns).
+    // Produce a textual description of the maximum flow achieved for the current configuration
+    // (the current printer, filament and print settings).
     // This description will be useful for getting a gut feeling for the maximum volumetric
     // print speed achievable with the extruder.
     static std::string maximum_volumetric_flow_description(const PresetBundle &preset_bundle);

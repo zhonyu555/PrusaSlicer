@@ -56,7 +56,7 @@ private:
 	bool    is_used(const std::string& id);
 	void    set_used(const std::string& id);
 	void    clear_used();
-	// Returns position in m_loaded_hints with next hint chosed randomly with weights
+	// Returns position in m_loaded_hints with next hint chose randomly with weights
 	size_t  get_next();
 	size_t						m_hint_id;
 	bool						m_initialized { false };

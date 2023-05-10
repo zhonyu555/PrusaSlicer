@@ -488,7 +488,7 @@ wxDataViewItem DiffModel::GetParent(const wxDataViewItem& item) const
 
 bool DiffModel::IsContainer(const wxDataViewItem& item) const
 {
-    // the invisble root node can have children
+    // the invisible root node can have children
     if (!item.IsOk())
         return true;
 

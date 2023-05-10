@@ -113,7 +113,7 @@ GalleryDialog::GalleryDialog(wxWindow* parent) :
     size_t btn_pos = 0;
     add_btn(btn_pos++, ID_BTN_ADD_CUSTOM_SHAPE,   _L("Add"),                _L("Add one or more custom shapes"),                                                &GalleryDialog::add_custom_shapes);
     add_btn(btn_pos++, ID_BTN_DEL_CUSTOM_SHAPE,   _L("Delete"),             _L("Delete one or more custom shape. You can't delete system shapes"),              &GalleryDialog::del_custom_shapes,  [this](){ return can_delete();           });
-    //add_btn(btn_pos++, ID_BTN_REPLACE_CUSTOM_PNG, _L("Change thumbnail"),   _L("Replace PNG for custom shape. You can't raplace thimbnail for system shape"),   &GalleryDialog::change_thumbnail, [this](){ return can_change_thumbnail(); });
+    //add_btn(btn_pos++, ID_BTN_REPLACE_CUSTOM_PNG, _L("Change thumbnail"),   _L("Replace PNG for custom shape. You can't replace thimbnail for system shape"),   &GalleryDialog::change_thumbnail, [this](){ return can_change_thumbnail(); });
     buttons->InsertStretchSpacer(btn_pos, 2* BORDER_W);
 
     load_label_icon_list();
@@ -367,7 +367,7 @@ void GalleryDialog::load_label_icon_list()
         model_path.replace_extension("png");
         std::string img_name = model_path.string();
 
-#if 0 // use "1" just in DEBUG mode to the generation of the thumbnails for the sistem shapes
+#if 0 // use "1" just in DEBUG mode to the generation of the thumbnails for the system shapes
         bool can_generate_thumbnail = true;
 #else
         bool can_generate_thumbnail = !item.is_system;

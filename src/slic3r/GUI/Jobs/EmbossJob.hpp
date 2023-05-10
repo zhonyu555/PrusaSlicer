@@ -34,7 +34,7 @@ struct DataBase
 };
 
 /// <summary>
-/// Hold neccessary data to create ModelVolume in job
+/// Hold necessary data to create ModelVolume in job
 /// Volume is created on the surface of existing volume in object.
 /// NOTE: EmbossDataBase::font_file doesn't have to be valid !!!
 /// </summary>
@@ -67,7 +67,7 @@ public:
 };
 
 /// <summary>
-/// Hold neccessary data to create ModelObject in job
+/// Hold necessary data to create ModelObject in job
 /// Object is placed on bed under screen coor
 /// OR to center of scene when it is out of bed shape
 /// </summary>
@@ -99,7 +99,7 @@ public:
 };
 
 /// <summary>
-/// Hold neccessary data to update embossed text object in job
+/// Hold necessary data to update embossed text object in job
 /// </summary>
 struct DataUpdate : public DataBase
 {
@@ -109,7 +109,7 @@ struct DataUpdate : public DataBase
 
 /// <summary>
 /// Update text shape in existing text volume
-/// Predict that there is only one runnig(not canceled) instance of it
+/// Predict that there is only one running(not canceled) instance of it
 /// </summary>
 class UpdateJob : public Job
 {
@@ -130,7 +130,7 @@ public:
     /// Update volume - change object_id
     /// </summary>
     /// <param name="canceled">Was process canceled.
-    /// NOTE: Be carefull it doesn't care about
+    /// NOTE: Be careful it doesn't care about
     /// time between finished process and started finalize part.</param>
     /// <param name="">unused</param>
     void finalize(bool canceled, std::exception_ptr &eptr) override;
@@ -170,7 +170,7 @@ struct SurfaceVolumeData
 };
 
 /// <summary>
-/// Hold neccessary data to create(cut) volume from surface object in job
+/// Hold necessary data to create(cut) volume from surface object in job
 /// </summary>
 struct CreateSurfaceVolumeData : public DataBase, public SurfaceVolumeData{    
     // define embossed volume type
@@ -181,7 +181,7 @@ struct CreateSurfaceVolumeData : public DataBase, public SurfaceVolumeData{
 };
 
 /// <summary>
-/// Cut surface from object and create cutted volume
+/// Cut surface from object and create cut volume
 /// Should not be stopped
 /// </summary>
 class CreateSurfaceVolumeJob : public Job
@@ -196,7 +196,7 @@ public:
 };
 
 /// <summary>
-/// Hold neccessary data to update embossed text object in job
+/// Hold necessary data to update embossed text object in job
 /// </summary>
 struct UpdateSurfaceVolumeData : public DataUpdate, public SurfaceVolumeData{};
 

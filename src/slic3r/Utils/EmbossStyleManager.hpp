@@ -35,7 +35,7 @@ public:
 
     /// <summary>
     /// Load font style list from config
-    /// Also select actual activ font
+    /// Also select actual active font
     /// </summary>
     /// <param name="app_config">Application configuration loaded from file "PrusaSlicer.ini"
     /// + cfg is stored to privat variable</param>
@@ -46,8 +46,8 @@ public:
     /// </summary>
     /// <param name="item_to_store">Configuration</param>
     /// <param name="use_modification">When true cache state will be used for store</param>
-    /// <param name="use_modification">When true store activ index into configuration</param>
-    /// <returns>True on succes otherwise False.</returns>
+    /// <param name="use_modification">When true store active index into configuration</param>
+    /// <returns>True on success otherwise False.</returns>
     bool store_styles_to_app_config(bool use_modification = true, bool store_active_index = true);
 
     /// <summary>
@@ -65,8 +65,8 @@ public:
     void swap(size_t i1, size_t i2);
 
     /// <summary>
-    /// Discard changes in activ style
-    /// When no activ style use last used OR first loadable
+    /// Discard changes in active style
+    /// When no active style use last used OR first loadable
     /// </summary>
     void discard_style_changes();
 
@@ -90,10 +90,10 @@ public:
 
     /// <summary>
     /// Change active font
-    /// When font not loaded roll back activ font
+    /// When font not loaded roll back active font
     /// </summary>
     /// <param name="font_index">New font index(from m_style_items range)</param>
-    /// <returns>True on succes. False on fail load font</returns>
+    /// <returns>True on success. False on fail load font</returns>
     bool load_style(size_t font_index);
     // load font style not stored in list
     bool load_style(const EmbossStyle &style);
@@ -122,7 +122,7 @@ public:
     bool has_collections() const { return m_style_cache.font_file.font_file != nullptr && 
                                           m_style_cache.font_file.font_file->infos.size() > 1; }
 
-    // True when activ style has same name as some of stored style
+    // True when active style has same name as some of stored style
     bool exist_stored_style() const { return m_style_cache.style_index != std::numeric_limits<size_t>::max(); }
     
     /// <summary>
@@ -147,7 +147,7 @@ public:
     /// <returns>True on success otherwise false</returns>
     bool set_wx_font(const wxFont &wx_font, std::unique_ptr<Slic3r::Emboss::FontFile> font_file);
 
-    // Getter on acitve font pointer for imgui
+    // Getter on active font pointer for imgui
     // Initialize imgui font(generate texture) when doesn't exist yet.
     // Extend font atlas when not in glyph range
     ImFont *get_imgui_font();
@@ -284,7 +284,7 @@ private:
         // place to store result in main thread in Finalize
         std::shared_ptr<StyleImages> result;
                 
-        // pixel per milimeter (scaled DPI)
+        // pixel per millimeter (scaled DPI)
         double ppm;
     };
     std::shared_ptr<StyleImagesData::StyleImages> m_temp_style_images;

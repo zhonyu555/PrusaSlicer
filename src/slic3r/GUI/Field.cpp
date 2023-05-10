@@ -36,7 +36,7 @@ wxString double_to_string(double const value, const int max_precision /*= 4*/)
 	wxString s = wxNumberFormatter::ToString(value, std::abs(value) < 0.0001 ? 10 : max_precision, wxNumberFormatter::Style_None);
 
 	// The following code comes from wxNumberFormatter::RemoveTrailingZeroes(wxString& s)
-	// with the exception that here one sets the decimal separator explicitely to dot.
+	// with the exception that here one sets the decimal separator explicitly to dot.
     // If number is in scientific format, trailing zeroes belong to the exponent and cannot be removed.
     if (s.find_first_of("eE") == wxString::npos) {
         char dec_sep = is_decimal_separator_point() ? '.' : ',';
@@ -296,7 +296,7 @@ void Field::get_value_by_opt_type(wxString& str, const bool check_value/* = true
     case coFloatsOrPercents:
     case coFloatOrPercent: {
         if (m_opt.type == coFloatOrPercent && m_opt.opt_key == "first_layer_height" && !str.IsEmpty() && str.Last() == '%') {
-            // Workaroud to avoid of using of the % for first layer height
+            // Workaround to avoid of using of the % for first layer height
             // see https://github.com/prusa3d/PrusaSlicer/issues/7418
             wxString label = m_opt.full_label.empty() ? _(m_opt.label) : _(m_opt.full_label);
             show_error(m_parent, format_wxstr(_L("%s doesn't support percentage"), label));
@@ -825,7 +825,7 @@ void SpinCtrl::BUILD() {
     if (m_opt.height < 0 && parent_is_custom_ctrl)
         opt_height = (double)temp->GetSize().GetHeight() / m_em_unit;
 
-// XXX: On OS X the wxSpinCtrl widget is made up of two subwidgets, unfortunatelly
+// XXX: On OS X the wxSpinCtrl widget is made up of two subwidgets, unfortunately
 // the kill focus event is not propagated to the encompassing widget,
 // so we need to bind it on the inner text widget instead. (Ugh.)
 #ifdef __WXOSX__
@@ -1298,7 +1298,7 @@ void Choice::msw_rescale()
 #ifdef __WXOSX__
     const wxString selection = field->GetValue();// field->GetString(index);
 
-	/* To correct scaling (set new controll size) of a wxBitmapCombobox
+	/* To correct scaling (set new control size) of a wxBitmapCombobox
 	 * we need to refill control with new bitmaps. So, in our case :
 	 * 1. clear control
 	 * 2. add content

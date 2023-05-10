@@ -168,7 +168,7 @@ public:
         : MeshRaycaster(std::make_unique<TriangleMesh>(mesh))
     {}
 
-    // DEPRICATED - use CameraUtils::ray_from_screen_pos
+    // DEPRECATED - use CameraUtils::ray_from_screen_pos
     static void line_from_mouse_pos(const Vec2d& mouse_pos, const Transform3d& trafo, const Camera& camera,
         Vec3d& point, Vec3d& direction);
 

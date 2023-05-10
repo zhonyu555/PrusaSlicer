@@ -252,7 +252,7 @@ void BackgroundSlicingProcess::thread_proc()
 }
 
 #ifdef _WIN32
-// Only these SEH exceptions will be catched and turned into Slic3r::HardCrash C++ exceptions.
+// Only these SEH exceptions will be caught and turned into Slic3r::HardCrash C++ exceptions.
 static bool is_win32_seh_harware_exception(unsigned long ex) throw() {
 	return
 		ex == STATUS_ACCESS_VIOLATION ||
@@ -680,7 +680,7 @@ void BackgroundSlicingProcess::finalize_gcode()
 	catch (...)
 	{
 		remove_post_processed_temp_file();
-		throw Slic3r::ExportError(_u8L("Unknown error occured during exporting G-code."));
+		throw Slic3r::ExportError(_u8L("Unknown error occurred during exporting G-code."));
 	}
 	switch (copy_ret_val) {
 	case CopyFileResult::SUCCESS: break; // no error
@@ -700,8 +700,8 @@ void BackgroundSlicingProcess::finalize_gcode()
 		throw Slic3r::ExportError(GUI::format(_L("Copying of the temporary G-code has finished but the exported code couldn't be opened during copy check. The output G-code is at %1%.tmp."), export_path));
 		break;
 	default:
-		throw Slic3r::ExportError(_u8L("Unknown error occured during exporting G-code."));
-		BOOST_LOG_TRIVIAL(error) << "Unexpected fail code(" << (int)copy_ret_val << ") durring copy_file() to " << export_path << ".";
+		throw Slic3r::ExportError(_u8L("Unknown error occurred during exporting G-code."));
+		BOOST_LOG_TRIVIAL(error) << "Unexpected fail code(" << (int)copy_ret_val << ") during copy_file() to " << export_path << ".";
 		break;
 	}
 
