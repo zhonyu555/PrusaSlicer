@@ -5,17 +5,13 @@
 #include "SLA/RasterBase.hpp"
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PrintConfig.hpp"
-#include "libslic3r/Config.hpp"
-#include "libslic3r/Zipper.hpp"
 #include "SLAArchiveWriter.hpp"
-#include "SLAArchiveReader.hpp"
 
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include <string>
 
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/log/trivial.hpp>
 #include <boost/pfr/core.hpp>
 
@@ -26,12 +22,6 @@
 
 #define CTB_SLA_FORMAT(FILEFORMAT) \
     CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, CTB_SLA_FORMAT_VERSION_4)
-
-#define L_PREV_W 224
-#define L_PREV_H 168
-#define S_PREV_W 224
-#define S_PREV_H 168
-#define PREV_DPI 42
 
 #define RLE_ENCODING_LIMIT 0xFFF
 #define RGB565_REPEAT_MASK 0x20
@@ -137,7 +127,6 @@ typedef struct ctb_format_slicer_info
     std::uint32_t zero_pad3 = 0;
 } ctb_format_slicer_info;
 
-// ADDME!
 typedef struct ctb_format_print_params_v4
 {
     std::float_t  bot_retract_speed;
