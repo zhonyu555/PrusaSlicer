@@ -1,13 +1,11 @@
 #include "ctb.hpp"
-#include "Format/SLAArchiveReader.hpp"
-#include "Layer.hpp"
 
 // Special thanks to UVTools for the CTBv4 update and
 // Catibo for the excellent writeup(https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc)
 
 namespace Slic3r {
 
-static void ctb_get_pixel_val(std::uint8_t pixel, uint32_t run_len, std::vector<uint8_t> *dst)
+static void ctb_get_pixel_val(std::uint8_t pixel, uint32_t run_len, std::vector<uint8_t> &dst)
 {
     if (run_len == 0) {
         return;
@@ -16,38 +14,38 @@ static void ctb_get_pixel_val(std::uint8_t pixel, uint32_t run_len, std::vector<
     if (run_len > 1) {
         pixel |= 0x80;
     }
-    dst->push_back(pixel);
+    dst.push_back(pixel);
 
     if (run_len <= 1) {
         return;
     } 
     
     if (run_len <= 0x7f) {
-        dst->push_back((uint8_t)run_len);
+        dst.push_back((uint8_t)run_len);
         return;
     }
 
     if (run_len <= 0x3fff)
     {
-        dst->push_back((uint8_t)((run_len >> 8) | 0x80));
-        dst->push_back((uint8_t)run_len);
+        dst.push_back((uint8_t)((run_len >> 8) | 0x80));
+        dst.push_back((uint8_t)run_len);
         return;
     }
 
     if (run_len <= 0x1fffff)
     {
-        dst->push_back((uint8_t)((run_len >> 16) | 0xc0));
-        dst->push_back((uint8_t)(run_len >> 8));
-        dst->push_back((uint8_t)run_len);
+        dst.push_back((uint8_t)((run_len >> 16) | 0xc0));
+        dst.push_back((uint8_t)(run_len >> 8));
+        dst.push_back((uint8_t)run_len);
         return;
     }
 
     if (run_len <= 0xfffffff)
     {
-        dst->push_back((uint8_t)((run_len >> 24) | 0xe0));
-        dst->push_back((uint8_t)(run_len >> 16));
-        dst->push_back((uint8_t)(run_len >> 8));
-        dst->push_back((uint8_t)run_len);
+        dst.push_back((uint8_t)((run_len >> 24) | 0xe0));
+        dst.push_back((uint8_t)(run_len >> 16));
+        dst.push_back((uint8_t)(run_len >> 8));
+        dst.push_back((uint8_t)run_len);
     }
 }
 
@@ -68,13 +66,13 @@ struct CTBRasterEncoder {
             if (tmp_pixel == pixel) {
                 run_len++;
             } else {
-                ctb_get_pixel_val(pixel, run_len, &dst);
+                ctb_get_pixel_val(pixel, run_len, dst);
                 pixel = tmp_pixel;
                 run_len = 1;
             }
             src++;
         }
-        ctb_get_pixel_val(pixel, run_len, &dst);
+        ctb_get_pixel_val(pixel, run_len, dst);
         dst.shrink_to_fit();
 
         return sla::EncodedRaster(std::move(dst), "ctb");
@@ -95,8 +93,6 @@ T get_cfg_value(const DynamicConfig &cfg,
                 ret = (T)opt->getInt();
             else if (opt->type() == Slic3r::ConfigOptionType::coFloat)
                 ret = (T)opt->getFloat();
-            //else if (opt->type() == Slic3r::ConfigOptionType::coPoints)
-            //    ret = (T)opt->values;
         }
     }
 
@@ -115,19 +111,6 @@ static size_t get_struct_size(T &h)
     });
     return tot_size;
 }
-
-/*
-float_t get_cfg_value(const DynamicConfig &cfg,
-                      const std::string   &key)
-{
-    if (cfg.has(key)) {
-        if (auto opt = cfg.option(key))
-            return opt->getFloat();
-    }
-
-    return 0.0f;
-}
-*/
 
 void fill_preview(ctb_format_preview &large_preview,
                   ctb_format_preview &small_preview,
@@ -148,8 +131,6 @@ void fill_preview(ctb_format_preview &large_preview,
     std::uint32_t first_width = thumbnails[0].width;
     uint16_t rep = 0;
     std::uint32_t prev_pixel{};
-
-    std::uint32_t dst_index = 0;
     auto rle = [&]()
     {
         if (rep == 0) {
@@ -184,23 +165,19 @@ void fill_preview(ctb_format_preview &large_preview,
 
         vec_data->reserve(preview->size_x * preview->size_y * 4);
 
-        dst_index = 0;
-        std::uint32_t i = 0;
-        size_t len = thumb.pixels.size();
-        size_t pixel_x = 0;
         // Convert to RGB565 and do RLE Encoding
-        // rearrange pixels: they seem to be stored from bottom to top.
-        //dst_index = std::size(preview_images.small) - 1;
+        std::uint32_t i = thumb.pixels.size() - 1;
         rep = 0;
-
-        while (i < len) {
-            std::uint32_t pixel;
-            std::uint32_t r = thumb.pixels[i++];
-            std::uint32_t g = thumb.pixels[i++];
-            std::uint32_t b = thumb.pixels[i++];
-            i++; // Alpha
+        // The color doesn't match the sl1s color- it comes out grey
+        // while sl1s comes out orange
+        while (i > 3) {
+            std::uint16_t pixel;
+            i--; // Alpha
+            std::uint8_t b = thumb.pixels[i--];
+            std::uint8_t g = thumb.pixels[i--];
+            std::uint8_t r = thumb.pixels[i--];
             // convert to BGRA565
-            pixel = ((b >> 3) << 11) | ((g >>2) << 5) | (r >> 3);
+            pixel = ((r >> 3) << 11) | ((g >> 3) << 6) | (b >> 3);
 
             if (pixel == prev_pixel) {
                 rep++;
@@ -212,12 +189,6 @@ void fill_preview(ctb_format_preview &large_preview,
                 rle();
                 prev_pixel = pixel;
                 rep = 1;
-            }
-
-            pixel_x++;
-            if (pixel_x == preview->size_x) {
-                pixel_x = 0;
-                dst_index -= (preview->size_x * 4);
             }
         }
     }
@@ -239,14 +210,12 @@ void fill_header(ctb_format_header          &h,
     SLAPrintStatistics              stats = print.print_statistics();
 
     // v2 MAGIC- 0x12FD0019 (cddlp magic number)
-    // v3 MAGIC- 0x12FD0086 (ctb magic number- might be the same for v4)
-    // v4 MAGIC- 0x12FD0106 (might be the v3 magic number)
+    // v3 MAGIC- 0x12FD0086 (ctb magic number- same for v4)
     h.magic                      = 0x12FD0086;
     // Version matches the CTB version
     h.version                    = 4;
-    Points bed_shape             = Slic3r::get_bed_shape(cfg);
-    h.bed_size_x                 = get_cfg_value<float_t>(cfg, "display_height");
-    h.bed_size_y                 = get_cfg_value<float_t>(cfg, "display_width");
+    h.bed_size_x                 = get_cfg_value<float_t>(cfg, "display_width");
+    h.bed_size_y                 = get_cfg_value<float_t>(cfg, "display_height");
     h.bed_size_z                 = get_cfg_value<float_t>(cfg, "max_print_height");
     h.zero_pad                   = 0;
     h.layer_height               = get_cfg_value<float_t> (cfg, "layer_height");
@@ -263,7 +232,6 @@ void fill_header(ctb_format_header          &h,
     h.print_time                 = stats.estimated_print_time;
     h.projector_type             = 1;  // check for normal or mirrored- 0/1 respectively- LCD printers are "mirrored" for this purpose
     h.print_params_size          = get_struct_size(print_params);
-    // TODO: Figure out if we need this
     h.antialias_level            = 1;
     h.pwm_level                  = (uint16_t)(get_cfg_value<float_t>(cfg, "light_intensity") / 100 * 255); 
     h.bot_pwm_level              = (uint16_t)(get_cfg_value<float_t>(cfg, "bot_light_intensity") / 100 * 255);
@@ -271,21 +239,21 @@ void fill_header(ctb_format_header          &h,
     h.slicer_info_size           = get_struct_size(slicer_info);
     //h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
 
-    print_params.bot_lift_height      = get_cfg_value<float_t>(cfg, "bot_lift_distance");
-    print_params.bot_lift_speed       = get_cfg_value<float_t>(cfg, "bot_lift_speed");
-    print_params.lift_height          = get_cfg_value<float_t>(cfg, "lift_distance");
-    print_params.lift_speed           = get_cfg_value<float_t>(cfg, "lift_speed");
-    print_params.retract_speed        = get_cfg_value<float_t>(cfg, "sla_retract_speed");
-    print_params.resin_volume_ml           = get_cfg_value<float_t>(cfg, "bottle_volume");
-    print_params.resin_mass_g              = get_cfg_value<float_t>(cfg, "bottle_weight") * 1000.0f;
-    print_params.resin_cost                = get_cfg_value<float_t>(cfg, "bottle_cost");
-    print_params.bot_light_off_delay      = get_cfg_value<float_t>(cfg, "bot_light_off_time");
+    print_params.bot_lift_height         = get_cfg_value<float_t>(cfg, "bot_lift_distance");
+    print_params.bot_lift_speed          = get_cfg_value<float_t>(cfg, "bot_lift_speed");
+    print_params.lift_height             = get_cfg_value<float_t>(cfg, "lift_distance");
+    print_params.lift_speed              = get_cfg_value<float_t>(cfg, "lift_speed");
+    print_params.retract_speed           = get_cfg_value<float_t>(cfg, "sla_retract_speed");
+    print_params.resin_volume_ml         = get_cfg_value<float_t>(cfg, "bottle_volume");
+    print_params.resin_mass_g            = get_cfg_value<float_t>(cfg, "bottle_weight") * 1000.0f;
+    print_params.resin_cost              = get_cfg_value<float_t>(cfg, "bottle_cost");
+    print_params.bot_light_off_delay     = get_cfg_value<float_t>(cfg, "bot_light_off_time");
     print_params.light_off_delay         = get_cfg_value<float_t>(cfg, "light_off_time");
-    print_params.bot_layer_count           = get_cfg_value<uint32_t>(cfg, "faded_layers");
-    print_params.zero_pad1                 = 0;
-    print_params.zero_pad2                 = 0;
-    print_params.zero_pad3                 = 0;
-    print_params.zero_pad4                 = 0;
+    print_params.bot_layer_count         = get_cfg_value<uint32_t>(cfg, "faded_layers");
+    print_params.zero_pad1               = 0;
+    print_params.zero_pad2               = 0;
+    print_params.zero_pad3               = 0;
+    print_params.zero_pad4               = 0;
 
     slicer_info.bot_lift_dist2           = get_cfg_value<float_t>(cfg, "tsmc_bot_lift_distance");
     slicer_info.bot_lift_speed2          = get_cfg_value<float_t>(cfg, "tsmc_bot_lift_speed");
@@ -336,21 +304,6 @@ void fill_header(ctb_format_header          &h,
     if (layer_count < h.bot_layer_count) {
         h.bot_layer_count = layer_count;
     }
-    //material_density = bottle_weight_g / bottle_volume_ml;
-
-    //h.volume_ml = (stats.objects_used_material + stats.support_used_material) / 1000;
-    //h.weight_g           = h.volume_ml * material_density;
-    //h.price              = (h.volume_ml * bottle_cost) /  bottle_volume_ml;
-    //h.price_currency     = '$';
-
-    /*
-    h.print_time = (h.bot_layer_count * h.bot_exposure) +
-                     ((layer_count - h.bot_layer_count) *
-                      h.exposure) +
-                     (layer_count * h.lift_dist / h.) +
-                     (layer_count * h.lift_height / h.lift_speed) +
-                     (layer_count * h.delay_before_exposure_s);
-    */
 }
 
 } // namespace
@@ -567,7 +520,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
             ctb_write_section(out, layer_data);
             ctb_write_section(out, layer_data_ex);
-            out.write((const char *)rst.data(), rst.size());
+            out.write(reinterpret_cast<const char *>(rst.data()), rst.size());
 
             out.seekp(curr_pos);
             ctb_write_section(out, layer_data);
