@@ -202,8 +202,12 @@ class SearchListModel : public wxDataViewVirtualListModel
 
 public:
     enum {
+#ifdef __WXMSW__
+        colIconMarkedText,
+#else
         colIcon,
         colMarkedText,
+#endif
         colMax
     };
 
@@ -213,7 +217,7 @@ public:
 
     void Clear();
     void Prepend(const std::string& text);
-    void msw_rescale();
+    void sys_color_changed();
 
     // implementation of base class virtuals to define model
 

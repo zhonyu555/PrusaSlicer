@@ -7,6 +7,7 @@
 
 namespace Slic3r {
 
+class PrintRegionConfig;
 class Surface;
 
 class FillRectilinear : public Fill
@@ -47,6 +48,15 @@ public:
     ~FillMonotonic() override = default;
     Polylines fill_surface(const Surface *surface, const FillParams &params) override;
 	bool no_sort() const override { return true; }
+};
+
+class FillMonotonicLines : public FillRectilinear
+{
+public:
+    Fill* clone() const override { return new FillMonotonicLines(*this); }
+    ~FillMonotonicLines() override = default;
+    Polylines fill_surface(const Surface *surface, const FillParams &params) override;
+    bool no_sort() const override { return true; }
 };
 
 class FillGrid : public FillRectilinear

@@ -18,6 +18,11 @@
     #define wxOSX true
 #else
     #define wxOSX false
+#endif 
+#ifdef __WXGTK3__
+    #define wxGTK3 true
+#else
+    #define wxGTK3 false
 #endif
 
 #define BORDER(a, b) ((wxOSX ? a : b))
@@ -42,8 +47,7 @@ struct Option {
 		return  (rhs.opt_id == this->opt_id);
 	}
 
-	Option(const ConfigOptionDef& _opt, t_config_option_key id) :
-		opt(_opt), opt_id(id) {}
+	Option(const ConfigOptionDef& _opt, t_config_option_key id);
 };
 using t_option = std::unique_ptr<Option>;	//!
 
@@ -81,6 +85,7 @@ public:
 
 	bool is_separator() const { return m_is_separator; }
 	bool has_only_option(const std::string& opt_key) const { return m_options.size() == 1 && m_options[0].opt_id == opt_key; }
+	void clear();
 
     const std::vector<widget_t>&	get_extra_widgets() const {return m_extra_widgets;}
     const std::vector<Option>&		get_options() const { return m_options; }
@@ -171,9 +176,8 @@ public:
 	void			show_field(const t_config_option_key& opt_key, bool show = true);
 	void			hide_field(const t_config_option_key& opt_key) {  show_field(opt_key, false);  }
 
-	void			set_name(const wxString& new_name) {
-							stb->SetLabel(new_name);
-    }
+	void			set_name(const wxString& new_name) { stb->SetLabel(new_name); }
+	wxString		get_name() const { return stb->GetLabel(); }
 
 	inline void		enable() { for (auto& field : m_fields) field.second->enable(); }
     inline void		disable() { for (auto& field : m_fields) field.second->disable(); }

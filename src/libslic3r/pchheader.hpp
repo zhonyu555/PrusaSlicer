@@ -107,6 +107,7 @@
 #include <boost/version.hpp>
 
 #include <tbb/parallel_for.h>
+#include <tbb/scalable_allocator.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/task_group.h>
 
@@ -132,7 +133,5 @@
 
 #include "libslic3r.h"
 #include "libslic3r_version.h"
-
-#include <Shiny/Shiny.h>
 
 #include <admesh/stl.h>

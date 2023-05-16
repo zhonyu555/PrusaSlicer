@@ -1,6 +1,8 @@
 #ifndef slic3r_Print_hpp_
 #define slic3r_Print_hpp_
 
+#include "Fill/FillAdaptive.hpp"
+#include "Fill/FillLightning.hpp"
 #include "PrintBase.hpp"
 
 #include "BoundingBox.hpp"
@@ -8,6 +10,7 @@
 #include "Flow.hpp"
 #include "Point.hpp"
 #include "Slicing.hpp"
+#include "SupportSpotsGenerator.hpp"
 #include "TriangleMeshSlicer.hpp"
 #include "GCode/ToolOrdering.hpp"
 #include "GCode/WipeTower.hpp"
@@ -20,7 +23,9 @@
 #include <Eigen/Geometry>
 
 #include <functional>
+#include <optional>
 #include <set>
+#include <tcbspan/span.hpp>
 
 namespace Slic3r {
 
@@ -51,6 +56,7 @@ enum PrintStep : unsigned int {
     // psToolOrdering is a synonym to psWipeTower, as the Wipe Tower calculates and modifies the ToolOrdering,
     // while if printing without the Wipe Tower, the ToolOrdering is calculated as well.
     psToolOrdering = psWipeTower,
+    psAlertWhenSupportsNeeded,
     psSkirtBrim,
     // Last step before G-code export, after this step is finished, the initial extrusion path preview
     // should be refreshed.
@@ -61,7 +67,7 @@ enum PrintStep : unsigned int {
 
 enum PrintObjectStep : unsigned int {
     posSlice, posPerimeters, posPrepareInfill,
-    posInfill, posIroning, posSupportMaterial, posCount,
+    posInfill, posIroning, posSupportSpotsSearch, posSupportMaterial, posEstimateCurledExtrusions, posCount,
 };
 
 // A PrintRegion object represents a group of volumes to print
@@ -117,38 +123,12 @@ private:
 inline bool operator==(const PrintRegion &lhs, const PrintRegion &rhs) { return lhs.config_hash() == rhs.config_hash() && lhs.config() == rhs.config(); }
 inline bool operator!=(const PrintRegion &lhs, const PrintRegion &rhs) { return ! (lhs == rhs); }
 
-template<typename T>
-class ConstVectorOfPtrsAdaptor {
-public:
-    // Returning a non-const pointer to const pointers to T.
-    T * const *             begin() const { return m_data->data(); }
-    T * const *             end()   const { return m_data->data() + m_data->size(); }
-    const T*                front() const { return m_data->front(); }
-    const T*                back()  const { return m_data->front(); }
-    size_t                  size()  const { return m_data->size(); }
-    bool                    empty() const { return m_data->empty(); }
-    const T*                operator[](size_t i) const { return (*m_data)[i]; }
-    const T*                at(size_t i) const { return m_data->at(i); }
-    std::vector<const T*>   vector() const { return std::vector<const T*>(this->begin(), this->end()); }
-protected:
-    ConstVectorOfPtrsAdaptor(const std::vector<T*> *data) : m_data(data) {}
-private:
-    const std::vector<T*> *m_data;
-};
+// For const correctness: Wrapping a vector of non-const pointers as a span of const pointers.
+template<class T>
+using SpanOfConstPtrs           = tcb::span<const T* const>;
 
-typedef std::vector<Layer*>       LayerPtrs;
-typedef std::vector<const Layer*> ConstLayerPtrs;
-class ConstLayerPtrsAdaptor : public ConstVectorOfPtrsAdaptor<Layer> {
-    friend PrintObject;
-    ConstLayerPtrsAdaptor(const LayerPtrs *data) : ConstVectorOfPtrsAdaptor<Layer>(data) {}
-};
-
-typedef std::vector<SupportLayer*>        SupportLayerPtrs;
-typedef std::vector<const SupportLayer*>  ConstSupportLayerPtrs;
-class ConstSupportLayerPtrsAdaptor : public ConstVectorOfPtrsAdaptor<SupportLayer> {
-    friend PrintObject;
-    ConstSupportLayerPtrsAdaptor(const SupportLayerPtrs *data) : ConstVectorOfPtrsAdaptor<SupportLayer>(data) {}
-};
+using LayerPtrs                 = std::vector<Layer*>;
+using SupportLayerPtrs          = std::vector<SupportLayer*>;
 
 class BoundingBoxf3;        // TODO: for temporary constructor parameter
 
@@ -225,12 +205,20 @@ public:
         }
     };
 
+    struct GeneratedSupportPoints{
+        Transform3d object_transform; // for frontend object mapping
+        SupportSpotsGenerator::SupportPoints support_points;
+        SupportSpotsGenerator::PartialObjects partial_objects;
+    };
+
     std::vector<std::unique_ptr<PrintRegion>>   all_regions;
     std::vector<LayerRangeRegions>              layer_ranges;
     // Transformation of this ModelObject into one of the associated PrintObjects (all PrintObjects derived from a single modelObject differ by a Z rotation only).
     // This transformation is used to calculate VolumeExtents.
     Transform3d                                 trafo_bboxes;
     std::vector<ObjectID>                       cached_volume_ids;
+
+    std::optional<GeneratedSupportPoints> generated_support_points;
 
     void ref_cnt_inc() { ++ m_ref_cnt; }
     void ref_cnt_dec() { if (-- m_ref_cnt == 0) delete this; }
@@ -256,8 +244,8 @@ public:
     // Size of an object: XYZ in scaled coordinates. The size might not be quite snug in XY plane.
     const Vec3crd&               size() const			{ return m_size; }
     const PrintObjectConfig&     config() const         { return m_config; }    
-    ConstLayerPtrsAdaptor        layers() const         { return ConstLayerPtrsAdaptor(&m_layers); }
-    ConstSupportLayerPtrsAdaptor support_layers() const { return ConstSupportLayerPtrsAdaptor(&m_support_layers); }
+    auto                         layers() const         { return SpanOfConstPtrs<Layer>(const_cast<const Layer* const* const>(m_layers.data()), m_layers.size()); }
+    auto                         support_layers() const { return SpanOfConstPtrs<SupportLayer>(const_cast<const SupportLayer* const* const>(m_support_layers.data()), m_support_layers.size()); }
     const Transform3d&           trafo() const          { return m_trafo; }
     // Trafo with the center_offset() applied after the transformation, to center the object in XY before slicing.
     Transform3d                  trafo_centered() const 
@@ -374,14 +362,20 @@ private:
     // If ! m_slicing_params.valid, recalculate.
     void                    update_slicing_parameters();
 
+    // Called on main thread with stopped or paused background processing to let PrintObject release data for its milestones that were invalidated or canceled.
+    void                    cleanup();
+
     static PrintObjectConfig object_config_from_model_object(const PrintObjectConfig &default_object_config, const ModelObject &object, size_t num_extruders);
 
 private:
     void make_perimeters();
     void prepare_infill();
+    void clear_fills();
     void infill();
     void ironing();
+    void generate_support_spots();
     void generate_support_material();
+    void estimate_curled_extrusions();
 
     void slice_volumes();
     // Has any support (not counting the raft).
@@ -393,7 +387,8 @@ private:
     void discover_horizontal_shells();
     void combine_infill();
     void _generate_support_material();
-    std::pair<FillAdaptive::OctreePtr, FillAdaptive::OctreePtr> prepare_adaptive_infill_data();
+    std::pair<FillAdaptive::OctreePtr, FillAdaptive::OctreePtr> prepare_adaptive_infill_data(
+        const std::vector<std::pair<const Surface*, float>>& surfaces_w_bottom_z) const;
     FillLightning::GeneratorPtr prepare_lightning_infill_data();
 
     // XYZ in scaled coordinates
@@ -418,6 +413,9 @@ private:
     // this is set to true when LayerRegion->slices is split in top/internal/bottom
     // so that next call to make_perimeters() performs a union() before computing loops
     bool                    				m_typed_slices = false;
+
+    std::pair<FillAdaptive::OctreePtr, FillAdaptive::OctreePtr> m_adaptive_fill_octrees;
+    FillLightning::GeneratorPtr m_lightning_generator;
 };
 
 struct WipeTowerData
@@ -436,6 +434,7 @@ struct WipeTowerData
     // Depth of the wipe tower to pass to GLCanvas3D for exact bounding box:
     float                                                 depth;
     float                                                 brim_width;
+    float                                                 height;
 
     void clear() {
         priming.reset(nullptr);
@@ -497,21 +496,10 @@ struct PrintStatistics
     }
 };
 
-typedef std::vector<PrintObject*>       PrintObjectPtrs;
-typedef std::vector<const PrintObject*> ConstPrintObjectPtrs;
-class ConstPrintObjectPtrsAdaptor : public ConstVectorOfPtrsAdaptor<PrintObject> {
-    friend Print;
-    ConstPrintObjectPtrsAdaptor(const PrintObjectPtrs *data) : ConstVectorOfPtrsAdaptor<PrintObject>(data) {}
-};
+using PrintObjectPtrs          = std::vector<PrintObject*>;
+using ConstPrintObjectPtrs     = std::vector<const PrintObject*>;
 
-typedef std::vector<PrintRegion*>       PrintRegionPtrs;
-/*
-typedef std::vector<const PrintRegion*> ConstPrintRegionPtrs;
-class ConstPrintRegionPtrsAdaptor : public ConstVectorOfPtrsAdaptor<PrintRegion> {
-    friend Print;
-    ConstPrintRegionPtrsAdaptor(const PrintRegionPtrs *data) : ConstVectorOfPtrsAdaptor<PrintRegion>(data) {}
-};
-*/
+using PrintRegionPtrs          = std::vector<PrintRegion*>;
 
 // The complete print tray with possibly multiple objects.
 class Print : public PrintBaseWithState<PrintStep, psCount>
@@ -541,6 +529,7 @@ public:
     void                set_task(const TaskParams &params) override { PrintBaseWithState<PrintStep, psCount>::set_task_impl(params, m_objects); }
     void                process() override;
     void                finalize() override { PrintBaseWithState<PrintStep, psCount>::finalize_impl(m_objects); }
+    void                cleanup() override;
 
     // Exports G-code into a file name based on the path_template, returns the file path of the generated G-code file.
     // If preview_data is not null, the preview_data is filled in for the G-code visualization (not used by the command line Slic3r).
@@ -574,9 +563,14 @@ public:
     const PrintConfig&          config() const { return m_config; }
     const PrintObjectConfig&    default_object_config() const { return m_default_object_config; }
     const PrintRegionConfig&    default_region_config() const { return m_default_region_config; }
-    ConstPrintObjectPtrsAdaptor objects() const { return ConstPrintObjectPtrsAdaptor(&m_objects); }
+    SpanOfConstPtrs<PrintObject> objects() const { return SpanOfConstPtrs<PrintObject>(const_cast<const PrintObject* const* const>(m_objects.data()), m_objects.size()); }
     PrintObject*                get_object(size_t idx) { return const_cast<PrintObject*>(m_objects[idx]); }
     const PrintObject*          get_object(size_t idx) const { return m_objects[idx]; }
+    const PrintObject* get_print_object_by_model_object_id(ObjectID object_id) const {
+        auto it = std::find_if(m_objects.begin(), m_objects.end(),
+                               [object_id](const PrintObject* obj) { return obj->model_object()->id() == object_id; });
+        return (it == m_objects.end()) ? nullptr : *it;
+    }
     // PrintObject by its ObjectID, to be used to uniquely bind slicing warnings to their source PrintObjects
     // in the notification center.
     const PrintObject*          get_object(ObjectID object_id) const { 
@@ -627,11 +621,18 @@ private:
     void                _make_skirt();
     void                _make_wipe_tower();
     void                finalize_first_layer_convex_hull();
+    void                alert_when_supports_needed();
 
     // Islands of objects and their supports extruded at the 1st layer.
     Polygons            first_layer_islands() const;
     // Return 4 wipe tower corners in the world coordinates (shifted and rotated), including the wipe tower brim.
-    std::vector<Point>  first_layer_wipe_tower_corners() const;
+    Points              first_layer_wipe_tower_corners() const;
+
+    // Returns true if any of the print_objects has print_object_step valid.
+    // That means data shared by all print objects of the print_objects span may still use the shared data.
+    // Otherwise the shared data shall be released.
+    // Unguarded variant, thus it shall only be called from main thread with background processing stopped.
+    static bool         is_shared_print_object_step_valid_unguarded(SpanOfConstPtrs<PrintObject> print_objects, PrintObjectStep print_object_step);
 
     PrintConfig                             m_config;
     PrintObjectConfig                       m_default_object_config;
@@ -659,6 +660,8 @@ private:
 
     // To allow GCode to set the Print's GCodeExport step status.
     friend class GCode;
+    // To allow GCodeProcessor to emit warnings.
+    friend class GCodeProcessor;
     // Allow PrintObject to access m_mutex and m_cancel_callback.
     friend class PrintObject;
 };

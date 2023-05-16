@@ -13,7 +13,7 @@ void Filler::_fill_surface_single(
     ExPolygon                      expolygon,
     Polylines                     &polylines_out)
 {
-    const Layer &layer      = generator->getTreesForLayer(this->layer_id);
+    const Layer &layer      = generator->getTreesForLayer(this->layer_id - this->num_raft_layers);
     Polylines    fill_lines = layer.convertToLines(to_polygons(expolygon), scaled<coord_t>(0.5 * this->spacing - this->overlap));
 
     if (params.dont_connect() || fill_lines.size() <= 1) {
@@ -26,9 +26,9 @@ void GeneratorDeleter::operator()(Generator *p) {
     delete p;
 }
 
-GeneratorPtr build_generator(const PrintObject &print_object, const std::function<void()> &throw_on_cancel_callback)
+GeneratorPtr build_generator(const PrintObject &print_object, const coordf_t fill_density, const std::function<void()> &throw_on_cancel_callback)
 {
-    return GeneratorPtr(new Generator(print_object, throw_on_cancel_callback));
+    return GeneratorPtr(new Generator(print_object, fill_density, throw_on_cancel_callback));
 }
 
 } // namespace Slic3r::FillAdaptive

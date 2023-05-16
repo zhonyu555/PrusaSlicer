@@ -130,6 +130,18 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 			val = boost::any_cast<double>(value);
 			break;
 		}
+		case coFloatsOrPercents:{
+			std::string str = boost::any_cast<std::string>(value);
+			bool percent = false;
+			if (str.back() == '%') {
+				str.pop_back();
+				percent = true;
+			}
+            double val = std::stod(str); // locale-dependent (on purpose - the input is the actual content of the field)
+			ConfigOptionFloatsOrPercents* vec_new = new ConfigOptionFloatsOrPercents({ {val, percent} });
+			config.option<ConfigOptionFloatsOrPercents>(opt_key)->set_at(vec_new, opt_index, opt_index);
+			break;
+		}
 		case coPercents:{
 			ConfigOptionPercents* vec_new = new ConfigOptionPercents{ boost::any_cast<double>(value) };
 			config.option<ConfigOptionPercents>(opt_key)->set_at(vec_new, opt_index, opt_index);
@@ -268,33 +280,11 @@ static void add_config_substitutions(const ConfigSubstitutions& conf_substitutio
 		switch (def->type) {
 		case coEnum:
 		{
-			const std::vector<std::string>& labels = def->enum_labels;
-			const std::vector<std::string>& values = def->enum_values;
-			int val = conf_substitution.new_value->getInt();
-
-			bool is_infill = def->opt_key == "top_fill_pattern"	   ||
-							 def->opt_key == "bottom_fill_pattern" ||
-							 def->opt_key == "fill_pattern";
-
-			// Each infill doesn't use all list of infill declared in PrintConfig.hpp.
-			// So we should "convert" val to the correct one
-			if (is_infill) {
-				for (const auto& key_val : *def->enum_keys_map)
-					if ((int)key_val.second == val) {
-						auto it = std::find(values.begin(), values.end(), key_val.first);
-						if (it == values.end())
-							break;
-						auto idx = it - values.begin();
-						new_val = wxString("\"") + values[idx] + "\"" + " (" + from_u8(_utf8(labels[idx])) + ")";
-						break;
-					}
-				if (new_val.IsEmpty()) {
-					assert(false);
-					new_val = _L("Undefined");
-				}
-			}
-			else
-				new_val = wxString("\"") + values[val] + "\"" + " (" + from_u8(_utf8(labels[val])) + ")";
+			auto opt = def->enum_def->enum_to_index(conf_substitution.new_value->getInt());
+			new_val = opt.has_value() ?
+				wxString("\"") + def->enum_def->value(*opt) + "\"" + " (" +
+					_(from_u8(def->enum_def->label(*opt))) + ")" :
+				_L("Undefined");
 			break;
 		}
 		case coBool:
