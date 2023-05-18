@@ -85,6 +85,17 @@ ObjectList::ObjectList(wxWindow* parent) :
 
     // describe control behavior 
     Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, [this](wxDataViewEvent& event) {
+        // do not allow to change selection while the sla support gizmo is in editing mode
+        const GLGizmosManager& gizmos = wxGetApp().plater()->canvas3D()->get_gizmos_manager();
+        if (gizmos.get_current_type() == GLGizmosManager::EType::SlaSupports && gizmos.is_in_editing_mode(true)) {
+            wxDataViewItemArray sels;
+            GetSelections(sels);
+            if (sels.size() > 1 || event.GetItem() != m_last_selected_item) {
+                select_item(m_last_selected_item);
+                return;
+            }
+        }
+
         // detect the current mouse position here, to pass it to list_manipulation() method
         // if we detect it later, the user may have moved the mouse pointer while calculations are performed, and this would mess-up the HitTest() call performed into list_manipulation()
         // see: https://github.com/prusa3d/PrusaSlicer/issues/3802
@@ -420,7 +431,7 @@ MeshErrorsInfo ObjectList::get_mesh_errors_info(const int obj_idx, const int vol
     const ModelObject* object = (*m_objects)[obj_idx];
     if (vol_idx != -1 && vol_idx >= int(object->volumes.size())) {
         if (sidebar_info)
-            *sidebar_info = _L("Wrong volume index") + " ";
+            *sidebar_info = _L("Invalid object part index") + " ";
         return { {}, {} }; // hide tooltip
     }
 
@@ -746,6 +757,10 @@ void ObjectList::selection_changed()
                 wxGetApp().obj_layers()->set_selectable_range(m_objects_model->GetLayerRangeByItem(item));
                 wxGetApp().obj_layers()->update_scene_from_editor_selection();
             }
+        }
+        else if (type & itVolume) {
+            if (printer_technology() == ptSLA)
+                wxGetApp().plater()->canvas3D()->set_sla_view_type(scene_selection().get_first_volume()->composite_id, GLCanvas3D::ESLAViewType::Original);
         }
     }
 
@@ -2044,7 +2059,7 @@ bool ObjectList::del_from_cut_object(bool is_cut_connector, bool is_model_part/*
     InfoDialog dialog(wxGetApp().plater(), title,
                       _L("This action will break a cut information.\n"
                          "After that PrusaSlicer can't guarantee model consistency.") + "\n\n" +
-                      _L("To manipulate with solid parts or negative volumes you have to invalidate cut infornation first." + msg_end ),
+                      _L("To manipulate with solid parts or negative volumes you have to invalidate cut information first." + msg_end ),
                       false, buttons_style | wxCANCEL_DEFAULT | wxICON_WARNING);
 
     dialog.SetButtonLabel(wxID_YES, _L("Invalidate cut info"));
@@ -2983,21 +2998,19 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selectio
                 wxGetApp().notification_manager()->push_updated_item_info_notification(type); 
         }
         else if (shows && ! should_show) {
-            if (!selections)
+            if (!selections && IsSelected(item)) {
                 Unselect(item);
-            m_objects_model->Delete(item);
-            if (selections) {
-                if (selections->Index(item) != wxNOT_FOUND) {
-                    // If info item was deleted from the list, 
-                    // it's need to be deleted from selection array, if it was there
-                    selections->Remove(item);
-                    // Select item_obj, if info_item doesn't exist for item anymore, but was selected
-                    if (selections->Index(item_obj) == wxNOT_FOUND)
-                        selections->Add(item_obj);
-                }
-            }
-            else
                 Select(item_obj);
+            }
+            m_objects_model->Delete(item);
+            if (selections && selections->Index(item) != wxNOT_FOUND) {
+                // If info item was deleted from the list, 
+                // it's need to be deleted from selection array, if it was there
+                selections->Remove(item);
+                // Select item_obj, if info_item doesn't exist for item anymore, but was selected
+                if (selections->Index(item_obj) == wxNOT_FOUND)
+                    selections->Add(item_obj);
+            }
         }
     }
 }
@@ -4960,6 +4973,11 @@ void ObjectList::update_printable_state(int obj_idx, int instance_idx)
 
 void ObjectList::toggle_printable_state()
 {
+    // do not allow to toggle the printable state while the sla support gizmo is in editing mode
+    const GLGizmosManager& gizmos = wxGetApp().plater()->canvas3D()->get_gizmos_manager();
+    if (gizmos.get_current_type() == GLGizmosManager::EType::SlaSupports && gizmos.is_in_editing_mode(true))
+        return;
+
     wxDataViewItemArray sels;
     GetSelections(sels);
     if (sels.IsEmpty())
