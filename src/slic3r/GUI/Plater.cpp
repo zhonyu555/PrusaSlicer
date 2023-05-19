@@ -683,7 +683,7 @@ struct Sidebar::priv
     priv(Plater *plater) : plater(plater) {}
     ~priv();
 
-    void show_preset_comboboxes();
+    void show_preset_comboboxes();    
 
 #ifdef _WIN32
     wxString btn_reslice_tip;
@@ -775,8 +775,8 @@ Sidebar::Sidebar(Plater *parent)
 #ifdef _WIN32
     wxGetApp().UpdateDarkUI(this);
     wxGetApp().UpdateDarkUI(p->scrolled);
-#else
-    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+#else    
+    SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));   
 #endif
 #endif
 
@@ -1582,6 +1582,7 @@ void Sidebar::update_ui_from_settings()
     p->plater->set_current_canvas_as_dirty();
     p->plater->get_current_canvas3D()->request_extra_frame();
     p->object_list->apply_volumes_order();
+    this->dock();
 }
 
 std::vector<PlaterPresetComboBox*>& Sidebar::combos_filament()
@@ -1599,6 +1600,26 @@ std::string& Sidebar::get_search_line()
     // update searcher before show imGui search dialog on the plater, if printer technology or mode was changed
     check_and_update_searcher(true);
     return p->searcher.search_string();
+}
+
+void Sidebar::dock()
+{
+    wxSizer* hsizer = p->plater->GetSizer();
+    std::string dockSidebar = wxGetApp().app_config->get("dock_sidebar");
+
+    // Detach existing sidebar dock (if any).
+    hsizer->Detach(this);
+
+    if (dockSidebar.empty() || dockSidebar == "right") {
+        // Dock RIGHT.
+        hsizer->Add(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+    }
+    else {
+        // Dock LEFT.
+        hsizer->Prepend(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+    }
+
+    hsizer->Layout();
 }
 
 // Plater::DropTarget
@@ -2008,7 +2029,7 @@ const std::regex Plater::priv::pattern_prusa(".*prusa", std::regex::icase);
 
 Plater::priv::priv(Plater *q, MainFrame *main_frame)
     : q(q)
-    , main_frame(main_frame)
+    , main_frame(main_frame)    
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
         "brim_width", "brim_separation", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
@@ -2074,7 +2095,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     panel_sizer->Add(view3D, 1, wxEXPAND | wxALL, 0);
     panel_sizer->Add(preview, 1, wxEXPAND | wxALL, 0);
     hsizer->Add(panel_sizer, 1, wxEXPAND | wxALL, 0);
-    hsizer->Add(sidebar, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+    // Add of sidebar to hsizer moved to Sidebar::dock() because now based on Preferences.
+    
     q->SetSizer(hsizer);
 
     menus.init(q);
@@ -2258,7 +2280,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
         bring_instance_forward();
     });
 	wxGetApp().other_instance_message_handler()->init(this->q);
-
+        
     // collapse sidebar according to saved value
     if (wxGetApp().is_editor()) {
         bool is_collapsed = get_config_bool("collapsed_sidebar");
@@ -2360,7 +2382,6 @@ void Plater::priv::update_ui_from_settings()
 
     view3D->get_canvas3d()->update_ui_from_settings();
     preview->get_canvas3d()->update_ui_from_settings();
-
     sidebar->update_ui_from_settings();
 }
 
