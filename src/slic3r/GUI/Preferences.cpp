@@ -495,12 +495,12 @@ void PreferencesDialog::build()
 	if (is_editor) {
 		append_bool_option(m_optgroup_gui, "show_collapse_button",
 			L("Show sidebar collapse/expand button"),
-			L("If enabled, the button for the collapse sidebar will be appeared in top right corner of the 3D Scene"),
+			L("If enabled, the button for the collapse sidebar will appear next to the sidebar in the top corner."),
 			app_config->get_bool("show_collapse_button"));
 
 		append_enum_option<DockSidebar>(m_optgroup_gui, "dock_sidebar",
-			L("Dock Sidebar"),
-			L("Where the Sidebar is docked: Left = Left of the 3D Scene. Right = Right of the 3D Scene."),
+			L("Dock sidebar"),
+			L("Where the sidebar is docked: Left = Left of the 3D Scene. Right = Right of the 3D Scene."),
 			new ConfigOptionEnum<DockSidebar>(static_cast<DockSidebar>(s_keys_map_DockSidebar.at(app_config->get("dock_sidebar")))),
 			{	{ "right", L("Right") },
 				{ "left", L("Left") },			  

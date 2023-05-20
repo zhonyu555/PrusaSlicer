@@ -1580,7 +1580,7 @@ void Sidebar::update_ui_from_settings()
     p->plater->set_current_canvas_as_dirty();
     p->plater->get_current_canvas3D()->request_extra_frame();
     p->object_list->apply_volumes_order();
-    this->dock();
+    dock();
 }
 
 std::vector<PlaterPresetComboBox*>& Sidebar::combos_filament()
@@ -1608,13 +1608,15 @@ void Sidebar::dock()
     // Detach existing sidebar dock (if any).
     hsizer->Detach(this);
 
-    if (dockSidebar.empty() || dockSidebar == "right") {
-        // Dock RIGHT.
+    if (dockSidebar == "right") {
         hsizer->Add(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+        // Set collapse button styling to match.
+        p->plater->get_collapse_toolbar().set_horizontal_orientation(GLToolbar::Layout::HO_Right);
     }
-    else {
-        // Dock LEFT.
+    else {  // Else, dock left
         hsizer->Prepend(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+        // Set collapse button styling to match.
+        p->plater->get_collapse_toolbar().set_horizontal_orientation(GLToolbar::Layout::HO_Left);
     }
 
     hsizer->Layout();
@@ -4614,8 +4616,9 @@ bool Plater::priv::init_collapse_toolbar()
     if (!collapse_toolbar.init(background_data))
         return false;
 
+    std::string dockSidebar = wxGetApp().app_config->get("dock_sidebar");
     collapse_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
-    collapse_toolbar.set_horizontal_orientation(GLToolbar::Layout::HO_Right);
+    collapse_toolbar.set_horizontal_orientation((dockSidebar == "right") ? GLToolbar::Layout::HO_Right : GLToolbar::Layout::HO_Left);
     collapse_toolbar.set_vertical_orientation(GLToolbar::Layout::VO_Top);
     collapse_toolbar.set_border(5.0f);
     collapse_toolbar.set_separator_size(5);
