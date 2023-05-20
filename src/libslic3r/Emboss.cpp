@@ -506,9 +506,9 @@ bool priv::remove_self_intersections(ExPolygons &shape, unsigned max_iteration) 
             hole.translate(p);
             holes.push_back(hole);
         }
-        // union overlapped holes
-        if (holes.size() > 1)
-            holes = Slic3r::union_(holes);
+        // Union of overlapped holes is not neccessary
+        // Clipper calculate winding number separately for each input parameter
+        // if (holes.size() > 1) holes = Slic3r::union_(holes);
         shape = Slic3r::diff_ex(shape, holes, ApplySafetyOffset::Yes);
         
         // TODO: find where diff ex could create same neighbor
@@ -634,7 +634,6 @@ bool priv::heal_dupl_inter(ExPolygons &shape, unsigned max_iteration)
             holes.push_back(hole);
         }
 
-        holes = Slic3r::union_(holes);
         shape = Slic3r::diff_ex(shape, holes, ApplySafetyOffset::Yes);
 
         // prepare for next loop
@@ -797,8 +796,7 @@ const Glyph* priv::get_glyph(
     auto glyph_item = cache.find(unicode);
     if (glyph_item != cache.end()) return &glyph_item->second;
 
-    unsigned int font_index = font_prop.collection_number.has_value()?
-            *font_prop.collection_number : 0;
+    unsigned int font_index = font_prop.collection_number.value_or(0);
     if (!is_valid(font, font_index)) return nullptr;
 
     if (!font_info_opt.has_value()) {
@@ -836,11 +834,10 @@ const Glyph* priv::get_glyph(
             glyph_opt->shape = Slic3r::union_ex(offset_ex(glyph_opt->shape, delta));
         }
         if (font_prop.skew.has_value()) {
-            const float &ratio = *font_prop.skew;
-            auto         skew  = [&ratio](Polygon &polygon) {
-                for (Slic3r::Point &p : polygon.points) {
-                    p.x() += p.y() * ratio;
-                }
+            double ratio = *font_prop.skew;
+            auto skew = [&ratio](Polygon &polygon) {
+                for (Slic3r::Point &p : polygon.points)
+                    p.x() += static_cast<Point::coord_type>(std::round(p.y() * ratio));
             };
             for (ExPolygon &expolygon : glyph_opt->shape) {
                 skew(expolygon.contour);
@@ -1364,10 +1361,9 @@ std::string Emboss::create_range_text(const std::string &text,
 
 double Emboss::get_shape_scale(const FontProp &fp, const FontFile &ff)
 {
-    const auto  &cn          = fp.collection_number;
-    unsigned int font_index  = (cn.has_value()) ? *cn : 0;
-    int          unit_per_em = ff.infos[font_index].unit_per_em;
-    double       scale       = fp.size_in_mm / unit_per_em;
+    size_t font_index  = fp.collection_number.value_or(0);
+    const FontFile::Info &info = ff.infos[font_index];
+    double scale  = fp.size_in_mm / (double) info.unit_per_em;
     // Shape is scaled for store point coordinate as integer
     return scale * SHAPE_SCALE;
 }

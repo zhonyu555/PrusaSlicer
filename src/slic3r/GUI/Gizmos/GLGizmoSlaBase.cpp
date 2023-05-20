@@ -20,8 +20,15 @@ GLGizmoSlaBase::GLGizmoSlaBase(GLCanvas3D& parent, const std::string& icon_filen
 void GLGizmoSlaBase::reslice_until_step(SLAPrintObjectStep step, bool postpone_error_messages)
 {
     wxGetApp().CallAfter([this, step, postpone_error_messages]() {
-        wxGetApp().plater()->reslice_SLA_until_step(step, *m_c->selection_info()->model_object(), postpone_error_messages);
-        });
+        if (m_c->selection_info())
+            wxGetApp().plater()->reslice_SLA_until_step(step, *m_c->selection_info()->model_object(), postpone_error_messages);
+        else {
+            const Selection& selection = m_parent.get_selection();
+            const int object_idx = selection.get_object_idx();
+            if (object_idx >= 0 && !selection.is_wipe_tower())
+                wxGetApp().plater()->reslice_SLA_until_step(step, *wxGetApp().plater()->model().objects[object_idx], postpone_error_messages);
+        }
+    });
 }
 
 CommonGizmosDataID GLGizmoSlaBase::on_get_requirements() const
@@ -59,7 +66,7 @@ void GLGizmoSlaBase::update_volumes()
         if (last_comp_step == slaposCount)
             last_comp_step = -1;
 
-        m_input_enabled = last_comp_step >= m_min_sla_print_object_step;
+        m_input_enabled = last_comp_step >= m_min_sla_print_object_step || po->model_object()->sla_points_status == sla::PointsStatus::UserModified;
 
         const int object_idx   = m_parent.get_selection().get_object_idx();
         const int instance_idx = m_parent.get_selection().get_instance_idx();
@@ -135,7 +142,11 @@ void GLGizmoSlaBase::render_volumes()
     const Camera& camera = wxGetApp().plater()->get_camera();
 
     ClippingPlane clipping_plane = (m_c->object_clipper()->get_position() == 0.0) ? ClippingPlane::ClipsNothing() : *m_c->object_clipper()->get_clipping_plane();
-    clipping_plane.set_normal(-clipping_plane.get_normal());
+    if (m_c->object_clipper()->get_position() != 0.0)
+        clipping_plane.set_normal(-clipping_plane.get_normal());
+    else
+        // on Linux the clipping plane does not work when using DBL_MAX
+        clipping_plane.set_offset(FLT_MAX);
     m_volumes.set_clipping_plane(clipping_plane.get_data());
 
     for (GLVolume* v : m_volumes.volumes) {

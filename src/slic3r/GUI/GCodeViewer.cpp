@@ -697,7 +697,9 @@ void GCodeViewer::init()
             buffer.render_primitive_type = TBuffer::ERenderPrimitiveType::Line;
             buffer.vertices.format = VBuffer::EFormat::Position;
 #if ENABLE_GL_CORE_PROFILE
-            buffer.shader = OpenGLManager::get_gl_info().is_core_profile() ? "dashed_thick_lines" : "flat";
+            // on MAC using the geometry shader of dashed_thick_lines is too slow
+            buffer.shader = "flat";
+//            buffer.shader = OpenGLManager::get_gl_info().is_core_profile() ? "dashed_thick_lines" : "flat";
 #else
             buffer.shader = "flat";
 #endif // ENABLE_GL_CORE_PROFILE
@@ -836,7 +838,8 @@ void GCodeViewer::refresh(const GCodeProcessorResult& gcode_result, const std::v
         case EMoveType::Extrude:
         {
             m_extrusions.ranges.height.update_from(round_to_bin(curr.height));
-            m_extrusions.ranges.width.update_from(round_to_bin(curr.width));
+            if (curr.extrusion_role != GCodeExtrusionRole::Custom || is_visible(GCodeExtrusionRole::Custom))
+                m_extrusions.ranges.width.update_from(round_to_bin(curr.width));
             m_extrusions.ranges.fan_speed.update_from(curr.fan_speed);
             m_extrusions.ranges.temperature.update_from(curr.temperature);
             if (curr.extrusion_role != GCodeExtrusionRole::Custom || is_visible(GCodeExtrusionRole::Custom))
@@ -3944,6 +3947,20 @@ void GCodeViewer::render_legend(float& legend_height)
         }
     }
 
+    if (m_view_type == EViewType::Width || m_view_type == EViewType::VolumetricRate) {
+      const auto custom_it = std::find(m_roles.begin(), m_roles.end(), GCodeExtrusionRole::Custom);
+      if (custom_it != m_roles.end()) {
+          const bool custom_visible = is_visible(GCodeExtrusionRole::Custom);
+          const wxString btn_text = custom_visible ? _u8L("Hide Custom GCode") : _u8L("Show Custom GCode");
+          ImGui::Separator();
+          if (imgui.button(btn_text, ImVec2(-1.0f, 0.0f), true)) {
+              m_extrusions.role_visibility_flags = custom_visible ? m_extrusions.role_visibility_flags & ~(1 << int(GCodeExtrusionRole::Custom)) :
+                  m_extrusions.role_visibility_flags | (1 << int(GCodeExtrusionRole::Custom));
+              wxGetApp().plater()->refresh_print();
+          }
+        }
+    }
+
     // total estimated printing time section
     if (show_estimated_time) {
         ImGui::Spacing();
@@ -4049,69 +4066,58 @@ void GCodeViewer::render_legend(float& legend_height)
         }
     };
 
-    auto image_icon = [&imgui](ImGuiWindow& window, const ImVec2& pos, float size, const wchar_t& icon_id) {
-        ImGuiIO& io = ImGui::GetIO();
-        const ImTextureID tex_id = io.Fonts->TexID;
-        const float tex_w = static_cast<float>(io.Fonts->TexWidth);
-        const float tex_h = static_cast<float>(io.Fonts->TexHeight);
-        const ImFontAtlas::CustomRect* const rect = imgui.GetTextureCustomRect(icon_id);
-        const ImVec2 uv0 = { static_cast<float>(rect->X) / tex_w, static_cast<float>(rect->Y) / tex_h };
-        const ImVec2 uv1 = { static_cast<float>(rect->X + rect->Width) / tex_w, static_cast<float>(rect->Y + rect->Height) / tex_h };
-        window.DrawList->AddImage(tex_id, pos, { pos.x + size, pos.y + size }, uv0, uv1, ImGuiWrapper::to_ImU32({ 1.0f, 1.0f, 1.0f, 1.0f }));
-    };
-
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::Spacing();
-    toggle_button(Preview::OptionType::Travel, _u8L("Travel"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendTravel);
+    toggle_button(Preview::OptionType::Travel, _u8L("Travel"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendTravel);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::Wipe, _u8L("Wipe"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendWipe);
+    toggle_button(Preview::OptionType::Wipe, _u8L("Wipe"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendWipe);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::Retractions, _u8L("Retractions"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendRetract);
+    toggle_button(Preview::OptionType::Retractions, _u8L("Retractions"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendRetract);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::Unretractions, _u8L("Deretractions"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendDeretract);
+    toggle_button(Preview::OptionType::Unretractions, _u8L("Deretractions"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendDeretract);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::Seams, _u8L("Seams"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendSeams);
+    toggle_button(Preview::OptionType::Seams, _u8L("Seams"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendSeams);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::ToolChanges, _u8L("Tool changes"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendToolChanges);
+    toggle_button(Preview::OptionType::ToolChanges, _u8L("Tool changes"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendToolChanges);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::ColorChanges, _u8L("Color changes"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendColorChanges);
+    toggle_button(Preview::OptionType::ColorChanges, _u8L("Color changes"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendColorChanges);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::PausePrints, _u8L("Print pauses"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendPausePrints);
+    toggle_button(Preview::OptionType::PausePrints, _u8L("Print pauses"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendPausePrints);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::CustomGCodes, _u8L("Custom G-codes"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendCustomGCodes);
+    toggle_button(Preview::OptionType::CustomGCodes, _u8L("Custom G-codes"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendCustomGCodes);
         });
     ImGui::SameLine();
-    toggle_button(Preview::OptionType::CenterOfGravity, _u8L("Center of gravity"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendCOG);
+    toggle_button(Preview::OptionType::CenterOfGravity, _u8L("Center of gravity"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendCOG);
         });
     ImGui::SameLine();
     if (!wxGetApp().is_gcode_viewer()) {
-        toggle_button(Preview::OptionType::Shells, _u8L("Shells"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-            image_icon(window, pos, size, ImGui::LegendShells);
+        toggle_button(Preview::OptionType::Shells, _u8L("Shells"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+            imgui.draw_icon(window, pos, size, ImGui::LegendShells);
             });
         ImGui::SameLine();
     }
-    toggle_button(Preview::OptionType::ToolMarker, _u8L("Tool marker"), [image_icon](ImGuiWindow& window, const ImVec2& pos, float size) {
-        image_icon(window, pos, size, ImGui::LegendToolMarker);
+    toggle_button(Preview::OptionType::ToolMarker, _u8L("Tool marker"), [&imgui](ImGuiWindow& window, const ImVec2& pos, float size) {
+        imgui.draw_icon(window, pos, size, ImGui::LegendToolMarker);
         });
 
     bool size_dirty = !ImGui::GetCurrentWindow()->ScrollbarY && ImGui::CalcWindowNextAutoFitSize(ImGui::GetCurrentWindow()).x != ImGui::GetWindowWidth();
