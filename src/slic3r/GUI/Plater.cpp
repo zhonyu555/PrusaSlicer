@@ -1602,24 +1602,24 @@ std::string& Sidebar::get_search_line()
 
 void Sidebar::dock()
 {
-    wxSizer* hsizer = p->plater->GetSizer();
-    std::string dockSidebar = wxGetApp().app_config->get("dock_sidebar");
+    wxSizer* sizer = p->plater->GetSizer();
+    std::string dock_sidebar = wxGetApp().app_config->get("dock_sidebar");
 
     // Detach existing sidebar dock (if any).
-    hsizer->Detach(this);
+    sizer->Detach(this);
 
-    if (dockSidebar == "right") {
-        hsizer->Add(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+    if (dock_sidebar == "right") {
+        sizer->Add(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);       
         // Set collapse button styling to match.
         p->plater->get_collapse_toolbar().set_horizontal_orientation(GLToolbar::Layout::HO_Right);
     }
     else {  // Else, dock left
-        hsizer->Prepend(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
+        sizer->Prepend(this, 0, wxEXPAND | wxLEFT | wxRIGHT, 0);
         // Set collapse button styling to match.
         p->plater->get_collapse_toolbar().set_horizontal_orientation(GLToolbar::Layout::HO_Left);
     }
 
-    hsizer->Layout();
+    sizer->Layout();
 }
 
 // Plater::DropTarget
@@ -2095,7 +2095,6 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     panel_sizer->Add(view3D, 1, wxEXPAND | wxALL, 0);
     panel_sizer->Add(preview, 1, wxEXPAND | wxALL, 0);
     hsizer->Add(panel_sizer, 1, wxEXPAND | wxALL, 0);
-    // Add of sidebar to hsizer moved to Sidebar::dock() because now based on Preferences.
     
     q->SetSizer(hsizer);
 
@@ -4616,9 +4615,8 @@ bool Plater::priv::init_collapse_toolbar()
     if (!collapse_toolbar.init(background_data))
         return false;
 
-    std::string dockSidebar = wxGetApp().app_config->get("dock_sidebar");
-    collapse_toolbar.set_layout_type(GLToolbar::Layout::Vertical);
-    collapse_toolbar.set_horizontal_orientation((dockSidebar == "right") ? GLToolbar::Layout::HO_Right : GLToolbar::Layout::HO_Left);
+    std::string dock_sidebar = wxGetApp().app_config->get("dock_sidebar");
+    collapse_toolbar.set_layout_type(GLToolbar::Layout::Vertical);    
     collapse_toolbar.set_vertical_orientation(GLToolbar::Layout::VO_Top);
     collapse_toolbar.set_border(5.0f);
     collapse_toolbar.set_separator_size(5);
