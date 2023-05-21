@@ -39,28 +39,27 @@ LayerPtrs new_layers(
     return out;
 }
 
-    // Slice single triangle mesh.
-static std::vector<ExPolygons> slice_volume(const ModelVolume &          volume,
-                                            const std::vector<float> &   zs,
-                                            const MeshSlicingParamsEx &  params,
-                                            std::vector<SubLayers> *     sublayers,
-                                            const std::function<void()> &throw_on_cancel_callback)
+// Slice single triangle mesh.
+static std::vector<ExPolygons> slice_volume(
+    const ModelVolume             &volume,
+    const std::vector<float>      &zs, 
+    const MeshSlicingParamsEx     &params,
+    std::vector<SubLayers>        *sublayers,
+    const std::function<void()>   &throw_on_cancel_callback)
 {
     indexed_triangle_set its = volume.mesh().its;
-    if (zs.empty() || its.indices.size() == 0) {
+    if (zs.empty() || its.indices.size() == 0)
         return std::vector<ExPolygons>();
-    }
 
     MeshSlicingParamsEx params2{params};
     params2.trafo = params2.trafo * volume.get_matrix();
     if (params2.trafo.rotation().determinant() < 0.)
         its_flip_triangles(its);
     std::vector<ExPolygons> expolys = slice_mesh_ex(its, zs, params2, throw_on_cancel_callback);
-    if (params2.z_dither) {
+    if (params2.z_dither)
         expolys = z_dither(its, zs, params2, expolys, sublayers, throw_on_cancel_callback);
-    } else {
+	else
         *sublayers = std::vector<SubLayers>(expolys.size());
-    }
     throw_on_cancel_callback();
     return expolys;
 }
@@ -101,7 +100,7 @@ static std::vector<ExPolygons> slice_volume(
                 i = 0;
                 for (const std::pair<size_t, size_t> &span : n_filtered)
                     for (size_t j = span.first; j < span.second; ++j) {
-                        out[j] = std::move(layers[i++]);
+                        out[j] = std::move(layers[i ++]);
                         outSublayers->emplace_back(std::move(sublayers[j]));
                     }
             }
@@ -109,7 +108,6 @@ static std::vector<ExPolygons> slice_volume(
     }
     return out;
 }
-
 
 struct VolumeSlices
 {
@@ -183,7 +181,7 @@ static std::vector<VolumeSlices> slice_volumes_inner(
             if (layer_ranges.size() == 1) {
                 if (const PrintObjectRegions::LayerRangeRegions &layer_range = layer_ranges.front(); layer_range.has_volume(model_volume->id())) {
                     if (model_volume->is_model_part() && print_config.spiral_vase) {
-                        auto it = std::find_if(layer_range.volume_regions.begin(), layer_range.volume_regions.end(),
+                        auto it = std::find_if(layer_range.volume_regions.begin(), layer_range.volume_regions.end(), 
                             [model_volume](const auto &slice){ return model_volume == slice.model_volume; });
                         params.mode = MeshSlicingParams::SlicingMode::PositiveLargestContour;
                         // Slice the bottom layers with SlicingMode::Regular.
@@ -249,7 +247,7 @@ static std::vector<PrintObjectRegions::LayerRangeRegions>::const_iterator layer_
 }
 
 static std::vector<PrintObjectRegions::LayerRangeRegions>::const_iterator layer_range_next(
-    const std::vector<PrintObjectRegions::LayerRangeRegions>            &layer_ranges,
+    const std::vector<PrintObjectRegions::LayerRangeRegions>            &layer_ranges, 
     std::vector<PrintObjectRegions::LayerRangeRegions>::const_iterator   it,
     double                                                               z)
 {
@@ -337,7 +335,7 @@ static std::vector<std::vector<ExPolygons>> slices_to_regions(
                 float z              = zs_complex[range.begin()].second;
                 auto  it_layer_range = layer_range_first(print_object_regions.layer_ranges, z);
                 // Per volume_regions slices at this Z height.
-                struct RegionSlice {
+                struct RegionSlice { 
                     ExPolygons  expolygons;
                     // Identifier of this region in PrintObjectRegions::all_regions
                     int         region_id;
@@ -413,7 +411,7 @@ static std::vector<std::vector<ExPolygons>> slices_to_regions(
                                 }
                             }
                         if (merged)
-                        // to handle region overlaps. Indeed, one may intentionally let the regions overlap to produce crossing perimeters
+                            // to handle region overlaps. Indeed, one may intentionally let the regions overlap to produce crossing perimeters
                             expolygons = closing_ex(expolygons, float(scale_(EPSILON)));
                         slices_by_region[temp_slices[i].region_id][z_idx] = std::move(expolygons);
                         i = j;
@@ -469,7 +467,7 @@ std::string fix_slicing_errors(LayerPtrs &layers, const std::function<void()> &t
                     // Collect outer contours and holes from the valid layers above & below.
                     Polygons outer;
                     outer.reserve(
-                        ((upper_surfaces == nullptr) ? 0 : upper_surfaces->size()) +
+                        ((upper_surfaces == nullptr) ? 0 : upper_surfaces->size()) + 
                         ((lower_surfaces == nullptr) ? 0 : lower_surfaces->size()));
                     size_t num_holes = 0;
                     if (upper_surfaces)
@@ -565,23 +563,21 @@ void PrintObject::slice()
     tbb::parallel_for(
         tbb::blocked_range<size_t>(1, m_layers.size()),
         [this](const tbb::blocked_range<size_t> &range) {
-        for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++layer_idx) {
-            m_print->throw_if_canceled();
-            // Layer::build_up_down_graph and subsequent support stability checks
-            // appear to get in trouble when multiple layers point to the same
-            // above/below layer as happens in case of z-dithering. For now I just avoid
-            // mixing dithered and non-dithered layers in the same graph.
-            Layer *above = m_layers[layer_idx];
-            Layer *below = above->lower_layer;
-            if (below != nullptr && above->dithered == below->dithered) {
-                Layer::build_up_down_graph(*below, *above);
-            }
-            // Layer::build_up_down_graph(*m_layers[layer_idx - 1], *m_layers[layer_idx]);
-        }
+	        for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++layer_idx) {
+	            m_print->throw_if_canceled();
+	            // Layer::build_up_down_graph and subsequent support stability checks
+	            // appear to get in trouble when multiple layers point to the same
+	            // above/below layer as happens in case of z-dithering. For now I just avoid
+	            // mixing dithered and non-dithered layers in the same graph.
+	            Layer *above = m_layers[layer_idx];
+	            Layer *below = above->lower_layer;
+	            if (below != nullptr && above->dithered == below->dithered)
+	                Layer::build_up_down_graph(*below, *above);
+	            // Layer::build_up_down_graph(*m_layers[layer_idx - 1], *m_layers[layer_idx]);
+	        }
         });
-       // });
     if (m_layers.empty())
-        throw Slic3r::SlicingError("No layers were detected. You might want to repair your STL file(s) or check their size or thickness and retry.\n");
+        throw Slic3r::SlicingError("No layers were detected. You might want to repair your STL file(s) or check their size or thickness and retry.\n");    
     this->set_done(posSlice);
 }
 
@@ -832,13 +828,12 @@ void PrintObject::slice_volumes()
 
     if (this->config().z_dither) {
         m_layers = add_dithering_layers(m_layers, volume_slices, volume_sublayers);
-        for (Layer *layer : m_layers) {
+        for (Layer *layer : m_layers)
             if (layer->dithered) {
                 layer->m_regions.reserve(m_shared_regions->all_regions.size());
                 for (const std::unique_ptr<PrintRegion> &pr : m_shared_regions->all_regions)
                     layer->m_regions.emplace_back(new LayerRegion(layer, pr.get()));
             }
-        }
         slice_zs = zs_from_layers(m_layers, false);
     }
 
@@ -851,7 +846,7 @@ void PrintObject::slice_volumes()
             m_layers[layer_id]->regions()[region_id]->m_slices.append(std::move(by_layer[layer_id]), stInternal);
     }
     region_slices.clear();
-
+    
     BOOST_LOG_TRIVIAL(debug) << "Slicing volumes - removing top empty layers";
     while (! m_layers.empty()) {
         const Layer *layer = m_layers.back();
@@ -919,7 +914,7 @@ void PrintObject::slice_volumes()
 							layerm->m_slices.set(
 								union_ex(
 									Slic3r::elephant_foot_compensation(
-										(delta == 0.f) ? lslices_1st_layer : offset_ex(lslices_1st_layer, delta),
+										(delta == 0.f) ? lslices_1st_layer : offset_ex(lslices_1st_layer, delta), 
 	                            		layerm->flow(frExternalPerimeter), unscale<double>(elfoot))),
 								stInternal);
 							if (xy_compensation_scaled < 0.f)

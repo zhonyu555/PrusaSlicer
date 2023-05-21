@@ -1007,8 +1007,6 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject     
             for (const auto &l : unstable_lines_per_slice[slice_idx]) {
                 assert(l.support_point_generated.has_value());
                 reckon_new_support_point(*l.support_point_generated, create_support_point_position(l.b), float(-EPSILON), Vec2f::Zero());
-                    
-                    
             }
 
             LD    current_slice_lines_distancer({ext_perim_lines_per_slice[slice_idx].begin(), ext_perim_lines_per_slice[slice_idx].end()});
@@ -1182,7 +1180,6 @@ void estimate_malformations(LayerPtrs &layers, const Params &params)
         std::vector<ExtrusionLine>           current_layer_lines;
         for (const LayerRegion *layer_region : l->regions()) {
             for (const ExtrusionEntity *extrusion : layer_region->perimeters().flatten().entities) {
-                
                 if (!extrusion->role().is_external_perimeter())
                     continue;
 

@@ -652,8 +652,6 @@ std::vector<std::pair<coordf_t, GCode::ObjectsLayerToPrint>> GCode::collect_laye
         size_t      object_idx;
         size_t      layer_idx;
         coordf_t    layer_height;
-
-
     };
 
     std::vector<ObjectsLayerToPrint>  per_object(print.objects().size(), ObjectsLayerToPrint());
@@ -672,9 +670,9 @@ std::vector<std::pair<coordf_t, GCode::ObjectsLayerToPrint>> GCode::collect_laye
         }
     }
 
-    std::sort(ordering.begin(), ordering.end(), [](const OrderingItem& oi1, const OrderingItem& oi2) {
+    std::sort(ordering.begin(), ordering.end(), [](const OrderingItem &oi1, const OrderingItem &oi2) {
         return fabs(oi1.print_z - oi2.print_z) > EPSILON ? oi1.print_z < oi2.print_z : oi1.layer_height < oi2.layer_height;
-        });
+    });
 
     std::vector<std::pair<coordf_t, ObjectsLayerToPrint>> layers_to_print;
 
@@ -689,8 +687,8 @@ std::vector<std::pair<coordf_t, GCode::ObjectsLayerToPrint>> GCode::collect_laye
         std::pair<coordf_t, ObjectsLayerToPrint> merged;
         // Assign an average print_z to the set of layers with nearly equal print_z.
         merged.first = 0.5 * (ordering[i].print_z + ordering[j - 1].print_z);
-		// z-dithering may result in 2 layers from the same object in merged
-        for (; i < j; ++ i) {
+	// z-dithering may result in 2 layers from the same object in merged
+        for (; i < j; ++i) {
             const OrderingItem& oi = ordering[i];
             merged.second.emplace_back(std::move(per_object[oi.object_idx][oi.layer_idx]));
         }

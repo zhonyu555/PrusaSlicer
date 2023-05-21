@@ -417,7 +417,7 @@ void Preset::set_visible_from_appconfig(const AppConfig &app_config)
 	    	for (auto it = this->renamed_from.begin(); ! is_visible && it != this->renamed_from.end(); ++ it)
 	    		is_visible = has(*it);
 	    }
-        else
+        else 
 			is_visible = false;
     }
 }
@@ -678,7 +678,7 @@ void PresetCollection::add_default_preset(const std::vector<std::string> &keys, 
 // Load all presets found in dir_path.
 // Throws an exception on error.
 void PresetCollection::load_presets(
-    const std::string &dir_path, const std::string &subdir,
+    const std::string &dir_path, const std::string &subdir, 
     PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule substitution_rule)
 {
     // Don't use boost::filesystem::canonical() on Windows, it is broken in regard to reparse points,
@@ -1755,7 +1755,7 @@ PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::str
 // Load all printers found in dir_path.
 // Throws an exception on error.
 void PhysicalPrinterCollection::load_printers(
-    const std::string& dir_path, const std::string& subdir,
+    const std::string& dir_path, const std::string& subdir, 
     PresetsConfigSubstitutions& substitutions, ForwardCompatibilitySubstitutionRule substitution_rule)
 {
     // Don't use boost::filesystem::canonical() on Windows, it is broken in regard to reparse points,

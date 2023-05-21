@@ -105,7 +105,7 @@ public:
 public:
     void                        set_config(const PrintRegionConfig &config) { m_config = config; m_config_hash = m_config.hash(); }
     void                        set_config(PrintRegionConfig &&config) { m_config = std::move(config); m_config_hash = m_config.hash(); }
-    void                        config_apply_only(const ConfigBase &other, const t_config_option_keys &keys, bool ignore_nonexistent = false)
+    void                        config_apply_only(const ConfigBase &other, const t_config_option_keys &keys, bool ignore_nonexistent = false) 
                                         { m_config.apply_only(other, keys, ignore_nonexistent); m_config_hash = m_config.hash(); }
 private:
     friend Print;
@@ -243,12 +243,12 @@ private: // Prevents erroneous use by other classes.
 public:
     // Size of an object: XYZ in scaled coordinates. The size might not be quite snug in XY plane.
     const Vec3crd&               size() const			{ return m_size; }
-    const PrintObjectConfig&     config() const         { return m_config; }
+    const PrintObjectConfig&     config() const         { return m_config; }    
     auto                         layers() const         { return SpanOfConstPtrs<Layer>(const_cast<const Layer* const* const>(m_layers.data()), m_layers.size()); }
     auto                         support_layers() const { return SpanOfConstPtrs<SupportLayer>(const_cast<const SupportLayer* const* const>(m_support_layers.data()), m_support_layers.size()); }
     const Transform3d&           trafo() const          { return m_trafo; }
     // Trafo with the center_offset() applied after the transformation, to center the object in XY before slicing.
-    Transform3d                  trafo_centered() const
+    Transform3d                  trafo_centered() const 
         { Transform3d t = this->trafo(); t.pretranslate(Vec3d(- unscale<double>(m_center_offset.x()), - unscale<double>(m_center_offset.y()), 0)); return t; }
     const PrintInstances&        instances() const      { return m_instances; }
 
@@ -297,7 +297,7 @@ public:
     SupportLayer*   add_support_layer(int id, int interface_id, coordf_t height, coordf_t print_z);
     SupportLayerPtrs::iterator insert_support_layer(SupportLayerPtrs::iterator pos, size_t id, size_t interface_id, coordf_t height, coordf_t print_z, coordf_t slice_z);
     void            delete_support_layer(int idx);
-
+    
     // Initialize the layer_height_profile from the model_object's layer_height_profile, from model_object's layer height table, or from slicing parameters.
     // Returns true, if the layer_height_profile was changed.
     static bool     update_layer_height_profile(const ModelObject &model_object, const SlicingParameters &slicing_parameters, std::vector<coordf_t> &layer_height_profile);
@@ -380,7 +380,7 @@ private:
     void slice_volumes();
     // Has any support (not counting the raft).
     // find the next layer below or above idx; In case of z-dithering it may be different from incrementing/decrementing idx
-    int next_layer_index(size_t idx, bool lower) const;   // returns int to allow -1
+    int  next_layer_index(size_t idx, bool lower) const;   // returns int to allow -1
     void detect_surfaces_type();
     void process_external_surfaces();
     void discover_vertical_shells();
@@ -449,7 +449,7 @@ struct WipeTowerData
     }
 
 private:
-	// Only allow the WipeTowerData to be instantiated internally by Print,
+	// Only allow the WipeTowerData to be instantiated internally by Print, 
 	// as this WipeTowerData shares reference to Print::m_tool_ordering.
 	friend class Print;
 	WipeTowerData(ToolOrdering &tool_ordering) : tool_ordering(tool_ordering) { clear(); }
@@ -539,7 +539,7 @@ public:
 
     // methods for handling state
     bool                is_step_done(PrintStep step) const { return Inherited::is_step_done(step); }
-    // Returns true if an object step is done on all objects and there's at least one object.
+    // Returns true if an object step is done on all objects and there's at least one object.    
     bool                is_step_done(PrintObjectStep step) const;
     // Returns true if the last step was finished with success.
     bool                finished() const override { return this->is_step_done(psGCodeExport); }
@@ -553,7 +553,7 @@ public:
     double              skirt_first_layer_height() const;
     Flow                brim_flow() const;
     Flow                skirt_flow() const;
-
+    
     std::vector<unsigned int> object_extruders() const;
     std::vector<unsigned int> support_material_extruders() const;
     std::vector<unsigned int> extruders() const;
@@ -575,8 +575,8 @@ public:
     }
     // PrintObject by its ObjectID, to be used to uniquely bind slicing warnings to their source PrintObjects
     // in the notification center.
-    const PrintObject*          get_object(ObjectID object_id) const {
-        auto it = std::find_if(m_objects.begin(), m_objects.end(),
+    const PrintObject*          get_object(ObjectID object_id) const { 
+        auto it = std::find_if(m_objects.begin(), m_objects.end(), 
             [object_id](const PrintObject *obj) { return obj->id() == object_id; });
         return (it == m_objects.end()) ? nullptr : *it;
     }
@@ -584,7 +584,7 @@ public:
     // If zero, then the print is empty and the print shall not be executed.
     unsigned int                num_object_instances() const;
 
-    // For Perl bindings.
+    // For Perl bindings. 
     PrintObjectPtrs&            objects_mutable() { return m_objects; }
     PrintRegionPtrs&            print_regions_mutable() { return m_print_regions; }
 
