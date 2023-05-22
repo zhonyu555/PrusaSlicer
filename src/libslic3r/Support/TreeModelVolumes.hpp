@@ -14,9 +14,9 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "Point.hpp"
-#include "Polygon.hpp"
-#include "PrintConfig.hpp"
+#include "../Point.hpp"
+#include "../Polygon.hpp"
+#include "../PrintConfig.hpp"
 
 namespace Slic3r
 {
@@ -94,7 +94,9 @@ struct TreeSupportMeshGroupSettings {
     bool                            support_roof_enable                     { false };
     // Support Roof Thickness
     // The thickness of the support roofs. This controls the amount of dense layers at the top of the support on which the model rests.
-    coord_t                         support_roof_height                     { scaled<coord_t>(1.) };
+    coord_t                         support_roof_layers                     { 2 };
+    bool                            support_floor_enable                    { false };
+    coord_t                         support_floor_layers                    { 2 };
     // Minimum Support Roof Area
     // Minimum area size for the roofs of the support. Polygons which have an area smaller than this value will be printed as normal support.
     double                          minimum_roof_area                       { scaled<double>(scaled<double>(1.)) };
@@ -215,6 +217,7 @@ public:
     void clear() { 
         this->clear_all_but_object_collision();
         m_collision_cache.clear();
+        m_placeable_areas_cache.clear();
     }
     void clear_all_but_object_collision() { 
         //m_collision_cache.clear_all_but_radius0();
@@ -223,7 +226,7 @@ public:
         m_avoidance_cache_slow.clear();
         m_avoidance_cache_to_model.clear();
         m_avoidance_cache_to_model_slow.clear();
-        m_placeable_areas_cache.clear();
+        m_placeable_areas_cache.clear_all_but_radius0();
         m_avoidance_cache_holefree.clear();
         m_avoidance_cache_holefree_to_model.clear();
         m_wall_restrictions_cache.clear();
@@ -329,23 +332,26 @@ public:
 
 private:
     // Caching polygons for a range of layers.
-    struct LayerPolygonCache {
-        std::vector<Polygons> polygons;
-        LayerIndex            idx_begin;
-        LayerIndex            idx_end;
-
+    class LayerPolygonCache {
+    public:
         void allocate(LayerIndex aidx_begin, LayerIndex aidx_end) {
-            this->idx_begin = aidx_begin;
-            this->idx_end = aidx_end;
-            this->polygons.assign(aidx_end - aidx_begin, {});
+            m_idx_begin = aidx_begin;
+            m_idx_end = aidx_end;
+            m_polygons.assign(aidx_end - aidx_begin, {});
         }
 
-        LayerIndex begin() const { return idx_begin; }
-        LayerIndex end()   const { return idx_end; }
-        size_t     size()  const { return polygons.size(); }
+        LayerIndex begin() const { return m_idx_begin; }
+        LayerIndex end()   const { return m_idx_end; }
+        size_t     size()  const { return m_polygons.size(); }
 
-        bool      has(LayerIndex idx) const { return idx >= idx_begin && idx < idx_end; }
-        Polygons& operator[](LayerIndex idx) { return polygons[idx + idx_begin]; }
+        bool      has(LayerIndex idx) const { return idx >= m_idx_begin && idx < m_idx_end; }
+        Polygons& operator[](LayerIndex idx) { assert(idx >= m_idx_begin && idx < m_idx_end); return m_polygons[idx - m_idx_begin]; }
+        std::vector<Polygons>& polygons_mutable() { return m_polygons; }
+
+    private:
+        std::vector<Polygons> m_polygons;
+        LayerIndex            m_idx_begin;
+        LayerIndex            m_idx_end;
     };
 
     /*!
@@ -385,9 +391,9 @@ private:
         }
         void insert(LayerPolygonCache &&in, coord_t radius) {
             std::lock_guard<std::mutex> guard(m_mutex);
-            LayerIndex i = in.idx_begin;
+            LayerIndex i = in.begin();
             allocate_layers(i + LayerIndex(in.size()));
-            for (auto &d : in.polygons)
+            for (auto &d : in.polygons_mutable())
                 m_data[i ++].emplace(radius, std::move(d));
         }
         /*!
@@ -512,7 +518,7 @@ private:
      */
     void calculateCollisionHolefree(RadiusLayerPair key)
     {
-        calculateCollisionHolefree(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, {});
+        calculateCollisionHolefree(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, []{});
     }
 
     /*!
@@ -533,7 +539,7 @@ private:
      */
     void calculateAvoidance(RadiusLayerPair key, bool to_build_plate, bool to_model)
     {
-        calculateAvoidance(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, to_build_plate, to_model, {});
+        calculateAvoidance(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, to_build_plate, to_model, []{});
     }
 
     /*!
@@ -567,7 +573,7 @@ private:
      */
     void calculateWallRestrictions(RadiusLayerPair key)
     {
-        calculateWallRestrictions(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, {});
+        calculateWallRestrictions(std::vector<RadiusLayerPair>{ RadiusLayerPair(key) }, []{});
     }
 
     /*!

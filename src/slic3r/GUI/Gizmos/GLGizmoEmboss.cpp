@@ -142,13 +142,6 @@ GLGizmoEmboss::GLGizmoEmboss(GLCanvas3D &parent)
 namespace priv {
 
 /// <summary>
-/// Check if volume type is possible use for new text volume
-/// </summary>
-/// <param name="volume_type">Type</param>
-/// <returns>True when allowed otherwise false</returns>
-static bool is_valid(ModelVolumeType volume_type);
-
-/// <summary>
 /// Prepare data for emboss
 /// </summary>
 /// <param name="text">Text to emboss</param>
@@ -250,13 +243,13 @@ static bool apply_camera_dir(const Camera &camera, GLCanvas3D &canvas);
 
 void GLGizmoEmboss::create_volume(ModelVolumeType volume_type, const Vec2d& mouse_pos)
 {
-    if (!priv::is_valid(volume_type)) return;
-    m_style_manager.discard_style_changes();
-    set_default_text();
-    
-    GLVolume *gl_volume = get_first_hovered_gl_volume(m_parent);
+    if (!init_create(volume_type))
+        return;
+
+    const GLVolume *gl_volume = get_first_hovered_gl_volume(m_parent);
     DataBase emboss_data = priv::create_emboss_data_base(m_text, m_style_manager, m_job_cancel);
-    if (gl_volume != nullptr) {
+    bool is_simple_mode = wxGetApp().get_mode() == comSimple;
+    if (gl_volume != nullptr && !is_simple_mode) {
         // Try to cast ray into scene and find object for add volume
         if (!priv::start_create_volume_on_surface_job(emboss_data, volume_type, mouse_pos, gl_volume, m_raycast_manager, m_parent)) {
             // When model is broken. It could appear that hit miss the object.
@@ -272,9 +265,8 @@ void GLGizmoEmboss::create_volume(ModelVolumeType volume_type, const Vec2d& mous
 // Designed for create volume without information of mouse in scene
 void GLGizmoEmboss::create_volume(ModelVolumeType volume_type)
 {
-    if (!priv::is_valid(volume_type)) return;
-    m_style_manager.discard_style_changes();
-    set_default_text();
+    if (!init_create(volume_type))
+        return;
 
     // select position by camera position and view direction
     const Selection &selection = m_parent.get_selection();
@@ -284,8 +276,9 @@ void GLGizmoEmboss::create_volume(ModelVolumeType volume_type)
     Vec2d screen_center(s.get_width() / 2., s.get_height() / 2.);
     DataBase emboss_data = priv::create_emboss_data_base(m_text, m_style_manager, m_job_cancel);
     const ModelObjectPtrs &objects = selection.get_model()->objects;
+    bool is_simple_mode = wxGetApp().get_mode() == comSimple;
     // No selected object so create new object
-    if (selection.is_empty() || object_idx < 0 || static_cast<size_t>(object_idx) >= objects.size()) {
+    if (selection.is_empty() || object_idx < 0 || static_cast<size_t>(object_idx) >= objects.size() || is_simple_mode) {
         // create Object on center of screen
         // when ray throw center of screen not hit bed it create object on center of bed
         priv::start_create_object_job(emboss_data, screen_center);
@@ -322,6 +315,60 @@ void GLGizmoEmboss::create_volume(ModelVolumeType volume_type)
     }
 }
 
+void GLGizmoEmboss::on_shortcut_key() {
+    set_volume_by_selection();
+    if (m_volume == nullptr) {
+        // No volume to select from selection so create volume.
+        // NOTE: After finish job for creation emboss Text volume,
+        // GLGizmoEmboss will be opened
+        create_volume(ModelVolumeType::MODEL_PART);
+    } else {
+        // shortcut is pressed when text is selected soo start edit it.
+        auto &mng = m_parent.get_gizmos_manager();
+        if (mng.get_current_type() != GLGizmosManager::Emboss)
+            mng.open_gizmo(GLGizmosManager::Emboss);
+    }
+}
+
+bool GLGizmoEmboss::init_create(ModelVolumeType volume_type)
+{
+    // check valid volume type
+    if (volume_type != ModelVolumeType::MODEL_PART &&
+        volume_type != ModelVolumeType::NEGATIVE_VOLUME &&
+        volume_type != ModelVolumeType::PARAMETER_MODIFIER){    
+        BOOST_LOG_TRIVIAL(error) << "Can't create embossed volume with this type: " << (int) volume_type;
+        return false;
+    }
+
+    if (!is_activable()) {
+        BOOST_LOG_TRIVIAL(error) << "Can't create text. Gizmo is not activabled.";
+        return false;
+    }
+    
+    // Check can't be inside is_activable() cause crash
+    // steps to reproduce: start App -> key 't' -> key 'delete'
+    if (wxGetApp().obj_list()->has_selected_cut_object()) {
+        BOOST_LOG_TRIVIAL(error) << "Can't create text on cut object";
+        return false;    
+    }
+
+    m_style_manager.discard_style_changes();
+
+    // set default text
+    m_text = _u8L("Embossed text");
+    return true;
+}
+
+namespace {
+TransformationType get_transformation_type(const Selection &selection)
+{
+    assert(selection.is_single_full_object() || selection.is_single_volume());
+    return selection.is_single_volume() ? 
+        TransformationType::Local_Relative_Joint :
+        TransformationType::Instance_Relative_Joint; // object
+}
+} // namespace
+
 bool GLGizmoEmboss::on_mouse_for_rotation(const wxMouseEvent &mouse_event)
 {
     if (mouse_event.Moving()) return false;
@@ -341,9 +388,8 @@ bool GLGizmoEmboss::on_mouse_for_rotation(const wxMouseEvent &mouse_event)
         angle -= PI / 2; // Grabber is upward
 
         // temporary rotation
-        const TransformationType transformation_type = m_parent.get_selection().is_single_text() ?
-          TransformationType::Local_Relative_Joint : TransformationType::World_Relative_Joint;
-        m_parent.get_selection().rotate(Vec3d(0., 0., angle), transformation_type);
+        Selection& selection = m_parent.get_selection();
+        selection.rotate(Vec3d(0., 0., angle), get_transformation_type(selection));
 
         angle += *m_rotate_start_angle;
         // move to range <-M_PI, M_PI>
@@ -410,6 +456,89 @@ bool GLGizmoEmboss::on_mouse_for_translate(const wxMouseEvent &mouse_event)
     return res;
 }
 
+void GLGizmoEmboss::on_mouse_change_selection(const wxMouseEvent &mouse_event)
+{
+    static bool was_dragging = true;  
+    if ((mouse_event.LeftUp() || mouse_event.RightUp()) && !was_dragging) {
+        // is hovered volume closest hovered?
+        int hovered_idx = m_parent.get_first_hover_volume_idx();
+        if (hovered_idx < 0) 
+            // unselect object
+            return close();
+
+        const GLVolumePtrs &gl_volumes = m_parent.get_volumes().volumes;
+        auto hovered_idx_ = static_cast<size_t>(hovered_idx);
+        if (hovered_idx_ >= gl_volumes.size())
+            return close();
+        
+        const GLVolume *gl_volume = gl_volumes[hovered_idx_];
+        if (gl_volume == nullptr)
+            return close();
+
+        const ModelVolume *volume = get_model_volume(*gl_volume, m_parent.get_model()->objects);
+        if (volume == nullptr || !volume->text_configuration.has_value())
+            // select volume without text configuration
+            return close();
+
+        // Reselection of text to another text
+    }
+    was_dragging = mouse_event.Dragging();
+
+    // Hook When click on object for reselection must be on event left down not up
+    if (mouse_event.LeftDown()) {
+        // is hovered volume closest hovered?
+        int hovered_idx = m_parent.get_first_hover_volume_idx();
+        if (hovered_idx < 0)
+            // Potentionaly move with camera (drag)
+            return;
+
+        const GLVolumePtrs &gl_volumes = m_parent.get_volumes().volumes;
+        auto hovered_idx_ = static_cast<size_t>(hovered_idx);
+        if (hovered_idx_ >= gl_volumes.size())
+            return;
+        const GLVolume *gl_volume = gl_volumes[hovered_idx_];
+        if (gl_volume == nullptr)
+            return;
+        const ModelVolume *volume = get_model_volume(*gl_volume, m_parent.get_model()->objects);
+        if (volume == nullptr)
+            return;
+
+        if (volume->text_configuration.has_value())        
+            return; // Reselection of text to another text
+
+        // select volume without text configuration
+        return close();
+    }
+
+    // Hook When drag with scene by right mouse button
+    // object it is selected after drag scene !!
+    if (mouse_event.RightDown()) {
+        // is hovered volume closest hovered?
+        int hovered_idx = m_parent.get_first_hover_volume_idx();
+        if (hovered_idx < 0)
+            // Potentionaly move with camera (drag)
+            return;
+
+        const GLVolumePtrs &gl_volumes = m_parent.get_volumes().volumes;
+        auto hovered_idx_ = static_cast<size_t>(hovered_idx);
+        if (hovered_idx_ >= gl_volumes.size())
+            return;
+        const GLVolume *gl_volume = gl_volumes[hovered_idx_];
+        if (gl_volume == nullptr)
+            return;
+        const ModelVolume *volume = get_model_volume(*gl_volume, m_parent.get_model()->objects);
+        if (volume == nullptr)
+            return;
+
+        // is actual selected?
+        if (m_volume->id() == volume->id())
+            return;
+
+        // select volume without text configuration
+        return close();
+    }
+}
+
 bool GLGizmoEmboss::on_mouse(const wxMouseEvent &mouse_event)
 {
     // not selected volume
@@ -419,7 +548,7 @@ bool GLGizmoEmboss::on_mouse(const wxMouseEvent &mouse_event)
 
     if (on_mouse_for_rotation(mouse_event)) return true;
     if (on_mouse_for_translate(mouse_event)) return true;
-
+    on_mouse_change_selection(mouse_event);
     return false;
 }
 
@@ -428,6 +557,8 @@ bool GLGizmoEmboss::on_init()
     m_rotate_gizmo.init();
     ColorRGBA gray_color(.6f, .6f, .6f, .3f);
     m_rotate_gizmo.set_highlight_color(gray_color);
+
+    // NOTE: It has special handling in GLGizmosManager::handle_shortcut
     m_shortcut_key = WXK_CONTROL_T;
 
     // initialize text styles
@@ -526,11 +657,12 @@ static void draw_mouse_offset(const std::optional<Vec2d> &offset)
 
 void GLGizmoEmboss::on_render_input_window(float x, float y, float bottom_limit)
 {
-    set_volume_by_selection();
+    assert(m_volume != nullptr);
     // Do not render window for not selected text volume
     if (m_volume == nullptr ||
         get_model_volume(m_volume_id, m_parent.get_selection().get_model()->objects) == nullptr ||
         !m_volume->text_configuration.has_value()) {
+        // This closing could lead to bad behavior of undo/redo stack when unselection create snapshot before close
         close();
         return;
     }
@@ -645,45 +777,25 @@ void GLGizmoEmboss::on_set_state()
 {
     // enable / disable bed from picking
     // Rotation gizmo must work through bed
-    m_parent.set_raycaster_gizmos_on_top(GLGizmoBase::m_state == GLGizmoBase::On);
+    m_parent.set_raycaster_gizmos_on_top(m_state == GLGizmoBase::On);
 
-    m_rotate_gizmo.set_state(GLGizmoBase::m_state);
+    m_rotate_gizmo.set_state(m_state);
 
     // Closing gizmo. e.g. selecting another one
-    if (GLGizmoBase::m_state == GLGizmoBase::Off) {
+    if (m_state == GLGizmoBase::Off) {
         // refuse outgoing during text preview
-        if (false) {
-            GLGizmoBase::m_state = GLGizmoBase::On;
-            auto notification_manager = wxGetApp().plater()->get_notification_manager();
-            notification_manager->push_notification(
-                NotificationType::CustomNotification,
-                NotificationManager::NotificationLevel::RegularNotificationLevel,
-                _u8L("ERROR: Wait until ends or Cancel process."));
-            return;
-        }
         reset_volume();
         // Store order and last activ index into app.ini
         // TODO: what to do when can't store into file?
         m_style_manager.store_styles_to_app_config(false);
         remove_notification_not_valid_font();
-    } else if (GLGizmoBase::m_state == GLGizmoBase::On) {
+    } else if (m_state == GLGizmoBase::On) {
         // to reload fonts from system, when install new one
         wxFontEnumerator::InvalidateCache();
 
-        // Try(when exist) set text configuration by volume 
-        set_volume_by_selection();
-
-        // when open window by "T" and no valid volume is selected, so Create new one 
-        if (m_volume == nullptr ||
-            get_model_volume(m_volume_id, m_parent.get_selection().get_model()->objects) == nullptr ) { 
-            // reopen gizmo when new object is created
-            GLGizmoBase::m_state = GLGizmoBase::Off;
-            if (wxGetApp().get_mode() == comSimple || wxGetApp().obj_list()->has_selected_cut_object())
-                // It's impossible to add a part in simple mode
-                return;
-            // start creating new object 
-            create_volume(ModelVolumeType::MODEL_PART);
-        }
+        // Immediately after set state On is called function data_changed(), 
+        // where one could distiguish undo/redo serialization from opening by letter 'T'
+        // set_volume_by_selection();
 
         // change position of just opened emboss window
         if (m_allow_open_near_volume) {
@@ -701,8 +813,10 @@ void GLGizmoEmboss::on_set_state()
     }
 }
 
-void GLGizmoEmboss::data_changed() { 
+void GLGizmoEmboss::data_changed(bool is_serializing) {
     set_volume_by_selection();
+    if (!is_serializing && m_volume == nullptr)
+        close();
 }
 
 void GLGizmoEmboss::on_start_dragging() { m_rotate_gizmo.start_dragging(); }
@@ -899,8 +1013,6 @@ EmbossStyles GLGizmoEmboss::create_default_styles()
     return styles;
 }
 
-void GLGizmoEmboss::set_default_text(){ m_text = _u8L("Embossed text"); }
-
 void GLGizmoEmboss::set_volume_by_selection()
 {
     const Selection &selection = m_parent.get_selection();
@@ -908,13 +1020,15 @@ void GLGizmoEmboss::set_volume_by_selection()
     if (gl_volume == nullptr)
         return reset_volume();
 
-    const ModelObjectPtrs &objects = selection.get_model()->objects;
-    ModelVolume *volume =get_model_volume(*gl_volume, objects);
+    const ModelObjectPtrs &objects = m_parent.get_model()->objects;
+    ModelVolume *volume = get_model_volume(*gl_volume, objects);
     if (volume == nullptr)
         return reset_volume();
 
     // is same volume as actual selected?
-    if (volume->id() == m_volume_id)
+    if (volume->id() == m_volume_id && 
+        m_volume != nullptr && 
+        volume->text_configuration->style == m_volume->text_configuration->style)
         return;
 
     // for changed volume notification is NOT valid
@@ -1886,7 +2000,7 @@ void GLGizmoEmboss::draw_font_list()
             if (ImGui::Selectable(face.name_truncated.c_str(), is_selected, flags, selectable_size)) {
                 if (!select_facename(wx_face_name)) {
                     del_index = index;
-                    wxMessageBox(GUI::format(_L("Font face \"%1%\" can't be selected."), wx_face_name));
+                    MessageDialog(wxGetApp().plater(), GUI::format_wxstr(_L("Font \"%1%\" can't be selected."), wx_face_name));
                 }
             }
             // tooltip as full name of font face
@@ -2218,7 +2332,7 @@ void GLGizmoEmboss::draw_delete_style_button() {
                                                    active_index + 1;
             
             if (next_style_index >= m_style_manager.get_styles().size()) {
-                MessageDialog msg(plater, _L("Can't remove the last exising style."), dialog_title, wxICON_ERROR | wxOK);
+                MessageDialog msg(plater, _L("Can't remove the last existing style."), dialog_title, wxICON_ERROR | wxOK);
                 msg.ShowModal();
                 break;
             }
@@ -2231,7 +2345,7 @@ void GLGizmoEmboss::draw_delete_style_button() {
                 continue;
             }
 
-            wxString message = GUI::format_wxstr(_L("Are you sure,\nthat you want permanently and unrecoverable \nremove \"%1%\" style?"), style_name);
+            wxString message = GUI::format_wxstr(_L("Are you sure you want to permanently remove the \"%1%\" style?"), style_name);
             MessageDialog msg(plater, message, dialog_title, wxICON_WARNING | wxYES | wxNO);
             if (msg.ShowModal() == wxID_YES) {
                 // delete style
@@ -2372,10 +2486,9 @@ void GLGizmoEmboss::draw_style_list() {
         
     // Check whether user wants lose actual style modification
     if (selected_style_index.has_value() && is_modified) { 
-        wxString title   = _L("Style modification will be lost.");
         const EmbossStyle &style = m_style_manager.get_styles()[*selected_style_index].style;        
-        wxString message = GUI::format_wxstr(_L("Changing style to '%1%' will discard current style modification.\n\n Would you like to continue anyway?"), style.name);
-        MessageDialog not_loaded_style_message(nullptr, message, title, wxICON_WARNING | wxYES|wxNO);
+        wxString message = GUI::format_wxstr(_L("Changing style to \"%1%\" will discard current style modification.\n\nWould you like to continue anyway?"), style.name);
+        MessageDialog not_loaded_style_message(nullptr, message, _L("Warning"), wxICON_WARNING | wxYES | wxNO);
         if (not_loaded_style_message.ShowModal() != wxID_YES) 
             selected_style_index.reset();
     }
@@ -2391,7 +2504,7 @@ void GLGizmoEmboss::draw_style_list() {
             process();
         } else {
             wxString title   = _L("Not valid style.");
-            wxString message = GUI::format_wxstr(_L("Style '%1%' can't be used and will be removed from a list."), style.name);
+            wxString message = GUI::format_wxstr(_L("Style \"%1%\" can't be used and will be removed from a list."), style.name);
             MessageDialog not_loaded_style_message(nullptr, message, title, wxOK);
             not_loaded_style_message.ShowModal();
             m_style_manager.erase(*selected_style_index);
@@ -2776,8 +2889,7 @@ void GLGizmoEmboss::do_rotate(float relative_z_angle)
     Selection &selection = m_parent.get_selection();
     assert(!selection.is_empty());
     selection.setup_cache();
-    TransformationType transformation_type = TransformationType::Local_Relative_Joint;
-    selection.rotate(Vec3d(0., 0., relative_z_angle), transformation_type);
+    selection.rotate(Vec3d(0., 0., relative_z_angle), get_transformation_type(selection));
 
     std::string snapshot_name; // empty meand no store undo / redo
     // NOTE: it use L instead of _L macro because prefix _ is appended
@@ -2790,8 +2902,8 @@ void GLGizmoEmboss::draw_advanced()
 {
     const auto &ff = m_style_manager.get_font_file_with_cache();
     if (!ff.has_value()) { 
-        ImGui::Text("%s", _u8L("Advanced font options could be changed only for correct font.\n"
-                                   "Start with select correct font.").c_str());
+        ImGui::Text("%s", _u8L("Advanced options cannot be changed for the selected font.\n"
+                                   "Select another font.").c_str());
         return;
     }
 
@@ -3038,7 +3150,7 @@ void GLGizmoEmboss::draw_advanced()
         if (priv::apply_camera_dir(cam, m_parent) && use_surface)
             process();
     } else if (ImGui::IsItemHovered()) {
-        ImGui::SetTooltip("%s", _u8L("Use camera direction for text orientation").c_str());
+        ImGui::SetTooltip("%s", _u8L("Orient the text towards the camera.").c_str());
     }
 #ifdef ALLOW_DEBUG_MODE
     ImGui::Text("family = %s", (font_prop.family.has_value() ?
@@ -3121,7 +3233,7 @@ bool GLGizmoEmboss::choose_font_by_wxdialog()
         (!use_deserialized_font && !m_style_manager.load_style(emboss_style, wx_font))) {
         m_style_manager.erase(font_index);
         wxString message = GUI::format_wxstr(
-            "Font '%1%' can't be used. Please select another.",
+            "Font \"%1%\" can't be used. Please select another.",
             emboss_style.name);
         wxString      title = "Selected font is NOT True-type.";
         MessageDialog not_loaded_font_message(nullptr, message, title, wxOK);
@@ -3309,16 +3421,6 @@ bool priv::draw_button(const IconManager::VIcons &icons, IconType type, bool dis
 // priv namespace implementation
 ///////////////
 
-bool priv::is_valid(ModelVolumeType volume_type)
-{
-    if (volume_type == ModelVolumeType::MODEL_PART || volume_type == ModelVolumeType::NEGATIVE_VOLUME ||
-        volume_type == ModelVolumeType::PARAMETER_MODIFIER)
-        return true;
-
-    BOOST_LOG_TRIVIAL(error) << "Can't create embossed volume with this type: " << (int) volume_type;
-    return false;
-}
-
 DataBase priv::create_emboss_data_base(const std::string &text, StyleManager &style_manager, std::shared_ptr<std::atomic<bool>>& cancel)
 {
     // create volume_name
@@ -3328,9 +3430,12 @@ DataBase priv::create_emboss_data_base(const std::string &text, StyleManager &st
         // change enters to space
         std::replace(volume_name.begin(), volume_name.end(), '\n', ' ');
 
-    if (!style_manager.is_active_font())
+    if (!style_manager.is_active_font()) {
         style_manager.load_valid_style();
-    assert(style_manager.is_active_font());
+        assert(style_manager.is_active_font());
+        if (!style_manager.is_active_font())
+            return {}; // no active font in style, should never happend !!!
+    }
 
     const EmbossStyle &es = style_manager.get_style();
     // actualize font path - during changes in gui it could be corrupted
