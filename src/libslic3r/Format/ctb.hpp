@@ -6,6 +6,7 @@
 #include "libslic3r/SLAPrint.hpp"
 #include "libslic3r/PrintConfig.hpp"
 #include "SLAArchiveWriter.hpp"
+#include "SLAArchiveFormatRegistry.hpp"
 
 #include <sstream>
 #include <iostream>
@@ -15,13 +16,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/pfr/core.hpp>
 
-#define CTB_SLA_FORMAT_VERSION_4 4
-
-#define CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, VERSION) \
-    { FILEFORMAT, { FILEFORMAT, [] (const auto &cfg) { return std::make_unique<CtbSLAArchive>(cfg, VERSION); } } }
-
-#define CTB_SLA_FORMAT(FILEFORMAT) \
-    CTB_SLA_FORMAT_VERSIONED(FILEFORMAT, CTB_SLA_FORMAT_VERSION_4)
+constexpr uint16_t CTB_SLA_FORMAT_VERSION_4 = 4;
 
 #define RLE_ENCODING_LIMIT 0xFFF
 #define RGB565_REPEAT_MASK 0x20
@@ -214,6 +209,23 @@ public:
                       const ThumbnailsList &thumbnails,
                       const std::string    &projectname = "") override;
 };
+
+
+inline Slic3r::ArchiveEntry ctb_sla_format_versioned(const char *fileformat, const char *desc, uint16_t version)
+{
+    Slic3r::ArchiveEntry entry(fileformat);
+
+    entry.desc = desc;
+    entry.ext  = fileformat;
+    entry.wrfactoryfn = [version] (const auto &cfg) { return std::make_unique<CtbSLAArchive>(cfg, version); };
+
+    return entry;
+}
+
+inline Slic3r::ArchiveEntry ctb_sla_format(const char *fileformat, const char *desc)
+{
+    return ctb_sla_format_versioned(fileformat, desc, CTB_SLA_FORMAT_VERSION_4);
+}
 
 } // Slic3r
 
