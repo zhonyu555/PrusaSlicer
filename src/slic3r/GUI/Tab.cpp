@@ -5153,7 +5153,7 @@ void TabSLAMaterial::toggle_options()
         m_config_manipulation.toggle_field("tsmc_bot_retract_height",    tsmc_bot_en);
         m_config_manipulation.toggle_field("tsmc_bot_lift_speed",        tsmc_bot_en);
         m_config_manipulation.toggle_field("tsmc_bot_lift_distance",     tsmc_bot_en);
-        m_config_manipulation.toggle_field("tsmc_bot_sla_retract_speed", tsmc_bot_en);
+        m_config_manipulation.toggle_field("tsmc_sla_bot_retract_speed", tsmc_bot_en);
     }
 }
 
