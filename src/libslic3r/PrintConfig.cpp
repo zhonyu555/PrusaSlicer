@@ -3869,6 +3869,22 @@ void PrintConfigDef::init_sla_params()
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(8));
 
+    def = this->add("retract_height", coFloat);
+    def->full_label = L("Normal layers retract height");
+    def->label = L("First Stage");
+    def->tooltip = L("Normal layers retract height");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(8));
+
+    def = this->add("bot_retract_height", coFloat);
+    def->full_label = L("Bottom layers retract height");
+    def->label = L("First Stage");
+    def->tooltip = L("Bottom layers retract height");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(8));
+
     def = this->add("lift_distance", coFloat);
     def->full_label = L("Normal layers lift distance");
     def->label = L("First Stage");
@@ -3876,6 +3892,7 @@ void PrintConfigDef::init_sla_params()
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(8));
+
 
     def = this->add("bot_lift_speed", coFloat);
     def->full_label = L("Bottom layers lift speed");
@@ -3947,9 +3964,24 @@ void PrintConfigDef::init_sla_params()
 
 
     // TSMC
+    def = this->add("tsmc_bot_enable", coBool);
+    def->label = L("Enable Two-Stage Motor Control");
+    def->tooltip = L("Enable two stage motor control for bottom layers");
+    def->category = L("Bottom tsmc");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+    
+    def = this->add("tsmc_enable", coBool);
+    def->label = L("Enable Two-Stage Motor Control");
+    def->tooltip = L("Enable two stage motor control for normal layers");
+    def->category = L("tsmc");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("tsmc_bot_lift_distance", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Bottom layers second stage lift distance");
+    def->category = L("Bottom tsmc");
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0));
@@ -3957,6 +3989,7 @@ void PrintConfigDef::init_sla_params()
     def = this->add("tsmc_lift_distance", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Normal layers second stage lift distance");
+    def->category = L("tsmc");
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0));
@@ -3964,6 +3997,7 @@ void PrintConfigDef::init_sla_params()
     def = this->add("tsmc_bot_lift_speed", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Bottom layers second stage lift speed");
+    def->category = L("Bottom tsmc");
     def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0));
@@ -3971,28 +4005,40 @@ void PrintConfigDef::init_sla_params()
     def = this->add("tsmc_lift_speed", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Normal layers second stage lift speed");
+    def->category = L("tsmc");
     def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(45));
 
+    def = this->add("tsmc_sla_bot_retract_speed", coFloat);
+    def->label = L("Second Stage");
+    def->tooltip = L("Bottom layers second stage retract speed");
+    def->category = L("Bottom tsmc");
+    def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(0));
+
     def = this->add("tsmc_sla_retract_speed", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Normal layers second stage retract speed");
+    def->category = L("tsmc");
     def->sidetext = L("mm/m");
+    def->min = 0;
+    def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("tsmc_bot_retract_height", coFloat);
+    def->label = L("Second Stage");
+    def->tooltip = L("Bottom layers second stage retract height");
+    def->category = L("Bottom tsmc");
+    def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("tsmc_retract_height", coFloat);
     def->label = L("Second Stage");
     def->tooltip = L("Normal layers second stage retract height");
+    def->category = L("tsmc");
     def->sidetext = L("mm");
-    def->min = 0;
-    def->set_default_value(new ConfigOptionFloat(0));
-
-    def = this->add("tsmc_sla_bot_retract_speed", coFloat);
-    def->label = L("Second Stage");
-    def->tooltip = L("Bottom layers second stage retract speed");
-    def->sidetext = L("mm/m");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloat(0));
 
