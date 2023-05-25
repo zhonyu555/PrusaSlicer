@@ -5007,6 +5007,7 @@ void TabSLAMaterial::build()
     };
 
     optgroup = page->new_optgroup(L("Bottom Layers"));
+    optgroup->append_single_option_line("tsmc_bot_enable");
     auto create_tsmc = [](auto &optgroup, std::string option_name) {
         auto option = optgroup->get_option(option_name);
         Line line = { option.opt.full_label, "" };
@@ -5017,29 +5018,77 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("initial_exposure_time");
     optgroup->append_single_option_line("bot_light_off_time");
 
-    //optgroup->append_single_option_line("bot_lift_distance");
-    //optgroup->append_single_option_line("bot_lift_speed");
-    //optgroup->append_single_option_line("sla_bot_retract_speed");
     create_tsmc(optgroup, "bot_lift_distance");
     create_tsmc(optgroup, "bot_lift_speed");
+    create_tsmc(optgroup, "bot_retract_height");
     create_tsmc(optgroup, "sla_bot_retract_speed");
     optgroup->append_single_option_line("bot_light_intensity");
 
     optgroup = page->new_optgroup(L("Layers"));
+    optgroup->append_single_option_line("tsmc_enable");
     optgroup->append_single_option_line("exposure_time");
     optgroup->append_single_option_line("initial_layer_height");
     optgroup->append_single_option_line("light_off_time");
-    //optgroup->append_single_option_line("lift_distance");
-    //optgroup->append_single_option_line("lift_speed");
-    //optgroup->append_single_option_line("sla_retract_speed");
     create_tsmc(optgroup, "lift_distance");
     create_tsmc(optgroup, "lift_speed");
+    create_tsmc(optgroup, "retract_height");
     create_tsmc(optgroup, "sla_retract_speed");
 
     optgroup->append_single_option_line("light_intensity");
     optgroup->append_single_option_line("rest_time_after_lift");
     optgroup->append_single_option_line("rest_time_after_lift2");
     optgroup->append_single_option_line("rest_time_after_retract");
+
+    // TODO: Try to figure out how to make the config options disappear if TSMC disabled
+    optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
+    {
+        DynamicPrintConfig new_conf = *m_config;
+
+        if (opt_key == "tsmc_enable") {
+            if (boost::any_cast<bool>(value) == true) {
+                double new_height = new_conf.option("lift_distance")->getFloat() + \
+                                    new_conf.option("tsmc_lift_distance")->getFloat() - \
+                                    new_conf.option("tsmc_retract_height")->getFloat();
+                new_conf.set_key_value("retract_height", new ConfigOptionFloat(new_height)); 
+   
+            }
+            /*
+            if (boost::any_cast<bool>(value) == true) {
+                auto option = new_conf.option("retract_height");
+                option->readonly = true;
+                //new_conf.set_key_value("retract_height", option);
+                
+                auto show_opt = new_conf.def()->get("tsmc_retract_height");
+                show_opt->mode = comUndef;
+                //new_conf.set_key_value("tsmc_retract_height", option);
+                //new_conf.erase("tsmc_retract_height");
+                //new_conf.erase("tsmc_lift_speed");
+                //new_conf.erase("tsmc_lift_distance");
+                //new_conf.erase("tsmc_sla_retract_speed");
+            } else {
+                auto option = new_conf.option("tsmc_retract_height");
+                option->mode = comSimple;
+                new_conf.set_key_value("tsmc_retract_height", option);
+                //optgroup->hide_field("tsmc_retract_height");
+                //optgroup->hide_field("tsmc_lift_speed");
+                //optgroup->hide_field("tsmc_lift_distance");
+                //optgroup->hide_field("tsmc_sla_retract_speed");
+            }
+            */
+        }
+
+        if (opt_key == "tsmc_retract_height" && new_conf.option("tsmc_enable")->getBool()) {
+            double new_height = new_conf.option("lift_distance")->getFloat() + \
+                                new_conf.option("tsmc_lift_distance")->getFloat() - \
+                                boost::any_cast<double>(value);
+            new_conf.set_key_value("retract_height", new ConfigOptionFloat(new_height)); 
+        }
+
+        load_config(new_conf);
+
+        update_dirty();
+        on_value_change(opt_key, value);
+    };
 
     optgroup = page->new_optgroup(L("Corrections"));
     auto line = Line{ m_config->def()->get("material_correction")->full_label, "" };
@@ -5091,23 +5140,48 @@ void TabSLAMaterial::toggle_options()
     const Preset &current_printer = wxGetApp().preset_bundle->printers.get_edited_preset();
     std::string model = current_printer.config.opt_string("printer_model");
     m_config_manipulation.toggle_field("material_print_speed", model != "SL1");
+
+    if (m_active_page) {
+        bool tsmc_en = m_config->opt_bool("tsmc_enable");
+        m_config_manipulation.toggle_field("tsmc_retract_height",    tsmc_en);
+        m_config_manipulation.toggle_field("tsmc_lift_speed",        tsmc_en);
+        m_config_manipulation.toggle_field("tsmc_lift_distance",     tsmc_en);
+        m_config_manipulation.toggle_field("tsmc_sla_retract_speed", tsmc_en);
+        m_config_manipulation.toggle_field("retract_height",        !tsmc_en);
+
+        bool tsmc_bot_en = m_config->opt_bool("tsmc_bot_enable");
+        m_config_manipulation.toggle_field("tsmc_bot_retract_height",    tsmc_bot_en);
+        m_config_manipulation.toggle_field("tsmc_bot_lift_speed",        tsmc_bot_en);
+        m_config_manipulation.toggle_field("tsmc_bot_lift_distance",     tsmc_bot_en);
+        m_config_manipulation.toggle_field("tsmc_bot_sla_retract_speed", tsmc_bot_en);
+    }
 }
 
 void TabSLAMaterial::update()
 {
+    
     if (m_preset_bundle->printers.get_selected_preset().printer_technology() == ptFFF)
         return;
+
+    m_update_cnt++;
+
+    //m_config_manipulation.update_print_sla_config(m_config, true);
 
     update_description_lines();
     Layout();
 
-// #ys_FIXME. Just a template for this function
-//     m_update_cnt++;
-//     ! something to update
-//     m_update_cnt--;
-//
-//     if (m_update_cnt == 0)
+    m_update_cnt--;
+
+    if (m_update_cnt == 0) {
+        toggle_options();
+
+        // update() could be called during undo/redo execution
+        // Update of objectList can cause a crash in this case (because m_objects doesn't match ObjectList)
+        if (!wxGetApp().plater()->inside_snapshot_capture())
+            wxGetApp().obj_list()->update_and_show_object_settings_item();
+
         wxGetApp().mainframe->on_config_changed(m_config);
+    }
 }
 
 static void add_options_into_line(ConfigOptionsGroupShp &optgroup,
