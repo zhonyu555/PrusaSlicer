@@ -581,7 +581,7 @@ void WipeTower::set_extruder(size_t idx, const PrintConfig& config)
     m_filpar.push_back(FilamentParameters());
 
     m_filpar[idx].material = config.filament_type.get_at(idx);
-    m_filpar[idx].is_soluble = config.filament_soluble.get_at(idx);
+    m_filpar[idx].is_soluble = config.wipe_tower_extruder == 0 ? config.filament_soluble.get_at(idx) : (idx != config.wipe_tower_extruder - 1);
     m_filpar[idx].temperature = config.temperature.get_at(idx);
     m_filpar[idx].first_layer_temperature = config.first_layer_temperature.get_at(idx);
 
@@ -1364,14 +1364,9 @@ std::vector<std::vector<float>> WipeTower::extract_wipe_volumes(const PrintConfi
         wipe_volumes.push_back(std::vector<float>(wiping_matrix.begin()+i*number_of_extruders, wiping_matrix.begin()+(i+1)*number_of_extruders));
 
     // Also include filament_minimal_purge_on_wipe_tower. This is needed for the preview.
-    for (unsigned int i = 0; i<number_of_extruders; ++i) {
-        for (unsigned int j = 0; j<number_of_extruders; ++j) {
-            float w = wipe_volumes[i][j];
-
-            if (wipe_volumes[i][j] < config.filament_minimal_purge_on_wipe_tower.get_at(j))
-                wipe_volumes[i][j] = config.filament_minimal_purge_on_wipe_tower.get_at(j);
-        }
-    }
+    for (unsigned int i = 0; i<number_of_extruders; ++i)
+        for (unsigned int j = 0; j<number_of_extruders; ++j)
+            wipe_volumes[i][j] = std::max<float>(wipe_volumes[i][j], config.filament_minimal_purge_on_wipe_tower.get_at(j));
 
     return wipe_volumes;
 }

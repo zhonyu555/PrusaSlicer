@@ -926,8 +926,8 @@ void ObjectList::OnContextMenu(wxDataViewEvent& evt)
     // Do not show the context menu if the user pressed the right mouse button on the 3D scene and released it on the objects list
     GLCanvas3D* canvas = wxGetApp().plater()->canvas3D();
     bool evt_context_menu = (canvas != nullptr) ? !canvas->is_mouse_dragging() : true;
-    if (!evt_context_menu)
-        canvas->mouse_up_cleanup();
+//    if (!evt_context_menu)
+//        canvas->mouse_up_cleanup();
 
     list_manipulation(mouse_pos, evt_context_menu);
 }
@@ -955,7 +955,7 @@ void ObjectList::list_manipulation(const wxPoint& mouse_pos, bool evt_context_me
 
     if (!item) {
         if (col == nullptr) {
-            if (wxOSX && !multiple_selection())
+            if (wxOSX)
                 UnselectAll();
             else if (!evt_context_menu) 
                 // Case, when last item was deleted and under GTK was called wxEVT_DATAVIEW_SELECTION_CHANGED,
@@ -972,11 +972,17 @@ void ObjectList::list_manipulation(const wxPoint& mouse_pos, bool evt_context_me
     if (wxOSX && item && col) {
         wxDataViewItemArray sels;
         GetSelections(sels);
-        UnselectAll();
-        if (sels.Count() > 1)
-            SetSelections(sels);
-        else
+        bool is_selection_changed = true;
+        for (const auto& sel_item : sels)
+            if (sel_item == item) {
+                // item is one oth the already selected items, so resection is no needed
+                is_selection_changed = false;
+                break;
+            }
+        if (is_selection_changed) {
+            UnselectAll();
             Select(item);
+        }
     }
 
     if (col != nullptr) 
@@ -1192,6 +1198,13 @@ void ObjectList::key_event(wxKeyEvent& event)
 
 void ObjectList::OnBeginDrag(wxDataViewEvent &event)
 {
+    if (m_is_editing_started)
+        m_is_editing_started = false;
+#ifdef __WXGTK__
+    const auto renderer = dynamic_cast<BitmapTextRenderer*>(GetColumn(colName)->GetRenderer());
+    renderer->FinishEditing();
+#endif
+
     const wxDataViewItem item(event.GetItem());
 
     const bool mult_sel = multiple_selection();
@@ -1225,18 +1238,11 @@ void ObjectList::OnBeginDrag(wxDataViewEvent &event)
                                         m_objects_model->GetInstanceIdByItem(item), 
                             type);
 
-    /* Under MSW or OSX, DnD moves an item to the place of another selected item
-    * But under GTK, DnD moves an item between another two items.
-    * And as a result - call EVT_CHANGE_SELECTION to unselect all items.
-    * To prevent such behavior use m_prevent_list_events
-    **/
-    m_prevent_list_events = true;//it's needed for GTK
-
     /* Under GTK, DnD requires to the wxTextDataObject been initialized with some valid value,
      * so set some nonempty string
      */
     wxTextDataObject* obj = new wxTextDataObject;
-    obj->SetText("Some text");//it's needed for GTK
+    obj->SetText(mult_sel ? "SomeText" : m_objects_model->GetItemName(item));//it's needed for GTK
 
     event.SetDataObject(obj);
     event.SetDragFlags(wxDrag_DefaultMove); // allows both copy and move;
@@ -1300,10 +1306,8 @@ void ObjectList::OnDropPossible(wxDataViewEvent &event)
 {
     const wxDataViewItem& item = event.GetItem();
 
-    if (!can_drop(item)) {
+    if (!can_drop(item))
         event.Veto();
-        m_prevent_list_events = false;
-    }
 }
 
 void ObjectList::OnDrop(wxDataViewEvent &event)
@@ -1316,6 +1320,13 @@ void ObjectList::OnDrop(wxDataViewEvent &event)
         m_dragged_data.clear();
         return;
     }
+
+    /* Under MSW or OSX, DnD moves an item to the place of another selected item
+    * But under GTK, DnD moves an item between another two items.
+    * And as a result - call EVT_CHANGE_SELECTION to unselect all items.
+    * To prevent such behavior use m_prevent_list_events
+    **/
+    m_prevent_list_events = true;//it's needed for GTK
 
     if (m_dragged_data.type() == itInstance)
     {
@@ -1790,7 +1801,7 @@ void ObjectList::load_shape_object(const std::string& type_name)
     // Create mesh
     BoundingBoxf3 bb;
     TriangleMesh mesh = create_mesh(type_name, bb);
-    load_mesh_object(mesh, _u8L("Shape") + "-" + type_name);
+    load_mesh_object(mesh, _u8L("Shape") + "-" + into_u8(_(type_name)));
     if (!m_objects->empty())
         m_objects->back()->volumes.front()->source.is_from_builtin_objects = true;
     wxGetApp().mainframe->update_title();
@@ -2059,7 +2070,7 @@ bool ObjectList::del_from_cut_object(bool is_cut_connector, bool is_model_part/*
     InfoDialog dialog(wxGetApp().plater(), title,
                       _L("This action will break a cut information.\n"
                          "After that PrusaSlicer can't guarantee model consistency.") + "\n\n" +
-                      _L("To manipulate with solid parts or negative volumes you have to invalidate cut information first." + msg_end ),
+                      _L("To manipulate with solid parts or negative volumes you have to invalidate cut information first.") + msg_end,
                       false, buttons_style | wxCANCEL_DEFAULT | wxICON_WARNING);
 
     dialog.SetButtonLabel(wxID_YES, _L("Invalidate cut info"));
@@ -4005,8 +4016,10 @@ void ObjectList::update_selections_on_canvas()
         selection.add_volumes(mode, volume_idxs, single_selection);
     }
 
-    wxGetApp().plater()->canvas3D()->update_gizmos_on_off_state();
-    wxGetApp().plater()->canvas3D()->render();
+    GLCanvas3D* canvas = wxGetApp().plater()->canvas3D();
+    canvas->update_gizmos_on_off_state();
+    canvas->check_volumes_outside_state();
+    canvas->render();
 }
 
 void ObjectList::select_item(const wxDataViewItem& item)
@@ -4841,6 +4854,9 @@ void ObjectList::OnEditingStarted(wxDataViewEvent &event)
 
 void ObjectList::OnEditingDone(wxDataViewEvent &event)
 {
+    if (!m_is_editing_started)
+        return;
+
     m_is_editing_started = false;
     if (event.GetColumn() != colName)
         return;
