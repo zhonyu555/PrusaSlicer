@@ -7,8 +7,10 @@
 #include <cstdarg>
 #include <stdio.h>
 
+#include "format.hpp"
 #include "Platform.hpp"
 #include "Time.hpp"
+
 #include "libslic3r.h"
 
 #ifdef WIN32
