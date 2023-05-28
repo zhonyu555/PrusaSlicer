@@ -17,7 +17,7 @@ When [reporting an issue](https://github.com/prusa3d/PrusaSlicer/issues/new), pl
        * G-code files.
        * Printer Model
        * Any other relevant details.
-   * In case of 3D rendering issues, please attach the contest of the `Help` -> `System Info` dialog.
+   * In case of 3D rendering issues, please attach the content of the `Help` -> `System Info` dialog.
 
 Please ensure that each report focuses on only *one* issue. If you encounter multiple unrelated issues, please report them separately.
 
