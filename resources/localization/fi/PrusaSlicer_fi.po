@@ -1,5 +1,10 @@
 msgid ""
 msgstr ""
+"Project-Id-Version: PrusaSlicer_fi\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-05-26 13:11+0200\n"
+"PO-Revision-Date: 2023-05-28 14:44+0300\n"
+"Last-Translator: \n"
 "Language-Team: PrusaSlicer developers\n"
 "Language: fi_FI\n"
 "MIME-Version: 1.0\n"
@@ -62,7 +67,7 @@ msgstr ""
 
 #: src/slic3r/GUI/AboutDialog.cpp:309
 msgid "Copy Version Info"
-msgstr "Kopio versioinformaatio"
+msgstr "Kopioi versioinformaatio"
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:79
 #, c-format, boost-format
@@ -71,9 +76,9 @@ msgid ""
 "If you are sure you have enough RAM on your system, this may also be a bug "
 "and we would be glad if you reported it."
 msgstr ""
-"%s  kohtasi virheen. Se todennäköisesti johtui muistin loppumisesta. Jos "
-"olet varma, että järjestelmässäsi on tarpeeksi RAM-muistia, tämä voi myös "
-"olla virhe, ja olisimme iloisia, jos ilmoitat siitä."
+"%s kohtasi virheen. Se todennäköisesti johtui muistin loppumisesta. Jos olet "
+"varma, että järjestelmässäsi on tarpeeksi RAM-muistia, tämä voi myös olla "
+"virhe, ja olisimme iloisia, jos ilmoitat siitä."
 
 #: src/slic3r/GUI/BackgroundSlicingProcess.cpp:84
 #, boost-format
@@ -328,7 +333,7 @@ msgstr "Tekstuuri"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:286 src/slic3r/GUI/BedShapeDialog.cpp:357
 msgid "Load..."
-msgstr "Lataa..."
+msgstr "Lataa…"
 
 #: src/slic3r/GUI/BedShapeDialog.cpp:295 src/slic3r/GUI/BedShapeDialog.cpp:365
 #: src/slic3r/GUI/Tab.cpp:4160
@@ -544,6 +549,9 @@ msgid ""
 "For the Wipe Tower to work with the soluble supports, the support layers\n"
 "need to be synchronized with the object layers."
 msgstr ""
+"Jotta pyyhkäisytorni toimisi liukenevien tukimateriaalien kanssa, "
+"tukikerrokset\n"
+"täytyy synkronisoida objektin kerroksien kanssa."
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:124
 msgid "Shall I synchronize support layers in order to enable the Wipe Tower?"
@@ -574,6 +582,8 @@ msgid ""
 "Supports work better, if the following feature is enabled:\n"
 "- Detect bridging perimeters"
 msgstr ""
+"Tuet toimivat paremmin, jos seuraava ominaisuus on käytössä:\n"
+"- Havaitse silloitusalueet"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:167
 msgid "Shall I adjust those settings for supports?"
@@ -586,11 +596,11 @@ msgstr "Tukimateriaalin generaattori"
 #: src/slic3r/GUI/ConfigManipulation.cpp:192
 #, boost-format
 msgid "The %1% infill pattern is not supposed to work at 100%% density."
-msgstr ""
+msgstr "Täyttökuvio %1% ei ole tarkoitettu käytettäväksi 100%-tiheydellä."
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:194
 msgid "Shall I switch to rectilinear fill pattern?"
-msgstr ""
+msgstr "Pitäisikö minun vaihtaa suoraviivaiseen täyttökuvioon?"
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:195
 #: src/slic3r/GUI/GUI_Factories.cpp:55 src/slic3r/GUI/GUI_Factories.cpp:128
@@ -631,7 +641,7 @@ msgstr "Alenna"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:25
 msgid "Before roll back"
-msgstr ""
+msgstr "Ennen palautusta"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:27 src/libslic3r/PrintConfig.cpp:350
 msgid "User"
@@ -653,11 +663,11 @@ msgstr "PrusaSlicer versio"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:64 src/libslic3r/Preset.cpp:1485
 msgid "print"
-msgstr ""
+msgstr "tuloste"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:65
 msgid "filaments"
-msgstr ""
+msgstr "tulostuslangat"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:68 src/libslic3r/Preset.cpp:1487
 msgid "SLA print"
@@ -695,7 +705,7 @@ msgstr "malli"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:81
 msgid "variants"
-msgstr ""
+msgstr "variantit"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:93
 #, c-format, boost-format
@@ -704,7 +714,7 @@ msgstr "Ei yhteensopiva; %s"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:96
 msgid "Activate"
-msgstr ""
+msgstr "Aktivoi"
 
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:123
 msgid "Configuration Snapshots"
@@ -716,15 +726,15 @@ msgstr "tulostuskärki"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:340
 msgid "Alternate nozzles:"
-msgstr ""
+msgstr "Vaihtoehtoiset tulostuskärjet:"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:404
 msgid "All standard"
-msgstr ""
+msgstr "Kaikki standardi"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:404
 msgid "Standard"
-msgstr ""
+msgstr "Standardi"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:405 src/slic3r/GUI/ConfigWizard.cpp:726
 #: src/slic3r/GUI/FileArchiveDialog.cpp:264
@@ -755,7 +765,7 @@ msgstr ""
 
 #: src/slic3r/GUI/ConfigWizard.cpp:562
 msgid "Welcome"
-msgstr ""
+msgstr "Tervetuloa"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:564
 #, c-format, boost-format
@@ -773,6 +783,8 @@ msgid ""
 "Perform desktop integration (Sets this binary to be searchable by the "
 "system)."
 msgstr ""
+"Suorita työpöytäintegraatio (Asettaa tämän binäärin järjestelmän "
+"haettavaksi)."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:624
 #, c-format, boost-format
@@ -811,7 +823,7 @@ msgstr ""
 #: src/slic3r/GUI/ConfigWizard.cpp:835 src/slic3r/GUI/ConfigWizard.cpp:838
 #: src/slic3r/GUI/ConfigWizard.cpp:2459 src/slic3r/GUI/ConfigWizard.cpp:3413
 msgid "Filaments"
-msgstr ""
+msgstr "Tulostuslangat"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:835 src/slic3r/GUI/ConfigWizard.cpp:838
 msgid "SLA materials"
@@ -824,12 +836,14 @@ msgid ""
 "%1% marked with <b>*</b> are <b>not</b> compatible with some installed "
 "printers."
 msgstr ""
+"%1% merkittynä <b>*</b>-symboleilla <b>eivät</b> ole yhteensopivia joidenkin "
+"ladattujen tulostimien kanssa."
 
 #. TRN ConfigWizard: Materials : "%1%" = "filament"/"SLA material"
 #: src/slic3r/GUI/ConfigWizard.cpp:842
 #, boost-format
 msgid "All installed printers are compatible with the selected %1%."
-msgstr ""
+msgstr "Kaikki ladatut tulostimet ovat yhteensopivia valitun %1%;n kanssa."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:842 src/libslic3r/Preset.cpp:1486
 msgid "filament"
@@ -863,7 +877,7 @@ msgstr ""
 #: src/slic3r/GUI/UpdateDialogs.cpp:222 src/slic3r/GUI/UpdateDialogs.cpp:229
 #: src/slic3r/GUI/UpdateDialogs.cpp:234
 msgid "Notice"
-msgstr ""
+msgstr "Huomio"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1310
 msgid "Custom Printer Setup"
@@ -920,26 +934,30 @@ msgid ""
 "Updates are never applied without user's consent and never overwrite user's "
 "customized settings."
 msgstr ""
+"Päivityksiä ei ikinä asenneta ilman käyttäjän lupaa, eivätkä ne ikinä "
+"ylikirjoita käyttäjän räätälöimiä asetuksia."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1360
 msgid ""
 "Additionally a backup snapshot of the whole configuration is created before "
 "an update is applied."
 msgstr ""
+"Lisäksi koko kokoonpanosta luodaan tilannekuva varmuuskopioksi ennen kuin "
+"päivitys asennetaan."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1409 src/slic3r/GUI/Preferences.cpp:1119
 msgid "Download path"
-msgstr ""
+msgstr "Latausreitti"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1414 src/slic3r/GUI/FirmwareDialog.cpp:815
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:300
 #: src/slic3r/GUI/PhysicalPrinterDialog.cpp:375
 msgid "Browse"
-msgstr ""
+msgstr "Selaa"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1419
 msgid "Choose folder"
-msgstr ""
+msgstr "Valitse kansio"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1457
 msgid "Downloads from URL"
@@ -947,11 +965,11 @@ msgstr "Lataukset verkko-osoitteesta"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1457
 msgid "Downloads"
-msgstr ""
+msgstr "Lataukset"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1465
 msgid "Allow built-in downloader"
-msgstr ""
+msgstr "Salli sisäänrakennettu lataaja"
 
 #. TRN ConfigWizard : Downloader : %1% = "PrusaSlicer"
 #: src/slic3r/GUI/ConfigWizard.cpp:1472
@@ -967,10 +985,12 @@ msgid ""
 "On Linux systems the process of registration also creates desktop "
 "integration files for this version of application."
 msgstr ""
+"Linux-järjestelmillä rekisteröinti myös luo työpöydän integraatiotiedostot "
+"tälle ohjelman versiolle."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1506
 msgid "Chosen directory for downloads does not exist."
-msgstr ""
+msgstr "Latauksille valittua kansiota ei ole olemassa."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1593 src/slic3r/GUI/GUI_Factories.cpp:818
 #: src/slic3r/GUI/Plater.cpp:3751
@@ -981,6 +1001,7 @@ msgstr "Lataa uudelleen levyltä"
 msgid ""
 "Export full pathnames of models and parts sources into 3mf and amf files"
 msgstr ""
+"Vie mallien ja osien täydet tiedostopolkunimet 3mf- ja amf-tiedostoihin"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1600
 msgid ""
@@ -989,18 +1010,22 @@ msgid ""
 "If not enabled, the Reload from disk command will ask to select each file "
 "using an open file dialog."
 msgstr ""
+"Jos käytössä, sallii \"Lataa uudelleen levyltä\"-komennon automaattisesti "
+"etsiä ja ladata tiedostot tarpeen mukaan.\n"
+"Jos ei käytössä, \"Lataa uudelleen levyltä\"-komento pyytää valita jokaisen "
+"tiedoston tiedostojen valintaikkunalla."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1609
 msgid "Files association"
-msgstr ""
+msgstr "Tiedostojen yhdistäminen"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1611 src/slic3r/GUI/Preferences.cpp:274
 msgid "Associate .3mf files to PrusaSlicer"
-msgstr ""
+msgstr "Yhdistä .3mf-tiedostot PrusaSliceriin"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1612 src/slic3r/GUI/Preferences.cpp:279
 msgid "Associate .stl files to PrusaSlicer"
-msgstr ""
+msgstr "Yhdistä .stl-tiedostot PrusaSliceriin"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1622
 msgid "View mode"
@@ -1014,6 +1039,12 @@ msgid ""
 "regular 3D printing. The other two offer progressively more sophisticated "
 "fine-tuning, they are suitable for advanced and expert users, respectively."
 msgstr ""
+"PrusaSlicerin käyttöliittymää on kolmessa eri muodossa:\n"
+"Yksinkertainen, Kehittynyt ja Ekspertti.\n"
+"Yksinkertainen tila näyttää vain tavallisessa 3D-tulostuksessa useiten "
+"käytetyt asetukset. Kaksi muuta tilaa tarjoavat kehittyneempää hienosäätöä "
+"ja sopivat nimensä mukaan kehittyneille ja erittäin kehittyneille "
+"käyttäjille."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1629
 msgid "Simple mode"
@@ -1029,7 +1060,7 @@ msgstr "Eksperttitila"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1644
 msgid "The size of the object can be specified in inches"
-msgstr ""
+msgstr "Objektin koko voidaan määritellä tuumina"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1645
 msgid "Use inches"
@@ -1042,7 +1073,7 @@ msgstr "Muut valmistajat"
 #: src/slic3r/GUI/ConfigWizard.cpp:1669
 #, c-format, boost-format
 msgid "Pick another vendor supported by %s"
-msgstr ""
+msgstr "Valitse toinen valmistaja, jota %s tukee"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1702
 msgid "Firmware Type"
@@ -1054,7 +1085,7 @@ msgstr "Laiteohjelmisto"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1706
 msgid "Choose the type of firmware used by your printer."
-msgstr ""
+msgstr "Valitse tulostimesi käyttämä laiteohjelmiston tyyppi."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1755 src/slic3r/GUI/ConfigWizard.cpp:1827
 #: src/slic3r/GUI/ConfigWizard.cpp:1832 src/slic3r/GUI/ConfigWizard.cpp:1837
@@ -1069,13 +1100,13 @@ msgstr "Alustan muoto ja koko"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1783
 msgid "Set the shape of your printer's bed."
-msgstr ""
+msgstr "Aseta tulostusalustasi muoto."
 
 #. TRN ConfigWizard : Size of possible print, related on printer size
 #: src/slic3r/GUI/ConfigWizard.cpp:1804
 #: src/slic3r/GUI/Gizmos/GLGizmoCut.cpp:1834
 msgid "Build Volume"
-msgstr ""
+msgstr "Tulostustilavuus"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1807
 msgid "Set the printer height."
@@ -1087,7 +1118,7 @@ msgstr "Tulosteen suurin sallittu korkeus"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1862
 msgid "Filament and Nozzle Diameters"
-msgstr ""
+msgstr "Tulostuslankojen ja tulostuskärkien halkaisijat"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1862
 msgid "Print Diameters"
@@ -1095,7 +1126,7 @@ msgstr "Tulosteen koot"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1877
 msgid "Enter the diameter of your printer's hot end nozzle."
-msgstr ""
+msgstr "Syötä tulostimesi tulostuskärjen halkaisija."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1880
 msgid "Nozzle Diameter"
@@ -1103,13 +1134,15 @@ msgstr "Tulostuskärjen halkaisija"
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1890
 msgid "Enter the diameter of your filament."
-msgstr ""
+msgstr "Syötä muovisi halkaisija."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1891
 msgid ""
 "Good precision is required, so use a caliper and do multiple measurements "
 "along the filament, then compute the average."
 msgstr ""
+"Hyvää tarkkuutta vaaditaan, joten käytä työntömittaa ja mittaa useasta "
+"kohtaa lankaa pitkin, ja laske sitten keskiarvo."
 
 #: src/slic3r/GUI/ConfigWizard.cpp:1894
 msgid "Filament Diameter"
@@ -1322,6 +1355,8 @@ msgid ""
 "Performing desktop integration failed - boost::filesystem::canonical did not "
 "return appimage path."
 msgstr ""
+"Työpöytäintegraation suorittaminen epäonnistui - boost::filesystem::"
+"canonical ei palauttanut appimagen tiedostopolkua."
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:243
 msgid "Performing desktop integration failed - Could not find executable."
@@ -1359,7 +1394,7 @@ msgstr ""
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:626
 #: src/slic3r/GUI/GUI_App.cpp:2402
 msgid "Desktop Integration"
-msgstr ""
+msgstr "Työpöytäintegraatio"
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:633
 msgid ""
@@ -1367,6 +1402,9 @@ msgid ""
 "\n"
 "Press \"Perform\" to proceed."
 msgstr ""
+"Työpöytäintegraatio asettaa tämän binäärin järjestelmän haettavaksi.\n"
+"\n"
+"Paina \"Suorita\" jatkaaksesi."
 
 #: src/slic3r/GUI/DesktopIntegrationDialog.cpp:647
 msgid "Perform"
@@ -1380,7 +1418,7 @@ msgstr "Peru"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:109
 msgid "Place bearings in slots and resume printing"
-msgstr ""
+msgstr "Aseta laakerit uriin ja jatka tulostusta"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:711 src/libslic3r/Utils.cpp:1015
 #, boost-format
@@ -1409,7 +1447,7 @@ msgstr "Yhden kerroksen tila"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1450
 msgid "Discard all custom changes"
-msgstr ""
+msgstr "Hylkää kaikki mukautukset"
 
 #: src/slic3r/GUI/DoubleSlider.cpp:1454 src/slic3r/GUI/DoubleSlider.cpp:2324
 msgid "Jump to move"
@@ -6178,7 +6216,7 @@ msgstr ""
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:123
 #: src/slic3r/GUI/PrintHostDialogs.cpp:267
 msgid "Print host upload queue"
-msgstr ""
+msgstr "Tulosta isäntäkoneen latausjono"
 
 #: src/slic3r/GUI/KBShortcutsDialog.cpp:124 src/slic3r/GUI/MainFrame.cpp:77
 msgid "Open new instance"
@@ -7142,11 +7180,11 @@ msgstr ""
 
 #: src/slic3r/GUI/MainFrame.cpp:1499
 msgid "Print &Host Upload Queue"
-msgstr ""
+msgstr "Tulosta &isäntäkoneen latausjono"
 
 #: src/slic3r/GUI/MainFrame.cpp:1499
 msgid "Display the Print Host Upload Queue window"
-msgstr ""
+msgstr "Näytä tulosta isäntäkoneen latausjono-ikkuna"
 
 #: src/slic3r/GUI/MainFrame.cpp:1503
 msgid "Open New Instance"
@@ -16371,6 +16409,11 @@ msgid ""
 "Perimeters and adjust the values in the right panel. Read more in the "
 "documentation."
 msgstr ""
+"Eri kerroskorkeudet jokaiselle mallille\n"
+"Tiesitkö, että voit tulostaa jokaisen mallin tulostusalalla eri "
+"kerroskorkeudella? Paina hiiren oikealla painikkeella 3d-näkymässä, valitse "
+"kerrokset ja kehät ja säädä arvoja oikeassa paneelissa. Lue lisää "
+"dokumentaatiosta."
 
 #: resources/data/hints.ini: [hint:Solid infill threshold area]
 msgid ""
