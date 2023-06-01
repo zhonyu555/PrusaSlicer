@@ -9,6 +9,8 @@
 #include "libslic3r/LocalesUtils.hpp"
 #include "libslic3r/PresetBundle.hpp"
 
+#include "slic3r/GUI/format.hpp"
+
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
 #include "Plater.hpp"
@@ -2354,13 +2356,23 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         size_t last = path_id;
 
         // check adjacent paths
-        while (first > 0 && path.sub_paths.front().first.position.isApprox(buffer.paths[first - 1].sub_paths.back().last.position)) {
+        while (first > 0) {
+            const Path& ref_path = buffer.paths[first - 1];
+            if (!path.sub_paths.front().first.position.isApprox(ref_path.sub_paths.back().last.position) ||
+                path.role != ref_path.role)
+                break;
+
+            path.sub_paths.front().first = ref_path.sub_paths.front().first;
             --first;
-            path.sub_paths.front().first = buffer.paths[first].sub_paths.front().first;
         }
-        while (last < buffer.paths.size() - 1 && path.sub_paths.back().last.position.isApprox(buffer.paths[last + 1].sub_paths.front().first.position)) {
+        while (last < buffer.paths.size() - 1) {
+            const Path& ref_path = buffer.paths[last + 1];
+            if (!path.sub_paths.back().last.position.isApprox(ref_path.sub_paths.front().first.position) ||
+                path.role != ref_path.role)
+                break;
+
+            path.sub_paths.back().last = ref_path.sub_paths.back().last;
             ++last;
-            path.sub_paths.back().last = buffer.paths[last].sub_paths.back().last;
         }
 
         const size_t min_s_id = m_layers.get_range_at(min_id).first;
@@ -3261,6 +3273,11 @@ void GCodeViewer::render_legend(float& legend_height)
         // draw text
         ImGui::Dummy({ icon_size, icon_size });
         ImGui::SameLine();
+
+        // localize "g" and "m" units
+        const std::string& grams  = _u8L("g");
+        const std::string& inches = _u8L("in");
+        const std::string& metres = _CTX_utf8(L_CONTEXT("m", "Metre"), "Metre");
         if (callback != nullptr) {
             if (ImGui::MenuItem(label.c_str()))
                 callback();
@@ -3296,11 +3313,9 @@ void GCodeViewer::render_legend(float& legend_height)
                 ::sprintf(buf, "%.1f%%", 100.0f * percent);
                 ImGui::TextUnformatted((percent > 0.0f) ? buf : "");
                 ImGui::SameLine(offsets[2]);
-                ::sprintf(buf, imperial_units ? "%.2f in" : "%.2f m", used_filament_m);
-                imgui.text(buf);
+                imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
                 ImGui::SameLine(offsets[3]);
-                ::sprintf(buf, "%.2f g", used_filament_g);
-                imgui.text(buf);
+                imgui.text(format("%1$.2f %2%", used_filament_g, grams));
             }
         }
         else {
@@ -3320,13 +3335,10 @@ void GCodeViewer::render_legend(float& legend_height)
                 ImGui::TextUnformatted((percent > 0.0f) ? buf : "");
             }
             else if (used_filament_m > 0.0) {
-                char buf[64];
                 ImGui::SameLine(offsets[0]);
-                ::sprintf(buf, imperial_units ? "%.2f in" : "%.2f m", used_filament_m);
-                imgui.text(buf);
+                imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
                 ImGui::SameLine(offsets[1]);
-                ::sprintf(buf, "%.2f g", used_filament_g);
-                imgui.text(buf);
+                imgui.text(format("%1$.2f %2%", used_filament_g, grams));
             }
         }
 
@@ -3496,7 +3508,7 @@ void GCodeViewer::render_legend(float& legend_height)
             if (role < GCodeExtrusionRole::Count) {
                 labels.push_back(_u8L(gcode_extrusion_role_to_string(role)));
                 auto [time, percent] = role_time_and_percent(role);
-                times.push_back((time > 0.0f) ? short_time(get_time_dhms(time)) : "");
+                times.push_back((time > 0.0f) ? short_time_ui(get_time_dhms(time)) : "");
                 percents.push_back(percent);
                 max_time_percent = std::max(max_time_percent, percent);
                 auto [used_filament_m, used_filament_g] = used_filament_per_role(role);
@@ -3565,12 +3577,9 @@ void GCodeViewer::render_legend(float& legend_height)
     int old_view_type = static_cast<int>(get_view_type());
     int view_type = old_view_type;
 
-    if (!m_legend_resizer.dirty)
-        ImGui::SetNextItemWidth(-1.0f);
-
     ImGui::PushStyleColor(ImGuiCol_FrameBg, { 0.1f, 0.1f, 0.1f, 0.8f });
     ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, { 0.2f, 0.2f, 0.2f, 0.8f });
-    imgui.combo("", { _u8L("Feature type"),
+    imgui.combo(std::string(), { _u8L("Feature type"),
                       _u8L("Height (mm)"),
                       _u8L("Width (mm)"),
                       _u8L("Speed (mm/s)"),
@@ -3580,7 +3589,7 @@ void GCodeViewer::render_legend(float& legend_height)
                       _u8L("Layer time (linear)"),
                       _u8L("Layer time (logarithmic)"),
                       _u8L("Tool"),
-                      _u8L("Color Print") }, view_type, ImGuiComboFlags_HeightLargest);
+                      _u8L("Color Print") }, view_type, ImGuiComboFlags_HeightLargest, 0.0f, -1.0f);
     ImGui::PopStyleColor(2);
    
     if (old_view_type != view_type) {
@@ -3623,7 +3632,7 @@ void GCodeViewer::render_legend(float& legend_height)
             }
 
             if (m_buffers[buffer_id(EMoveType::Travel)].visible)
-                append_item(EItemType::Line, Travel_Colors[0], _u8L("Travel"), true, short_time(get_time_dhms(time_mode.travel_time)),
+                append_item(EItemType::Line, Travel_Colors[0], _u8L("Travel"), true, short_time_ui(get_time_dhms(time_mode.travel_time)),
                     time_mode.travel_time / time_mode.time, max_time_percent, offsets, 0.0f, 0.0f);
 
             break;
@@ -3800,7 +3809,7 @@ void GCodeViewer::render_legend(float& legend_height)
                 ImGuiWrapper::to_ImU32(color2));
 
             ImGui::SameLine(offsets[0]);
-            imgui.text(short_time(get_time_dhms(times.second - times.first)));
+            imgui.text(short_time_ui(get_time_dhms(times.second - times.first)));
         };
 
         auto append_print = [&imgui, imperial_units](const ColorRGBA& color, const std::array<float, 4>& offsets, const Times& times, std::pair<double, double> used_filament) {
@@ -3816,9 +3825,9 @@ void GCodeViewer::render_legend(float& legend_height)
                 ImGuiWrapper::to_ImU32(color));
 
             ImGui::SameLine(offsets[0]);
-            imgui.text(short_time(get_time_dhms(times.second)));
+            imgui.text(short_time_ui(get_time_dhms(times.second)));
             ImGui::SameLine(offsets[1]);
-            imgui.text(short_time(get_time_dhms(times.first)));
+            imgui.text(short_time_ui(get_time_dhms(times.first)));
             if (used_filament.first > 0.0f) {
                 char buffer[64];
                 ImGui::SameLine(offsets[2]);
@@ -3843,7 +3852,7 @@ void GCodeViewer::render_legend(float& legend_height)
                 case PartialTime::EType::Pause:       { labels.push_back(_u8L("Pause")); break; }
                 case PartialTime::EType::ColorChange: { labels.push_back(_u8L("Color change")); break; }
                 }
-                times.push_back(short_time(get_time_dhms(item.times.second)));
+                times.push_back(short_time_ui(get_time_dhms(item.times.second)));
             }
 
 
@@ -3876,7 +3885,7 @@ void GCodeViewer::render_legend(float& legend_height)
                 case PartialTime::EType::Pause: {
                     imgui.text(_u8L("Pause"));
                     ImGui::SameLine(offsets[0]);
-                    imgui.text(short_time(get_time_dhms(item.times.second - item.times.first)));
+                    imgui.text(short_time_ui(get_time_dhms(item.times.second - item.times.first)));
                     break;
                 }
                 case PartialTime::EType::ColorChange: {
@@ -3951,7 +3960,7 @@ void GCodeViewer::render_legend(float& legend_height)
       const auto custom_it = std::find(m_roles.begin(), m_roles.end(), GCodeExtrusionRole::Custom);
       if (custom_it != m_roles.end()) {
           const bool custom_visible = is_visible(GCodeExtrusionRole::Custom);
-          const wxString btn_text = custom_visible ? _u8L("Hide Custom GCode") : _u8L("Show Custom GCode");
+          const wxString btn_text = custom_visible ? _u8L("Hide Custom G-code") : _u8L("Show Custom G-code");
           ImGui::Separator();
           if (imgui.button(btn_text, ImVec2(-1.0f, 0.0f), true)) {
               m_extrusions.role_visibility_flags = custom_visible ? m_extrusions.role_visibility_flags & ~(1 << int(GCodeExtrusionRole::Custom)) :
@@ -3994,11 +4003,11 @@ void GCodeViewer::render_legend(float& legend_height)
         if (ImGui::BeginTable("Times", 2)) {
             if (!time_mode.layers_times.empty()) {
                 add_strings_row_to_table(_u8L("First layer") + ":", ImGuiWrapper::COL_ORANGE_LIGHT,
-                    short_time(get_time_dhms(time_mode.layers_times.front())), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
+                    short_time_ui(get_time_dhms(time_mode.layers_times.front())), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
             }
 
             add_strings_row_to_table(_u8L("Total") + ":", ImGuiWrapper::COL_ORANGE_LIGHT,
-                short_time(get_time_dhms(time_mode.time)), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
+                short_time_ui(get_time_dhms(time_mode.time)), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
 
             ImGui::EndTable();
         }

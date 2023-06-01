@@ -549,7 +549,7 @@ public:
     bool                has_brim() const;
 
     // Returns an empty string if valid, otherwise returns an error message.
-    std::string         validate(std::string* warning = nullptr) const override;
+    std::string         validate(std::vector<std::string>* warnings = nullptr) const override;
     double              skirt_first_layer_height() const;
     Flow                brim_flow() const;
     Flow                skirt_flow() const;
@@ -611,6 +611,7 @@ public:
     const PrintRegion&          get_print_region(size_t idx) const  { return *m_print_regions[idx]; }
     const ToolOrdering&         get_tool_ordering() const { return m_wipe_tower_data.tool_ordering; }
 
+    const Polygons& get_sequential_print_clearance_contours() const { return m_sequential_print_clearance_contours; }
     static bool sequential_print_horizontal_clearance_valid(const Print& print, Polygons* polygons = nullptr);
 
 protected:
@@ -659,6 +660,9 @@ private:
 
     // Estimated print time, filament consumed.
     PrintStatistics                         m_print_statistics;
+
+    // Cache to store sequential print clearance contours
+    Polygons m_sequential_print_clearance_contours;
 
     // To allow GCode to set the Print's GCodeExport step status.
     friend class GCode;

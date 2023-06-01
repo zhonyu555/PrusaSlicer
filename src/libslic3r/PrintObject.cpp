@@ -1698,7 +1698,7 @@ void PrintObject::bridge_over_infill()
                         }
                     }
                 }
-                unsupported_area = closing(unsupported_area, SCALED_EPSILON);
+                unsupported_area = closing(unsupported_area, float(SCALED_EPSILON));
                 // By expanding the lower layer solids, we avoid making bridges from the tiny internal overhangs that are (very likely) supported by previous layer solids
                 // NOTE that we cannot filter out polygons worth bridging by their area, because sometimes there is a very small internal island that will grow into large hole
                 lower_layer_solids = shrink(lower_layer_solids, 1 * spacing); // first remove thin regions that will not support anything
@@ -1723,7 +1723,7 @@ void PrintObject::bridge_over_infill()
                                     worth_bridging.push_back(p);
                                 }
                             }
-                            worth_bridging = intersection(closing(worth_bridging, SCALED_EPSILON), s->expolygon);
+                            worth_bridging = intersection(closing(worth_bridging, float(SCALED_EPSILON)), s->expolygon);
                             candidate_surfaces.push_back(CandidateSurface(s, lidx, worth_bridging, region, 0));
 
 #ifdef DEBUG_BRIDGE_OVER_INFILL
@@ -1957,9 +1957,9 @@ void PrintObject::bridge_over_infill()
             }
         }
         layers_sparse_infill = union_ex(layers_sparse_infill);
-        layers_sparse_infill = closing_ex(layers_sparse_infill, SCALED_EPSILON);
+        layers_sparse_infill = closing_ex(layers_sparse_infill, float(SCALED_EPSILON));
         not_sparse_infill    = union_ex(not_sparse_infill);
-        not_sparse_infill    = closing_ex(not_sparse_infill, SCALED_EPSILON);
+        not_sparse_infill    = closing_ex(not_sparse_infill, float(SCALED_EPSILON));
         return diff(layers_sparse_infill, not_sparse_infill);
     };
 
@@ -2296,8 +2296,8 @@ void PrintObject::bridge_over_infill()
                         lightning_area.insert(lightning_area.end(), l.begin(), l.end());
                     }
                 }
-                total_fill_area   = closing(total_fill_area, SCALED_EPSILON);
-                expansion_area    = closing(expansion_area, SCALED_EPSILON);
+                total_fill_area   = closing(total_fill_area, float(SCALED_EPSILON));
+                expansion_area    = closing(expansion_area, float(SCALED_EPSILON));
                 expansion_area    = intersection(expansion_area, deep_infill_area);
                 Polylines anchors = intersection_pl(infill_lines[po->next_layer_index(lidx,true)], shrink(expansion_area, spacing));
                 Polygons internal_unsupported_area = shrink(deep_infill_area, spacing * 4.5);
@@ -2615,7 +2615,7 @@ bool PrintObject::update_layer_height_profile(const ModelObject &model_object, c
 
     if (layer_height_profile.empty()) {
         // use the constructor because the assignement is crashing on ASAN OsX
-        layer_height_profile = std::vector<coordf_t>(model_object.layer_height_profile.get());
+        layer_height_profile = model_object.layer_height_profile.get();
 //        layer_height_profile = model_object.layer_height_profile;
         // The layer height returned is sampled with high density for the UI layer height painting
         // and smoothing tool to work.

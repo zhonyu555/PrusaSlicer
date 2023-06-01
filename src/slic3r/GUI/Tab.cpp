@@ -1599,6 +1599,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("solid_infill_extruder");
         optgroup->append_single_option_line("support_material_extruder");
         optgroup->append_single_option_line("support_material_interface_extruder");
+        optgroup->append_single_option_line("wipe_tower_extruder");
 
         optgroup = page->new_optgroup(L("Ooze prevention"));
         optgroup->append_single_option_line("ooze_prevention");
@@ -2984,7 +2985,7 @@ void TabPrinter::build_extruder_pages(size_t n_before_extruders)
                 update();
             });
 
-            auto has_changes = [this, extruder_idx]() {
+            auto has_changes = [this]() {
                 auto dirty_options = m_presets->current_dirty_options(true);
 #if 1
                 dirty_options.erase(std::remove_if(dirty_options.begin(), dirty_options.end(), 
@@ -5155,8 +5156,7 @@ void TabSLAPrint::build()
     optgroup->append_single_option_line("support_tree_type");
     optgroup->append_single_option_line("support_enforcers_only");
     
-    build_sla_support_params({{"", "Default"}, {"branching", "Branching"}}, page);
-
+    build_sla_support_params({{"", L("Default")}, {"branching", L("Branching")}}, page);
 
     optgroup = page->new_optgroup(L("Automatic generation"));
     optgroup->append_single_option_line("support_points_density_relative");

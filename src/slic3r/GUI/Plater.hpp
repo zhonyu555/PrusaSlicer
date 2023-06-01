@@ -185,7 +185,12 @@ public:
 
     const wxString& get_last_loaded_gcode() const { return m_last_loaded_gcode; }
 
-    void update();
+    enum class UpdateParams {
+        FORCE_FULL_SCREEN_REFRESH = 1,
+        FORCE_BACKGROUND_PROCESSING_UPDATE = 2,
+        POSTPONE_VALIDATION_ERROR_MESSAGE = 4,
+    };
+    void update(unsigned int flags = 0);
 
     // Get the worker handling the UI jobs (arrange, fill bed, etc...)
     // Here is an example of starting up an ad-hoc job:
@@ -250,7 +255,7 @@ public:
     void reset_with_confirm();
     bool delete_object_from_model(size_t obj_idx);
     void remove_selected();
-    void increase_instances(size_t num = 1, int obj_idx = -1, std::optional<Selection::ObjectIdxsToInstanceIdxsMap> selection_map = std::nullopt);
+    void increase_instances(size_t num = 1, int obj_idx = -1, int inst_idx = -1);
     void decrease_instances(size_t num = 1, int obj_idx = -1);
     void set_number_of_copies();
     void fill_bed_with_instances();
