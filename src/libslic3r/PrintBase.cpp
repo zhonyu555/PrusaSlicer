@@ -20,7 +20,7 @@ size_t PrintStateBase::g_last_timestamp = 0;
 void PrintBase::update_object_placeholders(DynamicConfig &config, const std::string &default_ext) const
 {
     // get the first input file name
-    std::string input_file;
+    std::string printable_name;
     std::vector<std::string> v_scale;
     int num_objects = 0;
     int num_instances = 0;
@@ -37,8 +37,8 @@ void PrintBase::update_object_placeholders(DynamicConfig &config, const std::str
 			v_scale.push_back("x:" + boost::lexical_cast<std::string>(printable->get_scaling_factor(X) * 100) +
 				"% y:" + boost::lexical_cast<std::string>(printable->get_scaling_factor(Y) * 100) +
 				"% z:" + boost::lexical_cast<std::string>(printable->get_scaling_factor(Z) * 100) + "%");
-	        if (input_file.empty())
-	            input_file = model_object->name.empty() ? model_object->input_file : model_object->name;
+	        if (printable_name.empty())
+	            printable_name = model_object->name.empty() ? model_object->input_file : model_object->name;
 	    }
     }
     
@@ -46,12 +46,14 @@ void PrintBase::update_object_placeholders(DynamicConfig &config, const std::str
     config.set_key_value("num_instances", new ConfigOptionInt(num_instances));
 
     config.set_key_value("scale", new ConfigOptionStrings(v_scale));
-    if (! input_file.empty()) {
+    if (! printable_name.empty()) {
         // get basename with and without suffix
-        const std::string input_filename = boost::filesystem::path(input_file).filename().string();
-        const std::string input_filename_base = input_filename.substr(0, input_filename.find_last_of("."));
-        config.set_key_value("input_filename", new ConfigOptionString(input_filename_base + default_ext));
-        config.set_key_value("input_filename_base", new ConfigOptionString(input_filename_base));
+        const std::string printable_filename = boost::filesystem::path(printable_name).filename().string();
+        const std::string printable_filename_base = printable_filename.substr(0, printable_filename.find_last_of("."));
+        config.set_key_value("printable_filename", new ConfigOptionString(printable_filename_base + default_ext));
+        config.set_key_value("printable_filename_base", new ConfigOptionString(printable_filename_base));
+        config.set_key_value("input_filename", new ConfigOptionString(printable_filename_base + default_ext));
+        config.set_key_value("input_filename_base", new ConfigOptionString(printable_filename_base));
     }
 }
 

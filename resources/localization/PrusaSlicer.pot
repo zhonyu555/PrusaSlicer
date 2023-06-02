@@ -13758,7 +13758,7 @@ msgid ""
 "You can use all configuration options as variables inside this template. For "
 "example: [layer_height], [fill_density] etc. You can also use [timestamp], "
 "[year], [month], [day], [hour], [minute], [second], [version], "
-"[input_filename], [input_filename_base]."
+"[input_filename], [input_filename_base], [printable_filename], [printable_filename_base]."
 msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:1992
