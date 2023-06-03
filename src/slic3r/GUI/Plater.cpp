@@ -1,4 +1,5 @@
 #include "Plater.hpp"
+#include "slic3r/GUI/Jobs/UIThreadWorker.hpp"
 
 #include <cstddef>
 #include <algorithm>
@@ -1793,6 +1794,8 @@ struct Plater::priv
 
     bool init_view_toolbar();
     bool init_collapse_toolbar();
+
+    void set_preview_layers_slider_values_range(int bottom, int top);
 
     void update_preview_moves_slider();
     void enable_preview_moves_slider(bool enable);
@@ -4632,6 +4635,11 @@ bool Plater::priv::init_collapse_toolbar()
     return true;
 }
 
+void Plater::priv::set_preview_layers_slider_values_range(int bottom, int top)
+{
+    preview->set_layers_slider_values_range(bottom, top);
+}
+
 void Plater::priv::update_preview_moves_slider()
 {
     preview->update_moves_slider();
@@ -5293,8 +5301,9 @@ void Plater::import_zip_archive()
    if (input_file.empty())
        return;
 
-   fs::path path = into_path(input_file);
-   preview_zip_archive(path);
+   wxArrayString arr;
+   arr.Add(input_file);
+   load_files(arr, false);
 }
 
 void Plater::import_sl1_archive()
@@ -6090,7 +6099,7 @@ void Plater::increase_instances(size_t num, int obj_idx, int inst_idx)
             if (const auto obj_idxs = get_selection().get_object_idxs(); !obj_idxs.empty()) {
                 // we need a copy made here because the selection changes at every call of increase_instances()
                 const Selection::ObjectIdxsToInstanceIdxsMap content = p->get_selection().get_content();
-                for (const size_t& obj_id : obj_idxs) {
+                for (const unsigned int obj_id : obj_idxs) {
                     if (auto obj_it = content.find(int(obj_id)); obj_it != content.end())
                         increase_instances(1, int(obj_id), *obj_it->second.rbegin());
                 }
@@ -6311,7 +6320,9 @@ void Plater::cut(size_t obj_idx, const ModelObjectPtrs& new_objects)
     for (size_t i = 0; i < new_objects.size(); ++i)
         selection.add_object((unsigned int)(last_id - i), i == 0);
 
-    arrange();
+    UIThreadWorker w;
+    replace_job(w, std::make_unique<ArrangeJob>(ArrangeJob::SelectionOnly));
+    w.process_events();
 }
 
 void Plater::export_gcode(bool prefer_removable)
@@ -6628,11 +6639,14 @@ bool Plater::export_3mf(const boost::filesystem::path& output_path)
     if (ret) {
         // Success
 //        p->statusbar()->set_status_text(format_wxstr(_L("3MF file exported to %s"), path));
+        BOOST_LOG_TRIVIAL(info) << "3MF file exported to " << path;
         p->set_project_filename(path);
     }
     else {
         // Failure
 //        p->statusbar()->set_status_text(format_wxstr(_L("Error exporting 3MF file %s"), path));
+        const wxString what = GUI::format_wxstr(_L("%1%: %2%"),_L("Unable to save file") , path_u8);
+        show_error(this, what);
     }
     return ret;
 }
@@ -7196,7 +7210,11 @@ void Plater::arrange()
     if (p->can_arrange()) {
         auto &w = get_ui_job_worker();
         p->take_snapshot(_L("Arrange"));
-        replace_job(w, std::make_unique<ArrangeJob>());
+
+        auto mode = wxGetKeyState(WXK_SHIFT) ? ArrangeJob::SelectionOnly :
+                                               ArrangeJob::Full;
+
+        replace_job(w, std::make_unique<ArrangeJob>(mode));
     }
 }
 
@@ -7504,6 +7522,11 @@ const GLToolbar& Plater::get_collapse_toolbar() const
 GLToolbar& Plater::get_collapse_toolbar()
 {
     return p->collapse_toolbar;
+}
+
+void Plater::set_preview_layers_slider_values_range(int bottom, int top)
+{
+    p->set_preview_layers_slider_values_range(bottom, top);
 }
 
 void Plater::update_preview_moves_slider()
