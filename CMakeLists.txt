@@ -311,6 +311,24 @@ endif ()
 if (APPLE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror=partial-availability -Werror=unguarded-availability -Werror=unguarded-availability-new")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=partial-availability -Werror=unguarded-availability -Werror=unguarded-availability-new")
+
+    # Fix zstd not being found during linking
+    find_program(HOMEBREW_EXECUTABLE brew NO_CACHE)
+    if(HOMEBREW_EXECUTABLE STREQUAL "HOMEBREW_EXECUTABLE-NOTFOUND")
+        message(FATAL_ERROR "Homebrew must be installed in order to install zstd.")
+    endif ()
+
+    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix zstd
+                    RESULT_VARIABLE HOMEBREW_ZSTD_PREFIX_RESULT
+                    OUTPUT_VARIABLE HOMEBREW_ZSTD_PREFIX
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT HOMEBREW_ZSTD_PREFIX_RESULT EQUAL "0")
+        message(FATAL_ERROR "Could not find the zstd Homebrew keg. Ensure that zstd is installed via homebrew.")
+    endif ()
+
+    message(STATUS "Found zstd Homebrew prefix: ${HOMEBREW_ZSTD_PREFIX}")
+
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -L${HOMEBREW_ZSTD_PREFIX}/lib")
 endif ()
 
 # Where all the bundled libraries reside?
