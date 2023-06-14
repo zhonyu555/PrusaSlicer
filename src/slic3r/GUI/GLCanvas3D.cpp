@@ -1162,6 +1162,10 @@ static bool object_contains_negative_volumes(const Model& model, int obj_id) {
     return (0 <= obj_id && obj_id < (int)model.objects.size()) ? model.objects[obj_id]->has_negative_volume_mesh() : false;
 }
 
+static bool object_has_sla_drain_holes(const Model& model, int obj_id) {
+    return (0 <= obj_id && obj_id < (int)model.objects.size()) ? model.objects[obj_id]->has_sla_drain_holes() : false;
+}
+
 void GLCanvas3D::SLAView::detect_type_from_volumes(const GLVolumePtrs& volumes)
 {
     for (auto& [id, type] : m_instances_cache) {
@@ -1170,7 +1174,8 @@ void GLCanvas3D::SLAView::detect_type_from_volumes(const GLVolumePtrs& volumes)
 
     for (const GLVolume* v : volumes) {
         if (v->volume_idx() == -(int)slaposDrillHoles) {
-            if (object_contains_negative_volumes(*m_parent.get_model(), v->composite_id.object_id)) {
+            if (object_contains_negative_volumes(*m_parent.get_model(), v->composite_id.object_id) ||
+                object_has_sla_drain_holes(*m_parent.get_model(), v->composite_id.object_id)) {
                 const InstancesCacheItem* instance = find_instance_item(v->composite_id);
                 assert(instance != nullptr);
                 set_type(instance->first, ESLAViewType::Processed);
@@ -4686,6 +4691,13 @@ std::pair<SlicingParameters, const std::vector<double>> GLCanvas3D::get_layers_h
     return ret;
 }
 
+void GLCanvas3D::detect_sla_view_type()
+{
+    m_sla_view.detect_type_from_volumes(m_volumes.volumes);
+    m_sla_view.update_volumes_visibility(m_volumes.volumes);
+    m_dirty = true;
+}
+
 void GLCanvas3D::set_sla_view_type(ESLAViewType type)
 {
     m_sla_view.set_type(type);
@@ -7480,8 +7492,9 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
         std::string objName2 = conflict_result->_objName2;
         double      height = conflict_result->_height;
         int         layer = conflict_result->layer;
-        text = (boost::format(_u8L("Conflicts of gcode paths have been found at layer %d, z = %.2lf mm. Please separate the conflicted objects farther (%s <-> %s).")) % layer %
-            height % objName1 % objName2).str();
+        // TRN %3% is name of Object1, %4% is name of Object2
+        text = format(_u8L("Conflicts in G-code paths have been detected at layer %1%, z=%2$.2f mm. Please reposition the conflicting objects (%3% <-> %4%) further apart."), 
+                      layer, height, objName1, objName2);
         error = ErrorType::SLICING_ERROR;
         break;
     }
@@ -7503,6 +7516,7 @@ void GLCanvas3D::_set_warning_notification(EWarning warning, bool state)
                     wxGetApp().CallAfter([obj_idx, layer_id]() {
                         wxGetApp().plater()->set_preview_layers_slider_values_range(0, layer_id - 1);
                         wxGetApp().plater()->select_view_3D("3D");
+                        wxGetApp().plater()->canvas3D()->reset_all_gizmos();
                         wxGetApp().plater()->canvas3D()->get_selection().add_object(obj_idx, true);
                         wxGetApp().obj_list()->update_selections();
                     });
