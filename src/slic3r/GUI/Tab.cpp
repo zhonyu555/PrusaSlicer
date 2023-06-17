@@ -465,10 +465,19 @@ void Tab::OnActivate()
     if (m_presets_choice->IsShown())
         Refresh(); // Just refresh page, if m_presets_choice is already shown
     else {
-        // on first OnActivate call show top sizer
+        // From the tab creation whole top sizer is hidden to correct update of preset combobox's size
+        // (see https://github.com/prusa3d/PrusaSlicer/issues/10746)
+
+        // On first OnActivate call show top sizer
         m_top_hsizer->ShowItems(true);
+        // Size and layouts of all items are correct now,
+        // but ALL items of top sizer are visible.
+        // So, update visibility of each item according to the ui settings
+        update_btns_enabling();
+        m_btn_hide_incompatible_presets->Show(m_show_btn_incompatible_presets && m_type != Slic3r::Preset::TYPE_PRINTER);
         if (TabFilament* tab = dynamic_cast<TabFilament*>(this))
             tab->update_extruder_combobox();
+
         Layout();
     }
 }
@@ -2265,6 +2274,14 @@ void TabFilament::msw_rescale()
             win->SetInitialSize(win->GetBestSize());
 
     Tab::msw_rescale();
+}
+
+void TabFilament::sys_color_changed()
+{
+    m_extruders_cb->Clear();
+    update_extruder_combobox();
+
+    Tab::sys_color_changed();
 }
 
 void TabFilament::load_current_preset()
