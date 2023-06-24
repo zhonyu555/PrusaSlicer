@@ -587,6 +587,7 @@ public:
     double              skirt_first_layer_height() const;
     Flow                brim_flow() const;
     Flow                skirt_flow() const;
+    coordf_t            skirt_print_z() const { return m_skirt_height_z; };
     
     std::vector<unsigned int> object_extruders() const;
     std::vector<unsigned int> support_material_extruders() const;
@@ -687,6 +688,7 @@ private:
     // It does NOT encompass MMU/MMU2 starting (wipe) areas.
     Polygon                                 m_first_layer_convex_hull;
     Points                                  m_skirt_convex_hull;
+    coordf_t                                m_skirt_height_z;
 
     // Following section will be consumed by the GCodeGenerator.
     ToolOrdering 							m_tool_ordering;

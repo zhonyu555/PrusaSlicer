@@ -27,6 +27,7 @@ void midslice_zs(const indexed_triangle_set &mesh,
                  std::vector<int> *          dnwrd_mididx);
 
 std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &layers,
+                                       double min_contour_width,
                                        std::vector<ExPolygons> &mid_layers,
                                        const std::vector<bool> &do_low,
                                        const std::vector<bool> &do_high,
