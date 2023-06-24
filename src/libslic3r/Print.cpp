@@ -1019,18 +1019,17 @@ void Print::_make_skirt()
     // The skirt_height option from config is expressed in layers, but our
     // object might have different layer heights, so we need to find the print_z
     // of the highest layer involved.
-    // Note that unless has_infinite_skirt() == true
-    // the actual skirt might not reach this $skirt_height_z value since the print
-    // order of objects on each layer is not guaranteed and will not generally
-    // include the thickest object first. It is just guaranteed that a skirt is
-    // prepended to the first 'n' layers (with 'n' = skirt_height).
-    // $skirt_height_z in this case is the highest possible skirt height for safety.
-    coordf_t skirt_height_z = 0.;
+    m_skirt_height_z = 0.;
     for (const PrintObject *object : m_objects) {
-        size_t skirt_layers = this->has_infinite_skirt() ?
-            object->layer_count() : 
-            std::min(size_t(m_config.skirt_height.value), object->layer_count());
-        skirt_height_z = std::max(skirt_height_z, object->m_layers[skirt_layers-1]->print_z);
+        size_t skirt_layer = this->has_infinite_skirt() ? object->layer_count() - 1: 0;
+        if (!this->has_infinite_skirt()) {
+            for (size_t i = 0, non_dithered = 0; i < object->layer_count() && non_dithered < size_t(m_config.skirt_height.value); i++)
+                if (!object->m_layers[i]->dithered) { // Skip dithered layers
+                    skirt_layer = i;
+                    non_dithered += 1;
+                }
+        }
+        m_skirt_height_z = std::max(m_skirt_height_z, object->m_layers[skirt_layer]->print_z);
     }
     
     // Collect points from all layers contained in skirt height.
@@ -1039,7 +1038,7 @@ void Print::_make_skirt()
         Points object_points;
         // Get object layers up to skirt_height_z.
         for (const Layer *layer : object->m_layers) {
-            if (layer->print_z > skirt_height_z)
+            if (layer->print_z > m_skirt_height_z)
                 break;
             for (const ExPolygon &expoly : layer->lslices)
                 // Collect the outer contour points only, ignore holes for the calculation of the convex hull.
@@ -1047,7 +1046,7 @@ void Print::_make_skirt()
         }
         // Get support layers up to skirt_height_z.
         for (const SupportLayer *layer : object->support_layers()) {
-            if (layer->print_z > skirt_height_z)
+            if (layer->print_z > m_skirt_height_z)
                 break;
             layer->support_fills.collect_points(object_points);
         }

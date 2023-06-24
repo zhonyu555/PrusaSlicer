@@ -1,6 +1,7 @@
 #include "ZDither.hpp"
 #include "ExPolygon.hpp"
 #include "TriangleMeshSlicer.hpp"
+#include "Utils.hpp"
 
 
 namespace Slic3r {
@@ -15,6 +16,7 @@ void midslice_zs(const indexed_triangle_set &mesh,
                  const std::vector<float> &  zs,
                  const Transform3d &         trafo,
                  float                       nozzle_diameter,
+                 bool                        dither_both_up_n_down,
                  std::vector<float> *        mid_zs,
                  std::vector<int> *         upwrd_mididx,
                  std::vector<int> *         dnwrd_mididx)
@@ -72,7 +74,7 @@ void midslice_zs(const indexed_triangle_set &mesh,
             if (nozzle_diameter * sqrt(1 - norm[2] * norm[2]) * nDia < fabs(norm[2]) * layerHeight[cc]) {
                 if (norm[2] > 0)
                     upwrd_mididx->at(cc) = cc;
-                else
+                else if (dither_both_up_n_down)
                     dnwrd_mididx->at(cc) = cc;
             }
         }
@@ -94,7 +96,68 @@ void midslice_zs(const indexed_triangle_set &mesh,
     return;
 }
 
-std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys,
+namespace {
+void export_sublayers_to_svg(size_t            layer_id,
+                             const ExPolygons &whole,
+                             const ExPolygons &bottom,
+                             const ExPolygons &middleUp,
+                             const ExPolygons &middleDn,
+                             const ExPolygons &top)
+{
+    BoundingBox bbox = get_extents(whole);
+    bbox.merge(get_extents(bottom));
+    bbox.merge(get_extents(middleUp));
+    bbox.merge(get_extents(middleDn));
+    bbox.merge(get_extents(top));
+    SVG svg(debug_out_path("z-dither_%d_sublayers.svg", layer_id).c_str(), bbox);
+    svg.draw(whole, "green");
+    svg.draw(bottom, "lightcoral");
+    svg.draw_outline(middleUp, "red", "red", scale_(0.05));
+    svg.draw(top, "cyan");
+    svg.draw_outline(middleDn, "blue", "blue", scale_(0.05));
+    svg.Close();
+}
+
+void export_cuts_to_svg(size_t layer_id, const ExPolygons &expoly, const ExPolygons &below, const ExPolygons &above)
+{
+    BoundingBox bbox = get_extents(expoly);
+    bbox.merge(get_extents(below));
+    bbox.merge(get_extents(above));
+    SVG svg(debug_out_path("z-dither_%d_cuts.svg", layer_id).c_str(), bbox);
+    svg.draw_outline(below, "lightcoral", "lightcoral", scale_(0.05));
+    svg.draw_outline(expoly, "green", "green", scale_(0.05));
+    svg.draw_outline(above, "cyan", "cyan", scale_(0.05));
+    svg.Close();
+}
+
+// Subtraction of ExPolygons that are very close to each other along some portion of their boundary
+// may result in ExPolygons covering tiny, very narrow areas. We need to filter them out.
+ExPolygons &filter_tiny_areas(ExPolygons &expolys, double min)
+{
+    expolys.erase(std::remove_if(expolys.begin(), expolys.end(), [&min](ExPolygon &poly) {
+        // Use area and perimeter to estimate width of a closed polygon
+        double area   = poly.contour.area();
+        double perimeter = poly.contour.length();
+        // For cirle area/perimeter = width / 4; For thin rectangle area/perimeter = width / 2. 
+        // Arbitrary shape will have average width less than width of a circle 
+        double width = area / perimeter * 4;
+        return width < scale_(min);
+    }), expolys.end());
+    return expolys;
+}
+
+int total_num_contours(const ExPolygons &expolys)
+{
+    int total = 0;
+    for (const ExPolygon &poly : expolys)
+        total += poly.num_contours();
+    return total;
+}
+
+} // namespace
+
+std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys, 
+                                       double min_contour_width,
                                        std::vector<ExPolygons> &expolys_mid,
                                        const std::vector<int> & upwrd_mididx,
                                        const std::vector<int> & dnwrd_mididx,
@@ -107,18 +170,22 @@ std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys,
     out[0] = std::move(expolys[0]);     // Do not make sublayers of first layer
     for (auto ll = 1; ll < expolys.size(); ll++) {
         // idx0 - bottom of layer, idx1 - top of layer
-        int  upwrd_idx0  = upwrd_mididx[ll - 1];
-        int  dnwrd_idx0  = dnwrd_mididx[ll - 1];
-        int  upwrd_idx1  = upwrd_mididx[ll];
-        int  dnwrd_idx1  = dnwrd_mididx[ll];
+        int upwrd_idx0 = upwrd_mididx[ll - 1];
+        int dnwrd_idx0 = dnwrd_mididx[ll - 1];
+        int upwrd_idx1 = upwrd_mididx[ll];
+        int dnwrd_idx1 = dnwrd_mididx[ll];
 
         auto useMidCut = [](int idx) { return idx != -1; };
 
+        if (useMidCut(dnwrd_idx0) && useMidCut(dnwrd_idx1) &&
+            total_num_contours(expolys_mid[dnwrd_idx0]) != total_num_contours(expolys_mid[dnwrd_idx1])) {
+            dnwrd_idx0 = dnwrd_idx1 = -1;   // Don't mess up with bridging even in the presence of support 
+        }
         if (!useMidCut(upwrd_idx0) && !useMidCut(dnwrd_idx0) && !useMidCut(upwrd_idx1) && !useMidCut(dnwrd_idx1)) {
             out[ll] = std::move(expolys[ll]);
             continue;
         } else {
-            ExPolygons bottom, middleUp, middleDn, top;
+            ExPolygons bottom, middleUp, middleDn, top, whole;
 
             if (useMidCut(upwrd_idx0) || useMidCut(upwrd_idx1)) {
                 bottom = std::move(
@@ -138,27 +205,33 @@ std::vector<ExPolygons> apply_z_dither(std::vector<ExPolygons> &expolys,
                 middleDn = std::move(diff_ex(expolys[ll], expolys_mid[dnwrd_idx0]));
             }
 
-            ExPolygons whole;
-            if (useMidCut(upwrd_idx1) && useMidCut(dnwrd_idx0))
-                whole = std::move(intersection_ex(expolys_mid[dnwrd_idx0], expolys_mid[upwrd_idx1]));
-            else if (useMidCut(upwrd_idx1))
-                whole = std::move(intersection_ex(expolys[ll], expolys_mid[upwrd_idx1]));
-            else if (useMidCut(dnwrd_idx0))
-                whole = std::move(intersection_ex(expolys[ll], expolys_mid[dnwrd_idx0]));
+            filter_tiny_areas(bottom, min_contour_width);
+            filter_tiny_areas(middleUp, min_contour_width);
+            filter_tiny_areas(middleDn, min_contour_width);
+            filter_tiny_areas(top, min_contour_width);
+            
+            if (!bottom.empty() || !top.empty()) {
+                whole = std::move(diff_ex(expolys[ll], top));
+                whole = std::move(diff_ex(filter_tiny_areas(whole, min_contour_width), bottom));
+                filter_tiny_areas(whole, min_contour_width);
+            }
             else {
                 out[ll] = std::move(expolys[ll]);
                 continue;
             }
+
+            #if 0
+            export_sublayers_to_svg(ll, whole, bottom, middleUp, middleDn, top);
+            export_cuts_to_svg(ll, expolys[ll], 
+                useMidCut(dnwrd_idx0) ? expolys_mid[dnwrd_idx0] : (useMidCut(upwrd_idx0) ? expolys_mid[upwrd_idx0] : ExPolygons()), 
+                useMidCut(dnwrd_idx1) ? expolys_mid[dnwrd_idx1] : (useMidCut(upwrd_idx1) ? expolys_mid[upwrd_idx1] : ExPolygons()));
+            #endif
+
             out[ll] = std::move(whole);
-            if (bottom.empty() != middleUp.empty() || middleDn.empty() != top.empty()) {
-                BOOST_LOG_TRIVIAL(error)
-                    << "z-dithering: internal error";
-            } else {
-                sublayers->at(ll).bottom_ = std::move(bottom);
-                sublayers->at(ll).halfUp_ = std::move(middleUp);
-                sublayers->at(ll).halfDn_ = std::move(middleDn);
-                sublayers->at(ll).top_    = std::move(top);
-            }
+            sublayers->at(ll).bottom_ = std::move(bottom);
+            sublayers->at(ll).halfUp_ = std::move(middleUp);
+            sublayers->at(ll).halfDn_ = std::move(middleDn);
+            sublayers->at(ll).top_    = std::move(top);
         }
     }
     return out;
@@ -175,10 +248,11 @@ std::vector<ExPolygons> z_dither(const indexed_triangle_set &mesh,
     std::vector<float> mid_zs;
     std::vector<int>   upwrd_mididx;
     std::vector<int>   dnwrd_mididx;
-    midslice_zs(mesh, zs, params.trafo, params.nozzle_diameter, &mid_zs, &upwrd_mididx, &dnwrd_mididx);
+    midslice_zs(mesh, zs, params.trafo, params.nozzle_diameter, params.z_dither_mode == Z_dither_mode::Both, 
+        &mid_zs, &upwrd_mididx, &dnwrd_mididx);
     if (!mid_zs.empty()) {
         std::vector<ExPolygons> expolys_mid = slice_mesh_ex(mesh, mid_zs, params, throw_on_cancel_callback);
-        return apply_z_dither(expolys, expolys_mid, upwrd_mididx, dnwrd_mididx, sublayers);
+        return apply_z_dither(expolys, params.nozzle_diameter / 10, expolys_mid, upwrd_mididx, dnwrd_mididx, sublayers);
     } else {
         *sublayers = std::vector<SubLayers>(expolys.size());
         return expolys;

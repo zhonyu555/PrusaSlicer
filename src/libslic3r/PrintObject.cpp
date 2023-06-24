@@ -700,11 +700,12 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posSlice);
         } else if (opt_key == "support_material") {
             steps.emplace_back(posSupportMaterial);
-            if (m_config.support_material_contact_distance == 0.) {
+            if (m_config.support_material_contact_distance == 0. || m_config.z_dither) {
             	// Enabling / disabling supports while soluble support interface is enabled.
             	// This changes the bridging logic (bridging enabled without supports, disabled with supports).
-            	// Reset everything.
             	// See GH #1482 for details.
+                // Similarly enabling / disabling supports affects the logic of dithered layer calculations
+                // Reset everything.
 	            steps.emplace_back(posSlice);
 	        }
         } else if (
@@ -817,7 +818,8 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "wall_transition_angle"
             || opt_key == "wall_distribution_count"
             || opt_key == "min_feature_size"
-            || opt_key == "min_bead_width") {
+            || opt_key == "min_bead_width" 
+            || opt_key == "z_dither") {
             steps.emplace_back(posSlice);
         } else if (
                opt_key == "seam_position"

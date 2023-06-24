@@ -2082,14 +2082,13 @@ namespace Skirt {
         // not at the print_z of the interlaced support material layers.
         std::map<unsigned int, std::pair<size_t, size_t>> skirt_loops_per_extruder_out;
         if (print.has_skirt() && ! print.skirt().entities.empty() && layer_tools.has_skirt &&
+            // Bevare of several layers with same print_z but different heights which could happen
+            // in case of dithered overhanging layers with support 
+            fabs(skirt_done.back() - layer_tools.print_z) > EPSILON && 
             // Not enough skirt layers printed yet.
-            //FIXME infinite or high skirt does not make sense for sequential print!
-            (skirt_done.size() < (size_t)print.config().skirt_height.value || print.has_infinite_skirt())) {
+            (layer_tools.print_z < print.skirt_print_z() + EPSILON || print.has_infinite_skirt())) {
             bool valid = ! skirt_done.empty() && skirt_done.back() < layer_tools.print_z - EPSILON;
             assert(valid);
-            // This print_z has not been extruded yet (sequential print)
-            // FIXME: The skirt_done should not be empty at this point. The check is a workaround
-            // of https://github.com/prusa3d/PrusaSlicer/issues/5652, but it deserves a real fix.
             if (valid) {
 #if 0
                 // Prime just the first printing extruder. This is original Slic3r's implementation.

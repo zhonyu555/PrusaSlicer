@@ -35,6 +35,12 @@ struct MeshSlicingParams
     Transform3d   trafo { Transform3d::Identity() };
 };
 
+enum class Z_dither_mode {
+    None,   // No z-dithering
+    Upward, // Dither just upward facing surfaces, no overhangs
+    Both    // Dither Both upward andf downward surfacefaces. Requires presence of support.
+};
+
 struct MeshSlicingParamsEx : public MeshSlicingParams
 {
     // Morphological closing operation when creating output expolygons, unscaled.
@@ -46,7 +52,7 @@ struct MeshSlicingParamsEx : public MeshSlicingParams
     double        resolution { 0 };
     // nozzle diameter (needed for z_dithering optimization)
     float         nozzle_diameter{0};
-    bool          z_dither{false}; // indicates if z-dithering is needed
+    Z_dither_mode z_dither_mode = Z_dither_mode::None;
 };
 
 // All the following slicing functions shall produce consistent results with the same mesh, same transformation matrix and slicing parameters.

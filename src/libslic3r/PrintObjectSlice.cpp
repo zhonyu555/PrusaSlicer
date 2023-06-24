@@ -56,7 +56,7 @@ static std::vector<ExPolygons> slice_volume(
     if (params2.trafo.rotation().determinant() < 0.)
         its_flip_triangles(its);
     std::vector<ExPolygons> expolys = slice_mesh_ex(its, zs, params2, throw_on_cancel_callback);
-    if (params2.z_dither)
+    if (params2.z_dither_mode != Z_dither_mode::None)
         expolys = z_dither(its, zs, params2, expolys, sublayers, throw_on_cancel_callback);
 	else
         *sublayers = std::vector<SubLayers>(expolys.size());
@@ -159,7 +159,9 @@ static std::vector<VolumeSlices> slice_volumes_inner(
     params_base.resolution     = print_config.resolution.value;
     const std::vector<double> &diameters = print_config.nozzle_diameter.values;
     params_base.nozzle_diameter = float(*std::min_element(diameters.begin(), diameters.end()));
-    params_base.z_dither        = print_object_config.z_dither;
+    params_base.z_dither_mode   = print_object_config.z_dither 
+        ? (print_object_config.support_material ? Z_dither_mode::Both : Z_dither_mode::Upward) 
+        : Z_dither_mode::None;
 
     switch (print_object_config.slicing_mode.value) {
     case SlicingMode::Regular:    params_base.mode = MeshSlicingParams::SlicingMode::Regular; break;
@@ -748,9 +750,9 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
 {
     LayerPtrs original(layers);
     LayerPtrs resulting;
-    Layer *   newLayer[4];
 
     for (int ll = 0; ll < original.size(); ll++) {
+        Layer *newLayer[4] = {nullptr, nullptr, nullptr, nullptr};
         if (std::any_of(volume_sublayers.begin(), volume_sublayers.end(),
                         [&ll](VolumeSublayers &v_sub) {
                             return !v_sub.sublayers[ll].bottom_.empty();
@@ -765,8 +767,9 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                             return !v_sub.sublayers[ll].halfUp_.empty();
                         })) {
             newLayer[1]              = make_dithered_layer(original[ll], 0.25, 0.75);
-            newLayer[1]->lower_layer = newLayer[0]; // must be != nullptr
-            newLayer[0]->upper_layer = newLayer[1];
+            newLayer[1]->lower_layer = newLayer[0];
+            if (newLayer[0])
+                newLayer[0]->upper_layer = newLayer[1];
             merge_sublayers_to_slices(volume_slices, volume_sublayers, 1, ll, resulting.size());
             resulting.push_back(newLayer[1]);
         }
@@ -784,8 +787,9 @@ LayerPtrs add_dithering_layers(const LayerPtrs &                   layers,
                         })) {
             newLayer[3]              = make_dithered_layer(original[ll], 0.75, 1.);
             newLayer[3]->upper_layer = original[ll]->upper_layer;
-            newLayer[3]->lower_layer = newLayer[2]; // must be != nullptr
-            newLayer[2]->upper_layer = newLayer[3];
+            newLayer[3]->lower_layer = newLayer[2];
+            if (newLayer[2])
+                newLayer[2]->upper_layer = newLayer[3];
             merge_sublayers_to_slices(volume_slices, volume_sublayers, 3, ll, resulting.size());
             resulting.push_back(newLayer[3]);
         }

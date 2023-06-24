@@ -113,28 +113,24 @@ void LayerRegion::make_perimeters(
         auto perimeters_begin      = uint32_t(m_perimeters.size());
         auto gap_fills_begin       = uint32_t(m_thin_fills.size());
         auto fill_expolygons_begin = uint32_t(fill_expolygons.size());
-        if (this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase)
-            PerimeterGenerator::process_arachne(
-                // input:
-                params,
-                surface,
-                lower_slices,
-                lower_layer_polygons_cache,
-                // output:
-                m_perimeters,
-                m_thin_fills,
-                fill_expolygons);
-        else
+        bool use_arachne = this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase;
+        bool dithered_layer    = this->layer()->dithered;
+        // arachne width averaging is not so good for thin areas of dithered layers becuase it results in routh attachment/seams of 
+        // dithered layers to non-dithered (regular) layers. On the other hand for very narrow dithered layers classic algothim  
+        // sometimes makes no perimeters at all and in this case we better employ arachne algorithm (even if user selected classic).
+        if (!use_arachne || dithered_layer)
             PerimeterGenerator::process_classic(
                 // input:
-                params,
-                surface,
-                lower_slices,
-                lower_layer_polygons_cache,
+                params, surface, lower_slices, lower_layer_polygons_cache,
                 // output:
-                m_perimeters,
-                m_thin_fills,
-                fill_expolygons);
+                m_perimeters, m_thin_fills, fill_expolygons); 
+        if (dithered_layer && m_perimeters.empty() || !dithered_layer && use_arachne)
+            PerimeterGenerator::process_arachne(
+                // input:
+                params, surface, lower_slices, lower_layer_polygons_cache,
+                // output:
+                m_perimeters, m_thin_fills, fill_expolygons);
+            
         perimeter_and_gapfill_ranges.emplace_back(
             ExtrusionRange{ perimeters_begin, uint32_t(m_perimeters.size()) }, 
             ExtrusionRange{ gap_fills_begin,  uint32_t(m_thin_fills.size()) });
