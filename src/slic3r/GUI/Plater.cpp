@@ -1,4 +1,5 @@
 #include "Plater.hpp"
+#include "slic3r/GUI/Jobs/UIThreadWorker.hpp"
 
 #include <cstddef>
 #include <algorithm>
@@ -1370,7 +1371,7 @@ void Sidebar::update_sliced_info_sizer()
             }
             p->sliced_info->SetTextAndShow(siCost, str_total_cost, "Cost");
 
-            wxString t_est = std::isnan(ps.estimated_print_time) ? "N/A" : get_time_dhms(float(ps.estimated_print_time));
+            wxString t_est = std::isnan(ps.estimated_print_time) ? "N/A" : from_u8(short_time_ui(get_time_dhms(float(ps.estimated_print_time))));
             p->sliced_info->SetTextAndShow(siEstimatedTime, t_est, _L("Estimated printing time") + ":");
 
             p->plater->get_notification_manager()->set_slicing_complete_print_time(_u8L("Estimated printing time") + ": " + boost::nowide::narrow(t_est), p->plater->is_sidebar_collapsed());
@@ -1459,14 +1460,14 @@ void Sidebar::update_sliced_info_sizer()
                 new_label = _L("Estimated printing time") + ":";
                 if (ps.estimated_normal_print_time != "N/A") {
                     new_label += format_wxstr("\n   - %1%", _L("normal mode"));
-                    info_text += format_wxstr("\n%1%", short_time(ps.estimated_normal_print_time));
+                    info_text += format_wxstr("\n%1%", short_time_ui(ps.estimated_normal_print_time));
 
                     p->plater->get_notification_manager()->set_slicing_complete_print_time(_u8L("Estimated printing time") + ": " + ps.estimated_normal_print_time, p->plater->is_sidebar_collapsed());
 
                 }
                 if (ps.estimated_silent_print_time != "N/A") {
                     new_label += format_wxstr("\n   - %1%", _L("stealth mode"));
-                    info_text += format_wxstr("\n%1%", short_time(ps.estimated_silent_print_time));
+                    info_text += format_wxstr("\n%1%", short_time_ui(ps.estimated_silent_print_time));
                 }
                 p->sliced_info->SetTextAndShow(siEstimatedTime, info_text, new_label);
             }
@@ -1702,6 +1703,7 @@ struct Plater::priv
     static const std::regex pattern_zip_amf;
     static const std::regex pattern_any_amf;
     static const std::regex pattern_prusa;
+    static const std::regex pattern_zip;
 
     priv(Plater *q, MainFrame *main_frame);
     ~priv();
@@ -1765,11 +1767,6 @@ struct Plater::priv
     void render_project_state_debug_window() const { dirty_state.render_debug_window(); }
 #endif // ENABLE_PROJECT_DIRTY_STATE_DEBUG_WINDOW
 
-    enum class UpdateParams {
-        FORCE_FULL_SCREEN_REFRESH          = 1,
-        FORCE_BACKGROUND_PROCESSING_UPDATE = 2,
-        POSTPONE_VALIDATION_ERROR_MESSAGE  = 4,
-    };
     void update(unsigned int flags = 0);
     void select_view(const std::string& direction);
     void select_view_3D(const std::string& name);
@@ -1797,6 +1794,8 @@ struct Plater::priv
 
     bool init_view_toolbar();
     bool init_collapse_toolbar();
+
+    void set_preview_layers_slider_values_range(int bottom, int top);
 
     void update_preview_moves_slider();
     void enable_preview_moves_slider(bool enable);
@@ -1853,7 +1852,7 @@ struct Plater::priv
     void suppress_snapshots()   { m_prevent_snapshots++; }
     void allow_snapshots()      { m_prevent_snapshots--; }
 
-    void process_validation_warning(const std::string& warning) const;
+    void process_validation_warning(const std::vector<std::string>& warning) const;
 
     bool background_processing_enabled() const { return this->get_config_bool("background_processing"); }
     void update_print_volume_state();
@@ -2003,6 +2002,7 @@ const std::regex Plater::priv::pattern_3mf(".*3mf", std::regex::icase);
 const std::regex Plater::priv::pattern_zip_amf(".*[.]zip[.]amf", std::regex::icase);
 const std::regex Plater::priv::pattern_any_amf(".*[.](amf|amf[.]xml|zip[.]amf)", std::regex::icase);
 const std::regex Plater::priv::pattern_prusa(".*prusa", std::regex::icase);
+const std::regex Plater::priv::pattern_zip(".*zip", std::regex::icase);
 
 Plater::priv::priv(Plater *q, MainFrame *main_frame)
     : q(q)
@@ -2010,8 +2010,8 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
         "brim_width", "brim_separation", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
-        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_cone_angle", "wipe_tower_extra_spacing",
-        "extruder_colour", "filament_colour", "material_colour", "max_print_height", "printer_model", "printer_technology",
+        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_cone_angle", "wipe_tower_extra_spacing", "wipe_tower_extruder",
+        "extruder_colour", "filament_colour", "material_colour", "max_print_height", "printer_model", "printer_notes", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
         "layer_height", "first_layer_height", "min_layer_height", "max_layer_height",
         "brim_width", "perimeters", "perimeter_extruder", "fill_density", "infill_extruder", "top_solid_layers", 
@@ -2428,7 +2428,7 @@ void Plater::check_selected_presets_visibility(PrinterTechnology loaded_printer_
 
 std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool imperial_units/* = false*/)
 {
-    if (input_files.empty()) { return std::vector<size_t>(); }
+     if (input_files.empty()) { return std::vector<size_t>(); }
 
     auto *nozzle_dmrs = config->opt<ConfigOptionFloats>("nozzle_diameter");
 
@@ -2489,7 +2489,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
             progress_dlg->Fit();
         }
 
-        const bool type_3mf = std::regex_match(path.string(), pattern_3mf);
+        const bool type_3mf = std::regex_match(path.string(), pattern_3mf) || std::regex_match(path.string(), pattern_zip);
         const bool type_zip_amf = !type_3mf && std::regex_match(path.string(), pattern_zip_amf);
         const bool type_any_amf = !type_3mf && std::regex_match(path.string(), pattern_any_amf);
         const bool type_prusa = std::regex_match(path.string(), pattern_prusa);
@@ -3055,8 +3055,10 @@ bool Plater::priv::delete_object_from_model(size_t obj_idx)
         sidebar->obj_list()->invalidate_cut_info_for_object(obj_idx);
 
     model.delete_object(obj_idx);
+
     update();
     object_list_changed();
+
     return true;
 }
 
@@ -3199,12 +3201,12 @@ void Plater::priv::update_print_volume_state()
     this->q->model().update_print_volume_state(this->bed.build_volume());
 }
 
-void Plater::priv::process_validation_warning(const std::string& warning) const
+void Plater::priv::process_validation_warning(const std::vector<std::string>& warnings) const
 {
-    if (warning.empty())
+    if (warnings.empty())
         notification_manager->close_notification_of_type(NotificationType::ValidateWarning);
-    else {
-        std::string text = warning;
+
+    for (std::string text :  warnings) {
         std::string hypertext = "";
         std::function<bool(wxEvtHandler*)> action_fn = [](wxEvtHandler*){ return false; };
 
@@ -3223,6 +3225,8 @@ void Plater::priv::process_validation_warning(const std::string& warning) const
                 return true;
             };
         }
+        if (text == "_BED_TEMPS_DIFFER")
+            text = _u8L("Bed temperatures for the used filaments differ significantly.");
 
         notification_manager->push_notification(
             NotificationType::ValidateWarning,
@@ -3253,7 +3257,7 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
     if (view3D->is_layers_editing_enabled())
         view3D->get_wxglcanvas()->Refresh();
 
-    if (background_process.empty())
+    if (invalidated == Print::APPLY_STATUS_CHANGED || background_process.empty())
         view3D->get_canvas3d()->reset_sequential_print_clearance();
 
     if (invalidated == Print::APPLY_STATUS_INVALIDATED) {
@@ -3280,8 +3284,8 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
 		// The delayed error message is no more valid.
 		delayed_error_message.clear();
 		// The state of the Print changed, and it is non-zero. Let's validate it and give the user feedback on errors.
-        std::string warning;
-        std::string err = background_process.validate(&warning);
+        std::vector<std::string> warnings;
+        std::string err = background_process.validate(&warnings);
         if (err.empty()) {
 			notification_manager->set_all_slicing_errors_gray(true);
             notification_manager->close_notification_of_type(NotificationType::ValidateError);
@@ -3290,33 +3294,47 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
 
             // Pass a warning from validation and either show a notification,
             // or hide the old one.
-            process_validation_warning(warning);
+            process_validation_warning(warnings);
             if (printer_technology == ptFFF) {
-                view3D->get_canvas3d()->reset_sequential_print_clearance();
-                view3D->get_canvas3d()->set_as_dirty();
-                view3D->get_canvas3d()->request_extra_frame();
+                GLCanvas3D* canvas = view3D->get_canvas3d();
+                canvas->reset_sequential_print_clearance();
+                canvas->set_as_dirty();
+                canvas->request_extra_frame();
             }
         }
         else {
-			// The print is not valid.
-			// Show error as notification.
+            // The print is not valid.
+            // Show error as notification.
             notification_manager->push_validate_error_notification(err);
             return_state |= UPDATE_BACKGROUND_PROCESS_INVALID;
             if (printer_technology == ptFFF) {
-                const Print* print = background_process.fff_print();
-                Polygons polygons;
-                if (print->config().complete_objects)
-                    Print::sequential_print_horizontal_clearance_valid(*print, &polygons);
-                view3D->get_canvas3d()->set_sequential_print_clearance_visible(true);
-                view3D->get_canvas3d()->set_sequential_print_clearance_render_fill(true);
-                view3D->get_canvas3d()->set_sequential_print_clearance_polygons(polygons);
+                GLCanvas3D* canvas = view3D->get_canvas3d();
+                if (canvas->is_sequential_print_clearance_empty() || canvas->is_sequential_print_clearance_evaluating()) {
+                    GLCanvas3D::ContoursList contours;
+                    contours.contours = background_process.fff_print()->get_sequential_print_clearance_contours();
+                    canvas->set_sequential_print_clearance_contours(contours, true);
+                    canvas->set_as_dirty();
+                    canvas->request_extra_frame();
+                }
             }
         }
     }
     else {
         if (invalidated == Print::APPLY_STATUS_UNCHANGED && !background_process.empty()) {
-            std::string warning;
-            std::string err = background_process.validate(&warning);
+            if (printer_technology == ptFFF) {
+                // Object manipulation with gizmos may end up in a null transformation.
+                // In this case, we need to trigger the completion of the sequential print clearance contours evaluation 
+                GLCanvas3D* canvas = view3D->get_canvas3d();
+                if (canvas->is_sequential_print_clearance_evaluating()) {
+                    GLCanvas3D::ContoursList contours;
+                    contours.contours = background_process.fff_print()->get_sequential_print_clearance_contours();
+                    canvas->set_sequential_print_clearance_contours(contours, true);
+                    canvas->set_as_dirty();
+                    canvas->request_extra_frame();
+                }
+            }
+            std::vector<std::string> warnings;
+            std::string err = background_process.validate(&warnings);
             if (!err.empty())
                 return return_state;
         }
@@ -3329,7 +3347,7 @@ unsigned int Plater::priv::update_background_process(bool force_validation, bool
 	//actualizate warnings
 	if (invalidated != Print::APPLY_STATUS_UNCHANGED || background_process.empty()) {
         if (background_process.empty())
-            process_validation_warning(std::string());
+            process_validation_warning(std::vector<std::string>());
 		actualize_slicing_warnings(*this->background_process.current_print());
         actualize_object_warnings(*this->background_process.current_print());
 		show_warning_dialog = false;
@@ -3412,7 +3430,7 @@ bool Plater::priv::restart_background_process(unsigned int state)
 void Plater::priv::export_gcode(fs::path output_path, bool output_path_on_removable_media, PrintHostJob upload_job)
 {
     wxCHECK_RET(!(output_path.empty() && upload_job.empty()), "export_gcode: output_path and upload_job empty");
-
+    
     if (model.objects.empty())
         return;
 
@@ -4024,11 +4042,11 @@ void Plater::priv::on_select_preset(wxCommandEvent &evt)
             // revert previously selection
             const std::string& old_name = wxGetApp().preset_bundle->filaments.get_edited_preset().name;
             wxGetApp().preset_bundle->set_filament_preset(idx, old_name);
-            combo->update();
         }
         else
             // Synchronize config.ini with the current selections.
             wxGetApp().preset_bundle->export_selections(*wxGetApp().app_config);
+        combo->update();
     }
     else if (select_preset) {
         wxWindowUpdateLocker noUpdates(sidebar->presets_panel());
@@ -4064,11 +4082,42 @@ void Plater::priv::on_slicing_update(SlicingStatusEvent &evt)
             // Avoid a race condition
             return;
         }
-
-//        this->statusbar()->set_progress(evt.status.percent);
-//        this->statusbar()->set_status_text(_(evt.status.text) + wxString::FromUTF8("…"));
         notification_manager->set_slicing_progress_percentage(evt.status.text, (float)evt.status.percent / 100.0f);
     }
+
+    // Check template filaments and add warning
+    // This is more convinient to do here than in slicing backend, so it happens on "Slicing complete".
+    if (evt.status.percent >= 100 && this->printer_technology == ptFFF) {
+        size_t templ_cnt = 0;
+        const auto& preset_bundle = wxGetApp().preset_bundle;
+        std::string names;
+        for (const auto& extruder_filaments : preset_bundle->extruders_filaments) {
+            const Preset* preset = extruder_filaments.get_selected_preset();
+            if (preset && preset->vendor && preset->vendor->templates_profile) {
+                names += "\n" + preset->name;
+                templ_cnt++;
+            }
+        }
+        if (templ_cnt > 0) {
+            const std::string message_notif = GUI::format("%1%\n%2%\n\n%3%\n\n%4% "
+                , _L_PLURAL("You are using template filament preset.", "You are using template filament presets.", templ_cnt)
+                , names
+                , _u8L("Please note that template presets are not customized for specific printer and should only be used as a starting point for creating your own user presets.")
+                ,_u8L("More info at"));
+            // warning dialog proccessing cuts text at first '/n' - pass the text without new lines (and without filament names).
+            const std::string message_dial = GUI::format("%1% %2% %3%"
+                , _L_PLURAL("You are using template filament preset.", "You are using template filament presets.", templ_cnt)
+                , _u8L("Please note that template presets are not customized for specific printer and should only be used as a starting point for creating your own user presets.")
+                , "<a href=https://help.prusa3d.com/article/template-filaments_467599>https://help.prusa3d.com/</a>"
+            );
+            BOOST_LOG_TRIVIAL(warning) << message_notif;
+            notification_manager->push_slicing_warning_notification(message_notif, false, 0, 0, "https://help.prusa3d.com/", 
+                [](wxEvtHandler* evnthndlr) { wxGetApp().open_browser_with_warning_dialog("https://help.prusa3d.com/article/template-filaments_467599"); return false; }
+                );
+            add_warning({ PrintStateBase::WarningLevel::CRITICAL, true, message_dial, 0}, 0);
+        }
+    }
+
     if (evt.status.flags & (PrintBase::SlicingStatus::RELOAD_SCENE | PrintBase::SlicingStatus::RELOAD_SLA_SUPPORT_POINTS)) {
         switch (this->printer_technology) {
         case ptFFF:
@@ -4204,9 +4253,9 @@ bool Plater::priv::warnings_dialog()
 		else
 			text += it.first.message;
 	}
-	//text += "\n\nDo you still wish to export?";
-	//wxMessageDialog msg_wingow(this->q, from_u8(text), wxString(SLIC3R_APP_NAME " ") + _L("generated warnings"), wxOK);
-	MessageDialog msg_wingow(this->q, from_u8(text), wxString(SLIC3R_APP_NAME " ") + _L("generated warnings"), wxOK);
+	//MessageDialog msg_wingow(this->q, from_u8(text), wxString(SLIC3R_APP_NAME " ") + _L("generated warnings"), wxOK);
+    // Changed to InfoDialog so it can show hyperlinks
+    InfoDialog msg_wingow(this->q, format_wxstr("%1% %2%", SLIC3R_APP_NAME, _L("generated warnings")), from_u8(text), true);
 	const auto res = msg_wingow.ShowModal();
 	return res == wxID_OK;
 
@@ -4416,7 +4465,6 @@ void Plater::priv::on_update_geometry(Vec3dsEvent<2>&)
 
 void Plater::priv::on_3dcanvas_mouse_dragging_started(SimpleEvent&)
 {
-    view3D->get_canvas3d()->reset_sequential_print_clearance();
 }
 
 // Update the scene from the background processing,
@@ -4616,6 +4664,11 @@ bool Plater::priv::init_collapse_toolbar()
     // is updated before the toolbar is first used.
     wxGetApp().plater()->collapse_sidebar(wxGetApp().plater()->is_sidebar_collapsed());
     return true;
+}
+
+void Plater::priv::set_preview_layers_slider_values_range(int bottom, int top)
+{
+    preview->set_layers_slider_values_range(bottom, top);
 }
 
 void Plater::priv::update_preview_moves_slider()
@@ -5279,8 +5332,9 @@ void Plater::import_zip_archive()
    if (input_file.empty())
        return;
 
-   fs::path path = into_path(input_file);
-   preview_zip_archive(path);
+   wxArrayString arr;
+   arr.Add(input_file);
+   load_files(arr, false);
 }
 
 void Plater::import_sl1_archive()
@@ -5925,7 +5979,13 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
     // searches for project files
     for (std::vector<fs::path>::const_reverse_iterator it = paths.rbegin(); it != paths.rend(); ++it) {
         std::string filename = (*it).filename().string();
-        if (boost::algorithm::iends_with(filename, ".3mf") || boost::algorithm::iends_with(filename, ".amf")) {
+
+        bool handle_as_project = (boost::algorithm::iends_with(filename, ".3mf") || boost::algorithm::iends_with(filename, ".amf"));
+        if (boost::algorithm::iends_with(filename, ".zip") && is_project_3mf(it->string())) {
+            BOOST_LOG_TRIVIAL(warning) << "File with .zip extension is 3mf project, opening as it would have .3mf extension: " << *it;
+            handle_as_project = true;
+        }
+        if (handle_as_project) {
             ProjectDropDialog::LoadType load_type = ProjectDropDialog::LoadType::Unknown;
             {
                 if ((boost::algorithm::iends_with(filename, ".3mf") && !is_project_3mf(it->string())) ||
@@ -6005,7 +6065,7 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
     return true;
 }
 
-void Plater::update() { p->update(); }
+void Plater::update(unsigned int flags) { p->update(flags); }
 
 Worker &Plater::get_ui_job_worker() { return p->m_worker; }
 
@@ -6057,36 +6117,36 @@ void Plater::remove_selected()
     p->view3D->delete_selected();
 }
 
-void Plater::increase_instances(size_t num, int obj_idx, std::optional<Selection::ObjectIdxsToInstanceIdxsMap> selection_map)
+void Plater::increase_instances(size_t num, int obj_idx, int inst_idx)
 {
     if (! can_increase_instances()) { return; }
 
     Plater::TakeSnapshot snapshot(this, _L("Increase Instances"));
 
-    if (obj_idx < 0)
-        obj_idx = p->get_selected_object_idx();
-
     if (obj_idx < 0) {
-        if (const auto obj_idxs = get_selection().get_object_idxs(); !obj_idxs.empty()) {
-            // we need a copy made here because the selection changes at every call of increase_instances()
-            const Selection::ObjectIdxsToInstanceIdxsMap content = selection_map.has_value() ? *selection_map : p->get_selection().get_content();
-            for (const size_t obj_id : obj_idxs) {
-                increase_instances(1, int(obj_id), content);
+        obj_idx = p->get_selected_object_idx();
+        if (obj_idx < 0) {
+            // It's a case of increasing per 1 instance, when multiple objects are selected
+            if (const auto obj_idxs = get_selection().get_object_idxs(); !obj_idxs.empty()) {
+                // we need a copy made here because the selection changes at every call of increase_instances()
+                const Selection::ObjectIdxsToInstanceIdxsMap content = p->get_selection().get_content();
+                for (const unsigned int obj_id : obj_idxs) {
+                    if (auto obj_it = content.find(int(obj_id)); obj_it != content.end())
+                        increase_instances(1, int(obj_id), *obj_it->second.rbegin());
+                }
             }
+            return;
         }
-        return;
     }
+    assert(obj_idx >= 0);
 
     ModelObject* model_object = p->model.objects[obj_idx];
-    int inst_idx = -1;
-    if (selection_map.has_value()) {
-        auto obj_it = selection_map->find(obj_idx);
-        if (obj_it != selection_map->end() && obj_it->second.size() == 1)
-            inst_idx = *obj_it->second.begin();
-    }
-    else
-        inst_idx = p->get_selected_instance_idx();
 
+    if (inst_idx < 0 && get_selected_object_idx() >= 0) {
+        inst_idx = get_selection().get_instance_idx();
+        if (0 > inst_idx || inst_idx >= int(model_object->instances.size()))
+            inst_idx = -1;
+    }
     ModelInstance* model_instance = (inst_idx >= 0) ? model_object->instances[inst_idx] : model_object->instances.back();
 
     bool was_one_instance = model_object->instances.size()==1;
@@ -6098,7 +6158,6 @@ void Plater::increase_instances(size_t num, int obj_idx, std::optional<Selection
         Geometry::Transformation trafo = model_instance->get_transformation();
         trafo.set_offset(offset_vec);
         model_object->add_instance(trafo);
-//        p->print.get_object(obj_idx)->add_copy(Slic3r::to_2d(offset_vec));
     }
 
     if (p->get_config_bool("autocenter"))
@@ -6182,11 +6241,16 @@ void Plater::set_number_of_copies()
         return;
     TakeSnapshot snapshot(this, wxString::Format(_L("Set numbers of copies to %d"), num));
 
-    for (const auto obj_idx : obj_idxs) {
+    // we need a copy made here because the selection changes at every call of increase_instances()
+    Selection::ObjectIdxsToInstanceIdxsMap content = p->get_selection().get_content();
+
+    for (const auto& obj_idx : obj_idxs) {
         ModelObject* model_object = p->model.objects[obj_idx];
         const int diff = num - (int)model_object->instances.size();
-        if (diff > 0)
-            increase_instances(diff, int(obj_idx));
+        if (diff > 0) {
+            if (auto obj_it = content.find(int(obj_idx)); obj_it != content.end())
+                increase_instances(diff, int(obj_idx), *obj_it->second.rbegin());
+        }
         else if (diff < 0)
             decrease_instances(-diff, int(obj_idx));
     }
@@ -6287,7 +6351,9 @@ void Plater::cut(size_t obj_idx, const ModelObjectPtrs& new_objects)
     for (size_t i = 0; i < new_objects.size(); ++i)
         selection.add_object((unsigned int)(last_id - i), i == 0);
 
-    arrange();
+    UIThreadWorker w;
+    replace_job(w, std::make_unique<ArrangeJob>(ArrangeJob::SelectionOnly));
+    w.process_events();
 }
 
 void Plater::export_gcode(bool prefer_removable)
@@ -6342,9 +6408,11 @@ void Plater::export_gcode(bool prefer_removable)
             start_dir,
             from_path(default_output_file.filename()),
 #if ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
-            GUI::file_wildcards((printer_technology() == ptFFF) ? FT_GCODE : FT_SL1),
+            printer_technology() == ptFFF ?  GUI::file_wildcards(FT_GCODE) :
+                                             GUI::sla_wildcards(p->sla_print.printer_config().sla_archive_format.value.c_str()),
 #else
-            GUI::file_wildcards((printer_technology() == ptFFF) ? FT_GCODE : FT_SL1, ext),
+            printer_technology() == ptFFF ? GUI::file_wildcards(FT_GCODE, ext) :
+                                            GUI::sla_wildcards(p->sla_print.printer_config().sla_archive_format.value.c_str()),
 #endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
             wxFD_SAVE | wxFD_OVERWRITE_PROMPT
         );
@@ -6442,7 +6510,7 @@ void Plater::export_stl_obj(bool extended, bool selection_only)
 
         const SLAPrintObject *object = this->p->sla_print.get_print_object_by_model_object_id(mo.id());
 
-        if (auto m = object->get_mesh_to_print(); !m || m->empty())
+        if (!object || !object->get_mesh_to_print() || object->get_mesh_to_print()->empty())
             mesh = mesh_to_export_fff(mo, instance_id);
         else {
             const Transform3d mesh_trafo_inv = object->trafo().inverse();
@@ -6604,11 +6672,14 @@ bool Plater::export_3mf(const boost::filesystem::path& output_path)
     if (ret) {
         // Success
 //        p->statusbar()->set_status_text(format_wxstr(_L("3MF file exported to %s"), path));
+        BOOST_LOG_TRIVIAL(info) << "3MF file exported to " << path;
         p->set_project_filename(path);
     }
     else {
         // Failure
 //        p->statusbar()->set_status_text(format_wxstr(_L("Error exporting 3MF file %s"), path));
+        const wxString what = GUI::format_wxstr("%1%: %2%", _L("Unable to save file") , path_u8);
+        show_error(this, what);
     }
     return ret;
 }
@@ -7027,7 +7098,6 @@ void Plater::force_filament_colors_update()
     if (extruders_filaments.size() > 1 && 
         p->config->option<ConfigOptionStrings>("filament_colour")->values.size() == extruders_filaments.size())
     {
-        const PresetCollection& filaments = wxGetApp().preset_bundle->filaments;
         std::vector<std::string> filament_colors;
         filament_colors.reserve(extruders_filaments.size());
 
@@ -7173,7 +7243,11 @@ void Plater::arrange()
     if (p->can_arrange()) {
         auto &w = get_ui_job_worker();
         p->take_snapshot(_L("Arrange"));
-        replace_job(w, std::make_unique<ArrangeJob>());
+
+        auto mode = wxGetKeyState(WXK_SHIFT) ? ArrangeJob::SelectionOnly :
+                                               ArrangeJob::Full;
+
+        replace_job(w, std::make_unique<ArrangeJob>(mode));
     }
 }
 
@@ -7483,6 +7557,11 @@ GLToolbar& Plater::get_collapse_toolbar()
     return p->collapse_toolbar;
 }
 
+void Plater::set_preview_layers_slider_values_range(int bottom, int top)
+{
+    p->set_preview_layers_slider_values_range(bottom, top);
+}
+
 void Plater::update_preview_moves_slider()
 {
     p->update_preview_moves_slider();
@@ -7650,7 +7729,7 @@ PlaterAfterLoadAutoArrange::PlaterAfterLoadAutoArrange()
     Plater* plater = wxGetApp().plater();
     m_enabled = plater->model().objects.empty() &&
                 plater->printer_technology() == ptFFF &&
-                plater->fff_print().config().printer_model.value == "XL";
+                is_XL_printer(plater->fff_print().config());
 }
 
 PlaterAfterLoadAutoArrange::~PlaterAfterLoadAutoArrange()

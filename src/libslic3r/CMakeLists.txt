@@ -140,6 +140,8 @@ set(SLIC3R_SOURCES
     GCode/ThumbnailData.hpp
     GCode/Thumbnails.cpp
     GCode/Thumbnails.hpp
+    GCode/ConflictChecker.cpp
+    GCode/ConflictChecker.hpp
     GCode/CoolingBuffer.cpp
     GCode/CoolingBuffer.hpp
     GCode/FindReplace.cpp
@@ -290,8 +292,12 @@ set(SLIC3R_SOURCES
     Support/SupportMaterial.hpp
     Support/SupportParameters.cpp
     Support/SupportParameters.hpp
+    Support/OrganicSupport.cpp
+    Support/OrganicSupport.hpp
     Support/TreeSupport.cpp
     Support/TreeSupport.hpp
+    Support/TreeSupportCommon.cpp
+    Support/TreeSupportCommon.hpp
     Support/TreeModelVolumes.cpp
     Support/TreeModelVolumes.hpp
     SupportSpotsGenerator.cpp

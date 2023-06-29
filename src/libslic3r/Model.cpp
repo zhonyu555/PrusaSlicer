@@ -23,6 +23,8 @@
 #include <boost/log/trivial.hpp>
 #include <boost/nowide/iostream.hpp>
 
+#include <tbb/concurrent_vector.h>
+
 #include "SVG.hpp"
 #include <Eigen/Dense>
 #include "GCodeWriter.hpp"
@@ -119,7 +121,7 @@ Model Model::read_from_file(const std::string& input_file, DynamicPrintConfig* c
         result = load_step(input_file.c_str(), &model);
     else if (boost::algorithm::iends_with(input_file, ".amf") || boost::algorithm::iends_with(input_file, ".amf.xml"))
         result = load_amf(input_file.c_str(), config, config_substitutions, &model, options & LoadAttribute::CheckVersion);
-    else if (boost::algorithm::iends_with(input_file, ".3mf"))
+    else if (boost::algorithm::iends_with(input_file, ".3mf") || boost::algorithm::iends_with(input_file, ".zip"))
         //FIXME options & LoadAttribute::CheckVersion ? 
         result = load_3mf(input_file.c_str(), *config, *config_substitutions, &model, false);
     else
@@ -153,7 +155,7 @@ Model Model::read_from_archive(const std::string& input_file, DynamicPrintConfig
     Model model;
 
     bool result = false;
-    if (boost::algorithm::iends_with(input_file, ".3mf"))
+    if (boost::algorithm::iends_with(input_file, ".3mf") || boost::algorithm::iends_with(input_file, ".zip"))
         result = load_3mf(input_file.c_str(), *config, *config_substitutions, &model, options & LoadAttribute::CheckVersion);
     else if (boost::algorithm::iends_with(input_file, ".zip.amf"))
         result = load_amf(input_file.c_str(), config, config_substitutions, &model, options & LoadAttribute::CheckVersion);
@@ -1055,12 +1057,18 @@ BoundingBoxf3 ModelObject::instance_bounding_box(size_t instance_idx, bool dont_
 // This method is used by the auto arrange function.
 Polygon ModelObject::convex_hull_2d(const Transform3d& trafo_instance) const
 {
-    Points pts;
-    for (const ModelVolume* v : volumes) {
-        if (v->is_model_part())
-            append(pts, its_convex_hull_2d_above(v->mesh().its, (trafo_instance * v->get_matrix()).cast<float>(), 0.0f).points);
-    }
-    return Geometry::convex_hull(std::move(pts));
+    tbb::concurrent_vector<Polygon> chs;
+    chs.reserve(volumes.size());
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, volumes.size()), [&](const tbb::blocked_range<size_t>& range) {
+        for (size_t i = range.begin(); i < range.end(); ++i) {
+            const ModelVolume* v = volumes[i];
+            chs.emplace_back(its_convex_hull_2d_above(v->mesh().its, (trafo_instance * v->get_matrix()).cast<float>(), 0.0f));
+        }
+    });
+
+    Polygons polygons;
+    polygons.assign(chs.begin(), chs.end());
+    return Geometry::convex_hull(polygons);
 }
 
 void ModelObject::center_around_origin(bool include_modifiers)
@@ -1345,37 +1353,6 @@ void ModelObject::delete_connectors()
     }
 }
 
-void ModelObject::synchronize_model_after_cut()
-{
-    for (ModelObject* obj : m_model->objects) {
-        if (obj == this || obj->cut_id.is_equal(this->cut_id))
-            continue;
-        if (obj->is_cut() && obj->cut_id.has_same_id(this->cut_id))
-            obj->cut_id.copy(this->cut_id);
-    }
-    this->invalidate_cut();
-}
-
-void ModelObject::apply_cut_attributes(ModelObjectCutAttributes attributes)
-{
-    // we don't save cut information, if result will not contains all parts of initial object
-    if (!attributes.has(ModelObjectCutAttribute::KeepUpper) || 
-        !attributes.has(ModelObjectCutAttribute::KeepLower) || 
-        attributes.has(ModelObjectCutAttribute::InvalidateCutInfo))
-        return;
-
-    if (cut_id.id().invalid())
-        cut_id.init();
-    {
-        int cut_obj_cnt = -1;
-        if (attributes.has(ModelObjectCutAttribute::KeepUpper))     cut_obj_cnt++;
-        if (attributes.has(ModelObjectCutAttribute::KeepLower))     cut_obj_cnt++;
-        if (attributes.has(ModelObjectCutAttribute::CreateDowels))  cut_obj_cnt++;
-        if (cut_obj_cnt > 0)
-            cut_id.increase_check_sum(size_t(cut_obj_cnt));
-    }
-}
-
 void ModelObject::clone_for_cut(ModelObject** obj)
 {
     (*obj) = ModelObject::new_clone(*this);
@@ -1628,9 +1605,6 @@ ModelObjectPtrs ModelObject::cut(size_t instance, const Transform3d& cut_matrix,
 
     BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - start";
 
-    // apply cut attributes for object
-    apply_cut_attributes(attributes);
-
     // Clone the object to duplicate instances, materials etc.
     ModelObject* upper{ nullptr };
     if (attributes.has(ModelObjectCutAttribute::KeepUpper))
@@ -1700,8 +1674,6 @@ ModelObjectPtrs ModelObject::cut(size_t instance, const Transform3d& cut_matrix,
     }
 
     BOOST_LOG_TRIVIAL(trace) << "ModelObject::cut - end";
-
-    synchronize_model_after_cut();
 
     return res;
 }
