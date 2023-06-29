@@ -68,7 +68,7 @@ static const t_config_enum_values s_keys_map_PrintHostType {
     { "prusalink",      htPrusaLink },
     { "prusaconnect",   htPrusaConnect },
     { "octoprint",      htOctoPrint },
-    { "mainsail",       htMainSail },
+    { "moonraker",      htMoonraker },
     { "duet",           htDuet },
     { "flashair",       htFlashAir },
     { "astrobox",       htAstroBox },
@@ -1953,7 +1953,7 @@ void PrintConfigDef::init_fff_params()
         { "prusalink",      "PrusaLink" },
         { "prusaconnect",   "PrusaConnect" },
         { "octoprint",      "OctoPrint" },
-        { "mainsail",       "Mainsail/Fluidd" },
+        { "moonraker",      "Klipper (via Moonraker)" },
         { "duet",           "Duet" },
         { "flashair",       "FlashAir" },
         { "astrobox",       "AstroBox" },
@@ -1983,7 +1983,7 @@ void PrintConfigDef::init_fff_params()
     def->tooltip = L("You can use all configuration options as variables inside this template. "
                    "For example: [layer_height], [fill_density] etc. You can also use [timestamp], "
                    "[year], [month], [day], [hour], [minute], [second], [version], [input_filename], "
-                   "[input_filename_base].");
+                   "[input_filename_base], [default_output_extension].");
     def->full_width = true;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionString("[input_filename_base].gcode"));
@@ -3235,6 +3235,27 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(10.));
 
+    def = this->add("wipe_tower_extruder", coInt);
+    def->label = L("Wipe tower extruder");
+    def->category = L("Extruders");
+    def->tooltip = L("The extruder to use when printing perimeter of the wipe tower. "
+                     "Set to 0 to use the one that is available (non-soluble would be preferred).");
+    def->min = 0;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInt(0));
+
+    def = this->add("solid_infill_every_layers", coInt);
+    def->label = L("Solid infill every");
+    def->category = L("Infill");
+    def->tooltip = L("This feature allows to force a solid layer every given number of layers. "
+                   "Zero to disable. You can set this to any value (for example 9999); "
+                   "Slic3r will automatically choose the maximum possible number of layers "
+                   "to combine according to nozzle diameter and layer height.");
+    def->sidetext = L("layers");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionInt(0));
+
     def = this->add("xy_size_compensation", coFloat);
     def->label = L("XY Size Compensation");
     def->category = L("Advanced");
@@ -4193,6 +4214,9 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
         else if (value == "marlinfirmware")
             // the "new" marlin firmware flavor used to be called "marlinfirmware" for some time during PrusaSlicer 2.4.0-alpha development.
             value = "marlin2";
+    } else if (opt_key == "host_type" && value == "mainsail") {
+        // the "mainsail" key (introduced in 2.6.0-alpha6) was renamed to "moonraker" (in 2.6.0-rc1).
+        value = "moonraker";
     } else if (opt_key == "fill_density" && value.find("%") == std::string::npos) {
         try {
             // fill_density was turned into a percent value
@@ -4323,6 +4347,14 @@ void DynamicPrintConfig::normalize_fdm()
             // if (!this->has("support_material_interface_extruder"))
             //     this->option("support_material_interface_extruder", true)->setInt(extruder);
         }
+    }
+
+    if (this->has("wipe_tower_extruder")) {
+        // If invalid, replace with 0.
+        int extruder = this->opt<ConfigOptionInt>("wipe_tower_extruder")->value;
+        int num_extruders = this->opt<ConfigOptionFloats>("nozzle_diameter")->size();
+        if (extruder < 0 || extruder > num_extruders)
+            this->option("wipe_tower_extruder")->setInt(0);
     }
 
     if (!this->has("solid_infill_extruder") && this->has("infill_extruder"))
@@ -4950,21 +4982,21 @@ std::string get_sla_suptree_prefix(const DynamicPrintConfig &config)
     return slatree;
 }
 
-static bool is_XL_printer(const std::string& printer_model)
+static bool is_XL_printer(const std::string& printer_notes)
 {
-    static constexpr const char *ALIGN_ONLY_FOR = "XL";
-    return boost::algorithm::contains(printer_model, ALIGN_ONLY_FOR);
+    return boost::algorithm::contains(printer_notes, "PRINTER_VENDOR_PRUSA3D")
+        && boost::algorithm::contains(printer_notes, "PRINTER_MODEL_XL");
 }
 
 bool is_XL_printer(const DynamicPrintConfig &cfg)
 {
-    auto *printer_model = cfg.opt<ConfigOptionString>("printer_model");
-    return printer_model && is_XL_printer(printer_model->value);    
+    auto *printer_notes = cfg.opt<ConfigOptionString>("printer_notes");
+    return printer_notes && is_XL_printer(printer_notes->value);
 }
 
 bool is_XL_printer(const PrintConfig &cfg)
 {
-    return is_XL_printer(cfg.printer_model.value);
+    return is_XL_printer(cfg.printer_notes.value);
 }
 
 } // namespace Slic3r
