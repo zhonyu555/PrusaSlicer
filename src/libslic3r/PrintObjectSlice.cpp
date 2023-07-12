@@ -765,7 +765,7 @@ void PrintObject::slice_volumes()
 	                    // Single region, growing or shrinking.
 	                    LayerRegion *layerm = layer->m_regions.front();
 	                    if (elfoot > 0) {
-                            ExPolygons expolygons = to_expolygons(std::move(layerm->slices.surfaces));
+                            ExPolygons expolygons = to_expolygons(std::move(layerm->m_slices.surfaces));
 		                    float delta = xy_compensation_scaled;
 	                        if (delta > elfoot) {
 	                            delta -= elfoot;
