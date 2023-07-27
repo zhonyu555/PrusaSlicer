@@ -15,6 +15,7 @@
     #include <wx/rawbmp.h>
 #endif /* __WXGTK2__ */
 
+#include <wx/display.h>
 #include <nanosvg/nanosvg.h>
 #include <nanosvg/nanosvgrast.h>
 
@@ -68,7 +69,7 @@ wxBitmapBundle* BitmapCache::insert_bndl(const std::string& name, const std::vec
     wxVector<wxBitmap> bitmaps;
 
     std::set<double> scales = {1.0};
-#ifndef __linux__
+#if !defined(__linux__) && !defined(__FreeBSD__)
 
 #ifdef __APPLE__
     scales.emplace(m_scale);
@@ -547,7 +548,7 @@ wxBitmapBundle BitmapCache::mksolid(size_t width_in, size_t height_in, unsigned 
     wxVector<wxBitmap> bitmaps;
 
     std::set<double> scales = { 1.0 };
-#ifndef __linux__
+#if !defined(__linux__) && !defined(__FreeBSD__)
 
 #ifdef __APPLE__
     scales.emplace(m_scale);

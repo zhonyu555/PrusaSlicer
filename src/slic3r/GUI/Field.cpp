@@ -199,7 +199,7 @@ bool Field::is_matched(const std::string& string, const std::string& pattern)
 
 static wxString na_value(bool for_spin_ctrl = false)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__FreeBSD__)
     if (for_spin_ctrl)
         return "";
 #endif

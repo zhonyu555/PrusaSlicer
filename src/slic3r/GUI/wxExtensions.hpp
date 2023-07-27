@@ -16,7 +16,7 @@
 #include <functional>
 
 
-#ifndef __linux__
+#if !defined(__linux__) && !defined(__FreeBSD__)
 void                sys_color_changed_menu(wxMenu* menu);
 #else 
 inline void         sys_color_changed_menu(wxMenu* /* menu */) {}

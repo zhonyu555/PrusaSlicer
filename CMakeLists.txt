@@ -206,7 +206,7 @@ if (APPLE)
     endif ()
 endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     find_package(PkgConfig REQUIRED)
 
     if (CMAKE_VERSION VERSION_LESS "3.1")
@@ -636,7 +636,12 @@ elseif (SLIC3R_FHS)
             DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${SIZE}x${SIZE}/apps RENAME PrusaSlicer-gcodeviewer.png
         )
     endforeach()
-    install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/udev/ DESTINATION lib/udev/rules.d)
+
+    if (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+      #FreeBSD doesn't have a udev
+    else ()
+      install(DIRECTORY ${SLIC3R_RESOURCES_DIR}/udev/ DESTINATION lib/udev/rules.d)
+    endif ()
 else ()
     install(FILES src/platform/unix/PrusaSlicer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
     install(FILES src/platform/unix/PrusaGcodeviewer.desktop DESTINATION ${CMAKE_INSTALL_PREFIX}/resources/applications)
