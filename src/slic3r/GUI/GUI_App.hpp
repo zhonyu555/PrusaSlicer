@@ -73,6 +73,8 @@ enum FileType
 
     FT_SL1,
 
+    FT_ZIP,
+
     FT_SIZE,
 };
 
@@ -81,6 +83,8 @@ extern wxString file_wildcards(FileType file_type);
 #else
 extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = std::string{});
 #endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
+
+wxString sla_wildcards(const char *formatid);
 
 enum ConfigMenuIDs {
     ConfigMenuWizard,
@@ -122,11 +126,10 @@ private:
     bool            m_initialized { false };
     bool            m_post_initialized { false };
     bool            m_app_conf_exists{ false };
+    bool            m_last_app_conf_lower_version{ false };
     EAppMode        m_app_mode{ EAppMode::Editor };
     bool            m_is_recreating_gui{ false };
-#ifdef __linux__
     bool            m_opengl_initialized{ false };
-#endif
 
     wxColour        m_color_label_modified;
     wxColour        m_color_label_sys;
@@ -251,6 +254,7 @@ public:
     void            keyboard_shortcuts();
     void            load_project(wxWindow *parent, wxString& input_file) const;
     void            import_model(wxWindow *parent, wxArrayString& input_files) const;
+    void            import_zip(wxWindow* parent, wxString& input_file) const;
     void            load_gcode(wxWindow* parent, wxString& input_file) const;
 
     static bool     catch_error(std::function<void()> cb, const std::string& err);
@@ -305,8 +309,8 @@ public:
     Plater*              plater();
     const Plater*        plater() const;
     Model&      		 model();
-    NotificationManager * notification_manager();
-    GalleryDialog *     gallery_dialog();
+    NotificationManager* notification_manager();
+    GalleryDialog *      gallery_dialog();
     Downloader*          downloader();
 
     // Parameters extracted from the command line to be passed to GUI after initialization.
@@ -343,6 +347,7 @@ public:
     bool            may_switch_to_SLA_preset(const wxString& caption);
     bool            run_wizard(ConfigWizard::RunReason reason, ConfigWizard::StartPage start_page = ConfigWizard::SP_WELCOME);
     void            show_desktop_integration_dialog();
+    void            show_downloader_registration_dialog();
 
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
     // temporary and debug only -> extract thumbnails from selected gcode and save them as png files

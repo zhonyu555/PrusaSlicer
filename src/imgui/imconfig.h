@@ -150,6 +150,8 @@ namespace ImGui
 //    const wchar_t CustomSupportsMarker     = 0x1D;
 //    const wchar_t CustomSeamMarker         = 0x1E;
 //    const wchar_t MmuSegmentationMarker    = 0x1F;
+    const wchar_t PlugMarker               = 0x1C;
+    const wchar_t DowelMarker              = 0x1D;
     // Do not forget use following letters only in wstring
     const wchar_t DocumentationButton      = 0x2600;
     const wchar_t DocumentationHoverButton = 0x2601;
@@ -164,6 +166,8 @@ namespace ImGui
     const wchar_t PauseHoverButton         = 0x261B;
     const wchar_t OpenButton               = 0x261C;
     const wchar_t OpenHoverButton          = 0x261D;
+    const wchar_t SlaViewOriginal          = 0x261E;
+    const wchar_t SlaViewProcessed         = 0x261F;
 
     const wchar_t LegendTravel             = 0x2701;
     const wchar_t LegendWipe               = 0x2702;
