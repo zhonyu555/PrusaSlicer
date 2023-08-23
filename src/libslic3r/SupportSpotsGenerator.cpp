@@ -852,7 +852,7 @@ std::tuple<SupportPoints, PartialObjects> check_stability(const PrintObject     
                         }
                     }
                 }
-                auto estimate_conn_strength = [bottom_z](const SliceConnection &conn) {
+                auto estimate_conn_strength = [bottom_z](const SliceConnection &conn) -> float {
                     if (conn.area < EPSILON) { // connection is empty, does not exists. Return max strength so that it is not picked as the
                                                // weakest connection.
                         return INFINITY;
