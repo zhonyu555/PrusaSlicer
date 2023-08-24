@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: PrusaSlicer 2.6.1-rc1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-08-22 17:26+0200\n"
-"PO-Revision-Date: 2023-08-23 18:47+0700\n"
+"PO-Revision-Date: 2023-08-24 14:19+0700\n"
 "Last-Translator: Andylg <andylg@yandex.ru>\n"
 "Language-Team: \n"
 "Language: ru\n"
@@ -2447,7 +2447,7 @@ msgstr "Скорость извлечения при откате"
 
 #: src/libslic3r/PrintConfig.cpp:2321
 msgid "The speed for retractions (it only applies to the extruder motor)."
-msgstr "Скорость извлечения материала при откате."
+msgstr "Скорость выдавливания материала при откате."
 
 #: src/libslic3r/PrintConfig.cpp:2327 src/libslic3r/PrintConfig.cpp:2328
 msgid "Deretraction Speed"
@@ -2455,7 +2455,7 @@ msgstr "Скорость заправки при откате"
 
 #: src/libslic3r/PrintConfig.cpp:2329
 msgid "The speed for loading of a filament into extruder after retraction (it only applies to the extruder motor). If left to zero, the retraction speed is used."
-msgstr "Скорость возврата материала при откате. Если оставить 0, будет использоваться та же скорость что и при извлечении."
+msgstr "Скорость втягивания материала при откате. Если оставить 0, будет использоваться та же скорость что и при извлечении."
 
 #: src/libslic3r/PrintConfig.cpp:2336
 msgid "Seam position"
