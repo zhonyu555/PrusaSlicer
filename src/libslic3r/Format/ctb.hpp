@@ -29,24 +29,25 @@ namespace Slic3r {
 
 typedef struct ctb_format_header
 {
-    std::uint32_t magic;             // 0x12fd_0019 for cbddlp; 0x12fd_0086 for ctb
-    std::uint32_t version;           // Version number
-    std::float_t  bed_size_x;        // Dimensions of the printer's output in mm
-    std::float_t  bed_size_y;        // |
-    std::float_t  bed_size_z;        // |
+    std::uint32_t magic;      // 0x12fd_0019 for cbddlp; 0x12fd_0086 for ctb
+    std::uint32_t version;    // Version number
+    float         bed_size_x; // Dimensions of the printer's output in mm
+    float         bed_size_y; // |
+    float         bed_size_z; // |
     std::uint64_t zero_pad;
-    std::float_t  overall_height; // height of the model in millimeters
-    std::float_t  layer_height;   // layer height used at slicing in mm; actual height used by machine in layer table
-    std::float_t  exposure;        // exposure time setting used at slicing in seconds for normal layers; actual time in layer table
-    std::float_t  bot_exposure;    // exposure time setting used at slicing in seconds for bottom layers; actual time in layer table
-    std::float_t  light_off_delay;  //
-    std::uint32_t bot_layer_count;   //
-    std::uint32_t res_x;                //
-    std::uint32_t res_y;                //
+    float         overall_height;  // height of the model in millimeters
+    float         layer_height;    // layer height used at slicing in mm; actual height used by machine in layer table
+    float         exposure;        // exposure time setting used at slicing in seconds for normal layers; actual time in layer table
+    float         bot_exposure;    // exposure time setting used at slicing in seconds for bottom layers; actual time in layer table
+    float         light_off_delay; //
+    std::uint32_t bot_layer_count; //
+    std::uint32_t res_x;           //
+    std::uint32_t res_y;           //
     std::uint32_t large_preview_offset;
     std::uint32_t layer_table_offset;
-    std::uint32_t layer_count;     // Gets the number of records in the layer table for the first level set. In ctb files, that's equivalent to the total number of records
-    std::uint32_t small_preview_offset;  // Gets the file offsets of ImageHeader records describing the smaller preview images.
+    std::uint32_t layer_count; // Gets the number of records in the layer table for the first level set. In ctb files, that's equivalent to
+                               // the total number of records
+    std::uint32_t small_preview_offset; // Gets the file offsets of ImageHeader records describing the smaller preview images.
     std::uint32_t print_time;
     std::uint32_t projector_type;
     std::uint32_t print_params_offset;
@@ -80,16 +81,16 @@ typedef struct ctb_preview_data
 
 typedef struct ctb_format_print_params
 {
-    std::float_t  bot_lift_height;         // In mm
-    std::float_t  bot_lift_speed;   // In mmpm
-    std::float_t  lift_height;
-    std::float_t  lift_speed;
-    std::float_t  retract_speed;
-    std::float_t  resin_volume_ml;
-    std::float_t  resin_mass_g;
-    std::float_t  resin_cost;
-    std::float_t  bot_light_off_delay; // In seconds
-    std::float_t  light_off_delay;
+    float         bot_lift_height; // In mm
+    float         bot_lift_speed;  // In mmpm
+    float         lift_height;
+    float         lift_speed;
+    float         retract_speed;
+    float         resin_volume_ml;
+    float         resin_mass_g;
+    float         resin_cost;
+    float         bot_light_off_delay; // In seconds
+    float         light_off_delay;
     std::uint32_t bot_layer_count;
     std::uint32_t zero_pad1 = 0;
     std::uint32_t zero_pad2 = 0;
@@ -99,23 +100,23 @@ typedef struct ctb_format_print_params
 
 typedef struct ctb_format_slicer_info
 {
-    std::float_t  bot_lift_dist2;
-    std::float_t  bot_lift_speed2;
-    std::float_t  lift_height2;
-    std::float_t  lift_speed2;
-    std::float_t  retract_height2;
-    std::float_t  retract_speed2;
-    std::float_t  rest_time_after_lift;
+    float         bot_lift_dist2;
+    float         bot_lift_speed2;
+    float         lift_height2;
+    float         lift_speed2;
+    float         retract_height2;
+    float         retract_speed2;
+    float         rest_time_after_lift;
     std::uint32_t machine_name_offset;
     std::uint32_t machine_name_size;
-    std::uint8_t  anti_alias_flag;       // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
-    std::uint16_t zero_pad1 = 0;
-    std::uint8_t  per_layer_settings = 0;    // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
-    std::uint32_t timestamp_minutes;         // Time since epoch in minutes
+    std::uint8_t  anti_alias_flag; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    std::uint16_t zero_pad1          = 0;
+    std::uint8_t  per_layer_settings = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
+    std::uint32_t timestamp_minutes;      // Time since epoch in minutes
     std::uint32_t antialias_level;
-    std::uint32_t software_version;      // ctb v3 = 17171200 | ctb v4 pro = 16777216
-    std::float_t  rest_time_after_retract;
-    std::float_t  rest_time_after_lift2;
+    std::uint32_t software_version; // ctb v3 = 17171200 | ctb v4 pro = 16777216
+    float         rest_time_after_retract;
+    float         rest_time_after_lift2;
     std::uint32_t transition_layer_count;
     std::uint32_t print_params_v4_offset;
     std::uint32_t zero_pad2 = 0;
@@ -124,19 +125,19 @@ typedef struct ctb_format_slicer_info
 
 typedef struct ctb_format_print_params_v4
 {
-    std::float_t  bot_retract_speed;
-    std::float_t  bot_retract_speed2;
+    float         bot_retract_speed;
+    float         bot_retract_speed2;
     std::uint32_t zero_pad1 = 0;
-    std::float_t  four1 = 4.0f; // I don't think anyone knows why but ok chitu
+    float         four1     = 4.0f; // I don't think anyone knows why but ok chitu
     std::uint32_t zero_pad2 = 0;
-    std::float_t  four2 = 4.0f; // I don't think anyone knows why but ok chitu
-    std::float_t  rest_time_after_retract;
-    std::float_t  rest_time_after_lift;
-    std::float_t  rest_time_before_lift;
-    std::float_t  bot_retract_height2;
-    std::float_t  unknown1 = 2955.996;  // 2955.996 or uint:1161347054 but changes
-    std::uint32_t unknown2 = 73470;  // 73470 but changes
-    std::uint32_t unknown3 = 5;  // 5 apparently??
+    float         four2     = 4.0f; // I don't think anyone knows why but ok chitu
+    float         rest_time_after_retract;
+    float         rest_time_after_lift;
+    float         rest_time_before_lift;
+    float         bot_retract_height2;
+    float         unknown1 = 2955.996; // 2955.996 or uint:1161347054 but changes
+    std::uint32_t unknown2 = 73470;    // 73470 but changes
+    std::uint32_t unknown3 = 5;        // 5 apparently??
     std::uint32_t last_layer_index;
     std::uint32_t zero_pad3 = 0;
     std::uint32_t zero_pad4 = 0;
@@ -148,61 +149,55 @@ typedef struct ctb_format_print_params_v4
 
 typedef struct ctb_format_layer_data
 {
-    std::float_t  pos_z;
-    std::float_t  exposure;        // In seconds
-    std::float_t  light_off_delay;
+    float         pos_z;
+    float         exposure; // In seconds
+    float         light_off_delay;
     std::uint32_t data_offset;
     std::uint32_t data_size;
     std::uint32_t page_num;
-    std::uint32_t table_size;  // 36 add LayerHeaderEx table_size if v4
+    std::uint32_t table_size; // 36 add LayerHeaderEx table_size if v4
     std::uint32_t unknown1 = 0;
     std::uint32_t unknown2 = 0;
 } ctb_format_layer_data;
 
 typedef struct ctb_format_layer_data_ex
 {
-	// Technically in the data, leaving it here for reference
-	// Chitu wants this layer_data twice in a row, unsure why
-    //ctb_format_layer_data layer_data;
+    // Technically in the data, leaving it here for reference
+    // Chitu wants this layer_data twice in a row, unsure why
+    // ctb_format_layer_data layer_data;
     std::uint32_t tot_size;
-    std::float_t  lift_height;
-    std::float_t  lift_speed;
-    std::float_t  lift_height2;
-    std::float_t  lift_speed2;
-    std::float_t  retract_speed;
-    std::float_t  retract_height2;
-    std::float_t  retract_speed2;
-    std::float_t  rest_time_before_lift;
-    std::float_t  rest_time_after_lift;
-    std::float_t  rest_time_after_retract;
-    std::float_t  light_pwm;
+    float         lift_height;
+    float         lift_speed;
+    float         lift_height2;
+    float         lift_speed2;
+    float         retract_speed;
+    float         retract_height2;
+    float         retract_speed2;
+    float         rest_time_before_lift;
+    float         rest_time_after_lift;
+    float         rest_time_after_retract;
+    float         light_pwm;
 } ctb_format_layer_data_ex;
 
-class CtbSLAArchive: public SLAArchiveWriter {
+class CtbSLAArchive : public SLAArchiveWriter
+{
     SLAPrinterConfig m_cfg;
     // TODO: Implement other CTB versions?
     uint16_t m_version;
 
 protected:
     std::unique_ptr<sla::RasterBase> create_raster() const override;
-    sla::RasterEncoder get_encoder() const override;
+    sla::RasterEncoder               get_encoder() const override;
 
-    SLAPrinterConfig & cfg() { return m_cfg; }
-    const SLAPrinterConfig & cfg() const { return m_cfg; }
+    SLAPrinterConfig       &cfg() { return m_cfg; }
+    const SLAPrinterConfig &cfg() const { return m_cfg; }
 
 public:
-
     CtbSLAArchive() = default;
-    explicit CtbSLAArchive(const SLAPrinterConfig &cfg):
-	m_cfg(cfg), m_version(4) {}
-    explicit CtbSLAArchive(SLAPrinterConfig &&cfg):
-	m_cfg(std::move(cfg)), m_version(4) {}
-    explicit CtbSLAArchive(const SLAPrinterConfig &cfg, uint16_t version):
-        m_cfg(cfg), m_version(version) {}
-    explicit CtbSLAArchive(SLAPrinterConfig &&cfg, uint16_t version):
-        m_cfg(std::move(cfg)), m_version(version) {}
-
-
+    explicit CtbSLAArchive(const SLAPrinterConfig &cfg) : m_cfg(cfg), m_version(4) {}
+    explicit CtbSLAArchive(SLAPrinterConfig &&cfg) : m_cfg(std::move(cfg)), m_version(4) {}
+    explicit CtbSLAArchive(const SLAPrinterConfig &cfg, uint16_t version) : m_cfg(cfg), m_version(version) {}
+    explicit CtbSLAArchive(SLAPrinterConfig &&cfg, uint16_t version) : m_cfg(std::move(cfg)), m_version(version) {}
 
     void export_print(const std::string     fname,
                       const SLAPrint       &print,
@@ -210,14 +205,13 @@ public:
                       const std::string    &projectname = "") override;
 };
 
-
 inline Slic3r::ArchiveEntry ctb_sla_format_versioned(const char *fileformat, const char *desc, uint16_t version)
 {
     Slic3r::ArchiveEntry entry(fileformat);
 
-    entry.desc = desc;
-    entry.ext  = fileformat;
-    entry.wrfactoryfn = [version] (const auto &cfg) { return std::make_unique<CtbSLAArchive>(cfg, version); };
+    entry.desc        = desc;
+    entry.ext         = fileformat;
+    entry.wrfactoryfn = [version](const auto &cfg) { return std::make_unique<CtbSLAArchive>(cfg, version); };
 
     return entry;
 }
@@ -227,6 +221,6 @@ inline Slic3r::ArchiveEntry ctb_sla_format(const char *fileformat, const char *d
     return ctb_sla_format_versioned(fileformat, desc, CTB_SLA_FORMAT_VERSION_4);
 }
 
-} // Slic3r
+} // namespace Slic3r
 
 #endif // _SLIC3R_FORMAT_CTB_HPP_
