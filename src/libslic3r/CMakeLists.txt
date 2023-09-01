@@ -554,6 +554,8 @@ target_link_libraries(libslic3r
     libexpat
     glu-libtess
     qhull
+    ssl
+    crypto
     semver
     TBB::tbb
     TBB::tbbmalloc
