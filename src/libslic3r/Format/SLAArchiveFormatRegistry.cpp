@@ -5,45 +5,42 @@
 #include "SL1.hpp"
 #include "SL1_SVG.hpp"
 #include "AnycubicSLA.hpp"
-#include "ctb.hpp"
+#include "CTB.hpp"
 #include "I18N.hpp"
 
 #include "SLAArchiveFormatRegistry.hpp"
 
 namespace Slic3r {
 
-class Registry {
+class Registry
+{
     static std::unique_ptr<Registry> registry;
 
     std::set<ArchiveEntry> entries;
 
-    Registry ()
+    Registry()
     {
         entries = {
-            {
-                "SL1",                      // id
-                L("SL1 archive"),    // description
-                "sl1",                      // main extension
-                {"sl1s", "zip"},            // extension aliases
+            {"SL1",            // id
+             L("SL1 archive"), // description
+             "sl1",            // main extension
+             {"sl1s", "zip"},  // extension aliases
 
-                // Writer factory
-                [] (const auto &cfg) { return std::make_unique<SL1Archive>(cfg); },
+             // Writer factory
+             [](const auto &cfg) { return std::make_unique<SL1Archive>(cfg); },
 
-                // Reader factory
-                [] (const std::string &fname, SLAImportQuality quality, const ProgrFn &progr) {
-                    return std::make_unique<SL1Reader>(fname, quality, progr);
-                }
-            },
-            {
-                "SL1SVG",
-                L("SL1 SVG archive"),
-                "sl1_svg",
-                {"zip"},
-                [] (const auto &cfg) { return std::make_unique<SL1_SVGArchive>(cfg); },
-                [] (const std::string &fname, SLAImportQuality quality, const ProgrFn &progr) {
-                    return std::make_unique<SL1_SVGReader>(fname, quality, progr);
-                }
-            },
+             // Reader factory
+             [](const std::string &fname, SLAImportQuality quality, const ProgrFn &progr) {
+                 return std::make_unique<SL1Reader>(fname, quality, progr);
+             }},
+            {"SL1SVG",
+             L("SL1 SVG archive"),
+             "sl1_svg",
+             {"zip"},
+             [](const auto &cfg) { return std::make_unique<SL1_SVGArchive>(cfg); },
+             [](const std::string &fname, SLAImportQuality quality, const ProgrFn &progr) {
+                 return std::make_unique<SL1_SVGReader>(fname, quality, progr);
+             }},
             anycubic_sla_format("pwmo", "Photon Mono"),
             anycubic_sla_format("pwmx", "Photon Mono X"),
             anycubic_sla_format("pwms", "Photon Mono SE"),
@@ -77,8 +74,7 @@ class Registry {
     }
 
 public:
-
-    static const Registry& get_instance()
+    static const Registry &get_instance()
     {
         if (!registry)
             registry.reset(new Registry());
@@ -86,18 +82,12 @@ public:
         return *registry;
     }
 
-    static const std::set<ArchiveEntry>& get()
-    {
-        return get_instance().entries;
-    }
+    static const std::set<ArchiveEntry> &get() { return get_instance().entries; }
 };
 
 std::unique_ptr<Registry> Registry::registry = nullptr;
 
-const std::set<ArchiveEntry>& registered_sla_archives()
-{
-    return Registry::get();
-}
+const std::set<ArchiveEntry> &registered_sla_archives() { return Registry::get(); }
 
 std::vector<std::string> get_extensions(const ArchiveEntry &entry)
 {
@@ -113,7 +103,7 @@ std::vector<std::string> get_extensions(const ArchiveEntry &entry)
 ArchiveWriterFactory get_writer_factory(const char *formatid)
 {
     ArchiveWriterFactory ret;
-    auto entry = Registry::get().find(ArchiveEntry{formatid});
+    auto                 entry = Registry::get().find(ArchiveEntry{formatid});
     if (entry != Registry::get().end())
         ret = entry->wrfactoryfn;
 
@@ -122,9 +112,8 @@ ArchiveWriterFactory get_writer_factory(const char *formatid)
 
 ArchiveReaderFactory get_reader_factory(const char *formatid)
 {
-
     ArchiveReaderFactory ret;
-    auto entry = Registry::get().find(ArchiveEntry{formatid});
+    auto                 entry = Registry::get().find(ArchiveEntry{formatid});
     if (entry != Registry::get().end())
         ret = entry->rdfactoryfn;
 
@@ -135,7 +124,7 @@ const char *get_default_extension(const char *formatid)
 {
     static constexpr const char *Empty = "";
 
-    const char * ret = Empty;
+    const char *ret = Empty;
 
     auto entry = Registry::get().find(ArchiveEntry{formatid});
     if (entry != Registry::get().end())
@@ -144,7 +133,7 @@ const char *get_default_extension(const char *formatid)
     return ret;
 }
 
-const ArchiveEntry * get_archive_entry(const char *formatid)
+const ArchiveEntry *get_archive_entry(const char *formatid)
 {
     const ArchiveEntry *ret = nullptr;
 
@@ -155,4 +144,4 @@ const ArchiveEntry * get_archive_entry(const char *formatid)
     return ret;
 }
 
-} // namespace Slic3r::sla
+} // namespace Slic3r

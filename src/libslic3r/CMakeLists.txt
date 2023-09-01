@@ -112,8 +112,8 @@ set(SLIC3R_SOURCES
     Format/3mf.hpp
     Format/AMF.cpp
     Format/AMF.hpp
-    Format/ctb.hpp
-    Format/ctb.cpp
+    Format/CTB.hpp
+    Format/CTB.cpp
     Format/OBJ.cpp
     Format/OBJ.hpp
     Format/objparser.cpp
@@ -502,7 +502,7 @@ cmake_policy(SET CMP0011 NEW)
 find_package(CGAL REQUIRED)
 cmake_policy(POP)
 
-add_library(libslic3r_cgal STATIC 
+add_library(libslic3r_cgal STATIC
     CutSurface.hpp CutSurface.cpp
     Geometry/VoronoiUtilsCgal.hpp Geometry/VoronoiUtilsCgal.cpp
     IntersectionPoints.hpp IntersectionPoints.cpp
