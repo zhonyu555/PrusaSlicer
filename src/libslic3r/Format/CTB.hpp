@@ -8,6 +8,7 @@
 #include "SLAArchiveWriter.hpp"
 #include "SLAArchiveFormatRegistry.hpp"
 
+#include <cstdint>
 #include <sstream>
 #include <iostream>
 #include <fstream>
@@ -23,7 +24,12 @@ constexpr uint16_t CTB_SLA_FORMAT_VERSION_4 = 4;
 
 #define LAYER_SIZE_ESTIMATE (32 * 1024)
 
-#define PAGE_SIZE 4294967296; // 4G
+#define PAGE_SIZE 4294967296 // 4G
+
+constexpr uint32_t MAGIC_V2        = 0x12FD0019; // v2 (cddlp magic number)
+constexpr uint32_t MAGIC_V3        = 0x12FD0086;
+constexpr uint32_t MAGIC_V4        = 0x12FD0106;
+constexpr uint32_t MAGIC_ENCRYPTED = 0x12FD0107;
 
 namespace Slic3r {
 
@@ -178,6 +184,135 @@ typedef struct ctb_format_layer_data_ex
     float         rest_time_after_retract;
     float         light_pwm;
 } ctb_format_layer_data_ex;
+
+// Encrypted CTB- unencrypted doesn't get encrypted
+typedef struct unencrypted_format_header
+{
+    uint32_t magic;
+    uint32_t encrypted_header_size;
+    uint32_t encrypted_header_offset;
+    uint32_t unknown1 = 0;
+    uint32_t unknown2 = 0;
+    uint32_t signature_size;
+    uint32_t signature_offset;
+    uint32_t unknown3 = 0;
+    uint16_t unknown4 = 0;
+    uint16_t unknown5 = 0;
+    uint32_t unknown6 = 0;
+    uint32_t unknown7 = 0;
+    uint32_t unknown9 = 0;
+} unencrypted_format_header;
+
+typedef struct decrypted_format_header
+{
+    uint64_t     checksum;
+    uint32_t     layer_table_offset;
+    float        bed_size_x;
+    float        bed_size_y;
+    float        bed_size_z;
+    uint32_t     unknown1 = 0;
+    uint32_t     unknown2 = 0;
+    float        overall_height;
+    float        layer_height;
+    float        exposure;
+    float        bot_exposure;
+    float        light_off_delay;
+    uint32_t     bot_layer_count;
+    uint32_t     res_x;
+    uint32_t     res_y;
+    uint32_t     layer_count;
+    uint32_t     large_preview_offset;
+    uint32_t     small_preview_offset; // Gets the file offsets of ImageHeader records describing the smaller preview images.
+    uint32_t     print_time;
+    uint32_t     projector_type;
+    float        bot_lift_height;
+    float        bot_lift_speed;
+    float        lift_height;
+    float        lift_speed;
+    float        retract_speed; /* might be bottom retract speed, need to verify */
+    float        resin_volume_ml;
+    float        resin_mass_g;
+    float        resin_cost;
+    float        bot_light_off_delay;
+    uint32_t     unknown3 = 0;
+    uint16_t     pwm_level;
+    uint16_t     bot_pwm_level;
+    uint32_t     layer_xor_key;
+    float        bot_lift_dist2;
+    float        bot_lift_speed2;
+    float        lift_height2;
+    float        lift_speed2;
+    float        retract_height2;
+    float        retract_speed2;
+    float        rest_time_after_lift;
+    uint32_t     machine_name_offset;
+    uint32_t     machine_name_size;
+    std::uint8_t anti_alias_flag; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    uint16_t     zero_pad1          = 0;
+    uint8_t      per_layer_settings = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
+    uint32_t     unknown4           = 0;
+    uint32_t     unknown5           = 0;
+    float        rest_time_after_retract;
+    float        rest_time_after_lift2;
+    uint32_t     transition_layer_count;
+    float        bot_retract_speed;
+    float        bot_retract_speed2;
+    uint32_t     zero_pad2 = 0;
+    float        four1     = 4.0f; // I don't think anyone knows why but ok chitu
+    uint32_t     zero_pad3 = 0;
+    float        four2     = 4.0f; // I don't think anyone knows why but ok chitu
+    float        rest_time_after_retract_repeat;
+    float        rest_time_after_lift_repeat;
+    float        rest_time_before_lift;
+    float        bot_retract_height2;
+    float        unknown6 = 2955.996; // 2955.996 or uint:1161347054 but changes
+    uint32_t     unknown7 = 73470;    // 73470 but changes
+    uint32_t     unknown8 = 5;        // 5 apparently??
+    uint32_t     last_layer_index;
+    uint32_t     zero_pad4 = 0;
+    uint32_t     zero_pad5 = 0;
+    uint32_t     zero_pad6 = 0;
+    uint32_t     zero_pad7 = 0;
+    uint32_t     disclaimer_offset;
+    uint32_t     disclaimer_len = 320; // pretty much always going to be 320
+    uint32_t     zero_pad8      = 0;
+    uint32_t     zero_pad9      = 0;
+    uint32_t     zero_pad10     = 0;
+    uint32_t     zero_pad11     = 0;
+} decrypted_format_header;
+
+typedef struct unencrypted_format_layer_pointers
+{
+    uint32_t offset;
+    uint32_t page_num;
+    uint32_t layer_table_size;
+    uint32_t zero_pad = 0;
+} unencrypted_format_layer_pointers;
+
+typedef struct unencrypted_format_layer_header
+{
+    uint32_t table_size;
+    float    pos_z;
+    float    exposure;
+    float    light_off_delay;
+    uint32_t layer_data_offset;
+    uint32_t layer_data_length;
+    uint32_t unknown1 = 0;
+    uint32_t encrypted_data_offset;
+    uint32_t encrypted_data_length;
+    float    lift_height;
+    float    lift_speed;
+    float    lift_height2;
+    float    lift_speed2;
+    float    retract_speed;
+    float    retract_height2;
+    float    retract_speed2;
+    float    rest_time_before_lift;
+    float    rest_time_after_lift;
+    float    rest_time_after_retract;
+    float    light_pwm;
+    uint32_t unknown2 = 0;
+} unencrypted_format_layer_header;
 
 class CtbSLAArchive : public SLAArchiveWriter
 {

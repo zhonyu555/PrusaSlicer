@@ -1,4 +1,7 @@
 #include "CTB.hpp"
+#include "openssl/sha.h"
+#include "openssl/evp.h"
+#include <cstring>
 
 // Special thanks to UVTools for the CTBv4 update and
 // Catibo for the excellent writeup(https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc)
@@ -200,10 +203,7 @@ void fill_header(ctb_format_header          &h,
 
     SLAPrintStatistics stats = print.print_statistics();
 
-    // v2 MAGIC- 0x12FD0019 (cddlp magic number)
-    // v3 MAGIC- 0x12FD0086
-    // v4 MAGIC- 0x12FD0106
-    h.magic = 0x12FD0106;
+    h.magic = MAGIC_V4;
     // Version matches the CTB version
     h.version              = 4;
     h.bed_size_x           = get_cfg_value<float>(cfg, "display_width");
@@ -295,6 +295,98 @@ void fill_header(ctb_format_header          &h,
     }
 }
 
+void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header &h, const SLAPrint &print, std::uint32_t layer_count)
+{
+    CNumericLocalesSetter locales_setter;
+
+    auto &cfg = print.full_print_config();
+
+    SLAPrintStatistics stats = print.print_statistics();
+
+    u.magic                 = MAGIC_ENCRYPTED;
+    u.encrypted_header_size = get_struct_size(h);
+    u.unknown1              = 0;
+    u.unknown2              = 0;
+    u.unknown3              = 0;
+    u.unknown4              = 0;
+    u.unknown5              = 0;
+    u.unknown6              = 0;
+    u.unknown7              = 0;
+    u.unknown9              = 0;
+
+    // Version matches the CTB version
+    h.checksum        = 0xBEBAFECA;
+    h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
+    h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
+    h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
+    h.overall_height  = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
+    h.layer_height    = get_cfg_value<float>(cfg, "layer_height");
+    h.exposure        = get_cfg_value<float>(cfg, "exposure_time");
+    h.bot_exposure    = get_cfg_value<float>(cfg, "initial_exposure_time");
+    h.light_off_delay = get_cfg_value<float>(cfg, "light_off_time");
+    h.bot_layer_count = get_cfg_value<uint32_t>(cfg, "faded_layers");
+    h.res_x           = get_cfg_value<uint32_t>(cfg, "display_pixels_x");
+    h.res_y           = get_cfg_value<uint32_t>(cfg, "display_pixels_y");
+    h.layer_count     = layer_count;
+    // Layer table offset is set below after everything is created
+    h.print_time          = stats.estimated_print_time;
+    h.projector_type      = 1; // check for normal or mirrored- 0/1 respectively- LCD printers are "mirrored" for this purpose
+    h.bot_lift_height     = get_cfg_value<float>(cfg, "bot_lift_distance");
+    h.bot_lift_speed      = get_cfg_value<float>(cfg, "bot_lift_speed");
+    h.lift_height         = get_cfg_value<float>(cfg, "lift_distance");
+    h.lift_speed          = get_cfg_value<float>(cfg, "lift_speed");
+    h.retract_speed       = get_cfg_value<float>(cfg, "sla_retract_speed");
+    h.resin_volume_ml     = get_cfg_value<float>(cfg, "bottle_volume");
+    h.resin_mass_g        = get_cfg_value<float>(cfg, "bottle_weight") * 1000.0f;
+    h.resin_cost          = get_cfg_value<float>(cfg, "bottle_cost");
+    h.bot_light_off_delay = get_cfg_value<float>(cfg, "bot_light_off_time");
+    h.pwm_level           = (uint16_t) (get_cfg_value<float>(cfg, "light_intensity") / 100 * 255);
+    h.bot_pwm_level       = (uint16_t) (get_cfg_value<float>(cfg, "bot_light_intensity") / 100 * 255);
+    h.layer_xor_key       = 0xEFBEADDE;
+    // h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
+    h.bot_lift_dist2       = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
+    h.bot_lift_speed2      = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
+    h.lift_height2         = get_cfg_value<float>(cfg, "tsmc_lift_distance");
+    h.lift_speed2          = get_cfg_value<float>(cfg, "tsmc_lift_speed");
+    h.retract_height2      = get_cfg_value<float>(cfg, "tsmc_retract_height");
+    h.retract_speed2       = get_cfg_value<float>(cfg, "tsmc_sla_retract_speed");
+    h.rest_time_after_lift = get_cfg_value<float>(cfg, "rest_time_after_lift");
+    h.anti_alias_flag      = 0x7; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    h.zero_pad1            = 0;
+    // TODO: Maybe implement this setting in PrusaSlicer?
+    h.per_layer_settings             = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
+    h.rest_time_after_retract        = get_cfg_value<float>(cfg, "rest_time_after_retract");
+    h.rest_time_after_lift2          = get_cfg_value<float>(cfg, "rest_time_after_lift2");
+    h.transition_layer_count         = get_cfg_value<uint32_t>(cfg, "faded_layers");
+    h.bot_retract_speed              = get_cfg_value<float>(cfg, "sla_bot_retract_speed");
+    h.bot_retract_speed2             = get_cfg_value<float>(cfg, "tsmc_sla_bot_retract_speed");
+    h.zero_pad2                      = 0;
+    h.four1                          = 4.0f;
+    h.zero_pad3                      = 0;
+    h.four2                          = 4.0f;
+    h.rest_time_after_retract_repeat = h.rest_time_after_retract;
+    h.rest_time_after_lift_repeat    = h.rest_time_after_lift;
+    h.rest_time_before_lift          = get_cfg_value<float>(cfg, "rest_time_before_lift");
+    h.bot_retract_height2            = get_cfg_value<float>(cfg, "tsmc_bot_retract_height");
+    h.unknown6                       = 2955.996;
+    h.unknown7                       = 73470;
+    h.unknown8                       = 5;
+    h.last_layer_index               = layer_count - 1;
+    h.zero_pad4                      = 0;
+    h.zero_pad5                      = 0;
+    h.zero_pad6                      = 0;
+    h.zero_pad7                      = 0;
+    h.disclaimer_len                 = 320;
+    h.zero_pad8                      = 0;
+    h.zero_pad9                      = 0;
+    h.zero_pad10                     = 0;
+    h.zero_pad11                     = 0;
+
+    if (layer_count < h.bot_layer_count) {
+        h.bot_layer_count = layer_count;
+    }
+}
+
 } // namespace
 
 std::unique_ptr<sla::RasterBase> CtbSLAArchive::create_raster() const
@@ -379,6 +471,35 @@ static void ctb_write_print_disclaimer(std::ofstream &out, int reserved_size, st
     ctb_write_out(out, disclaimer);
 }
 
+std::string xor_cypher(std::string input, std::string key)
+{
+    std::string output;
+    for (long unsigned int i = 0; i < input.length(); i++) {
+        output[i] = input[i] ^ key[i % key.length()];
+    }
+    return output;
+}
+
+int encrypt(std::string input, std::string key, std::string iv, unsigned char *encrypted_string)
+{
+    EVP_CIPHER_CTX *ctx;
+    if (!(ctx = EVP_CIPHER_CTX_new())) {
+        throw;
+    }
+
+    // Might need to use a packed struct
+    int len;
+    EVP_CIPHER_CTX_set_padding(ctx, 0);
+    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, reinterpret_cast<const unsigned char *>(key.c_str()),
+                       reinterpret_cast<const unsigned char *>(iv.c_str()));
+    EVP_EncryptUpdate(ctx, encrypted_string, &len, reinterpret_cast<const unsigned char *>(input.c_str()), input.length());
+    int encrypted_len = len;
+    EVP_EncryptFinal_ex(ctx, encrypted_string + len, &len);
+    encrypted_len += len;
+    EVP_CIPHER_CTX_free(ctx);
+    return encrypted_len;
+}
+
 void CtbSLAArchive::export_print(const std::string     fname,
                                  const SLAPrint       &print,
                                  const ThumbnailsList &thumbnails,
@@ -397,6 +518,15 @@ void CtbSLAArchive::export_print(const std::string     fname,
     ctb_format_layer_data_ex   layer_data_ex{};
     std::vector<uint8_t>       layer_images;
 
+    unencrypted_format_header unencrypted_header{};
+    union decrypt_header {
+        decrypted_format_header header_struct{};
+        char                    buffer[sizeof(decrypted_format_header)];
+    };
+    union decrypt_header              decrypted_header {};
+    unencrypted_format_layer_header   layer_header{};
+    unencrypted_format_layer_pointers layer_pointers{};
+
     // This is all zeros- just use the size
     int         reserved_size = 384;
     std::string disclaimer_text =
@@ -404,96 +534,204 @@ void CtbSLAArchive::export_print(const std::string     fname,
         "Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, "
         "reverse engineer, lease, assign, or sublicense the said programs or codes.";
 
-    fill_header(header, print_params, slicer_info, print_params_v4, print, layer_count);
+    auto       &cfg          = print.full_print_config();
+    std::string machine_name = cfg.option("printer_model")->serialize();
+    uint8_t     is_encrypted = 0;
+    if (machine_name == "MARS3PRO4K" || machine_name == "MARS3ULTRA4K") {
+        is_encrypted = 1;
+        fill_header_encrypted(unencrypted_header, decrypted_header.header_struct, print, layer_count);
+        decrypted_header.header_struct.machine_name_size = machine_name.length();
+    } else {
+        fill_header(header, print_params, slicer_info, print_params_v4, print, layer_count);
+        slicer_info.machine_name_size = machine_name.length();
+    }
+
     fill_preview(large_preview, small_preview, preview_images, thumbnails);
 
-    // TODO: Figure out how to get machine name from Prusa
-    std::string machine_name      = "ELEGOO";
-    slicer_info.machine_name_size = machine_name.length();
-
     // Fill out all the offsets now that we have the info we need
-    header.small_preview_offset        = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size();
-    header.print_params_offset         = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size();
-    header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
-    slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
-    slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + machine_name.length();
-    print_params_v4.disclaimer_offset  = slicer_info.print_params_v4_offset + reserved_size + get_struct_size(print_params_v4);
-    header.layer_table_offset          = print_params_v4.disclaimer_offset + disclaimer_text.length();
+    std::string   key = xor_cypher("hQ36XB6yTk+zO02ysyiowt8yC1buK+nbLWyfY40EXoU=", "PrusaSlicer");
+    std::string   iv  = xor_cypher("Wld+ampndVJecmVjYH5cWQ==", "PrusaSlicer");
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    unsigned char encrypted_hash[512];
+    std::string   checksum = "\xBE\xBA\xFE\xCA";
+    SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), 4, hash);
+    std::string hash_string{reinterpret_cast<char *>(hash)};
+    int         encrypted_len = encrypt(hash_string, key, iv, encrypted_hash);
+    if (is_encrypted) {
+        unencrypted_header.signature_size = encrypted_len;
 
-    large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
-    small_preview.image_offset = header.print_params_offset - preview_images.small.size();
+        unencrypted_header.encrypted_header_offset = get_struct_size(unencrypted_header);
+        unencrypted_header.signature_offset        = unencrypted_header.encrypted_header_offset + get_struct_size(unencrypted_header);
+        decrypted_header.header_struct.large_preview_offset = unencrypted_header.signature_offset + encrypted_len;
+        decrypted_header.header_struct.small_preview_offset = decrypted_header.header_struct.large_preview_offset +
+                                                              get_struct_size(large_preview) + preview_images.large.size();
+        decrypted_header.header_struct.machine_name_offset = decrypted_header.header_struct.small_preview_offset +
+                                                             get_struct_size(small_preview) + preview_images.small.size();
+        decrypted_header.header_struct.disclaimer_offset  = decrypted_header.header_struct.machine_name_offset + machine_name.length();
+        decrypted_header.header_struct.layer_table_offset = decrypted_header.header_struct.disclaimer_offset + disclaimer_text.length();
 
-    layer_data.pos_z                      = 0.0f;
-    layer_data.data_offset                = header.layer_table_offset;
-    layer_data.table_size                 = 36 + get_struct_size(layer_data_ex); // 36 add LayerHeaderEx table_size if v4
-    layer_data.unknown1                   = 0;
-    layer_data.unknown2                   = 0;
-    layer_data_ex.rest_time_before_lift   = print_params_v4.rest_time_before_lift;
-    layer_data_ex.rest_time_after_lift    = print_params_v4.rest_time_after_lift;
-    layer_data_ex.rest_time_after_retract = print_params_v4.rest_time_after_retract;
+        large_preview.image_offset = decrypted_header.header_struct.small_preview_offset - preview_images.large.size();
+        small_preview.image_offset = decrypted_header.header_struct.machine_name_offset - preview_images.small.size();
+        layer_pointers.offset      = decrypted_header.header_struct.layer_table_offset;
+
+        layer_pointers.layer_table_size      = 0x58; // Always 0x58
+        layer_pointers.zero_pad              = 0;
+        layer_header.table_size              = 0x58;
+        layer_header.pos_z                   = 0.0f;
+        layer_header.layer_data_offset       = decrypted_header.header_struct.layer_table_offset;
+        layer_header.encrypted_data_offset   = 0;
+        layer_header.encrypted_data_length   = 0;
+        layer_header.unknown1                = 0;
+        layer_header.unknown2                = 0;
+        layer_header.rest_time_before_lift   = decrypted_header.header_struct.rest_time_before_lift;
+        layer_header.rest_time_after_lift    = decrypted_header.header_struct.rest_time_after_lift;
+        layer_header.rest_time_after_retract = decrypted_header.header_struct.rest_time_after_retract;
+    } else {
+        header.small_preview_offset        = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size();
+        header.print_params_offset         = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size();
+        header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
+        slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
+        slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + machine_name.length();
+        print_params_v4.disclaimer_offset  = slicer_info.print_params_v4_offset + reserved_size + get_struct_size(print_params_v4);
+        header.layer_table_offset          = print_params_v4.disclaimer_offset + disclaimer_text.length();
+
+        large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
+        small_preview.image_offset = header.print_params_offset - preview_images.small.size();
+
+        layer_data.pos_z                      = 0.0f;
+        layer_data.data_offset                = header.layer_table_offset;
+        layer_data.table_size                 = 36 + get_struct_size(layer_data_ex); // 36 add LayerHeaderEx table_size if v4
+        layer_data.unknown1                   = 0;
+        layer_data.unknown2                   = 0;
+        layer_data_ex.rest_time_before_lift   = print_params_v4.rest_time_before_lift;
+        layer_data_ex.rest_time_after_lift    = print_params_v4.rest_time_after_lift;
+        layer_data_ex.rest_time_after_retract = print_params_v4.rest_time_after_retract;
+    }
 
     try {
         // open the file and write the contents
         std::ofstream out;
         out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
-        ctb_write_section(out, header);
+        // Can't do this until we know where the encryption settings will live
+        if (is_encrypted) {
+            ctb_write_section(out, unencrypted_header);
+            unsigned char encrypted_header[512];
+            int           header_encrypted_len = encrypt(decrypted_header.buffer, key, iv, encrypted_header);
+
+            out.write(reinterpret_cast<const char *>(encrypted_header), header_encrypted_len);
+
+            out.write(reinterpret_cast<const char *>(encrypted_hash), encrypted_len);
+        } else {
+            ctb_write_section(out, header);
+        }
         ctb_write_preview(out, large_preview, small_preview, preview_images);
-        ctb_write_section(out, print_params);
-        ctb_write_section(out, slicer_info);
+
+        if (!is_encrypted) {
+            ctb_write_section(out, print_params);
+            ctb_write_section(out, slicer_info);
+        }
         ctb_write_out(out, machine_name);
-        ctb_write_section(out, print_params_v4);
+
+        if (!is_encrypted) {
+            ctb_write_section(out, print_params_v4);
+        }
         ctb_write_print_disclaimer(out, reserved_size, disclaimer_text);
 
         // layers
         layer_images.reserve(layer_count * LAYER_SIZE_ESTIMATE);
-        size_t        i                 = 0;
-        unsigned long layer_data_offset = header.layer_table_offset + get_struct_size(layer_data) * layer_count;
+        size_t        i = 0;
+        unsigned long layer_data_offset;
+        if (is_encrypted) {
+            layer_data_offset = header.layer_table_offset + get_struct_size(layer_pointers) * layer_count;
+        } else {
+            layer_data_offset = header.layer_table_offset + get_struct_size(layer_data) * layer_count;
+        }
 
         for (const sla::EncodedRaster &rst : m_layers) {
-            if (i < header.bot_layer_count) {
-                layer_data.exposure           = header.bot_exposure;
-                layer_data.light_off_delay    = print_params.bot_light_off_delay;
-                layer_data_ex.lift_height     = print_params.bot_lift_height;
-                layer_data_ex.lift_speed      = print_params.bot_lift_speed;
-                layer_data_ex.lift_height2    = slicer_info.bot_lift_dist2;
-                layer_data_ex.lift_speed2     = slicer_info.bot_lift_speed2;
-                layer_data_ex.retract_speed   = print_params_v4.bot_retract_speed;
-                layer_data_ex.retract_height2 = print_params_v4.bot_retract_height2;
-                layer_data_ex.retract_speed2  = print_params_v4.bot_retract_speed2;
-                layer_data_ex.light_pwm       = header.bot_pwm_level;
+            if (is_encrypted) {
+                if (i < header.bot_layer_count) {
+                    layer_header.exposure        = decrypted_header.header_struct.exposure;
+                    layer_header.light_off_delay = decrypted_header.header_struct.light_off_delay;
+                    layer_header.lift_height     = decrypted_header.header_struct.lift_height;
+                    layer_header.lift_speed      = decrypted_header.header_struct.lift_speed;
+                    layer_header.lift_height2    = decrypted_header.header_struct.lift_height2;
+                    layer_header.lift_speed2     = decrypted_header.header_struct.lift_speed2;
+                    layer_header.retract_speed   = decrypted_header.header_struct.retract_speed;
+                    layer_header.retract_height2 = decrypted_header.header_struct.retract_height2;
+                    layer_header.retract_speed2  = decrypted_header.header_struct.retract_speed2;
+                    layer_header.light_pwm       = decrypted_header.header_struct.pwm_level;
+                } else {
+                    layer_header.exposure        = decrypted_header.header_struct.bot_exposure;
+                    layer_header.light_off_delay = decrypted_header.header_struct.bot_light_off_delay;
+                    layer_header.lift_height     = decrypted_header.header_struct.bot_lift_height;
+                    layer_header.lift_speed      = decrypted_header.header_struct.bot_lift_speed;
+                    layer_header.lift_height2    = decrypted_header.header_struct.bot_lift_dist2;
+                    layer_header.lift_speed2     = decrypted_header.header_struct.bot_lift_speed2;
+                    layer_header.retract_speed   = decrypted_header.header_struct.bot_retract_speed;
+                    layer_header.retract_height2 = decrypted_header.header_struct.bot_retract_height2;
+                    layer_header.retract_speed2  = decrypted_header.header_struct.bot_retract_speed2;
+                    layer_header.light_pwm       = decrypted_header.header_struct.bot_pwm_level;
+                }
             } else {
-                layer_data.exposure           = header.exposure;
-                layer_data.light_off_delay    = print_params.light_off_delay;
-                layer_data_ex.lift_height     = print_params.lift_height;
-                layer_data_ex.lift_speed      = print_params.lift_speed;
-                layer_data_ex.lift_height2    = slicer_info.lift_height2;
-                layer_data_ex.lift_speed2     = slicer_info.lift_speed2;
-                layer_data_ex.retract_speed   = print_params.retract_speed;
-                layer_data_ex.retract_height2 = slicer_info.retract_height2;
-                layer_data_ex.retract_speed2  = slicer_info.retract_speed2;
-                layer_data_ex.light_pwm       = header.pwm_level;
+                if (i < header.bot_layer_count) {
+                    layer_data.exposure           = header.bot_exposure;
+                    layer_data.light_off_delay    = print_params.bot_light_off_delay;
+                    layer_data_ex.lift_height     = print_params.bot_lift_height;
+                    layer_data_ex.lift_speed      = print_params.bot_lift_speed;
+                    layer_data_ex.lift_height2    = slicer_info.bot_lift_dist2;
+                    layer_data_ex.lift_speed2     = slicer_info.bot_lift_speed2;
+                    layer_data_ex.retract_speed   = print_params_v4.bot_retract_speed;
+                    layer_data_ex.retract_height2 = print_params_v4.bot_retract_height2;
+                    layer_data_ex.retract_speed2  = print_params_v4.bot_retract_speed2;
+                    layer_data_ex.light_pwm       = header.bot_pwm_level;
+                } else {
+                    layer_data.exposure           = header.exposure;
+                    layer_data.light_off_delay    = print_params.light_off_delay;
+                    layer_data_ex.lift_height     = print_params.lift_height;
+                    layer_data_ex.lift_speed      = print_params.lift_speed;
+                    layer_data_ex.lift_height2    = slicer_info.lift_height2;
+                    layer_data_ex.lift_speed2     = slicer_info.lift_speed2;
+                    layer_data_ex.retract_speed   = print_params.retract_speed;
+                    layer_data_ex.retract_height2 = slicer_info.retract_height2;
+                    layer_data_ex.retract_speed2  = slicer_info.retract_speed2;
+                    layer_data_ex.light_pwm       = header.pwm_level;
+                }
             }
 
             long curr_pos = out.tellp();
             out.seekp(layer_data_offset);
 
-            layer_data_offset += get_struct_size(layer_data) + get_struct_size(layer_data_ex);
-            // TODO: This was multiplied by anti_alias_level- find out if i need it
-            layer_data.page_num    = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
-            layer_data.data_offset = layer_data_offset - layer_data.page_num * PAGE_SIZE;
-            layer_data.data_size   = rst.size();
-            layer_data_ex.tot_size = get_struct_size(layer_data) + get_struct_size(layer_data_ex) + layer_data.data_size;
+            if (is_encrypted) { // FIXME
+                layer_data_offset += rst.size() + get_struct_size(layer_header);
+                layer_pointers.page_num        = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
+                layer_pointers.offset          = layer_data_offset - layer_data.page_num * PAGE_SIZE;
+                layer_header.layer_data_length = rst.size();
+                ctb_write_section(out, layer_pointers);
+                ctb_write_section(out, layer_header);
+            } else {
+                layer_data_offset += get_struct_size(layer_data) + get_struct_size(layer_data_ex);
+                // TODO: This was multiplied by anti_alias_level- find out if i need it
+                layer_data.page_num    = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
+                layer_data.data_offset = layer_data_offset - layer_data.page_num * PAGE_SIZE;
+                layer_data.data_size   = rst.size();
+                layer_data_ex.tot_size = get_struct_size(layer_data) + get_struct_size(layer_data_ex) + layer_data.data_size;
 
-            ctb_write_section(out, layer_data);
-            ctb_write_section(out, layer_data_ex);
+                ctb_write_section(out, layer_data);
+                ctb_write_section(out, layer_data_ex);
+            }
             out.write(reinterpret_cast<const char *>(rst.data()), rst.size());
 
             out.seekp(curr_pos);
             ctb_write_section(out, layer_data);
 
             // add the rle encoded layer image into the buffer
-            layer_data_offset += layer_data.data_size;
-            layer_data.pos_z += header.layer_height;
+            if (is_encrypted) {
+                layer_data_offset += layer_header.layer_data_length;
+                layer_header.pos_z += decrypted_header.header_struct.layer_height;
+            } else {
+                layer_data_offset += layer_data.data_size;
+                layer_data.pos_z += header.layer_height;
+            }
             i++;
         }
         out.close();
