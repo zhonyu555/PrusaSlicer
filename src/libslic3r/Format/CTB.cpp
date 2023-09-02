@@ -1,6 +1,7 @@
 #include "CTB.hpp"
 #include "openssl/sha.h"
 #include "openssl/evp.h"
+#include <boost/pfr/core.hpp>
 #include <cstring>
 
 // Special thanks to UVTools for the CTBv4 update and
@@ -112,16 +113,6 @@ void fill_preview(ctb_format_preview   &large_preview,
                   ctb_preview_data     &preview_images,
                   const ThumbnailsList &thumbnails)
 {
-    large_preview.zero_pad1 = 0;
-    large_preview.zero_pad2 = 0;
-    large_preview.zero_pad3 = 0;
-    large_preview.zero_pad4 = 0;
-
-    small_preview.zero_pad1 = 0;
-    small_preview.zero_pad2 = 0;
-    small_preview.zero_pad3 = 0;
-    small_preview.zero_pad4 = 0;
-
     auto          vec_data    = &preview_images.large;
     std::uint32_t first_width = thumbnails[0].width;
     uint16_t      rep         = 0;
@@ -303,19 +294,18 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
 
     SLAPrintStatistics stats = print.print_statistics();
 
-    u.magic                 = MAGIC_ENCRYPTED;
-    u.encrypted_header_size = get_struct_size(h);
-    u.unknown1              = 0;
-    u.unknown2              = 0;
-    u.unknown3              = 0;
-    u.unknown4              = 0;
-    u.unknown5              = 0;
-    u.unknown6              = 0;
-    u.unknown7              = 0;
-    u.unknown9              = 0;
+    u.magic    = MAGIC_ENCRYPTED;
+    u.unknown1 = 0;
+    u.unknown2 = 0;
+    u.unknown3 = 0;
+    u.unknown4 = 0;
+    u.unknown5 = 0;
+    u.unknown6 = 0;
+    u.unknown7 = 0;
+    u.unknown9 = 0;
 
     // Version matches the CTB version
-    h.checksum        = 0xBEBAFECA;
+    h.checksum        = 0xBABECAFE;
     h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
     h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
     h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
@@ -446,34 +436,48 @@ template<typename T> static void ctb_write_section(std::ofstream &out, T &h)
     boost::pfr::for_each_field(h, [&out](auto &x) { ctb_write_out(out, *&x); });
 }
 
-static void ctb_write_preview(std::ofstream &out, ctb_format_preview &large, ctb_format_preview &small, ctb_preview_data &data)
+static void ctb_write_preview(std::ofstream          &out,
+                              ctb_format_preview     &large,
+                              ctb_format_preview     &small,
+                              ctb_format_preview_pad &preview_pad,
+                              int                     is_encrypted,
+                              ctb_preview_data       &data)
 {
     boost::pfr::for_each_field(large, [&out](auto &x) { ctb_write_out(out, x); });
+    if (!is_encrypted) {
+        boost::pfr::for_each_field(preview_pad, [&out](auto &x) { ctb_write_out(out, x); });
+    }
 
     for (auto i : data.large) {
         ctb_write_out(out, (uint8_t) i);
     }
 
     boost::pfr::for_each_field(small, [&out](auto &x) { ctb_write_out(out, x); });
+    if (!is_encrypted) {
+        boost::pfr::for_each_field(preview_pad, [&out](auto &x) { ctb_write_out(out, x); });
+    }
 
     for (auto i : data.small) {
         ctb_write_out(out, (uint8_t) i);
     }
 }
 
-static void ctb_write_print_disclaimer(std::ofstream &out, int reserved_size, std::string disclaimer)
+static void ctb_write_print_disclaimer(std::ofstream &out, int reserved_size, int is_encrypted, std::string disclaimer)
 {
     // Garbage data is too big for boost's for_each_field
-    for (int i = 0; i < reserved_size; i++) {
-        ctb_write_out(out, (uint8_t) 0);
+    if (!is_encrypted) {
+        for (int i = 0; i < reserved_size; i++) {
+            ctb_write_out(out, (uint8_t) 0);
+        }
     }
 
     ctb_write_out(out, disclaimer);
 }
 
-std::string xor_cypher(std::string input, std::string key)
+std::string xor_cipher(std::string input, std::string key)
 {
     std::string output;
+    output.resize(input.length());
     for (long unsigned int i = 0; i < input.length(); i++) {
         output[i] = input[i] ^ key[i % key.length()];
     }
@@ -489,7 +493,7 @@ int encrypt(std::string input, std::string key, std::string iv, unsigned char *e
 
     // Might need to use a packed struct
     int len;
-    EVP_CIPHER_CTX_set_padding(ctx, 0);
+    // EVP_CIPHER_CTX_set_padding(ctx, 0);
     EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, reinterpret_cast<const unsigned char *>(key.c_str()),
                        reinterpret_cast<const unsigned char *>(iv.c_str()));
     EVP_EncryptUpdate(ctx, encrypted_string, &len, reinterpret_cast<const unsigned char *>(input.c_str()), input.length());
@@ -509,6 +513,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
     ctb_format_header          header{};
     ctb_format_preview         large_preview{};
+    ctb_format_preview_pad     preview_pad{};
     ctb_format_preview         small_preview{};
     ctb_preview_data           preview_images{};
     ctb_format_print_params    print_params{};
@@ -546,22 +551,39 @@ void CtbSLAArchive::export_print(const std::string     fname,
         slicer_info.machine_name_size = machine_name.length();
     }
 
+    preview_pad.zero_pad1 = 0;
+    preview_pad.zero_pad2 = 0;
+    preview_pad.zero_pad3 = 0;
+    preview_pad.zero_pad4 = 0;
     fill_preview(large_preview, small_preview, preview_images, thumbnails);
 
-    // Fill out all the offsets now that we have the info we need
-    std::string   key = xor_cypher("hQ36XB6yTk+zO02ysyiowt8yC1buK+nbLWyfY40EXoU=", "PrusaSlicer");
-    std::string   iv  = xor_cypher("Wld+ampndVJecmVjYH5cWQ==", "PrusaSlicer");
-    unsigned char hash[SHA256_DIGEST_LENGTH];
-    unsigned char encrypted_hash[512];
-    std::string   checksum = "\xBE\xBA\xFE\xCA";
-    SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), 4, hash);
-    std::string hash_string{reinterpret_cast<char *>(hash)};
-    int         encrypted_len = encrypt(hash_string, key, iv, encrypted_hash);
     if (is_encrypted) {
-        unencrypted_header.signature_size = encrypted_len;
+        // Encryption has to happen earlier due to offset calculations
+        // I'm not writing a base64 decoder to hide chitu bs
+        // std::string key = xor_cipher("hQ36XB6yTk+zO02ysyiowt8yC1buK+nbLWyfY40EXoU=", "PrusaSlicer");
+        // std::string iv  = xor_cipher("Wld+ampndVJecmVjYH5cWQ==", "PrusaSlicer");
+        std::string key = xor_cipher("\x85\x0d\xfa\x5c\x1e\xb2\x4e\x4f\xb3\x3b\x4d\xb2\xb3\x28\xa8\xc2\xdf\x32\x0b\x56\xee\x2b\xe9\xdb\x2d"
+                                     "\x6c\x9f\x63\x8d\x04\x5e\x85",
+                                     "UVTools");
+        std::string iv  = xor_cipher("\x5a\x57\x7e\x6a\x6a\x67\x75\x52\x5e\x72\x65\x63\x60\x7e\x5c\x59", "UVTools");
+        unsigned char hash[SHA256_DIGEST_LENGTH];
+        unsigned char encrypted_hash[512];
+        unsigned char encrypted_header[512];
+        // std::string   checksum = "\xCA\xFE\xBA\xBE";
+        std::string checksum = "\xBE\xBA\xFE\xCA";
+        SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), checksum.length(), hash);
+        std::string hash_string{reinterpret_cast<char *>(hash)};
+        std::string decrypted_header_string{decrypted_header.buffer, get_struct_size(decrypted_header.header_struct)};
 
-        unencrypted_header.encrypted_header_offset = get_struct_size(unencrypted_header);
-        unencrypted_header.signature_offset        = unencrypted_header.encrypted_header_offset + get_struct_size(unencrypted_header);
+        int encrypted_len        = encrypt(hash_string, key, iv, encrypted_hash);
+        int header_encrypted_len = encrypt(decrypted_header_string, key, iv, encrypted_header);
+
+        // Fill out all the offsets now that we have the info we need
+        unencrypted_header.signature_size        = encrypted_len;
+        unencrypted_header.encrypted_header_size = header_encrypted_len;
+
+        unencrypted_header.encrypted_header_offset          = get_struct_size(unencrypted_header);
+        unencrypted_header.signature_offset                 = unencrypted_header.encrypted_header_offset + header_encrypted_len;
         decrypted_header.header_struct.large_preview_offset = unencrypted_header.signature_offset + encrypted_len;
         decrypted_header.header_struct.small_preview_offset = decrypted_header.header_struct.large_preview_offset +
                                                               get_struct_size(large_preview) + preview_images.large.size();
@@ -578,7 +600,6 @@ void CtbSLAArchive::export_print(const std::string     fname,
         layer_pointers.zero_pad              = 0;
         layer_header.table_size              = 0x58;
         layer_header.pos_z                   = 0.0f;
-        layer_header.layer_data_offset       = decrypted_header.header_struct.layer_table_offset;
         layer_header.encrypted_data_offset   = 0;
         layer_header.encrypted_data_length   = 0;
         layer_header.unknown1                = 0;
@@ -586,69 +607,28 @@ void CtbSLAArchive::export_print(const std::string     fname,
         layer_header.rest_time_before_lift   = decrypted_header.header_struct.rest_time_before_lift;
         layer_header.rest_time_after_lift    = decrypted_header.header_struct.rest_time_after_lift;
         layer_header.rest_time_after_retract = decrypted_header.header_struct.rest_time_after_retract;
-    } else {
-        header.small_preview_offset        = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size();
-        header.print_params_offset         = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size();
-        header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
-        slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
-        slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + machine_name.length();
-        print_params_v4.disclaimer_offset  = slicer_info.print_params_v4_offset + reserved_size + get_struct_size(print_params_v4);
-        header.layer_table_offset          = print_params_v4.disclaimer_offset + disclaimer_text.length();
 
-        large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
-        small_preview.image_offset = header.print_params_offset - preview_images.small.size();
-
-        layer_data.pos_z                      = 0.0f;
-        layer_data.data_offset                = header.layer_table_offset;
-        layer_data.table_size                 = 36 + get_struct_size(layer_data_ex); // 36 add LayerHeaderEx table_size if v4
-        layer_data.unknown1                   = 0;
-        layer_data.unknown2                   = 0;
-        layer_data_ex.rest_time_before_lift   = print_params_v4.rest_time_before_lift;
-        layer_data_ex.rest_time_after_lift    = print_params_v4.rest_time_after_lift;
-        layer_data_ex.rest_time_after_retract = print_params_v4.rest_time_after_retract;
-    }
-
-    try {
-        // open the file and write the contents
-        std::ofstream out;
-        out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
-        // Can't do this until we know where the encryption settings will live
-        if (is_encrypted) {
+        try {
+            // open the file and write the contents
+            std::ofstream out;
+            out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
+            // Can't do this until we know where the encryption settings will live
             ctb_write_section(out, unencrypted_header);
-            unsigned char encrypted_header[512];
-            int           header_encrypted_len = encrypt(decrypted_header.buffer, key, iv, encrypted_header);
-
             out.write(reinterpret_cast<const char *>(encrypted_header), header_encrypted_len);
-
             out.write(reinterpret_cast<const char *>(encrypted_hash), encrypted_len);
-        } else {
-            ctb_write_section(out, header);
-        }
-        ctb_write_preview(out, large_preview, small_preview, preview_images);
+            ctb_write_preview(out, large_preview, small_preview, preview_pad, is_encrypted, preview_images);
 
-        if (!is_encrypted) {
-            ctb_write_section(out, print_params);
-            ctb_write_section(out, slicer_info);
-        }
-        ctb_write_out(out, machine_name);
+            ctb_write_out(out, machine_name);
 
-        if (!is_encrypted) {
-            ctb_write_section(out, print_params_v4);
-        }
-        ctb_write_print_disclaimer(out, reserved_size, disclaimer_text);
+            ctb_write_print_disclaimer(out, reserved_size, is_encrypted, disclaimer_text);
 
-        // layers
-        layer_images.reserve(layer_count * LAYER_SIZE_ESTIMATE);
-        size_t        i = 0;
-        unsigned long layer_data_offset;
-        if (is_encrypted) {
-            layer_data_offset = header.layer_table_offset + get_struct_size(layer_pointers) * layer_count;
-        } else {
-            layer_data_offset = header.layer_table_offset + get_struct_size(layer_data) * layer_count;
-        }
+            // layers
+            layer_images.reserve(layer_count * LAYER_SIZE_ESTIMATE);
+            size_t        i = 0;
+            unsigned long layer_data_offset;
+            layer_data_offset = decrypted_header.header_struct.layer_table_offset + get_struct_size(layer_pointers) * layer_count;
 
-        for (const sla::EncodedRaster &rst : m_layers) {
-            if (is_encrypted) {
+            for (const sla::EncodedRaster &rst : m_layers) {
                 if (i < header.bot_layer_count) {
                     layer_header.exposure        = decrypted_header.header_struct.exposure;
                     layer_header.light_off_delay = decrypted_header.header_struct.light_off_delay;
@@ -672,7 +652,77 @@ void CtbSLAArchive::export_print(const std::string     fname,
                     layer_header.retract_speed2  = decrypted_header.header_struct.bot_retract_speed2;
                     layer_header.light_pwm       = decrypted_header.header_struct.bot_pwm_level;
                 }
-            } else {
+
+                layer_pointers.page_num = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
+                layer_pointers.offset   = layer_data_offset;
+                ctb_write_section(out, layer_pointers);
+
+                long curr_pos = out.tellp();
+                out.seekp(layer_data_offset);
+                // layer_data_offset += rst.size() + get_struct_size(layer_header);
+                layer_header.layer_data_offset = layer_data_offset + get_struct_size(layer_header);
+                layer_header.page_num          = layer_header.layer_data_offset / PAGE_SIZE;
+                layer_header.layer_data_length = rst.size();
+                ctb_write_section(out, layer_header);
+                // add the rle encoded layer image into the buffer
+                out.write(reinterpret_cast<const char *>(rst.data()), rst.size());
+
+                out.seekp(curr_pos);
+
+                layer_data_offset += layer_header.layer_data_length + get_struct_size(layer_header);
+                layer_header.pos_z += decrypted_header.header_struct.layer_height;
+                i++;
+            }
+            out.close();
+        } catch (std::exception &e) {
+            BOOST_LOG_TRIVIAL(error) << e.what();
+            // Rethrow the exception
+            throw;
+        }
+    } else {
+        // Fill out all the offsets now that we have the info we need
+        header.small_preview_offset        = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size();
+        header.print_params_offset         = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size();
+        header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
+        slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
+        slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + machine_name.length();
+        print_params_v4.disclaimer_offset  = slicer_info.print_params_v4_offset + reserved_size + get_struct_size(print_params_v4);
+        header.layer_table_offset          = print_params_v4.disclaimer_offset + disclaimer_text.length();
+
+        large_preview.image_offset = header.small_preview_offset - preview_images.large.size();
+        small_preview.image_offset = header.print_params_offset - preview_images.small.size();
+
+        layer_data.pos_z                      = 0.0f;
+        layer_data.data_offset                = header.layer_table_offset;
+        layer_data.table_size                 = 36 + get_struct_size(layer_data_ex); // 36 add LayerHeaderEx table_size if v4
+        layer_data.unknown1                   = 0;
+        layer_data.unknown2                   = 0;
+        layer_data_ex.rest_time_before_lift   = print_params_v4.rest_time_before_lift;
+        layer_data_ex.rest_time_after_lift    = print_params_v4.rest_time_after_lift;
+        layer_data_ex.rest_time_after_retract = print_params_v4.rest_time_after_retract;
+
+        try {
+            // open the file and write the contents
+            std::ofstream out;
+            out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
+            // Can't do this until we know where the encryption settings will live
+            ctb_write_section(out, header);
+            ctb_write_preview(out, large_preview, small_preview, preview_pad, is_encrypted, preview_images);
+
+            ctb_write_section(out, print_params);
+            ctb_write_section(out, slicer_info);
+            ctb_write_out(out, machine_name);
+
+            ctb_write_section(out, print_params_v4);
+            ctb_write_print_disclaimer(out, reserved_size, is_encrypted, disclaimer_text);
+
+            // layers
+            layer_images.reserve(layer_count * LAYER_SIZE_ESTIMATE);
+            size_t        i = 0;
+            unsigned long layer_data_offset;
+            layer_data_offset = header.layer_table_offset + get_struct_size(layer_data) * layer_count;
+
+            for (const sla::EncodedRaster &rst : m_layers) {
                 if (i < header.bot_layer_count) {
                     layer_data.exposure           = header.bot_exposure;
                     layer_data.light_off_delay    = print_params.bot_light_off_delay;
@@ -696,19 +746,10 @@ void CtbSLAArchive::export_print(const std::string     fname,
                     layer_data_ex.retract_speed2  = slicer_info.retract_speed2;
                     layer_data_ex.light_pwm       = header.pwm_level;
                 }
-            }
 
-            long curr_pos = out.tellp();
-            out.seekp(layer_data_offset);
+                long curr_pos = out.tellp();
+                out.seekp(layer_data_offset);
 
-            if (is_encrypted) { // FIXME
-                layer_data_offset += rst.size() + get_struct_size(layer_header);
-                layer_pointers.page_num        = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
-                layer_pointers.offset          = layer_data_offset - layer_data.page_num * PAGE_SIZE;
-                layer_header.layer_data_length = rst.size();
-                ctb_write_section(out, layer_pointers);
-                ctb_write_section(out, layer_header);
-            } else {
                 layer_data_offset += get_struct_size(layer_data) + get_struct_size(layer_data_ex);
                 // TODO: This was multiplied by anti_alias_level- find out if i need it
                 layer_data.page_num    = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
@@ -718,28 +759,22 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
                 ctb_write_section(out, layer_data);
                 ctb_write_section(out, layer_data_ex);
-            }
-            out.write(reinterpret_cast<const char *>(rst.data()), rst.size());
+                out.write(reinterpret_cast<const char *>(rst.data()), rst.size());
 
-            out.seekp(curr_pos);
-            ctb_write_section(out, layer_data);
+                out.seekp(curr_pos);
+                ctb_write_section(out, layer_data);
 
-            // add the rle encoded layer image into the buffer
-            if (is_encrypted) {
-                layer_data_offset += layer_header.layer_data_length;
-                layer_header.pos_z += decrypted_header.header_struct.layer_height;
-            } else {
+                // add the rle encoded layer image into the buffer
                 layer_data_offset += layer_data.data_size;
                 layer_data.pos_z += header.layer_height;
+                i++;
             }
-            i++;
+            out.close();
+        } catch (std::exception &e) {
+            BOOST_LOG_TRIVIAL(error) << e.what();
+            // Rethrow the exception
+            throw;
         }
-        out.close();
-    } catch (std::exception &e) {
-        BOOST_LOG_TRIVIAL(error) << e.what();
-        // Rethrow the exception
-        throw;
     }
 }
-
 } // namespace Slic3r

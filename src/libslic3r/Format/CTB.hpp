@@ -72,11 +72,15 @@ typedef struct ctb_format_preview
     std::uint32_t size_y;
     std::uint32_t image_offset;
     std::uint32_t image_len;
+} ctb_format_preview;
+
+typedef struct ctb_format_preview_pad
+{
     std::uint32_t zero_pad1 = 0;
     std::uint32_t zero_pad2 = 0;
     std::uint32_t zero_pad3 = 0;
     std::uint32_t zero_pad4 = 0;
-} ctb_format_preview;
+} ctb_format_preview_pad;
 
 // raw image data in RGB565 format
 typedef struct ctb_preview_data
@@ -296,6 +300,7 @@ typedef struct unencrypted_format_layer_header
     float    exposure;
     float    light_off_delay;
     uint32_t layer_data_offset;
+    uint32_t page_num;
     uint32_t layer_data_length;
     uint32_t unknown1 = 0;
     uint32_t encrypted_data_offset;
