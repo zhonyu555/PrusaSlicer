@@ -3,6 +3,7 @@
 ///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
 ///|/
 
+#include <boost/log/trivial.hpp>
 #include "CutUtils.hpp"
 #include "Geometry.hpp"
 #include "libslic3r.h"

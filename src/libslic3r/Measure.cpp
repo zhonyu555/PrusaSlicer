@@ -2,6 +2,7 @@
 ///|/
 ///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
 ///|/
+#include <tbb/parallel_for.h>
 #include "libslic3r/libslic3r.h"
 #include "Measure.hpp"
 #include "MeasureUtils.hpp"

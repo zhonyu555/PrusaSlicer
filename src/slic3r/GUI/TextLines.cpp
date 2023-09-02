@@ -4,6 +4,7 @@
 
 #include "libslic3r/Model.hpp"
 
+#include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/Emboss.hpp"
 #include "libslic3r/TriangleMeshSlicer.hpp"
 #include "libslic3r/Tesselate.hpp"
