@@ -467,6 +467,7 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
     BOOST_LOG_TRIVIAL(debug) << "performing downloader desktop integration.";
     // Path to appimage
     const char* appimage_env = std::getenv("APPIMAGE");
+    const char* container_env = std::getenv("container");
     std::string excutable_path;
     if (appimage_env) {
         try {
@@ -477,6 +478,10 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
             show_error(nullptr, _L("Performing downloader desktop integration failed - boost::filesystem::canonical did not return appimage path."));
             return;
         }
+    }
+    else if (strcmp(container_env, "flatpak") == 0) {
+        const char* flatpak_id = std::getenv("FLATPAK_ID");
+        excutable_path = "flatpak run " + std::string(flatpak_id);
     }
     else {
         // not appimage - find executable
@@ -491,9 +496,12 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
         }
     }
 
-    // Escape ' characters in appimage, other special symbols will be esacaped in desktop file by 'excutable_path'
-    //boost::replace_all(excutable_path, "'", "'\\''");
-    excutable_path = escape_string(excutable_path);
+    // For flatpak there are not required neither quotes nor escape
+    if (strcmp(container_env, "flatpak") != 0) {
+        // Escape ' characters in appimage, other special symbols will be esacaped in desktop file by 'excutable_path'
+        //boost::replace_all(excutable_path, "'", "'\\''");
+        excutable_path = "\"" + escape_string(excutable_path) + "\"";
+    }
 
     // Find directories icons and applications
     // $XDG_DATA_HOME defines the base directory relative to which user specific data files should be stored. 
@@ -539,7 +547,7 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
     std::string desktop_file_downloader = GUI::format(
         "[Desktop Entry]\n"
         "Name=PrusaSlicer URL Protocol%1%\n"
-        "Exec=\"%2%\" --single-instance %%u\n"
+        "Exec=%2% --single-instance %%u\n"
         "Terminal=false\n"
         "Type=Application\n"
         "MimeType=x-scheme-handler/prusaslicer;\n"
