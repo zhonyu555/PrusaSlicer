@@ -305,7 +305,7 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     u.unknown9 = 0;
 
     // Version matches the CTB version
-    h.checksum        = 0xBABECAFE;
+    h.checksum        = 0xCAFEBABE;
     h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
     h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
     h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
@@ -491,14 +491,29 @@ int encrypt(std::string input, std::string key, std::string iv, unsigned char *e
         throw;
     }
 
+    // There are functions for reporting errors from EVP we should use them below
     // Might need to use a packed struct
     int len;
-    // EVP_CIPHER_CTX_set_padding(ctx, 0);
-    EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, reinterpret_cast<const unsigned char *>(key.c_str()),
-                       reinterpret_cast<const unsigned char *>(iv.c_str()));
-    EVP_EncryptUpdate(ctx, encrypted_string, &len, reinterpret_cast<const unsigned char *>(input.c_str()), input.length());
+    if (!EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, reinterpret_cast<const unsigned char *>(key.c_str()),
+                            reinterpret_cast<const unsigned char *>(iv.c_str()))) {
+        BOOST_LOG_TRIVIAL(error) << "Error in initialization";
+        throw;
+    }
+
+    if (!EVP_CIPHER_CTX_set_padding(ctx, 0)) {
+        BOOST_LOG_TRIVIAL(error) << "Error in setting padding";
+        throw;
+    }
+
+    if (!EVP_EncryptUpdate(ctx, encrypted_string, &len, reinterpret_cast<const unsigned char *>(input.c_str()), input.length())) {
+        BOOST_LOG_TRIVIAL(error) << "Error updating encryption";
+        throw;
+    }
     int encrypted_len = len;
-    EVP_EncryptFinal_ex(ctx, encrypted_string + len, &len);
+    if (!EVP_EncryptFinal_ex(ctx, encrypted_string + len, &len)) {
+        BOOST_LOG_TRIVIAL(error) << "Error finalizing encryption";
+        throw;
+    }
     encrypted_len += len;
     EVP_CIPHER_CTX_free(ctx);
     return encrypted_len;
@@ -570,9 +585,17 @@ void CtbSLAArchive::export_print(const std::string     fname,
         unsigned char encrypted_hash[512];
         unsigned char encrypted_header[512];
         // std::string   checksum = "\xCA\xFE\xBA\xBE";
-        std::string checksum = "\xBE\xBA\xFE\xCA";
-        SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), checksum.length(), hash);
-        std::string hash_string{reinterpret_cast<char *>(hash)};
+        unsigned char checksum[8] = {0xBE, 0xBA, 0xFE, 0xCA, 0x00, 0x00, 0x00, 0x00};
+
+        unsigned int hash_len;
+        EVP_MD_CTX  *ctx_sha256 = EVP_MD_CTX_create();
+        EVP_DigestInit_ex(ctx_sha256, EVP_sha256(), NULL);
+        EVP_DigestUpdate(ctx_sha256, checksum, 8);
+        EVP_DigestFinal_ex(ctx_sha256, hash, &hash_len);
+        EVP_MD_CTX_destroy(ctx_sha256);
+
+        // SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), checksum.length(), hash);
+        std::string hash_string{reinterpret_cast<char *>(hash), hash_len};
         std::string decrypted_header_string{decrypted_header.buffer, get_struct_size(decrypted_header.header_struct)};
 
         int encrypted_len        = encrypt(hash_string, key, iv, encrypted_hash);
