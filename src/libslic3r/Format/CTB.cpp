@@ -196,20 +196,19 @@ void fill_header(ctb_format_header          &h,
 
     h.magic = MAGIC_V4;
     // Version matches the CTB version
-    h.version              = 4;
-    h.bed_size_x           = get_cfg_value<float>(cfg, "display_width");
-    h.bed_size_y           = get_cfg_value<float>(cfg, "display_height");
-    h.bed_size_z           = get_cfg_value<float>(cfg, "max_print_height");
-    h.zero_pad             = 0;
-    h.layer_height         = get_cfg_value<float>(cfg, "layer_height");
-    h.overall_height       = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
-    h.exposure             = get_cfg_value<float>(cfg, "exposure_time");
-    h.bot_exposure         = get_cfg_value<float>(cfg, "initial_exposure_time");
-    h.light_off_delay      = get_cfg_value<float>(cfg, "light_off_time");
-    h.bot_layer_count      = get_cfg_value<uint32_t>(cfg, "faded_layers");
-    h.res_x                = get_cfg_value<uint32_t>(cfg, "display_pixels_x");
-    h.res_y                = get_cfg_value<uint32_t>(cfg, "display_pixels_y");
-    h.large_preview_offset = get_struct_size(h);
+    h.version         = 4;
+    h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
+    h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
+    h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
+    h.zero_pad        = 0;
+    h.layer_height    = get_cfg_value<float>(cfg, "layer_height");
+    h.overall_height  = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
+    h.exposure        = get_cfg_value<float>(cfg, "exposure_time");
+    h.bot_exposure    = get_cfg_value<float>(cfg, "initial_exposure_time");
+    h.light_off_delay = get_cfg_value<float>(cfg, "light_off_time");
+    h.bot_layer_count = get_cfg_value<uint32_t>(cfg, "faded_layers");
+    h.res_x           = get_cfg_value<uint32_t>(cfg, "display_pixels_x");
+    h.res_y           = get_cfg_value<uint32_t>(cfg, "display_pixels_y");
     // Layer table offset is set below after the v4 params offset is created
     h.layer_count       = layer_count;
     h.print_time        = stats.estimated_print_time;
@@ -332,8 +331,9 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     h.bot_light_off_delay = get_cfg_value<float>(cfg, "bot_light_off_time");
     h.pwm_level           = (uint16_t) (get_cfg_value<float>(cfg, "light_intensity") / 100 * 255);
     h.bot_pwm_level       = (uint16_t) (get_cfg_value<float>(cfg, "bot_light_intensity") / 100 * 255);
-    h.layer_xor_key       = 0xEFBEADDE;
-    // h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
+    h.layer_xor_key       = 0;
+    // h.layer_xor_key       = 0xEFBEADDE;
+    //  h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
     h.bot_lift_dist2       = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
     h.bot_lift_speed2      = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
     h.lift_height2         = get_cfg_value<float>(cfg, "tsmc_lift_distance");
@@ -575,12 +575,16 @@ void CtbSLAArchive::export_print(const std::string     fname,
     if (is_encrypted) {
         // Encryption has to happen earlier due to offset calculations
         // I'm not writing a base64 decoder to hide chitu bs
+        // Might as well forget about the xor cipher as well
         // std::string key = xor_cipher("hQ36XB6yTk+zO02ysyiowt8yC1buK+nbLWyfY40EXoU=", "PrusaSlicer");
         // std::string iv  = xor_cipher("Wld+ampndVJecmVjYH5cWQ==", "PrusaSlicer");
-        std::string key = xor_cipher("\x85\x0d\xfa\x5c\x1e\xb2\x4e\x4f\xb3\x3b\x4d\xb2\xb3\x28\xa8\xc2\xdf\x32\x0b\x56\xee\x2b\xe9\xdb\x2d"
-                                     "\x6c\x9f\x63\x8d\x04\x5e\x85",
-                                     "UVTools");
-        std::string iv  = xor_cipher("\x5a\x57\x7e\x6a\x6a\x67\x75\x52\x5e\x72\x65\x63\x60\x7e\x5c\x59", "UVTools");
+        // std::string key = xor_cipher("\x85\x0d\xfa\x5c\x1e\xb2\x4e\x4f\xb3\x3b\x4d\xb2\xb3\x28\xa8\xc2\xdf\x32\x0b\x56\xee\x2b\xe9\xdb\x2d"
+        //                             "\x6c\x9f\x63\x8d\x04\x5e\x85",
+        //                             "UVtools");
+        // std::string   iv  = xor_cipher("\x5a\x57\x7e\x6a\x6a\x67\x75\x52\x5e\x72\x65\x63\x60\x7e\x5c\x59", "UVtools");
+        std::string key = "\xD0\x5B\x8E\x33\x71\xDE\x3D\x1A\xE5\x4F\x22\xDD\xDF\x5B\xFD\x94\xAB\x5D\x64\x3A\x9D\x7E\xBF\xAF\x42\x03\xF3\x10"
+                          "\xD8\x52\x2A\xEA";
+        std::string iv  = "\x0F\x01\x0A\x05\x05\x0B\x06\x07\x08\x06\x0A\x0C\x0C\x0D\x09\x0F";
         unsigned char hash[SHA256_DIGEST_LENGTH];
         unsigned char encrypted_hash[512];
         unsigned char encrypted_header[512];
@@ -596,10 +600,9 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
         // SHA256(reinterpret_cast<const unsigned char *>(checksum.c_str()), checksum.length(), hash);
         std::string hash_string{reinterpret_cast<char *>(hash), hash_len};
-        std::string decrypted_header_string{decrypted_header.buffer, get_struct_size(decrypted_header.header_struct)};
 
         int encrypted_len        = encrypt(hash_string, key, iv, encrypted_hash);
-        int header_encrypted_len = encrypt(decrypted_header_string, key, iv, encrypted_header);
+        int header_encrypted_len = 288;
 
         // Fill out all the offsets now that we have the info we need
         unencrypted_header.signature_size        = encrypted_len;
@@ -630,6 +633,9 @@ void CtbSLAArchive::export_print(const std::string     fname,
         layer_header.rest_time_before_lift   = decrypted_header.header_struct.rest_time_before_lift;
         layer_header.rest_time_after_lift    = decrypted_header.header_struct.rest_time_after_lift;
         layer_header.rest_time_after_retract = decrypted_header.header_struct.rest_time_after_retract;
+        std::string decrypted_header_string{decrypted_header.buffer, get_struct_size(decrypted_header.header_struct)};
+        int         new_header_encrypted_len = encrypt(decrypted_header_string, key, iv, encrypted_header);
+        assert(new_header_encrypted_len == header_encrypted_len);
 
         try {
             // open the file and write the contents
