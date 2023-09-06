@@ -1,3 +1,11 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Tomáš Mészáros @tamasmeszaros, Lukáš Hejl @hejllukas, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Martin Budden
+///|/ Copyright (c) 2021 Ilya @xorza
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <cassert>
 
 #include "Exception.hpp"
@@ -1401,6 +1409,10 @@ Preset& PresetCollection::select_preset(size_t idx)
     if (idx >= m_presets.size())
         idx = first_visible_idx();
     m_idx_selected = idx;
+    if (!m_presets[idx].is_visible)
+        // The newly selected preset can be activated -> make it visible.
+        m_presets[idx].is_visible = true;
+
     m_edited_preset = m_presets[idx];
     bool default_visible = ! m_default_suppressed || m_idx_selected < m_num_default_presets;
     for (size_t i = 0; i < m_num_default_presets; ++i)
