@@ -1,6 +1,6 @@
 #include "CTB.hpp"
-#include "openssl/sha.h"
-#include "openssl/evp.h"
+#include <openssl/sha.h>
+#include <openssl/evp.h>
 #include <boost/pfr/core.hpp>
 #include <cstring>
 
@@ -673,7 +673,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
                     layer_header.light_pwm       = decrypted_header.header_struct.bot_pwm_level;
                 }
 
-                layer_pointers.page_num = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
+                layer_pointers.page_num = layer_data_offset / CTB_PAGE_SIZE; // I'm not 100% sure if I did this correctly
                 layer_pointers.offset   = layer_data_offset;
                 ctb_write_section(out, layer_pointers);
 
@@ -681,7 +681,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
                 out.seekp(layer_data_offset);
                 // layer_data_offset += rst.size() + get_struct_size(layer_header);
                 layer_header.layer_data_offset = layer_data_offset + get_struct_size(layer_header);
-                layer_header.page_num          = layer_header.layer_data_offset / PAGE_SIZE;
+                layer_header.page_num          = layer_header.layer_data_offset / CTB_PAGE_SIZE;
                 layer_header.layer_data_length = rst.size();
                 ctb_write_section(out, layer_header);
                 // add the rle encoded layer image into the buffer
@@ -778,8 +778,8 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
                 layer_data_offset += get_struct_size(layer_data) + get_struct_size(layer_data_ex);
                 // TODO: This was multiplied by anti_alias_level- find out if i need it
-                layer_data.page_num    = layer_data_offset / PAGE_SIZE; // I'm not 100% sure if I did this correctly
-                layer_data.data_offset = layer_data_offset - layer_data.page_num * PAGE_SIZE;
+                layer_data.page_num    = layer_data_offset / CTB_PAGE_SIZE; // I'm not 100% sure if I did this correctly
+                layer_data.data_offset = layer_data_offset - layer_data.page_num * CTB_PAGE_SIZE;
                 layer_data.data_size   = rst.size();
                 layer_data_ex.tot_size = get_struct_size(layer_data) + get_struct_size(layer_data_ex) + layer_data.data_size;
 
