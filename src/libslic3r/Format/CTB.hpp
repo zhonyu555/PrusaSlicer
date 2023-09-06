@@ -24,7 +24,7 @@ constexpr uint16_t CTB_SLA_FORMAT_VERSION_4 = 4;
 
 #define LAYER_SIZE_ESTIMATE (32 * 1024)
 
-#define PAGE_SIZE 4294967296 // 4G
+#define CTB_PAGE_SIZE 4294967296 // 4G
 
 constexpr uint32_t MAGIC_V2        = 0x12FD0019; // v2 (cddlp magic number)
 constexpr uint32_t MAGIC_V3        = 0x12FD0086;
