@@ -574,17 +574,10 @@ void CtbSLAArchive::export_print(const std::string     fname,
 
     if (is_encrypted) {
         // Encryption has to happen earlier due to offset calculations
-        // I'm not writing a base64 decoder to hide chitu bs
-        // Might as well forget about the xor cipher as well
-        // std::string key = xor_cipher("hQ36XB6yTk+zO02ysyiowt8yC1buK+nbLWyfY40EXoU=", "PrusaSlicer");
-        // std::string iv  = xor_cipher("Wld+ampndVJecmVjYH5cWQ==", "PrusaSlicer");
-        // std::string key = xor_cipher("\x85\x0d\xfa\x5c\x1e\xb2\x4e\x4f\xb3\x3b\x4d\xb2\xb3\x28\xa8\xc2\xdf\x32\x0b\x56\xee\x2b\xe9\xdb\x2d"
-        //                             "\x6c\x9f\x63\x8d\x04\x5e\x85",
-        //                             "UVtools");
-        // std::string   iv  = xor_cipher("\x5a\x57\x7e\x6a\x6a\x67\x75\x52\x5e\x72\x65\x63\x60\x7e\x5c\x59", "UVtools");
-        std::string key = "\xD0\x5B\x8E\x33\x71\xDE\x3D\x1A\xE5\x4F\x22\xDD\xDF\x5B\xFD\x94\xAB\x5D\x64\x3A\x9D\x7E\xBF\xAF\x42\x03\xF3\x10"
-                          "\xD8\x52\x2A\xEA";
-        std::string iv  = "\x0F\x01\x0A\x05\x05\x0B\x06\x07\x08\x06\x0A\x0C\x0C\x0D\x09\x0F";
+        std::string key = xor_cipher("\x80\x29\xFB\x40\x10\x8D\x51\x73\x86\x2A\x50\x8D\xAD\x2E\x8E\xF5\xF8\x31\x0D\x59\xF8\x0C\xEF\xDD\x37"
+                                     "\x70\x92\x43\xB4\x3B\x49\x8F",
+                                     "PrusaSlicer");
+        std::string iv  = xor_cipher("\x5F\x73\x7F\x76\x64\x58\x6A\x6E\x6B\x63\x78\x5C\x7E\x78\x7A\x6E", "PrusaSlicer");
         unsigned char hash[SHA256_DIGEST_LENGTH];
         unsigned char encrypted_hash[512];
         unsigned char encrypted_header[512];
@@ -602,15 +595,14 @@ void CtbSLAArchive::export_print(const std::string     fname,
         std::string hash_string{reinterpret_cast<char *>(hash), hash_len};
 
         int encrypted_len        = encrypt(hash_string, key, iv, encrypted_hash);
-        int header_encrypted_len = 288;
+        int header_encrypted_len = get_struct_size(decrypted_header.header_struct);
 
         // Fill out all the offsets now that we have the info we need
         unencrypted_header.signature_size        = encrypted_len;
         unencrypted_header.encrypted_header_size = header_encrypted_len;
 
         unencrypted_header.encrypted_header_offset          = get_struct_size(unencrypted_header);
-        unencrypted_header.signature_offset                 = unencrypted_header.encrypted_header_offset + header_encrypted_len;
-        decrypted_header.header_struct.large_preview_offset = unencrypted_header.signature_offset + encrypted_len;
+        decrypted_header.header_struct.large_preview_offset = unencrypted_header.encrypted_header_offset + header_encrypted_len;
         decrypted_header.header_struct.small_preview_offset = decrypted_header.header_struct.large_preview_offset +
                                                               get_struct_size(large_preview) + preview_images.large.size();
         decrypted_header.header_struct.machine_name_offset = decrypted_header.header_struct.small_preview_offset +
@@ -633,18 +625,17 @@ void CtbSLAArchive::export_print(const std::string     fname,
         layer_header.rest_time_before_lift   = decrypted_header.header_struct.rest_time_before_lift;
         layer_header.rest_time_after_lift    = decrypted_header.header_struct.rest_time_after_lift;
         layer_header.rest_time_after_retract = decrypted_header.header_struct.rest_time_after_retract;
+
         std::string decrypted_header_string{decrypted_header.buffer, get_struct_size(decrypted_header.header_struct)};
-        int         new_header_encrypted_len = encrypt(decrypted_header_string, key, iv, encrypted_header);
-        assert(new_header_encrypted_len == header_encrypted_len);
+        header_encrypted_len = encrypt(decrypted_header_string, key, iv, encrypted_header);
 
         try {
             // open the file and write the contents
             std::ofstream out;
             out.open(fname, std::ios::binary | std::ios::out | std::ios::trunc);
             // Can't do this until we know where the encryption settings will live
-            ctb_write_section(out, unencrypted_header);
+            out.seekp(unencrypted_header.encrypted_header_offset);
             out.write(reinterpret_cast<const char *>(encrypted_header), header_encrypted_len);
-            out.write(reinterpret_cast<const char *>(encrypted_hash), encrypted_len);
             ctb_write_preview(out, large_preview, small_preview, preview_pad, is_encrypted, preview_images);
 
             ctb_write_out(out, machine_name);
@@ -702,6 +693,12 @@ void CtbSLAArchive::export_print(const std::string     fname,
                 layer_header.pos_z += decrypted_header.header_struct.layer_height;
                 i++;
             }
+
+            out.seekp(layer_data_offset);
+            unencrypted_header.signature_offset = layer_data_offset;
+            out.write(reinterpret_cast<const char *>(encrypted_hash), encrypted_len);
+            out.seekp(0);
+            ctb_write_section(out, unencrypted_header);
             out.close();
         } catch (std::exception &e) {
             BOOST_LOG_TRIVIAL(error) << e.what();
