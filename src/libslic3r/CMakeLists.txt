@@ -548,6 +548,7 @@ target_include_directories(libslic3r PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} PUBLIC 
 target_include_directories(libslic3r PUBLIC ${EXPAT_INCLUDE_DIRS})
 
 find_package(JPEG REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 target_link_libraries(libslic3r
     libnest2d
@@ -561,8 +562,8 @@ target_link_libraries(libslic3r
     libexpat
     glu-libtess
     qhull
-    ssl
-    crypto
+    OpenSSL::SSL
+    OpenSSL::Crypto
     semver
     TBB::tbb
     TBB::tbbmalloc
