@@ -237,14 +237,29 @@ void fill_header(ctb_format_header          &h,
     print_params.zero_pad3           = 0;
     print_params.zero_pad4           = 0;
 
-    slicer_info.bot_lift_dist2       = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
-    slicer_info.bot_lift_speed2      = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
-    slicer_info.lift_height2         = get_cfg_value<float>(cfg, "tsmc_lift_distance");
-    slicer_info.lift_speed2          = get_cfg_value<float>(cfg, "tsmc_lift_speed");
-    slicer_info.retract_height2      = get_cfg_value<float>(cfg, "tsmc_retract_height");
-    slicer_info.retract_speed2       = get_cfg_value<float>(cfg, "tsmc_sla_retract_speed");
+    if (get_cfg_value<bool>(cfg, "enable_tsmc") == true) {
+        slicer_info.bot_lift_height2        = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
+        slicer_info.bot_lift_speed2         = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
+        slicer_info.lift_height2            = get_cfg_value<float>(cfg, "tsmc_lift_distance");
+        slicer_info.lift_speed2             = get_cfg_value<float>(cfg, "tsmc_lift_speed");
+        slicer_info.retract_height2         = get_cfg_value<float>(cfg, "tsmc_retract_height");
+        slicer_info.retract_speed2          = get_cfg_value<float>(cfg, "tsmc_sla_retract_speed");
+        slicer_info.rest_time_after_lift2   = get_cfg_value<float>(cfg, "tsmc_rest_time_after_lift");
+        print_params_v4.bot_retract_speed2  = get_cfg_value<float>(cfg, "tsmc_sla_bot_retract_speed");
+        print_params_v4.bot_retract_height2 = get_cfg_value<float>(cfg, "tsmc_bot_retract_height");
+    } else {
+        slicer_info.bot_lift_height2        = 0;
+        slicer_info.bot_lift_speed2         = 0;
+        slicer_info.lift_height2            = 0;
+        slicer_info.lift_speed2             = 0;
+        slicer_info.retract_height2         = 0;
+        slicer_info.retract_speed2          = 0;
+        slicer_info.rest_time_after_lift2   = 0;
+        print_params_v4.bot_retract_speed2  = 0;
+        print_params_v4.bot_retract_height2 = 0;
+    }
     slicer_info.rest_time_after_lift = get_cfg_value<float>(cfg, "rest_time_after_lift");
-    slicer_info.anti_alias_flag      = 0x7; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    slicer_info.anti_alias_flag      = 0x0F; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
     slicer_info.zero_pad1            = 0;
     // TODO: Maybe implement this setting in PrusaSlicer?
     slicer_info.per_layer_settings = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
@@ -255,13 +270,11 @@ void fill_header(ctb_format_header          &h,
     // TODO: Does this need to be changed?
     slicer_info.software_version        = 0x01090000; // ctb v3 = 17171200 | ctb v4 pro = 16777216
     slicer_info.rest_time_after_retract = get_cfg_value<float>(cfg, "rest_time_after_retract");
-    slicer_info.rest_time_after_lift2   = get_cfg_value<float>(cfg, "rest_time_after_lift2");
     slicer_info.transition_layer_count  = get_cfg_value<uint32_t>(cfg, "faded_layers");
     slicer_info.zero_pad2               = 0;
     slicer_info.zero_pad3               = 0;
 
     print_params_v4.bot_retract_speed       = get_cfg_value<float>(cfg, "sla_bot_retract_speed");
-    print_params_v4.bot_retract_speed2      = get_cfg_value<float>(cfg, "tsmc_sla_bot_retract_speed");
     print_params_v4.zero_pad1               = 0;
     print_params_v4.four1                   = 4.0f;
     print_params_v4.zero_pad2               = 0;
@@ -269,10 +282,9 @@ void fill_header(ctb_format_header          &h,
     print_params_v4.rest_time_after_retract = slicer_info.rest_time_after_retract;
     print_params_v4.rest_time_after_lift    = slicer_info.rest_time_after_lift;
     print_params_v4.rest_time_before_lift   = get_cfg_value<float>(cfg, "rest_time_before_lift");
-    print_params_v4.bot_retract_height2     = get_cfg_value<float>(cfg, "tsmc_bot_retract_height");
     print_params_v4.unknown1                = 2955.996;
     print_params_v4.unknown2                = 73470;
-    print_params_v4.unknown3                = 5;
+    print_params_v4.unknown3                = 4;
     print_params_v4.last_layer_index        = layer_count - 1;
     print_params_v4.zero_pad3               = 0;
     print_params_v4.zero_pad4               = 0;
@@ -297,19 +309,21 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     u.unknown1 = 0;
     u.unknown2 = 0;
     u.unknown3 = 0;
-    u.unknown4 = 0;
-    u.unknown5 = 0;
+    u.unknown4 = 1;
+    u.unknown5 = 1;
     u.unknown6 = 0;
-    u.unknown7 = 0;
-    u.unknown9 = 0;
+    u.unknown7 = 42;
+    u.unknown8 = 0;
 
     // Version matches the CTB version
     h.checksum        = 0xCAFEBABE;
     h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
     h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
     h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
-    h.overall_height  = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
+    h.unknown1        = 0;
+    h.unknown2        = 0;
     h.layer_height    = get_cfg_value<float>(cfg, "layer_height");
+    h.overall_height  = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
     h.exposure        = get_cfg_value<float>(cfg, "exposure_time");
     h.bot_exposure    = get_cfg_value<float>(cfg, "initial_exposure_time");
     h.light_off_delay = get_cfg_value<float>(cfg, "light_off_time");
@@ -329,27 +343,43 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     h.resin_mass_g        = get_cfg_value<float>(cfg, "bottle_weight") * 1000.0f;
     h.resin_cost          = get_cfg_value<float>(cfg, "bottle_cost");
     h.bot_light_off_delay = get_cfg_value<float>(cfg, "bot_light_off_time");
+    h.unknown3            = 1;
     h.pwm_level           = (uint16_t) (get_cfg_value<float>(cfg, "light_intensity") / 100 * 255);
     h.bot_pwm_level       = (uint16_t) (get_cfg_value<float>(cfg, "bot_light_intensity") / 100 * 255);
     h.layer_xor_key       = 0;
     // h.layer_xor_key       = 0xEFBEADDE;
     //  h.level_set_count            = 0;  // Useless unless antialiasing for cbddlp
-    h.bot_lift_dist2       = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
-    h.bot_lift_speed2      = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
-    h.lift_height2         = get_cfg_value<float>(cfg, "tsmc_lift_distance");
-    h.lift_speed2          = get_cfg_value<float>(cfg, "tsmc_lift_speed");
-    h.retract_height2      = get_cfg_value<float>(cfg, "tsmc_retract_height");
-    h.retract_speed2       = get_cfg_value<float>(cfg, "tsmc_sla_retract_speed");
+    if (get_cfg_value<bool>(cfg, "enable_tsmc") == true) {
+        h.bot_lift_height2      = get_cfg_value<float>(cfg, "tsmc_bot_lift_distance");
+        h.bot_lift_speed2       = get_cfg_value<float>(cfg, "tsmc_bot_lift_speed");
+        h.lift_height2          = get_cfg_value<float>(cfg, "tsmc_lift_distance");
+        h.lift_speed2           = get_cfg_value<float>(cfg, "tsmc_lift_speed");
+        h.retract_height2       = get_cfg_value<float>(cfg, "tsmc_retract_height");
+        h.retract_speed2        = get_cfg_value<float>(cfg, "tsmc_sla_retract_speed");
+        h.bot_retract_speed2    = get_cfg_value<float>(cfg, "tsmc_sla_bot_retract_speed");
+        h.bot_retract_height2   = get_cfg_value<float>(cfg, "tsmc_bot_retract_height");
+        h.rest_time_after_lift2 = get_cfg_value<float>(cfg, "tsmc_rest_time_after_lift");
+    } else {
+        h.bot_lift_height2      = 0;
+        h.bot_lift_speed2       = 0;
+        h.lift_height2          = 0;
+        h.lift_speed2           = 0;
+        h.retract_height2       = 0;
+        h.retract_speed2        = 0;
+        h.bot_retract_speed2    = 0;
+        h.bot_retract_height2   = 0;
+        h.rest_time_after_lift2 = 0;
+    }
     h.rest_time_after_lift = get_cfg_value<float>(cfg, "rest_time_after_lift");
-    h.anti_alias_flag      = 0x7; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    h.anti_alias_flag      = 0x0F; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
     h.zero_pad1            = 0;
     // TODO: Maybe implement this setting in PrusaSlicer?
     h.per_layer_settings             = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
+    h.unknown4                       = 0;
+    h.unknown5                       = 1;
     h.rest_time_after_retract        = get_cfg_value<float>(cfg, "rest_time_after_retract");
-    h.rest_time_after_lift2          = get_cfg_value<float>(cfg, "rest_time_after_lift2");
     h.transition_layer_count         = get_cfg_value<uint32_t>(cfg, "faded_layers");
     h.bot_retract_speed              = get_cfg_value<float>(cfg, "sla_bot_retract_speed");
-    h.bot_retract_speed2             = get_cfg_value<float>(cfg, "tsmc_sla_bot_retract_speed");
     h.zero_pad2                      = 0;
     h.four1                          = 4.0f;
     h.zero_pad3                      = 0;
@@ -357,10 +387,9 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     h.rest_time_after_retract_repeat = h.rest_time_after_retract;
     h.rest_time_after_lift_repeat    = h.rest_time_after_lift;
     h.rest_time_before_lift          = get_cfg_value<float>(cfg, "rest_time_before_lift");
-    h.bot_retract_height2            = get_cfg_value<float>(cfg, "tsmc_bot_retract_height");
     h.unknown6                       = 2955.996;
     h.unknown7                       = 73470;
-    h.unknown8                       = 5;
+    h.unknown8                       = 4;
     h.last_layer_index               = layer_count - 1;
     h.zero_pad4                      = 0;
     h.zero_pad5                      = 0;
@@ -665,7 +694,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
                     layer_header.light_off_delay = decrypted_header.header_struct.bot_light_off_delay;
                     layer_header.lift_height     = decrypted_header.header_struct.bot_lift_height;
                     layer_header.lift_speed      = decrypted_header.header_struct.bot_lift_speed;
-                    layer_header.lift_height2    = decrypted_header.header_struct.bot_lift_dist2;
+                    layer_header.lift_height2    = decrypted_header.header_struct.bot_lift_height2;
                     layer_header.lift_speed2     = decrypted_header.header_struct.bot_lift_speed2;
                     layer_header.retract_speed   = decrypted_header.header_struct.bot_retract_speed;
                     layer_header.retract_height2 = decrypted_header.header_struct.bot_retract_height2;
@@ -754,7 +783,7 @@ void CtbSLAArchive::export_print(const std::string     fname,
                     layer_data.light_off_delay    = print_params.bot_light_off_delay;
                     layer_data_ex.lift_height     = print_params.bot_lift_height;
                     layer_data_ex.lift_speed      = print_params.bot_lift_speed;
-                    layer_data_ex.lift_height2    = slicer_info.bot_lift_dist2;
+                    layer_data_ex.lift_height2    = slicer_info.bot_lift_height2;
                     layer_data_ex.lift_speed2     = slicer_info.bot_lift_speed2;
                     layer_data_ex.retract_speed   = print_params_v4.bot_retract_speed;
                     layer_data_ex.retract_height2 = print_params_v4.bot_retract_height2;
