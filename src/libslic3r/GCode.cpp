@@ -1504,11 +1504,16 @@ void GCodeGenerator::process_layers(
         });
     // The pipeline is variable: The vase mode filter is optional.
     const auto spiral_vase = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
-        [spiral_vase = this->m_spiral_vase.get()](LayerResult in) -> LayerResult {
+        [spiral_vase = this->m_spiral_vase.get(), &layers_to_print](LayerResult in) -> LayerResult {
             if (in.nop_layer_result)
                 return in;
             spiral_vase->enable(in.spiral_vase_enable);
-            return { spiral_vase->process_layer(std::move(in.gcode)), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush};
+
+            if (in.layer_id == layers_to_print.size() - 1) {
+                spiral_vase->setLastLayer();
+            }
+
+            return {spiral_vase->process_layer(std::move(in.gcode)), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush};
         });
     const auto pressure_equalizer = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
         [pressure_equalizer = this->m_pressure_equalizer.get()](LayerResult in) -> LayerResult {

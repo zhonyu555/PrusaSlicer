@@ -2607,6 +2607,13 @@ void PrintConfigDef::init_fff_params()
                    "It won't work when printing more than one single object.");
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("spiral_vase_flush_finish", coBool);
+    def->label = L("Spiral vase flush finish");
+    def->tooltip = L("End a spiral vase mode print with a flush layer. "
+                   "Disable to restore the old behavior, which will end the print with a normal "
+                   "vase mode layer - i.e. a slightly tilted layer.");
+    def->set_default_value(new ConfigOptionBool(true));
+
     def = this->add("standby_temperature_delta", coInt);
     def->label = L("Temperature variation");
     // TRN PrintSettings : "Ooze prevention" > "Temperature variation"

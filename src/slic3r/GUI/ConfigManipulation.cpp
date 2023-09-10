@@ -237,6 +237,9 @@ void ConfigManipulation::toggle_print_fff_options(DynamicPrintConfig* config)
     toggle_field("infill_anchor", has_infill_anchors);
 
     bool has_spiral_vase         = config->opt_bool("spiral_vase");
+    bool have_spiral_vase_flush_finish = config->opt_bool("spiral_vase_flush_finish");
+    toggle_field("spiral_vase_flush_finish", has_spiral_vase);
+    
     bool has_top_solid_infill 	 = config->opt_int("top_solid_layers") > 0;
     bool has_bottom_solid_infill = config->opt_int("bottom_solid_layers") > 0;
     bool has_solid_infill 		 = has_top_solid_infill || has_bottom_solid_infill;
