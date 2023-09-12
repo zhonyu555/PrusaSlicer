@@ -3909,11 +3909,12 @@ void PrintConfigDef::init_sla_params()
     def->min      = 0;
     def->set_default_value(new ConfigOptionPercent(100));
 
-    def           = this->add("rest_time_after_lift", coFloat);
-    def->label    = L("Rest time after lifting the build plate");
-    def->tooltip  = L("Rest time after lifting the build plate");
-    def->sidetext = L("s");
-    def->min      = 0;
+    def             = this->add("rest_time_after_lift", coFloat);
+    def->full_label = L("Rest time after lifting the build plate");
+    def->label      = L("First Stage");
+    def->tooltip    = L("Rest time after lifting the build plate");
+    def->sidetext   = L("s");
+    def->min        = 0;
     def->set_default_value(new ConfigOptionFloat(1));
 
     def           = this->add("rest_time_after_retract", coFloat);
@@ -3968,7 +3969,7 @@ void PrintConfigDef::init_sla_params()
     def->category = L("tsmc");
     def->sidetext = L("mm/m");
     def->min      = 0;
-    def->set_default_value(new ConfigOptionFloat(45));
+    def->set_default_value(new ConfigOptionFloat(0));
 
     def           = this->add("tsmc_sla_bot_retract_speed", coFloat);
     def->label    = L("Second Stage");
