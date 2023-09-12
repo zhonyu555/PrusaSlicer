@@ -90,7 +90,7 @@ template<typename T> T get_cfg_value(const DynamicConfig &cfg, const std::string
         if (auto opt = cfg.option(key)) {
             if (opt->type() == Slic3r::ConfigOptionType::coInt)
                 ret = (T) opt->getInt();
-            else if (opt->type() == Slic3r::ConfigOptionType::coFloat)
+            else if (opt->type() == Slic3r::ConfigOptionType::coFloat || opt->type() == Slic3r::ConfigOptionType::coPercent)
                 ret = (T) opt->getFloat();
         }
     }
@@ -196,19 +196,20 @@ void fill_header(ctb_format_header          &h,
 
     h.magic = MAGIC_V4;
     // Version matches the CTB version
-    h.version         = 4;
-    h.bed_size_x      = get_cfg_value<float>(cfg, "display_width");
-    h.bed_size_y      = get_cfg_value<float>(cfg, "display_height");
-    h.bed_size_z      = get_cfg_value<float>(cfg, "max_print_height");
-    h.zero_pad        = 0;
-    h.layer_height    = get_cfg_value<float>(cfg, "layer_height");
-    h.overall_height  = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
-    h.exposure        = get_cfg_value<float>(cfg, "exposure_time");
-    h.bot_exposure    = get_cfg_value<float>(cfg, "initial_exposure_time");
-    h.light_off_delay = get_cfg_value<float>(cfg, "light_off_time");
-    h.bot_layer_count = get_cfg_value<uint32_t>(cfg, "faded_layers");
-    h.res_x           = get_cfg_value<uint32_t>(cfg, "display_pixels_x");
-    h.res_y           = get_cfg_value<uint32_t>(cfg, "display_pixels_y");
+    h.version              = 4;
+    h.bed_size_x           = get_cfg_value<float>(cfg, "display_width");
+    h.bed_size_y           = get_cfg_value<float>(cfg, "display_height");
+    h.bed_size_z           = get_cfg_value<float>(cfg, "max_print_height");
+    h.zero_pad             = 0;
+    h.layer_height         = get_cfg_value<float>(cfg, "layer_height");
+    h.overall_height       = layer_count * h.layer_height; // model height- might be a way to get this from prusa slicer
+    h.exposure             = get_cfg_value<float>(cfg, "exposure_time");
+    h.bot_exposure         = get_cfg_value<float>(cfg, "initial_exposure_time");
+    h.light_off_delay      = get_cfg_value<float>(cfg, "light_off_time");
+    h.bot_layer_count      = get_cfg_value<uint32_t>(cfg, "faded_layers");
+    h.res_x                = get_cfg_value<uint32_t>(cfg, "display_pixels_x");
+    h.res_y                = get_cfg_value<uint32_t>(cfg, "display_pixels_y");
+    h.large_preview_offset = get_struct_size(h);
     // Layer table offset is set below after the v4 params offset is created
     h.layer_count       = layer_count;
     h.print_time        = stats.estimated_print_time;
@@ -736,8 +737,10 @@ void CtbSLAArchive::export_print(const std::string     fname,
         }
     } else {
         // Fill out all the offsets now that we have the info we need
-        header.small_preview_offset        = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size();
-        header.print_params_offset         = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size();
+        header.small_preview_offset = header.large_preview_offset + get_struct_size(large_preview) + preview_images.large.size() +
+                                      get_struct_size(preview_pad);
+        header.print_params_offset = header.small_preview_offset + get_struct_size(small_preview) + preview_images.small.size() +
+                                     get_struct_size(preview_pad);
         header.slicer_info_offset          = header.print_params_offset + header.print_params_size;
         slicer_info.machine_name_offset    = header.slicer_info_offset + header.slicer_info_size;
         slicer_info.print_params_v4_offset = slicer_info.machine_name_offset + machine_name.length();

@@ -119,7 +119,7 @@ typedef struct ctb_format_slicer_info
     float         rest_time_after_lift;
     std::uint32_t machine_name_offset;
     std::uint32_t machine_name_size;
-    std::uint8_t  anti_alias_flag; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    std::uint8_t  anti_alias_flag    = 0x0F; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
     std::uint16_t zero_pad1          = 0;
     std::uint8_t  per_layer_settings = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
     std::uint32_t timestamp_minutes;      // Time since epoch in minutes
@@ -207,6 +207,7 @@ typedef struct unencrypted_format_header
     uint32_t unknown8 = 0;
 } unencrypted_format_header;
 
+#pragma pack(push, 1)
 typedef struct decrypted_format_header
 {
     uint64_t checksum;
@@ -251,11 +252,11 @@ typedef struct decrypted_format_header
     float    rest_time_after_lift;
     uint32_t machine_name_offset;
     uint32_t machine_name_size;
-    uint8_t  anti_alias_flag; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
+    uint8_t  anti_alias_flag    = 0x0F; // 0 [No AA] / 8 [AA] for cbddlp files, 7(0x7) [No AA] / 15(0x0F) [AA] for ctb files
     uint16_t zero_pad1          = 0;
     uint8_t  per_layer_settings = 0; // 0 to not support, 0x20 (32) for v3 ctb and 0x40 for v4 ctb files to allow per layer parameters
     uint32_t unknown4           = 0;
-    uint32_t unknown5           = 0;
+    uint32_t unknown5           = 1;
     float    rest_time_after_retract;
     float    rest_time_after_lift2;
     uint32_t transition_layer_count;
@@ -284,6 +285,7 @@ typedef struct decrypted_format_header
     uint32_t zero_pad10     = 0;
     uint32_t zero_pad11     = 0;
 } decrypted_format_header;
+#pragma pack(pop)
 
 typedef struct unencrypted_format_layer_pointers
 {
