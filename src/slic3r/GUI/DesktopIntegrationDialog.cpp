@@ -468,6 +468,7 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
     // Path to appimage
     const char* appimage_env = std::getenv("APPIMAGE");
     const char* container_env = std::getenv("container");
+	bool is_flatpak = false;
     std::string excutable_path;
     if (appimage_env) {
         try {
@@ -479,7 +480,8 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
             return;
         }
     }
-    else if (strcmp(container_env, "flatpak") == 0) {
+    else if (container_env && strcmp(container_env, "flatpak") == 0) {
+		is_flatpak = true;
         const char* flatpak_id = std::getenv("FLATPAK_ID");
         excutable_path = "flatpak run " + std::string(flatpak_id);
     }
@@ -497,7 +499,7 @@ void DesktopIntegrationDialog::perform_downloader_desktop_integration()
     }
 
     // For flatpak there are not required neither quotes nor escape
-    if (strcmp(container_env, "flatpak") != 0) {
+    if (!is_flatpak) {
         // Escape ' characters in appimage, other special symbols will be esacaped in desktop file by 'excutable_path'
         //boost::replace_all(excutable_path, "'", "'\\''");
         excutable_path = "\"" + escape_string(excutable_path) + "\"";
