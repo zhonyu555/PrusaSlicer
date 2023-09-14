@@ -588,6 +588,8 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionBool,                thick_bridges))
     ((ConfigOptionFloat,               xy_size_compensation))
     ((ConfigOptionBool,                wipe_into_objects))
+    ((ConfigOptionBool,                errors_are_warnings))
+
 )
 
 PRINT_CONFIG_CLASS_DEFINE(

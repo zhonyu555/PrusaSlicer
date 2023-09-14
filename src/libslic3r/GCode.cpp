@@ -577,6 +577,9 @@ GCode::ObjectsLayerToPrint GCode::collect_layers_to_print(const PrintObject& obj
 {
     GCode::ObjectsLayerToPrint layers_to_print;
     layers_to_print.reserve(object.layers().size() + object.support_layers().size());
+    const PrintObjectConfig &config = object.config();
+
+
 
     /*
     // Calculate a minimum support layer height as a minimum over all extruders, but not smaller than 10um.
@@ -623,19 +626,19 @@ GCode::ObjectsLayerToPrint GCode::collect_layers_to_print(const PrintObject& obj
         // Check that there are extrusions on the very first layer. The case with empty
         // first layer may result in skirt/brim in the air and maybe other issues.
         if (layers_to_print.size() == 1u) {
-#if 0
-            if (!has_extrusions)
-                throw Slic3r::SlicingError(_u8L("There is an object with no extrusions in the first layer.") + "\n" +
+            if(!config.errors_are_warnings) {
+                if (!has_extrusions)
+                    throw Slic3r::SlicingError(_u8L("There is an object with no extrusions in the first layer.") + "\n" +
                                            _u8L("Object name") + ": " + object.model_object()->name);
-#else
-            if (!has_extrusions) {
-                std::string float_warning;
+            } else {
+                if (!has_extrusions) {
+                    std::string float_warning;
 
-                float_warning += Slic3r::format(_u8L("First layer is empty. This may not be what you want")) +"\n";
-                const_cast<Print*>(object.print())->active_step_add_warning(
-                    PrintStateBase::WarningLevel::CRITICAL, float_warning);
+                    float_warning += Slic3r::format(_u8L("First layer is empty. This may not be what you want")) +"\n";
+                    const_cast<Print*>(object.print())->active_step_add_warning(
+                        PrintStateBase::WarningLevel::CRITICAL, float_warning);
+                }
             }
-#endif
         }
 
         // In case there are extrusions on this layer, check there is a layer to lay it on.
