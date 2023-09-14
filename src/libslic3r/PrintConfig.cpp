@@ -1439,6 +1439,12 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(0));
 
+    def = this->add("errors_are_warnings", coBool);
+    def->label = L("Errors are Warnings");
+    def->tooltip = L("Enable this to simply warn for some conditions thar would normally be errors. This may be useful for advanced users.");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(0));
+
     def = this->add("gcode_flavor", coEnum);
     def->label = L("G-code flavor");
     def->tooltip = L("Some G/M-code commands, including temperature control and others, are not universal. "
