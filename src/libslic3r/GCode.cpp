@@ -626,12 +626,11 @@ GCode::ObjectsLayerToPrint GCode::collect_layers_to_print(const PrintObject& obj
         // Check that there are extrusions on the very first layer. The case with empty
         // first layer may result in skirt/brim in the air and maybe other issues.
         if (layers_to_print.size() == 1u) {
-            if(!config.errors_are_warnings) {
-                if (!has_extrusions)
+            if(!has_extrusions) {
+                if(!config.errors_are_warnings) {
                     throw Slic3r::SlicingError(_u8L("There is an object with no extrusions in the first layer.") + "\n" +
                                            _u8L("Object name") + ": " + object.model_object()->name);
-            } else {
-                if (!has_extrusions) {
+                } else {
                     std::string float_warning;
 
                     float_warning += Slic3r::format(_u8L("First layer is empty. This may not be what you want")) +"\n";
