@@ -1,8 +1,21 @@
 #include "CTB.hpp"
+
+#include "GCode/ThumbnailData.hpp"
+#include "SLA/RasterBase.hpp"
+#include "libslic3r/SLAPrint.hpp"
+
+#include <boost/log/trivial.hpp>
+#include <boost/pfr/core.hpp>
+
 #include <openssl/sha.h>
 #include <openssl/evp.h>
 #include <boost/pfr/core.hpp>
 #include <cstring>
+
+#include <sstream>
+#include <iostream>
+#include <fstream>
+#include <string>
 
 // Special thanks to UVTools for the CTBv4 update and
 // Catibo for the excellent writeup(https://github.com/cbiffle/catibo/blob/master/doc/cbddlp-ctb.adoc)
@@ -283,7 +296,7 @@ void fill_header(ctb_format_header          &h,
     print_params_v4.rest_time_after_retract = slicer_info.rest_time_after_retract;
     print_params_v4.rest_time_after_lift    = slicer_info.rest_time_after_lift;
     print_params_v4.rest_time_before_lift   = get_cfg_value<float>(cfg, "rest_time_before_lift");
-    print_params_v4.unknown1                = 2955.996;
+    print_params_v4.unknown1                = 2955.996f;
     print_params_v4.unknown2                = 73470;
     print_params_v4.unknown3                = 4;
     print_params_v4.last_layer_index        = layer_count - 1;
@@ -388,7 +401,7 @@ void fill_header_encrypted(unencrypted_format_header &u, decrypted_format_header
     h.rest_time_after_retract_repeat = h.rest_time_after_retract;
     h.rest_time_after_lift_repeat    = h.rest_time_after_lift;
     h.rest_time_before_lift          = get_cfg_value<float>(cfg, "rest_time_before_lift");
-    h.unknown6                       = 2955.996;
+    h.unknown6                       = 2955.996f;
     h.unknown7                       = 73470;
     h.unknown8                       = 4;
     h.last_layer_index               = layer_count - 1;
@@ -578,8 +591,8 @@ void CtbSLAArchive::export_print(const std::string     fname,
     unencrypted_format_layer_pointers layer_pointers{};
 
     // This is all zeros- just use the size
-    int         reserved_size = 384;
-    std::string disclaimer_text =
+    int               reserved_size = 384;
+    const std::string disclaimer_text =
         "Layout and record format for the ctb and cbddlp file types are the copyrighted programs or codes of CBD Technology (China) "
         "Inc..The Customer or User shall not in any manner reproduce, distribute, modify, decompile, disassemble, decrypt, extract, "
         "reverse engineer, lease, assign, or sublicense the said programs or codes.";

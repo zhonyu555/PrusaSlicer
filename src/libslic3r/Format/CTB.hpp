@@ -1,21 +1,12 @@
 #ifndef _SLIC3R_FORMAT_CTB_HPP_
 #define _SLIC3R_FORMAT_CTB_HPP_
 
-#include "GCode/ThumbnailData.hpp"
-#include "SLA/RasterBase.hpp"
-#include "libslic3r/SLAPrint.hpp"
-#include "libslic3r/PrintConfig.hpp"
-#include "SLAArchiveWriter.hpp"
 #include "SLAArchiveFormatRegistry.hpp"
+#include "SLAArchiveWriter.hpp"
+#include "libslic3r/PrintConfig.hpp"
 
 #include <cstdint>
-#include <sstream>
-#include <iostream>
-#include <fstream>
-#include <string>
-
-#include <boost/log/trivial.hpp>
-#include <boost/pfr/core.hpp>
+#include <vector>
 
 constexpr uint16_t CTB_SLA_FORMAT_VERSION_4 = 4;
 
@@ -145,9 +136,9 @@ typedef struct ctb_format_print_params_v4
     float         rest_time_after_lift;
     float         rest_time_before_lift;
     float         bot_retract_height2;
-    float         unknown1 = 2955.996; // 2955.996 or uint:1161347054 but changes
-    std::uint32_t unknown2 = 73470;    // 73470 but changes
-    std::uint32_t unknown3 = 5;        // 5 apparently??
+    float         unknown1 = 2955.996f; // 2955.996 or uint:1161347054 but changes
+    std::uint32_t unknown2 = 73470;     // 73470 but changes
+    std::uint32_t unknown3 = 5;         // 5 apparently??
     std::uint32_t last_layer_index;
     std::uint32_t zero_pad3 = 0;
     std::uint32_t zero_pad4 = 0;
@@ -270,9 +261,9 @@ typedef struct decrypted_format_header
     float    rest_time_after_lift_repeat;
     float    rest_time_before_lift;
     float    bot_retract_height2;
-    float    unknown6 = 2955.996; // 2955.996 or uint:1161347054 but changes
-    uint32_t unknown7 = 73470;    // 73470 but changes
-    uint32_t unknown8 = 5;        // 5 apparently??
+    float    unknown6 = 2955.996f; // 2955.996 or uint:1161347054 but changes
+    uint32_t unknown7 = 73470;     // 73470 but changes
+    uint32_t unknown8 = 5;         // 5 apparently??
     uint32_t last_layer_index;
     uint32_t zero_pad4 = 0;
     uint32_t zero_pad5 = 0;
