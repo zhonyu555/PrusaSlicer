@@ -1090,9 +1090,9 @@ void WipeTower::toolchange_Wipe(
     }
     
     // Before starting wipe with a single-extruder MMU, wait for destination temperature if warming up.
-    // If destination temp is cooler, set it without waiting; we can purge while it cools.
-    if (m_semm && new_temperature != 0)
-        writer.set_extruder_temp(new_temperature, (new_temperature > m_old_temperature));
+    // If destination temp is cooler, wait until after wipe to set it (for compatibility with fast-cooling extruders).
+    if (m_semm && new_temperature > m_old_temperature)
+        writer.set_extruder_temp(new_temperature, true);
 
     // now the wiping itself:
 	for (int i = 0; true; ++i)	{
@@ -1122,6 +1122,10 @@ void WipeTower::toolchange_Wipe(
         writer.extrude(writer.x() + (i % 4 == 0 ? -1.f : (i % 4 == 1 ? 1.f : 0.f)) * 1.5f*m_perimeter_width, writer.y() + dy);
 		m_left_to_right = !m_left_to_right;
 	}
+    // For single-extruder MMU, we wait until here to set cooler temperature (if applicable)
+    // so that a fast-cooling extruder can completely purge the higher temperature material
+    if (m_semm && new_temperature != 0 && new_temperature < m_old_temperature)
+        writer.set_extruder_temp(new_temperature, false);
 
     // We may be going back to the model - wipe the nozzle. If this is followed
     // by finish_layer, this wipe path will be overwritten.
@@ -1135,7 +1139,7 @@ void WipeTower::toolchange_Wipe(
     writer.set_extrusion_flow(m_extrusion_flow); // Reset the extrusion flow.
 
     // Before starting to print with a single-extruder MMU, AND if cooling down,
-    // wait for destination temperature to settle because temperature may bounce while cooling.
+    // wait for destination temperature to settle before resuming print.
     // If new temperature is higher, then it's already correct from before starting the wipe.
     if (m_semm && new_temperature != 0 && new_temperature < m_old_temperature)
         writer.set_extruder_temp(new_temperature, true);
