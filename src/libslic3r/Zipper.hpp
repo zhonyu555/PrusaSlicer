@@ -32,7 +32,7 @@ public:
 
     // Will blow up in a runtime exception if the file cannot be created.
     explicit Zipper(const std::string& zipfname,
-                    e_compression level = FAST_COMPRESSION);
+                    e_compression level = TIGHT_COMPRESSION);
     ~Zipper();
 
     // No copies allwed, this is a file resource...

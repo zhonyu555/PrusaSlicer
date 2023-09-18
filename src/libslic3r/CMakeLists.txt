@@ -135,12 +135,19 @@ set(SLIC3R_SOURCES
     Format/SL1.cpp
     Format/SL1_SVG.hpp
     Format/SL1_SVG.cpp
+<<<<<<< HEAD
     Format/AnycubicSLA.hpp
     Format/AnycubicSLA.cpp
     Format/STEP.hpp
     Format/STEP.cpp
     Format/SLAArchiveFormatRegistry.hpp
     Format/SLAArchiveFormatRegistry.cpp
+=======
+    Format/SL1_Binary.hpp
+    Format/SL1_Binary.cpp
+    Format/pwmx.hpp
+    Format/pwmx.cpp
+>>>>>>> remotes/origin/vb_sl2_binary_experiment
     GCode/ThumbnailData.cpp
     GCode/ThumbnailData.hpp
     GCode/Thumbnails.cpp
