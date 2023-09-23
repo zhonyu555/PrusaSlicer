@@ -1,4 +1,4 @@
-
+Note: MaxiDev's fork.
 ![PrusaSlicer logo](/resources/icons/PrusaSlicer.png?raw=true)
 
 # PrusaSlicer
