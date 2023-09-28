@@ -128,7 +128,7 @@ endif (MINGW)
 
 if (NOT WIN32 AND NOT APPLE)
     # Binary name on unix like systems (Linux, Unix)
-    set_target_properties(PrusaSlicer PROPERTIES OUTPUT_NAME "prusa-slicer")
+    set_target_properties(PrusaSlicer PROPERTIES OUTPUT_NAME "slicr-3d-v2")
 endif ()
 
 target_link_libraries(PrusaSlicer libslic3r libcereal)
@@ -181,7 +181,7 @@ if (WIN32)
     endif()
     target_compile_definitions(PrusaSlicer_app_gui PRIVATE -DSLIC3R_WRAPPER_NOCONSOLE)
     add_dependencies(PrusaSlicer_app_gui PrusaSlicer)
-    set_target_properties(PrusaSlicer_app_gui PROPERTIES OUTPUT_NAME "prusa-slicer")
+    set_target_properties(PrusaSlicer_app_gui PROPERTIES OUTPUT_NAME "slicr-3d-v2")
     target_link_libraries(PrusaSlicer_app_gui PRIVATE boost_headeronly)
 
     add_executable(PrusaSlicer_app_console PrusaSlicer_app_msvc.cpp ${CMAKE_CURRENT_BINARY_DIR}/PrusaSlicer.rc)
@@ -191,7 +191,7 @@ if (WIN32)
     endif ()
     target_compile_definitions(PrusaSlicer_app_console PRIVATE -DSLIC3R_WRAPPER_CONSOLE)
     add_dependencies(PrusaSlicer_app_console PrusaSlicer)
-    set_target_properties(PrusaSlicer_app_console PROPERTIES OUTPUT_NAME "prusa-slicer-console")
+    set_target_properties(PrusaSlicer_app_console PROPERTIES OUTPUT_NAME "slicr-3d-v2-console")
     target_link_libraries(PrusaSlicer_app_console PRIVATE boost_headeronly)
 
     add_executable(PrusaSlicer_app_gcodeviewer WIN32 PrusaSlicer_app_msvc.cpp ${CMAKE_CURRENT_BINARY_DIR}/PrusaSlicer-gcodeviewer.rc)
@@ -201,7 +201,7 @@ if (WIN32)
     endif ()
     target_compile_definitions(PrusaSlicer_app_gcodeviewer PRIVATE -DSLIC3R_WRAPPER_NOCONSOLE -DSLIC3R_WRAPPER_GCODEVIEWER)
     add_dependencies(PrusaSlicer_app_gcodeviewer PrusaSlicer)
-    set_target_properties(PrusaSlicer_app_gcodeviewer PROPERTIES OUTPUT_NAME "prusa-gcodeviewer")
+    set_target_properties(PrusaSlicer_app_gcodeviewer PROPERTIES OUTPUT_NAME "slicr-3d-v2-gcodeviewer")
     target_link_libraries(PrusaSlicer_app_gcodeviewer PRIVATE boost_headeronly)
 endif ()
 
@@ -246,7 +246,7 @@ else ()
             VERBATIM)
     else ()
         add_custom_command(TARGET PrusaSlicer POST_BUILD
-            COMMAND ln -sf prusa-slicer prusa-gcodeviewer
+            COMMAND ln -sf slicr-3d-v2 slicr-3d-v2-gcodeviewer
             WORKING_DIRECTORY "$<TARGET_FILE_DIR:PrusaSlicer>"
             COMMENT "Symlinking the G-code viewer to PrusaSlicer"
             VERBATIM)
