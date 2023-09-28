@@ -1476,8 +1476,9 @@ void GCode::_do_export(Print& print, GCodeOutputStream &file, ThumbnailsGenerato
     }
 
     // Write end commands to file.
-    file.write(this->retract());
-    file.write(m_writer.set_fan(0));
+    file.write(this->retract()); 
+    file.write(m_writer.set_fan(0,0)); //Extruder 1 hard coded, got tired of chasing tail with number of extruders, relying on error handler to resolve by CRobson
+    file.write(m_writer.set_fan(0,1)); //Extruder 2 hard coded, got tired of chasing tail with number of extruders, relying on error handler to resolve by CRobson
 
     // adds tag for processor
     file.write_format(";%s%s\n", GCodeProcessor::reserved_tag(GCodeProcessor::ETags::Role).c_str(), gcode_extrusion_role_to_string(GCodeExtrusionRole::Custom).c_str());
