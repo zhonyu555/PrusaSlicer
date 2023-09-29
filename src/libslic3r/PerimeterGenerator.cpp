@@ -1108,7 +1108,7 @@ void PerimeterGenerator::process_arachne(
         // lower layer, so we take lower slices and offset them by half the nozzle diameter used
         // in the current layer
         double nozzle_diameter = params.print_config.nozzle_diameter.get_at(params.config.perimeter_extruder-1);
-        lower_slices_polygons_cache = offset(*lower_slices, float(scale_(+nozzle_diameter/2)));
+        lower_slices_polygons_cache = offset(*lower_slices, params.config.overhangs_threshold ? 0 : float(scale_(+nozzle_diameter/2)));
     }
 
     // we need to process each island separately because we might have different

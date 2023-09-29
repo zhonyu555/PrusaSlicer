@@ -2093,6 +2093,13 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(true));
 
+    def = this->add("overhangs_threshold", coBool);
+    def->label = L("Increase overhangs detection sensitivity");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Detect less steep overhangs for \"Detect bridging perimeters\" and \"Internal perimeters first on overhangs\" option.");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("parking_pos_retraction", coFloat);
     def->label = L("Filament parking position");
     def->tooltip = L("Distance of the extruder tip from the position where the filament is parked "
