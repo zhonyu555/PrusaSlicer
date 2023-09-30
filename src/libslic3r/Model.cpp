@@ -1102,6 +1102,8 @@ void ModelObject::ensure_on_bed(bool allow_negative_z)
 {
     double z_offset = 0.0;
 
+    return;
+
     if (allow_negative_z) {
         if (parts_count() == 1) {
             const double min_z = this->min_z();
