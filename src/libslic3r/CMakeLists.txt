@@ -485,6 +485,11 @@ set(SLIC3R_SOURCES
     Arachne/WallToolPaths.cpp
 )
 
+if (APPLE)
+#    set_source_files_properties(Format/ModelIO.mm PROPERTIES LANGUAGE CXX)
+    list(APPEND SLIC3R_SOURCES Format/ModelIO.hpp Format/ModelIO.mm)
+endif ()
+
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})
 
 if (WIN32)
@@ -571,8 +576,10 @@ target_link_libraries(libslic3r
     )
 
 if (APPLE)
+    find_library(COREFOUNDATION Foundation REQUIRED)
+    find_library(MODELIO ModelIO REQUIRED)
     # TODO: we need to fix notarization with the separate shared library
-    target_link_libraries(libslic3r OCCTWrapper)
+    target_link_libraries(libslic3r OCCTWrapper ${COREFOUNDATION} ${MODELIO})
 endif ()
 
 if (TARGET OpenVDB::openvdb)
