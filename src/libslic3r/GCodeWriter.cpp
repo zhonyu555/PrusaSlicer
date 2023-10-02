@@ -513,7 +513,7 @@ void GCodeWriter::update_position(const Vec3d &new_pos)
     m_pos = new_pos;
 }
 
-std::string GCodeWriter::set_fan(const GCodeFlavor gcode_flavor, bool gcode_comments, unsigned int speed)
+std::string GCodeWriter::set_fan(const GCodeFlavor gcode_flavor, bool gcode_comments, unsigned int speed, unsigned int fantool) // Added fantool to call by CRobson
 {
     std::ostringstream gcode;
     if (speed == 0) {
@@ -538,7 +538,8 @@ std::string GCodeWriter::set_fan(const GCodeFlavor gcode_flavor, bool gcode_comm
         case gcfMachinekit:
             gcode << "M106 P" << 255.0 * speed / 100.0; break;
         default:
-            gcode << "M106 S" << 255.0 * speed / 100.0; break;
+            gcode << "M106 P" << fantool; //added extruder to code ie, P0 or P1. Was not in here, just set fan speed. by CRobson
+            gcode << " S" << 255.0 * speed / 100.0; break;
         }
         if (gcode_comments) 
             gcode << " ; enable fan";
@@ -547,9 +548,9 @@ std::string GCodeWriter::set_fan(const GCodeFlavor gcode_flavor, bool gcode_comm
     return gcode.str();
 }
 
-std::string GCodeWriter::set_fan(unsigned int speed) const
+std::string GCodeWriter::set_fan(unsigned int speed, unsigned int fantool) const // Added fantool to call by CRobson
 {
-    return GCodeWriter::set_fan(this->config.gcode_flavor, this->config.gcode_comments, speed);
+    return GCodeWriter::set_fan(this->config.gcode_flavor, this->config.gcode_comments, speed, fantool); // Added fantool to call by CRobson
 }
 
 void GCodeFormatter::emit_axis(const char axis, const double v, size_t digits) {
