@@ -1,23 +1,27 @@
+///|/ Copyright (c) Prusa Research 2020 - 2022 Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "SupportTreeMesher.hpp"
 
 namespace Slic3r { namespace sla {
 
-Contour3D sphere(double rho, Portion portion, double fa) {
+indexed_triangle_set sphere(double rho, Portion portion, double fa) {
 
-    Contour3D ret;
+    indexed_triangle_set ret;
 
     // prohibit close to zero radius
     if(rho <= 1e-6 && rho >= -1e-6) return ret;
 
-    auto& vertices = ret.points;
-    auto& facets = ret.faces3;
+    auto& vertices = ret.vertices;
+    auto& facets = ret.indices;
 
     // Algorithm:
     // Add points one-by-one to the sphere grid and form facets using relative
     // coordinates. Sphere is composed effectively of a mesh of stacked circles.
 
     // adjust via rounding to get an even multiple for any provided angle.
-    double angle = (2*PI / floor(2*PI / fa));
+    double angle = (2 * PI / floor(2*PI / fa) );
 
     // Ring to be scaled to generate the steps of the sphere
     std::vector<double> ring;
@@ -32,8 +36,9 @@ Contour3D sphere(double rho, Portion portion, double fa) {
 
     // special case: first ring connects to 0,0,0
     // insert and form facets.
-    if(sbegin == 0)
-        vertices.emplace_back(Vec3d(0.0, 0.0, -rho + increment*sbegin*2.0*rho));
+    if (sbegin == 0)
+        vertices.emplace_back(
+            Vec3f(0.f, 0.f, float(-rho + increment * sbegin * 2. * rho)));
 
     auto id = coord_t(vertices.size());
     for (size_t i = 0; i < ring.size(); i++) {
@@ -42,7 +47,7 @@ Contour3D sphere(double rho, Portion portion, double fa) {
         // radius of the circle for this step.
         const double r = std::sqrt(std::abs(rho*rho - z*z));
         Vec2d b = Eigen::Rotation2Dd(ring[i]) * Eigen::Vector2d(0, r);
-        vertices.emplace_back(Vec3d(b(0), b(1), z));
+        vertices.emplace_back(Vec3d(b(0), b(1), z).cast<float>());
 
         if (sbegin == 0)
             (i == 0) ? facets.emplace_back(coord_t(ring.size()), 0, 1) :
@@ -53,12 +58,12 @@ Contour3D sphere(double rho, Portion portion, double fa) {
     // General case: insert and form facets for each step,
     // joining it to the ring below it.
     for (size_t s = sbegin + 2; s < send - 1; s++) {
-        const double z = -rho + increment*double(s*2.0*rho);
+        const double z = -rho + increment * double(s * 2. * rho);
         const double r = std::sqrt(std::abs(rho*rho - z*z));
 
         for (size_t i = 0; i < ring.size(); i++) {
             Vec2d b = Eigen::Rotation2Dd(ring[i]) * Eigen::Vector2d(0, r);
-            vertices.emplace_back(Vec3d(b(0), b(1), z));
+            vertices.emplace_back(Vec3d(b(0), b(1), z).cast<float>());
             auto id_ringsize = coord_t(id - int(ring.size()));
             if (i == 0) {
                 // wrap around
@@ -75,7 +80,7 @@ Contour3D sphere(double rho, Portion portion, double fa) {
     // special case: last ring connects to 0,0,rho*2.0
     // only form facets.
     if(send >= size_t(2*PI / angle)) {
-        vertices.emplace_back(Vec3d(0.0, 0.0, -rho + increment*send*2.0*rho));
+        vertices.emplace_back(0.f, 0.f, float(-rho + increment*send*2.0*rho));
         for (size_t i = 0; i < ring.size(); i++) {
             auto id_ringsize = coord_t(id - int(ring.size()));
             if (i == 0) {
@@ -92,76 +97,17 @@ Contour3D sphere(double rho, Portion portion, double fa) {
     return ret;
 }
 
-Contour3D cylinder(double r, double h, size_t ssteps, const Vec3d &sp)
-{
-    assert(ssteps > 0);
-
-    Contour3D ret;
-
-    auto steps = int(ssteps);
-    auto& points = ret.points;
-    auto& indices = ret.faces3;
-    points.reserve(2*ssteps);
-    double a = 2*PI/steps;
-
-    Vec3d jp = sp;
-    Vec3d endp = {sp(X), sp(Y), sp(Z) + h};
-
-    // Upper circle points
-    for(int i = 0; i < steps; ++i) {
-        double phi = i*a;
-        double ex = endp(X) + r*std::cos(phi);
-        double ey = endp(Y) + r*std::sin(phi);
-        points.emplace_back(ex, ey, endp(Z));
-    }
-
-    // Lower circle points
-    for(int i = 0; i < steps; ++i) {
-        double phi = i*a;
-        double x = jp(X) + r*std::cos(phi);
-        double y = jp(Y) + r*std::sin(phi);
-        points.emplace_back(x, y, jp(Z));
-    }
-
-    // Now create long triangles connecting upper and lower circles
-    indices.reserve(2*ssteps);
-    auto offs = steps;
-    for(int i = 0; i < steps - 1; ++i) {
-        indices.emplace_back(i, i + offs, offs + i + 1);
-        indices.emplace_back(i, offs + i + 1, i + 1);
-    }
-
-    // Last triangle connecting the first and last vertices
-    auto last = steps - 1;
-    indices.emplace_back(0, last, offs);
-    indices.emplace_back(last, offs + last, offs);
-
-    // According to the slicing algorithms, we need to aid them with generating
-    // a watertight body. So we create a triangle fan for the upper and lower
-    // ending of the cylinder to close the geometry.
-    points.emplace_back(jp); int ci = int(points.size() - 1);
-    for(int i = 0; i < steps - 1; ++i)
-        indices.emplace_back(i + offs + 1, i + offs, ci);
-
-    indices.emplace_back(offs, steps + offs - 1, ci);
-
-    points.emplace_back(endp); ci = int(points.size() - 1);
-    for(int i = 0; i < steps - 1; ++i)
-        indices.emplace_back(ci, i, i + 1);
-
-    indices.emplace_back(steps - 1, 0, ci);
-
-    return ret;
-}
-
-Contour3D pinhead(double r_pin, double r_back, double length, size_t steps)
+indexed_triangle_set pinhead(double r_pin,
+                             double r_back,
+                             double length,
+                             size_t steps)
 {
     assert(steps > 0);
     assert(length >= 0.);
     assert(r_back > 0.);
     assert(r_pin > 0.);
 
-    Contour3D mesh;
+    indexed_triangle_set mesh;
 
     // We create two spheres which will be connected with a robe that fits
     // both circles perfectly.
@@ -179,74 +125,78 @@ Contour3D pinhead(double r_pin, double r_back, double length, size_t steps)
     const double h   = r_back + r_pin + length;
     double       phi = PI / 2. - std::acos((r_back - r_pin) / h);
 
+    if (std::isnan(phi))
+        return mesh;
+
     // To generate a whole circle we would pass a portion of (0, Pi)
     // To generate only a half horizontal circle we can pass (0, Pi/2)
     // The calculated phi is an offset to the half circles needed to smooth
     // the transition from the circle to the robe geometry
 
-    auto &&s1 = sphere(r_back, make_portion(0, PI / 2 + phi), detail);
-    auto &&s2 = sphere(r_pin, make_portion(PI / 2 + phi, PI), detail);
+    auto s1 = sphere(r_back, make_portion(0, PI / 2 + phi), detail);
+    auto s2 = sphere(r_pin, make_portion(PI / 2 + phi, PI), detail);
 
-    for (auto &p : s2.points) p.z() += h;
+    for (auto &p : s2.vertices) p.z() += h;
 
-    mesh.merge(s1);
-    mesh.merge(s2);
+    its_merge(mesh, s1);
+    its_merge(mesh, s2);
 
-    for (size_t idx1 = s1.points.size() - steps, idx2 = s1.points.size();
-         idx1 < s1.points.size() - 1; idx1++, idx2++) {
+    for (size_t idx1 = s1.vertices.size() - steps, idx2 = s1.vertices.size();
+         idx1 < s1.vertices.size() - 1; idx1++, idx2++) {
         coord_t i1s1 = coord_t(idx1), i1s2 = coord_t(idx2);
         coord_t i2s1 = i1s1 + 1, i2s2 = i1s2 + 1;
 
-        mesh.faces3.emplace_back(i1s1, i2s1, i2s2);
-        mesh.faces3.emplace_back(i1s1, i2s2, i1s2);
+        mesh.indices.emplace_back(i1s1, i2s1, i2s2);
+        mesh.indices.emplace_back(i1s1, i2s2, i1s2);
     }
 
-    auto i1s1 = coord_t(s1.points.size()) - coord_t(steps);
-    auto i2s1 = coord_t(s1.points.size()) - 1;
-    auto i1s2 = coord_t(s1.points.size());
-    auto i2s2 = coord_t(s1.points.size()) + coord_t(steps) - 1;
+    auto i1s1 = coord_t(s1.vertices.size()) - coord_t(steps);
+    auto i2s1 = coord_t(s1.vertices.size()) - 1;
+    auto i1s2 = coord_t(s1.vertices.size());
+    auto i2s2 = coord_t(s1.vertices.size()) + coord_t(steps) - 1;
 
-    mesh.faces3.emplace_back(i2s2, i2s1, i1s1);
-    mesh.faces3.emplace_back(i1s2, i2s2, i1s1);
+    mesh.indices.emplace_back(i2s2, i2s1, i1s1);
+    mesh.indices.emplace_back(i1s2, i2s2, i1s1);
 
     return mesh;
 }
 
-Contour3D halfcone(double       baseheight,
-                   double       r_bottom,
-                   double       r_top,
-                   const Vec3d &pos,
-                   size_t       steps)
+indexed_triangle_set halfcone(double       baseheight,
+                              double       r_bottom,
+                              double       r_top,
+                              const Vec3d &pos,
+                              size_t       steps)
 {
     assert(steps > 0);
 
-    if (baseheight <= 0 || steps <= 0) return {};
+    if (baseheight <= 0 || steps <= 0 || (r_bottom <= 0. && r_top <= 0.))
+        return {};
 
-    Contour3D base;
+    indexed_triangle_set base;
 
     double a    = 2 * PI / steps;
     auto   last = int(steps - 1);
     Vec3d  ep{pos.x(), pos.y(), pos.z() + baseheight};
     for (size_t i = 0; i < steps; ++i) {
         double phi = i * a;
-        double x   = pos.x() + r_top * std::cos(phi);
-        double y   = pos.y() + r_top * std::sin(phi);
-        base.points.emplace_back(x, y, ep.z());
+        auto x   = float(pos.x() + r_top * std::cos(phi));
+        auto y   = float(pos.y() + r_top * std::sin(phi));
+        base.vertices.emplace_back(x, y, float(ep.z()));
     }
 
     for (size_t i = 0; i < steps; ++i) {
         double phi = i * a;
-        double x   = pos.x() + r_bottom * std::cos(phi);
-        double y   = pos.y() + r_bottom * std::sin(phi);
-        base.points.emplace_back(x, y, pos.z());
+        auto x   = float(pos.x() + r_bottom * std::cos(phi));
+        auto y   = float(pos.y() + r_bottom * std::sin(phi));
+        base.vertices.emplace_back(x, y, float(pos.z()));
     }
 
-    base.points.emplace_back(pos);
-    base.points.emplace_back(ep);
+    base.vertices.emplace_back(pos.cast<float>());
+    base.vertices.emplace_back(ep.cast<float>());
 
-    auto &indices = base.faces3;
-    auto  hcenter = int(base.points.size() - 1);
-    auto  lcenter = int(base.points.size() - 2);
+    auto &indices = base.indices;
+    auto  hcenter = int(base.vertices.size() - 1);
+    auto  lcenter = int(base.vertices.size() - 2);
     auto  offs    = int(steps);
     for (int i = 0; i < last; ++i) {
         indices.emplace_back(i, i + offs, offs + i + 1);
@@ -261,6 +211,65 @@ Contour3D halfcone(double       baseheight,
     indices.emplace_back(offs, offs + last, lcenter);
 
     return base;
+}
+
+indexed_triangle_set get_mesh(const Head &h, size_t steps)
+{
+    indexed_triangle_set mesh = pinhead(h.r_pin_mm, h.r_back_mm, h.width_mm, steps);
+
+    for (auto& p : mesh.vertices) p.z() -= (h.fullwidth() - h.r_back_mm);
+
+    using Quaternion = Eigen::Quaternion<float>;
+
+       // We rotate the head to the specified direction. The head's pointing
+       // side is facing upwards so this means that it would hold a support
+       // point with a normal pointing straight down. This is the reason of
+       // the -1 z coordinate
+    auto quatern = Quaternion::FromTwoVectors(Vec3f{0.f, 0.f, -1.f},
+                                              h.dir.cast<float>());
+
+    Vec3f pos = h.pos.cast<float>();
+    for (auto& p : mesh.vertices) p = quatern * p + pos;
+
+    return mesh;
+}
+
+indexed_triangle_set get_mesh(const Bridge &br, size_t steps)
+{
+    using Quaternion = Eigen::Quaternion<float>;
+    Vec3d v = (br.endp - br.startp);
+    Vec3d dir = v.normalized();
+    double d = v.norm();
+
+    indexed_triangle_set mesh = cylinder(br.r, d, steps);
+
+    auto quater = Quaternion::FromTwoVectors(Vec3f{0.f, 0.f, 1.f},
+                                             dir.cast<float>());
+
+    Vec3f startp = br.startp.cast<float>();
+    for(auto& p : mesh.vertices) p = quater * p + startp;
+
+    return mesh;
+}
+
+indexed_triangle_set get_mesh(const DiffBridge &br, size_t steps)
+{
+    double h = br.get_length();
+    indexed_triangle_set mesh = halfcone(h, br.r, br.end_r, Vec3d::Zero(), steps);
+
+    using Quaternion = Eigen::Quaternion<float>;
+
+       // We rotate the head to the specified direction. The head's pointing
+       // side is facing upwards so this means that it would hold a support
+       // point with a normal pointing straight down. This is the reason of
+       // the -1 z coordinate
+    auto quatern = Quaternion::FromTwoVectors(Vec3f{0.f, 0.f, 1.f},
+                                              br.get_dir().cast<float>());
+
+    Vec3f startp = br.startp.cast<float>();
+    for(auto& p : mesh.vertices) p = quatern * p + startp;
+
+    return mesh;
 }
 
 }} // namespace Slic3r::sla

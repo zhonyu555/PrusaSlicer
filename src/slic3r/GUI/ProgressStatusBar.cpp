@@ -1,3 +1,11 @@
+///|/ Copyright (c) Prusa Research 2018 - 2021 David Kocík @kocikdav, Oleksandra Iushchenko @YuSanka, Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv
+///|/
+///|/ ported from lib/Slic3r/GUI/ProgressStatusBar.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros
+///|/ Copyright (c) Slic3r 2014 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "ProgressStatusBar.hpp"
 
 #include <wx/timer.h>
@@ -28,6 +36,7 @@ ProgressStatusBar::ProgressStatusBar(wxWindow *parent, int id)
                                   wxDefaultSize)}
     , m_timer{new wxTimer(self)}
 {
+    update_dark_ui();
     m_prog->Hide();
     m_cancelbutton->Hide();
 
@@ -66,6 +75,13 @@ ProgressStatusBar::ProgressStatusBar(wxWindow *parent, int id)
 
 ProgressStatusBar::~ProgressStatusBar() {
     if(m_timer && m_timer->IsRunning()) m_timer->Stop();
+}
+
+void ProgressStatusBar::update_dark_ui()
+{
+    GUI::wxGetApp().UpdateDarkUI(self);
+    GUI::wxGetApp().UpdateDarkUI(m_prog);
+    GUI::wxGetApp().UpdateDarkUI(m_cancelbutton);
 }
 
 int ProgressStatusBar::get_progress() const
@@ -186,3 +202,4 @@ void ProgressStatusBar::hide_cancel_button()
 }
 
 }
+

@@ -1,3 +1,12 @@
+///|/ Copyright (c) Prusa Research 2016 - 2022 Lukáš Hejl @hejllukas, Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ ported from lib/Slic3r/SVG.pm:
+///|/ Copyright (c) Prusa Research 2018 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2014 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_SVG_hpp_
 #define slic3r_SVG_hpp_
 
@@ -43,8 +52,7 @@ public:
     void draw(const Line &line, std::string stroke = "black", coordf_t stroke_width = 0);
     void draw(const ThickLine &line, const std::string &fill, const std::string &stroke, coordf_t stroke_width = 0);
     void draw(const Lines &lines, std::string stroke = "black", coordf_t stroke_width = 0);
-    void draw(const IntersectionLines &lines, std::string stroke = "black");
-
+    
     void draw(const ExPolygon &expolygon, std::string fill = "grey", const float fill_opacity=1.f);
     void draw_outline(const ExPolygon &polygon, std::string stroke_outer = "black", std::string stroke_holes = "blue", coordf_t stroke_width = 0);
     void draw(const ExPolygons &expolygons, std::string fill = "grey", const float fill_opacity=1.f);
@@ -73,8 +81,8 @@ public:
     void draw(const ClipperLib::Path  &polygon, double scale, std::string fill = "grey", coordf_t stroke_width = 0);
     void draw(const ClipperLib::Paths &polygons, double scale, std::string fill = "grey", coordf_t stroke_width = 0);
 
-    void draw_text(const Point &pt, const char *text, const char *color);
-    void draw_legend(const Point &pt, const char *text, const char *color);
+    void draw_text(const Point &pt, const char *text, const char *color, coordf_t font_size = 20.f);
+    void draw_legend(const Point &pt, const char *text, const char *color, coordf_t font_size = 10.f);
 
     void Close();
     
@@ -102,7 +110,7 @@ public:
             ExPolygonAttributes(color, color, color) {}
 
         ExPolygonAttributes(
-            const std::string &color_fill, 
+            const std::string &color_fill,
             const std::string &color_contour,
             const std::string &color_holes,
             const coord_t      outline_width = scale_(0.05),
@@ -118,21 +126,59 @@ public:
             radius_points	(radius_points)
             {}
 
+        ExPolygonAttributes(
+            const std::string &legend,
+            const std::string &color_fill,
+            const std::string &color_contour,
+            const std::string &color_holes,
+            const coord_t      outline_width = scale_(0.05),
+            const float        fill_opacity  = 0.5f,
+            const std::string &color_points = "black",
+            const coord_t      radius_points = 0) :
+            legend          (legend),
+            color_fill      (color_fill),
+            color_contour   (color_contour),
+            color_holes     (color_holes),
+            outline_width   (outline_width),
+            fill_opacity    (fill_opacity),
+            color_points    (color_points),
+            radius_points   (radius_points)
+            {}
+
+        ExPolygonAttributes(
+            const std::string &legend,
+            const std::string &color_fill,
+            const float        fill_opacity) :
+            legend          (legend),
+            color_fill      (color_fill),
+            fill_opacity    (fill_opacity)
+            {}
+
+        std::string     legend;
         std::string     color_fill;
         std::string     color_contour;
         std::string     color_holes;
         std::string   	color_points;
-        coord_t         outline_width;
+        coord_t         outline_width { 0 };
         float           fill_opacity;
-        coord_t			radius_points;
+        coord_t			radius_points { 0 };
     };
 
+    // Paint the expolygons in the order they are presented, thus the latter overwrites the former expolygon.
+    // 1) Paint all areas with the provided ExPolygonAttributes::color_fill and ExPolygonAttributes::fill_opacity.
+    // 2) Optionally paint outlines of the areas if ExPolygonAttributes::outline_width > 0.
+    //    Paint with ExPolygonAttributes::color_contour and ExPolygonAttributes::color_holes.
+    //    If color_contour is empty, color_fill is used. If color_hole is empty, color_contour is used.
+    // 3) Optionally paint points of all expolygon contours with ExPolygonAttributes::radius_points if radius_points > 0.
+    // 4) Paint ExPolygonAttributes::legend into legend using the ExPolygonAttributes::color_fill if legend is not empty. 
     static void export_expolygons(const char *path, const std::vector<std::pair<Slic3r::ExPolygons, ExPolygonAttributes>> &expolygons_with_attributes);
+    static void export_expolygons(const std::string &path, const std::vector<std::pair<Slic3r::ExPolygons, ExPolygonAttributes>> &expolygons_with_attributes) 
+        { export_expolygons(path.c_str(), expolygons_with_attributes); }
 
 private:
-    static float    to_svg_coord(float x) throw() { return unscale<float>(x) * 10.f; }
-    static float    to_svg_x(float x) throw() { return to_svg_coord(x); }
-    float           to_svg_y(float x) const throw() { return flipY ? this->height - to_svg_coord(x) : to_svg_coord(x); }
+    static float to_svg_coord(float x) throw();
+    static float to_svg_x(float x) throw() { return to_svg_coord(x); }
+           float to_svg_y(float x) const throw() { return flipY ? this->height - to_svg_coord(x) : to_svg_coord(x); }
 };
 
 }

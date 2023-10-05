@@ -1437,6 +1437,7 @@ static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, in
       switch(ttUSHORT(data+encoding_record)) {
          case STBTT_PLATFORM_ID_MICROSOFT:
             switch (ttUSHORT(data+encoding_record+2)) {
+               case STBTT_MS_EID_SYMBOL:
                case STBTT_MS_EID_UNICODE_BMP:
                case STBTT_MS_EID_UNICODE_FULL:
                   // MS/Unicode
@@ -1734,7 +1735,7 @@ static int stbtt__GetGlyphShapeTT(const stbtt_fontinfo *info, int glyph_index, s
 
             // now start the new one               
             start_off = !(flags & 1);
-            if (start_off) {
+            if (start_off && (i + 1) < n) {
                // if we start off with an off-curve point, then when we need to find a point on the curve
                // where we can start, and we need to save some state for when we wraparound.
                scx = x;
@@ -2538,11 +2539,11 @@ static stbtt_int32  stbtt__GetGlyphGPOSInfoAdvance(const stbtt_fontinfo *info, i
                             // There are no other cases.
                             STBTT_assert(0);
                             break;
-                        };
+                        } // [DEAR IMGUI] removed ;
                     }
                 }
                 break;
-            };
+            } // [DEAR IMGUI] removed ;
 
             default:
                 // TODO: Implement other stuff.
@@ -4132,7 +4133,7 @@ STBTT_DEF void stbtt_PackFontRangesPackRects(stbtt_pack_context *spc, stbrp_rect
 STBTT_DEF int stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, stbtt_pack_range *ranges, int num_ranges)
 {
    stbtt_fontinfo info;
-   int i,j,n, return_value = 1;
+   int i,j,n, return_value; // [DEAR IMGUI] removed = 1
    //stbrp_context *context = (stbrp_context *) spc->pack_info;
    stbrp_rect    *rects;
 
@@ -4302,7 +4303,7 @@ static int stbtt__compute_crossings_x(float x, float y, int nverts, stbtt_vertex
    int winding = 0;
 
    orig[0] = x;
-   //orig[1] = y; // [DEAR IMGUI] commmented double assignment
+   //orig[1] = y; // [DEAR IMGUI] commented double assignment
 
    // make sure y never passes through a vertex of the shape
    y_frac = (float) STBTT_fmod(y, 1.0f);

@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2020 Manuel Coenen
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Http.hpp"
 
 #include <cstdlib>
@@ -104,6 +110,7 @@ struct Http::priv
 {
 	enum {
 		DEFAULT_TIMEOUT_CONNECT = 10,
+        DEFAULT_TIMEOUT_MAX = 0,
 		DEFAULT_SIZE_LIMIT = 5 * 1024 * 1024,
 	};
 
@@ -126,6 +133,7 @@ struct Http::priv
 	Http::CompleteFn completefn;
 	Http::ErrorFn errorfn;
 	Http::ProgressFn progressfn;
+	Http::IPResolveFn ipresolvefn;
 
 	priv(const std::string &url);
 	~priv();
@@ -137,10 +145,12 @@ struct Http::priv
 	static size_t form_file_read_cb(char *buffer, size_t size, size_t nitems, void *userp);
 
 	void set_timeout_connect(long timeout);
+    void set_timeout_max(long timeout);
 	void form_add_file(const char *name, const fs::path &path, const char* filename);
 	void set_post_body(const fs::path &path);
 	void set_post_body(const std::string &body);
 	void set_put_body(const fs::path &path);
+	void set_range(const std::string& range);
 
 	std::string curl_error(CURLcode curlcode);
 	std::string body_size_error();
@@ -163,6 +173,7 @@ Http::priv::priv(const std::string &url)
 	}
 
 	set_timeout_connect(DEFAULT_TIMEOUT_CONNECT);
+    set_timeout_max(DEFAULT_TIMEOUT_MAX);
 	::curl_easy_setopt(curl, CURLOPT_URL, url.c_str());   // curl makes a copy internally
 	::curl_easy_setopt(curl, CURLOPT_USERAGENT, SLIC3R_APP_NAME "/" SLIC3R_VERSION);
 	::curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, &error_buffer.front());
@@ -177,7 +188,7 @@ Http::priv::~priv()
 
 bool Http::priv::ca_file_supported(::CURL *curl)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__APPLE__)
 	bool res = false;
 #else
 	bool res = true;
@@ -190,6 +201,7 @@ bool Http::priv::ca_file_supported(::CURL *curl)
 	if (::curl_easy_getinfo(curl, CURLINFO_TLS_SSL_PTR, &tls) == CURLE_OK) {
 		if (tls->backend == CURLSSLBACKEND_SCHANNEL || tls->backend == CURLSSLBACKEND_DARWINSSL) {
 			// With Windows and OS X native SSL support, cert files cannot be set
+            // DK: OSX is now not building CURL and links system one, thus we do not know which backend is installed. Still, false will be returned since the ifdef at the begining if this function.
 			res = false;
 		}
 	}
@@ -203,7 +215,6 @@ size_t Http::priv::writecb(void *data, size_t size, size_t nmemb, void *userp)
 	auto self = static_cast<priv*>(userp);
 	const char *cdata = static_cast<char*>(data);
 	const size_t realsize = size * nmemb;
-
 	const size_t limit = self->limit > 0 ? self->limit : DEFAULT_SIZE_LIMIT;
 	if (self->buffer.size() + realsize > limit) {
 		// This makes curl_easy_perform return CURLE_WRITE_ERROR
@@ -221,7 +232,7 @@ int Http::priv::xfercb(void *userp, curl_off_t dltotal, curl_off_t dlnow, curl_o
 	bool cb_cancel = false;
 
 	if (self->progressfn) {
-		Progress progress(dltotal, dlnow, ultotal, ulnow);
+		Progress progress(dltotal, dlnow, ultotal, ulnow, self->buffer);
 		self->progressfn(progress, cb_cancel);
 	}
 
@@ -251,6 +262,11 @@ size_t Http::priv::form_file_read_cb(char *buffer, size_t size, size_t nitems, v
 void Http::priv::set_timeout_connect(long timeout)
 {
 	::curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
+}
+
+void Http::priv::set_timeout_max(long timeout)
+{
+    ::curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
 }
 
 void Http::priv::form_add_file(const char *name, const fs::path &path, const char* filename)
@@ -302,6 +318,11 @@ void Http::priv::set_put_body(const fs::path &path)
         ::curl_easy_setopt(curl, CURLOPT_READDATA, (void *) (putFile.get()));
 		::curl_easy_setopt(curl, CURLOPT_INFILESIZE, filesize);
 	}
+}
+
+void Http::priv::set_range(const std::string& range)
+{
+	::curl_easy_setopt(curl, CURLOPT_RANGE, range.c_str());
 }
 
 std::string Http::priv::curl_error(CURLcode curlcode)
@@ -361,7 +382,7 @@ void Http::priv::http_perform()
 		if (res == CURLE_ABORTED_BY_CALLBACK) {
 			if (cancel) {
 				// The abort comes from the request being cancelled programatically
-				Progress dummyprogress(0, 0, 0, 0);
+				Progress dummyprogress(0, 0, 0, 0, std::string());
 				bool cancel = true;
 				if (progressfn) { progressfn(dummyprogress, cancel); }
 			} else {
@@ -382,6 +403,13 @@ void Http::priv::http_perform()
 			if (errorfn) { errorfn(std::move(buffer), std::string(), http_status); }
 		} else {
 			if (completefn) { completefn(std::move(buffer), http_status); }
+			if (ipresolvefn) {
+				char* ct;
+				res = curl_easy_getinfo(curl, CURLINFO_PRIMARY_IP, &ct);
+				if ((CURLE_OK == res) && ct) {
+					ipresolvefn(ct);
+				}
+			}
 		}
 	}
 }
@@ -409,9 +437,22 @@ Http& Http::timeout_connect(long timeout)
 	return *this;
 }
 
+Http& Http::timeout_max(long timeout)
+{
+    if (timeout < 1) { timeout = priv::DEFAULT_TIMEOUT_MAX; }
+    if (p) { p->set_timeout_max(timeout); }
+    return *this;
+}
+
 Http& Http::size_limit(size_t sizeLimit)
 {
 	if (p) { p->limit = sizeLimit; }
+	return *this;
+}
+
+Http& Http::set_range(const std::string& range)
+{
+	if (p) { p->set_range(range); }
 	return *this;
 }
 
@@ -491,6 +532,18 @@ Http& Http::form_add_file(const std::string &name, const fs::path &path, const s
 	return *this;
 }
 
+#ifdef WIN32
+// Tells libcurl to ignore certificate revocation checks in case of missing or offline distribution points for those SSL backends where such behavior is present. 
+// This option is only supported for Schannel (the native Windows SSL library).
+Http& Http::ssl_revoke_best_effort(bool set)
+{
+	if(p && set){
+		::curl_easy_setopt(p->curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_REVOKE_BEST_EFFORT);
+	}
+	return *this;
+}
+#endif // WIN32
+
 Http& Http::set_post_body(const fs::path &path)
 {
 	if (p) { p->set_post_body(path);}
@@ -527,6 +580,12 @@ Http& Http::on_progress(ProgressFn fn)
 	return *this;
 }
 
+Http& Http::on_ip_resolve(IPResolveFn fn)
+{
+	if (p) { p->ipresolvefn = std::move(fn); }
+	return *this;
+}
+
 Http::Ptr Http::perform()
 {
 	auto self = std::make_shared<Http>(std::move(*this));
@@ -553,7 +612,7 @@ void Http::cancel()
 
 Http Http::get(std::string url)
 {
-	return std::move(Http{std::move(url)});
+    return Http{std::move(url)};
 }
 
 Http Http::post(std::string url)

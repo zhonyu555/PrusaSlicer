@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2018 - 2020 Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka
+///|/ Copyright (c) 2019 Maeyanie @Maeyanie
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_KBShortcutsDialog_hpp_
 #define slic3r_GUI_KBShortcutsDialog_hpp_
 
@@ -15,7 +20,8 @@ class KBShortcutsDialog : public DPIDialog
 {
     typedef std::pair<std::string, std::string> Shortcut;
     typedef std::vector<Shortcut> Shortcuts;
-    typedef std::vector<std::pair<wxString, Shortcuts>> ShortcutsVec;
+    typedef std::pair<std::pair<wxString, wxString>, Shortcuts> ShortcutsItem;
+    typedef std::vector<ShortcutsItem> ShortcutsVec;
 
     ShortcutsVec    m_full_shortcuts;
     ScalableBitmap  m_logo_bmp;
@@ -32,8 +38,7 @@ private:
     void fill_shortcuts();
 
     wxPanel* create_header(wxWindow* parent, const wxFont& bold_font);
-    wxPanel* create_page(wxWindow* parent, const std::pair<wxString, Shortcuts>& shortcuts, const wxFont& font, const wxFont& bold_font);
-
+    wxPanel* create_page(wxWindow* parent, const ShortcutsItem& shortcuts, const wxFont& font, const wxFont& bold_font);
 };
 
 } // namespace GUI

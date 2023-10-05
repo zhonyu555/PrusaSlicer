@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 Sijmen Schoon
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Utils_hpp_
 #define slic3r_Utils_hpp_
 
@@ -6,6 +11,7 @@
 #include <functional>
 #include <type_traits>
 #include <system_error>
+#include <cmath>
 
 #include <boost/system/error_code.hpp>
 
@@ -17,7 +23,6 @@ namespace Slic3r {
 
 extern void set_logging_level(unsigned int level);
 extern unsigned get_logging_level();
-extern void trace(unsigned int level, const char *message);
 // Format memory allocated, separate thousands by comma.
 extern std::string format_memsize_MB(size_t n);
 // Return string to be added to the boost::log output to inform about the current process memory allocation.
@@ -45,21 +50,32 @@ void set_local_dir(const std::string &path);
 // Return a full path to the localization directory.
 const std::string& localization_dir();
 
+// Set a path with shapes gallery files.
+void set_sys_shapes_dir(const std::string &path);
+// Return a full path to the system shapes gallery directory.
+const std::string& sys_shapes_dir();
+
+// Return a full path to the custom shapes gallery directory.
+std::string custom_shapes_dir();
+
 // Set a path with preset files.
 void set_data_dir(const std::string &path);
 // Return a full path to the GUI resource files.
 const std::string& data_dir();
 
+// Format an output path for debugging purposes.
+// Writes out the output path prefix to the console for the first time the function is called,
+// so the user knows where to search for the debugging output.
+std::string debug_out_path(const char *name, ...);
+
 // A special type for strings encoded in the local Windows 8-bit code page.
 // This type is only needed for Perl bindings to relay to Perl that the string is raw, not UTF-8 encoded.
 typedef std::string local_encoded_string;
 
-// Convert an UTF-8 encoded string into local coding.
-// On Windows, the UTF-8 string is converted to a local 8-bit code page.
-// On OSX and Linux, this function does no conversion and returns a copy of the source string.
-extern local_encoded_string encode_path(const char *src);
-extern std::string decode_path(const char *src);
-extern std::string normalize_utf8_nfc(const char *src);
+// Returns next utf8 sequence length. =number of bytes in string, that creates together one utf-8 character. 
+// Starting at pos. ASCII characters returns 1. Works also if pos is in the middle of the sequence.
+extern size_t get_utf8_sequence_length(const std::string& text, size_t pos = 0);
+extern size_t get_utf8_sequence_length(const char *seq, size_t size);
 
 // Safely rename a file even if the target exists.
 // On Windows, the file explorer (or anti-virus or whatever else) often locks the file
@@ -90,19 +106,11 @@ extern CopyFileResult check_copy(const std::string& origin, const std::string& c
 extern bool is_plain_file(const boost::filesystem::directory_entry &path);
 extern bool is_ini_file(const boost::filesystem::directory_entry &path);
 extern bool is_idx_file(const boost::filesystem::directory_entry &path);
-
-// File path / name / extension splitting utilities, working with UTF-8,
-// to be published to Perl.
-namespace PerlUtils {
-    // Get a file name including the extension.
-    extern std::string path_to_filename(const char *src);
-    // Get a file name without the extension.
-    extern std::string path_to_stem(const char *src);
-    // Get just the extension.
-    extern std::string path_to_extension(const char *src);
-    // Get a directory without the trailing slash.
-    extern std::string path_to_parent_path(const char *src);
-};
+extern bool is_gcode_file(const std::string &path);
+extern bool is_img_file(const std::string& path);
+extern bool is_gallery_file(const boost::filesystem::directory_entry& path, char const* type);
+extern bool is_gallery_file(const std::string& path, char const* type);
+extern bool is_shapes_dir(const std::string& dir);
 
 std::string string_printf(const char *format, ...);
 
@@ -173,6 +181,21 @@ template<class T> size_t next_highest_power_of_2(T v,
     return next_highest_power_of_2(uint32_t(v));
 }
 
+template<class VectorType> void reserve_power_of_2(VectorType &vector, size_t n)
+{
+    vector.reserve(next_highest_power_of_2(n));
+}
+
+template<class VectorType> void reserve_more(VectorType &vector, size_t n)
+{
+    vector.reserve(vector.size() + n);
+}
+
+template<class VectorType> void reserve_more_power_of_2(VectorType &vector, size_t n)
+{
+    vector.reserve(next_highest_power_of_2(vector.size() + n));
+}
+
 template<typename INDEX_TYPE>
 inline INDEX_TYPE prev_idx_modulo(INDEX_TYPE idx, const INDEX_TYPE count)
 {
@@ -187,6 +210,14 @@ inline INDEX_TYPE next_idx_modulo(INDEX_TYPE idx, const INDEX_TYPE count)
 	if (++ idx == count)
 		idx = 0;
 	return idx;
+}
+
+
+// Return dividend divided by divisor rounded to the nearest integer
+template<typename INDEX_TYPE>
+inline INDEX_TYPE round_up_divide(const INDEX_TYPE dividend, const INDEX_TYPE divisor)
+{
+    return (dividend + divisor - 1) / divisor;
 }
 
 template<typename CONTAINER_TYPE>
@@ -225,7 +256,8 @@ inline typename CONTAINER_TYPE::value_type& next_value_modulo(typename CONTAINER
 	return container[next_idx_modulo(idx, container.size())];
 }
 
-extern std::string xml_escape(std::string text);
+extern std::string xml_escape(std::string text, bool is_marked = false);
+extern std::string xml_escape_double_quotes_attribute_value(std::string text);
 
 
 #if defined __GNUC__ && __GNUC__ < 5 && !defined __clang__
@@ -237,13 +269,24 @@ template<typename T> struct IsTriviallyCopyable { static constexpr bool value = 
 template<typename T> struct IsTriviallyCopyable : public std::is_trivially_copyable<T> {};
 #endif
 
+// A very lightweight ROII wrapper around C FILE.
+// The old C file API is much faster than C++ streams, thus they are recommended for processing large / huge files.
+struct FilePtr {
+    FilePtr(FILE *f) : f(f) {}
+    ~FilePtr() { this->close(); }
+    void close() { 
+        if (this->f) {
+            ::fclose(this->f);
+            this->f = nullptr;
+        }
+    }
+    FILE* f = nullptr;
+};
 
 class ScopeGuard
 {
 public:
     typedef std::function<void()> Closure;
-private:
-//    bool committed;
     Closure closure;
 
 public:
@@ -269,43 +312,9 @@ public:
 
 // Shorten the dhms time by removing the seconds, rounding the dhm to full minutes
 // and removing spaces.
-inline std::string short_time(const std::string &time)
-{
-    // Parse the dhms time format.
-    int days = 0;
-    int hours = 0;
-    int minutes = 0;
-    int seconds = 0;
-    if (time.find('d') != std::string::npos)
-        ::sscanf(time.c_str(), "%dd %dh %dm %ds", &days, &hours, &minutes, &seconds);
-    else if (time.find('h') != std::string::npos)
-        ::sscanf(time.c_str(), "%dh %dm %ds", &hours, &minutes, &seconds);
-    else if (time.find('m') != std::string::npos)
-        ::sscanf(time.c_str(), "%dm %ds", &minutes, &seconds);
-    else if (time.find('s') != std::string::npos)
-        ::sscanf(time.c_str(), "%ds", &seconds);
-    // Round to full minutes.
-    if (days + hours + minutes > 0 && seconds >= 30) {
-        if (++minutes == 60) {
-            minutes = 0;
-            if (++hours == 24) {
-                hours = 0;
-                ++days;
-            }
-        }
-    }
-    // Format the dhm time.
-    char buffer[64];
-    if (days > 0)
-        ::sprintf(buffer, "%dd%dh%dm", days, hours, minutes);
-    else if (hours > 0)
-        ::sprintf(buffer, "%dh%dm", hours, minutes);
-    else if (minutes > 0)
-        ::sprintf(buffer, "%dm", minutes);
-    else
-        ::sprintf(buffer, "%ds", seconds);
-    return buffer;
-}
+std::string short_time(const std::string& time, bool force_localization = false);
+// localized short_time used on UI
+inline std::string short_time_ui(const std::string& time) { return short_time(time, true); }
 
 // Returns the given time is seconds in format DDd HHh MMm SSs
 inline std::string get_time_dhms(float time_in_secs)
@@ -325,7 +334,7 @@ inline std::string get_time_dhms(float time_in_secs)
     else if (minutes > 0)
         ::sprintf(buffer, "%dm %ds", minutes, (int)time_in_secs);
     else
-        ::sprintf(buffer, "%ds", (int)time_in_secs);
+        ::sprintf(buffer, "%ds", (int)std::round(time_in_secs));
 
     return buffer;
 }
@@ -353,8 +362,12 @@ inline std::string get_time_dhm(float time_in_secs)
 
 #if WIN32
     #define SLIC3R_STDVEC_MEMSIZE(NAME, TYPE) NAME.capacity() * ((sizeof(TYPE) + __alignof(TYPE) - 1) / __alignof(TYPE)) * __alignof(TYPE)
+    //FIXME this is an inprecise hack. Add the hash table size and possibly some estimate of the linked list at each of the used bin.
+    #define SLIC3R_STDUNORDEREDSET_MEMSIZE(NAME, TYPE) NAME.size() * ((sizeof(TYPE) + __alignof(TYPE) - 1) / __alignof(TYPE)) * __alignof(TYPE)
 #else
     #define SLIC3R_STDVEC_MEMSIZE(NAME, TYPE) NAME.capacity() * ((sizeof(TYPE) + alignof(TYPE) - 1) / alignof(TYPE)) * alignof(TYPE)
+    //FIXME this is an inprecise hack. Add the hash table size and possibly some estimate of the linked list at each of the used bin.
+    #define SLIC3R_STDUNORDEREDSET_MEMSIZE(NAME, TYPE) NAME.size() * ((sizeof(TYPE) + alignof(TYPE) - 1) / alignof(TYPE)) * alignof(TYPE)
 #endif
 
 #endif // slic3r_Utils_hpp_

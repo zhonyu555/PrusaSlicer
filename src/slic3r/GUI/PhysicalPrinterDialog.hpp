@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2022 David Kocík @kocikdav, Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_PhysicalPrinterDialog_hpp_
 #define slic3r_PhysicalPrinterDialog_hpp_
 
@@ -48,8 +52,7 @@ public:
     void                SuppressDelete();
     void                AllowDelete();
 
-    void                msw_rescale();
-    void                on_sys_color_changed() {};
+    void                on_sys_color_changed();
 };
 
 
@@ -85,7 +88,8 @@ public:
     PhysicalPrinterDialog(wxWindow* parent, wxString printer_name);
     ~PhysicalPrinterDialog();
 
-    void        update();
+    void        update(bool printer_change = false);
+    void        update_host_type(bool printer_change);
     void        update_printhost_buttons();
     void        update_printers();
     wxString    get_printer_name();
@@ -95,10 +99,10 @@ public:
     PrinterTechnology   get_printer_technology();
 
     void        DeletePreset(PresetForPrinter* preset_for_printer);
-
 protected:
     void on_dpi_changed(const wxRect& suggested_rect) override;
-    void on_sys_color_changed() override {};
+    void on_sys_color_changed() override;
+
 };
 
 

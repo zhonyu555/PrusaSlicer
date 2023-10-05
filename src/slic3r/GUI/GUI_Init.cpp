@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
+#include "libslic3r/Technologies.hpp"
 #include "GUI_Init.hpp"
 
 #include "libslic3r/AppConfig.hpp" 
@@ -9,6 +14,8 @@
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
 #include "slic3r/GUI/Plater.hpp"
+#include "slic3r/GUI/I18N.hpp"
+
 
 // To show a message box if GUI initialization ends up with an exception thrown.
 #include <wx/msgdlg.h>
@@ -16,58 +23,46 @@
 #include <boost/nowide/iostream.hpp>
 #include <boost/nowide/convert.hpp>
 
+#if __APPLE__
+    #include <signal.h>
+#endif // __APPLE__
+
 namespace Slic3r {
 namespace GUI {
 
+const std::vector<std::string> OpenGLVersions::core_str    = { "3.2", "3.3", "4.0", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6" };
+const std::vector<std::string> OpenGLVersions::precore_str = { "2.0", "2.1", "3.0", "3.1" };
+
+const std::vector<std::pair<int, int>> OpenGLVersions::core    = { {3,2}, {3,3}, {4,0}, {4,1}, {4,2}, {4,3}, {4,4}, {4,5}, {4,6} };
+const std::vector<std::pair<int, int>> OpenGLVersions::precore = { {2,0}, {2,1}, {3,0}, {3,1} };
+
 int GUI_Run(GUI_InitParams &params)
 {
+#if __APPLE__
+    // On OSX, we use boost::process::spawn() to launch new instances of PrusaSlicer from another PrusaSlicer.
+    // boost::process::spawn() sets SIGCHLD to SIGIGN for the child process, thus if a child PrusaSlicer spawns another
+    // subprocess and the subrocess dies, the child PrusaSlicer will not receive information on end of subprocess
+    // (posix waitpid() call will always fail).
+    // https://jmmv.dev/2008/10/boostprocess-and-sigchld.html
+    // The child instance of PrusaSlicer has to reset SIGCHLD to its default, so that posix waitpid() and similar continue to work.
+    // See GH issue #5507
+    signal(SIGCHLD, SIG_DFL);
+#endif // __APPLE__
+
     try {
         GUI::GUI_App* gui = new GUI::GUI_App(params.start_as_gcodeviewer ? GUI::GUI_App::EAppMode::GCodeViewer : GUI::GUI_App::EAppMode::Editor);
         if (gui->get_app_mode() != GUI::GUI_App::EAppMode::GCodeViewer) {
             // G-code viewer is currently not performing instance check, a new G-code viewer is started every time.
-            bool gui_single_instance_setting = gui->app_config->get("single_instance") == "1";
+            bool gui_single_instance_setting = gui->app_config->get_bool("single_instance");
             if (Slic3r::instance_check(params.argc, params.argv, gui_single_instance_setting)) {
                 //TODO: do we have delete gui and other stuff?
                 return -1;
             }
         }
 
-//      gui->autosave = m_config.opt_string("autosave");
         GUI::GUI_App::SetInstance(gui);
         gui->init_params = &params;
-/*
-        gui->CallAfter([gui, this, &load_configs, params.start_as_gcodeviewer] {
-            if (!gui->initialized()) {
-                return;
-            }
-
-            if (params.start_as_gcodeviewer) {
-                if (!m_input_files.empty())
-                    gui->plater()->load_gcode(wxString::FromUTF8(m_input_files[0].c_str()));
-            } else {
-#if 0
-                // Load the cummulative config over the currently active profiles.
-                //FIXME if multiple configs are loaded, only the last one will have an effect.
-                // We need to decide what to do about loading of separate presets (just print preset, just filament preset etc).
-                // As of now only the full configs are supported here.
-                if (!m_print_config.empty())
-                    gui->mainframe->load_config(m_print_config);
-#endif
-                if (!load_configs.empty())
-                    // Load the last config to give it a name at the UI. The name of the preset may be later
-                    // changed by loading an AMF or 3MF.
-                    //FIXME this is not strictly correct, as one may pass a print/filament/printer profile here instead of a full config.
-                    gui->mainframe->load_config_file(load_configs.back());
-                // If loading a 3MF file, the config is loaded from the last one.
-                if (!m_input_files.empty())
-                    gui->plater()->load_files(m_input_files, true, true);
-                if (!m_extra_config.empty())
-                    gui->mainframe->load_config(m_extra_config);
-            }
-        });
-*/
-        int result = wxEntry(params.argc, params.argv);
-        return result;
+        return wxEntry(params.argc, params.argv);
     } catch (const Slic3r::Exception &ex) {
         boost::nowide::cerr << ex.what() << std::endl;
         wxMessageBox(boost::nowide::widen(ex.what()), _L("PrusaSlicer GUI initialization failed"), wxICON_STOP);

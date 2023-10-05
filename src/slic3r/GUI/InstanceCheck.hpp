@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 David Kocík @kocikdav, Roman Beránek @zavorka
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_InstanceCheck_hpp_
 #define slic3r_InstanceCheck_hpp_
 
@@ -13,7 +17,7 @@
 
 #if __linux__
 #include <boost/thread.hpp>
-#include <tbb/mutex.h>
+#include <mutex>
 #include <condition_variable>
 #endif // __linux__
 
@@ -28,6 +32,8 @@ bool    instance_check(int argc, char** argv, bool app_config_single_instance);
 // apple implementation of inner functions of instance_check
 // in InstanceCheckMac.mm
 void    send_message_mac(const std::string& msg, const std::string& version);
+void    send_message_mac_closing(const std::string& msg, const std::string& version);
+
 
 bool unlock_lockfile(const std::string& name, const std::string& path);
 #endif //__APPLE__
@@ -41,8 +47,9 @@ class MainFrame;
 #endif // __linux__
 
 using LoadFromOtherInstanceEvent = Event<std::vector<boost::filesystem::path>>;
+using StartDownloadOtherInstanceEvent = Event<std::vector<std::string>>;
 wxDECLARE_EVENT(EVT_LOAD_MODEL_OTHER_INSTANCE, LoadFromOtherInstanceEvent);
-
+wxDECLARE_EVENT(EVT_START_DOWNLOAD_OTHER_INSTANCE, StartDownloadOtherInstanceEvent);
 using InstanceGoToFrontEvent = SimpleEvent;
 wxDECLARE_EVENT(EVT_INSTANCE_GO_TO_FRONT, InstanceGoToFrontEvent);
 
@@ -66,6 +73,10 @@ public:
 	//						mac - anybody who posts notification with name:@"OtherPrusaSlicerTerminating"
 	//						linux - instrospectable on dbus
 	void           handle_message(const std::string& message);
+#ifdef __APPLE__
+	// Messege form other instance, that it deleted its lockfile - first instance to get it will create its own.
+	void           handle_message_other_closed();
+#endif //__APPLE__
 #ifdef _WIN32
 	static void    init_windows_properties(MainFrame* main_frame, size_t instance_hash);
 #endif //WIN32

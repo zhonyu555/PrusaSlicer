@@ -1,9 +1,15 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, David Kocík @kocikdav, Vojtěch Král @vojtechkral, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "slic3r/Utils/Bonjour.hpp"   // On Windows, boost needs to be included before wxWidgets headers
 
 #include "BonjourDialog.hpp"
 
 #include <set>
 #include <mutex>
+
+#include <boost/nowide/convert.hpp>
 
 #include <wx/sizer.h>
 #include <wx/button.h>
@@ -15,6 +21,7 @@
 #include "slic3r/GUI/GUI.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/I18N.hpp"
+#include "slic3r/GUI/format.hpp"
 #include "slic3r/Utils/Bonjour.hpp"
 
 namespace Slic3r {
@@ -53,7 +60,7 @@ struct LifetimeGuard
 
 BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	: wxDialog(parent, wxID_ANY, _(L("Network lookup")), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER)
-	, list(new wxListView(this, wxID_ANY))
+	, list(new wxListView(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT|wxSIMPLE_BORDER))
 	, replies(new ReplySet)
 	, label(new wxStaticText(this, wxID_ANY, ""))
 	, timer(new wxTimer())
@@ -93,6 +100,7 @@ BonjourDialog::BonjourDialog(wxWindow *parent, Slic3r::PrinterTechnology tech)
 	});
 
 	Bind(wxEVT_TIMER, &BonjourDialog::on_timer, this);
+	GUI::wxGetApp().UpdateDlgDarkUI(this);
 }
 
 BonjourDialog::~BonjourDialog()
@@ -108,8 +116,7 @@ bool BonjourDialog::show_and_lookup()
 	timer->SetOwner(this);
 	timer_state = 1;
 	timer->Start(1000);
-	wxTimerEvent evt_dummy;
-	on_timer(evt_dummy);
+    on_timer_process();
 
 	// The background thread needs to queue messages for this dialog
 	// and for that it needs a valid pointer to it (mandated by the wxWidgets API).
@@ -120,7 +127,7 @@ bool BonjourDialog::show_and_lookup()
 	// Note: More can be done here when we support discovery of hosts other than Octoprint and SL1
 	Bonjour::TxtKeys txt_keys { "version", "model" };
 
-	bonjour = std::move(Bonjour("octoprint")
+    bonjour = Bonjour("octoprint")
 		.set_txt_keys(std::move(txt_keys))
 		.set_retries(3)
 		.set_timeout(4)
@@ -140,8 +147,7 @@ bool BonjourDialog::show_and_lookup()
 				wxQueueEvent(dialog, evt);
 			}
 		})
-		.lookup()
-	);
+		.lookup();
 
 	bool res = ShowModal() == wxID_OK && list->GetFirstSelected() >= 0;
 	{
@@ -215,17 +221,68 @@ void BonjourDialog::on_reply(BonjourReplyEvent &e)
 
 void BonjourDialog::on_timer(wxTimerEvent &)
 {
-    const auto search_str = _utf8(L("Searching for devices"));
-
-	if (timer_state > 0) {
-		const std::string dots(timer_state, '.');
-        label->SetLabel(GUI::from_u8((boost::format("%1% %2%") % search_str % dots).str()));
-		timer_state = (timer_state) % 3 + 1;
-	} else {
-        label->SetLabel(GUI::from_u8((boost::format("%1%: %2%") % search_str % (_utf8(L("Finished"))+".")).str()));
-		timer->Stop();
-	}
+    on_timer_process();
 }
 
+// This is here so the function can be bound to wxEVT_TIMER and also called
+// explicitly (wxTimerEvent should not be created by user code).
+void BonjourDialog::on_timer_process()
+{
+    const auto search_str = _L("Searching for devices");
+
+    if (timer_state > 0) {
+        const std::string dots(timer_state, '.');
+        label->SetLabel(search_str + dots);
+        timer_state = (timer_state) % 3 + 1;
+    } else {
+        label->SetLabel(search_str + ": " + _L("Finished") + ".");
+        timer->Stop();
+    }
+}
+
+IPListDialog::IPListDialog(wxWindow* parent, const wxString& hostname, const std::vector<boost::asio::ip::address>& ips, size_t& selected_index)
+	: wxDialog(parent, wxID_ANY, _(L("Multiple resolved IP addresses")), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
+	, m_list(new wxListView(this, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLC_REPORT | wxSIMPLE_BORDER))
+	, m_selected_index (selected_index)
+{
+	const int em = GUI::wxGetApp().em_unit();
+	m_list->SetMinSize(wxSize(40 * em, 30 * em));
+
+	wxBoxSizer* vsizer = new wxBoxSizer(wxVERTICAL);
+
+	auto* label = new wxStaticText(this, wxID_ANY, GUI::format_wxstr(_L("There are several IP addresses resolving to hostname %1%.\nPlease select one that should be used."), hostname));
+	vsizer->Add(label, 0, wxEXPAND | wxTOP | wxLEFT | wxRIGHT, em);
+
+	m_list->SetSingleStyle(wxLC_SINGLE_SEL);
+	m_list->AppendColumn(_(L("Address")), wxLIST_FORMAT_LEFT, 40 * em);
+
+	for (size_t i = 0; i < ips.size(); i++) 
+		m_list->InsertItem(i, boost::nowide::widen(ips[i].to_string()));
+
+	m_list->Select(0);
+
+	vsizer->Add(m_list, 1, wxEXPAND | wxALL, em);
+
+	wxBoxSizer* button_sizer = new wxBoxSizer(wxHORIZONTAL);
+	button_sizer->Add(new wxButton(this, wxID_OK, "OK"), 0, wxALL, em);
+	button_sizer->Add(new wxButton(this, wxID_CANCEL, "Cancel"), 0, wxALL, em);
+
+	vsizer->Add(button_sizer, 0, wxALIGN_CENTER);
+	SetSizerAndFit(vsizer);
+
+	GUI::wxGetApp().UpdateDlgDarkUI(this);
+}
+
+IPListDialog::~IPListDialog()
+{
+}
+
+void IPListDialog::EndModal(int retCode)
+{
+	if (retCode == wxID_OK) {
+		m_selected_index = (size_t)m_list->GetFirstSelected();
+	}
+	wxDialog::EndModal(retCode);
+}
 
 }

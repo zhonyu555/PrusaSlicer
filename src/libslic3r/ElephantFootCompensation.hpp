@@ -1,7 +1,12 @@
+///|/ Copyright (c) Prusa Research 2019 - 2021 Lukáš Hejl @hejllukas, Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_ElephantFootCompensation_hpp_
 #define slic3r_ElephantFootCompensation_hpp_
 
 #include "libslic3r.h"
+#include "ExPolygon.hpp"
 #include <vector>
 
 namespace Slic3r {

@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Vojtěch Bubník @bubnikv, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_AppConfig_hpp_
 #define slic3r_AppConfig_hpp_
 
@@ -22,10 +26,7 @@ public:
 	};
 
 	explicit AppConfig(EAppMode mode) :
-		m_dirty(false),
-		m_orig_version(Semver::invalid()),
-		m_mode(mode),
-		m_legacy_datadir(false)
+		m_mode(mode)
 	{
 		this->reset();
 	}
@@ -37,7 +38,9 @@ public:
 
 	// Load the slic3r.ini from a user profile directory (or a datadir, if configured).
 	// return error string or empty strinf
-	std::string		   	load();
+	std::string         load();
+	// Load from an explicit path.
+	std::string         load(const std::string &path);
 	// Store the slic3r.ini into a user profile directory (or a datadir, if configured).
 	void 			   	save();
 
@@ -59,24 +62,32 @@ public:
 	}
 	std::string 		get(const std::string &section, const std::string &key) const
 		{ std::string value; this->get(section, key, value); return value; }
+	bool  				get_bool(const std::string &section, const std::string &key) const
+		{ return this->get(section, key) == "1"; }
 	std::string 		get(const std::string &key) const
 		{ std::string value; this->get("", key, value); return value; }
-	void			    set(const std::string &section, const std::string &key, const std::string &value)
+	bool  				get_bool(const std::string &key) const
+		{ return this->get(key) == "1"; }
+	bool			    set(const std::string &section, const std::string &key, const std::string &value)
 	{
-#ifndef _NDEBUG
-		std::string key_trimmed = key;
-		boost::trim_all(key_trimmed);
-		assert(key_trimmed == key);
-		assert(! key_trimmed.empty());
-#endif // _NDEBUG
+#ifndef NDEBUG
+		{
+			std::string key_trimmed = key;
+			boost::trim_all(key_trimmed);
+			assert(key_trimmed == key);
+			assert(! key_trimmed.empty());
+		}
+#endif // NDEBUG
 		std::string &old = m_storage[section][key];
 		if (old != value) {
 			old = value;
 			m_dirty = true;
+			return true;
 		}
+		return false;
 	}
-	void			    set(const std::string &key, const std::string &value)
-		{ this->set("", key, value);  }
+	bool			    set(const std::string &key, const std::string &value)
+		{ return this->set("", key, value);  }
 	bool				has(const std::string &section, const std::string &key) const
 	{
 		auto it = m_storage.find(section);
@@ -88,40 +99,32 @@ public:
 	bool				has(const std::string &key) const
 		{ return this->has("", key); }
 
-	void				erase(const std::string &section, const std::string &key)
-	{
-		auto it = m_storage.find(section);
-		if (it != m_storage.end()) {
-			it->second.erase(key);
-		}
-	}
+	bool				erase(const std::string &section, const std::string &key);
 
 	bool                has_section(const std::string &section) const
 		{ return m_storage.find(section) != m_storage.end(); }
 	const std::map<std::string, std::string>& get_section(const std::string &section) const
-		{ return m_storage.find(section)->second; }
-	void set_section(const std::string &section, const std::map<std::string, std::string>& data)
-		{ m_storage[section] = data; }
-	void 				clear_section(const std::string &section)
-		{ m_storage[section].clear(); }
+		{ auto it = m_storage.find(section); assert(it != m_storage.end()); return it->second; }
+	bool 				set_section(const std::string &section, std::map<std::string, std::string> data);
+	bool 				clear_section(const std::string &section);
 
 	typedef std::map<std::string, std::map<std::string, std::set<std::string>>> VendorMap;
 	bool                get_variant(const std::string &vendor, const std::string &model, const std::string &variant) const;
-	void                set_variant(const std::string &vendor, const std::string &model, const std::string &variant, bool enable);
-	void                set_vendors(const AppConfig &from);
-	void 				set_vendors(const VendorMap &vendors) { m_vendors = vendors; m_dirty = true; }
-	void 				set_vendors(VendorMap &&vendors) { m_vendors = std::move(vendors); m_dirty = true; }
+	bool                set_variant(const std::string &vendor, const std::string &model, const std::string &variant, bool enable);
+	bool                set_vendors(const AppConfig &from) { return this->set_vendors(from.vendors()); }
+	bool 				set_vendors(const VendorMap &vendors);
+	bool 				set_vendors(VendorMap &&vendors);
 	const VendorMap&    vendors() const { return m_vendors; }
 
 	// return recent/skein_directory or recent/config_directory or empty string.
 	std::string 		get_last_dir() const;
-	void 				update_config_dir(const std::string &dir);
-	void 				update_skein_dir(const std::string &dir);
+	bool 				update_config_dir(const std::string &dir);
+	bool 				update_skein_dir(const std::string &dir);
 
 	//std::string 		get_last_output_dir(const std::string &alt) const;
 	//void                update_last_output_dir(const std::string &dir);
 	std::string 		get_last_output_dir(const std::string& alt, const bool removable = false) const;
-	void                update_last_output_dir(const std::string &dir, const bool removable = false);
+	bool                update_last_output_dir(const std::string &dir, const bool removable = false);
 
 	// reset the current print / filament / printer selections, so that 
 	// the  PresetBundle::load_selections(const AppConfig &config) call will select
@@ -129,7 +132,7 @@ public:
     void                reset_selections();
 
 	// Get the default config path from Slic3r::data_dir().
-	std::string			config_path();
+	std::string			config_path() const;
 
 	// Returns true if the user's data directory comes from before Slic3r 1.40.0 (no updating)
 	bool 				legacy_datadir() const { return m_legacy_datadir; }
@@ -138,18 +141,23 @@ public:
 	// Get the Slic3r version check url.
 	// This returns a hardcoded string unless it is overriden by "version_check_url" in the ini file.
 	std::string 		version_check_url() const;
+	// Get the Slic3r url to vendor index archive zip.
+	std::string  		index_archive_url() const;
+	// Get the Slic3r url to folder with vendor profile files.
+	std::string 		profile_folder_url() const;
+
 
 	// Returns the original Slic3r version found in the ini file before it was overwritten
 	// by the current version
 	Semver 				orig_version() const { return m_orig_version; }
 
 	// Does the config file exist?
-	bool 				exists();
+	bool 				exists() const;
 
     std::vector<std::string> get_recent_projects() const;
-    void set_recent_projects(const std::vector<std::string>& recent_projects);
+    bool set_recent_projects(const std::vector<std::string>& recent_projects);
 
-	void set_mouse_device(const std::string& name, double translation_speed, double translation_deadzone, float rotation_speed, float rotation_deadzone, double zoom_speed, bool swap_yz);
+	bool set_mouse_device(const std::string& name, double translation_speed, double translation_deadzone, float rotation_speed, float rotation_deadzone, double zoom_speed, bool swap_yz);
 	std::vector<std::string> get_mouse_device_names() const;
 	bool get_mouse_device_translation_speed(const std::string& name, double& speed) const
 		{ return get_3dmouse_device_numeric_value(name, "translation_speed", speed); }
@@ -166,6 +174,7 @@ public:
 
 	static const std::string SECTION_FILAMENTS;
     static const std::string SECTION_MATERIALS;
+    static const std::string SECTION_EMBOSS_STYLE;
 
 private:
 	template<typename T>
@@ -178,7 +187,7 @@ private:
 	    auto it_val = it->second.find(parameter_name);
 	    if (it_val == it->second.end())
 	        return false;
-	    out = T(::atof(it_val->second.c_str()));
+        out = T(string_to_double_decimal_point(it_val->second));
 	    return true;
 	}
 
@@ -196,6 +205,6 @@ private:
 	bool                                                        m_legacy_datadir;
 };
 
-}; // namespace Slic3r
+} // namespace Slic3r
 
 #endif /* slic3r_AppConfig_hpp_ */

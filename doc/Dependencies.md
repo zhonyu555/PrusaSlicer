@@ -1,7 +1,7 @@
 # Dependency report for PrusaSlicer
 ## Possible dynamic linking on Linux
 * zlib: Strict dependency required from the system, linked dynamically. Many other libs depend on zlib.
-* wxWidgets: searches for wx-3.1 by default, but with cmake option `SLIC3R_WX_STABLE=ON` it will use wx-3.0 bundled with most distros.
+* wxWidgets >= 3.2
 * libcurl
 * tbb
 * boost
@@ -11,6 +11,9 @@
 * openssl
 * nlopt
 * openvdb: This library depends on other libs, namely boost, zlib, openexr, blosc (not strictly), etc... 
+* CGAL: Needs additional dependencies
+    * MPFR 
+    * GMP
 
 ## External libraries in source tree
 * ad-mesh: Lots of customization, have to be bundled in the source tree.
@@ -21,9 +24,6 @@
 * miniz: No packages, author suggests using in the source tree
 * qhull: libqhull-dev does not contain libqhullcpp => link errors. Until it is fixed, we will use the builtin version. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=925540
 * semver: One module C library, author expects to use clib for installation. No packages.
-* Shiny: no packages
-* poly2tree: Obsolete, candidate for removal
-* polypartition: Obsolete, candidate for removal
 
 ## Header only
 * igl

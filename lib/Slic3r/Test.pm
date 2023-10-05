@@ -1,3 +1,9 @@
+#/|/ Copyright (c) Prusa Research 2016 - 2021 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966
+#/|/ Copyright (c) 2016 Joseph Lenox @lordofhyphens
+#/|/ Copyright (c) Slic3r 2012 - 2016 Alessandro Ranellucci @alranel
+#/|/
+#/|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+#/|/
 package Slic3r::Test;
 use strict;
 use warnings;
@@ -139,7 +145,6 @@ sub mesh {
     
     my $mesh = Slic3r::TriangleMesh->new;
     $mesh->ReadFromPerl($vertices, $facets);
-    $mesh->repair;
     $mesh->scale_xyz(Slic3r::Pointf3->new(@{$params{scale_xyz}})) if $params{scale_xyz};
     $mesh->translate(@{$params{translate}}) if $params{translate};
     return $mesh;
@@ -192,12 +197,12 @@ sub init_print {
     if (defined $params{duplicate} && $params{duplicate} > 1) {
         $model->duplicate($params{duplicate} // 1, $config->min_object_distance);
     }
-    $model->arrange_objects($config->min_object_distance);
-    $model->center_instances_around_point($params{print_center} ? Slic3r::Pointf->new(@{$params{print_center}}) : Slic3r::Pointf->new(100,100));
     foreach my $model_object (@{$model->objects}) {
         $model_object->ensure_on_bed;
         $print->auto_assign_extruders($model_object);
     }
+    $model->arrange_objects($config->min_object_distance);
+    $model->center_instances_around_point($params{print_center} ? Slic3r::Pointf->new(@{$params{print_center}}) : Slic3r::Pointf->new(100,100));
 
     $print->apply($model, $config);
     $print->validate;

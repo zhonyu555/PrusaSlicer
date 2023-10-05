@@ -1,4 +1,4 @@
-use Test::More tests => 24;
+use Test::More tests => 23;
 use strict;
 use warnings;
 
@@ -12,13 +12,6 @@ use List::Util qw(first);
 use Slic3r;
 use Slic3r::Geometry qw(scale convex_hull);
 use Slic3r::Test;
-
-{
-    my $gcodegen = Slic3r::GCode->new();
-    $gcodegen->set_layer_count(1);
-    $gcodegen->set_origin(Slic3r::Pointf->new(10, 10));
-    is_deeply $gcodegen->last_pos->arrayref, [scale -10, scale -10], 'last_pos is shifted correctly';
-}
 
 {
     my $config = Slic3r::Config::new_from_defaults;
@@ -133,6 +126,7 @@ use Slic3r::Test;
     my $config = Slic3r::Config::new_from_defaults;
     $config->set('retract_length', [1000000]);
     $config->set('use_relative_e_distances', 1);
+    $config->set('layer_gcode', "G92 E0\n");
     my $print = Slic3r::Test::init_print('20mm_cube', config => $config);
     Slic3r::Test::gcode($print);
     ok $print->print->total_used_filament > 0, 'final retraction is not considered in total used filament';

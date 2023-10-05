@@ -1,10 +1,32 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Martin Budden
+///|/ Copyright (c) 2021 Ilya @xorza
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/ Copyright (c) 2019 Matthias Urlichs @smurfix
+///|/ Copyright (c) 2019 Thomas Moore
+///|/ Copyright (c) 2019 Sijmen Schoon
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ ported from lib/Slic3r/GUI/Tab.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) 2015 - 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2012 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2016 Chow Loong Jin @hyperair
+///|/ Copyright (c) 2012 QuantumConcepts
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 // #include "libslic3r/GCodeSender.hpp"
+#include "slic3r/GUI/BedShapeDialog.hpp"
 #include "slic3r/Utils/Serial.hpp"
 #include "Tab.hpp"
 #include "PresetHints.hpp"
 #include "libslic3r/PresetBundle.hpp"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Model.hpp"
+#include "libslic3r/GCode/GCodeProcessor.hpp"
+#include "libslic3r/GCodeWriter.hpp"
 
 #include "slic3r/Utils/Http.hpp"
 #include "slic3r/Utils/PrintHost.hpp"
@@ -28,6 +50,9 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/exception/diagnostic_information.hpp>
+
 #include "wxExtensions.hpp"
 #include "PresetComboBoxes.hpp"
 #include <wx/wupdlock.h>
@@ -37,74 +62,25 @@
 #include "Plater.hpp"
 #include "MainFrame.hpp"
 #include "format.hpp"
-#include "PhysicalPrinterDialog.hpp"
 #include "UnsavedChangesDialog.hpp"
 #include "SavePresetDialog.hpp"
+#include "MsgDialog.hpp"
+#include "Notebook.hpp"
 
 #ifdef WIN32
-	#include <commctrl.h>
+	#include <CommCtrl.h>
 #endif // WIN32
 
 namespace Slic3r {
 namespace GUI {
 
-
-wxDEFINE_EVENT(EVT_TAB_VALUE_CHANGED, wxCommandEvent);
-wxDEFINE_EVENT(EVT_TAB_PRESETS_CHANGED, SimpleEvent);
-
-void Tab::Highlighter::set_timer_owner(wxEvtHandler* owner, int timerid/* = wxID_ANY*/)
-{
-    m_timer.SetOwner(owner, timerid);
-}
-
-void Tab::Highlighter::init(std::pair<OG_CustomCtrl*, bool*> params)
-{
-    if (m_timer.IsRunning())
-        invalidate();
-    if (!params.first || !params.second)
-        return;
-
-    m_timer.Start(300, false);
-
-    m_custom_ctrl = params.first;
-    m_show_blink_ptr = params.second;
-
-    *m_show_blink_ptr = true;
-    m_custom_ctrl->Refresh();
-}
-
-void Tab::Highlighter::invalidate()
-{
-    m_timer.Stop();
-
-    if (m_custom_ctrl && m_show_blink_ptr) {
-        *m_show_blink_ptr = false;
-        m_custom_ctrl->Refresh();
-        m_show_blink_ptr = nullptr;
-        m_custom_ctrl = nullptr;
-    }
-
-    m_blink_counter = 0;
-}
-
-void Tab::Highlighter::blink()
-{
-    if (m_custom_ctrl && m_show_blink_ptr) {
-        *m_show_blink_ptr = !*m_show_blink_ptr;
-        m_custom_ctrl->Refresh();
-    }
-    else
-        return;
-
-    if ((++m_blink_counter) == 11)
-        invalidate();
-}
-
-Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
-    m_parent(parent), m_title(title), m_type(type)
+Tab::Tab(wxBookCtrlBase* parent, const wxString& title, Preset::Type type) :
+    m_parent(parent), m_type(type), m_title(title)
 {
     Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL/*, name*/);
     this->SetFont(Slic3r::GUI::wxGetApp().normal_font());
+
+    wxGetApp().UpdateDarkUI(this);
 
     m_compatible_printers.type			= Preset::TYPE_PRINTER;
     m_compatible_printers.key_list		= "compatible_printers";
@@ -124,7 +100,7 @@ Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
 
     m_config_manipulation = get_config_manipulation();
 
-    Bind(wxEVT_SIZE, ([this](wxSizeEvent &evt) {
+    Bind(wxEVT_SIZE, ([](wxSizeEvent &evt) {
         //for (auto page : m_pages)
         //    if (! page.get()->IsShown())
         //        page->layout_valid = false;
@@ -132,10 +108,6 @@ Tab::Tab(wxNotebook* parent, const wxString& title, Preset::Type type) :
     }));
 
     m_highlighter.set_timer_owner(this, 0);
-    this->Bind(wxEVT_TIMER, [this](wxTimerEvent&)
-    {
-        m_highlighter.blink();
-    });
 }
 
 void Tab::set_type()
@@ -199,20 +171,26 @@ void Tab::create_preset_tab()
     m_scaled_buttons.reserve(6);
     m_scaled_buttons.reserve(2);
 
+    add_scaled_button(panel, &m_btn_compare_preset, "compare");
     add_scaled_button(panel, &m_btn_save_preset, "save");
+    add_scaled_button(panel, &m_btn_rename_preset, "edit");
     add_scaled_button(panel, &m_btn_delete_preset, "cross");
     if (m_type == Preset::Type::TYPE_PRINTER)
         add_scaled_button(panel, &m_btn_edit_ph_printer, "cog");
 
     m_show_incompatible_presets = false;
-    add_scaled_bitmap(this, m_bmp_show_incompatible_presets, "flag_red");
-    add_scaled_bitmap(this, m_bmp_hide_incompatible_presets, "flag_green");
 
-    add_scaled_button(panel, &m_btn_hide_incompatible_presets, m_bmp_hide_incompatible_presets.name());
+    add_scaled_button(panel, &m_btn_hide_incompatible_presets, "flag_green");
 
-    // TRN "Save current Settings"
-    m_btn_save_preset->SetToolTip(from_u8((boost::format(_utf8(L("Save current %s"))) % m_title).str()));
-    m_btn_delete_preset->SetToolTip(_(L("Delete this preset")));
+    //TRN Settings Tab: tooltip for toolbar button
+    m_btn_compare_preset->SetToolTip(_L("Compare preset with another"));
+    //TRN Settings Tab: tooltip for toolbar button
+    m_btn_save_preset  ->SetToolTip(_L("Save preset"));
+    //TRN Settings Tab: tooltip for toolbar button
+    m_btn_rename_preset->SetToolTip(_L("Rename preset"));
+    m_btn_rename_preset->Hide();
+    //TRN Settings Tab: tooltip for toolbar button
+    m_btn_delete_preset->SetToolTip(_(L("Delete preset")));
     m_btn_delete_preset->Hide();
 
     add_scaled_button(panel, &m_question_btn, "question");
@@ -238,55 +216,65 @@ void Tab::create_preset_tab()
 
     m_undo_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent) { on_roll_back_value(); }));
     m_undo_to_sys_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent) { on_roll_back_value(true); }));
-    m_question_btn->Bind(wxEVT_BUTTON, ([this](wxCommandEvent)
-    {
-        ButtonsDescription dlg(this, m_icon_descriptions);
-        if (dlg.ShowModal() == wxID_OK) {
-            // Colors for ui "decoration"
-            for (Tab *tab : wxGetApp().tabs_list) {
-                tab->m_sys_label_clr = wxGetApp().get_label_clr_sys();
-                tab->m_modified_label_clr = wxGetApp().get_label_clr_modified();
-                tab->update_labels_colour();
-            }
-        }
-    }));
-    m_search_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent) { wxGetApp().plater()->search(false); });
+    m_question_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent) {
+        GUI_Descriptions::Dialog dlg(this, m_icon_descriptions);
+        if (dlg.ShowModal() == wxID_OK)
+            wxGetApp().update_label_colours();
+    });
+    m_search_btn->Bind(wxEVT_BUTTON, [](wxCommandEvent) { wxGetApp().plater()->search(false); });
 
     // Colors for ui "decoration"
     m_sys_label_clr			= wxGetApp().get_label_clr_sys();
     m_modified_label_clr	= wxGetApp().get_label_clr_modified();
     m_default_text_clr		= wxGetApp().get_label_clr_default();
 
+#ifdef _MSW_DARK_MODE
     // Sizer with buttons for mode changing
-    m_mode_sizer = new ModeSizer(panel);
+    if (wxGetApp().tabs_as_menu())
+#endif
+        m_mode_sizer = new ModeSizer(panel, int (0.5*em_unit(this)));
 
-    const float scale_factor = /*wxGetApp().*/em_unit(this)*0.1;// GetContentScaleFactor();
-    m_hsizer = new wxBoxSizer(wxHORIZONTAL);
-    sizer->Add(m_hsizer, 0, wxEXPAND | wxBOTTOM, 3);
-    m_hsizer->Add(m_presets_choice, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_VERTICAL, 3);
-    m_hsizer->AddSpacer(int(4*scale_factor));
-    m_hsizer->Add(m_btn_save_preset, 0, wxALIGN_CENTER_VERTICAL);
-    m_hsizer->AddSpacer(int(4 * scale_factor));
-    m_hsizer->Add(m_btn_delete_preset, 0, wxALIGN_CENTER_VERTICAL);
+    const float scale_factor = em_unit(this)*0.1;// GetContentScaleFactor();
+    m_top_hsizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(m_top_hsizer, 0, wxEXPAND | wxBOTTOM | wxALIGN_CENTER_VERTICAL, 3);
+    m_top_hsizer->Add(m_presets_choice, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_VERTICAL, 3);
+    m_top_hsizer->AddSpacer(int(4*scale_factor));
+
+    m_h_buttons_sizer = new wxBoxSizer(wxHORIZONTAL);
+    m_h_buttons_sizer->Add(m_btn_save_preset, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(4*scale_factor));
+    m_h_buttons_sizer->Add(m_btn_rename_preset, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(4 * scale_factor));
+    m_h_buttons_sizer->Add(m_btn_delete_preset, 0, wxALIGN_CENTER_VERTICAL);
     if (m_btn_edit_ph_printer) {
-        m_hsizer->AddSpacer(int(4 * scale_factor));
-        m_hsizer->Add(m_btn_edit_ph_printer, 0, wxALIGN_CENTER_VERTICAL);
+        m_h_buttons_sizer->AddSpacer(int(4 * scale_factor));
+        m_h_buttons_sizer->Add(m_btn_edit_ph_printer, 0, wxALIGN_CENTER_VERTICAL);
     }
-    m_hsizer->AddSpacer(int(/*16*/8 * scale_factor));
-    m_hsizer->Add(m_btn_hide_incompatible_presets, 0, wxALIGN_CENTER_VERTICAL);
-    m_hsizer->AddSpacer(int(8 * scale_factor));
-    m_hsizer->Add(m_question_btn, 0, wxALIGN_CENTER_VERTICAL);
-    m_hsizer->AddSpacer(int(32 * scale_factor));
-    m_hsizer->Add(m_undo_to_sys_btn, 0, wxALIGN_CENTER_VERTICAL);
-    m_hsizer->Add(m_undo_btn, 0, wxALIGN_CENTER_VERTICAL);
-    m_hsizer->AddSpacer(int(32 * scale_factor));
-    m_hsizer->Add(m_search_btn, 0, wxALIGN_CENTER_VERTICAL);
-    // m_hsizer->AddStretchSpacer(32);
+    m_h_buttons_sizer->AddSpacer(int(/*16*/8 * scale_factor));
+    m_h_buttons_sizer->Add(m_btn_hide_incompatible_presets, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(8 * scale_factor));
+    m_h_buttons_sizer->Add(m_question_btn, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(32 * scale_factor));
+    m_h_buttons_sizer->Add(m_undo_to_sys_btn, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->Add(m_undo_btn, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(32 * scale_factor));
+    m_h_buttons_sizer->Add(m_search_btn, 0, wxALIGN_CENTER_VERTICAL);
+    m_h_buttons_sizer->AddSpacer(int(8*scale_factor));
+    m_h_buttons_sizer->Add(m_btn_compare_preset, 0, wxALIGN_CENTER_VERTICAL);
+
+    m_top_hsizer->Add(m_h_buttons_sizer, 1, wxEXPAND | wxALIGN_CENTRE_VERTICAL);
+    m_top_hsizer->AddSpacer(int(16*scale_factor));
     // StretchSpacer has a strange behavior under OSX, so
     // There is used just additional sizer for m_mode_sizer with right alignment
-    auto mode_sizer = new wxBoxSizer(wxVERTICAL);
-    mode_sizer->Add(m_mode_sizer, 1, wxALIGN_RIGHT);
-    m_hsizer->Add(mode_sizer, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, wxOSX ? 15 : 10);
+    if (m_mode_sizer) {
+        auto mode_sizer = new wxBoxSizer(wxVERTICAL);
+        // Don't set the 2nd parameter to 1, making the sizer rubbery scalable in Y axis may lead 
+        // to wrong vertical size assigned to wxBitmapComboBoxes, see GH issue #7176.
+        mode_sizer->Add(m_mode_sizer, 0, wxALIGN_RIGHT);
+        m_top_hsizer->Add(mode_sizer, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, wxOSX ? 15 : 10);
+    }
+    // hide whole top sizer to correct layout later
+    m_top_hsizer->ShowItems(false);
 
     //Horizontal sizer to hold the tree and the selected page.
     m_hsizer = new wxBoxSizer(wxHORIZONTAL);
@@ -299,19 +287,25 @@ void Tab::create_preset_tab()
     // tree
     m_treectrl = new wxTreeCtrl(panel, wxID_ANY, wxDefaultPosition, wxSize(20 * m_em_unit, -1),
         wxTR_NO_BUTTONS | wxTR_HIDE_ROOT | wxTR_SINGLE | wxTR_NO_LINES | wxBORDER_SUNKEN | wxWANTS_CHARS);
+    m_treectrl->SetFont(wxGetApp().normal_font());
     m_left_sizer->Add(m_treectrl, 1, wxEXPAND);
-    const int img_sz = int(16 * scale_factor + 0.5f);
-    m_icons = new wxImageList(img_sz, img_sz, true, 1);
-    // Index of the last icon inserted into $self->{icons}.
+    // Index of the last icon inserted into m_treectrl
     m_icon_count = -1;
-    m_treectrl->AssignImageList(m_icons);
     m_treectrl->AddRoot("root");
     m_treectrl->SetIndent(0);
+    wxGetApp().UpdateDarkUI(m_treectrl);
 
     // Delay processing of the following handler until the message queue is flushed.
     // This helps to process all the cursor key events on Windows in the tree control,
     // so that the cursor jumps to the last item.
     m_treectrl->Bind(wxEVT_TREE_SEL_CHANGED, [this](wxTreeEvent&) {
+#ifdef __linux__
+        // Events queue is opposite On Linux. wxEVT_SET_FOCUS invokes after wxEVT_TREE_SEL_CHANGED,
+        // and a result wxEVT_KILL_FOCUS doesn't invoke for the TextCtrls.
+        // see https://github.com/prusa3d/PrusaSlicer/issues/5720
+        // So, call SetFocus explicitly for this control before changing of the selection
+        m_treectrl->SetFocus();
+#endif
             if (!m_disable_tree_sel_changed_event && !m_pages.empty()) {
                 if (m_page_switch_running)
                     m_page_switch_planned = true;
@@ -341,7 +335,9 @@ void Tab::create_preset_tab()
     m_page_view->SetScrollbars(1, 20, 1, 2);
     m_hsizer->Add(m_page_view, 1, wxEXPAND | wxLEFT, 5);
 
+    m_btn_compare_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { compare_preset(); }));
     m_btn_save_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { save_preset(); }));
+    m_btn_rename_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { rename_preset(); }));
     m_btn_delete_preset->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) { delete_preset(); }));
     m_btn_hide_incompatible_presets->Bind(wxEVT_BUTTON, ([this](wxCommandEvent e) {
         toggle_show_hide_incompatible();
@@ -358,6 +354,14 @@ void Tab::create_preset_tab()
     // Initialize the DynamicPrintConfig by default keys/values.
     build();
 
+    if (!m_scaled_icons_list.empty()) {
+        // update icons for tree_ctrl
+        wxVector<wxBitmapBundle> img_bundles;
+        for (const ScalableBitmap& bmp : m_scaled_icons_list)
+            img_bundles.push_back(bmp.bmp());
+        m_treectrl->SetImages(img_bundles);
+    }
+
     // ys_FIXME: Following should not be needed, the function will be called later
     // (update_mode->update_visibility->rebuild_page_tree). This does not work, during the
     // second call of rebuild_page_tree m_treectrl->GetFirstVisibleItem(); returns zero
@@ -373,7 +377,7 @@ void Tab::add_scaled_button(wxWindow* parent,
                             const wxString& label/* = wxEmptyString*/,
                             long style /*= wxBU_EXACTFIT | wxNO_BORDER*/)
 {
-    *btn = new ScalableButton(parent, wxID_ANY, icon_name, label, wxDefaultSize, wxDefaultPosition, style, true);
+    *btn = new ScalableButton(parent, wxID_ANY, icon_name, label, wxDefaultSize, wxDefaultPosition, style);
     m_scaled_buttons.push_back(*btn);
 }
 
@@ -403,7 +407,6 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
         if (icon_idx == -1) {
             // Add a new icon to the icon list.
             m_scaled_icons_list.push_back(ScalableBitmap(this, icon));
-            m_icons->Add(m_scaled_icons_list.back().bmp());
             icon_idx = ++m_icon_count;
             m_icon_index[icon] = icon_idx;
         }
@@ -414,11 +417,6 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
         }
     }
     // Initialize the page.
-#ifdef __WXOSX__
-    auto panel = m_tmp_panel;
-#else
-    auto panel = this;
-#endif
     PageShp page(new Page(m_page_view, title, icon_idx));
 //	page->SetBackgroundStyle(wxBG_STYLE_SYSTEM);
 #ifdef __WINDOWS__
@@ -482,13 +480,37 @@ void Tab::OnActivate()
     // create controls on active page
     activate_selected_page([](){});
     m_hsizer->Layout();
-    Refresh();
+
+    if (m_presets_choice->IsShown())
+        Refresh(); // Just refresh page, if m_presets_choice is already shown
+    else {
+        // From the tab creation whole top sizer is hidden to correct update of preset combobox's size
+        // (see https://github.com/prusa3d/PrusaSlicer/issues/10746)
+
+        // On first OnActivate call show top sizer
+        m_top_hsizer->ShowItems(true);
+        // Size and layouts of all items are correct now,
+        // but ALL items of top sizer are visible.
+        // So, update visibility of each item according to the ui settings
+        update_btns_enabling();
+        m_btn_hide_incompatible_presets->Show(m_show_btn_incompatible_presets && m_type != Slic3r::Preset::TYPE_PRINTER);
+        if (TabFilament* tab = dynamic_cast<TabFilament*>(this))
+            tab->update_extruder_combobox();
+
+        Layout();
+    }
 }
 
-void Tab::update_labels_colour()
+void Tab::update_label_colours()
 {
+    m_default_text_clr = wxGetApp().get_label_clr_default();
+    if (m_sys_label_clr == wxGetApp().get_label_clr_sys() && m_modified_label_clr == wxGetApp().get_label_clr_modified())
+        return;
+    m_sys_label_clr = wxGetApp().get_label_clr_sys();
+    m_modified_label_clr = wxGetApp().get_label_clr_modified();
+
     //update options "decoration"
-    for (const auto opt : m_options_list)
+    for (const auto& opt : m_options_list)
     {
         const wxColour *color = &m_sys_label_clr;
 
@@ -501,10 +523,9 @@ void Tab::update_labels_colour()
             else
                 color = &m_modified_label_clr;
         }
-        if (opt.first == "bed_shape"            || opt.first == "filament_ramming_parameters" || 
-            opt.first == "compatible_prints"    || opt.first == "compatible_printers"           ) {
-            if (m_colored_Label_colors.find(opt.first) != m_colored_Label_colors.end())
-                *m_colored_Label_colors.at(opt.first) = *color;
+        if (OptionsGroup::is_option_without_field(opt.first)) {
+            if (Line* line = get_line(opt.first))
+                line->set_label_colour(color);
             continue;
         }
 
@@ -532,20 +553,21 @@ void Tab::update_labels_colour()
         }
         cur_item = m_treectrl->GetNextVisible(cur_item);
     }
+
+    decorate();
 }
 
 void Tab::decorate()
 {
-    for (const auto opt : m_options_list)
+    for (const auto& opt : m_options_list)
     {
         Field*      field = nullptr;
-        wxColour*   colored_label_clr = nullptr;
+        bool        option_without_field = false;
 
-        if (opt.first == "bed_shape" || opt.first == "filament_ramming_parameters" ||
-            opt.first == "compatible_prints" || opt.first == "compatible_printers") 
-            colored_label_clr = (m_colored_Label_colors.find(opt.first) == m_colored_Label_colors.end()) ? nullptr : m_colored_Label_colors.at(opt.first);
+        if(OptionsGroup::is_option_without_field(opt.first))
+            option_without_field = true;
 
-        if (!colored_label_clr) {
+        if (!option_without_field) {
             field = get_field(opt.first);
             if (!field)
                 continue;
@@ -580,8 +602,14 @@ void Tab::decorate()
             tt = &m_tt_white_bullet;
         }
 
-        if (colored_label_clr) {
-            *colored_label_clr = *color;
+        if (option_without_field) {
+            if (Line* line = get_line(opt.first)) {
+                line->set_undo_bitmap(icon);
+                line->set_undo_to_sys_bitmap(sys_icon);
+                line->set_undo_tooltip(tt);
+                line->set_undo_to_sys_tooltip(sys_tt);
+                line->set_label_colour(color);
+            }
             continue;
         }
         
@@ -604,15 +632,29 @@ void Tab::update_changed_ui()
     if (m_postpone_update_ui)
         return;
 
-    const bool deep_compare = (m_type == Slic3r::Preset::TYPE_PRINTER || m_type == Slic3r::Preset::TYPE_SLA_MATERIAL);
+    const bool deep_compare = m_type != Preset::TYPE_FILAMENT;
     auto dirty_options = m_presets->current_dirty_options(deep_compare);
     auto nonsys_options = m_presets->current_different_from_parent_options(deep_compare);
-    if (m_type == Slic3r::Preset::TYPE_PRINTER) {
-        TabPrinter* tab = static_cast<TabPrinter*>(this);
-        if (tab->m_initial_extruders_count != tab->m_extruders_count)
-            dirty_options.emplace_back("extruders_count");
-        if (tab->m_sys_extruders_count != tab->m_extruders_count)
-            nonsys_options.emplace_back("extruders_count");
+    if (m_type == Preset::TYPE_PRINTER) {
+        {
+            auto check_bed_custom_options = [](std::vector<std::string>& keys) {
+                size_t old_keys_size = keys.size();
+                keys.erase(std::remove_if(keys.begin(), keys.end(), [](const std::string& key) { 
+                    return key == "bed_custom_texture" || key == "bed_custom_model"; }), keys.end());
+                if (old_keys_size != keys.size() && std::find(keys.begin(), keys.end(), "bed_shape") == keys.end())
+                    keys.emplace_back("bed_shape");
+            };
+            check_bed_custom_options(dirty_options);
+            check_bed_custom_options(nonsys_options);
+        }
+
+        if (static_cast<TabPrinter*>(this)->m_printer_technology == ptFFF) {
+            TabPrinter* tab = static_cast<TabPrinter*>(this);
+            if (tab->m_initial_extruders_count != tab->m_extruders_count)
+                dirty_options.emplace_back("extruders_count");
+            if (tab->m_sys_extruders_count != tab->m_extruders_count)
+                nonsys_options.emplace_back("extruders_count");
+        }
     }
 
     for (auto& it : m_options_list)
@@ -631,11 +673,10 @@ void Tab::update_changed_ui()
 
 void Tab::init_options_list()
 {
-    if (!m_options_list.empty())
-        m_options_list.clear();
+    m_options_list.clear();
 
-    for (const auto opt_key : m_config->keys())
-        m_options_list.emplace(opt_key, m_opt_status_value);
+    for (const std::string& opt_key : m_config->keys())
+        emplace_option(opt_key, m_type != Preset::TYPE_FILAMENT && !PresetCollection::is_independent_from_extruder_number_option(opt_key));
 }
 
 template<class T>
@@ -646,80 +687,31 @@ void add_correct_opts_to_options_list(const std::string &opt_key, std::map<std::
         map.emplace(opt_key + "#" + std::to_string(i), value);
 }
 
+void Tab::emplace_option(const std::string& opt_key, bool respect_vec_values/* = false*/)
+{
+    if (respect_vec_values) {
+        switch (m_config->option(opt_key)->type())
+        {
+        case coInts:	add_correct_opts_to_options_list<ConfigOptionInts		>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coBools:	add_correct_opts_to_options_list<ConfigOptionBools		>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coFloats:	add_correct_opts_to_options_list<ConfigOptionFloats		>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coStrings:	add_correct_opts_to_options_list<ConfigOptionStrings	>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coPercents:add_correct_opts_to_options_list<ConfigOptionPercents	>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coPoints:	add_correct_opts_to_options_list<ConfigOptionPoints		>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        case coFloatsOrPercents:	add_correct_opts_to_options_list<ConfigOptionFloatsOrPercents		>(opt_key, m_options_list, this, m_opt_status_value);	break;
+        default:		m_options_list.emplace(opt_key, m_opt_status_value);		break;
+        }
+    }
+    else 
+        m_options_list.emplace(opt_key, m_opt_status_value);
+}
+
 void TabPrinter::init_options_list()
 {
-    if (!m_options_list.empty())
-        m_options_list.clear();
+    Tab::init_options_list();
 
-    for (const auto opt_key : m_config->keys())
-    {
-        if (opt_key == "bed_shape" || opt_key == "thumbnails") {
-            m_options_list.emplace(opt_key, m_opt_status_value);
-            continue;
-        }
-        switch (m_config->option(opt_key)->type())
-        {
-        case coInts:	add_correct_opts_to_options_list<ConfigOptionInts		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coBools:	add_correct_opts_to_options_list<ConfigOptionBools		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coFloats:	add_correct_opts_to_options_list<ConfigOptionFloats		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coStrings:	add_correct_opts_to_options_list<ConfigOptionStrings	>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coPercents:add_correct_opts_to_options_list<ConfigOptionPercents	>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coPoints:	add_correct_opts_to_options_list<ConfigOptionPoints		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        default:		m_options_list.emplace(opt_key, m_opt_status_value);		break;
-        }
-    }
-    m_options_list.emplace("extruders_count", m_opt_status_value);
-}
-
-void TabPrinter::msw_rescale()
-{
-    Tab::msw_rescale();
-
-    // rescale missed options_groups
-    const std::vector<PageShp>& pages = m_printer_technology == ptFFF ? m_pages_sla : m_pages_fff;
-    for (auto page : pages)
-        page->msw_rescale();
-
-    if (m_reset_to_filament_color)
-        m_reset_to_filament_color->msw_rescale();
-
-    Layout();
-}
-
-void TabPrinter::sys_color_changed() 
-{
-    Tab::sys_color_changed();
-
-    // update missed options_groups
-    const std::vector<PageShp>& pages = m_printer_technology == ptFFF ? m_pages_sla : m_pages_fff;
-    for (auto page : pages)
-        page->sys_color_changed();
-
-    Layout();
-}
-
-void TabSLAMaterial::init_options_list()
-{
-    if (!m_options_list.empty())
-        m_options_list.clear();
-
-    for (const auto opt_key : m_config->keys())
-    {
-        if (opt_key == "compatible_prints" || opt_key == "compatible_printers") {
-            m_options_list.emplace(opt_key, m_opt_status_value);
-            continue;
-        }
-        switch (m_config->option(opt_key)->type())
-        {
-        case coInts:	add_correct_opts_to_options_list<ConfigOptionInts		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coBools:	add_correct_opts_to_options_list<ConfigOptionBools		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coFloats:	add_correct_opts_to_options_list<ConfigOptionFloats		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coStrings:	add_correct_opts_to_options_list<ConfigOptionStrings	>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coPercents:add_correct_opts_to_options_list<ConfigOptionPercents	>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        case coPoints:	add_correct_opts_to_options_list<ConfigOptionPoints		>(opt_key, m_options_list, this, m_opt_status_value);	break;
-        default:		m_options_list.emplace(opt_key, m_opt_status_value);		break;
-        }
-    }
+    if (m_printer_technology == ptFFF)
+        m_options_list.emplace("extruders_count", m_opt_status_value);
 }
 
 void Tab::get_sys_and_mod_flags(const std::string& opt_key, bool& sys_page, bool& modified_page)
@@ -804,8 +796,11 @@ void Tab::update_changed_tree_ui()
 
 void Tab::update_undo_buttons()
 {
-    m_undo_btn->        SetBitmap_(m_is_modified_values ? m_bmp_value_revert: m_bmp_white_bullet);
-    m_undo_to_sys_btn-> SetBitmap_(m_is_nonsys_values   ? *m_bmp_non_system : m_bmp_value_lock);
+    m_undo_btn->        SetBitmap_(m_is_modified_values ? m_bmp_value_revert.name(): m_bmp_white_bullet.name());
+    m_undo_to_sys_btn-> SetBitmap_(m_is_nonsys_values   ? m_bmp_non_system->name() : m_bmp_value_lock.name());
+
+    //m_undo_btn->        SetBitmap_(m_is_modified_values ? m_bmp_value_revert: m_bmp_white_bullet);
+    //m_undo_to_sys_btn-> SetBitmap_(m_is_nonsys_values   ? *m_bmp_non_system : m_bmp_value_lock);
 
     m_undo_btn->SetToolTip(m_is_modified_values ? m_ttg_value_revert : m_ttg_white_bullet);
     m_undo_to_sys_btn->SetToolTip(m_is_nonsys_values ? *m_ttg_non_system : m_ttg_value_lock);
@@ -842,24 +837,22 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
             if ((m_options_list["filament_ramming_parameters"] & os) == 0)
                 to_sys ? group->back_to_sys_value("filament_ramming_parameters") : group->back_to_initial_value("filament_ramming_parameters");
         }
+        if (group->title == "G-code Substitutions") {
+            if ((m_options_list["gcode_substitutions"] & os) == 0) {
+                to_sys ? group->back_to_sys_value("gcode_substitutions") : group->back_to_initial_value("gcode_substitutions");
+                load_key_value("gcode_substitutions", true/*some value*/, true);
+            }
+        }
         if (group->title == "Profile dependencies") {
             // "compatible_printers" option doesn't exists in Printer Settimgs Tab
             if (m_type != Preset::TYPE_PRINTER && (m_options_list["compatible_printers"] & os) == 0) {
                 to_sys ? group->back_to_sys_value("compatible_printers") : group->back_to_initial_value("compatible_printers");
                 load_key_value("compatible_printers", true/*some value*/, true);
-
-                bool is_empty = m_config->option<ConfigOptionStrings>("compatible_printers")->values.empty();
-                m_compatible_printers.checkbox->SetValue(is_empty);
-                is_empty ? m_compatible_printers.btn->Disable() : m_compatible_printers.btn->Enable();
             }
             // "compatible_prints" option exists only in Filament Settimgs and Materials Tabs
             if ((m_type == Preset::TYPE_FILAMENT || m_type == Preset::TYPE_SLA_MATERIAL) && (m_options_list["compatible_prints"] & os) == 0) {
                 to_sys ? group->back_to_sys_value("compatible_prints") : group->back_to_initial_value("compatible_prints");
                 load_key_value("compatible_prints", true/*some value*/, true);
-
-                bool is_empty = m_config->option<ConfigOptionStrings>("compatible_prints")->values.empty();
-                m_compatible_prints.checkbox->SetValue(is_empty);
-                is_empty ? m_compatible_prints.btn->Disable() : m_compatible_prints.btn->Enable();
             }
         }
         for (const auto &kvp : group->opt_map()) {
@@ -870,6 +863,10 @@ void Tab::on_roll_back_value(const bool to_sys /*= true*/)
     }
 
     m_postpone_update_ui = false;
+
+    // When all values are rolled, then we have to update whole tab in respect to the reverted values
+    update();
+
     update_changed_ui();
 }
 
@@ -916,11 +913,22 @@ void Tab::update_mode()
     m_mode = wxGetApp().get_mode();
 
     // update mode for ModeSizer
-    m_mode_sizer->SetMode(m_mode);
+    if (m_mode_sizer)
+        m_mode_sizer->SetMode(m_mode);
 
     update_visibility();
 
     update_changed_tree_ui();
+}
+
+void Tab::update_mode_markers()
+{
+    // update mode for ModeSizer
+    if (m_mode_sizer)
+        m_mode_sizer->update_mode_markers();
+
+    if (m_active_page)
+        m_active_page->refresh();
 }
 
 void Tab::update_visibility()
@@ -931,7 +939,7 @@ void Tab::update_visibility()
         page->update_visibility(m_mode, page.get() == m_active_page);
     rebuild_page_tree();
 
-    if (this->m_type == Preset::TYPE_SLA_PRINT)
+    if (m_type != Preset::TYPE_PRINTER)
         update_description_lines();
 
     Layout();
@@ -942,29 +950,8 @@ void Tab::msw_rescale()
 {
     m_em_unit = em_unit(m_parent);
 
-    m_mode_sizer->msw_rescale();
     m_presets_choice->msw_rescale();
-
     m_treectrl->SetMinSize(wxSize(20 * m_em_unit, -1));
-
-    // rescale buttons and cached bitmaps
-    for (const auto btn : m_scaled_buttons)
-        btn->msw_rescale();
-    for (const auto bmp : m_scaled_bitmaps)
-        bmp->msw_rescale();
-
-    if (m_detach_preset_btn)
-        m_detach_preset_btn->msw_rescale();
-
-    // rescale icons for tree_ctrl
-    for (ScalableBitmap& bmp : m_scaled_icons_list)
-        bmp.msw_rescale();
-    // recreate and set new ImageList for tree_ctrl
-    m_icons->RemoveAll();
-    m_icons = new wxImageList(m_scaled_icons_list.front().bmp().GetWidth(), m_scaled_icons_list.front().bmp().GetHeight());
-    for (ScalableBitmap& bmp : m_scaled_icons_list)
-        m_icons->Add(bmp.bmp());
-    m_treectrl->AssignImageList(m_icons);
 
     // rescale options_groups
     if (m_active_page)
@@ -975,40 +962,53 @@ void Tab::msw_rescale()
 
 void Tab::sys_color_changed()
 {
-    update_tab_ui();
-    m_presets_choice->msw_rescale();
+    m_presets_choice->sys_color_changed();
 
     // update buttons and cached bitmaps
     for (const auto btn : m_scaled_buttons)
-        btn->msw_rescale();
+        btn->sys_color_changed();
     for (const auto bmp : m_scaled_bitmaps)
-        bmp->msw_rescale();
+        bmp->sys_color_changed();
+    if (m_detach_preset_btn)
+        m_detach_preset_btn->sys_color_changed();
+
+    update_show_hide_incompatible_button();
 
     // update icons for tree_ctrl
-    for (ScalableBitmap& bmp : m_scaled_icons_list)
-        bmp.msw_rescale();
-    // recreate and set new ImageList for tree_ctrl
-    m_icons->RemoveAll();
-    m_icons = new wxImageList(m_scaled_icons_list.front().bmp().GetWidth(), m_scaled_icons_list.front().bmp().GetHeight());
-    for (ScalableBitmap& bmp : m_scaled_icons_list)
-        m_icons->Add(bmp.bmp());
-    m_treectrl->AssignImageList(m_icons);
+    wxVector <wxBitmapBundle> img_bundles;
+    for (ScalableBitmap& bmp : m_scaled_icons_list) {
+        bmp.sys_color_changed();
+        img_bundles.push_back(bmp.bmp());
+    }
+    m_treectrl->SetImages(img_bundles);
 
     // Colors for ui "decoration"
-    m_sys_label_clr = wxGetApp().get_label_clr_sys();
-    m_modified_label_clr = wxGetApp().get_label_clr_modified();
-    update_labels_colour();
+    update_label_colours();
+#ifdef _WIN32
+    wxWindowUpdateLocker noUpdates(this);
+    if (m_mode_sizer)
+        m_mode_sizer->sys_color_changed();
+    wxGetApp().UpdateDarkUI(this);
+    wxGetApp().UpdateDarkUI(m_treectrl);
+#endif
+    update_changed_tree_ui();
 
     // update options_groups
     if (m_active_page)
-        m_active_page->msw_rescale();
+        m_active_page->sys_color_changed();
 
     Layout();
+    Refresh();
 }
 
 Field* Tab::get_field(const t_config_option_key& opt_key, int opt_index/* = -1*/) const
 {
     return m_active_page ? m_active_page->get_field(opt_key, opt_index) : nullptr;
+}
+
+Line* Tab::get_line(const t_config_option_key& opt_key)
+{
+    return m_active_page ? m_active_page->get_line(opt_key) : nullptr;
 }
 
 std::pair<OG_CustomCtrl*, bool*> Tab::get_custom_ctrl_with_blinking_ptr(const t_config_option_key& opt_key, int opt_index/* = -1*/)
@@ -1067,12 +1067,15 @@ void Tab::load_key_value(const std::string& opt_key, const boost::any& value, bo
 
 static wxString support_combo_value_for_config(const DynamicPrintConfig &config, bool is_fff)
 {
+    std::string slatree = is_fff ? "" : get_sla_suptree_prefix(config);
+
     const std::string support         = is_fff ? "support_material"                 : "supports_enable";
-    const std::string buildplate_only = is_fff ? "support_material_buildplate_only" : "support_buildplate_only";
+    const std::string buildplate_only = is_fff ? "support_material_buildplate_only" : slatree + "support_buildplate_only";
+
     return
         ! config.opt_bool(support) ?
             _("None") :
-            (is_fff && !config.opt_bool("support_material_auto")) ?
+               ((is_fff && !config.opt_bool("support_material_auto")) || (!is_fff && config.opt_bool("support_enforcers_only"))) ?
                 _("For support enforcers only") :
                 (config.opt_bool(buildplate_only) ? _("Support on build plate only") :
                                                     _("Everywhere"));
@@ -1088,6 +1091,11 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
     if (wxGetApp().plater() == nullptr) {
         return;
     }
+
+    if (opt_key == "compatible_prints")
+        this->compatible_widget_reload(m_compatible_prints);
+    if (opt_key == "compatible_printers")
+        this->compatible_widget_reload(m_compatible_printers);
 
     const bool is_fff = supports_printer_technology(ptFFF);
     ConfigOptionsGroup* og_freq_chng_params = wxGetApp().sidebar().og_freq_chng_params(is_fff);
@@ -1106,7 +1114,7 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
 
     if (is_fff ?
             (opt_key == "support_material" || opt_key == "support_material_auto" || opt_key == "support_material_buildplate_only") :
-            (opt_key == "supports_enable"  || opt_key == "support_buildplate_only"))
+            (opt_key == "supports_enable"  || opt_key == "support_tree_type" || opt_key == get_sla_suptree_prefix(*m_config) + "support_buildplate_only" || opt_key == "support_enforcers_only"))
         og_freq_chng_params->set_value("support", support_combo_value_for_config(*m_config, is_fff));
 
     if (! is_fff && (opt_key == "pad_enable" || opt_key == "pad_around_object"))
@@ -1124,6 +1132,13 @@ void Tab::on_value_change(const std::string& opt_key, const boost::any& value)
     if (opt_key == "extruders_count")
         wxGetApp().plater()->on_extruders_change(boost::any_cast<size_t>(value));
 
+    if (m_postpone_update_ui) {
+        // It means that not all values are rolled to the system/last saved values jet.
+        // And call of the update() can causes a redundant check of the config values,
+        // see https://github.com/prusa3d/PrusaSlicer/issues/7146
+        return;
+    }
+
     update();
 }
 
@@ -1133,10 +1148,11 @@ void Tab::update_wiping_button_visibility() {
         return; // ys_FIXME
     bool wipe_tower_enabled = dynamic_cast<ConfigOptionBool*>(  (m_preset_bundle->prints.get_edited_preset().config  ).option("wipe_tower"))->value;
     bool multiple_extruders = dynamic_cast<ConfigOptionFloats*>((m_preset_bundle->printers.get_edited_preset().config).option("nozzle_diameter"))->values.size() > 1;
+    bool single_extruder_multi_material = dynamic_cast<ConfigOptionBool*>((m_preset_bundle->printers.get_edited_preset().config).option("single_extruder_multi_material"))->value;
 
     auto wiping_dialog_button = wxGetApp().sidebar().get_wiping_dialog_button();
     if (wiping_dialog_button) {
-        wiping_dialog_button->Show(wipe_tower_enabled && multiple_extruders);
+        wiping_dialog_button->Show(wipe_tower_enabled && multiple_extruders && single_extruder_multi_material);
         wiping_dialog_button->GetParent()->Layout();
     }
 }
@@ -1146,8 +1162,12 @@ void Tab::activate_option(const std::string& opt_key, const wxString& category)
     wxString page_title = translate_category(category, m_type);
 
     auto cur_item = m_treectrl->GetFirstVisibleItem();
-    if (!cur_item || !m_treectrl->IsVisible(cur_item))
+    if (!cur_item)
         return;
+
+    // We should to activate a tab with searched option, if it doesn't.
+    // And do it before finding of the cur_item to avoid a case when Tab isn't activated jet and all treeItems are invisible
+    wxGetApp().mainframe->select_tab(this);
 
     while (cur_item) {
         auto title = m_treectrl->GetItemText(cur_item);
@@ -1160,13 +1180,21 @@ void Tab::activate_option(const std::string& opt_key, const wxString& category)
         break;
     }
 
-    // we should to activate a tab with searched option, if it doesn't.
-    wxGetApp().mainframe->select_tab(this);
+    auto set_focus = [](wxWindow* win) {
+        win->SetFocus();
+#ifdef WIN32
+        if (wxTextCtrl* text = dynamic_cast<wxTextCtrl*>(win))
+            text->SetSelection(-1, -1);
+        else if (wxSpinCtrl* spin = dynamic_cast<wxSpinCtrl*>(win))
+            spin->SetSelection(-1, -1);
+#endif // WIN32
+    };
+
     Field* field = get_field(opt_key);
 
     // focused selected field
     if (field)
-        field->getWindow()->SetFocus();
+        set_focus(field->getWindow());
     else if (category == "Single extruder MM setup") {
         // When we show and hide "Single extruder MM setup" page, 
         // related options are still in the search list
@@ -1174,30 +1202,33 @@ void Tab::activate_option(const std::string& opt_key, const wxString& category)
         // as a "way" to show hidden page again
         field = get_field("single_extruder_multi_material");
         if (field)
-            field->getWindow()->SetFocus();
+            set_focus(field->getWindow());
     }
 
     m_highlighter.init(get_custom_ctrl_with_blinking_ptr(opt_key));
 }
 
-void Tab::apply_searcher()
+void Tab::cache_config_diff(const std::vector<std::string>& selected_options, const DynamicPrintConfig* config/* = nullptr*/)
 {
-    wxGetApp().sidebar().get_searcher().apply(m_config, m_type, m_mode);
-}
-
-void Tab::cache_config_diff(const std::vector<std::string>& selected_options)
-{
-    m_cache_config.apply_only(m_presets->get_edited_preset().config, selected_options);
+    m_cache_config.apply_only(config ? *config : m_presets->get_edited_preset().config, selected_options);
 }
 
 void Tab::apply_config_from_cache()
 {
+    bool was_applied = false;
+    // check and apply extruders count for printer preset
+    if (m_type == Preset::TYPE_PRINTER)
+        was_applied = static_cast<TabPrinter*>(this)->apply_extruder_cnt_from_cache();
+
     if (!m_cache_config.empty()) {
         m_presets->get_edited_preset().config.apply(m_cache_config);
         m_cache_config.clear();
 
-        update_dirty();
+        was_applied = true;
     }
+
+    if (was_applied)
+        update_dirty();
 }
 
 
@@ -1208,9 +1239,8 @@ void Tab::apply_config_from_cache()
 // to update number of "filament" selection boxes when the number of extruders change.
 void Tab::on_presets_changed()
 {
-    if (wxGetApp().plater() == nullptr) {
+    if (wxGetApp().plater() == nullptr)
         return;
-    }
 
     // Instead of PostEvent (EVT_TAB_PRESETS_CHANGED) just call update_presets
     wxGetApp().plater()->sidebar().update_presets(m_type);
@@ -1228,6 +1258,10 @@ void Tab::on_presets_changed()
     // clear m_dependent_tabs after first update from select_preset()
     // to avoid needless preset loading from update() function
     m_dependent_tabs.clear();
+
+    // Update Project dirty state, update application title bar.
+    if (wxGetApp().mainframe)
+        wxGetApp().plater()->update_project_dirty_from_presets();
 }
 
 void Tab::build_preset_description_line(ConfigOptionsGroup* optgroup)
@@ -1238,7 +1272,7 @@ void Tab::build_preset_description_line(ConfigOptionsGroup* optgroup)
 
     auto detach_preset_btn = [this](wxWindow* parent) {
         m_detach_preset_btn = new ScalableButton(parent, wxID_ANY, "lock_open_sys", _L("Detach from system preset"), 
-                                                 wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
+                                                 wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
         ScalableButton* btn = m_detach_preset_btn;
         btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
 
@@ -1257,9 +1291,10 @@ void Tab::build_preset_description_line(ConfigOptionsGroup* optgroup)
             	msg_text += _(L("Modifications to the current profile will be saved."));
             }
             msg_text += "\n\n";
-            msg_text += _(L("This action is not revertable.\nDo you want to proceed?"));
+            msg_text += _(L("This action is not revertible.\nDo you want to proceed?"));
 
-            wxMessageDialog dialog(parent, msg_text, _(L("Detach preset")), wxICON_WARNING | wxYES_NO | wxCANCEL);
+            //wxMessageDialog dialog(parent, msg_text, _(L("Detach preset")), wxICON_WARNING | wxYES_NO | wxCANCEL);
+            MessageDialog dialog(parent, msg_text, _(L("Detach preset")), wxICON_WARNING | wxYES_NO | wxCANCEL);
             if (dialog.ShowModal() == wxID_YES)
                 save_preset(m_presets->get_edited_preset().is_system ? std::string() : m_presets->get_edited_preset().name, true);
         });
@@ -1386,7 +1421,7 @@ void TabPrint::build()
     load_initial_data();
 
     auto page = add_options_page(L("Layers and perimeters"), "layers");
-        wxString category_path = "layers-and-perimeters_1748#";
+        std::string category_path = "layers-and-perimeters_1748#";
         auto optgroup = page->new_optgroup(L("Layer height"));
         optgroup->append_single_option_line("layer_height", category_path + "layer-height");
         optgroup->append_single_option_line("first_layer_height", category_path + "first-layer-height");
@@ -1422,14 +1457,26 @@ void TabPrint::build()
 
         optgroup = page->new_optgroup(L("Quality (slower slicing)"));
         optgroup->append_single_option_line("extra_perimeters", category_path + "extra-perimeters-if-needed");
-        optgroup->append_single_option_line("ensure_vertical_shell_thickness", category_path + "ensure-vertical-shell-thickness");
+        optgroup->append_single_option_line("extra_perimeters_on_overhangs", category_path + "extra-perimeters-on-overhangs");
+        optgroup->append_single_option_line("avoid_crossing_curled_overhangs", category_path + "avoid-crossing-curled-overhangs");
         optgroup->append_single_option_line("avoid_crossing_perimeters", category_path + "avoid-crossing-perimeters");
+        optgroup->append_single_option_line("avoid_crossing_perimeters_max_detour", category_path + "avoid_crossing_perimeters_max_detour");
         optgroup->append_single_option_line("thin_walls", category_path + "detect-thin-walls");
+        optgroup->append_single_option_line("thick_bridges", category_path + "thick_bridges");
         optgroup->append_single_option_line("overhangs", category_path + "detect-bridging-perimeters");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("seam_position", category_path + "seam-position");
+        optgroup->append_single_option_line("staggered_inner_seams", category_path + "staggered-inner-seams");
         optgroup->append_single_option_line("external_perimeters_first", category_path + "external-perimeters-first");
+        optgroup->append_single_option_line("gap_fill_enabled", category_path + "fill-gaps");
+        optgroup->append_single_option_line("perimeter_generator");
+
+        optgroup = page->new_optgroup(L("Fuzzy skin (experimental)"));
+        category_path = "fuzzy-skin_246186/#";
+        optgroup->append_single_option_line("fuzzy_skin", category_path + "fuzzy-skin-type");
+        optgroup->append_single_option_line("fuzzy_skin_thickness", category_path + "fuzzy-skin-thickness");
+        optgroup->append_single_option_line("fuzzy_skin_point_dist", category_path + "fuzzy-skin-point-distance");
 
     page = add_options_page(L("Infill"), "infill");
         category_path = "infill_42#";
@@ -1442,14 +1489,16 @@ void TabPrint::build()
         optgroup->append_single_option_line("bottom_fill_pattern", category_path + "bottom-fill-pattern");
 
         optgroup = page->new_optgroup(L("Ironing"));
-        optgroup->append_single_option_line("ironing");
-        optgroup->append_single_option_line("ironing_type");
-        optgroup->append_single_option_line("ironing_flowrate");
-        optgroup->append_single_option_line("ironing_spacing");
+        category_path = "ironing_177488#";
+        optgroup->append_single_option_line("ironing", category_path);
+        optgroup->append_single_option_line("ironing_type", category_path + "ironing-type");
+        optgroup->append_single_option_line("ironing_flowrate", category_path + "flow-rate");
+        optgroup->append_single_option_line("ironing_spacing", category_path + "spacing-between-ironing-passes");
 
         optgroup = page->new_optgroup(L("Reducing printing time"));
+        category_path = "infill_42#";
         optgroup->append_single_option_line("infill_every_layers", category_path + "combine-infill-every-x-layers");
-        optgroup->append_single_option_line("infill_only_where_needed", category_path + "only-infill-where-needed");
+        // optgroup->append_single_option_line("infill_only_where_needed", category_path + "only-infill-where-needed");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("solid_infill_every_layers", category_path + "solid-infill-every-x-layers");
@@ -1471,7 +1520,9 @@ void TabPrint::build()
         optgroup->append_single_option_line("min_skirt_length", category_path + "skirt");
 
         optgroup = page->new_optgroup(L("Brim"));
+        optgroup->append_single_option_line("brim_type", category_path + "brim");
         optgroup->append_single_option_line("brim_width", category_path + "brim");
+        optgroup->append_single_option_line("brim_separation", category_path + "brim");
 
     page = add_options_page(L("Support material"), "support");
         category_path = "support-material_1698#";
@@ -1480,24 +1531,42 @@ void TabPrint::build()
         optgroup->append_single_option_line("support_material_auto", category_path + "auto-generated-supports");
         optgroup->append_single_option_line("support_material_threshold", category_path + "overhang-threshold");
         optgroup->append_single_option_line("support_material_enforce_layers", category_path + "enforce-support-for-the-first");
+        optgroup->append_single_option_line("raft_first_layer_density", category_path + "raft-first-layer-density");
+        optgroup->append_single_option_line("raft_first_layer_expansion", category_path + "raft-first-layer-expansion");
 
         optgroup = page->new_optgroup(L("Raft"));
         optgroup->append_single_option_line("raft_layers", category_path + "raft-layers");
-//		# optgroup->append_single_option_line(get_option_("raft_contact_distance");
+        optgroup->append_single_option_line("raft_contact_distance", category_path + "raft-layers");
+        optgroup->append_single_option_line("raft_expansion");
 
         optgroup = page->new_optgroup(L("Options for support material and raft"));
+        optgroup->append_single_option_line("support_material_style", category_path + "style");
         optgroup->append_single_option_line("support_material_contact_distance", category_path + "contact-z-distance");
+        optgroup->append_single_option_line("support_material_bottom_contact_distance", category_path + "contact-z-distance");
         optgroup->append_single_option_line("support_material_pattern", category_path + "pattern");
         optgroup->append_single_option_line("support_material_with_sheath", category_path + "with-sheath-around-the-support");
         optgroup->append_single_option_line("support_material_spacing", category_path + "pattern-spacing-0-inf");
         optgroup->append_single_option_line("support_material_angle", category_path + "pattern-angle");
+        optgroup->append_single_option_line("support_material_closing_radius", category_path + "pattern-angle");
         optgroup->append_single_option_line("support_material_interface_layers", category_path + "interface-layers");
+        optgroup->append_single_option_line("support_material_bottom_interface_layers", category_path + "interface-layers");
+        optgroup->append_single_option_line("support_material_interface_pattern", category_path + "interface-pattern");
         optgroup->append_single_option_line("support_material_interface_spacing", category_path + "interface-pattern-spacing");
         optgroup->append_single_option_line("support_material_interface_contact_loops", category_path + "interface-loops");
         optgroup->append_single_option_line("support_material_buildplate_only", category_path + "support-on-build-plate-only");
         optgroup->append_single_option_line("support_material_xy_spacing", category_path + "xy-separation-between-an-object-and-its-support");
         optgroup->append_single_option_line("dont_support_bridges", category_path + "dont-support-bridges");
         optgroup->append_single_option_line("support_material_synchronize_layers", category_path + "synchronize-with-object-layers");
+
+        optgroup = page->new_optgroup(L("Organic supports"));
+        optgroup->append_single_option_line("support_tree_angle", category_path + "tree_angle");
+        optgroup->append_single_option_line("support_tree_angle_slow", category_path + "tree_angle_slow");
+        optgroup->append_single_option_line("support_tree_branch_diameter", category_path + "tree_branch_diameter");
+        optgroup->append_single_option_line("support_tree_branch_diameter_angle", category_path + "tree_branch_diameter_angle");
+        optgroup->append_single_option_line("support_tree_branch_diameter_double_wall", category_path + "tree_branch_diameter_double_wall");
+        optgroup->append_single_option_line("support_tree_tip_diameter", category_path + "tree_tip_diameter");
+        optgroup->append_single_option_line("support_tree_branch_distance", category_path + "tree_branch_distance");
+        optgroup->append_single_option_line("support_tree_top_rate", category_path + "tree_top_rate");
 
     page = add_options_page(L("Speed"), "time");
         optgroup = page->new_optgroup(L("Speed for print moves"));
@@ -1513,26 +1582,40 @@ void TabPrint::build()
         optgroup->append_single_option_line("gap_fill_speed");
         optgroup->append_single_option_line("ironing_speed");
 
+        optgroup = page->new_optgroup(L("Dynamic overhang speed"));
+        optgroup->append_single_option_line("enable_dynamic_overhang_speeds");
+        optgroup->append_single_option_line("overhang_speed_0");
+        optgroup->append_single_option_line("overhang_speed_1");
+        optgroup->append_single_option_line("overhang_speed_2");
+        optgroup->append_single_option_line("overhang_speed_3");
+
         optgroup = page->new_optgroup(L("Speed for non-print moves"));
         optgroup->append_single_option_line("travel_speed");
+        optgroup->append_single_option_line("travel_speed_z");
 
         optgroup = page->new_optgroup(L("Modifiers"));
         optgroup->append_single_option_line("first_layer_speed");
+        optgroup->append_single_option_line("first_layer_speed_over_raft");
 
         optgroup = page->new_optgroup(L("Acceleration control (advanced)"));
+        optgroup->append_single_option_line("external_perimeter_acceleration");
         optgroup->append_single_option_line("perimeter_acceleration");
+        optgroup->append_single_option_line("top_solid_infill_acceleration");
+        optgroup->append_single_option_line("solid_infill_acceleration");
         optgroup->append_single_option_line("infill_acceleration");
         optgroup->append_single_option_line("bridge_acceleration");
         optgroup->append_single_option_line("first_layer_acceleration");
+        optgroup->append_single_option_line("first_layer_acceleration_over_raft");
+        optgroup->append_single_option_line("travel_acceleration");
         optgroup->append_single_option_line("default_acceleration");
 
         optgroup = page->new_optgroup(L("Autospeed (advanced)"));
         optgroup->append_single_option_line("max_print_speed", "max-volumetric-speed_127176");
         optgroup->append_single_option_line("max_volumetric_speed", "max-volumetric-speed_127176");
-#ifdef HAS_PRESSURE_EQUALIZER
-        optgroup->append_single_option_line("max_volumetric_extrusion_rate_slope_positive");
-        optgroup->append_single_option_line("max_volumetric_extrusion_rate_slope_negative");
-#endif /* HAS_PRESSURE_EQUALIZER */
+
+        optgroup = page->new_optgroup(L("Pressure equalizer (experimental)"));
+        optgroup->append_single_option_line("max_volumetric_extrusion_rate_slope_positive", "pressure-equlizer_331504");
+        optgroup->append_single_option_line("max_volumetric_extrusion_rate_slope_negative", "pressure-equlizer_331504");
 
     page = add_options_page(L("Multiple Extruders"), "funnel");
         optgroup = page->new_optgroup(L("Extruders"));
@@ -1541,6 +1624,7 @@ void TabPrint::build()
         optgroup->append_single_option_line("solid_infill_extruder");
         optgroup->append_single_option_line("support_material_extruder");
         optgroup->append_single_option_line("support_material_interface_extruder");
+        optgroup->append_single_option_line("wipe_tower_extruder");
 
         optgroup = page->new_optgroup(L("Ooze prevention"));
         optgroup->append_single_option_line("ooze_prevention");
@@ -1552,12 +1636,17 @@ void TabPrint::build()
         optgroup->append_single_option_line("wipe_tower_y");
         optgroup->append_single_option_line("wipe_tower_width");
         optgroup->append_single_option_line("wipe_tower_rotation_angle");
+        optgroup->append_single_option_line("wipe_tower_brim_width");
         optgroup->append_single_option_line("wipe_tower_bridging");
+        optgroup->append_single_option_line("wipe_tower_cone_angle");
+        optgroup->append_single_option_line("wipe_tower_extra_spacing");
         optgroup->append_single_option_line("wipe_tower_no_sparse_layers");
         optgroup->append_single_option_line("single_extruder_multi_material_priming");
 
         optgroup = page->new_optgroup(L("Advanced"));
         optgroup->append_single_option_line("interface_shells");
+        optgroup->append_single_option_line("mmu_segmented_region_max_width");
+        optgroup->append_single_option_line("mmu_segmented_region_interlocking_depth");
 
     page = add_options_page(L("Advanced"), "wrench");
         optgroup = page->new_optgroup(L("Extrusion width"));
@@ -1578,12 +1667,19 @@ void TabPrint::build()
 
         optgroup = page->new_optgroup(L("Slicing"));
         optgroup->append_single_option_line("slice_closing_radius");
+        optgroup->append_single_option_line("slicing_mode");
         optgroup->append_single_option_line("resolution");
+        optgroup->append_single_option_line("gcode_resolution");
         optgroup->append_single_option_line("xy_size_compensation");
         optgroup->append_single_option_line("elefant_foot_compensation", "elephant-foot-compensation_114487");
 
-        optgroup = page->new_optgroup(L("Other"));
-        optgroup->append_single_option_line("clip_multipart_objects");
+        optgroup = page->new_optgroup(L("Arachne perimeter generator"));
+        optgroup->append_single_option_line("wall_transition_angle");
+        optgroup->append_single_option_line("wall_transition_filter_deviation");
+        optgroup->append_single_option_line("wall_transition_length");
+        optgroup->append_single_option_line("wall_distribution_count");
+        optgroup->append_single_option_line("min_bead_width");
+        optgroup->append_single_option_line("min_feature_size");
 
     page = add_options_page(L("Output options"), "output+page_white");
         optgroup = page->new_optgroup(L("Sequential printing"));
@@ -1600,23 +1696,41 @@ void TabPrint::build()
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
 
+        optgroup = page->new_optgroup(L("Other"));
+
+        create_line_with_widget(optgroup.get(), "gcode_substitutions", "g-code-substitutions_301694", [this](wxWindow* parent) {
+            return create_manage_substitution_widget(parent);
+        });
+        line = { "", "" };
+        line.full_width = 1;
+        line.widget = [this](wxWindow* parent) {
+            return create_substitutions_widget(parent);
+        };
+        optgroup->append_line(line);
+
         optgroup = page->new_optgroup(L("Post-processing scripts"), 0);
+        line = { "", "" };
+        line.full_width = 1;
+        line.widget = [this](wxWindow* parent) {
+            return description_line_widget(parent, &m_post_process_explanation);
+        };
+        optgroup->append_line(line);
         option = optgroup->get_option("post_process");
         option.opt.full_width = true;
         option.opt.height = 5;//50;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Notes"), "note.png");
+    page = add_options_page(L("Notes"), "note");
         optgroup = page->new_optgroup(L("Notes"), 0);
         option = optgroup->get_option("notes");
         option.opt.full_width = true;
         option.opt.height = 25;//250;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Dependencies"), "wrench.png");
+    page = add_options_page(L("Dependencies"), "wrench");
         optgroup = page->new_optgroup(L("Profile dependencies"));
 
-        create_line_with_widget(optgroup.get(), "compatible_printers", wxEmptyString, [this](wxWindow* parent) {
+        create_line_with_widget(optgroup.get(), "compatible_printers", "", [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_printers);
         });
         
@@ -1625,13 +1739,6 @@ void TabPrint::build()
         optgroup->append_single_option_line(option);
 
         build_preset_description_line(optgroup.get());
-}
-
-// Reload current config (aka presets->edited_preset->config) into the UI fields.
-void TabPrint::reload_config()
-{
-    this->compatible_widget_reload(m_compatible_printers);
-    Tab::reload_config();
 }
 
 void TabPrint::update_description_lines()
@@ -1649,6 +1756,20 @@ void TabPrint::update_description_lines()
         m_top_bottom_shell_thickness_explanation->SetText(
             from_u8(PresetHints::top_bottom_shell_thickness_explanation(*m_preset_bundle)));
     }
+
+    if (m_active_page && m_active_page->title() == "Output options") {
+        if (m_post_process_explanation) {
+            m_post_process_explanation->SetText(
+                _L("Post processing scripts shall modify G-code file in place."));
+            m_post_process_explanation->SetPathEnd("post-processing-scripts_283913");
+        }
+        // upadte G-code substitutions from the current configuration
+        {
+            m_subst_manager.update_from_config();
+            if (m_del_all_substitutions_btn)
+                m_del_all_substitutions_btn->Show(!m_subst_manager.is_empty_substitutions());
+        }
+    }
 }
 
 void TabPrint::toggle_options()
@@ -1664,6 +1785,20 @@ void TabPrint::update()
         return; // ys_FIXME
 
     m_update_cnt++;
+
+    // see https://github.com/prusa3d/PrusaSlicer/issues/6814
+    // ysFIXME: It's temporary workaround and should be clewer reworked:
+    // Note: This workaround works till "support_material" and "overhangs" is exclusive sets of mutually no-exclusive parameters.
+    // But it should be corrected when we will have more such sets.
+    // Disable check of the compatibility of the "support_material" and "overhangs" options for saved user profile
+    // NOTE: Initialization of the support_material_overhangs_queried value have to be processed just ones
+    if (!m_config_manipulation.is_initialized_support_material_overhangs_queried())
+    {
+        const Preset& selected_preset = m_preset_bundle->prints.get_selected_preset();
+        bool is_user_and_saved_preset = !selected_preset.is_system && !selected_preset.is_dirty;
+        bool support_material_overhangs_queried = m_config->opt_bool("support_material") && !m_config->opt_bool("overhangs");
+        m_config_manipulation.initialize_support_material_overhangs_queried(is_user_and_saved_preset && support_material_overhangs_queried);
+    }
 
     m_config_manipulation.update_print_fff_config(m_config, true);
 
@@ -1690,45 +1825,89 @@ void TabPrint::clear_pages()
 
     m_recommended_thin_wall_thickness_description_line = nullptr;
     m_top_bottom_shell_thickness_explanation = nullptr;
+    m_post_process_explanation = nullptr;
+
+    m_del_all_substitutions_btn = nullptr;
 }
 
-void TabFilament::add_filament_overrides_page()
+bool Tab::validate_custom_gcode(const wxString& title, const std::string& gcode)
 {
-    PageShp page = add_options_page(L("Filament Overrides"), "wrench");
-    ConfigOptionsGroupShp optgroup = page->new_optgroup(L("Retraction"));
+    std::vector<std::string> tags;
+    bool invalid = GCodeProcessor::contains_reserved_tags(gcode, 5, tags);
+    if (invalid) {
+        std::string lines = ":\n";
+        for (const std::string& keyword : tags)
+            lines += ";" + keyword + "\n";
+        wxString reports = format_wxstr(
+            _L_PLURAL("The following line %s contains reserved keywords.\nPlease remove it, as it may cause problems in G-code visualization and printing time estimation.", 
+                      "The following lines %s contain reserved keywords.\nPlease remove them, as they may cause problems in G-code visualization and printing time estimation.", 
+                      tags.size()),
+            lines);
+        //wxMessageDialog dialog(wxGetApp().mainframe, reports, _L("Found reserved keywords in") + " " + _(title), wxICON_WARNING | wxOK);
+        MessageDialog dialog(wxGetApp().mainframe, reports, _L("Found reserved keywords in") + " " + _(title), wxICON_WARNING | wxOK);
+        dialog.ShowModal();
+    }
+    return !invalid;
+}
 
-    auto append_single_option_line = [optgroup, this](const std::string& opt_key, int opt_index)
-    {
-        Line line {"",""};
-        if (opt_key == "filament_retract_lift_above" || opt_key == "filament_retract_lift_below") {
-            Option opt = optgroup->get_option(opt_key);
-            opt.opt.label = opt.opt.full_label;
-            line = optgroup->create_single_option_line(opt);
-        }
-        else
-            line = optgroup->create_single_option_line(optgroup->get_option(opt_key));
+static void validate_custom_gcode_cb(Tab* tab, const wxString& title, const t_config_option_key& opt_key, const boost::any& value) {
+    tab->validate_custom_gcodes_was_shown = !Tab::validate_custom_gcode(title, boost::any_cast<std::string>(value));
+    tab->update_dirty();
+    tab->on_value_change(opt_key, value);
+}
 
-        line.near_label_widget = [this, optgroup, opt_key, opt_index](wxWindow* parent) {
-            wxCheckBox* check_box = new wxCheckBox(parent, wxID_ANY, "");
+void TabFilament::create_line_with_near_label_widget(ConfigOptionsGroupShp optgroup, const std::string& opt_key, int opt_index/* = 0*/)
+{
+    Line line {"",""};
+    if (opt_key == "filament_retract_lift_above" || opt_key == "filament_retract_lift_below") {
+        Option opt = optgroup->get_option(opt_key);
+        opt.opt.label = opt.opt.full_label;
+        line = optgroup->create_single_option_line(opt);
+    }
+    else
+        line = optgroup->create_single_option_line(optgroup->get_option(opt_key));
 
-            check_box->Bind(wxEVT_CHECKBOX, [this, optgroup, opt_key, opt_index](wxCommandEvent& evt) {
-                const bool is_checked = evt.IsChecked();
-                Field* field = optgroup->get_fieldc(opt_key, opt_index);
-                if (field != nullptr) {
+    line.near_label_widget = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup), opt_key, opt_index](wxWindow* parent) {
+        wxCheckBox* check_box = new wxCheckBox(parent, wxID_ANY, "");
+
+        check_box->Bind(wxEVT_CHECKBOX, [optgroup_wk, opt_key, opt_index](wxCommandEvent& evt) {
+            const bool is_checked = evt.IsChecked();
+            if (auto optgroup_sh = optgroup_wk.lock(); optgroup_sh) {
+                if (Field *field = optgroup_sh->get_fieldc(opt_key, opt_index); field != nullptr) {
                     field->toggle(is_checked);
                     if (is_checked)
                         field->set_last_meaningful_value();
                     else
                         field->set_na_value();
                 }
-            }, check_box->GetId());
+            }
+        }, check_box->GetId());
 
-            m_overrides_options[opt_key] = check_box;
-            return check_box;
-        };
-
-        optgroup->append_line(line);
+        m_overrides_options[opt_key] = check_box;
+        return check_box;
     };
+
+    optgroup->append_line(line);
+}
+
+void TabFilament::update_line_with_near_label_widget(ConfigOptionsGroupShp optgroup, const std::string& opt_key, int opt_index/* = 0*/, bool is_checked/* = true*/)
+{
+    if (!m_overrides_options[opt_key])
+        return;
+    m_overrides_options[opt_key]->Enable(is_checked);
+
+    is_checked &= !m_config->option(opt_key)->is_nil();
+    m_overrides_options[opt_key]->SetValue(is_checked);
+
+    Field* field = optgroup->get_fieldc(opt_key, opt_index);
+    if (field != nullptr)
+        field->toggle(is_checked);
+}
+
+void TabFilament::add_filament_overrides_page()
+{
+    PageShp page = add_options_page(L("Filament Overrides"), "wrench");
+    ConfigOptionsGroupShp optgroup = page->new_optgroup(L("Retraction"));
 
     const int extruder_idx = 0; // #ys_FIXME
 
@@ -1744,7 +1923,14 @@ void TabFilament::add_filament_overrides_page()
                                         "filament_wipe",
                                         "filament_retract_before_wipe"
                                      })
-        append_single_option_line(opt_key, extruder_idx);
+        create_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
+
+    optgroup = page->new_optgroup(L("Retraction when tool is disabled"));
+    for (const std::string opt_key : {  "filament_retract_length_toolchange",
+                                        "filament_retract_restart_extra_toolchange"
+                                     })
+        create_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
+
 }
 
 void TabFilament::update_filament_overrides_page()
@@ -1753,7 +1939,7 @@ void TabFilament::update_filament_overrides_page()
         return;
     Page* page = m_active_page;
 
-    const auto og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction"; });
+    auto og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction"; });
     if (og_it == page->m_optgroups.end())
         return;
     ConfigOptionsGroupShp optgroup = *og_it;
@@ -1779,23 +1965,93 @@ void TabFilament::update_filament_overrides_page()
     for (const std::string& opt_key : opt_keys)
     {
         bool is_checked = opt_key=="filament_retract_length" ? true : have_retract_length;
-        m_overrides_options[opt_key]->Enable(is_checked);
-
-        is_checked &= !m_config->option(opt_key)->is_nil();
-        m_overrides_options[opt_key]->SetValue(is_checked);
-
-        Field* field = optgroup->get_fieldc(opt_key, extruder_idx);
-        if (field != nullptr)
-            field->toggle(is_checked);
+        update_line_with_near_label_widget(optgroup, opt_key, extruder_idx, is_checked);
     }
+
+    og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction when tool is disabled"; });
+    if (og_it == page->m_optgroups.end())
+        return;
+    optgroup = *og_it;
+
+    for (const std::string& opt_key : {"filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange"})
+        update_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
+
+
+}
+
+void TabFilament::create_extruder_combobox()
+{
+    m_extruders_cb = new BitmapComboBox(this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize(12 * m_em_unit, -1), 0, nullptr, wxCB_READONLY);
+    m_extruders_cb->Hide();
+
+    m_extruders_cb->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent&) {
+        set_active_extruder(m_extruders_cb->GetSelection());
+    });
+
+    m_h_buttons_sizer->AddSpacer(3*em_unit(this));
+    m_h_buttons_sizer->Add(m_extruders_cb, 0, wxALIGN_CENTER_VERTICAL);
+}
+
+void TabFilament::update_extruder_combobox()
+{
+    if (!m_presets_choice->IsShown())
+        return; // it will be updated later, on OnActive()
+
+    const size_t extruder_cnt = static_cast<const ConfigOptionFloats*>(m_preset_bundle->printers.get_edited_preset().config.option("nozzle_diameter"))->values.size();
+
+    m_extruders_cb->Show(extruder_cnt > 1);
+
+    if (extruder_cnt != m_extruders_cb->GetCount()) {
+        m_extruders_cb->Clear();
+        for (size_t id = 1; id <= extruder_cnt; id++)
+            m_extruders_cb->Append(format_wxstr("%1% %2%", _L("Extruder"), id), *get_bmp_bundle("funnel"));
+    }
+
+    if (m_active_extruder >= int(extruder_cnt)) {
+        m_active_extruder = 0;
+        // update selected and, as a result, editing preset
+        const std::string& preset_name = m_preset_bundle->extruders_filaments[0].get_selected_preset_name();
+        m_presets->select_preset_by_name(preset_name, true);
+
+        // To avoid inconsistance between value of active_extruder in FilamentTab and TabPresetComboBox,
+        // which can causes a crash on switch preset from MM printer to SM printer
+        m_presets_choice->set_active_extruder(m_active_extruder);
+    }
+
+    m_extruders_cb->SetSelection(m_active_extruder);
+}
+
+bool TabFilament::set_active_extruder(int new_selected_extruder)
+{
+    if (m_active_extruder == new_selected_extruder)
+        return true;
+
+    const int old_extruder_id = m_active_extruder;
+    m_active_extruder = new_selected_extruder;
+    m_presets_choice->set_active_extruder(m_active_extruder);
+
+    if (!select_preset(m_preset_bundle->extruders_filaments[m_active_extruder].get_selected_preset_name())) {
+        m_active_extruder = old_extruder_id;
+        m_presets_choice->set_active_extruder(m_active_extruder);
+        m_extruders_cb->SetSelection(m_active_extruder);
+        return false;
+    }
+
+    if (m_active_extruder != m_extruders_cb->GetSelection())
+        m_extruders_cb->Select(m_active_extruder);
+
+    return true;
 }
 
 void TabFilament::build()
 {
+    // add extruder combobox
+    create_extruder_combobox();
+
     m_presets = &m_preset_bundle->filaments;
     load_initial_data();
 
-    auto page = add_options_page(L("Filament"), "spool.png");
+    auto page = add_options_page(L("Filament"), "spool");
         auto optgroup = page->new_optgroup(L("Filament"));
         optgroup->append_single_option_line("filament_colour");
         optgroup->append_single_option_line("filament_diameter");
@@ -1804,7 +2060,7 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_cost");
         optgroup->append_single_option_line("filament_spool_weight");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value)
+        optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
         {
             update_dirty();
             if (opt_key == "filament_spool_weight") {
@@ -1817,6 +2073,9 @@ void TabFilament::build()
         };
 
         optgroup = page->new_optgroup(L("Temperature"));
+
+        create_line_with_near_label_widget(optgroup, "idle_temperature");
+
         Line line = { L("Nozzle"), "" };
         line.append_option(optgroup->get_option("first_layer_temperature"));
         line.append_option(optgroup->get_option("temperature"));
@@ -1828,7 +2087,7 @@ void TabFilament::build()
         optgroup->append_line(line);
 
     page = add_options_page(L("Cooling"), "cooling");
-        wxString category_path = "cooling_127569#";
+        std::string category_path = "cooling_127569#";
         optgroup = page->new_optgroup(L("Enable"));
         optgroup->append_single_option_line("fan_always_on");
         optgroup->append_single_option_line("cooling");
@@ -1850,6 +2109,13 @@ void TabFilament::build()
         optgroup->append_single_option_line("bridge_fan_speed", category_path + "fan-settings");
         optgroup->append_single_option_line("disable_fan_first_layers", category_path + "fan-settings");
         optgroup->append_single_option_line("full_fan_speed_layer", category_path + "fan-settings");
+
+        optgroup = page->new_optgroup(L("Dynamic fan speeds"), 25);
+        optgroup->append_single_option_line("enable_dynamic_fan_speeds", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_0", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_1", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_2", category_path + "dynamic-fan-speeds");
+        optgroup->append_single_option_line("overhang_fan_speed_3", category_path + "dynamic-fan-speeds");
 
         optgroup = page->new_optgroup(L("Cooling thresholds"), 25);
         optgroup->append_single_option_line("fan_below_layer_time", category_path + "cooling-thresholds");
@@ -1889,8 +2155,9 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_cooling_initial_speed");
         optgroup->append_single_option_line("filament_cooling_final_speed");
 
-        create_line_with_widget(optgroup.get(), "filament_ramming_parameters", wxEmptyString, [this](wxWindow* parent) {
+        create_line_with_widget(optgroup.get(), "filament_ramming_parameters", "", [this](wxWindow* parent) {
             auto ramming_dialog_btn = new wxButton(parent, wxID_ANY, _(L("Ramming settings"))+dots, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+            wxGetApp().UpdateDarkUI(ramming_dialog_btn);
             ramming_dialog_btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
             ramming_dialog_btn->SetSize(ramming_dialog_btn->GetBestSize());
             auto sizer = new wxBoxSizer(wxHORIZONTAL);
@@ -1907,6 +2174,12 @@ void TabFilament::build()
         });
 
 
+        optgroup = page->new_optgroup(L("Toolchange parameters with multi extruder MM printers"));
+        optgroup->append_single_option_line("filament_multitool_ramming");
+        optgroup->append_single_option_line("filament_multitool_ramming_volume");
+        optgroup->append_single_option_line("filament_multitool_ramming_flow");
+
+
     add_filament_overrides_page();
 
 
@@ -1915,6 +2188,9 @@ void TabFilament::build()
 
     page = add_options_page(L("Custom G-code"), "cog");
         optgroup = page->new_optgroup(L("Start G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("start_filament_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -1922,13 +2198,16 @@ void TabFilament::build()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("End G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("end_filament_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;// 150;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Notes"), "note.png");
+    page = add_options_page(L("Notes"), "note");
         optgroup = page->new_optgroup(L("Notes"), 0);
         optgroup->label_width = 0;
         option = optgroup->get_option("filament_notes");
@@ -1936,9 +2215,9 @@ void TabFilament::build()
         option.opt.height = notes_field_height;// 250;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Dependencies"), "wrench.png");
+    page = add_options_page(L("Dependencies"), "wrench");
         optgroup = page->new_optgroup(L("Profile dependencies"));
-        create_line_with_widget(optgroup.get(), "compatible_printers", wxEmptyString, [this](wxWindow* parent) {
+        create_line_with_widget(optgroup.get(), "compatible_printers", "", [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_printers);
         });
 
@@ -1946,7 +2225,7 @@ void TabFilament::build()
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
 
-        create_line_with_widget(optgroup.get(), "compatible_prints", wxEmptyString, [this](wxWindow* parent) {
+        create_line_with_widget(optgroup.get(), "compatible_prints", "", [this](wxWindow* parent) {
             return compatible_widget_create(parent, m_compatible_prints);
         });
 
@@ -1955,14 +2234,6 @@ void TabFilament::build()
         optgroup->append_single_option_line(option);
 
         build_preset_description_line(optgroup.get());
-}
-
-// Reload current config (aka presets->edited_preset->config) into the UI fields.
-void TabFilament::reload_config()
-{
-    this->compatible_widget_reload(m_compatible_printers);
-    this->compatible_widget_reload(m_compatible_prints);
-    Tab::reload_config();
 }
 
 void TabFilament::update_volumetric_flow_preset_hints()
@@ -2004,10 +2275,30 @@ void TabFilament::toggle_options()
 
         for (auto el : { "min_fan_speed", "disable_fan_first_layers", "full_fan_speed_layer" })
             toggle_option(el, fan_always_on);
+
+        bool dynamic_fan_speeds = m_config->opt_bool("enable_dynamic_fan_speeds", 0);
+        for (int i = 0; i < 4; i++) {
+        toggle_option("overhang_fan_speed_"+std::to_string(i),dynamic_fan_speeds);
+        }
+    }
+
+    if (m_active_page->title() == "Advanced")
+    {
+        bool multitool_ramming = m_config->opt_bool("filament_multitool_ramming", 0);
+        toggle_option("filament_multitool_ramming_volume", multitool_ramming);
+        toggle_option("filament_multitool_ramming_flow", multitool_ramming);
     }
 
     if (m_active_page->title() == "Filament Overrides")
         update_filament_overrides_page();
+
+    if (m_active_page->title() == "Filament") {
+        Page* page = m_active_page;
+
+        const auto og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Temperature"; });
+        if (og_it != page->m_optgroups.end())
+            update_line_with_near_label_widget(*og_it, "idle_temperature");
+    }
 }
 
 void TabFilament::update()
@@ -2024,7 +2315,7 @@ void TabFilament::update()
 
     m_update_cnt--;
 
-    if (m_update_cnt == 0)
+    if (m_update_cnt == 0 && wxGetApp().mainframe)
         wxGetApp().mainframe->on_config_changed(m_config);
 }
 
@@ -2034,6 +2325,86 @@ void TabFilament::clear_pages()
 
     m_volumetric_speed_description_line = nullptr;
 	m_cooling_description_line = nullptr;
+}
+
+void TabFilament::msw_rescale()
+{
+    for (const auto& over_opt : m_overrides_options)
+        if (wxWindow* win = over_opt.second)
+            win->SetInitialSize(win->GetBestSize());
+
+    Tab::msw_rescale();
+}
+
+void TabFilament::sys_color_changed()
+{
+    m_extruders_cb->Clear();
+    update_extruder_combobox();
+
+    Tab::sys_color_changed();
+}
+
+void TabFilament::load_current_preset()
+{
+    const std::string& selected_filament_name = m_presets->get_selected_preset_name();
+    if (m_active_extruder < 0) {
+        // active extruder was invalidated before load new project file or configuration,
+        // so we have to update active extruder selection from selected filament
+        const std::string& edited_filament_name = m_presets->get_edited_preset().name;
+        assert(!selected_filament_name.empty() && selected_filament_name == edited_filament_name);
+
+        for (int i = 0; i < int(m_preset_bundle->extruders_filaments.size()); i++) {
+            const std::string& selected_extr_filament_name = m_preset_bundle->extruders_filaments[i].get_selected_preset_name();
+            if (selected_extr_filament_name == edited_filament_name) {
+                m_active_extruder = i;
+                break;
+            }
+        }
+        assert(m_active_extruder >= 0);
+
+        m_presets_choice->set_active_extruder(m_active_extruder);
+        if (m_active_extruder != m_extruders_cb->GetSelection())
+            m_extruders_cb->Select(m_active_extruder);
+    }
+
+    assert(m_active_extruder >= 0 && m_active_extruder < m_preset_bundle->extruders_filaments.size());
+    const std::string& selected_extr_filament_name = m_preset_bundle->extruders_filaments[m_active_extruder].get_selected_preset_name();
+    if (selected_extr_filament_name != selected_filament_name) {
+        m_presets->select_preset_by_name(selected_extr_filament_name, false);
+
+        // To avoid inconsistance between value of active_extruder in FilamentTab and TabPresetComboBox,
+        // which can causes a crash on switch preset from MM printer to SM printer
+        m_presets_choice->set_active_extruder(m_active_extruder);
+    }
+
+    Tab::load_current_preset();
+}
+
+bool TabFilament::select_preset_by_name(const std::string &name_w_suffix, bool force)
+{
+    const bool is_selected_filament      = Tab::select_preset_by_name(name_w_suffix, force);
+    const bool is_selected_extr_filament = m_preset_bundle->extruders_filaments[m_active_extruder].select_filament(name_w_suffix, force);
+    return is_selected_filament && is_selected_extr_filament;
+}
+
+bool TabFilament::save_current_preset(const std::string &new_name, bool detach)
+{
+    m_preset_bundle->cache_extruder_filaments_names();
+    const bool is_saved = Tab::save_current_preset(new_name, detach);
+    if (is_saved) {
+        m_preset_bundle->reset_extruder_filaments();
+        m_preset_bundle->extruders_filaments[m_active_extruder].select_filament(m_presets->get_idx_selected());
+    }
+    return is_saved;
+}
+
+bool TabFilament::delete_current_preset()
+{
+    m_preset_bundle->cache_extruder_filaments_names();
+    const bool is_deleted = Tab::delete_current_preset();
+    if (is_deleted)
+        m_preset_bundle->reset_extruder_filaments();
+    return is_deleted;
 }
 
 wxSizer* Tab::description_line_widget(wxWindow* parent, ogStaticText* *StaticText, wxString text /*= wxEmptyString*/)
@@ -2048,19 +2419,27 @@ wxSizer* Tab::description_line_widget(wxWindow* parent, ogStaticText* *StaticTex
     return sizer;
 }
 
-bool Tab::current_preset_is_dirty()
-{
-    return m_presets->current_is_dirty();
-}
+bool Tab::saved_preset_is_dirty() const { return m_presets->saved_is_dirty(); }
+void Tab::update_saved_preset_from_current_preset() { m_presets->update_saved_preset_from_current_preset(); }
+bool Tab::current_preset_is_dirty() const { return m_presets->current_is_dirty(); }
 
 void TabPrinter::build()
 {
     m_presets = &m_preset_bundle->printers;
-    load_initial_data();
-
     m_printer_technology = m_presets->get_selected_preset().printer_technology();
 
-    m_presets->get_selected_preset().printer_technology() == ptSLA ? build_sla() : build_fff();
+    // For DiffPresetDialog we use options list which is saved in Searcher class.
+    // Options for the Searcher is added in the moment of pages creation.
+    // So, build first of all printer pages for non-selected printer technology...
+    std::string def_preset_name = "- default " + std::string(m_printer_technology == ptSLA ? "FFF" : "SLA") + " -";
+    m_config = &m_presets->find_preset(def_preset_name)->config;
+    m_printer_technology == ptSLA ? build_fff() : build_sla();
+    if (m_printer_technology == ptSLA)
+        m_extruders_count_old = 0;// revert this value 
+
+    // ... and than for selected printer technology
+    load_initial_data();
+    m_printer_technology == ptSLA ? build_sla() : build_fff();
 }
 
 void TabPrinter::build_print_host_upload_group(Page* page)
@@ -2084,6 +2463,12 @@ void TabPrinter::build_print_host_upload_group(Page* page)
     optgroup->append_line(line);
 }
 
+static wxString get_info_klipper_string()
+{
+    return _L("Emitting machine limits to G-code is not supported with Klipper G-code flavor.\n"
+              "The option was switched to \"Use for time estimate\".");
+}
+
 void TabPrinter::build_fff()
 {
     if (!m_pages.empty())
@@ -2095,7 +2480,8 @@ void TabPrinter::build_fff()
     m_initial_extruders_count = m_extruders_count = nozzle_diameter->values.size();
     wxGetApp().sidebar().update_objects_list_extruder_column(m_initial_extruders_count);
 
-    const Preset* parent_preset = m_presets->get_selected_preset_parent();
+    const Preset* parent_preset = m_printer_technology == ptSLA ? nullptr // just for first build, if SLA printer preset is selected 
+                                  : m_presets->get_selected_preset_parent();
     m_sys_extruders_count = parent_preset == nullptr ? 0 :
             static_cast<const ConfigOptionFloats*>(parent_preset->config.option("nozzle_diameter"))->values.size();
 
@@ -2116,16 +2502,21 @@ void TabPrinter::build_fff()
             def.label = L("Extruders");
             def.tooltip = L("Number of extruders of the printer.");
             def.min = 1;
+            def.max = 256;
             def.mode = comExpert;
         Option option(def, "extruders_count");
         optgroup->append_single_option_line(option);
         optgroup->append_single_option_line("single_extruder_multi_material");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value) {
+        optgroup->m_on_change = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup)](t_config_option_key opt_key, boost::any value) {
+            auto optgroup_sh = optgroup_wk.lock();
+            if (!optgroup_sh)
+                return;
+
             // optgroup->get_value() return int for def.type == coInt,
             // Thus, there should be boost::any_cast<int> !
             // Otherwise, boost::any_cast<size_t> causes an "unhandled unknown exception"
-            size_t extruders_count = size_t(boost::any_cast<int>(optgroup->get_value("extruders_count")));
+            size_t extruders_count = size_t(boost::any_cast<int>(optgroup_sh->get_value("extruders_count")));
             wxTheApp->CallAfter([this, opt_key, value, extruders_count]() {
                 if (opt_key == "extruders_count" || opt_key == "single_extruder_multi_material") {
                     extruders_count_changed(extruders_count);
@@ -2145,7 +2536,7 @@ void TabPrinter::build_fff()
                                     const wxString msg_text = _(L("Single Extruder Multi Material is selected, \n"
                                                                   "and all extruders must have the same diameter.\n"
                                                                   "Do you want to change the diameter for all extruders to first extruder nozzle diameter value?"));
-                                    wxMessageDialog dialog(parent(), msg_text, _(L("Nozzle diameter")), wxICON_WARNING | wxYES_NO);
+                                    MessageDialog dialog(parent(), msg_text, _(L("Nozzle diameter")), wxICON_WARNING | wxYES_NO);
 
                                     DynamicPrintConfig new_conf = *m_config;
                                     if (dialog.ShowModal() == wxID_YES) {
@@ -2161,6 +2552,14 @@ void TabPrinter::build_fff()
                                     break;
                                 }
                             }
+                        }
+
+                        m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
+                        // Upadte related comboboxes on Sidebar and Tabs
+                        Sidebar& sidebar = wxGetApp().plater()->sidebar();
+                        for (const Preset::Type& type : {Preset::TYPE_PRINT, Preset::TYPE_FILAMENT}) {
+                            sidebar.update_presets(type);
+                            wxGetApp().get_tab(type)->update_tab_ui();
                         }
                     }
                 }
@@ -2179,17 +2578,56 @@ void TabPrinter::build_fff()
         option = optgroup->get_option("thumbnails");
         option.opt.full_width = true;
         optgroup->append_single_option_line(option);
+        optgroup->append_single_option_line("thumbnails_format");
 
         optgroup->append_single_option_line("silent_mode");
         optgroup->append_single_option_line("remaining_times");
 
-        optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value) {
+        optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value) {
             wxTheApp->CallAfter([this, opt_key, value]() {
                 if (opt_key == "silent_mode") {
                     bool val = boost::any_cast<bool>(value);
                     if (m_use_silent_mode != val) {
                         m_rebuild_kinematics_page = true;
                         m_use_silent_mode = val;
+                    }
+                }
+                if (opt_key == "gcode_flavor") {
+                    const GCodeFlavor flavor = static_cast<GCodeFlavor>(boost::any_cast<int>(value));
+                    bool supports_travel_acceleration = GCodeWriter::supports_separate_travel_acceleration(flavor);
+                    bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
+                    if (supports_travel_acceleration != m_supports_travel_acceleration || supports_min_feedrates != m_supports_min_feedrates) {
+                        m_rebuild_kinematics_page = true;
+                        m_supports_travel_acceleration = supports_travel_acceleration;
+                        m_supports_min_feedrates = supports_min_feedrates;
+                    }
+
+                    const bool is_emit_to_gcode = m_config->option("machine_limits_usage")->getInt() == static_cast<int>(MachineLimitsUsage::EmitToGCode);
+                    if ((flavor == gcfKlipper && is_emit_to_gcode) || (!m_supports_min_feedrates && m_use_silent_mode)) {
+                        DynamicPrintConfig new_conf = *m_config;
+                        wxString msg;
+
+                        if (flavor == gcfKlipper && is_emit_to_gcode) {
+                            msg = get_info_klipper_string();
+
+                            auto machine_limits_usage = static_cast<ConfigOptionEnum<MachineLimitsUsage>*>(m_config->option("machine_limits_usage")->clone());
+                            machine_limits_usage->value = MachineLimitsUsage::TimeEstimateOnly;
+                            new_conf.set_key_value("machine_limits_usage", machine_limits_usage);
+                        }
+
+                        if (!m_supports_min_feedrates && m_use_silent_mode) {
+                            if (!msg.IsEmpty())
+                                msg += "\n\n";
+                            msg += _L("The selected G-code flavor does not support the machine limitation for Stealth mode.\n"
+                                      "Stealth mode will not be applied and will be disabled.");
+
+                            auto silent_mode = static_cast<ConfigOptionBool*>(m_config->option("silent_mode")->clone());
+                            silent_mode->value = false;
+                            new_conf.set_key_value("silent_mode", silent_mode);
+                        }
+
+                        InfoDialog(parent(), _L("G-code flavor is switched"), msg).ShowModal();
+                        load_config(new_conf);
                     }
                 }
                 build_unregular_pages();
@@ -2208,20 +2646,32 @@ void TabPrinter::build_fff()
     const int notes_field_height = 25; // 250
     page = add_options_page(L("Custom G-code"), "cog");
         optgroup = page->new_optgroup(L("Start G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("start_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
-        option.opt.height = gcode_field_height;//150;
+        option.opt.height = 3 * gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
+        optgroup = page->new_optgroup(L("Start G-Code options"));
+        optgroup->append_single_option_line("autoemit_temperature_commands");
+
         optgroup = page->new_optgroup(L("End G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("end_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
-        option.opt.height = gcode_field_height;//150;
+        option.opt.height = 1.75 * gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Before layer change G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("before_layer_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2229,6 +2679,9 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("After layer change G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("layer_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2236,6 +2689,9 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Tool change G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("toolchange_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2243,6 +2699,9 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Between objects G-code (for sequential printing)"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("between_objects_gcode");
         option.opt.full_width = true;
         option.opt.is_code = true;
@@ -2250,36 +2709,45 @@ void TabPrinter::build_fff()
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Color Change G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("color_change_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Pause Print G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("pause_print_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
         optgroup = page->new_optgroup(L("Template Custom G-code"), 0);
+        optgroup->m_on_change = [this, &optgroup_title = optgroup->title](const t_config_option_key& opt_key, const boost::any& value) {
+            validate_custom_gcode_cb(this, optgroup_title, opt_key, value);
+        };
         option = optgroup->get_option("template_custom_gcode");
         option.opt.is_code = true;
         option.opt.height = gcode_field_height;//150;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Notes"), "note.png");
+    page = add_options_page(L("Notes"), "note");
         optgroup = page->new_optgroup(L("Notes"), 0);
         option = optgroup->get_option("printer_notes");
         option.opt.full_width = true;
         option.opt.height = notes_field_height;//250;
         optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Dependencies"), "wrench.png");
+    page = add_options_page(L("Dependencies"), "wrench");
         optgroup = page->new_optgroup(L("Profile dependencies"));
 
         build_preset_description_line(optgroup.get());
 
-    build_unregular_pages();
+    build_unregular_pages(true);
 }
 
 void TabPrinter::build_sla()
@@ -2313,19 +2781,16 @@ void TabPrinter::build_sla()
     line = { L("Tilt time"), "" };
     line.append_option(optgroup->get_option("fast_tilt_time"));
     line.append_option(optgroup->get_option("slow_tilt_time"));
+    line.append_option(optgroup->get_option("high_viscosity_tilt_time"));
     optgroup->append_line(line);
     optgroup->append_single_option_line("area_fill");
 
     optgroup = page->new_optgroup(L("Corrections"));
     line = Line{ m_config->def()->get("relative_correction")->full_label, "" };
-//    std::vector<std::string> axes{ "X", "Y", "Z" };
-    std::vector<std::string> axes{ "XY", "Z" };
-    int id = 0;
-    for (auto& axis : axes) {
-        auto opt = optgroup->get_option("relative_correction", id);
+    for (auto& axis : { "X", "Y", "Z" }) {
+        auto opt = optgroup->get_option(std::string("relative_correction_") + char(std::tolower(axis[0])));
         opt.opt.label = axis;
         line.append_option(opt);
-        ++id;
     }
     optgroup->append_line(line);
     optgroup->append_single_option_line("absolute_correction");
@@ -2339,18 +2804,23 @@ void TabPrinter::build_sla()
     optgroup->append_single_option_line("min_initial_exposure_time");
     optgroup->append_single_option_line("max_initial_exposure_time");
 
+
+    optgroup = page->new_optgroup(L("Output"));
+    optgroup->append_single_option_line("sla_archive_format");
+    optgroup->append_single_option_line("sla_output_precision");
+
     build_print_host_upload_group(page.get());
 
     const int notes_field_height = 25; // 250
 
-    page = add_options_page(L("Notes"), "note.png");
+    page = add_options_page(L("Notes"), "note");
     optgroup = page->new_optgroup(L("Notes"), 0);
     option = optgroup->get_option("printer_notes");
     option.opt.full_width = true;
     option.opt.height = notes_field_height;//250;
     optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Dependencies"), "wrench.png");
+    page = add_options_page(L("Dependencies"), "wrench");
     optgroup = page->new_optgroup(L("Profile dependencies"));
 
     build_preset_description_line(optgroup.get());
@@ -2359,15 +2829,21 @@ void TabPrinter::build_sla()
 void TabPrinter::extruders_count_changed(size_t extruders_count)
 {
     bool is_count_changed = false;
+    bool is_updated_mm_filament_presets = false;
     if (m_extruders_count != extruders_count) {
         m_extruders_count = extruders_count;
         m_preset_bundle->printers.get_edited_preset().set_num_extruders(extruders_count);
-        m_preset_bundle->update_multi_material_filament_presets();
-        is_count_changed = true;
+        is_count_changed = is_updated_mm_filament_presets = true;
     }
     else if (m_extruders_count == 1 &&
-             m_preset_bundle->project_config.option<ConfigOptionFloats>("wiping_volumes_matrix")->values.size()>1)
+             m_preset_bundle->project_config.option<ConfigOptionFloats>("wiping_volumes_matrix")->values.size()>1) {
+        is_updated_mm_filament_presets = true;
+    }
+
+    if (is_updated_mm_filament_presets) {
         m_preset_bundle->update_multi_material_filament_presets();
+        m_preset_bundle->update_filaments_compatible(PresetSelectCompatibleType::OnlyIfWasCompatible);
+    }
 
     /* This function should be call in any case because of correct updating/rebuilding
      * of unregular pages of a Printer Settings
@@ -2385,7 +2861,9 @@ void TabPrinter::append_option_line(ConfigOptionsGroupShp optgroup, const std::s
     auto option = optgroup->get_option(opt_key, 0);
     auto line = Line{ option.opt.full_label, "" };
     line.append_option(option);
-    if (m_use_silent_mode)
+    if (m_use_silent_mode 
+        || m_printer_technology == ptSLA // just for first build, if SLA printer preset is selected 
+        )
         line.append_option(optgroup->get_option(opt_key, 1));
     optgroup->append_line(line);
 }
@@ -2405,6 +2883,27 @@ PageShp TabPrinter::build_kinematics_page()
         optgroup->append_line(line);
     }
 
+    optgroup->m_on_change = [this](const t_config_option_key& opt_key, boost::any value)
+    {
+        if (opt_key == "machine_limits_usage" &&
+            static_cast<MachineLimitsUsage>(boost::any_cast<int>(value)) == MachineLimitsUsage::EmitToGCode &&
+            static_cast<GCodeFlavor>(m_config->option("gcode_flavor")->getInt()) == gcfKlipper)
+        {
+            DynamicPrintConfig new_conf = *m_config;
+
+            auto machine_limits_usage = static_cast<ConfigOptionEnum<MachineLimitsUsage>*>(m_config->option("machine_limits_usage")->clone());
+            machine_limits_usage->value = MachineLimitsUsage::TimeEstimateOnly;
+
+            new_conf.set_key_value("machine_limits_usage", machine_limits_usage);
+
+            InfoDialog(parent(), wxEmptyString, get_info_klipper_string()).ShowModal();
+            load_config(new_conf);
+        }
+
+        update_dirty();
+        update();
+    };
+
     if (m_use_silent_mode) {
         // Legend for OptionsGroups
         auto optgroup = page->new_optgroup("");
@@ -2413,7 +2912,7 @@ PageShp TabPrinter::build_kinematics_page()
         ConfigOptionDef def;
         def.type = coString;
         def.width = Field::def_width();
-        def.gui_type = "legend";
+        def.gui_type = ConfigOptionDef::GUIType::legend;
         def.mode = comAdvanced;
         def.tooltip = L("Values in this column are for Normal mode");
         def.set_default_value(new ConfigOptionString{ _(L("Normal")).ToUTF8().data() });
@@ -2429,7 +2928,7 @@ PageShp TabPrinter::build_kinematics_page()
         optgroup->append_line(line);
     }
 
-    std::vector<std::string> axes{ "x", "y", "z", "e" };
+    const std::vector<std::string> axes{ "x", "y", "z", "e" };
     optgroup = page->new_optgroup(L("Maximum feedrates"));
         for (const std::string &axis : axes)	{
             append_option_line(optgroup, "machine_max_feedrate_" + axis);
@@ -2441,17 +2940,206 @@ PageShp TabPrinter::build_kinematics_page()
         }
         append_option_line(optgroup, "machine_max_acceleration_extruding");
         append_option_line(optgroup, "machine_max_acceleration_retracting");
+        if (m_supports_travel_acceleration)
+            append_option_line(optgroup, "machine_max_acceleration_travel");
 
     optgroup = page->new_optgroup(L("Jerk limits"));
         for (const std::string &axis : axes)	{
             append_option_line(optgroup, "machine_max_jerk_" + axis);
         }
 
-    optgroup = page->new_optgroup(L("Minimum feedrates"));
-        append_option_line(optgroup, "machine_min_extruding_rate");
-        append_option_line(optgroup, "machine_min_travel_rate");
+        if (m_supports_min_feedrates) {
+            optgroup = page->new_optgroup(L("Minimum feedrates"));
+            append_option_line(optgroup, "machine_min_extruding_rate");
+            append_option_line(optgroup, "machine_min_travel_rate");
+        }
 
     return page;
+}
+
+const std::vector<std::string> extruder_options = {
+    "min_layer_height", "max_layer_height", "extruder_offset",
+    "retract_length", "retract_lift", "retract_lift_above", "retract_lift_below",
+    "retract_speed", "deretract_speed", "retract_restart_extra", "retract_before_travel",
+    "retract_layer_change", "wipe", "retract_before_wipe",
+    "retract_length_toolchange", "retract_restart_extra_toolchange",
+};
+
+void TabPrinter::build_extruder_pages(size_t n_before_extruders)
+{
+    for (auto extruder_idx = m_extruders_count_old; extruder_idx < m_extruders_count; ++extruder_idx) {
+        //# build page
+        const wxString&page_name = wxString::Format("Extruder %d", int(extruder_idx + 1));
+        auto           page      = add_options_page(page_name, "funnel", true);
+        m_pages.insert(m_pages.begin() + n_before_extruders + extruder_idx, page);
+
+        auto optgroup = page->new_optgroup(L("Size"));
+        optgroup->append_single_option_line("nozzle_diameter", "", extruder_idx);
+
+        optgroup->m_on_change = [this, extruder_idx](const t_config_option_key&opt_key, boost::any value)
+        {
+            const bool is_single_extruder_MM = m_config->opt_bool("single_extruder_multi_material");
+            const bool is_nozzle_diameter_changed = opt_key.find_first_of("nozzle_diameter") != std::string::npos;
+
+            if (is_single_extruder_MM && m_extruders_count > 1 && is_nozzle_diameter_changed)
+            {
+                SuppressBackgroundProcessingUpdate sbpu;
+                const double new_nd = boost::any_cast<double>(value);
+                std::vector<double> nozzle_diameters = static_cast<const ConfigOptionFloats*>(m_config->option("nozzle_diameter"))->values;
+
+                // if value was changed
+                if (fabs(nozzle_diameters[extruder_idx == 0 ? 1 : 0] - new_nd) > EPSILON)
+                {
+                    const wxString msg_text = _L("This is a single extruder multimaterial printer, diameters of all extruders "
+                                                 "will be set to the new value. Do you want to proceed?");
+                    //wxMessageDialog dialog(parent(), msg_text, _(L("Nozzle diameter")), wxICON_WARNING | wxYES_NO);
+                    MessageDialog dialog(parent(), msg_text, _L("Nozzle diameter"), wxICON_WARNING | wxYES_NO);
+
+                    DynamicPrintConfig new_conf = *m_config;
+                    if (dialog.ShowModal() == wxID_YES) {
+                        for (size_t i = 0; i < nozzle_diameters.size(); i++) {
+                            if (i==extruder_idx)
+                                continue;
+                            nozzle_diameters[i] = new_nd;
+                        }
+                    }
+                    else
+                        nozzle_diameters[extruder_idx] = nozzle_diameters[extruder_idx == 0 ? 1 : 0];
+
+                    new_conf.set_key_value("nozzle_diameter", new ConfigOptionFloats(nozzle_diameters));
+                    load_config(new_conf);
+                }
+            }
+
+            if (is_nozzle_diameter_changed) {
+                if (extruder_idx == 0)
+                    // Mark the print & filament enabled if they are compatible with the currently selected preset.
+                    // If saving the preset changes compatibility with other presets, keep the now incompatible dependent presets selected, however with a "red flag" icon showing that they are no more compatible.
+                    m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
+                else
+                    m_preset_bundle->update_filaments_compatible(PresetSelectCompatibleType::Never, extruder_idx);
+            }
+
+            update_dirty();
+            update();
+        };
+
+        optgroup = page->new_optgroup(L("Preview"));
+
+        auto reset_to_filament_color = [this, extruder_idx](wxWindow*parent) {
+            ScalableButton* btn = new ScalableButton(parent, wxID_ANY, "undo", _L("Reset to Filament Color"),
+                                                     wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+            btn->SetFont(wxGetApp().normal_font());
+            btn->SetSize(btn->GetBestSize());
+            auto sizer = new wxBoxSizer(wxHORIZONTAL);
+            sizer->Add(btn);
+
+            btn->Bind(wxEVT_BUTTON, [this, extruder_idx](wxCommandEvent&e)
+            {
+                std::vector<std::string> colors = static_cast<const ConfigOptionStrings*>(m_config->option("extruder_colour"))->values;
+                colors[extruder_idx]            = "";
+
+                DynamicPrintConfig new_conf = *m_config;
+                new_conf.set_key_value("extruder_colour", new ConfigOptionStrings(colors));
+                load_config(new_conf);
+
+                update_dirty();
+                update();
+            });
+
+            parent->Bind(wxEVT_UPDATE_UI, [this, extruder_idx](wxUpdateUIEvent& evt) {
+                evt.Enable(!static_cast<const ConfigOptionStrings*>(m_config->option("extruder_colour"))->values[extruder_idx].empty());
+            }, btn->GetId());
+
+            return sizer;
+        };
+        Line line = optgroup->create_single_option_line("extruder_colour", "", extruder_idx);
+        line.append_widget(reset_to_filament_color);
+        optgroup->append_line(line);
+
+        optgroup = page->new_optgroup("");
+
+        auto copy_settings_btn = 
+        line            = { "", ""};
+        line.full_width = 1;
+        line.widget = [this, extruder_idx](wxWindow* parent) {
+            ScalableButton* btn = new ScalableButton(parent, wxID_ANY, "copy", _L("Apply below setting to other extruders"),
+                                                     wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+            auto sizer = new wxBoxSizer(wxHORIZONTAL);
+            sizer->Add(btn);
+
+            btn->Bind(wxEVT_BUTTON, [this, extruder_idx](wxCommandEvent& e) {
+                DynamicPrintConfig new_conf = *m_config;
+
+                for (const std::string& opt : extruder_options) {
+                    const ConfigOption* other_opt = m_config->option(opt);
+                    for (size_t extruder = 0; extruder < m_extruders_count; ++extruder) {
+                        if (extruder == extruder_idx)
+                            continue;
+                        static_cast<ConfigOptionVectorBase*>(new_conf.option(opt, false))->set_at(other_opt, extruder, extruder_idx);
+                    }
+                }
+                load_config(new_conf);
+
+                update_dirty();
+                update();
+            });
+
+            auto has_changes = [this]() {
+                auto dirty_options = m_presets->current_dirty_options(true);
+#if 1
+                dirty_options.erase(std::remove_if(dirty_options.begin(), dirty_options.end(), 
+                    [](const std::string& opt) { return opt.find("extruder_colour") != std::string::npos || opt.find("nozzle_diameter") != std::string::npos; }), dirty_options.end());
+                return !dirty_options.empty();
+#else
+                // if we wont to apply enable status for each extruder separately
+                for (const std::string& opt : extruder_options)
+                    if (std::find(dirty_options.begin(), dirty_options.end(), opt+"#"+std::to_string(extruder_idx)) != dirty_options.end())
+                        return true;
+                return false;
+#endif
+            };
+
+            parent->Bind(wxEVT_UPDATE_UI, [this, has_changes](wxUpdateUIEvent& evt) {
+                evt.Enable(m_extruders_count > 1 && has_changes());
+            }, btn->GetId());
+
+            return sizer;
+        };
+        optgroup->append_line(line);
+
+        optgroup = page->new_optgroup(L("Layer height limits"));
+        optgroup->append_single_option_line("min_layer_height", "", extruder_idx);
+        optgroup->append_single_option_line("max_layer_height", "", extruder_idx);
+
+        optgroup = page->new_optgroup(L("Position (for multi-extruder printers)"));
+        optgroup->append_single_option_line("extruder_offset", "", extruder_idx);
+
+        optgroup = page->new_optgroup(L("Retraction"));
+        optgroup->append_single_option_line("retract_length", "", extruder_idx);
+        optgroup->append_single_option_line("retract_lift", "", extruder_idx);
+        line = { L("Only lift Z"), "" };
+        line.append_option(optgroup->get_option("retract_lift_above", extruder_idx));
+        line.append_option(optgroup->get_option("retract_lift_below", extruder_idx));
+        optgroup->append_line(line);
+
+        optgroup->append_single_option_line("retract_speed", "", extruder_idx);
+        optgroup->append_single_option_line("deretract_speed", "", extruder_idx);
+        optgroup->append_single_option_line("retract_restart_extra", "", extruder_idx);
+        optgroup->append_single_option_line("retract_before_travel", "", extruder_idx);
+        optgroup->append_single_option_line("retract_layer_change", "", extruder_idx);
+        optgroup->append_single_option_line("wipe", "", extruder_idx);
+        optgroup->append_single_option_line("retract_before_wipe", "", extruder_idx);
+
+        optgroup = page->new_optgroup(L("Retraction when tool is disabled (advanced settings for multi-extruder setups)"));
+        optgroup->append_single_option_line("retract_length_toolchange", "", extruder_idx);
+        optgroup->append_single_option_line("retract_restart_extra_toolchange", "", extruder_idx);
+    }
+
+    // # remove extra pages
+    if (m_extruders_count < m_extruders_count_old)
+        m_pages.erase(	m_pages.begin() + n_before_extruders + m_extruders_count,
+                        m_pages.begin() + n_before_extruders + m_extruders_count_old);
 }
 
 /* Previous name build_extruder_pages().
@@ -2460,10 +3148,11 @@ PageShp TabPrinter::build_kinematics_page()
  * but "Machine limits" and "Single extruder MM setup" too
  * (These pages can changes according to the another values of a current preset)
  * */
-void TabPrinter::build_unregular_pages()
+void TabPrinter::build_unregular_pages(bool from_initial_build/* = false*/)
 {
     size_t		n_before_extruders = 2;			//	Count of pages before Extruder pages
-    bool		is_marlin_flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value == gcfMarlin;
+    auto        flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+    bool		show_mach_limits = (flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware || flavor == gcfKlipper);
 
     /* ! Freeze/Thaw in this function is needed to avoid call OnPaint() for erased pages
      * and be cause of application crash, when try to change Preset in moment,
@@ -2471,38 +3160,26 @@ void TabPrinter::build_unregular_pages()
      *  */
     Freeze();
 
-#ifdef __WXMSW__
-    /* Workaround for correct layout of controls inside the created page:
-     * In some _strange_ way we should we should imitate page resizing.
-     */
-/*    auto layout_page = [this](PageShp page)
-    {
-        const wxSize& sz = page->GetSize();
-        page->SetSize(sz.x + 1, sz.y + 1);
-        page->SetSize(sz);
-    };*/
-#endif //__WXMSW__
-
-    // Add/delete Kinematics page according to is_marlin_flavor
+    // Add/delete Kinematics page according to show_mach_limits
     size_t existed_page = 0;
     for (size_t i = n_before_extruders; i < m_pages.size(); ++i) // first make sure it's not there already
         if (m_pages[i]->title().find(L("Machine limits")) != std::string::npos) {
-            if (!is_marlin_flavor || m_rebuild_kinematics_page)
+            if (!show_mach_limits || m_rebuild_kinematics_page)
                 m_pages.erase(m_pages.begin() + i);
             else
                 existed_page = i;
             break;
         }
 
-    if (existed_page < n_before_extruders && is_marlin_flavor) {
+    if (existed_page < n_before_extruders && (show_mach_limits || from_initial_build)) {
         auto page = build_kinematics_page();
-#ifdef __WXMSW__
-//        layout_page(page);
-#endif
-        m_pages.insert(m_pages.begin() + n_before_extruders, page);
+        if (from_initial_build && !show_mach_limits)
+            page->clear();
+        else
+            m_pages.insert(m_pages.begin() + n_before_extruders, page);
     }
 
-    if (is_marlin_flavor)
+    if (show_mach_limits)
         n_before_extruders++;
     size_t		n_after_single_extruder_MM = 2; //	Count of pages after single_extruder_multi_material page
 
@@ -2517,7 +3194,8 @@ void TabPrinter::build_unregular_pages()
             }
         m_has_single_extruder_MM_page = false;
     }
-    if (m_extruders_count > 1 && m_config->opt_bool("single_extruder_multi_material") && !m_has_single_extruder_MM_page) {
+    if (from_initial_build ||
+        (m_extruders_count > 1 && m_config->opt_bool("single_extruder_multi_material") && !m_has_single_extruder_MM_page)) {
         // create a page, but pretend it's an extruder page, so we can add it to m_pages ourselves
         auto page = add_options_page(L("Single extruder MM setup"), "printer", true);
         auto optgroup = page->new_optgroup(L("Single extruder multimaterial parameters"));
@@ -2526,133 +3204,28 @@ void TabPrinter::build_unregular_pages()
         optgroup->append_single_option_line("parking_pos_retraction");
         optgroup->append_single_option_line("extra_loading_move");
         optgroup->append_single_option_line("high_current_on_filament_swap");
-        m_pages.insert(m_pages.end() - n_after_single_extruder_MM, page);
-        m_has_single_extruder_MM_page = true;
+        if (from_initial_build)
+            page->clear();
+        else {
+            m_pages.insert(m_pages.end() - n_after_single_extruder_MM, page);
+            m_has_single_extruder_MM_page = true;
+        }
     }
 
     // Build missed extruder pages
-    for (auto extruder_idx = m_extruders_count_old; extruder_idx < m_extruders_count; ++extruder_idx) {
-        //# build page
-        const wxString& page_name = wxString::Format("Extruder %d", int(extruder_idx + 1));
-        auto page = add_options_page(page_name, "funnel", true);
-        m_pages.insert(m_pages.begin() + n_before_extruders + extruder_idx, page);
-
-            auto optgroup = page->new_optgroup(L("Size"));
-            optgroup->append_single_option_line("nozzle_diameter", wxEmptyString, extruder_idx);
-
-            optgroup->m_on_change = [this, extruder_idx](const t_config_option_key& opt_key, boost::any value)
-            {
-                if (m_config->opt_bool("single_extruder_multi_material") && m_extruders_count > 1 && opt_key.find_first_of("nozzle_diameter") != std::string::npos)
-                {
-                    SuppressBackgroundProcessingUpdate sbpu;
-                    const double new_nd = boost::any_cast<double>(value);
-                    std::vector<double> nozzle_diameters = static_cast<const ConfigOptionFloats*>(m_config->option("nozzle_diameter"))->values;
-
-                    // if value was changed
-                    if (fabs(nozzle_diameters[extruder_idx == 0 ? 1 : 0] - new_nd) > EPSILON)
-                    {
-                        const wxString msg_text = _(L("This is a single extruder multimaterial printer, diameters of all extruders "
-                                                      "will be set to the new value. Do you want to proceed?"));
-                        wxMessageDialog dialog(parent(), msg_text, _(L("Nozzle diameter")), wxICON_WARNING | wxYES_NO);
-
-                        DynamicPrintConfig new_conf = *m_config;
-                        if (dialog.ShowModal() == wxID_YES) {
-                            for (size_t i = 0; i < nozzle_diameters.size(); i++) {
-                                if (i==extruder_idx)
-                                    continue;
-                                nozzle_diameters[i] = new_nd;
-                            }
-                        }
-                        else
-                            nozzle_diameters[extruder_idx] = nozzle_diameters[extruder_idx == 0 ? 1 : 0];
-
-                        new_conf.set_key_value("nozzle_diameter", new ConfigOptionFloats(nozzle_diameters));
-                        load_config(new_conf);
-                    }
-                }
-
-                update_dirty();
-                update();
-            };
-
-            optgroup = page->new_optgroup(L("Layer height limits"));
-            optgroup->append_single_option_line("min_layer_height", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("max_layer_height", wxEmptyString, extruder_idx);
-
-
-            optgroup = page->new_optgroup(L("Position (for multi-extruder printers)"));
-            optgroup->append_single_option_line("extruder_offset", wxEmptyString, extruder_idx);
-
-            optgroup = page->new_optgroup(L("Retraction"));
-            optgroup->append_single_option_line("retract_length", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_lift", wxEmptyString, extruder_idx);
-                Line line = { L("Only lift Z"), "" };
-                line.append_option(optgroup->get_option("retract_lift_above", extruder_idx));
-                line.append_option(optgroup->get_option("retract_lift_below", extruder_idx));
-                optgroup->append_line(line);
-
-            optgroup->append_single_option_line("retract_speed", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("deretract_speed", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_restart_extra", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_before_travel", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_layer_change", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("wipe", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_before_wipe", wxEmptyString, extruder_idx);
-
-            optgroup = page->new_optgroup(L("Retraction when tool is disabled (advanced settings for multi-extruder setups)"));
-            optgroup->append_single_option_line("retract_length_toolchange", wxEmptyString, extruder_idx);
-            optgroup->append_single_option_line("retract_restart_extra_toolchange", wxEmptyString, extruder_idx);
-
-            optgroup = page->new_optgroup(L("Preview"));
-
-            auto reset_to_filament_color = [this, extruder_idx](wxWindow* parent) {
-                m_reset_to_filament_color = new ScalableButton(parent, wxID_ANY, "undo", _L("Reset to Filament Color"), 
-                                                               wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
-                ScalableButton* btn = m_reset_to_filament_color;
-                btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-                btn->SetSize(btn->GetBestSize());
-                auto sizer = new wxBoxSizer(wxHORIZONTAL);
-                sizer->Add(btn);
-
-                btn->Bind(wxEVT_BUTTON, [this, extruder_idx](wxCommandEvent& e)
-                {
-                    std::vector<std::string> colors = static_cast<const ConfigOptionStrings*>(m_config->option("extruder_colour"))->values;
-                    colors[extruder_idx] = "";
-
-                    DynamicPrintConfig new_conf = *m_config;
-                    new_conf.set_key_value("extruder_colour", new ConfigOptionStrings(colors));
-                    load_config(new_conf);
-
-                    update_dirty();
-                    update();
-                });
-
-                return sizer;
-            };
-            line = optgroup->create_single_option_line("extruder_colour", wxEmptyString, extruder_idx);
-            line.append_widget(reset_to_filament_color);
-            optgroup->append_line(line);
-
-#ifdef __WXMSW__
-//        layout_page(page);
-#endif
-    }
-
-    // # remove extra pages
-    if (m_extruders_count < m_extruders_count_old)
-        m_pages.erase(	m_pages.begin() + n_before_extruders + m_extruders_count,
-                        m_pages.begin() + n_before_extruders + m_extruders_count_old);
+    build_extruder_pages(n_before_extruders);
 
     Thaw();
 
     m_extruders_count_old = m_extruders_count;
+
+    if (from_initial_build && m_printer_technology == ptSLA)
+        return; // next part of code is no needed to execute at this moment
+
     rebuild_page_tree();
 
     // Reload preset pages with current configuration values
     reload_config();
-
-    // apply searcher with current configuration
-    apply_searcher();
 }
 
 // this gets executed after preset is loaded and before GUI fields are updated
@@ -2689,6 +3262,7 @@ void TabPrinter::update_pages()
             if (m_extruders_count > 1)
             {
                 m_preset_bundle->update_multi_material_filament_presets();
+                m_preset_bundle->update_filaments_compatible(PresetSelectCompatibleType::OnlyIfWasCompatible);
                 on_value_change("extruders_count", m_extruders_count);
             }
         }
@@ -2726,7 +3300,10 @@ void TabPrinter::activate_selected_page(std::function<void()> throw_if_canceled)
 void TabPrinter::clear_pages()
 {
     Tab::clear_pages();
-    m_reset_to_filament_color = nullptr;
+
+    m_machine_limits_description_line           = nullptr;
+    m_fff_print_host_upload_description_line    = nullptr;
+    m_sla_print_host_upload_description_line    = nullptr;
 }
 
 void TabPrinter::toggle_options()
@@ -2734,13 +3311,14 @@ void TabPrinter::toggle_options()
     if (!m_active_page || m_presets->get_edited_preset().printer_technology() == ptSLA)
         return;
 
+    const GCodeFlavor flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
     bool have_multiple_extruders = m_extruders_count > 1;
     if (m_active_page->title() == "Custom G-code")
         toggle_option("toolchange_gcode", have_multiple_extruders);
     if (m_active_page->title() == "General") {
         toggle_option("single_extruder_multi_material", have_multiple_extruders);
 
-        bool is_marlin_flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value == gcfMarlin;
+        bool is_marlin_flavor = flavor == gcfMarlinLegacy || flavor == gcfMarlinFirmware;
         // Disable silent mode for non-marlin firmwares.
         toggle_option("silent_mode", is_marlin_flavor);
     }
@@ -2783,7 +3361,8 @@ void TabPrinter::toggle_options()
         toggle_option("retract_before_wipe", wipe, i);
 
         if (use_firmware_retraction && wipe) {
-            wxMessageDialog dialog(parent(),
+            //wxMessageDialog dialog(parent(),
+            MessageDialog dialog(parent(),
                 _(L("The Wipe option is not available when using the Firmware Retraction mode.\n"
                     "\nShall I disable it in order to enable Firmware Retraction?")),
                 _(L("Firmware Retraction")), wxICON_WARNING | wxYES | wxNO);
@@ -2807,8 +3386,11 @@ void TabPrinter::toggle_options()
         toggle_option("retract_restart_extra_toolchange", have_multiple_extruders && toolchange_retraction, i);
     }
 
-    if (m_active_page->title() == "Machine limits") {
-        assert(m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value == gcfMarlin);
+    if (m_active_page->title() == "Machine limits" && m_machine_limits_description_line) {
+        assert(flavor == gcfMarlinLegacy
+            || flavor == gcfMarlinFirmware
+            || flavor == gcfRepRapFirmware
+            || flavor == gcfKlipper);
 		const auto *machine_limits_usage = m_config->option<ConfigOptionEnum<MachineLimitsUsage>>("machine_limits_usage");
 		bool enabled = machine_limits_usage->value != MachineLimitsUsage::Ignore;
         bool silent_mode = m_config->opt_bool("silent_mode");
@@ -2826,6 +3408,7 @@ void TabPrinter::update()
     m_presets->get_edited_preset().printer_technology() == ptFFF ? update_fff() : update_sla();
     m_update_cnt--;
 
+    update_description_lines();
     Layout();
 
     if (m_update_cnt == 0)
@@ -2837,6 +3420,15 @@ void TabPrinter::update_fff()
     if (m_use_silent_mode != m_config->opt_bool("silent_mode"))	{
         m_rebuild_kinematics_page = true;
         m_use_silent_mode = m_config->opt_bool("silent_mode");
+    }
+
+    const auto flavor = m_config->option<ConfigOptionEnum<GCodeFlavor>>("gcode_flavor")->value;
+    bool supports_travel_acceleration = (flavor == gcfMarlinFirmware || flavor == gcfRepRapFirmware);
+    bool supports_min_feedrates       = (flavor == gcfMarlinFirmware || flavor == gcfMarlinLegacy);
+    if (m_supports_travel_acceleration != supports_travel_acceleration || m_supports_min_feedrates != supports_min_feedrates) {
+        m_rebuild_kinematics_page = true;
+        m_supports_travel_acceleration = supports_travel_acceleration;
+        m_supports_min_feedrates = supports_min_feedrates;
     }
 
     toggle_options();
@@ -2902,11 +3494,24 @@ void Tab::load_current_preset()
                 Page* tmp_page = m_active_page;
                 m_active_page = nullptr;
                 for (auto tab : wxGetApp().tabs_list) {
-                    if (tab->type() == Preset::TYPE_PRINTER) // Printer tab is shown every time
+                    if (tab->type() == Preset::TYPE_PRINTER) { // Printer tab is shown every time
+                        int cur_selection = wxGetApp().tab_panel()->GetSelection();
+                        if (cur_selection != 0)
+                            wxGetApp().tab_panel()->SetSelection(wxGetApp().tab_panel()->GetPageCount() - 1);
                         continue;
+                    }
                     if (tab->supports_printer_technology(printer_technology))
                     {
-                        wxGetApp().tab_panel()->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title());
+#ifdef _MSW_DARK_MODE
+                        if (!wxGetApp().tabs_as_menu()) {
+                            std::string bmp_name = tab->type() == Slic3r::Preset::TYPE_FILAMENT      ? "spool" :
+                                                   tab->type() == Slic3r::Preset::TYPE_SLA_MATERIAL  ? "resin" : "cog";
+                            tab->Hide(); // #ys_WORKAROUND : Hide tab before inserting to avoid unwanted rendering of the tab
+                            dynamic_cast<Notebook*>(wxGetApp().tab_panel())->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title(), bmp_name);
+                        }
+                        else
+#endif
+                            wxGetApp().tab_panel()->InsertPage(wxGetApp().tab_panel()->FindPage(this), tab, tab->title());
                         #ifdef __linux__ // the tabs apparently need to be explicitly shown on Linux (pull request #1563)
                             int page_id = wxGetApp().tab_panel()->FindPage(tab);
                             wxGetApp().tab_panel()->GetPage(page_id)->Show(true);
@@ -2920,6 +3525,10 @@ void Tab::load_current_preset()
                 }
                 static_cast<TabPrinter*>(this)->m_printer_technology = printer_technology;
                 m_active_page = tmp_page;
+#ifdef _MSW_DARK_MODE
+                if (!wxGetApp().tabs_as_menu())
+                    dynamic_cast<Notebook*>(wxGetApp().tab_panel())->SetPageImage(wxGetApp().tab_panel()->FindPage(this), printer_technology == ptFFF ? "printer" : "sla_printer");
+#endif
             }
             on_presets_changed();
             if (printer_technology == ptFFF) {
@@ -2967,7 +3576,7 @@ void Tab::rebuild_page_tree()
             continue;
         auto itemId = m_treectrl->AppendItem(rootItem, translate_category(p->title(), m_type), p->iconID());
         m_treectrl->SetItemTextColour(itemId, p->get_item_colour());
-        if (p->title() == selected)
+        if (translate_category(p->title(), m_type) == selected)
             item = itemId;
     }
     if (!item) {
@@ -2986,12 +3595,15 @@ void Tab::update_btns_enabling()
     // we can delete any preset from the physical printer
     // and any user preset
     const Preset& preset = m_presets->get_edited_preset();
-    m_btn_delete_preset->Show(m_type == Preset::TYPE_PRINTER && m_preset_bundle->physical_printers.has_selection() || 
-                              !preset.is_default && !preset.is_system);
+    m_btn_delete_preset->Show((m_type == Preset::TYPE_PRINTER && m_preset_bundle->physical_printers.has_selection())
+                              || (!preset.is_default && !preset.is_system));
+    m_btn_rename_preset->Show(!preset.is_default && !preset.is_system && !preset.is_external && 
+                              !wxGetApp().preset_bundle->physical_printers.has_selection());
 
     if (m_btn_edit_ph_printer)
         m_btn_edit_ph_printer->SetToolTip( m_preset_bundle->physical_printers.has_selection() ?
                                            _L("Edit physical printer") : _L("Add physical printer"));
+    m_h_buttons_sizer->Layout();
 }
 
 void Tab::update_preset_choice()
@@ -3003,13 +3615,13 @@ void Tab::update_preset_choice()
 // Called by the UI combo box when the user switches profiles, and also to delete the current profile.
 // Select a preset by a name.If !defined(name), then the default preset is selected.
 // If the current profile is modified, user is asked to save the changes.
-void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/, const std::string& last_selected_ph_printer_name/* =""*/)
+bool Tab::select_preset(std::string preset_name, bool delete_current /*=false*/, const std::string& last_selected_ph_printer_name/* =""*/)
 {
     if (preset_name.empty()) {
         if (delete_current) {
             // Find an alternate preset to be selected after the current preset is deleted.
-            const std::deque<Preset> &presets 		= this->m_presets->get_presets();
-            size_t    				  idx_current   = this->m_presets->get_idx_selected();
+            const std::deque<Preset> &presets 		= m_presets->get_presets();
+            size_t    				  idx_current   = m_presets->get_idx_selected();
             // Find the next visible preset.
             size_t 				      idx_new       = idx_current + 1;
             if (idx_new < presets.size())
@@ -3062,7 +3674,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
 		const PresetWithVendorProfile new_printer_preset_with_vendor_profile = m_presets->get_preset_with_vendor_profile(new_printer_preset);
         PrinterTechnology    old_printer_technology = m_presets->get_edited_preset().printer_technology();
         PrinterTechnology    new_printer_technology = new_printer_preset.printer_technology();
-        if (new_printer_technology == ptSLA && old_printer_technology == ptFFF && !may_switch_to_SLA_preset())
+        if (new_printer_technology == ptSLA && old_printer_technology == ptFFF && !wxGetApp().may_switch_to_SLA_preset(_L("New printer preset selected")))
             canceled = true;
         else {
             struct PresetUpdate {
@@ -3081,8 +3693,17 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
             for (PresetUpdate &pu : updates) {
                 pu.old_preset_dirty = (old_printer_technology == pu.technology) && pu.presets->current_is_dirty();
                 pu.new_preset_compatible = (new_printer_technology == pu.technology) && is_compatible_with_printer(pu.presets->get_edited_preset_with_vendor_profile(), new_printer_preset_with_vendor_profile);
+                bool force_update_edited_preset = false;
+                if (pu.tab_type == Preset::TYPE_FILAMENT && pu.new_preset_compatible) {
+                    // check if edited preset will be still correct after selection new printer 
+                    const int active_extruder    = dynamic_cast<const TabFilament*>(wxGetApp().get_tab(Preset::TYPE_FILAMENT))->get_active_extruder();
+                    const int extruder_count_new = int(dynamic_cast<const ConfigOptionFloats*>(new_printer_preset.config.option("nozzle_diameter"))->size());
+                    // if active_extruder is bigger than extruders_count,
+                    // then it means that edited filament preset will be changed and we have to check this changes
+                    force_update_edited_preset = active_extruder >= extruder_count_new;
+                }
                 if (!canceled)
-                    canceled = pu.old_preset_dirty && !pu.new_preset_compatible && !may_discard_current_dirty_preset(pu.presets, preset_name);
+                    canceled = pu.old_preset_dirty && (!pu.new_preset_compatible || force_update_edited_preset) && !may_discard_current_dirty_preset(pu.presets, preset_name);
             }
             if (!canceled) {
                 for (PresetUpdate &pu : updates) {
@@ -3103,7 +3724,8 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
         // It does not matter which preset will be made active as the preset will be re-selected from the preset_name variable.
         // The 'external' presets will only be removed from the preset list, their files will not be deleted.
         try {
-            m_presets->delete_current_preset();
+            // cache previously selected names
+            delete_current_preset();
         } catch (const std::exception & /* e */) {
             //FIXME add some error reporting!
             canceled = true;
@@ -3117,13 +3739,14 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
                 // If preset selection was canceled and previously was selected physical printer, we should select it back
                 m_preset_bundle->physical_printers.select_printer(last_selected_ph_printer_name);
             }
-            if (m_preset_bundle->physical_printers.has_selection()) {
+            else if (m_preset_bundle->physical_printers.has_selection()) {
                 // If preset selection was canceled and physical printer was selected
                 // we must disable selection marker for the physical printers
                 m_preset_bundle->physical_printers.unselect_printer();
             }
         }
 
+        // ! update preset combobox, to revert previously selection
         update_tab_ui();
 
         // Trigger the on_presets_changed event so that we also restore the previous value in the plater selector,
@@ -3133,7 +3756,7 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
         if (current_dirty)
             m_presets->discard_current_changes();
 
-        const bool is_selected = m_presets->select_preset_by_name(preset_name, false) || delete_current;
+        const bool is_selected = select_preset_by_name(preset_name, false) || delete_current;
         assert(m_presets->get_edited_preset().name == preset_name || ! is_selected);
         // Mark the print & filament enabled if they are compatible with the currently selected preset.
         // The following method should not discard changes of current print or filament presets on change of a printer profile,
@@ -3168,15 +3791,16 @@ void Tab::select_preset(std::string preset_name, bool delete_current /*=false*/,
                 m_dependent_tabs = { Preset::Type::TYPE_SLA_PRINT, Preset::Type::TYPE_SLA_MATERIAL };
         }
 
-        // check and apply extruders count for printer preset
-        if (m_type == Preset::TYPE_PRINTER)
-            static_cast<TabPrinter*>(this)->apply_extruder_cnt_from_cache();
-
         // check if there is something in the cache to move to the new selected preset
         apply_config_from_cache();
 
         load_current_preset();
     }
+
+    if (technology_changed)
+        wxGetApp().mainframe->technology_changed();
+
+    return !canceled;
 }
 
 // If the current preset is dirty, the user is asked whether the changes may be discarded.
@@ -3236,21 +3860,6 @@ bool Tab::may_discard_current_dirty_preset(PresetCollection* presets /*= nullptr
     return true;
 }
 
-// If we are switching from the FFF-preset to the SLA, we should to control the printed objects if they have a part(s).
-// Because of we can't to print the multi-part objects with SLA technology.
-bool Tab::may_switch_to_SLA_preset()
-{
-    if (model_has_multi_part_objects(wxGetApp().model()))
-    {
-        show_info( parent(),
-                    _(L("It's impossible to print multi-part object(s) with SLA technology.")) + "\n\n" +
-                    _(L("Please check your object list before preset changing.")),
-                    _(L("Attention!")) );
-        return false;
-    }
-    return true;
-}
-
 void Tab::clear_pages()
 {
     // invalidated highlighter, if any exists
@@ -3273,7 +3882,7 @@ void Tab::clear_pages()
 
 void Tab::update_description_lines()
 {
-    if (m_active_page && m_active_page->title() == "Dependencies")
+    if (m_active_page && m_active_page->title() == "Dependencies" && m_parent_preset_description_line)
         update_preset_description_line();
 }
 
@@ -3283,10 +3892,40 @@ void Tab::activate_selected_page(std::function<void()> throw_if_canceled)
         return;
 
     m_active_page->activate(m_mode, throw_if_canceled);
+
+    if (m_active_page->title() == "Dependencies") {
+        if (m_compatible_printers.checkbox)
+            this->compatible_widget_reload(m_compatible_printers);
+        if (m_compatible_prints.checkbox)
+            this->compatible_widget_reload(m_compatible_prints);
+    }
+
     update_changed_ui();
     update_description_lines();
     toggle_options();
 }
+
+#ifdef WIN32
+// Override the wxCheckForInterrupt to process inperruptions just from key or mouse
+// and to avoid an unwanted early call of CallAfter()
+static bool CheckForInterrupt(wxWindow* wnd)
+{
+    wxCHECK(wnd, false);
+
+    MSG msg;
+    while (::PeekMessage(&msg, ((HWND)((wnd)->GetHWND())), WM_KEYFIRST, WM_KEYLAST, PM_REMOVE))
+    {
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+    }
+    while (::PeekMessage(&msg, ((HWND)((wnd)->GetHWND())), WM_MOUSEFIRST, WM_MOUSELAST, PM_REMOVE))
+    {
+        ::TranslateMessage(&msg);
+        ::DispatchMessage(&msg);
+    }
+    return true;
+}
+#endif //WIN32
 
 bool Tab::tree_sel_change_delayed()
 {
@@ -3324,10 +3963,12 @@ bool Tab::tree_sel_change_delayed()
     
     auto throw_if_canceled = std::function<void()>([this](){
 #ifdef WIN32
-            wxCheckForInterrupt(m_treectrl);
+            CheckForInterrupt(m_treectrl);
             if (m_page_switch_planned)
                 throw UIBuildCanceled();
-#endif // WIN32
+#else // WIN32
+            (void)this; // silence warning
+#endif
         });
 
     try {
@@ -3364,6 +4005,37 @@ void Tab::OnKeyDown(wxKeyEvent& event)
         event.Skip();
 }
 
+void Tab::compare_preset()
+{
+    wxGetApp().mainframe->diff_dialog.show(m_type);
+}
+
+void Tab::transfer_options(const std::string &name_from, const std::string &name_to, std::vector<std::string> options)
+{
+    if (options.empty())
+        return;
+
+    Preset* preset_from = m_presets->find_preset(name_from);
+    Preset* preset_to = m_presets->find_preset(name_to);
+
+    if (m_type == Preset::TYPE_PRINTER) {
+         auto it = std::find(options.begin(), options.end(), "extruders_count");
+         if (it != options.end()) {
+             // erase "extruders_count" option from the list
+             options.erase(it);
+             // cache the extruders count
+             static_cast<TabPrinter*>(this)->cache_extruder_cnt(&preset_from->config);
+         }
+    }
+    cache_config_diff(options, &preset_from->config);
+
+    if (name_to != m_presets->get_edited_preset().name )
+        select_preset(preset_to->name);
+
+    apply_config_from_cache();
+    load_current_preset();
+}
+
 // Save the current preset into file.
 // This removes the "dirty" flag of the preset, possibly creates a new preset under a new name,
 // and activates the new preset.
@@ -3376,15 +4048,42 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
     // focus currently.is there anything better than this ?
 //!	m_treectrl->OnSetFocus();
 
+    Preset& edited_preset = m_presets->get_edited_preset();
+    bool from_template = false;
+    std::string edited_printer;
+    if (m_type == Preset::TYPE_FILAMENT && edited_preset.vendor && edited_preset.vendor->templates_profile) {
+        edited_printer = wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_string("printer_model");
+        from_template = !edited_printer.empty();
+    }
+
     if (name.empty()) {
-        SavePresetDialog dlg(m_parent, m_type, detach ? _u8L("Detached") : "");
+        SavePresetDialog dlg(m_parent, { m_type }, detach ? _u8L("Detached") : "", from_template);
         if (dlg.ShowModal() != wxID_OK)
             return;
         name = dlg.get_name();
+        if (from_template)
+            from_template = dlg.get_template_filament_checkbox();
+    }
+
+    if (detach && m_type == Preset::TYPE_PRINTER)
+        m_config->opt_string("printer_model", true) = "";
+
+    // Update compatible printers
+    if (from_template && !edited_printer.empty()) {
+        std::string cond = edited_preset.compatible_printers_condition();
+        if (!cond.empty())
+            cond += " and ";
+        cond += "printer_model == \"" + edited_printer + "\"";
+        edited_preset.config.opt_string("compatible_printers_condition") = cond;
     }
 
     // Save the preset into Slic3r::data_dir / presets / section_name / preset_name.ini
-    m_presets->save_current_preset(name, detach);
+    save_current_preset(name, detach);
+
+    if (detach && m_type == Preset::TYPE_PRINTER)
+        wxGetApp().mainframe->on_config_changed(m_config);
+
+
     // Mark the print & filament enabled if they are compatible with the currently selected preset.
     // If saving the preset changes compatibility with other presets, keep the now incompatible dependent presets selected, however with a "red flag" icon showing that they are no more compatible.
     m_preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
@@ -3392,8 +4091,10 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
     update_tab_ui();
     // Update the selection boxes at the plater.
     on_presets_changed();
-    // If current profile is saved, "delete preset" button have to be enabled
+    // If current profile is saved, "delete/rename preset" buttons have to be shown
     m_btn_delete_preset->Show();
+    m_btn_rename_preset->Show(!m_presets_choice->is_selected_physical_printer());
+    m_btn_delete_preset->GetParent()->Layout();
 
     if (m_type == Preset::TYPE_PRINTER)
         static_cast<TabPrinter*>(this)->m_initial_extruders_count = static_cast<TabPrinter*>(this)->m_extruders_count;
@@ -3433,6 +4134,85 @@ void Tab::save_preset(std::string name /*= ""*/, bool detach)
         for (Preset::Type preset_type : dependent)
             wxGetApp().get_tab(preset_type)->update_tab_ui();
     }
+
+    // update preset comboboxes in DiffPresetDlg
+    wxGetApp().mainframe->diff_dialog.update_presets(m_type);
+
+    if (detach)
+        update_description_lines();
+}
+
+void Tab::rename_preset()
+{
+    if (m_presets_choice->is_selected_physical_printer())
+        return;
+
+    wxString msg;
+
+    if (m_type == Preset::TYPE_PRINTER && !m_preset_bundle->physical_printers.empty()) {
+        // Check preset for rename in physical printers
+        std::vector<std::string> ph_printers = m_preset_bundle->physical_printers.get_printers_with_preset(m_presets->get_selected_preset().name);
+        if (!ph_printers.empty()) {
+            msg += _L_PLURAL("The physical printer below is based on the preset, you are going to rename.",
+                "The physical printers below are based on the preset, you are going to rename.", ph_printers.size());
+            for (const std::string& printer : ph_printers)
+                msg += "\n    \"" + from_u8(printer) + "\",";
+            msg.RemoveLast();
+            msg += "\n" + _L_PLURAL("Note, that the selected preset will be renamed in this printer too.",
+                "Note, that the selected preset will be renamed in these printers too.", ph_printers.size()) + "\n\n";
+        }
+    }
+
+    // get new name
+
+    SavePresetDialog dlg(m_parent, m_type, msg);
+    if (dlg.ShowModal() != wxID_OK)
+        return;
+
+    const std::string new_name = dlg.get_name();
+    if (new_name.empty() || new_name == m_presets->get_selected_preset().name)
+        return;
+
+    // Note: selected preset can be changed, if in SavePresetDialog was selected name of existing preset
+    Preset& selected_preset = m_presets->get_selected_preset();
+    Preset& edited_preset   = m_presets->get_edited_preset();
+
+    const std::string old_name      = selected_preset.name;
+    const std::string old_file_name = selected_preset.file;
+
+    assert(old_name == edited_preset.name);
+
+    using namespace boost;
+    try {
+        // rename selected and edited presets
+
+        selected_preset.name = new_name;
+        replace_last(selected_preset.file, old_name, new_name);
+
+        edited_preset.name = new_name;
+        replace_last(edited_preset.file, old_name, new_name);
+
+        // rename file with renamed preset configuration
+
+        filesystem::rename(old_file_name, selected_preset.file);
+
+        // rename selected preset in printers, if it's needed
+
+        if (!msg.IsEmpty())
+            m_preset_bundle->physical_printers.rename_preset_in_printers(old_name, new_name);
+    }
+    catch (const exception& ex) {
+        const std::string exception = diagnostic_information(ex);
+        printf("Can't rename a preset : %s", exception.c_str());
+    }
+
+    // sort presets after renaming
+    std::sort(m_presets->begin(), m_presets->end());
+    // update selection
+    select_preset_by_name(new_name, true);
+
+    m_presets_choice->update();
+    on_presets_changed();
 }
 
 // Called for a currently selected preset.
@@ -3440,8 +4220,7 @@ void Tab::delete_preset()
 {
     auto current_preset = m_presets->get_selected_preset();
     // Don't let the user delete the ' - default - ' configuration.
-    std::string action = current_preset.is_external ? _utf8(L("remove")) : _utf8(L("delete"));
-    // TRN  remove/delete
+    wxString action = current_preset.is_external ? _L("remove") : _L("delete");
 
     PhysicalPrinterCollection& physical_printers = m_preset_bundle->physical_printers;
     wxString msg;
@@ -3462,34 +4241,40 @@ void Tab::delete_preset()
         {
             // Check preset for delete in physical printers
             // Ask a customer about next action, if there is a printer with just one preset and this preset is equal to delete
-            std::vector<std::string> ph_printers        = physical_printers.get_printers_with_preset(current_preset.name);
+            std::vector<std::string> ph_printers        = physical_printers.get_printers_with_preset(current_preset.name, false);
             std::vector<std::string> ph_printers_only   = physical_printers.get_printers_with_only_preset(current_preset.name);
 
             if (!ph_printers.empty()) {
-                msg += _L("The physical printer(s) below is based on the preset, you are going to delete.");
+                msg += _L_PLURAL("The physical printer below is based on the preset, you are going to delete.", 
+                                 "The physical printers below are based on the preset, you are going to delete.", ph_printers.size());
                 for (const std::string& printer : ph_printers)
                     msg += "\n    \"" + from_u8(printer) + "\",";
                 msg.RemoveLast();
-                msg += "\n" + _L("Note, that selected preset will be deleted from this/those printer(s) too.")+ "\n\n";
+                msg += "\n" + _L_PLURAL("Note, that the selected preset will be deleted from this printer too.", 
+                                        "Note, that the selected preset will be deleted from these printers too.", ph_printers.size()) + "\n\n";
             }
 
             if (!ph_printers_only.empty()) {
-                msg += _L("The physical printer(s) below is based only on the preset, you are going to delete.");
+                msg += _L_PLURAL("The physical printer below is based only on the preset, you are going to delete.", 
+                                 "The physical printers below are based only on the preset, you are going to delete.", ph_printers_only.size());
                 for (const std::string& printer : ph_printers_only)
                     msg += "\n    \"" + from_u8(printer) + "\",";
                 msg.RemoveLast();
-                msg += "\n" + _L("Note, that this/those printer(s) will be deleted after deleting of the selected preset.") + "\n\n";
+                msg += "\n" + _L_PLURAL("Note, that this printer will be deleted after deleting the selected preset.",
+                                        "Note, that these printers will be deleted after deleting the selected preset.", ph_printers_only.size()) + "\n\n";
             }
         }
-    
+
+        // TRN "remove/delete"
         msg += from_u8((boost::format(_u8L("Are you sure you want to %1% the selected preset?")) % action).str());
     }
 
-    action = current_preset.is_external ? _utf8(L("Remove")) : _utf8(L("Delete"));
-    // TRN  Remove/Delete
-    wxString title = from_u8((boost::format(_utf8(L("%1% Preset"))) % action).str());  //action + _(L(" Preset"));
+    action = current_preset.is_external ? _L("Remove") : _L("Delete");
+    // TRN Settings Tabs: Button in toolbar: "Remove/Delete"
+    wxString title = format_wxstr(_L("%1% Preset"), action);
     if (current_preset.is_default ||
-        wxID_YES != wxMessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
+        //wxID_YES != wxMessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
+        wxID_YES != MessageDialog(parent(), msg, title, wxYES_NO | wxNO_DEFAULT | wxICON_QUESTION).ShowModal())
         return;
 
     // if we just delete preset from the physical printer
@@ -3524,8 +4309,7 @@ void Tab::toggle_show_hide_incompatible()
 
 void Tab::update_show_hide_incompatible_button()
 {
-    m_btn_hide_incompatible_presets->SetBitmap_(m_show_incompatible_presets ?
-        m_bmp_show_incompatible_presets : m_bmp_hide_incompatible_presets);
+    m_btn_hide_incompatible_presets->SetBitmap(*get_bmp_bundle(m_show_incompatible_presets ? "flag_red" : "flag_green"));
     m_btn_hide_incompatible_presets->SetToolTip(m_show_incompatible_presets ?
         "Both compatible an incompatible presets are shown. Click to hide presets not compatible with the current printer." :
         "Only compatible presets are shown. Click to show both the presets compatible and not compatible with the current printer.");
@@ -3551,14 +4335,18 @@ void Tab::update_ui_from_settings()
     }
 }
 
-void Tab::create_line_with_widget(ConfigOptionsGroup* optgroup, const std::string& opt_key, const wxString& path, widget_t widget)
+void Tab::create_line_with_widget(ConfigOptionsGroup* optgroup, const std::string& opt_key, const std::string& path, widget_t widget)
 {
     Line line = optgroup->create_single_option_line(opt_key);
     line.widget = widget;
     line.label_path = path;
 
-    m_colored_Label_colors[opt_key] = &m_default_text_clr;
-    line.full_Label_color = m_colored_Label_colors[opt_key];
+    // set default undo ui
+    line.set_undo_bitmap(&m_bmp_white_bullet);
+    line.set_undo_to_sys_bitmap(&m_bmp_white_bullet);
+    line.set_undo_tooltip(&m_tt_white_bullet);
+    line.set_undo_to_sys_tooltip(&m_tt_white_bullet);
+    line.set_label_colour(&m_default_text_clr);
 
     optgroup->append_line(line);
 }
@@ -3568,8 +4356,9 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
 {
     deps.checkbox = new wxCheckBox(parent, wxID_ANY, _(L("All")));
     deps.checkbox->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-    deps.btn = new ScalableButton(parent, wxID_ANY, "printer", from_u8((boost::format(" %s %s") % _utf8(L("Set")) % std::string(dots.ToUTF8())).str()),
-                                  wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
+    wxGetApp().UpdateDarkUI(deps.checkbox, false, true);
+    deps.btn = new ScalableButton(parent, wxID_ANY, "printer", format_wxstr(" %s %s", _L("Set"), dots),
+                                  wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
     deps.btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
     deps.btn->SetSize(deps.btn->GetBestSize());
 
@@ -3606,6 +4395,7 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
         }
 
         wxMultiChoiceDialog dlg(parent, deps.dialog_title, deps.dialog_label, presets);
+        wxGetApp().UpdateDlgDarkUI(&dlg);
         // Collect and set indices of depending_presets marked as compatible.
         wxArrayInt selections;
         auto *compatible_printers = dynamic_cast<const ConfigOptionStrings*>(m_config->option(deps.key_list));
@@ -3637,11 +4427,300 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
     return sizer;
 }
 
+// G-code substitutions
+
+void SubstitutionManager::init(DynamicPrintConfig* config, wxWindow* parent, wxFlexGridSizer* grid_sizer)
+{
+    m_config = config;
+    m_parent = parent;
+    m_grid_sizer = grid_sizer;
+    m_em = em_unit(parent);
+}
+
+void SubstitutionManager::validate_lenth()
+{
+    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if ((substitutions.size() % 4) != 0) {
+        WarningDialog(m_parent, "Value of gcode_substitutions parameter will be cut to valid length",
+                                "Invalid length of gcode_substitutions parameter").ShowModal();
+        substitutions.resize(substitutions.size() - (substitutions.size() % 4));
+    }
+}
+
+bool SubstitutionManager::is_compatibile_with_ui()
+{
+    const std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if (int(substitutions.size() / 4) != m_grid_sizer->GetEffectiveRowsCount() - 1) {
+        ErrorDialog(m_parent, "Invalid compatibility between UI and BE", false).ShowModal();
+        return false;
+    }
+    return true;
+};
+
+bool SubstitutionManager::is_valid_id(int substitution_id, const wxString& message)
+{
+    const std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if (int(substitutions.size() / 4) < substitution_id) {
+        ErrorDialog(m_parent, message, false).ShowModal();
+        return false;
+    }
+    return true;
+}
+
+void SubstitutionManager::create_legend()
+{
+    if (!m_grid_sizer->IsEmpty())
+        return;
+    // name of the first column is empty
+    m_grid_sizer->Add(new wxStaticText(m_parent, wxID_ANY, wxEmptyString));
+
+    // Legend for another columns
+    auto legend_sizer = new wxBoxSizer(wxHORIZONTAL); // "Find", "Replace", "Notes"
+    legend_sizer->Add(new wxStaticText(m_parent, wxID_ANY, _L("Find")),         3, wxEXPAND);
+    legend_sizer->Add(new wxStaticText(m_parent, wxID_ANY, _L("Replace with")), 3, wxEXPAND);
+    legend_sizer->Add(new wxStaticText(m_parent, wxID_ANY, _L("Notes")),      2, wxEXPAND);
+
+    m_grid_sizer->Add(legend_sizer, 1, wxEXPAND);
+}
+
+// delete substitution_id from substitutions
+void SubstitutionManager::delete_substitution(int substitution_id)
+{
+    validate_lenth();
+    if (!is_valid_id(substitution_id, "Invalid substitution_id to delete"))
+        return;
+
+    // delete substitution
+    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    substitutions.erase(std::next(substitutions.begin(), substitution_id * 4), std::next(substitutions.begin(), substitution_id * 4 + 4));
+    call_ui_update();
+
+    // update grid_sizer
+    update_from_config();
+}
+
+// Add substitution line
+void SubstitutionManager::add_substitution( int substitution_id, 
+                                            const std::string& plain_pattern, 
+                                            const std::string& format, 
+                                            const std::string& params,
+                                            const std::string& notes)
+{
+    bool call_after_layout = false;
+    
+    if (substitution_id < 0) {
+        if (m_grid_sizer->IsEmpty()) {
+            create_legend();
+            substitution_id = 0;
+        }
+        substitution_id = m_grid_sizer->GetEffectiveRowsCount() - 1;
+
+        // create new substitution
+        // it have to be added to config too
+        std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+        for (size_t i = 0; i < 4; i ++)
+            substitutions.push_back(std::string());
+
+        call_after_layout = true;
+    }
+
+    auto del_btn = new ScalableButton(m_parent, wxID_ANY, "cross");
+    del_btn->Bind(wxEVT_BUTTON, [substitution_id, this](wxEvent&) {
+        delete_substitution(substitution_id);
+    });
+
+    m_grid_sizer->Add(del_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, int(0.5*m_em));
+
+    auto top_sizer = new wxBoxSizer(wxHORIZONTAL);
+    auto add_text_editor = [substitution_id, top_sizer, this](const wxString& value, int opt_pos, int proportion) {
+        auto editor = new wxTextCtrl(m_parent, wxID_ANY, value, wxDefaultPosition, wxSize(15 * m_em, wxDefaultCoord), wxTE_PROCESS_ENTER
+#ifdef _WIN32
+            | wxBORDER_SIMPLE
+#endif
+        );
+
+        editor->SetFont(wxGetApp().normal_font());
+        wxGetApp().UpdateDarkUI(editor);
+        top_sizer->Add(editor, proportion, wxALIGN_CENTER_VERTICAL | wxRIGHT, m_em);
+
+        editor->Bind(wxEVT_TEXT_ENTER, [this, editor, substitution_id, opt_pos](wxEvent& e) {
+#if !defined(__WXGTK__)
+            e.Skip();
+#endif // __WXGTK__
+            edit_substitution(substitution_id, opt_pos, into_u8(editor->GetValue()));
+        });
+
+        editor->Bind(wxEVT_KILL_FOCUS, [this, editor, substitution_id, opt_pos](wxEvent& e) {
+            e.Skip();
+            edit_substitution(substitution_id, opt_pos, into_u8(editor->GetValue()));
+        });
+    };
+
+    add_text_editor(from_u8(plain_pattern), 0, 3);
+    add_text_editor(from_u8(format),        1, 3);
+    add_text_editor(from_u8(notes),         3, 2);
+
+    auto params_sizer = new wxBoxSizer(wxHORIZONTAL);
+    bool regexp              = strchr(params.c_str(), 'r') != nullptr || strchr(params.c_str(), 'R') != nullptr;
+    bool case_insensitive    = strchr(params.c_str(), 'i') != nullptr || strchr(params.c_str(), 'I') != nullptr;
+    bool whole_word          = strchr(params.c_str(), 'w') != nullptr || strchr(params.c_str(), 'W') != nullptr;
+    bool match_single_line   = strchr(params.c_str(), 's') != nullptr || strchr(params.c_str(), 'S') != nullptr;
+
+    auto chb_regexp = new wxCheckBox(m_parent, wxID_ANY, _L("Regular expression"));
+    chb_regexp->SetValue(regexp);
+    params_sizer->Add(chb_regexp, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, m_em);
+
+    auto chb_case_insensitive = new wxCheckBox(m_parent, wxID_ANY, _L("Case insensitive"));
+    chb_case_insensitive->SetValue(case_insensitive);
+    params_sizer->Add(chb_case_insensitive, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
+
+    auto chb_whole_word = new wxCheckBox(m_parent, wxID_ANY, _L("Whole word"));
+    chb_whole_word->SetValue(whole_word);
+    params_sizer->Add(chb_whole_word, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
+
+    auto chb_match_single_line = new wxCheckBox(m_parent, wxID_ANY, _L("Match single line"));
+    chb_match_single_line->SetValue(match_single_line);
+    chb_match_single_line->Show(regexp);
+    params_sizer->Add(chb_match_single_line, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
+
+    for (wxCheckBox* chb : std::initializer_list<wxCheckBox*>{ chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line }) {
+        chb->SetFont(wxGetApp().normal_font());
+        chb->Bind(wxEVT_CHECKBOX, [this, substitution_id, chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line](wxCommandEvent e) {
+            std::string value = std::string();
+            if (chb_regexp->GetValue())
+                value += "r";
+            if (chb_case_insensitive->GetValue())
+                value += "i";
+            if (chb_whole_word->GetValue())
+                value += "w";
+            if (chb_match_single_line->GetValue())
+                value += "s";
+
+            chb_match_single_line->Show(chb_regexp->GetValue());
+            m_grid_sizer->Layout();
+
+            edit_substitution(substitution_id, 2, value);
+        });
+    }
+
+    auto v_sizer = new wxBoxSizer(wxVERTICAL);
+    v_sizer->Add(top_sizer, 1, wxEXPAND);
+    v_sizer->Add(params_sizer, 1, wxEXPAND|wxTOP|wxBOTTOM, int(0.5* m_em));
+    m_grid_sizer->Add(v_sizer, 1, wxEXPAND);
+
+    if (call_after_layout) {
+        m_parent->GetParent()->Layout();
+        call_ui_update();
+    }
+}
+
+void SubstitutionManager::update_from_config()
+{
+    if (!m_grid_sizer->IsEmpty())
+        m_grid_sizer->Clear(true);
+
+    std::vector<std::string>& subst = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    if (subst.empty())
+        hide_delete_all_btn();
+    else
+        create_legend();
+
+    validate_lenth();
+
+    int subst_id = 0;
+    for (size_t i = 0; i < subst.size(); i += 4)
+        add_substitution(subst_id++, subst[i], subst[i + 1], subst[i + 2], subst[i + 3]);
+
+    m_parent->GetParent()->Layout();
+}
+
+void SubstitutionManager::delete_all()
+{
+    m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.clear(); 
+    call_ui_update();
+
+    if (!m_grid_sizer->IsEmpty())
+        m_grid_sizer->Clear(true);
+
+    m_parent->GetParent()->Layout();
+}
+
+void SubstitutionManager::edit_substitution(int substitution_id, int opt_pos, const std::string& value)
+{
+    std::vector<std::string>& substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+
+    validate_lenth();
+    if(!is_compatibile_with_ui() || !is_valid_id(substitution_id, "Invalid substitution_id to edit"))
+        return;
+
+    substitutions[substitution_id * 4 + opt_pos] = value;
+
+    call_ui_update();
+}
+
+bool SubstitutionManager::is_empty_substitutions()
+{
+    return m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.empty();
+}
+
+// Return a callback to create a TabPrint widget to edit G-code substitutions
+wxSizer* TabPrint::create_manage_substitution_widget(wxWindow* parent)
+{
+    auto create_btn = [parent](ScalableButton** btn, const wxString& label, const std::string& icon_name) {
+        *btn = new ScalableButton(parent, wxID_ANY, icon_name, " " + label + " ", wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
+        (*btn)->SetFont(wxGetApp().normal_font());
+        (*btn)->SetSize((*btn)->GetBestSize());
+    };
+
+    ScalableButton* add_substitution_btn;
+    create_btn(&add_substitution_btn, _L("Add"), "add_copies");
+    add_substitution_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent e) {
+        m_subst_manager.add_substitution();
+        m_del_all_substitutions_btn->Show();
+    });
+
+    create_btn(&m_del_all_substitutions_btn, _L("Delete all"), "cross");
+    m_del_all_substitutions_btn->Bind(wxEVT_BUTTON, [this, parent](wxCommandEvent e) {
+        if (MessageDialog(parent, _L("Are you sure you want to delete all substitutions?"), SLIC3R_APP_NAME, wxYES_NO | wxCANCEL | wxICON_QUESTION).
+            ShowModal() != wxID_YES)
+            return;
+        m_subst_manager.delete_all();
+        m_del_all_substitutions_btn->Hide();
+    });
+
+    auto sizer = new wxBoxSizer(wxHORIZONTAL);
+    sizer->Add(add_substitution_btn,        0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, em_unit(parent));
+    sizer->Add(m_del_all_substitutions_btn, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, em_unit(parent));
+
+    parent->GetParent()->Layout();
+    return sizer;
+}
+
+// Return a callback to create a TabPrint widget to edit G-code substitutions
+wxSizer* TabPrint::create_substitutions_widget(wxWindow* parent)
+{
+    wxFlexGridSizer* grid_sizer = new wxFlexGridSizer(2, 5, wxGetApp().em_unit()); // delete_button,  edit column contains "Find", "Replace", "Notes"
+    grid_sizer->SetFlexibleDirection(wxBOTH);
+    grid_sizer->AddGrowableCol(1);
+
+    m_subst_manager.init(m_config, parent, grid_sizer);
+    m_subst_manager.set_cb_edited_substitution([this]() {
+        update_dirty();
+        wxGetApp().mainframe->on_config_changed(m_config); // invalidate print
+    });
+    m_subst_manager.set_cb_hide_delete_all_btn([this]() {
+        m_del_all_substitutions_btn->Hide();
+    });
+
+    parent->GetParent()->Layout();
+    return grid_sizer;
+}
+
 // Return a callback to create a TabPrinter widget to edit bed shape
 wxSizer* TabPrinter::create_bed_shape_widget(wxWindow* parent)
 {
     ScalableButton* btn = new ScalableButton(parent, wxID_ANY, "printer", " " + _(L("Set")) + " " + dots,
-        wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT, true);
+        wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
     btn->SetFont(wxGetApp().normal_font());
     btn->SetSize(btn->GetBestSize());
 
@@ -3673,30 +4752,66 @@ wxSizer* TabPrinter::create_bed_shape_widget(wxWindow* parent)
     {
         Search::OptionsSearcher& searcher = wxGetApp().sidebar().get_searcher();
         const Search::GroupAndCategory& gc = searcher.get_group_and_category("bed_shape");
-        searcher.add_key("bed_custom_texture", gc.group, gc.category);
-        searcher.add_key("bed_custom_model", gc.group, gc.category);
+        searcher.add_key("bed_custom_texture", m_type, gc.group, gc.category);
+        searcher.add_key("bed_custom_model", m_type, gc.group, gc.category);
     }
 
     return sizer;
 }
 
-void TabPrinter::cache_extruder_cnt()
+void TabPrinter::cache_extruder_cnt(const DynamicPrintConfig* config/* = nullptr*/)
 {
-    if (m_presets->get_edited_preset().printer_technology() == ptSLA)
+    const DynamicPrintConfig& cached_config = config ? *config : m_presets->get_edited_preset().config;
+    if (Preset::printer_technology(cached_config) == ptSLA)
         return;
 
-    m_cache_extruder_count = m_extruders_count;
+    // get extruders count 
+    auto* nozzle_diameter = dynamic_cast<const ConfigOptionFloats*>(cached_config.option("nozzle_diameter"));
+    m_cache_extruder_count = nozzle_diameter->values.size(); //m_extruders_count;
 }
 
-void TabPrinter::apply_extruder_cnt_from_cache()
+bool TabPrinter::apply_extruder_cnt_from_cache()
 {
     if (m_presets->get_edited_preset().printer_technology() == ptSLA)
-        return;
+        return false;
 
     if (m_cache_extruder_count > 0) {
         m_presets->get_edited_preset().set_num_extruders(m_cache_extruder_count);
+//        extruders_count_changed(m_cache_extruder_count);
         m_cache_extruder_count = 0;
+        return true;
     }
+    return false;
+}
+
+bool Tab::validate_custom_gcodes()
+{
+    if (m_type != Preset::TYPE_FILAMENT &&
+        (m_type != Preset::TYPE_PRINTER || static_cast<TabPrinter*>(this)->m_printer_technology != ptFFF))
+        return true;
+    if (m_active_page->title() != L("Custom G-code"))
+        return true;
+
+    // When we switch Settings tab after editing of the custom g-code, then warning message could ba already shown after KillFocus event
+    // and then it's no need to show it again
+    if (validate_custom_gcodes_was_shown) {
+        validate_custom_gcodes_was_shown = false;
+        return true;
+    }
+
+    bool valid = true;
+    for (auto opt_group : m_active_page->m_optgroups) {
+        assert(opt_group->opt_map().size() == 1);
+        if (!opt_group->is_activated())
+            break;
+        std::string key = opt_group->opt_map().begin()->first;
+        if (key == "autoemit_temperature_commands")
+            continue;
+        valid &= validate_custom_gcode(opt_group->title, boost::any_cast<std::string>(opt_group->get_value(key)));
+        if (!valid)
+            break;
+    }
+    return valid;
 }
 
 void TabPrinter::update_machine_limits_description(const MachineLimitsUsage usage)
@@ -3789,6 +4904,21 @@ void Tab::set_tooltips_text()
                                 "Click to reset current value to the last saved preset."));
 }
 
+bool Tab::select_preset_by_name(const std::string &name_w_suffix, bool force)
+{
+    return m_presets->select_preset_by_name(name_w_suffix, force);
+}
+
+bool Tab::save_current_preset(const std::string& new_name, bool detach)
+{
+    return m_presets->save_current_preset(new_name, detach);
+}
+
+bool Tab::delete_current_preset()
+{
+    return m_presets->delete_current_preset();
+}
+
 Page::Page(wxWindow* parent, const wxString& title, int iconID) :
         m_parent(parent),
         m_title(title),
@@ -3864,6 +4994,14 @@ Field* Page::get_field(const t_config_option_key& opt_key, int opt_index /*= -1*
     return field;
 }
 
+Line* Page::get_line(const t_config_option_key& opt_key)
+{
+    for (auto opt : m_optgroups)
+        if (Line* line = opt->get_line(opt_key))
+            return line;
+    return nullptr;
+}
+
 bool Page::set_value(const t_config_option_key& opt_key, const boost::any& value) {
     bool changed = false;
     for(auto optgroup: m_optgroups) {
@@ -3878,7 +5016,6 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
 {
     //! config_ have to be "right"
     ConfigOptionsGroupShp optgroup = std::make_shared<ConfigOptionsGroup>(m_parent, title, m_config, true);
-    optgroup->set_config_category(m_title.ToStdString());
     if (noncommon_label_width >= 0)
         optgroup->label_width = noncommon_label_width;
 
@@ -3887,7 +5024,8 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
 #else
     auto tab = parent()->GetParent();// GetParent();
 #endif
-    optgroup->m_on_change = [this, tab](t_config_option_key opt_key, boost::any value) {
+    optgroup->set_config_category_and_type(m_title, static_cast<Tab*>(tab)->type());
+    optgroup->m_on_change = [tab](t_config_option_key opt_key, boost::any value) {
         //! This function will be called from OptionGroup.
         //! Using of CallAfter is redundant.
         //! And in some cases it causes update() function to be recalled again
@@ -3897,21 +5035,21 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
 //!        });
     };
 
-    optgroup->m_get_initial_config = [this, tab]() {
+    optgroup->m_get_initial_config = [tab]() {
         DynamicPrintConfig config = static_cast<Tab*>(tab)->m_presets->get_selected_preset().config;
         return config;
     };
 
-    optgroup->m_get_sys_config = [this, tab]() {
+    optgroup->m_get_sys_config = [tab]() {
         DynamicPrintConfig config = static_cast<Tab*>(tab)->m_presets->get_selected_preset_parent()->config;
         return config;
     };
 
-    optgroup->have_sys_config = [this, tab]() {
+    optgroup->have_sys_config = [tab]() {
         return static_cast<Tab*>(tab)->m_presets->get_selected_preset_parent() != nullptr;
     };
 
-    optgroup->rescale_extra_column_item = [this](wxWindow* win) {
+    optgroup->rescale_extra_column_item = [](wxWindow* win) {
         auto *ctrl = dynamic_cast<wxStaticBitmap*>(win);
         if (ctrl == nullptr)
             return;
@@ -3924,6 +5062,16 @@ ConfigOptionsGroupShp Page::new_optgroup(const wxString& title, int noncommon_la
     return optgroup;
 }
 
+const ConfigOptionsGroupShp Page::get_optgroup(const wxString& title) const
+{
+    for (ConfigOptionsGroupShp optgroup : m_optgroups) {
+        if (optgroup->title == title)
+            return optgroup;
+    }
+
+    return nullptr;
+}
+
 void TabSLAMaterial::build()
 {
     m_presets = &m_preset_bundle->sla_materials;
@@ -3932,13 +5080,20 @@ void TabSLAMaterial::build()
     auto page = add_options_page(L("Material"), "resin");
 
     auto optgroup = page->new_optgroup(L("Material"));
+    optgroup->append_single_option_line("material_colour");
     optgroup->append_single_option_line("bottle_cost");
     optgroup->append_single_option_line("bottle_volume");
     optgroup->append_single_option_line("bottle_weight");
     optgroup->append_single_option_line("material_density");
 
-    optgroup->m_on_change = [this, optgroup](t_config_option_key opt_key, boost::any value)
+    optgroup->m_on_change = [this](t_config_option_key opt_key, boost::any value)
     {
+        if (opt_key == "material_colour") {
+            update_dirty();
+            on_value_change(opt_key, value); 
+            return;
+        }
+
         DynamicPrintConfig new_conf = *m_config;
 
         if (opt_key == "bottle_volume") {
@@ -3971,22 +5126,16 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line("initial_exposure_time");
 
     optgroup = page->new_optgroup(L("Corrections"));
-    std::vector<std::string> corrections = {"material_correction"};
-//    std::vector<std::string> axes{ "X", "Y", "Z" };
-    std::vector<std::string> axes{ "XY", "Z" };
-    for (auto& opt_key : corrections) {
-        auto line = Line{ m_config->def()->get(opt_key)->full_label, "" };
-        int id = 0;
-        for (auto& axis : axes) {
-            auto opt = optgroup->get_option(opt_key, id);
-            opt.opt.label = axis;
-            line.append_option(opt);
-            ++id;
-        }
-        optgroup->append_line(line);
+    auto line = Line{ m_config->def()->get("material_correction")->full_label, "" };
+    for (auto& axis : { "X", "Y", "Z" }) {
+        auto opt = optgroup->get_option(std::string("material_correction_") + char(std::tolower(axis[0])));
+        opt.opt.label = axis;
+        line.append_option(opt);
     }
 
-    page = add_options_page(L("Notes"), "note.png");
+    optgroup->append_line(line);
+
+    page = add_options_page(L("Notes"), "note");
     optgroup = page->new_optgroup(L("Notes"), 0);
     optgroup->label_width = 0;
     Option option = optgroup->get_option("material_notes");
@@ -3994,10 +5143,10 @@ void TabSLAMaterial::build()
     option.opt.height = 25;//250;
     optgroup->append_single_option_line(option);
 
-    page = add_options_page(L("Dependencies"), "wrench.png");
+    page = add_options_page(L("Dependencies"), "wrench");
     optgroup = page->new_optgroup(L("Profile dependencies"));
 
-    create_line_with_widget(optgroup.get(), "compatible_printers", wxEmptyString, [this](wxWindow* parent) {
+    create_line_with_widget(optgroup.get(), "compatible_printers", "", [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_printers);
     });
     
@@ -4005,7 +5154,7 @@ void TabSLAMaterial::build()
     option.opt.full_width = true;
     optgroup->append_single_option_line(option);
 
-    create_line_with_widget(optgroup.get(), "compatible_prints", wxEmptyString, [this](wxWindow* parent) {
+    create_line_with_widget(optgroup.get(), "compatible_prints", "", [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_prints);
     });
 
@@ -4014,20 +5163,27 @@ void TabSLAMaterial::build()
     optgroup->append_single_option_line(option);
 
     build_preset_description_line(optgroup.get());
+
+    page = add_options_page(L("Material printing profile"), "note");
+    optgroup = page->new_optgroup(L("Material printing profile"));
+    option = optgroup->get_option("material_print_speed");
+    optgroup->append_single_option_line(option);
 }
 
-// Reload current config (aka presets->edited_preset->config) into the UI fields.
-void TabSLAMaterial::reload_config()
+void TabSLAMaterial::toggle_options()
 {
-    this->compatible_widget_reload(m_compatible_printers);
-    this->compatible_widget_reload(m_compatible_prints);
-    Tab::reload_config();
+    const Preset &current_printer = wxGetApp().preset_bundle->printers.get_edited_preset();
+    std::string model = current_printer.config.opt_string("printer_model");
+    m_config_manipulation.toggle_field("material_print_speed", model != "SL1");
 }
 
 void TabSLAMaterial::update()
 {
     if (m_preset_bundle->printers.get_selected_preset().printer_technology() == ptFFF)
         return;
+
+    update_description_lines();
+    Layout();
 
 // #ys_FIXME. Just a template for this function
 //     m_update_cnt++;
@@ -4036,6 +5192,60 @@ void TabSLAMaterial::update()
 //
 //     if (m_update_cnt == 0)
         wxGetApp().mainframe->on_config_changed(m_config);
+}
+
+static void add_options_into_line(ConfigOptionsGroupShp &optgroup,
+                                  const std::vector<SamePair<std::string>> &prefixes,
+                                  const std::string &optkey)
+{
+    auto opt = optgroup->get_option(prefixes.front().first + optkey);
+    Line line{ opt.opt.label, "" };
+    line.full_width = 1;
+    for (auto &prefix : prefixes) {
+        opt = optgroup->get_option(prefix.first + optkey);
+        opt.opt.label = prefix.second;
+        opt.opt.width = 12; // TODO
+        line.append_option(opt);
+    }
+    optgroup->append_line(line);
+}
+
+void TabSLAPrint::build_sla_support_params(const std::vector<SamePair<std::string>> &prefixes,
+                                           const Slic3r::GUI::PageShp &page)
+{
+
+    auto optgroup = page->new_optgroup(L("Support head"));
+    add_options_into_line(optgroup, prefixes, "support_head_front_diameter");
+    add_options_into_line(optgroup, prefixes, "support_head_penetration");
+    add_options_into_line(optgroup, prefixes, "support_head_width");
+
+    optgroup = page->new_optgroup(L("Support pillar"));
+    add_options_into_line(optgroup, prefixes, "support_pillar_diameter");
+    add_options_into_line(optgroup, prefixes, "support_small_pillar_diameter_percent");
+    add_options_into_line(optgroup, prefixes, "support_max_bridges_on_pillar");
+
+    add_options_into_line(optgroup, prefixes, "support_pillar_connection_mode");
+    add_options_into_line(optgroup, prefixes, "support_buildplate_only");
+    add_options_into_line(optgroup, prefixes, "support_pillar_widening_factor");
+    add_options_into_line(optgroup, prefixes, "support_max_weight_on_model");
+    add_options_into_line(optgroup, prefixes, "support_base_diameter");
+    add_options_into_line(optgroup, prefixes, "support_base_height");
+    add_options_into_line(optgroup, prefixes, "support_base_safety_distance");
+
+    // Mirrored parameter from Pad page for toggling elevation on the same page
+    add_options_into_line(optgroup, prefixes, "support_object_elevation");
+
+    Line line{ "", "" };
+    line.full_width = 1;
+    line.widget = [this](wxWindow* parent) {
+        return description_line_widget(parent, &m_support_object_elevation_description_line);
+    };
+    optgroup->append_line(line);
+
+    optgroup = page->new_optgroup(L("Connection of the support sticks and junctions"));
+    add_options_into_line(optgroup, prefixes, "support_critical_angle");
+    add_options_into_line(optgroup, prefixes, "support_max_bridge_length");
+    add_options_into_line(optgroup, prefixes, "support_max_pillar_link_distance");
 }
 
 void TabSLAPrint::build()
@@ -4050,41 +5260,13 @@ void TabSLAPrint::build()
     optgroup->append_single_option_line("faded_layers");
 
     page = add_options_page(L("Supports"), "support"/*"sla_supports"*/);
+
     optgroup = page->new_optgroup(L("Supports"));
     optgroup->append_single_option_line("supports_enable");
-
-    optgroup = page->new_optgroup(L("Support head"));
-    optgroup->append_single_option_line("support_head_front_diameter");
-    optgroup->append_single_option_line("support_head_penetration");
-    optgroup->append_single_option_line("support_head_width");
-
-    optgroup = page->new_optgroup(L("Support pillar"));
-    optgroup->append_single_option_line("support_pillar_diameter");
-    optgroup->append_single_option_line("support_small_pillar_diameter_percent");
-    optgroup->append_single_option_line("support_max_bridges_on_pillar");
+    optgroup->append_single_option_line("support_tree_type");
+    optgroup->append_single_option_line("support_enforcers_only");
     
-    optgroup->append_single_option_line("support_pillar_connection_mode");
-    optgroup->append_single_option_line("support_buildplate_only");
-    // TODO: This parameter is not used at the moment.
-    // optgroup->append_single_option_line("support_pillar_widening_factor");
-    optgroup->append_single_option_line("support_base_diameter");
-    optgroup->append_single_option_line("support_base_height");
-    optgroup->append_single_option_line("support_base_safety_distance");
-    
-    // Mirrored parameter from Pad page for toggling elevation on the same page
-    optgroup->append_single_option_line("support_object_elevation");
-
-    Line line{ "", "" };
-    line.full_width = 1;
-    line.widget = [this](wxWindow* parent) {
-        return description_line_widget(parent, &m_support_object_elevation_description_line);
-    };
-    optgroup->append_line(line);
-
-    optgroup = page->new_optgroup(L("Connection of the support sticks and junctions"));
-    optgroup->append_single_option_line("support_critical_angle");
-    optgroup->append_single_option_line("support_max_bridge_length");
-    optgroup->append_single_option_line("support_max_pillar_link_distance");
+    build_sla_support_params({{"", L("Default")}, {"branching", L("Branching")}}, page);
 
     optgroup = page->new_optgroup(L("Automatic generation"));
     optgroup->append_single_option_line("support_points_density_relative");
@@ -4118,6 +5300,7 @@ void TabSLAPrint::build()
     page = add_options_page(L("Advanced"), "wrench");
     optgroup = page->new_optgroup(L("Slicing"));
     optgroup->append_single_option_line("slice_closing_radius");
+    optgroup->append_single_option_line("slicing_mode");
 
     page = add_options_page(L("Output options"), "output+page_white");
     optgroup = page->new_optgroup(L("Output file"));
@@ -4128,7 +5311,7 @@ void TabSLAPrint::build()
     page = add_options_page(L("Dependencies"), "wrench");
     optgroup = page->new_optgroup(L("Profile dependencies"));
 
-    create_line_with_widget(optgroup.get(), "compatible_printers", wxEmptyString, [this](wxWindow* parent) {
+    create_line_with_widget(optgroup.get(), "compatible_printers", "", [this](wxWindow* parent) {
         return compatible_widget_create(parent, m_compatible_printers);
     });
 
@@ -4137,13 +5320,6 @@ void TabSLAPrint::build()
     optgroup->append_single_option_line(option);
 
     build_preset_description_line(optgroup.get());
-}
-
-// Reload current config (aka presets->edited_preset->config) into the UI fields.
-void TabSLAPrint::reload_config()
-{
-    this->compatible_widget_reload(m_compatible_printers);
-    Tab::reload_config();
 }
 
 void TabSLAPrint::update_description_lines()
@@ -4160,9 +5336,9 @@ void TabSLAPrint::update_description_lines()
             {
                 bool elev = !m_config->opt_bool("pad_enable") || !m_config->opt_bool("pad_around_object");
                 m_support_object_elevation_description_line->SetText(elev ? "" :
-                    from_u8((boost::format(_u8L("\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
-                        "To enable \"%1%\", please switch off \"%2%\""))
-                        % _L("Object elevation") % _L("Pad around object") % _L("Pad")).str()));
+                    format_wxstr(_L("\"%1%\" is disabled because \"%2%\" is on in \"%3%\" category.\n"
+                        "To enable \"%1%\", please switch off \"%2%\"")
+                        , _L("Object elevation"), _L("Pad around object"), _L("Pad")));
             }
         }
     }
@@ -4225,7 +5401,7 @@ ConfigManipulation Tab::get_config_manipulation()
         return on_value_change(opt_key, value);
     };
 
-    return ConfigManipulation(load_config, cb_toggle_field, cb_value_change);
+    return ConfigManipulation(load_config, cb_toggle_field, cb_value_change, nullptr, this);
 }
 
 

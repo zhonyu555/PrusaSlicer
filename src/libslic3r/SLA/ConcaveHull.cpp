@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <libslic3r/SLA/ConcaveHull.hpp>
 #include <libslic3r/SLA/SpatIndex.hpp>
 
@@ -40,39 +44,11 @@ Point ConcaveHull::centroid(const Points &pp)
     return c;
 }
 
-// As it shows, the current offset_ex in ClipperUtils hangs if used in jtRound
-// mode
-static ClipperLib::Paths fast_offset(const ClipperLib::Paths &paths,
-                                     coord_t                  delta,
-                                     ClipperLib::JoinType     jointype)
-{
-    using ClipperLib::ClipperOffset;
-    using ClipperLib::etClosedPolygon;
-    using ClipperLib::Paths;
-    using ClipperLib::Path;
-
-    ClipperOffset offs;
-    offs.ArcTolerance = scaled<double>(0.01);
-
-    for (auto &p : paths)
-        // If the input is not at least a triangle, we can not do this algorithm
-        if(p.size() < 3) {
-            BOOST_LOG_TRIVIAL(error) << "Invalid geometry for offsetting!";
-            return {};
-        }
-
-    offs.AddPaths(paths, jointype, etClosedPolygon);
-
-    Paths result;
-    offs.Execute(result, static_cast<double>(delta));
-
-    return result;
-}
-
 Points ConcaveHull::calculate_centroids() const
 {
     // We get the centroids of all the islands in the 2D slice
-    Points centroids = reserve_vector<Point>(m_polys.size());
+    Points centroids;
+    centroids.reserve(m_polys.size());
     std::transform(m_polys.begin(), m_polys.end(),
                    std::back_inserter(centroids),
                    [](const Polygon &poly) { return centroid(poly); });
@@ -157,17 +133,18 @@ ExPolygons ConcaveHull::to_expolygons() const
 
 ExPolygons offset_waffle_style_ex(const ConcaveHull &hull, coord_t delta)
 {
-    ClipperLib::Paths paths = Slic3rMultiPoints_to_ClipperPaths(hull.polygons());
-    paths = fast_offset(paths, 2 * delta, ClipperLib::jtRound);
-    paths = fast_offset(paths, -delta, ClipperLib::jtRound);
-    ExPolygons ret = ClipperPaths_to_Slic3rExPolygons(paths);
-    for (ExPolygon &p : ret) p.holes = {};
-    return ret;
+    return to_expolygons(offset_waffle_style(hull, delta));
 }
 
 Polygons offset_waffle_style(const ConcaveHull &hull, coord_t delta)
 {
-    return to_polygons(offset_waffle_style_ex(hull, delta));
+    auto arc_tolerance = scaled<double>(0.01);
+    Polygons res = closing(hull.polygons(), 2 * delta, delta, ClipperLib::jtRound, arc_tolerance);
+
+    auto it = std::remove_if(res.begin(), res.end(), [](Polygon &p) { return p.is_clockwise(); });
+    res.erase(it, res.end());
+
+    return res;
 }
 
 }} // namespace Slic3r::sla

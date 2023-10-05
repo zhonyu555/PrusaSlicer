@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2021 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Serial.hpp"
 
 #include "libslic3r/Exception.hpp"
@@ -313,7 +317,7 @@ void Serial::set_baud_rate(unsigned baud_rate)
 		speed_t newSpeed = baud_rate;
 		handle_errno(::ioctl(handle, IOSSIOSPEED, &newSpeed));
 		handle_errno(::tcsetattr(handle, TCSANOW, &ios));
-#elif __linux
+#elif __linux__
 
 		/* The following definitions are kindly borrowed from:
 			/usr/include/asm-generic/termbits.h

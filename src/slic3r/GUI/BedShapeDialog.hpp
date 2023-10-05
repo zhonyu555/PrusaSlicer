@@ -1,3 +1,13 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Hejl @hejllukas, Filip Sykala @Jony01, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena
+///|/
+///|/ ported from lib/Slic3r/GUI/BedShapeDialog.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Král @vojtechkral, Vojtěch Bubník @bubnikv
+///|/ Copyright (c) 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) 2017 Ahmed Samir Abdelreheem @Samir55
+///|/ Copyright (c) Slic3r 2014 - 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_BedShapeDialog_hpp_
 #define slic3r_BedShapeDialog_hpp_
 // The bed shape dialog.
@@ -5,7 +15,8 @@
 
 #include "GUI_Utils.hpp"
 #include "2DBed.hpp"
-#include "I18N.hpp"
+
+#include <libslic3r/BuildVolume.hpp>
 
 #include <wx/dialog.h>
 #include <wx/choicebk.h>
@@ -16,14 +27,14 @@ namespace GUI {
 class ConfigOptionsGroup;
 
 using ConfigOptionsGroupShp = std::shared_ptr<ConfigOptionsGroup>;
+using ConfigOptionsGroupWkp = std::weak_ptr<ConfigOptionsGroup>;
 
 struct BedShape
 {
-    enum class Type {
-        Rectangular = 0,
-        Circular,
-        Custom,
-        Invalid
+    enum class PageType {
+        Rectangle,
+        Circle,
+        Custom
     };
 
     enum class Parameter {
@@ -34,22 +45,18 @@ struct BedShape
 
     BedShape(const ConfigOptionPoints& points);
 
-    bool            is_custom() { return m_type == Type::Custom; }
+    bool            is_custom() { return m_build_volume.type() == BuildVolume::Type::Convex || m_build_volume.type() == BuildVolume::Type::Custom; }
 
     static void     append_option_line(ConfigOptionsGroupShp optgroup, Parameter param);
-    static wxString get_name(Type type);
+    static wxString get_name(PageType type);
 
-    // convert Type to size_t
-    size_t          get_type();
+    PageType        get_page_type();
 
     wxString        get_full_name_with_params();
     void            apply_optgroup_values(ConfigOptionsGroupShp optgroup);
 
 private:
-    Type    m_type          {Type::Invalid};
-    Vec2d   m_rectSize      {200, 200};
-    Vec2d   m_rectOrigin    {0, 0};
-    double  m_diameter      {0};
+    BuildVolume m_build_volume;
 };
 
 class BedShapePanel : public wxPanel
@@ -95,8 +102,7 @@ class BedShapeDialog : public DPIDialog
 {
 	BedShapePanel*	m_panel;
 public:
-	BedShapeDialog(wxWindow* parent) : DPIDialog(parent, wxID_ANY, _(L("Bed Shape")),
-        wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER) {}
+	BedShapeDialog(wxWindow* parent);
 
     void build_dialog(const ConfigOptionPoints& default_pt, const ConfigOptionString& custom_texture, const ConfigOptionString& custom_model);
 

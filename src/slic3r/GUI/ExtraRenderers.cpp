@@ -1,7 +1,13 @@
+///|/ Copyright (c) Prusa Research 2020 - 2022 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "ExtraRenderers.hpp"
 #include "wxExtensions.hpp"
 #include "GUI.hpp"
 #include "I18N.hpp"
+#include "BitmapComboBox.hpp"
+#include "Plater.hpp"
 
 #include <wx/dc.h>
 #ifdef wxHAS_GENERIC_DATAVIEWCTRL
@@ -31,6 +37,15 @@ wxIMPLEMENT_DYNAMIC_CLASS(DataViewBitmapText, wxObject)
 
 IMPLEMENT_VARIANT_OBJECT(DataViewBitmapText)
 
+static wxSize get_size(const wxBitmap& icon)
+{
+#ifdef __WIN32__
+    return icon.GetSize();
+#else
+    return icon.GetScaledSize();
+#endif
+}
+
 // ---------------------------------------------------------
 // BitmapTextRenderer
 // ---------------------------------------------------------
@@ -49,8 +64,7 @@ BitmapTextRenderer::~BitmapTextRenderer()
 {
 #ifdef SUPPORTS_MARKUP
     #ifdef wxHAS_GENERIC_DATAVIEWCTRL
-    if (m_markupText)
-        delete m_markupText;
+    delete m_markupText;
     #endif //wxHAS_GENERIC_DATAVIEWCTRL
 #endif // SUPPORTS_MARKUP
 }
@@ -123,11 +137,7 @@ bool BitmapTextRenderer::Render(wxRect rect, wxDC *dc, int state)
     const wxBitmap& icon = m_value.GetBitmap();
     if (icon.IsOk())
     {
-#ifdef __APPLE__
-        wxSize icon_sz = icon.GetScaledSize();
-#else
-        wxSize icon_sz = icon.GetSize();
-#endif
+        wxSize icon_sz = get_size(icon);
         dc->DrawBitmap(icon, rect.x, rect.y + (rect.height - icon_sz.y) / 2);
         xoffset = icon_sz.x + 4;
     }
@@ -140,7 +150,12 @@ bool BitmapTextRenderer::Render(wxRect rect, wxDC *dc, int state)
     }
     else
 #endif // SUPPORTS_MARKUP && wxHAS_GENERIC_DATAVIEWCTRL
+#ifdef _WIN32 
+        // workaround for Windows DarkMode : Don't respect to the state & wxDATAVIEW_CELL_SELECTED to avoid update of the text color
+        RenderText(m_value.GetText(), xoffset, rect, dc, state & wxDATAVIEW_CELL_SELECTED ? 0 :state);
+#else
         RenderText(m_value.GetText(), xoffset, rect, dc, state);
+#endif
 
     return true;
 }
@@ -192,6 +207,17 @@ wxWindow* BitmapTextRenderer::CreateEditorCtrl(wxWindow* parent, wxRect labelRec
         labelRect.SetWidth(labelRect.GetWidth() - bmp_width);
     }
 
+#ifdef __WXMSW__
+    // Case when from some reason we try to create next EditorCtrl till old one was not deleted
+    if (auto children = parent->GetChildren(); children.GetCount() > 0)
+        for (auto child : children)
+            if (dynamic_cast<wxTextCtrl*>(child)) {
+                parent->RemoveChild(child);
+                child->Destroy();
+                break;
+            }
+#endif // __WXMSW__
+
     wxTextCtrl* text_editor = new wxTextCtrl(parent, wxID_ANY, data.GetText(),
                                              position, labelRect.GetSize(), wxTE_PROCESS_ENTER);
     text_editor->SetInsertionPointEnd();
@@ -206,14 +232,9 @@ bool BitmapTextRenderer::GetValueFromEditorCtrl(wxWindow* ctrl, wxVariant& value
     if (!text_editor || text_editor->GetValue().IsEmpty())
         return false;
 
-    std::string chosen_name = into_u8(text_editor->GetValue());
-    const char* unusable_symbols = "<>:/\\|?*\"";
-    for (size_t i = 0; i < std::strlen(unusable_symbols); i++) {
-        if (chosen_name.find_first_of(unusable_symbols[i]) != std::string::npos) {
-            m_was_unusable_symbol = true;
-            return false;
-        }
-    }
+    m_was_unusable_symbol = Slic3r::GUI::Plater::has_illegal_filename_characters(text_editor->GetValue());
+    if (m_was_unusable_symbol)
+        return false;
 
     // The icon can't be edited so get its old value and reuse it.
     wxVariant valueOld;
@@ -252,14 +273,21 @@ bool BitmapChoiceRenderer::Render(wxRect rect, wxDC* dc, int state)
     const wxBitmap& icon = m_value.GetBitmap();
     if (icon.IsOk())
     {
-        dc->DrawBitmap(icon, rect.x, rect.y + (rect.height - icon.GetHeight()) / 2);
-        xoffset = icon.GetWidth() + 4;
+        wxSize icon_sz = get_size(icon);
+
+        dc->DrawBitmap(icon, rect.x, rect.y + (rect.height - icon_sz.GetHeight()) / 2);
+        xoffset = icon_sz.GetWidth() + 4;
 
         if (rect.height==0)
-          rect.height= icon.GetHeight();
+          rect.height= icon_sz.GetHeight();
     }
 
+#ifdef _WIN32
+    // workaround for Windows DarkMode : Don't respect to the state & wxDATAVIEW_CELL_SELECTED to avoid update of the text color
+    RenderText(m_value.GetText(), xoffset, rect, dc, state & wxDATAVIEW_CELL_SELECTED ? 0 : state);
+#else
     RenderText(m_value.GetText(), xoffset, rect, dc, state);
+#endif
 
     return true;
 }
@@ -280,36 +308,41 @@ wxWindow* BitmapChoiceRenderer::CreateEditorCtrl(wxWindow* parent, wxRect labelR
     if (can_create_editor_ctrl && !can_create_editor_ctrl())
         return nullptr;
 
-    std::vector<wxBitmap*> icons = get_extruder_color_icons();
+    std::vector<wxBitmapBundle*> icons = get_extruder_color_icons();
     if (icons.empty())
         return nullptr;
 
     DataViewBitmapText data;
     data << value;
 
+#ifdef _WIN32
+    Slic3r::GUI::BitmapComboBox* c_editor = new Slic3r::GUI::BitmapComboBox(parent, wxID_ANY, wxEmptyString,
+#else
     auto c_editor = new wxBitmapComboBox(parent, wxID_ANY, wxEmptyString,
+#endif
         labelRect.GetTopLeft(), wxSize(labelRect.GetWidth(), -1), 
         0, nullptr , wxCB_READONLY);
 
-    int i=0;
-    for (wxBitmap* bmp : icons) {
-        if (i==0) {
-            c_editor->Append(_L("default"), *bmp);
-            ++i;
-        }
+    int def_id = get_default_extruder_idx ? get_default_extruder_idx() : 0;
+    c_editor->Append(_L("default"), def_id < 0 ? wxNullBitmap : *icons[def_id]);
+    for (size_t i = 0; i < icons.size(); i++)
+        c_editor->Append(wxString::Format("%d", i+1), *icons[i]);
 
-        c_editor->Append(wxString::Format("%d", i), *bmp);
-        ++i;
-    }
     c_editor->SetSelection(atoi(data.GetText().c_str()));
 
-    // to avoid event propagation to other sidebar items
+    
+#ifdef __linux__
     c_editor->Bind(wxEVT_COMBOBOX, [this](wxCommandEvent& evt) {
-            evt.StopPropagation();
-            // FinishEditing grabs new selection and triggers config update. We better call
-            // it explicitly, automatic update on KILL_FOCUS didn't work on Linux.
-            this->FinishEditing();
+        // to avoid event propagation to other sidebar items
+        evt.StopPropagation();
+        // FinishEditing grabs new selection and triggers config update. We better call
+        // it explicitly, automatic update on KILL_FOCUS didn't work on Linux.
+        this->FinishEditing();
     });
+#else
+    // to avoid event propagation to other sidebar items
+    c_editor->Bind(wxEVT_COMBOBOX, [](wxCommandEvent& evt) { evt.StopPropagation(); });
+#endif
 
     return c_editor;
 }
@@ -328,6 +361,39 @@ bool BitmapChoiceRenderer::GetValueFromEditorCtrl(wxWindow* ctrl, wxVariant& val
 
     value << bmpText;
     return true;
+}
+
+
+// ----------------------------------------------------------------------------
+// TextRenderer
+// ----------------------------------------------------------------------------
+
+bool TextRenderer::SetValue(const wxVariant& value)
+{
+    m_value = value.GetString();
+    return true;
+}
+
+bool TextRenderer::GetValue(wxVariant& value) const
+{
+    return false;
+}
+
+bool TextRenderer::Render(wxRect rect, wxDC* dc, int state)
+{
+#ifdef _WIN32
+    // workaround for Windows DarkMode : Don't respect to the state & wxDATAVIEW_CELL_SELECTED to avoid update of the text color
+    RenderText(m_value, 0, rect, dc, state & wxDATAVIEW_CELL_SELECTED ? 0 : state);
+#else
+    RenderText(m_value, 0, rect, dc, state);
+#endif
+
+    return true;
+}
+
+wxSize TextRenderer::GetSize() const
+{
+    return GetTextExtent(m_value);
 }
 
 

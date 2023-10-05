@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2020 Manuel Coenen
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Http_hpp_
 #define slic3r_Http_hpp_
 
@@ -21,9 +27,10 @@ public:
 		size_t dlnow;     // Bytes downloaded so far
 		size_t ultotal;   // Total bytes to upload
 		size_t ulnow;     // Bytes uploaded so far
+		const  std::string& buffer; // reference to buffer containing all data
 
-		Progress(size_t dltotal, size_t dlnow, size_t ultotal, size_t ulnow) :
-			dltotal(dltotal), dlnow(dlnow), ultotal(ultotal), ulnow(ulnow)
+		Progress(size_t dltotal, size_t dlnow, size_t ultotal, size_t ulnow, const std::string& buffer) :
+			dltotal(dltotal), dlnow(dlnow), ultotal(ultotal), ulnow(ulnow), buffer(buffer)
 		{}
 	};
 
@@ -40,6 +47,8 @@ public:
 	// See the Progress struct above.
 	// Writing true to the `cancel` reference cancels the request in progress.
 	typedef std::function<void(Progress, bool& /* cancel */)> ProgressFn;
+
+	typedef std::function<void(std::string/* address */)> IPResolveFn;
 
 	Http(Http &&other);
 
@@ -58,9 +67,13 @@ public:
 
 	// Sets a maximum connection timeout in seconds
 	Http& timeout_connect(long timeout);
+    // Sets a maximum total request timeout in seconds
+    Http& timeout_max(long timeout);
 	// Sets a maximum size of the data that can be received.
 	// A value of zero sets the default limit, which is is 5MB.
 	Http& size_limit(size_t sizeLimit);
+	// range  of donloaded bytes. example: curl_easy_setopt(curl, CURLOPT_RANGE, "0-199");
+	Http& set_range(const std::string& range);
 	// Sets a HTTP header field.
 	Http& header(std::string name, const std::string &value);
 	// Removes a header field.
@@ -79,6 +92,12 @@ public:
 	Http& form_add_file(const std::string &name, const boost::filesystem::path &path);
 	// Same as above except also override the file's filename with a custom one
 	Http& form_add_file(const std::string &name, const boost::filesystem::path &path, const std::string &filename);
+
+#ifdef WIN32
+	// Tells libcurl to ignore certificate revocation checks in case of missing or offline distribution points for those SSL backends where such behavior is present. 
+	// This option is only supported for Schannel (the native Windows SSL library).
+	Http& ssl_revoke_best_effort(bool set);
+#endif // WIN32
 
 	// Set the file contents as a POST request body.
 	// The data is used verbatim, it is not additionally encoded in any way.
@@ -105,6 +124,9 @@ public:
 	// See the `Progress` structure for description of the data passed.
 	// Writing a true-ish value into the cancel reference parameter cancels the request.
 	Http& on_progress(ProgressFn fn);
+	// Callback called after succesful HTTP request (after on_complete callback)
+	// Called if curl_easy_getinfo resolved just used IP address.
+	Http& on_ip_resolve(IPResolveFn fn);
 
 	// Starts performing the request in a background thread
 	Ptr perform();

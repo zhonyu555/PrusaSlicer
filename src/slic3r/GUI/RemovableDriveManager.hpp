@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 David Kocík @kocikdav, Roman Beránek @zavorka, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_RemovableDriveManager_hpp_
 #define slic3r_GUI_RemovableDriveManager_hpp_
 
@@ -5,7 +9,7 @@
 #include <string>
 
 #include <boost/thread.hpp>
-#include <tbb/mutex.h>
+#include <mutex>
 #include <condition_variable>
 
 // Custom wxWidget events
@@ -93,6 +97,7 @@ private:
 	bool 			 		m_initialized { false };
 	wxEvtHandler*			m_callback_evt_handler { nullptr };
 
+
 #ifndef REMOVABLE_DRIVE_MANAGER_OS_CALLBACKS
 	// Worker thread, worker thread synchronization and callbacks to the UI thread.
 	void 					thread_proc();
@@ -111,9 +116,9 @@ private:
 	// m_current_drives is guarded by m_drives_mutex
 	// sorted ascending by path
 	std::vector<DriveData> 	m_current_drives;
-	mutable tbb::mutex 		m_drives_mutex;
+	mutable std::mutex 		m_drives_mutex;
 	// Locking the update() function to avoid that the function is executed multiple times.
-	mutable tbb::mutex 		m_inside_update_mutex;
+	mutable std::mutex 		m_inside_update_mutex;
 
 	// Returns drive path (same as path in DriveData) if exists otherwise empty string.
 	std::string 			get_removable_drive_from_path(const std::string& path);
@@ -132,6 +137,8 @@ private:
     void eject_device(const std::string &path);
     // Opaque pointer to RemovableDriveManagerMM
     void *m_impl_osx;
+    boost::thread *m_eject_thread { nullptr };
+    void eject_thread_finish();
 #endif
 };
 

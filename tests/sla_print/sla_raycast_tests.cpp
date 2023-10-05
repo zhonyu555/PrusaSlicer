@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include <test_utils.hpp>
 
-#include <libslic3r/SLA/IndexedMesh.hpp>
+#include <libslic3r/AABBMesh.hpp>
 #include <libslic3r/SLA/Hollowing.hpp>
 
 #include "sla_test_utils.hpp"
@@ -63,7 +63,6 @@ TEST_CASE("Raycaster with loaded drillholes", "[sla_raycast]")
     sla::DrainHoles holes = { sla::DrainHole{p, normal, radius, hole_length} };
     
     cube.merge(*cube_inside);
-    cube.require_shared_vertices();
     
     sla::IndexedMesh emesh{cube};
     emesh.load_holes(holes);

@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2017 - 2022 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) 2019 Thomas Moore
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 // Calculate extents of the extrusions assigned to Print / PrintObject.
 // The extents are used for assessing collisions of the print with the priming towers,
 // to decide whether to pause the print after the priming towers are extruded
@@ -113,8 +118,8 @@ BoundingBoxf get_print_object_extrusions_extents(const PrintObject &print_object
             break;
         BoundingBoxf bbox_this;
         for (const LayerRegion *layerm : layer->regions()) {
-            bbox_this.merge(extrusionentity_extents(layerm->perimeters));
-            for (const ExtrusionEntity *ee : layerm->fills.entities)
+            bbox_this.merge(extrusionentity_extents(layerm->perimeters()));
+            for (const ExtrusionEntity *ee : layerm->fills())
                 // fill represents infill extrusions of a single island.
                 bbox_this.merge(extrusionentity_extents(*dynamic_cast<const ExtrusionEntityCollection*>(ee)));
         }

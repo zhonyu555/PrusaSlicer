@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 // Based on implementation by @platsch
 
 #ifndef slic3r_Slicing_hpp_
@@ -26,7 +30,7 @@ class DynamicPrintConfig;
 // (using a normal flow over a soluble support, using a bridging flow over a non-soluble support).
 struct SlicingParameters
 {
-	SlicingParameters() { memset(this, 0, sizeof(SlicingParameters)); }
+	SlicingParameters() = default;
 
     static SlicingParameters create_from_config(
         const PrintConfig       &print_config, 
@@ -44,59 +48,58 @@ struct SlicingParameters
     // Height of the object to be printed. This value does not contain the raft height.
     coordf_t    object_print_z_height() const { return object_print_z_max - object_print_z_min; }
 
-    bool        valid;
+    bool        valid { false };
 
     // Number of raft layers.
-    size_t      base_raft_layers;
+    size_t      base_raft_layers { 0 };
     // Number of interface layers including the contact layer.
-    size_t      interface_raft_layers;
+    size_t      interface_raft_layers { 0 };
 
     // Layer heights of the raft (base, interface and a contact layer).
-    coordf_t    base_raft_layer_height;
-    coordf_t    interface_raft_layer_height;
-    coordf_t    contact_raft_layer_height;
-    bool        contact_raft_layer_height_bridging;
+    coordf_t    base_raft_layer_height { 0 };
+    coordf_t    interface_raft_layer_height { 0 };
+    coordf_t    contact_raft_layer_height { 0 };
 
 	// The regular layer height, applied for all but the first layer, if not overridden by layer ranges
 	// or by the variable layer thickness table.
-    coordf_t    layer_height;
+    coordf_t    layer_height { 0 };
     // Minimum / maximum layer height, to be used for the automatic adaptive layer height algorithm,
     // or by an interactive layer height editor.
-    coordf_t    min_layer_height;
-    coordf_t    max_layer_height;
-    coordf_t    max_suport_layer_height;
+    coordf_t    min_layer_height { 0 };
+    coordf_t    max_layer_height { 0 };
+    coordf_t    max_suport_layer_height { 0 };
 
     // First layer height of the print, this may be used for the first layer of the raft
     // or for the first layer of the print.
-    coordf_t    first_print_layer_height;
+    coordf_t    first_print_layer_height { 0 };
 
     // Thickness of the first layer. This is either the first print layer thickness if printed without a raft,
     // or a bridging flow thickness if printed over a non-soluble raft,
     // or a normal layer height if printed over a soluble raft.
-    coordf_t    first_object_layer_height;
+    coordf_t    first_object_layer_height { 0 };
 
     // If the object is printed over a non-soluble raft, the first layer may be printed with a briding flow.
-    bool 		first_object_layer_bridging;
+    bool 		first_object_layer_bridging { false };
 
     // Soluble interface? (PLA soluble in water, HIPS soluble in lemonen)
     // otherwise the interface must be broken off.
-    bool        soluble_interface;
+    bool        soluble_interface { false };
     // Gap when placing object over raft.
-    coordf_t    gap_raft_object;
+    coordf_t    gap_raft_object { 0 };
     // Gap when placing support over object.
-    coordf_t    gap_object_support;
+    coordf_t    gap_object_support { 0 };
     // Gap when placing object over support.
-    coordf_t    gap_support_object;
+    coordf_t    gap_support_object { 0 };
 
     // Bottom and top of the printed object.
     // If printed without a raft, object_print_z_min = 0 and object_print_z_max = object height.
     // Otherwise object_print_z_min is equal to the raft height.
-    coordf_t    raft_base_top_z;
-    coordf_t    raft_interface_top_z;
-    coordf_t    raft_contact_top_z;
+    coordf_t    raft_base_top_z { 0 };
+    coordf_t    raft_interface_top_z { 0 };
+    coordf_t    raft_contact_top_z { 0 };
     // In case of a soluble interface, object_print_z_min == raft_contact_top_z, otherwise there is a gap between the raft and the 1st object layer.
-    coordf_t 	object_print_z_min;
-    coordf_t 	object_print_z_max;
+    coordf_t 	object_print_z_min { 0 };
+    coordf_t 	object_print_z_max { 0 };
 };
 static_assert(IsTriviallyCopyable<SlicingParameters>::value, "SlicingParameters class is not POD (and it should be - see constructor).");
 
@@ -110,7 +113,6 @@ inline bool equal_layering(const SlicingParameters &sp1, const SlicingParameters
             sp1.base_raft_layer_height              == sp2.base_raft_layer_height               &&
             sp1.interface_raft_layer_height         == sp2.interface_raft_layer_height          &&
             sp1.contact_raft_layer_height           == sp2.contact_raft_layer_height            &&
-            sp1.contact_raft_layer_height_bridging  == sp2.contact_raft_layer_height_bridging   &&
             sp1.layer_height                        == sp2.layer_height                         &&
             sp1.min_layer_height                    == sp2.min_layer_height                     &&
             sp1.max_layer_height                    == sp2.max_layer_height                     &&
@@ -131,11 +133,11 @@ inline bool equal_layering(const SlicingParameters &sp1, const SlicingParameters
 typedef std::pair<coordf_t,coordf_t> t_layer_height_range;
 typedef std::map<t_layer_height_range, ModelConfig> t_layer_config_ranges;
 
-extern std::vector<coordf_t> layer_height_profile_from_ranges(
+std::vector<coordf_t> layer_height_profile_from_ranges(
     const SlicingParameters     &slicing_params,
     const t_layer_config_ranges &layer_config_ranges);
 
-extern std::vector<double> layer_height_profile_adaptive(
+std::vector<double> layer_height_profile_adaptive(
     const SlicingParameters& slicing_params,
     const ModelObject& object, float quality_factor);
 
@@ -148,7 +150,7 @@ struct HeightProfileSmoothingParams
     HeightProfileSmoothingParams(unsigned int radius, bool keep_min) : radius(radius), keep_min(keep_min) {}
 };
 
-extern std::vector<double> smooth_height_profile(
+std::vector<double> smooth_height_profile(
     const std::vector<double>& profile, const SlicingParameters& slicing_params,
     const HeightProfileSmoothingParams& smoothing_params);
 
@@ -159,7 +161,7 @@ enum LayerHeightEditActionType : unsigned int {
     LAYER_HEIGHT_EDIT_ACTION_SMOOTH   = 3
 };
 
-extern void adjust_layer_height_profile(
+void adjust_layer_height_profile(
     const SlicingParameters     &slicing_params,
     std::vector<coordf_t>       &layer_height_profile,
     coordf_t                     z,
@@ -169,14 +171,19 @@ extern void adjust_layer_height_profile(
 
 // Produce object layers as pairs of low / high layer boundaries, stored into a linear vector.
 // The object layers are based at z=0, ignoring the raft layers.
-extern std::vector<coordf_t> generate_object_layers(
+std::vector<coordf_t> generate_object_layers(
+    const SlicingParameters     &slicing_params,
+    const std::vector<coordf_t> &layer_height_profile);
+
+// Check whether the layer height profile describes a fixed layer height profile.
+bool check_object_layers_fixed(
     const SlicingParameters     &slicing_params,
     const std::vector<coordf_t> &layer_height_profile);
 
 // Produce a 1D texture packed into a 2D texture describing in the RGBA format
 // the planned object layers.
 // Returns number of cells used by the texture of the 0th LOD level.
-extern int generate_layer_height_texture(
+int generate_layer_height_texture(
     const SlicingParameters     &slicing_params,
     const std::vector<coordf_t> &layers,
     void *data, int rows, int cols, bool level_of_detail_2nd_level);

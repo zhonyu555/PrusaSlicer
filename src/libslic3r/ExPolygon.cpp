@@ -1,39 +1,30 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2015 Maksim Derbasov @ntfshard
+///|/ Copyright (c) 2014 Petr Ledvina @ledvinap
+///|/
+///|/ ported from lib/Slic3r/ExPolygon.pm:
+///|/ Copyright (c) Prusa Research 2017 - 2022 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2014 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2012 Mark Hindess
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "BoundingBox.hpp"
 #include "ExPolygon.hpp"
 #include "Exception.hpp"
-#include "Geometry.hpp"
+#include "Geometry/MedialAxis.hpp"
 #include "Polygon.hpp"
 #include "Line.hpp"
 #include "ClipperUtils.hpp"
 #include "SVG.hpp"
-#include "polypartition.h"
-#include "poly2tri/poly2tri.h"
 #include <algorithm>
 #include <cassert>
 #include <list>
 
+#include <ankerl/unordered_dense.h>
+
 namespace Slic3r {
-
-ExPolygon::operator Points() const
-{
-    Points points;
-    Polygons pp = *this;
-    for (Polygons::const_iterator poly = pp.begin(); poly != pp.end(); ++poly) {
-        for (Points::const_iterator point = poly->points.begin(); point != poly->points.end(); ++point)
-            points.push_back(*point);
-    }
-    return points;
-}
-
-ExPolygon::operator Polygons() const
-{
-    return to_polygons(*this);
-}
-
-ExPolygon::operator Polylines() const
-{
-    return to_polylines(*this);
-}
 
 void ExPolygon::scale(double factor)
 {
@@ -42,11 +33,18 @@ void ExPolygon::scale(double factor)
         hole.scale(factor);
 }
 
-void ExPolygon::translate(double x, double y)
+void ExPolygon::scale(double factor_x, double factor_y)
 {
-    contour.translate(x, y);
+    contour.scale(factor_x, factor_y);
     for (Polygon &hole : holes)
-        hole.translate(x, y);
+        hole.scale(factor_x, factor_y);
+}
+
+void ExPolygon::translate(const Point &p)
+{
+    contour.translate(p);
+    for (Polygon &hole : holes)
+        hole.translate(p);
 }
 
 void ExPolygon::rotate(double angle)
@@ -80,6 +78,13 @@ bool ExPolygon::is_valid() const
     return true;
 }
 
+void ExPolygon::douglas_peucker(double tolerance)
+{
+    this->contour.douglas_peucker(tolerance);
+    for (Polygon &poly : this->holes)
+        poly.douglas_peucker(tolerance);
+}
+
 bool ExPolygon::contains(const Line &line) const
 {
     return this->contains(Polyline(line.a, line.b));
@@ -87,7 +92,7 @@ bool ExPolygon::contains(const Line &line) const
 
 bool ExPolygon::contains(const Polyline &polyline) const
 {
-    return diff_pl((Polylines)polyline, *this).empty();
+    return diff_pl(polyline, *this).empty();
 }
 
 bool ExPolygon::contains(const Polylines &polylines) const
@@ -107,34 +112,53 @@ bool ExPolygon::contains(const Polylines &polylines) const
     return pl_out.empty();
 }
 
-bool ExPolygon::contains(const Point &point) const
+bool ExPolygon::contains(const Point &point, bool border_result /* = true */) const
 {
-    if (!this->contour.contains(point)) return false;
-    for (Polygons::const_iterator it = this->holes.begin(); it != this->holes.end(); ++it) {
-        if (it->contains(point)) return false;
-    }
+    if (! Slic3r::contains(contour, point, border_result))
+        // Outside the outer contour, not on the contour boundary.
+        return false;
+    for (const Polygon &hole : this->holes)
+        if (Slic3r::contains(hole, point, ! border_result))
+            // Inside a hole, not on the hole boundary.
+            return false;
     return true;
 }
 
-// inclusive version of contains() that also checks whether point is on boundaries
-bool ExPolygon::contains_b(const Point &point) const
+bool ExPolygon::on_boundary(const Point &point, double eps) const
 {
-    return this->contains(point) || this->has_boundary_point(point);
-}
-
-bool
-ExPolygon::has_boundary_point(const Point &point) const
-{
-    if (this->contour.has_boundary_point(point)) return true;
-    for (Polygons::const_iterator h = this->holes.begin(); h != this->holes.end(); ++h) {
-        if (h->has_boundary_point(point)) return true;
-    }
+    if (this->contour.on_boundary(point, eps))
+        return true;
+    for (const Polygon &hole : this->holes)
+        if (hole.on_boundary(point, eps))
+            return true;
     return false;
 }
 
-bool
-ExPolygon::overlaps(const ExPolygon &other) const
+// Projection of a point onto the polygon.
+Point ExPolygon::point_projection(const Point &point) const
 {
+    if (this->holes.empty()) {
+        return this->contour.point_projection(point);
+    } else {
+        double dist_min2 = std::numeric_limits<double>::max();
+        Point  closest_pt_min;
+        for (size_t i = 0; i < this->num_contours(); ++ i) {
+            Point closest_pt = this->contour_or_hole(i).point_projection(point);
+            double d2 = (closest_pt - point).cast<double>().squaredNorm();
+            if (d2 < dist_min2) {
+                dist_min2      = d2;
+                closest_pt_min = closest_pt;
+            }
+        }
+        return closest_pt_min;
+    }
+}
+
+bool ExPolygon::overlaps(const ExPolygon &other) const
+{
+    if (this->empty() || other.empty())
+        return false;
+
     #if 0
     BoundingBox bbox = get_extents(other);
     bbox.merge(get_extents(*this));
@@ -144,13 +168,18 @@ ExPolygon::overlaps(const ExPolygon &other) const
     svg.draw_outline(*this);
     svg.draw_outline(other, "blue");
     #endif
-    Polylines pl_out = intersection_pl((Polylines)other, *this);
+
+    Polylines pl_out = intersection_pl(to_polylines(other), *this);
+
     #if 0
     svg.draw(pl_out, "red");
     #endif
-    if (! pl_out.empty())
-        return true; 
-    return ! other.contour.points.empty() && this->contains_b(other.contour.points.front());
+
+    // See unit test SCENARIO("Clipper diff with polyline", "[Clipper]")
+    // for in which case the intersection_pl produces any intersection.
+    return ! pl_out.empty() ||
+           // If *this is completely inside other, then pl_out is empty, but the expolygons overlap. Test for that situation.
+           other.contains(this->contour.points.front());
 }
 
 void ExPolygon::simplify_p(double tolerance, Polygons* polygons) const
@@ -167,14 +196,14 @@ Polygons ExPolygon::simplify_p(double tolerance) const
     {
         Polygon p = this->contour;
         p.points.push_back(p.points.front());
-        p.points = MultiPoint::_douglas_peucker(p.points, tolerance);
+        p.points = MultiPoint::douglas_peucker(p.points, tolerance);
         p.points.pop_back();
         pp.emplace_back(std::move(p));
     }
     // holes
     for (Polygon p : this->holes) {
         p.points.push_back(p.points.front());
-        p.points = MultiPoint::_douglas_peucker(p.points, tolerance);
+        p.points = MultiPoint::douglas_peucker(p.points, tolerance);
         p.points.pop_back();
         pp.emplace_back(std::move(p));
     }
@@ -191,12 +220,10 @@ void ExPolygon::simplify(double tolerance, ExPolygons* expolygons) const
     append(*expolygons, this->simplify(tolerance));
 }
 
-void
-ExPolygon::medial_axis(double max_width, double min_width, ThickPolylines* polylines) const
+void ExPolygon::medial_axis(double min_width, double max_width, ThickPolylines* polylines) const
 {
     // init helper object
-    Slic3r::Geometry::MedialAxis ma(max_width, min_width, this);
-    ma.lines = this->lines();
+    Slic3r::Geometry::MedialAxis ma(min_width, max_width, *this);
     
     // compute the Voronoi diagram and extract medial axis polylines
     ThickPolylines pp;
@@ -227,7 +254,7 @@ ExPolygon::medial_axis(double max_width, double min_width, ThickPolylines* polyl
            call, so we keep the inner point until we perform the second intersection() as well */
         Point new_front = polyline.points.front();
         Point new_back  = polyline.points.back();
-        if (polyline.endpoints.first && !this->has_boundary_point(new_front)) {
+        if (polyline.endpoints.first && !this->on_boundary(new_front, SCALED_EPSILON)) {
             Vec2d p1 = polyline.points.front().cast<double>();
             Vec2d p2 = polyline.points[1].cast<double>();
             // prevent the line from touching on the other side, otherwise intersection() might return that solution
@@ -237,7 +264,7 @@ ExPolygon::medial_axis(double max_width, double min_width, ThickPolylines* polyl
             p1 -= (p2 - p1).normalized() * max_width;
             this->contour.intersection(Line(p1.cast<coord_t>(), p2.cast<coord_t>()), &new_front);
         }
-        if (polyline.endpoints.second && !this->has_boundary_point(new_back)) {
+        if (polyline.endpoints.second && !this->on_boundary(new_back, SCALED_EPSILON)) {
             Vec2d p1 = (polyline.points.end() - 2)->cast<double>();
             Vec2d p2 = polyline.points.back().cast<double>();
             // prevent the line from touching on the other side, otherwise intersection() might return that solution
@@ -303,290 +330,13 @@ ExPolygon::medial_axis(double max_width, double min_width, ThickPolylines* polyl
     polylines->insert(polylines->end(), pp.begin(), pp.end());
 }
 
-void
-ExPolygon::medial_axis(double max_width, double min_width, Polylines* polylines) const
+void ExPolygon::medial_axis(double min_width, double max_width, Polylines* polylines) const
 {
     ThickPolylines tp;
-    this->medial_axis(max_width, min_width, &tp);
-    polylines->insert(polylines->end(), tp.begin(), tp.end());
-}
-
-/*
-void ExPolygon::get_trapezoids(Polygons* polygons) const
-{
-    ExPolygons expp;
-    expp.push_back(*this);
-    boost::polygon::get_trapezoids(*polygons, expp);
-}
-
-void ExPolygon::get_trapezoids(Polygons* polygons, double angle) const
-{
-    ExPolygon clone = *this;
-    clone.rotate(PI/2 - angle, Point(0,0));
-    clone.get_trapezoids(polygons);
-    for (Polygons::iterator polygon = polygons->begin(); polygon != polygons->end(); ++polygon)
-        polygon->rotate(-(PI/2 - angle), Point(0,0));
-}
-*/
-
-// This algorithm may return more trapezoids than necessary
-// (i.e. it may break a single trapezoid in several because
-// other parts of the object have x coordinates in the middle)
-void ExPolygon::get_trapezoids2(Polygons* polygons) const
-{
-    // get all points of this ExPolygon
-    Points pp = *this;
-    
-    // build our bounding box
-    BoundingBox bb(pp);
-    
-    // get all x coordinates
-    std::vector<coord_t> xx;
-    xx.reserve(pp.size());
-    for (Points::const_iterator p = pp.begin(); p != pp.end(); ++p)
-        xx.push_back(p->x());
-    std::sort(xx.begin(), xx.end());
-    
-    // find trapezoids by looping from first to next-to-last coordinate
-    for (std::vector<coord_t>::const_iterator x = xx.begin(); x != xx.end()-1; ++x) {
-        coord_t next_x = *(x + 1);
-        if (*x != next_x)
-            // intersect with rectangle
-            // append results to return value
-            polygons_append(*polygons, intersection({ { { *x, bb.min.y() }, { next_x, bb.min.y() }, { next_x, bb.max.y() }, { *x, bb.max.y() } } }, to_polygons(*this)));
-    }
-}
-
-void ExPolygon::get_trapezoids2(Polygons* polygons, double angle) const
-{
-    ExPolygon clone = *this;
-    clone.rotate(PI/2 - angle, Point(0,0));
-    clone.get_trapezoids2(polygons);
-    for (Polygons::iterator polygon = polygons->begin(); polygon != polygons->end(); ++polygon)
-        polygon->rotate(-(PI/2 - angle), Point(0,0));
-}
-
-// While this triangulates successfully, it's NOT a constrained triangulation
-// as it will create more vertices on the boundaries than the ones supplied.
-void ExPolygon::triangulate(Polygons* polygons) const
-{
-    // first make trapezoids
-    Polygons trapezoids;
-    this->get_trapezoids2(&trapezoids);
-    
-    // then triangulate each trapezoid
-    for (Polygons::iterator polygon = trapezoids.begin(); polygon != trapezoids.end(); ++polygon)
-        polygon->triangulate_convex(polygons);
-}
-
-/*
-void ExPolygon::triangulate_pp(Polygons* polygons) const
-{
-    // convert polygons
-    std::list<TPPLPoly> input;
-    
-    ExPolygons expp = union_ex(simplify_polygons(to_polygons(*this), true));
-    
-    for (ExPolygons::const_iterator ex = expp.begin(); ex != expp.end(); ++ex) {
-        // contour
-        {
-            TPPLPoly p;
-            p.Init(int(ex->contour.points.size()));
-            //printf("%zu\n0\n", ex->contour.points.size());
-            for (const Point &point : ex->contour.points) {
-                size_t i = &point - &ex->contour.points.front();
-                p[i].x = point(0);
-                p[i].y = point(1);
-                //printf("%ld %ld\n", point->x(), point->y());
-            }
-            p.SetHole(false);
-            input.push_back(p);
-        }
-    
-        // holes
-        for (Polygons::const_iterator hole = ex->holes.begin(); hole != ex->holes.end(); ++hole) {
-            TPPLPoly p;
-            p.Init(hole->points.size());
-            //printf("%zu\n1\n", hole->points.size());
-            for (const Point &point : hole->points) {
-                size_t i = &point - &hole->points.front();
-                p[i].x = point(0);
-                p[i].y = point(1);
-                //printf("%ld %ld\n", point->x(), point->y());
-            }
-            p.SetHole(true);
-            input.push_back(p);
-        }
-    }
-    
-    // perform triangulation
-    std::list<TPPLPoly> output;
-    int res = TPPLPartition().Triangulate_MONO(&input, &output);
-    if (res != 1)
-        throw Slic3r::RuntimeError("Triangulation failed");
-    
-    // convert output polygons
-    for (std::list<TPPLPoly>::iterator poly = output.begin(); poly != output.end(); ++poly) {
-        long num_points = poly->GetNumPoints();
-        Polygon p;
-        p.points.resize(num_points);
-        for (long i = 0; i < num_points; ++i) {
-            p.points[i](0) = coord_t((*poly)[i].x);
-            p.points[i](1) = coord_t((*poly)[i].y);
-        }
-        polygons->push_back(p);
-    }
-}
-*/
-
-std::list<TPPLPoly> expoly_to_polypartition_input(const ExPolygon &ex)
-{
-	std::list<TPPLPoly> input;
-	// contour
-	{
-		input.emplace_back();
-		TPPLPoly &p = input.back();
-		p.Init(int(ex.contour.points.size()));
-		for (const Point &point : ex.contour.points) {
-			size_t i = &point - &ex.contour.points.front();
-			p[i].x = point(0);
-			p[i].y = point(1);
-		}
-		p.SetHole(false);
-	}
-	// holes
-	for (const Polygon &hole : ex.holes) {
-		input.emplace_back();
-		TPPLPoly &p = input.back();
-		p.Init(hole.points.size());
-		for (const Point &point : hole.points) {
-			size_t i = &point - &hole.points.front();
-			p[i].x = point(0);
-			p[i].y = point(1);
-		}
-		p.SetHole(true);
-	}
-	return input;
-}
-
-std::list<TPPLPoly> expoly_to_polypartition_input(const ExPolygons &expps)
-{
-    std::list<TPPLPoly> input;
-	for (const ExPolygon &ex : expps) {
-        // contour
-        {
-            input.emplace_back();
-            TPPLPoly &p = input.back();
-            p.Init(int(ex.contour.points.size()));
-            for (const Point &point : ex.contour.points) {
-                size_t i = &point - &ex.contour.points.front();
-                p[i].x = point(0);
-                p[i].y = point(1);
-            }
-            p.SetHole(false);
-        }
-        // holes
-        for (const Polygon &hole : ex.holes) {
-            input.emplace_back();
-            TPPLPoly &p = input.back();
-            p.Init(hole.points.size());
-            for (const Point &point : hole.points) {
-                size_t i = &point - &hole.points.front();
-                p[i].x = point(0);
-                p[i].y = point(1);
-            }
-            p.SetHole(true);
-        }
-    }
-    return input;
-}
-
-std::vector<Point> polypartition_output_to_triangles(const std::list<TPPLPoly> &output)
-{
-    size_t num_triangles = 0;
-    for (const TPPLPoly &poly : output)
-        if (poly.GetNumPoints() >= 3)
-            num_triangles += (size_t)poly.GetNumPoints() - 2;
-    std::vector<Point> triangles;
-    triangles.reserve(triangles.size() + num_triangles * 3);
-    for (const TPPLPoly &poly : output) {
-        long num_points = poly.GetNumPoints();
-        if (num_points >= 3) {
-            const TPPLPoint *pt0 = &poly[0];
-            const TPPLPoint *pt1 = nullptr;
-            const TPPLPoint *pt2 = &poly[1];
-            for (long i = 2; i < num_points; ++ i) {
-                pt1 = pt2;
-                pt2 = &poly[i];
-                triangles.emplace_back(coord_t(pt0->x), coord_t(pt0->y));
-                triangles.emplace_back(coord_t(pt1->x), coord_t(pt1->y));
-                triangles.emplace_back(coord_t(pt2->x), coord_t(pt2->y));
-            }
-        }
-    }
-    return triangles;
-}
-
-void ExPolygon::triangulate_pp(Points *triangles) const
-{
-    ExPolygons expp = union_ex(simplify_polygons(to_polygons(*this), true));
-    std::list<TPPLPoly> input = expoly_to_polypartition_input(expp);
-    // perform triangulation
-    std::list<TPPLPoly> output;
-    int res = TPPLPartition().Triangulate_MONO(&input, &output);
-// int TPPLPartition::Triangulate_EC(TPPLPolyList *inpolys, TPPLPolyList *triangles) {
-    if (res != 1)
-        throw Slic3r::RuntimeError("Triangulation failed");
-    *triangles = polypartition_output_to_triangles(output);
-}
-
-// Uses the Poly2tri library maintained by Jan Niklas Hasse @jhasse // https://github.com/jhasse/poly2tri
-// See https://github.com/jhasse/poly2tri/blob/master/README.md for the limitations of the library!
-// No duplicate points are allowed, no very close points, holes must not touch outer contour etc.
-void ExPolygon::triangulate_p2t(Polygons* polygons) const
-{
-    ExPolygons expp = simplify_polygons_ex(*this, true);
-    
-    for (ExPolygons::const_iterator ex = expp.begin(); ex != expp.end(); ++ex) {
-        // TODO: prevent duplicate points
-
-        // contour
-        std::vector<p2t::Point*> ContourPoints;
-        for (const Point &pt : ex->contour.points)
-            // We should delete each p2t::Point object
-            ContourPoints.push_back(new p2t::Point(pt(0), pt(1)));
-        p2t::CDT cdt(ContourPoints);
-
-        // holes
-        for (Polygons::const_iterator hole = ex->holes.begin(); hole != ex->holes.end(); ++hole) {
-            std::vector<p2t::Point*> points;
-            for (const Point &pt : hole->points)
-                // will be destructed in SweepContext::~SweepContext
-                points.push_back(new p2t::Point(pt(0), pt(1)));
-            cdt.AddHole(points);
-        }
-        
-        // perform triangulation
-        try {
-            cdt.Triangulate();
-            std::vector<p2t::Triangle*> triangles = cdt.GetTriangles();
-            
-            for (std::vector<p2t::Triangle*>::const_iterator triangle = triangles.begin(); triangle != triangles.end(); ++triangle) {
-                Polygon p;
-                for (int i = 0; i <= 2; ++i) {
-                    p2t::Point* point = (*triangle)->GetPoint(i);
-                    p.points.push_back(Point(point->x, point->y));
-                }
-                polygons->push_back(p);
-            }
-        } catch (const Slic3r::RuntimeError & /* err */) {
-            assert(false);
-            // just ignore, don't triangulate
-        }
-
-        for (p2t::Point *ptr : ContourPoints)
-            delete ptr;
-    }
+    this->medial_axis(min_width, max_width, &tp);
+    polylines->reserve(polylines->size() + tp.size());
+    for (auto &pl : tp)
+        polylines->emplace_back(pl.points);
 }
 
 Lines ExPolygon::lines() const
@@ -597,6 +347,18 @@ Lines ExPolygon::lines() const
         lines.insert(lines.end(), hole_lines.begin(), hole_lines.end());
     }
     return lines;
+}
+
+// Do expolygons match? If they match, they must have the same topology,
+// however their contours may be rotated.
+bool expolygons_match(const ExPolygon &l, const ExPolygon &r)
+{
+    if (l.holes.size() != r.holes.size() || ! polygons_match(l.contour, r.contour))
+        return false;
+    for (size_t hole_idx = 0; hole_idx < l.holes.size(); ++ hole_idx)
+        if (! polygons_match(l.holes[hole_idx], r.holes[hole_idx]))
+            return false;
+    return true;
 }
 
 BoundingBox get_extents(const ExPolygon &expolygon)
@@ -640,9 +402,97 @@ extern std::vector<BoundingBox> get_extents_vector(const ExPolygons &polygons)
     return out;
 }
 
+bool has_duplicate_points(const ExPolygon &expoly)
+{
+#if 1
+    // Check globally.
+    size_t cnt = expoly.contour.points.size();
+    for (const Polygon &hole : expoly.holes)
+        cnt += hole.points.size();
+    Points allpts;
+    allpts.reserve(cnt);
+    allpts.insert(allpts.begin(), expoly.contour.points.begin(), expoly.contour.points.end());
+    for (const Polygon &hole : expoly.holes)
+        allpts.insert(allpts.end(), hole.points.begin(), hole.points.end());
+    return has_duplicate_points(std::move(allpts));
+#else
+    // Check per contour.
+    if (has_duplicate_points(expoly.contour))
+        return true;
+    for (const Polygon &hole : expoly.holes)
+        if (has_duplicate_points(hole))
+            return true;
+    return false;
+#endif
+}
+
+bool has_duplicate_points(const ExPolygons &expolys)
+{
+#if 1
+    // Check globally.
+#if 0
+    // Detect duplicates by sorting with quicksort. It is quite fast, but ankerl::unordered_dense is around 1/4 faster.
+    Points allpts;
+    allpts.reserve(count_points(expolys));
+    for (const ExPolygon &expoly : expolys) {
+        allpts.insert(allpts.begin(), expoly.contour.points.begin(), expoly.contour.points.end());
+        for (const Polygon &hole : expoly.holes)
+            allpts.insert(allpts.end(), hole.points.begin(), hole.points.end());
+    }
+    return has_duplicate_points(std::move(allpts));
+#else
+    // Detect duplicates by inserting into an ankerl::unordered_dense hash set, which is is around 1/4 faster than qsort.
+    struct PointHash {
+        uint64_t operator()(const Point &p) const noexcept {
+            uint64_t h;
+            static_assert(sizeof(h) == sizeof(p));
+            memcpy(&h, &p, sizeof(p));
+            return ankerl::unordered_dense::detail::wyhash::hash(h);
+        }
+    };
+    ankerl::unordered_dense::set<Point, PointHash> allpts;
+    allpts.reserve(count_points(expolys));
+    for (const ExPolygon &expoly : expolys)
+        for (size_t icontour = 0; icontour < expoly.num_contours(); ++ icontour)
+            for (const Point &pt : expoly.contour_or_hole(icontour).points)
+                if (! allpts.insert(pt).second)
+                    // Duplicate point was discovered.
+                    return true;
+    return false;
+#endif
+#else
+    // Check per contour.
+    for (const ExPolygon &expoly : expolys)
+        if (has_duplicate_points(expoly))
+            return true;
+    return false;
+#endif
+}
+
 bool remove_sticks(ExPolygon &poly)
 {
     return remove_sticks(poly.contour) || remove_sticks(poly.holes);
+}
+
+bool remove_small_and_small_holes(ExPolygons &expolygons, double min_area)
+{
+    bool   modified = false;
+    size_t free_idx = 0;
+    for (size_t expoly_idx = 0; expoly_idx < expolygons.size(); ++expoly_idx) {
+        if (std::abs(expolygons[expoly_idx].area()) >= min_area) {
+            // Expolygon is big enough, so also check all its holes
+            modified |= remove_small(expolygons[expoly_idx].holes, min_area);
+            if (free_idx < expoly_idx) {
+                std::swap(expolygons[expoly_idx].contour, expolygons[free_idx].contour);
+                std::swap(expolygons[expoly_idx].holes, expolygons[free_idx].holes);
+            }
+            ++free_idx;
+        } else
+            modified = true;
+    }
+    if (free_idx < expolygons.size())
+        expolygons.erase(expolygons.begin() + free_idx, expolygons.end());
+    return modified;
 }
 
 void keep_largest_contour_only(ExPolygons &polygons)

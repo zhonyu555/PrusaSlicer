@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, Enrico Turri @enricoturri1966
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_MultiPoint_hpp_
 #define slic3r_MultiPoint_hpp_
 
@@ -17,7 +22,7 @@ class MultiPoint
 public:
     Points points;
     
-    MultiPoint() {}
+    MultiPoint() = default;
     MultiPoint(const MultiPoint &other) : points(other.points) {}
     MultiPoint(MultiPoint &&other) : points(std::move(other.points)) {}
     MultiPoint(std::initializer_list<Point> list) : points(list) {}
@@ -26,23 +31,26 @@ public:
     MultiPoint& operator=(MultiPoint &&other) { points = std::move(other.points); return *this; }
     void scale(double factor);
     void scale(double factor_x, double factor_y);
-    void translate(double x, double y);
+    void translate(double x, double y) { this->translate(Point(coord_t(x), coord_t(y))); }
     void translate(const Point &vector);
     void rotate(double angle) { this->rotate(cos(angle), sin(angle)); }
     void rotate(double cos_angle, double sin_angle);
     void rotate(double angle, const Point &center);
     void reverse() { std::reverse(this->points.begin(), this->points.end()); }
 
-    const Point& first_point() const { return this->points.front(); }
-    virtual const Point& last_point() const = 0;
-    virtual Lines lines() const = 0;
+    const Point& front() const { return this->points.front(); }
+    const Point& back() const { return this->points.back(); }
+    const Point& first_point() const { return this->front(); }
     size_t size() const { return points.size(); }
     bool   empty() const { return points.empty(); }
-    double length() const;
     bool   is_valid() const { return this->points.size() >= 2; }
 
+    // Return index of a polygon point exactly equal to point.
+    // Return -1 if no such point exists.
     int  find_point(const Point &point) const;
-    bool has_boundary_point(const Point &point) const;
+    // Return index of the closest point to point closer than scaled_epsilon.
+    // Return -1 if no such point exists.
+    int  find_point(const Point &point, const double scaled_epsilon) const;
     int  closest_point_index(const Point &point) const {
         int idx = -1;
         if (! this->points.empty()) {
@@ -64,6 +72,7 @@ public:
     bool has_duplicate_points() const;
     // Remove exact duplicates, return true if any duplicate has been removed.
     bool remove_duplicate_points();
+    void clear() { this->points.clear(); }
     void append(const Point &point) { this->points.push_back(point); }
     void append(const Points &src) { this->append(src.begin(), src.end()); }
     void append(const Points::const_iterator &begin, const Points::const_iterator &end) { this->points.insert(this->points.end(), begin, end); }
@@ -77,11 +86,21 @@ public:
         }
     }
 
-    bool intersection(const Line& line, Point* intersection) const;
-    bool first_intersection(const Line& line, Point* intersection) const;
-    
-    static Points _douglas_peucker(const Points &points, const double tolerance);
+    static Points douglas_peucker(const Points &points, const double tolerance);
     static Points visivalingam(const Points& pts, const double& tolerance);
+
+    inline auto begin()        { return points.begin(); }
+    inline auto begin()  const { return points.begin(); }
+    inline auto end()          { return points.end();   }
+    inline auto end()    const { return points.end();   }
+    inline auto cbegin() const { return points.begin(); }
+    inline auto cend()   const { return points.end();   }
+    inline auto rbegin()       { return points.rbegin(); }
+    inline auto rbegin() const { return points.rbegin(); }
+    inline auto rend()         { return points.rend();   }
+    inline auto rend()   const { return points.rend();   }
+    inline auto crbegin()const { return points.crbegin(); }
+    inline auto crend()  const { return points.crend(); }
 };
 
 class MultiPoint3
@@ -93,8 +112,6 @@ public:
 
     void translate(double x, double y);
     void translate(const Point& vector);
-    virtual Lines3 lines() const = 0;
-    double length() const;
     bool is_valid() const { return this->points.size() >= 2; }
 
     BoundingBox3 bounding_box() const;
@@ -104,7 +121,7 @@ public:
 };
 
 extern BoundingBox get_extents(const MultiPoint &mp);
-extern BoundingBox get_extents_rotated(const std::vector<Point> &points, double angle);
+extern BoundingBox get_extents_rotated(const Points &points, double angle);
 extern BoundingBox get_extents_rotated(const MultiPoint &mp, double angle);
 
 inline double length(const Points &pts) {

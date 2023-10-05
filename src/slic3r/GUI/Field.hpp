@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral, Enrico Turri @enricoturri1966
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef SLIC3R_GUI_FIELD_HPP
 #define SLIC3R_GUI_FIELD_HPP
 
@@ -39,7 +43,86 @@ using t_back_to_init = std::function<void(const std::string&)>;
 wxString double_to_string(double const value, const int max_precision = 4);
 wxString get_thumbnails_string(const std::vector<Vec2d>& values);
 
-class Field {
+class UndoValueUIManager
+{
+	struct UndoValueUI {
+		// Bitmap and Tooltip text for m_Undo_btn. The wxButton will be updated only if the new wxBitmap pointer differs from the currently rendered one.
+		const ScalableBitmap* undo_bitmap{ nullptr };
+		const wxString* undo_tooltip{ nullptr };
+		// Bitmap and Tooltip text for m_Undo_to_sys_btn. The wxButton will be updated only if the new wxBitmap pointer differs from the currently rendered one.
+		const ScalableBitmap* undo_to_sys_bitmap{ nullptr };
+		const wxString* undo_to_sys_tooltip{ nullptr };
+		// Color for Label. The wxColour will be updated only if the new wxColour pointer differs from the currently rendered one.
+		const wxColour* label_color{ nullptr };
+		// State of the blinker icon
+		bool					blink{ false };
+
+		bool 	set_undo_bitmap(const ScalableBitmap* bmp) {
+			if (undo_bitmap != bmp) {
+				undo_bitmap = bmp;
+				return true;
+			}
+			return false;
+		}
+
+		bool 	set_undo_to_sys_bitmap(const ScalableBitmap* bmp) {
+			if (undo_to_sys_bitmap != bmp) {
+				undo_to_sys_bitmap = bmp;
+				return true;
+			}
+			return false;
+		}
+
+		bool	set_label_colour(const wxColour* clr) {
+			if (label_color != clr) {
+				label_color = clr;
+			}
+			return false;
+		}
+
+		bool 	set_undo_tooltip(const wxString* tip) {
+			if (undo_tooltip != tip) {
+				undo_tooltip = tip;
+				return true;
+			}
+			return false;
+		}
+
+		bool 	set_undo_to_sys_tooltip(const wxString* tip) {
+			if (undo_to_sys_tooltip != tip) {
+				undo_to_sys_tooltip = tip;
+				return true;
+			}
+			return false;
+		}
+	};
+
+	UndoValueUI m_undo_ui;
+
+public:
+	UndoValueUIManager() {}
+	~UndoValueUIManager() {}
+
+	bool 	set_undo_bitmap(const ScalableBitmap* bmp)			{ return m_undo_ui.set_undo_bitmap(bmp); }
+	bool 	set_undo_to_sys_bitmap(const ScalableBitmap* bmp)	{ return m_undo_ui.set_undo_to_sys_bitmap(bmp); }
+	bool	set_label_colour(const wxColour* clr)				{ return m_undo_ui.set_label_colour(clr); }
+	bool 	set_undo_tooltip(const wxString* tip)				{ return m_undo_ui.set_undo_tooltip(tip); }
+	bool 	set_undo_to_sys_tooltip(const wxString* tip)		{ return m_undo_ui.set_undo_to_sys_tooltip(tip); }	
+
+	// ui items used for revert line value
+	bool					has_undo_ui()			const { return m_undo_ui.undo_bitmap != nullptr; }
+	const wxBitmapBundle&	undo_bitmap()			const { return m_undo_ui.undo_bitmap->bmp(); }
+	const wxString*			undo_tooltip()			const { return m_undo_ui.undo_tooltip; }
+	const wxBitmapBundle&	undo_to_sys_bitmap()	const { return m_undo_ui.undo_to_sys_bitmap->bmp(); }
+	const wxString*			undo_to_sys_tooltip()	const { return m_undo_ui.undo_to_sys_tooltip; }
+	const wxColour*			label_color()			const { return m_undo_ui.label_color; }
+	const bool				blink()					const { return m_undo_ui.blink; }
+	bool*					get_blink_ptr()				  { return &m_undo_ui.blink; }
+};
+
+
+class Field : public UndoValueUIManager
+{
 protected:
     // factory function to defer and enforce creation of derived type. 
 	virtual void	PostInitialize();
@@ -52,9 +135,16 @@ protected:
 	//! in another case we can't unfocused control at all
 	void			on_kill_focus();
     /// Call the attached on_change method. 
-    void			on_set_focus(wxEvent& event);
-    /// Call the attached on_change method. 
     void			on_change_field();
+
+    class EnterPressed {
+    public:
+        EnterPressed(Field* field) : 
+            m_parent(field){ m_parent->set_enter_pressed(true);  }
+        ~EnterPressed()    { m_parent->set_enter_pressed(false); }
+    private:
+        Field* m_parent;
+    };
 
 public:
     /// Call the attached m_back_to_initial_value method. 
@@ -68,9 +158,6 @@ public:
 
     /// Function object to store callback passed in from owning object.
 	t_kill_focus	m_on_kill_focus {nullptr};
-
-    /// Function object to store callback passed in from owning object.
-	t_kill_focus	m_on_set_focus {nullptr};
 
     /// Function object to store callback passed in from owning object.
 	t_change		m_on_change {nullptr};
@@ -113,8 +200,8 @@ public:
 
     void				field_changed() { on_change_field(); }
 
-    Field(const ConfigOptionDef& opt, const t_config_option_key& id) : m_opt(opt), m_opt_id(id) {};
-    Field(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : m_parent(parent), m_opt(opt), m_opt_id(id) {};
+    Field(const ConfigOptionDef& opt, const t_config_option_key& id) : m_opt(opt), m_opt_id(id) {}
+    Field(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : m_parent(parent), m_opt(opt), m_opt_id(id) {}
     virtual ~Field();
 
     /// If you don't know what you are getting back, check both methods for nullptr. 
@@ -133,51 +220,8 @@ public:
 		return std::move(p); //!p;
     }
 
-    bool 	set_undo_bitmap(const ScalableBitmap *bmp) {
-    	if (m_undo_bitmap != bmp) {
-    		m_undo_bitmap = bmp;
-    		return true;
-    	}
-    	return false;
-    }
-
-    bool 	set_undo_to_sys_bitmap(const ScalableBitmap *bmp) {
-    	if (m_undo_to_sys_bitmap != bmp) {
-    		m_undo_to_sys_bitmap = bmp;
-    		return true;
-    	}
-    	return false;
-    }
-
-	bool	set_label_colour(const wxColour *clr) {
-		if (m_label_color != clr) {
-			m_label_color = clr;
-		}
-		return false;
-	}
-
-	bool 	set_undo_tooltip(const wxString *tip) {
-		if (m_undo_tooltip != tip) {
-			m_undo_tooltip = tip;
-			return true;
-		}
-		return false;
-	}
-
-	bool 	set_undo_to_sys_tooltip(const wxString *tip) {
-		if (m_undo_to_sys_tooltip != tip) {
-			m_undo_to_sys_tooltip = tip;
-			return true;
-		}
-		return false;
-	}
-
-	bool*	get_blink_ptr() {
-		return &m_blink;
-    }
-
     virtual void msw_rescale();
-    void sys_color_changed();
+    virtual void sys_color_changed();
 
     bool get_enter_pressed() const { return bEnterPressed; }
     void set_enter_pressed(bool pressed) { bEnterPressed = pressed; }
@@ -187,26 +231,7 @@ public:
 	static int def_width_wider()	;
 	static int def_width_thinner()	;
 
-	const ScalableBitmap*	undo_bitmap()			{ return m_undo_bitmap; }
-	const wxString*			undo_tooltip()			{ return m_undo_tooltip; }
-	const ScalableBitmap*	undo_to_sys_bitmap()	{ return m_undo_to_sys_bitmap; }
-	const wxString*			undo_to_sys_tooltip()	{ return m_undo_to_sys_tooltip; }
-	const wxColour*			label_color()			{ return m_label_color; }
-	const bool				blink()					{ return m_blink; }
-
 protected:
-	// Bitmap and Tooltip text for m_Undo_btn. The wxButton will be updated only if the new wxBitmap pointer differs from the currently rendered one.
-	const ScalableBitmap*   m_undo_bitmap = nullptr;
-	const wxString*         m_undo_tooltip = nullptr;
-	// Bitmap and Tooltip text for m_Undo_to_sys_btn. The wxButton will be updated only if the new wxBitmap pointer differs from the currently rendered one.
-    const ScalableBitmap*   m_undo_to_sys_bitmap = nullptr;
-	const wxString*		    m_undo_to_sys_tooltip = nullptr;
-
-	bool					m_blink{ false };
-
-	// Color for Label. The wxColour will be updated only if the new wxColour pointer differs from the currently rendered one.
-	const wxColour*		m_label_color = nullptr;
-
 	// current value
 	boost::any			m_value;
     // last maeningful value
@@ -235,10 +260,6 @@ class TextCtrl : public Field {
 	bool	bChangedValueEvent = true;
     void    change_field_value(wxEvent& event);
 #endif //__WXGTK__
-
-#ifdef __WXOSX__
-	bool	bKilledFocus = false;
-#endif // __WXOSX__
 
 public:
 	TextCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt,  id) {}
@@ -302,7 +323,6 @@ class SpinCtrl : public Field {
 private:
 	static const int UNDEF_VALUE = INT_MIN;
 
-    bool            suppress_propagation {false};
 public:
 	SpinCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id), tmp_value(UNDEF_VALUE) {}
 	SpinCtrl(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id), tmp_value(UNDEF_VALUE) {}
@@ -314,24 +334,18 @@ public:
 	void			BUILD() override;
     /// Propagate value from field to the OptionGroupe and Config after kill_focus/ENTER
     void	        propagate_value() ;
-
-	void			set_value(const std::string& value, bool change_event = false) {
+/*
+    void			set_value(const std::string& value, bool change_event = false) {
 		m_disable_change_event = !change_event;
 		dynamic_cast<wxSpinCtrl*>(window)->SetValue(value);
 		m_disable_change_event = false;
-	}
-	void			set_value(const boost::any& value, bool change_event = false) {
-		m_disable_change_event = !change_event;
-		tmp_value = boost::any_cast<int>(value);
-        m_value = value;
-		dynamic_cast<wxSpinCtrl*>(window)->SetValue(tmp_value);
-		m_disable_change_event = false;
-	}
+    }
+*/
+    void            set_value(const boost::any& value, bool change_event = false) override;
+    void            set_last_meaningful_value() override;
+    void            set_na_value() override;
 
-	boost::any&		get_value() override {
-		int value = static_cast<wxSpinCtrl*>(window)->GetValue();
-		return m_value = value;
-	}
+	boost::any&		get_value() override;
 
     void            msw_rescale() override;
 
@@ -342,6 +356,7 @@ public:
 
 class Choice : public Field {
 	using Field::Field;
+
 public:
 	Choice(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id) {}
 	Choice(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id) {}
@@ -349,6 +364,8 @@ public:
 
 	wxWindow*		window{ nullptr };
 	void			BUILD() override;
+	// Propagate value from field to the OptionGroupe and Config after kill_focus/ENTER
+	void			propagate_value();
 
     /* Under OSX: wxBitmapComboBox->GetWindowStyle() returns some weard value, 
      * so let use a flag, which has TRUE value for a control without wxCB_READONLY style
@@ -394,9 +411,10 @@ public:
 	void			set_value(const boost::any& value, bool change_event = false) override;
 	boost::any&		get_value() override;
     void            msw_rescale() override;
+    void            sys_color_changed() override;
 
-	void			enable() override { dynamic_cast<wxColourPickerCtrl*>(window)->Enable(); };
-	void			disable() override{ dynamic_cast<wxColourPickerCtrl*>(window)->Disable(); };
+    void			enable() override { dynamic_cast<wxColourPickerCtrl*>(window)->Enable(); }
+    void			disable() override{ dynamic_cast<wxColourPickerCtrl*>(window)->Disable(); }
 	wxWindow*		getWindow() override { return window; }
 };
 
@@ -405,7 +423,7 @@ class PointCtrl : public Field {
 public:
 	PointCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id) {}
 	PointCtrl(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id) {}
-	~PointCtrl() {}
+	~PointCtrl();
 
 	wxSizer*		sizer{ nullptr };
 	wxTextCtrl*		x_textctrl{ nullptr };
@@ -420,6 +438,7 @@ public:
 	boost::any&		get_value() override;
 
     void            msw_rescale() override;
+	void            sys_color_changed() override;
 
 	void			enable() override {
 		x_textctrl->Enable();
@@ -456,8 +475,8 @@ public:
 
     void            msw_rescale() override;
 
-	void			enable() override { dynamic_cast<wxStaticText*>(window)->Enable(); };
-	void			disable() override{ dynamic_cast<wxStaticText*>(window)->Disable(); };
+    void			enable() override { dynamic_cast<wxStaticText*>(window)->Enable(); }
+    void			disable() override{ dynamic_cast<wxStaticText*>(window)->Disable(); }
 	wxWindow*		getWindow() override { return window; }
 };
 

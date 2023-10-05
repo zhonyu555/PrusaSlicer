@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_OG_CustomCtrl_hpp_
 #define slic3r_OG_CustomCtrl_hpp_
 
@@ -11,7 +15,6 @@
 #include "libslic3r/PrintConfig.hpp"
 
 #include "OptionsGroup.hpp"
-#include "I18N.hpp"
 
 // Translate the ifdef 
 #ifdef __WXOSX__
@@ -33,31 +36,39 @@ class OG_CustomCtrl :public wxPanel
     wxSize  m_bmp_mode_sz;
     wxSize  m_bmp_blinking_sz;
 
+    int     m_max_win_width{0};
+
     struct CtrlLine {
         wxCoord           height  { wxDefaultCoord };
         OG_CustomCtrl*    ctrl    { nullptr };
         const Line&       og_line;
 
         bool draw_just_act_buttons  { false };
+        bool draw_mode_bitmap       { true };
         bool is_visible             { true };
         bool is_focused             { false };
 
         CtrlLine(   wxCoord         height,
                     OG_CustomCtrl*  ctrl,
                     const Line&     og_line,
-                    bool            draw_just_act_buttons = false);
+                    bool            draw_just_act_buttons = false,
+                    bool            draw_mode_bitmap = true);
         ~CtrlLine() { ctrl = nullptr; }
 
+        int     get_max_win_width();
         void    correct_items_positions();
         void    msw_rescale();
         void    update_visibility(ConfigOptionMode mode);
+
+        void render_separator(wxDC& dc, wxCoord v_pos);
 
         void    render(wxDC& dc, wxCoord v_pos);
         wxCoord draw_mode_bmp(wxDC& dc, wxCoord v_pos);
         wxCoord draw_text      (wxDC& dc, wxPoint pos, const wxString& text, const wxColour* color, int width, bool is_url = false);
         wxPoint draw_blinking_bmp(wxDC& dc, wxPoint pos, bool is_blinking);
-        wxCoord draw_act_bmps(wxDC& dc, wxPoint pos, const wxBitmap& bmp_undo_to_sys, const wxBitmap& bmp_undo, bool is_blinking, size_t rect_id = 0);
+        wxCoord draw_act_bmps(wxDC& dc, wxPoint pos, const wxBitmapBundle& bmp_undo_to_sys, const wxBitmapBundle& bmp_undo, bool is_blinking, size_t rect_id = 0);
         bool    launch_browser() const;
+        bool    is_separator() const { return og_line.is_separator(); }
 
         std::vector<wxRect> rects_undo_icon;
         std::vector<wxRect> rects_undo_to_sys_icon;
@@ -84,6 +95,9 @@ public:
     bool    update_visibility(ConfigOptionMode mode);
     void    correct_window_position(wxWindow* win, const Line& line, Field* field = nullptr);
     void    correct_widgets_position(wxSizer* widget, const Line& line, Field* field = nullptr);
+    void    init_max_win_width();
+    void    set_max_win_width(int max_win_width);
+    int     get_max_win_width() { return m_max_win_width; }
 
     void    msw_rescale();
     void    sys_color_changed();
@@ -93,20 +107,6 @@ public:
 
     OptionsGroup*  opt_group;
 
-};
-
-//-----------------------------------------------
-//          RememberChoiceDialog
-//-----------------------------------------------
-
-class RememberChoiceDialog : public wxDialog
-{
-    wxCheckBox* m_remember_choice;
-public:
-    RememberChoiceDialog(wxWindow* parent, const wxString& msg_text, const wxString& caption);
-    ~RememberChoiceDialog() {}
-
-    bool remember_choice() const { return m_remember_choice->GetValue(); }
 };
 
 }}

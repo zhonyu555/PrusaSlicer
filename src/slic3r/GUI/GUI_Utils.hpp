@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_Utils_hpp_
 #define slic3r_GUI_Utils_hpp_
 
@@ -26,11 +30,7 @@ class wxCheckBox;
 class wxTopLevelWindow;
 class wxRect;
 
-#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
 #define wxVERSION_EQUAL_OR_GREATER_THAN(major, minor, release) ((wxMAJOR_VERSION > major) || ((wxMAJOR_VERSION == major) && (wxMINOR_VERSION > minor)) || ((wxMAJOR_VERSION == major) && (wxMINOR_VERSION == minor) && (wxRELEASE_NUMBER >= release)))
-#else
-#define wxVERSION_EQUAL_OR_GREATER_THAN(major, minor, release) 0
-#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
 
 namespace Slic3r {
 namespace GUI {
@@ -59,6 +59,11 @@ int get_dpi_for_window(const wxWindow *window);
 wxFont get_default_font_for_dpi(const wxWindow* window, int dpi);
 inline wxFont get_default_font(const wxWindow* window) { return get_default_font_for_dpi(window, get_dpi_for_window(window)); }
 
+bool check_dark_mode();
+#ifdef _WIN32
+void update_dark_ui(wxWindow* window);
+#endif
+
 #if !wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
 struct DpiChangedEvent : public wxEvent {
     int dpi;
@@ -81,13 +86,16 @@ template<class P> class DPIAware : public P
 {
 public:
     DPIAware(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos=wxDefaultPosition,
-        const wxSize &size=wxDefaultSize, long style=wxDEFAULT_FRAME_STYLE, const wxString &name=wxFrameNameStr)
+        const wxSize &size=wxDefaultSize, long style=wxDEFAULT_FRAME_STYLE, const wxString &name= wxFrameNameStr, const int font_point_size = -1)
         : P(parent, id, title, pos, size, style, name)
     {
         int dpi = get_dpi_for_window(this);
         m_scale_factor = (float)dpi / (float)DPI_DEFAULT;
         m_prev_scale_factor = m_scale_factor;
 		m_normal_font = get_default_font_for_dpi(this, dpi);
+
+        if (font_point_size > 0)
+            m_normal_font.SetPointSize(font_point_size);
 
         /* Because of default window font is a primary display font, 
          * We should set correct font for window before getting em_unit value.
@@ -96,18 +104,22 @@ public:
         this->SetFont(m_normal_font);
 #endif
         this->CenterOnParent();
+#ifdef _WIN32
+        update_dark_ui(this);
+#endif
 
         // Linux specific issue : get_dpi_for_window(this) still doesn't responce to the Display's scale in new wxWidgets(3.1.3).
         // So, calculate the m_em_unit value from the font size, as before
-#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT && !defined(__WXGTK__)
+#if !defined(__WXGTK__)
         m_em_unit = std::max<size_t>(10, 10.0f * m_scale_factor);
 #else
         // initialize default width_unit according to the width of the one symbol ("m") of the currently active font of this window.
         m_em_unit = std::max<size_t>(10, this->GetTextExtent("m").x - 1);
-#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
+#endif // __WXGTK__
 
 //        recalc_font();
 
+#ifndef __WXOSX__
 #if wxVERSION_EQUAL_OR_GREATER_THAN(3,1,3)
         this->Bind(wxEVT_DPI_CHANGED, [this](wxDPIChangedEvent& evt) {
 	            m_scale_factor = (float)evt.GetNewDPI().x / (float)DPI_DEFAULT;
@@ -128,6 +140,7 @@ public:
                 rescale(evt.rect);
             });
 #endif // wxVERSION_EQUAL_OR_GREATER_THAN
+#endif // no __WXOSX__
 
         this->Bind(wxEVT_MOVE_START, [this](wxMoveEvent& event)
         {
@@ -168,6 +181,14 @@ public:
 //    int     font_size() const           { return m_font_size; }
     const wxFont& normal_font() const   { return m_normal_font; }
     void enable_force_rescale()         { m_force_rescale = true; }
+
+#ifdef _WIN32
+    void force_color_changed()
+    {
+        update_dark_ui(this);
+        on_sys_color_changed();
+    }
+#endif
 
 protected:
     virtual void on_dpi_changed(const wxRect &suggested_rect) = 0;
@@ -233,11 +254,7 @@ private:
         m_normal_font = this->GetFont();
 
         // update em_unit value for new window font
-#if ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
         m_em_unit = std::max<int>(10, 10.0f * m_scale_factor);
-#else
-        m_em_unit = std::max<size_t>(10, this->GetTextExtent("m").x - 1);
-#endif // ENABLE_WX_3_1_3_DPI_CHANGED_EVENT
 
         // rescale missed controls sizes and images
         on_dpi_changed(suggested_rect);
@@ -248,6 +265,17 @@ private:
         // reset previous scale factor from current scale factor value
         m_prev_scale_factor = m_scale_factor;
     }
+
+#if 0 //#ifdef _WIN32  // #ysDarkMSW - Allow it when we deside to support the sustem colors for application 
+    bool HandleSettingChange(WXWPARAM wParam, WXLPARAM lParam) override
+    {
+        update_dark_ui(this);
+        on_sys_color_changed();
+
+        // let the system handle it
+        return false;
+    }
+#endif
 
 };
 
@@ -385,14 +413,6 @@ public:
 
 std::ostream& operator<<(std::ostream &os, const WindowMetrics& metrics);
 
-inline int hex_digit_to_int(const char c)
-{
-    return
-        (c >= '0' && c <= '9') ? int(c - '0') :
-        (c >= 'A' && c <= 'F') ? int(c - 'A') + 10 :
-        (c >= 'a' && c <= 'f') ? int(c - 'a') + 10 : -1;
-}
-
 class TaskTimer
 {
     std::chrono::milliseconds   start_timer;
@@ -401,6 +421,16 @@ public:
     TaskTimer(std::string task_name);
 
     ~TaskTimer();
+};
+
+class KeyAutoRepeatFilter
+{
+    size_t m_count{ 0 };
+
+public:
+    void increase_count() { ++m_count; }
+    void reset_count() { m_count = 0; }
+    bool is_first() const { return m_count == 0; }
 };
 
 }}

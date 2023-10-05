@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2018 - 2022 David Kocík @kocikdav, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2020 Manuel Coenen
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Duet_hpp_
 #define slic3r_Duet_hpp_
 
@@ -22,10 +28,10 @@ public:
 	bool test(wxString &curl_msg) const override;
 	wxString get_test_ok_msg() const override;
 	wxString get_test_failed_msg(wxString &msg) const override;
-	bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn) const override;
+	bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn, InfoFn info_fn) const override;
 	bool has_auto_discovery() const override { return false; }
 	bool can_test() const override { return true; }
-	bool can_start_print() const override { return true; }
+    PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint | PrintHostPostUploadAction::StartSimulation; }
 	std::string get_host() const override { return host; }
    
 private:
@@ -39,7 +45,7 @@ private:
 	std::string timestamp_str() const;
 	ConnectionType connect(wxString &msg) const;
 	void disconnect(ConnectionType connectionType) const;
-	bool start_print(wxString &msg, const std::string &filename, ConnectionType connectionType) const;
+	bool start_print(wxString &msg, const std::string &filename, ConnectionType connectionType, bool simulationMode) const;
 	int get_err_code_from_body(const std::string &body) const;
 };
 
