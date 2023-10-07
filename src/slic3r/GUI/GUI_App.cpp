@@ -498,8 +498,8 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
     /* FT_SVG */     { "SVG files"sv,       { ".svg"sv } },
 
     /* FT_TEX */     { "Texture"sv,         { ".png"sv, ".svg"sv } },
-
-    /* FT_SL1 (deprecated, overriden by sla_wildcards) */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv, ".pwmx"sv } },
+  
+    /* FT_SL1 (deprecated, overriden by sla_wildcards) */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv, ".pwmx"sv, ".ctb"sv } },
 
     /* FT_ZIP */     { "Zip files"sv, { ".zip"sv } },
 };

@@ -1,0 +1,7 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "dependencies": [
+    "openssl"
+  ],
+  "builtin-baseline": "56c03b53fcea2defda598b1406c4d40df17c8926"
+}

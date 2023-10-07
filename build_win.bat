@@ -210,6 +210,9 @@ IF "%PS_STEPS_DIRTY%" EQU "" (
     CALL :MAKE_OR_CLEAN_DIRECTORY deps\build "%PS_DEPS_PATH_FILE_NAME%" .vs
     CALL :MAKE_OR_CLEAN_DIRECTORY "%PS_DESTDIR%"
 )
+set VCPKG_TARGET_TRIPLET=%PS_ARCH%
+set CMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
+vcpkg install
 cd deps\build || GOTO :END
 cmake.exe .. -DDESTDIR="%PS_DESTDIR%"
 IF %ERRORLEVEL% NEQ 0 IF "%PS_STEPS_DIRTY%" NEQ "" (
