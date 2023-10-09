@@ -375,7 +375,7 @@ bool GCodeWriter::will_move_z(double z) const
         we don't perform an actual Z move. */
     if (m_lifted > 0) {
         double nominal_z = m_pos.z() - m_lifted;
-        if (z >= nominal_z && z <= m_pos.z())
+        if (z <= m_pos.z())
             return false;
     }
     return true;
