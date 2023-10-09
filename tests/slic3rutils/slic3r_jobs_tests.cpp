@@ -66,6 +66,9 @@ TEMPLATE_LIST_TEST_CASE("Status messages should be received by the main thread d
         }
     });
 
+    // make sure that the job starts BEFORE the worker.wait_for_idle() is called
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
     worker.wait_for_idle();
 
     REQUIRE(pri->pr == 100);
