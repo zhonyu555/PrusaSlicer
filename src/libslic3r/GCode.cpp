@@ -2229,18 +2229,10 @@ LayerResult GCode::process_layer(
             print.config().before_layer_gcode.value, m_writer.extruder()->id(), &config)
             + "\n";
     }
+
     gcode += this->change_layer(print_z);  // this will increase m_layer_index
     m_layer = &layer;
     m_object_layer_over_raft = false;
-    if (! print.config().layer_gcode.value.empty()) {
-        DynamicConfig config;
-        config.set_key_value("layer_num", new ConfigOptionInt(m_layer_index));
-        config.set_key_value("layer_z",   new ConfigOptionFloat(print_z));
-        config.set_key_value("max_layer_z", new ConfigOptionFloat(m_max_layer_z));
-        gcode += this->placeholder_parser_process("layer_gcode",
-            print.config().layer_gcode.value, m_writer.extruder()->id(), &config)
-            + "\n";
-    }
 
     if (! first_layer && ! m_second_layer_things_done) {
         // Transition from 1st to 2nd layer. Adjust nozzle temperatures as prescribed by the nozzle dependent
@@ -2259,6 +2251,15 @@ LayerResult GCode::process_layer(
         gcode += m_writer.set_bed_temperature(print.config().bed_temperature.get_at(first_extruder_id));
         // Mark the temperature transition from 1st to 2nd layer to be finished.
         m_second_layer_things_done = true;
+    }
+
+    if (!print.config().layer_gcode.value.empty()) {
+        DynamicConfig config;
+        config.set_key_value("layer_num", new ConfigOptionInt(m_layer_index));
+        config.set_key_value("layer_z", new ConfigOptionFloat(print_z));
+        config.set_key_value("max_layer_z", new ConfigOptionFloat(m_max_layer_z));
+        gcode += this->placeholder_parser_process("layer_gcode", print.config().layer_gcode.value, m_writer.extruder()->id(), &config) +
+                 "\n";
     }
 
     // Map from extruder ID to <begin, end> index of skirt loops to be extruded with that extruder.
