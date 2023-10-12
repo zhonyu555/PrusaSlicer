@@ -199,13 +199,30 @@ class ExtrusionLoop : public ExtrusionEntity
 public:
     ExtrusionPaths paths;
     
-    ExtrusionLoop(ExtrusionLoopRole role = elrDefault) : m_loop_role(role) {}
-    ExtrusionLoop(const ExtrusionPaths &paths, ExtrusionLoopRole role = elrDefault) : paths(paths), m_loop_role(role) {}
-    ExtrusionLoop(ExtrusionPaths &&paths, ExtrusionLoopRole role = elrDefault) : paths(std::move(paths)), m_loop_role(role) {}
-    ExtrusionLoop(const ExtrusionPath &path, ExtrusionLoopRole role = elrDefault) : m_loop_role(role) 
-        { this->paths.push_back(path); }
-    ExtrusionLoop(ExtrusionPath &&path, ExtrusionLoopRole role = elrDefault) : m_loop_role(role)
-        { this->paths.emplace_back(std::move(path)); }
+    ExtrusionLoop(ExtrusionLoopRole role = elrDefault, unsigned short perimeter_idx = 0) : m_loop_role(role)
+    {
+        m_perimeter_idx = perimeter_idx;
+    }
+    ExtrusionLoop(const ExtrusionPaths &paths, ExtrusionLoopRole role = elrDefault, unsigned short perimeter_idx = 0)
+        : paths(paths), m_loop_role(role)
+    {
+        m_perimeter_idx = perimeter_idx;
+    }
+    ExtrusionLoop(ExtrusionPaths &&paths, ExtrusionLoopRole role = elrDefault, unsigned short perimeter_idx = 0)
+        : paths(std::move(paths)), m_loop_role(role)
+    {
+        m_perimeter_idx = perimeter_idx;
+    }
+    ExtrusionLoop(const ExtrusionPath &path, ExtrusionLoopRole role = elrDefault, unsigned short perimeter_idx = 0) : m_loop_role(role)
+    {
+        m_perimeter_idx = perimeter_idx;
+        this->paths.push_back(path);
+    }
+    ExtrusionLoop(ExtrusionPath &&path, ExtrusionLoopRole role = elrDefault, unsigned short perimeter_idx = 0) : m_loop_role(role)
+    {
+        m_perimeter_idx = perimeter_idx;
+        this->paths.emplace_back(std::move(path));
+    }
     bool is_loop() const override{ return true; }
     bool can_reverse() const override { return false; }
 	ExtrusionEntity* clone() const override{ return new ExtrusionLoop (*this); }
@@ -256,6 +273,7 @@ public:
     }
     double total_volume() const override { double volume =0.; for (const auto& path : paths) volume += path.total_volume(); return volume; }
 
+    unsigned short perimeter_idx() const { return this->m_perimeter_idx; }
 #ifndef NDEBUG
 	bool validate() const {
 		assert(this->first_point() == this->paths.back().polyline.points.back());
@@ -267,6 +285,7 @@ public:
 
 private:
     ExtrusionLoopRole m_loop_role;
+    unsigned short m_perimeter_idx;
 };
 
 inline void extrusion_paths_append(ExtrusionPaths &dst, Polylines &polylines, ExtrusionRole role, double mm3_per_mm, float width, float height)

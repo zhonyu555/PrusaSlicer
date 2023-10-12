@@ -2721,6 +2721,25 @@ std::string GCode::extrude_loop(ExtrusionLoop loop, const std::string_view descr
     // apply the small perimeter speed
     if (paths.front().role().is_perimeter() && loop.length() <= SMALL_PERIMETER_LENGTH && speed == -1)
         speed = m_config.small_perimeter_speed.get_abs_value(m_config.perimeter_speed);
+    
+    // apply gradual inner perimeter speed change override
+    if (loop.role() == ExtrusionRole::Perimeter && 
+        speed == -1 && 
+        !m_config.perimeters.is_nil() && 
+        !m_config.perimeter_speed.is_nil() && 
+        !m_config.external_perimeter_speed.is_nil()) {
+        
+        int perimeters = m_config.perimeters.getInt() - 1;
+        double perimeter_speed = m_config.get_abs_value("perimeter_speed");
+        double external_perimeter_speed = m_config.get_abs_value("external_perimeter_speed");
+        // If ext. per. speed is smaller, we gradually increase speed to inner most perimeter to per. speed
+        // If ext. per. speed is bigger, we gradually decrease speed to inner most perimeter to per. speed
+        // If for some reason there are more perimeters than set in config, we cap off speed change
+        // External perimeter is loop.perimeter_idx() == 0
+        speed = external_perimeter_speed + 
+            ((perimeter_speed - external_perimeter_speed) / perimeters * std::min(static_cast<int>(loop.perimeter_idx()), perimeters));
+    }
+
 
     // extrude along the path
     std::string gcode;
@@ -3000,9 +3019,6 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             speed = m_config.get_abs_value("perimeter_speed");
         } else if (path.role() == ExtrusionRole::ExternalPerimeter) {
             speed = m_config.get_abs_value("external_perimeter_speed");
-        } else if (path.role().is_bridge()) {
-            assert(path.role().is_perimeter() || path.role() == ExtrusionRole::BridgeInfill);
-            speed = m_config.get_abs_value("bridge_speed");
         } else if (path.role() == ExtrusionRole::InternalInfill) {
             speed = m_config.get_abs_value("infill_speed");
         } else if (path.role() == ExtrusionRole::SolidInfill) {
@@ -3013,9 +3029,14 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
             speed = m_config.get_abs_value("ironing_speed");
         } else if (path.role() == ExtrusionRole::GapFill) {
             speed = m_config.get_abs_value("gap_fill_speed");
-        } else {
+        } else if (!path.role().is_bridge()) {
             throw Slic3r::InvalidArgument("Invalid speed");
         }
+    }
+    // Bridge speed should override any other speed, if it's smaller than currently set speed
+    if (path.role().is_bridge() && (speed > m_config.get_abs_value("bridge_speed") || speed == -1)) {
+        assert(path.role().is_perimeter() || path.role() == ExtrusionRole::BridgeInfill);
+        speed = m_config.get_abs_value("bridge_speed");
     }
     if (m_volumetric_speed != 0. && speed == 0)
         speed = m_volumetric_speed / path.mm3_per_mm;
