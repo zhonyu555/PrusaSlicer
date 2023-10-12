@@ -3018,7 +3018,7 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
         }
     }
     if (m_volumetric_speed != 0. && speed == 0)
-        speed = m_volumetric_speed / path.mm3_per_mm;
+        speed = m_volumetric_speed / (path.mm3_per_mm * EXTRUDER_CONFIG(extrusion_multiplier));
     if (this->on_first_layer())
         speed = m_config.get_abs_value("first_layer_speed", speed);
     else if (this->object_layer_over_raft())
@@ -3027,14 +3027,14 @@ std::string GCode::_extrude(const ExtrusionPath &path, const std::string_view de
         // cap speed with max_volumetric_speed anyway (even if user is not using autospeed)
         speed = std::min(
             speed,
-            m_config.max_volumetric_speed.value / path.mm3_per_mm
+            m_config.max_volumetric_speed.value / (path.mm3_per_mm * EXTRUDER_CONFIG(extrusion_multiplier))
         );
     }
     if (EXTRUDER_CONFIG(filament_max_volumetric_speed) > 0) {
         // cap speed with max_volumetric_speed anyway (even if user is not using autospeed)
         speed = std::min(
             speed,
-            EXTRUDER_CONFIG(filament_max_volumetric_speed) / path.mm3_per_mm
+            EXTRUDER_CONFIG(filament_max_volumetric_speed) / (path.mm3_per_mm * EXTRUDER_CONFIG(extrusion_multiplier))
         );
     }
 
