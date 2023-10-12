@@ -8,16 +8,16 @@ msgstr ""
 "Project-Id-Version: PrusaSlicer 2.6.1-rc1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-05 12:41+0200\n"
-"PO-Revision-Date: 2023-08-24 14:19+0700\n"
+"PO-Revision-Date: 2023-10-12 23:18+1000\n"
 "Last-Translator: Andylg <andylg@yandex.ru>\n"
 "Language-Team: \n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
-"%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
-"X-Generator: Poedit 3.3.2\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
+"n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+"X-Generator: Poedit 3.0.1\n"
 
 #: src/libslic3r/ExtrusionRole.cpp:41
 #: src/slic3r/GUI/ConfigSnapshotDialog.cpp:34
@@ -671,18 +671,24 @@ msgid ""
 "Organic support tree tip diameter must not be smaller than support material "
 "extrusion width."
 msgstr ""
+"Диаметр верхушки поддержки органического дерева не должен быть меньше ширины "
+"экструзии материала поддержки."
 
 #: src/libslic3r/Print.cpp:733
 msgid ""
 "Organic support branch diameter must not be smaller than 2x support material "
 "extrusion width."
 msgstr ""
+"Диаметр верхушки поддержки органической ветви не должен быть меньше ширины "
+"экструзии материала поддержки в 2 раза."
 
 #: src/libslic3r/Print.cpp:735
 msgid ""
 "Organic support branch diameter must not be smaller than support tree tip "
 "diameter."
 msgstr ""
+"Диаметр верхушки поддержки органической ветви не должен быть меньше диаметра "
+"верхушки опорного дерева."
 
 #: src/libslic3r/Print.cpp:769
 msgid "First layer height can't be greater than nozzle diameter"
@@ -2503,10 +2509,11 @@ msgid ""
 "maximum allowed speed at layer \"disable_fan_first_layers\" + 1."
 msgstr ""
 "Скорость вентилятора будет линейно увеличиваться от нуля на слое "
-"\"disable_fan_first_layers\" до максимальной на слое \"full_fan_speed_layer"
-"\". \"full_fan_speed_layer\" будет игнорироваться, если она ниже, чем "
-"\"disable_fan_first_layers\", и в этом случае вентилятор будет работать с "
-"максимально допустимой скоростью на слое \"disable_fan_first_layers\" +1."
+"\"disable_fan_first_layers\" до максимальной на слое "
+"\"full_fan_speed_layer\". \"full_fan_speed_layer\" будет игнорироваться, "
+"если она ниже, чем \"disable_fan_first_layers\", и в этом случае вентилятор "
+"будет работать с максимально допустимой скоростью на слое "
+"\"disable_fan_first_layers\" +1."
 
 #: src/libslic3r/PrintConfig.cpp:1386 src/libslic3r/PrintConfig.cpp:1387
 #: src/libslic3r/PrintConfig.cpp:1399 src/libslic3r/PrintConfig.cpp:1409
@@ -13344,7 +13351,7 @@ msgstr "Без названия"
 
 #: src/slic3r/GUI/MainFrame.cpp:721
 msgid "based on Slic3r"
-msgstr "созданная на остове Slic3r"
+msgstr "созданная на основе Slic3r"
 
 #: src/slic3r/GUI/MainFrame.cpp:1162
 #, c-format, boost-format
@@ -13360,12 +13367,12 @@ msgstr "Открыть сайт %s"
 #. TRN Item from "Help" menu
 #: src/slic3r/GUI/MainFrame.cpp:1166
 msgid "&Quick Start"
-msgstr ""
+msgstr "&Быстрый старт"
 
 #. TRN Item from "Help" menu
 #: src/slic3r/GUI/MainFrame.cpp:1170
 msgid "Sample &G-codes and Models"
-msgstr ""
+msgstr "Пример &G-кодов и Моделей"
 
 #: src/slic3r/GUI/MainFrame.cpp:1174
 msgid "Prusa 3D &Drivers"
@@ -16931,11 +16938,12 @@ msgstr ""
 "Примечание: все параметры из этой группы перенесены в настройки физического "
 "принтера (см. список изменений).\n"
 "\n"
-"Новый профиль физического принтера создаётся нажатием по значку \"шестеренка"
-"\" справа от поля со списком профилей принтеров, выбрав «Добавить физический "
-"принтер». Редактор профиля физического принтера открывается также при "
-"нажатии на значок шестеренки на вкладке настройки принтера. Профили "
-"физического принтера сохраняются в папке PrusaSlicer/physical_printer."
+"Новый профиль физического принтера создаётся нажатием по значку "
+"\"шестеренка\" справа от поля со списком профилей принтеров, выбрав "
+"«Добавить физический принтер». Редактор профиля физического принтера "
+"открывается также при нажатии на значок шестеренки на вкладке настройки "
+"принтера. Профили физического принтера сохраняются в папке PrusaSlicer/"
+"physical_printer."
 
 #: src/slic3r/GUI/Tab.cpp:2466
 msgid ""
@@ -18540,8 +18548,9 @@ msgstr ""
 #: resources/data/hints.ini: [hint:Hiding sidebar]
 msgid ""
 "Hiding sidebar\n"
-"Did you know that you can hide the right sidebar using the shortcut <b>Shift"
-"+Tab</b>? You can also enable the icon for this from the<a>Preferences</a>."
+"Did you know that you can hide the right sidebar using the shortcut "
+"<b>Shift+Tab</b>? You can also enable the icon for this from "
+"the<a>Preferences</a>."
 msgstr ""
 "Свернуть боковую панель\n"
 "Знаете ли вы, что правую боковую панель можно скрыть с помощью сочетания "
