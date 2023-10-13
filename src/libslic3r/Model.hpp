@@ -26,6 +26,7 @@
 #include "CustomGCode.hpp"
 #include "enum_bitmask.hpp"
 #include "TextConfiguration.hpp"
+#include "AppConfig.hpp"
 
 #include <map>
 #include <memory>
@@ -507,6 +508,8 @@ public:
 
 private:
     friend class Model;
+    AppConfig*	app_config=NULL;
+    bool load_app_config();
     // This constructor assigns new ID to this ModelObject and its config.
     explicit ModelObject(Model* model) : m_model(model), origin_translation(Vec3d::Zero())
     { 

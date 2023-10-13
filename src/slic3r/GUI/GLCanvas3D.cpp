@@ -4054,7 +4054,9 @@ void GLCanvas3D::do_move(const std::string& snapshot_type)
     for (const std::pair<int, int>& i : done) {
         ModelObject* m = m_model->objects[i.first];
         const double shift_z = m->get_instance_min_z(i.second);
-        if (current_printer_technology() == ptSLA || shift_z > SINKING_Z_THRESHOLD) {
+        bool antigravity = wxGetApp().app_config->get_bool("antigravity");
+// SMJ        if (current_printer_technology() == ptSLA || shift_z > SINKING_Z_THRESHOLD) {
+        if (current_printer_technology() == ptSLA || (!antigravity && shift_z > SINKING_Z_THRESHOLD)) {
             const Vec3d shift(0.0, 0.0, -shift_z);
             m_selection.translate(i.first, i.second, shift);
             m->translate_instance(i.second, shift);
