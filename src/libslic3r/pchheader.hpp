@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Vojtěch Bubník @bubnikv, Roman Beránek @zavorka
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifdef WIN32
 	#ifndef WIN32_LEAN_AND_MEAN
 		#define WIN32_LEAN_AND_MEAN
@@ -60,10 +64,16 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/config.hpp>
 #include <boost/config/warning_disable.hpp>
 #include <boost/container/small_vector.hpp>
+#ifdef _WIN32
+// On MSVC, std::deque degenerates to a list of pointers, which defeats its purpose of reducing allocator load and memory fragmentation.
+// https://github.com/microsoft/STL/issues/147#issuecomment-1090148740
+// Thus it is recommended to use boost::container::deque instead.
+#include <boost/container/deque.hpp>
+#endif // _WIN32
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
@@ -88,17 +98,22 @@
 #include <boost/nowide/fstream.hpp>
 #include <boost/nowide/integration/filesystem.hpp>
 #include <boost/nowide/iostream.hpp>
+
+// boost/property_tree/json_parser/detail/parser.hpp includes boost/bind.hpp, which is deprecated.
+// Suppress the following boost message:
+// The practice of declaring the Bind placeholders (_1, _2, ...) in the global namespace is deprecated.
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
+#undef BOOST_BIND_GLOBAL_PLACEHOLDERS
+
 #include <boost/thread.hpp>
 #include <boost/version.hpp>
 
-#include <tbb/atomic.h>
 #include <tbb/parallel_for.h>
+#include <tbb/scalable_allocator.h>
 #include <tbb/spin_mutex.h>
-#include <tbb/mutex.h>
 #include <tbb/task_group.h>
-#include <tbb/task_scheduler_init.h>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -107,10 +122,11 @@
 #include <cereal/types/base_class.hpp>
 
 #include <clipper/clipper_z.hpp>
-#include <clipper/clipper.hpp>
+#include "clipper.hpp"
 #include "BoundingBox.hpp"
 #include "ClipperUtils.hpp"
 #include "Config.hpp"
+#include "enum_bitmask.hpp"
 #include "format.hpp"
 #include "I18N.hpp"
 #include "MultiPoint.hpp"
@@ -121,9 +137,5 @@
 
 #include "libslic3r.h"
 #include "libslic3r_version.h"
-
-#include "clipper.hpp"
-
-#include <Shiny/Shiny.h>
 
 #include <admesh/stl.h>

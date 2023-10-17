@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2021 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_FillLine_hpp_
 #define slic3r_FillLine_hpp_
 
@@ -37,7 +42,7 @@ protected:
 
 	bool _can_connect(coord_t dist_X, coord_t dist_Y)
 	{
-	    coord_t TOLERANCE = 10 * SCALED_EPSILON;
+	    const auto TOLERANCE = coord_t(10 * SCALED_EPSILON);
     	return (dist_X >= (this->_line_spacing - this->_line_oscillation) - TOLERANCE)
         	&& (dist_X <= (this->_line_spacing + this->_line_oscillation) + TOLERANCE)
         	&& (dist_Y <= this->_diagonal_distance);

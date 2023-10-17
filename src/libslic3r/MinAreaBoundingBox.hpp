@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef MINAREABOUNDINGBOX_HPP
 #define MINAREABOUNDINGBOX_HPP
 
@@ -26,12 +30,8 @@ public:
     };
    
     // Constructors with various types of geometry data used in Slic3r.
-    // If the convexity is known apriory, pcConvex can be used to skip 
-    // convex hull calculation. It is very important that the input polygons
-    // do NOT have any collinear points (except for the first and the last 
-    // vertex being the same -- meaning a closed polygon for boost)
-    // To make sure this constraint is satisfied, you can call 
-    // remove_collinear_points on the input polygon before handing over here)
+    // If the convexity is known apriory, pcConvex can be used to skip
+    // convex hull calculation.
     explicit MinAreaBoundigBox(const Polygon&, PolygonLevel = pcSimple);
     explicit MinAreaBoundigBox(const ExPolygon&, PolygonLevel = pcSimple);
     explicit MinAreaBoundigBox(const Points&, PolygonLevel = pcSimple);
@@ -54,6 +54,8 @@ public:
     const Point& axis()  const { return m_axis; }
 };
 
-}
+double fit_into_box_rotation(const Polygon &shape, const BoundingBox &box);
+
+} // namespace Slic3r
 
 #endif // MINAREABOUNDINGBOX_HPP

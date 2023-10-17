@@ -2,8 +2,6 @@
 
 %{
 #include <xsinit.h>
-#include "libslic3r/BoundingBox.hpp"
-#include "libslic3r/ClipperUtils.hpp"
 #include "libslic3r/Polyline.hpp"
 %}
 
@@ -23,7 +21,6 @@
     Lines lines();
     Clone<Point> first_point();
     Clone<Point> last_point();
-    Points equally_spaced_points(double distance);
     double length();
     bool is_valid();
     void clip_end(double distance);
@@ -31,13 +28,8 @@
     void extend_end(double distance);
     void extend_start(double distance);
     void simplify(double tolerance);
-    void simplify_by_visibility(ExPolygon* expolygon)
-        %code{% THIS->simplify_by_visibility(*expolygon); %};
     void split_at(Point* point, Polyline* p1, Polyline* p2)
         %code{% THIS->split_at(*point, p1, p2); %};
-    bool is_straight();
-    Clone<BoundingBox> bounding_box();
-    void remove_duplicate_points();
 %{
 
 Polyline*
@@ -77,16 +69,6 @@ Polyline::rotate(angle, center_sv)
         Point center;
         from_SV_check(center_sv, &center);
         THIS->rotate(angle, center);
-
-Polygons
-Polyline::grow(delta, joinType = ClipperLib::jtSquare, miterLimit = 3)
-    const float             delta
-    ClipperLib::JoinType    joinType
-    double                  miterLimit
-    CODE:
-        RETVAL = offset(*THIS, delta, joinType, miterLimit);
-    OUTPUT:
-        RETVAL
 
 %}
 };

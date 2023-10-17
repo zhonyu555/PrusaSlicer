@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2016 - 2021 Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "../ClipperUtils.hpp"
 #include "../ExPolygon.hpp"
 #include "../ShortestPath.hpp"
@@ -31,7 +35,7 @@ void FillLine::_fill_surface_single(
     } else {
         // extend bounding box so that our pattern will be aligned with other layers
         // Transform the reference point to the rotated coordinate system.
-        bounding_box.merge(_align_to_grid(
+        bounding_box.merge(align_to_grid(
             bounding_box.min, 
             Point(this->_line_spacing, this->_line_spacing), 
             direction.second.rotated(- direction.first)));
@@ -58,7 +62,7 @@ void FillLine::_fill_surface_single(
         pts.push_back(it->a);
         pts.push_back(it->b);
     }
-    Polylines polylines = intersection_pl(polylines_src, offset(to_polygons(expolygon), scale_(0.02)), false);
+    Polylines polylines = intersection_pl(polylines_src, offset(expolygon, scale_(0.02)));
 
     // FIXME Vojtech: This is only performed for horizontal lines, not for the vertical lines!
     const float INFILL_OVERLAP_OVER_SPACING = 0.3f;

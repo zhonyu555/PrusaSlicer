@@ -1,10 +1,12 @@
+///|/ Copyright (c) Prusa Research 2020 - 2022 Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef AGGRASTER_HPP
 #define AGGRASTER_HPP
 
 #include <libslic3r/SLA/RasterBase.hpp>
 #include "libslic3r/ExPolygon.hpp"
-#include "libslic3r/MTUtils.hpp"
-#include <libnest2d/backends/clipper/clipper_polygon.hpp>
 
 // For rasterizing
 #include <agg/agg_basics.h>
@@ -21,10 +23,7 @@
 namespace Slic3r {
 
 inline const Polygon& contour(const ExPolygon& p) { return p.contour; }
-inline const ClipperLib::Path& contour(const ClipperLib::Polygon& p) { return p.Contour; }
-
 inline const Polygons& holes(const ExPolygon& p) { return p.holes; }
-inline const ClipperLib::Paths& holes(const ClipperLib::Polygon& p) { return p.Holes; }
 
 namespace sla {
 
@@ -46,7 +45,7 @@ public:
     using TValue = typename TColor::value_type;
     using TPixel = typename PixelRenderer::pixel_type;
     using TRawBuffer = agg::rendering_buffer;
-    
+
 protected:
     
     Resolution m_resolution;
@@ -77,8 +76,6 @@ protected:
     double getPx(const Point &p) { return p(0) * m_pxdim_scaled.w_mm; }
     double getPy(const Point &p) { return p(1) * m_pxdim_scaled.h_mm; }
     agg::path_storage to_path(const Polygon &poly) { return to_path(poly.points); }
-    double getPx(const ClipperLib::IntPoint &p) { return p.X * m_pxdim_scaled.w_mm; }
-    double getPy(const ClipperLib::IntPoint& p) { return p.Y * m_pxdim_scaled.h_mm; }
     
     template<class PointVec> agg::path_storage _to_path(const PointVec& v)
     {
@@ -136,7 +133,7 @@ public:
               const TColor &    background,
               GammaFn &&        gammafn)
         : m_resolution(res)
-        , m_pxdim_scaled(SCALING_FACTOR / pd.w_mm, SCALING_FACTOR / pd.h_mm)
+        , m_pxdim_scaled(SCALING_FACTOR, SCALING_FACTOR)
         , m_buf(res.pixels())
         , m_rbuf(reinterpret_cast<TValue *>(m_buf.data()),
                  unsigned(res.width_px),
@@ -147,6 +144,12 @@ public:
         , m_renderer(m_raw_renderer)
         , m_trafo(trafo)
     {
+        // Visual Studio compiler gives warnings about possible division by zero.
+        assert(pd.w_mm != 0 && pd.h_mm != 0);
+        if (pd.w_mm != 0 && pd.h_mm != 0) {
+            m_pxdim_scaled.w_mm /= pd.w_mm;
+            m_pxdim_scaled.h_mm /= pd.h_mm;
+        }
         m_renderer.color(foreground);
         clear(background);
         
@@ -154,15 +157,14 @@ public:
     }
     
     Trafo trafo() const override { return m_trafo; }
-    Resolution resolution() const override { return m_resolution; }
-    PixelDim   pixel_dimensions() const override
+    Resolution resolution() const { return m_resolution; }
+    PixelDim   pixel_dimensions() const
     {
         return {SCALING_FACTOR / m_pxdim_scaled.w_mm,
                 SCALING_FACTOR / m_pxdim_scaled.h_mm};
     }
     
     void draw(const ExPolygon &poly) override { _draw(poly); }
-    void draw(const ClipperLib::Polygon &poly) override { _draw(poly); }
     
     EncodedRaster encode(RasterEncoder encoder) const override
     {
@@ -188,11 +190,15 @@ class RasterGrayscaleAA : public _RasterGrayscaleAA {
     using typename Base::TValue;
 public:
     template<class GammaFn>
-    RasterGrayscaleAA(const RasterBase::Resolution &res,
-                      const RasterBase::PixelDim &  pd,
-                      const RasterBase::Trafo &     trafo,
-                      GammaFn &&                    fn)
-        : Base(res, pd, trafo, Colors<TColor>::White, Colors<TColor>::Black,
+    RasterGrayscaleAA(const Resolution        &res,
+                      const PixelDim          &pd,
+                      const RasterBase::Trafo &trafo,
+                      GammaFn                &&fn)
+        : Base(res,
+               pd,
+               trafo,
+               Colors<TColor>::White,
+               Colors<TColor>::Black,
                std::forward<GammaFn>(fn))
     {}
     
@@ -210,10 +216,10 @@ public:
 
 class RasterGrayscaleAAGammaPower: public RasterGrayscaleAA {
 public:
-    RasterGrayscaleAAGammaPower(const RasterBase::Resolution &res,
-                                const RasterBase::PixelDim &  pd,
-                                const RasterBase::Trafo &     trafo,
-                                double                        gamma = 1.)
+    RasterGrayscaleAAGammaPower(const Resolution        &res,
+                                const PixelDim          &pd,
+                                const RasterBase::Trafo &trafo,
+                                double                   gamma = 1.)
         : RasterGrayscaleAA(res, pd, trafo, agg::gamma_power(gamma))
     {}
 };

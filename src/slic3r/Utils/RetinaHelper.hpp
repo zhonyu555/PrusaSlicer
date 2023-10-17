@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2021 Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_RetinaHelper_hpp_
 #define slic3r_RetinaHelper_hpp_
 
@@ -18,7 +22,9 @@ public:
     float get_scale_factor();
 
 private:
+#ifdef __WXGTK3__
     wxWindow* m_window;
+#endif // __WXGTK3__
     void* m_self;
 };
 

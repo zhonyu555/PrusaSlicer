@@ -1,3 +1,15 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Filip Sykala @Jony01, Lukáš Hejl @hejllukas, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Tomáš Mészáros @tamasmeszaros
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2014 Petr Ledvina @ledvinap
+///|/ Copyright (c) 2014 Kamil Kwolek
+///|/ Copyright (c) 2013 Jose Luis Perez Diez
+///|/
+///|/ ported from lib/Slic3r/Point.pm:
+///|/ Copyright (c) Prusa Research 2018 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2015 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Point.hpp"
 #include "Line.hpp"
 #include "MultiPoint.hpp"
@@ -57,137 +69,85 @@ void Point::rotate(double angle, const Point &center)
     (*this)(1) = (coord_t)round( (double)center(1) + c * dy + s * dx );
 }
 
-int Point::nearest_point_index(const Points &points) const
+bool has_duplicate_points(Points &&pts)
 {
-    PointConstPtrs p;
-    p.reserve(points.size());
-    for (Points::const_iterator it = points.begin(); it != points.end(); ++it)
-        p.push_back(&*it);
-    return this->nearest_point_index(p);
+    std::sort(pts.begin(), pts.end());
+    for (size_t i = 1; i < pts.size(); ++ i)
+        if (pts[i - 1] == pts[i])
+            return true;
+    return false;
 }
 
-int Point::nearest_point_index(const PointConstPtrs &points) const
+Points collect_duplicates(Points pts /* Copy */)
 {
-    int idx = -1;
-    double distance = -1;  // double because long is limited to 2147483647 on some platforms and it's not enough
-    
-    for (PointConstPtrs::const_iterator it = points.begin(); it != points.end(); ++it) {
-        /* If the X distance of the candidate is > than the total distance of the
-           best previous candidate, we know we don't want it */
-        double d = sqr<double>((*this)(0) - (*it)->x());
-        if (distance != -1 && d > distance) continue;
-        
-        /* If the Y distance of the candidate is > than the total distance of the
-           best previous candidate, we know we don't want it */
-        d += sqr<double>((*this)(1) - (*it)->y());
-        if (distance != -1 && d > distance) continue;
-        
-        idx = it - points.begin();
-        distance = d;
-        
-        if (distance < EPSILON) break;
-    }
-    
-    return idx;
-}
-
-int Point::nearest_point_index(const PointPtrs &points) const
-{
-    PointConstPtrs p;
-    p.reserve(points.size());
-    for (PointPtrs::const_iterator it = points.begin(); it != points.end(); ++it)
-        p.push_back(*it);
-    return this->nearest_point_index(p);
-}
-
-bool Point::nearest_point(const Points &points, Point* point) const
-{
-    int idx = this->nearest_point_index(points);
-    if (idx == -1) return false;
-    *point = points.at(idx);
-    return true;
-}
-
-/* Three points are a counter-clockwise turn if ccw > 0, clockwise if
- * ccw < 0, and collinear if ccw = 0 because ccw is a determinant that
- * gives the signed area of the triangle formed by p1, p2 and this point.
- * In other words it is the 2D cross product of p1-p2 and p1-this, i.e.
- * z-component of their 3D cross product.
- * We return double because it must be big enough to hold 2*max(|coordinate|)^2
- */
-double Point::ccw(const Point &p1, const Point &p2) const
-{
-    return (double)(p2(0) - p1(0))*(double)((*this)(1) - p1(1)) - (double)(p2(1) - p1(1))*(double)((*this)(0) - p1(0));
-}
-
-double Point::ccw(const Line &line) const
-{
-    return this->ccw(line.a, line.b);
-}
-
-// returns the CCW angle between this-p1 and this-p2
-// i.e. this assumes a CCW rotation from p1 to p2 around this
-double Point::ccw_angle(const Point &p1, const Point &p2) const
-{
-    double angle = atan2(p1(0) - (*this)(0), p1(1) - (*this)(1))
-                 - atan2(p2(0) - (*this)(0), p2(1) - (*this)(1));
-    
-    // we only want to return only positive angles
-    return angle <= 0 ? angle + 2*PI : angle;
-}
-
-Point Point::projection_onto(const MultiPoint &poly) const
-{
-    Point running_projection = poly.first_point();
-    double running_min = (running_projection - *this).cast<double>().norm();
-    
-    Lines lines = poly.lines();
-    for (Lines::const_iterator line = lines.begin(); line != lines.end(); ++line) {
-        Point point_temp = this->projection_onto(*line);
-        if ((point_temp - *this).cast<double>().norm() < running_min) {
-	        running_projection = point_temp;
-	        running_min = (running_projection - *this).cast<double>().norm();
+    std::sort(pts.begin(), pts.end());
+    Points duplicits;
+    const Point *prev = &pts.front();
+    for (size_t i = 1; i < pts.size(); ++i) {
+        const Point *act = &pts[i];
+        if (*prev == *act) {
+            // duplicit point
+            if (!duplicits.empty() && duplicits.back() == *act)
+                continue; // only unique duplicits
+            duplicits.push_back(*act);
         }
+        prev = act;
     }
-    return running_projection;
+    return duplicits;
 }
 
-Point Point::projection_onto(const Line &line) const
-{
-    if (line.a == line.b) return line.a;
-    
-    /*
-        (Ported from VisiLibity by Karl J. Obermeyer)
-        The projection of point_temp onto the line determined by
-        line_segment_temp can be represented as an affine combination
-        expressed in the form projection of
-        Point = theta*line_segment_temp.first + (1.0-theta)*line_segment_temp.second.
-        If theta is outside the interval [0,1], then one of the Line_Segment's endpoints
-        must be closest to calling Point.
-    */
-    double lx = (double)(line.b(0) - line.a(0));
-    double ly = (double)(line.b(1) - line.a(1));
-    double theta = ( (double)(line.b(0) - (*this)(0))*lx + (double)(line.b(1)- (*this)(1))*ly ) 
-          / ( sqr<double>(lx) + sqr<double>(ly) );
-    
-    if (0.0 <= theta && theta <= 1.0)
-        return (theta * line.a.cast<coordf_t>() + (1.0-theta) * line.b.cast<coordf_t>()).cast<coord_t>();
-    
-    // Else pick closest endpoint.
-    return ((line.a - *this).cast<double>().squaredNorm() < (line.b - *this).cast<double>().squaredNorm()) ? line.a : line.b;
-}
-
+template<bool IncludeBoundary>
 BoundingBox get_extents(const Points &pts)
 { 
-    return BoundingBox(pts);
+    BoundingBox out;
+    BoundingBox::construct<IncludeBoundary>(out, pts.begin(), pts.end());
+    return out;
 }
+template BoundingBox get_extents<false>(const Points &pts);
+template BoundingBox get_extents<true>(const Points &pts);
 
-BoundingBox get_extents(const std::vector<Points> &pts)
+// if IncludeBoundary, then a bounding box is defined even for a single point.
+// otherwise a bounding box is only defined if it has a positive area.
+template<bool IncludeBoundary>
+BoundingBox get_extents(const VecOfPoints &pts)
 {
     BoundingBox bbox;
     for (const Points &p : pts)
-        bbox.merge(get_extents(p));
+        bbox.merge(get_extents<IncludeBoundary>(p));
     return bbox;
+}
+template BoundingBox get_extents<false>(const VecOfPoints &pts);
+template BoundingBox get_extents<true>(const VecOfPoints &pts);
+
+BoundingBoxf get_extents(const std::vector<Vec2d> &pts)
+{
+    BoundingBoxf bbox;
+    for (const Vec2d &p : pts)
+        bbox.merge(p);
+    return bbox;
+}
+
+int nearest_point_index(const Points &points, const Point &pt)
+{
+    int64_t distance = std::numeric_limits<int64_t>::max();
+    int     idx      = -1;
+
+    for (const Point &pt2 : points) {
+        // If the X distance of the candidate is > than the total distance of the
+        // best previous candidate, we know we don't want it.
+        int64_t d = sqr<int64_t>(pt2.x() - pt.x());
+        if (d < distance) {
+            // If the Y distance of the candidate is > than the total distance of the
+            // best previous candidate, we know we don't want it.
+            d += sqr<int64_t>(pt2.y() - pt.y());
+            if (d < distance) {
+                idx      = &pt2 - points.data();
+                distance = d;
+            }
+        }
+    }
+
+    return idx;
 }
 
 std::ostream& operator<<(std::ostream &stm, const Vec2d &pointf)
@@ -201,12 +161,12 @@ int orient(const Vec2crd &p1, const Vec2crd &p2, const Vec2crd &p3)
 {
     Slic3r::Vector v1(p2 - p1);
     Slic3r::Vector v2(p3 - p1);
-    return Int128::sign_determinant_2x2_filtered(v1(0), v1(1), v2(0), v2(1));
+    return Int128::sign_determinant_2x2_filtered(v1.x(), v1.y(), v2.x(), v2.y());
 }
 
 int cross(const Vec2crd &v1, const Vec2crd &v2)
 {
-    return Int128::sign_determinant_2x2_filtered(v1(0), v1(1), v2(0), v2(1));
+    return Int128::sign_determinant_2x2_filtered(v1.x(), v1.y(), v2.x(), v2.y());
 }
 
 }

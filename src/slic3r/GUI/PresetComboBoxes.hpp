@@ -1,11 +1,16 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_PresetComboBoxes_hpp_
 #define slic3r_PresetComboBoxes_hpp_
 
-#include <wx/bmpcbox.h>
+#include <wx/bmpbndl.h>
 #include <wx/gdicmn.h>
 
 #include "libslic3r/Preset.hpp"
 #include "wxExtensions.hpp"
+#include "BitmapComboBox.hpp"
 #include "GUI_Utils.hpp"
 
 class wxString;
@@ -15,7 +20,6 @@ class ScalableButton;
 class wxBoxSizer;
 class wxComboBox;
 class wxStaticBitmap;
-class wxRadioBox;
 
 namespace Slic3r {
 
@@ -28,10 +32,12 @@ class BitmapCache;
 // ---------------------------------
 
 // BitmapComboBox used to presets list on Sidebar and Tabs
-class PresetComboBox : public wxBitmapComboBox
+class PresetComboBox : public BitmapComboBox
 {
+    bool m_show_all { false };
+    bool m_show_modif_preset_separately{ false };
 public:
-    PresetComboBox(wxWindow* parent, Preset::Type preset_type, const wxSize& size = wxDefaultSize);
+    PresetComboBox(wxWindow* parent, Preset::Type preset_type, const wxSize& size = wxDefaultSize, PresetBundle* preset_bundle = nullptr);
     ~PresetComboBox();
 
 	enum LabelItemType {
@@ -58,13 +64,22 @@ public:
     bool selection_is_changed_according_to_physical_printers();
 
     void update(std::string select_preset);
+    // select preset which is selected in PreseBundle
+    void update_from_bundle();
 
     void edit_physical_printer();
     void add_physical_printer();
+    void open_physical_printer_url();
     bool del_physical_printer(const wxString& note_string = wxEmptyString);
+    void show_modif_preset_separately() { m_show_modif_preset_separately = true; }
 
+    virtual wxString get_preset_name(const Preset& preset); 
+    Preset::Type     get_type() { return m_type; }
+    void             show_all(bool show_all);
     virtual void update();
     virtual void msw_rescale();
+    virtual void sys_color_changed();
+    virtual void OnSelect(wxCommandEvent& evt);
 
 protected:
     typedef std::size_t Marker;
@@ -80,9 +95,9 @@ protected:
     static BitmapCache& bitmap_cache();
 
     // Indicator, that the preset is compatible with the selected printer.
-    ScalableBitmap      m_bitmapCompatible;
+    wxBitmapBundle*      m_bitmapCompatible;
     // Indicator, that the preset is NOT compatible with the selected printer.
-    ScalableBitmap      m_bitmapIncompatible;
+    wxBitmapBundle*      m_bitmapIncompatible;
 
     int m_last_selected;
     int m_em_unit;
@@ -91,6 +106,7 @@ protected:
     // parameters for an icon's drawing
     int icon_height;
     int norm_icon_width;
+    int null_icon_width;
     int thin_icon_width;
     int wide_icon_width;
     int space_icon_width;
@@ -112,27 +128,14 @@ protected:
 #endif // __linux__
     static wxString    separator(const std::string& label);
 
-    wxBitmap* get_bmp(  std::string bitmap_key, bool wide_icons, const std::string& main_icon_name, 
+    wxBitmapBundle* get_bmp(  std::string bitmap_key, bool wide_icons, const std::string& main_icon_name,
                         bool is_compatible = true, bool is_system = false, bool is_single_bar = false,
-                        std::string filament_rgb = "", std::string extruder_rgb = "");
+                        const std::string& filament_rgb = "", const std::string& extruder_rgb = "", const std::string& material_rgb = "");
 
-    wxBitmap* get_bmp(  std::string bitmap_key, const std::string& main_icon_name, const std::string& next_icon_name,
+    wxBitmapBundle* get_bmp(  std::string bitmap_key, const std::string& main_icon_name, const std::string& next_icon_name,
                         bool is_enabled = true, bool is_compatible = true, bool is_system = false);
 
-#ifdef __APPLE__
-    /* For PresetComboBox we use bitmaps that are created from images that are already scaled appropriately for Retina
-     * (Contrary to the intuition, the `scale` argument for Bitmap's constructor doesn't mean
-     * "please scale this to such and such" but rather
-     * "the wxImage is already sized for backing scale such and such". )
-     * Unfortunately, the constructor changes the size of wxBitmap too.
-     * Thus We need to use unscaled size value for bitmaps that we use
-     * to avoid scaled size of control items.
-     * For this purpose control drawing methods and
-     * control size calculation methods (virtual) are overridden.
-     **/
-    bool OnAddBitmap(const wxBitmap& bitmap) override;
-    void OnDrawItem(wxDC& dc, const wxRect& rect, int item, int flags) const override;
-#endif
+    wxBitmapBundle NullBitmapBndl();
 
 private:
     void fill_width_height();
@@ -154,12 +157,18 @@ public:
     void set_extruder_idx(const int extr_idx)   { m_extruder_idx = extr_idx; }
     int  get_extruder_idx() const               { return m_extruder_idx; }
 
-    bool switch_to_tab();
+    void switch_to_tab();
+    void change_extruder_color();
     void show_add_menu();
     void show_edit_menu();
 
+    wxString get_preset_name(const Preset& preset) override;
     void update() override;
     void msw_rescale() override;
+    void sys_color_changed() override;
+    void OnSelect(wxCommandEvent& evt) override;
+
+    std::string get_selected_ph_printer_name() const;
 
 private:
     int     m_extruder_idx = -1;
@@ -174,6 +183,8 @@ class TabPresetComboBox : public PresetComboBox
 {
     bool show_incompatible {false};
     bool m_enable_all {false};
+    // This parameter is used by FilamentSettings tab to show filament setting related to the active extruder
+    int  m_active_extruder_idx {0};
 
 public:
     TabPresetComboBox(wxWindow *parent, Preset::Type preset_type);
@@ -182,14 +193,19 @@ public:
         show_incompatible = show_incompatible_presets;
     }
 
+    wxString get_preset_name(const Preset& preset) override;
     void update() override;
     void update_dirty();
     void msw_rescale() override;
+    void OnSelect(wxCommandEvent& evt) override;
 
     void set_enable_all(bool enable=true) { m_enable_all = enable; }
 
     PresetCollection*   presets()   const { return m_collection; }
     Preset::Type        type()      const { return m_type; }
+
+    // used by Filaments tab to update preset list according to the particular extruder
+    void set_active_extruder(int extruder_idx) { m_active_extruder_idx = extruder_idx; }
 };
 
 } // namespace GUI

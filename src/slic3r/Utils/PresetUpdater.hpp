@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_PresetUpdate_hpp_
 #define slic3r_PresetUpdate_hpp_
 
@@ -13,6 +17,8 @@ class AppConfig;
 class PresetBundle;
 class Semver;
 
+static constexpr const int SLIC3R_VERSION_BODY_MAX = 256;
+
 class PresetUpdater
 {
 public:
@@ -24,7 +30,8 @@ public:
 	~PresetUpdater();
 
 	// If either version check or config updating is enabled, get the appropriate data in the background and cache it.
-	void sync(PresetBundle *preset_bundle);
+	void sync(const PresetBundle *preset_bundle);
+	void cancel_sync();
 
 	// If version check is enabled, check if chaced online slic3r version is newer, notify if so.
 	void slic3r_update_notify();
@@ -35,27 +42,37 @@ public:
 		R_INCOMPAT_CONFIGURED,
 		R_UPDATE_INSTALLED,
 		R_UPDATE_REJECT,
-		R_UPDATE_NOTIFICATION
+		R_UPDATE_NOTIFICATION,
+		R_ALL_CANCELED
+	};
+
+	enum class UpdateParams {
+		SHOW_TEXT_BOX,				// force modal textbox
+		SHOW_NOTIFICATION,			// only shows notification
+		FORCED_BEFORE_WIZARD		// indicates that check of updated is forced before ConfigWizard opening
 	};
 
 	// If updating is enabled, check if updates are available in cache, if so, ask about installation.
 	// A false return value implies Slic3r should exit due to incompatibility of configuration.
 	// Providing old slic3r version upgrade profiles on upgrade of an application even in case
 	// that the config index installed from the Internet is equal to the index contained in the installation package.
-	// no_notification = force modal textbox, otherwise some cases only shows notification
-	UpdateResult config_update(const Semver &old_slic3r_version, bool no_notification) const;
+	UpdateResult config_update(const Semver &old_slic3r_version, UpdateParams params) const;
+	
+	void update_index_db();
 
-	// "Update" a list of bundles from resources (behaves like an online update).
-	void install_bundles_rsrc(std::vector<std::string> bundles, bool snapshot = true) const;
+	// "Update" a list of bundles from resources or cache/vendor (behaves like an online update).
+	bool install_bundles_rsrc_or_cache_vendor(std::vector<std::string> bundles, bool snapshot = true) const;
 
 	void on_update_notification_confirm();
+
+	bool version_check_enabled() const;
+
 private:
 	struct priv;
 	std::unique_ptr<priv> p;
 };
 
-wxDECLARE_EVENT(EVT_SLIC3R_VERSION_ONLINE, wxCommandEvent);
-
-
+//wxDECLARE_EVENT(EVT_SLIC3R_VERSION_ONLINE, wxCommandEvent);
+//wxDECLARE_EVENT(EVT_SLIC3R_EXPERIMENTAL_VERSION_ONLINE, wxCommandEvent);
 }
 #endif

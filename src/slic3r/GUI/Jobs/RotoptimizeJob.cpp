@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "RotoptimizeJob.hpp"
 
 #include "libslic3r/MTUtils.hpp"
@@ -7,79 +11,131 @@
 #include "libslic3r/SLAPrint.hpp"
 
 #include "slic3r/GUI/Plater.hpp"
+#include "libslic3r/PresetBundle.hpp"
+
+#include "slic3r/GUI/GUI_App.hpp"
+#include "libslic3r/AppConfig.hpp"
+
+#include <slic3r/GUI/I18N.hpp>
 
 namespace Slic3r { namespace GUI {
 
-void RotoptimizeJob::process()
+void RotoptimizeJob::prepare()
 {
-    int obj_idx = m_plater->get_selected_object_idx();
-    if (obj_idx < 0 || int(m_plater->sla_print().objects().size()) <= obj_idx)
+    std::string accuracy_str =
+        wxGetApp().app_config->get("sla_auto_rotate", "accuracy");
+
+    std::string method_str =
+        wxGetApp().app_config->get("sla_auto_rotate", "method_id");
+
+    if (!accuracy_str.empty())
+        m_accuracy = std::stof(accuracy_str);
+
+    if (!method_str.empty())
+        m_method_id = std::stoi(method_str);
+
+    m_accuracy = std::max(0.f, std::min(m_accuracy, 1.f));
+    m_method_id = std::max(size_t(0), std::min(get_methods_count() - 1, m_method_id));
+
+    m_default_print_cfg = wxGetApp().preset_bundle->full_config();
+
+    const auto &sel = m_plater->get_selection().get_content();
+
+    m_selected_object_ids.clear();
+    m_selected_object_ids.reserve(sel.size());
+
+    for (const auto &s : sel) {
+        int obj_id;
+        std::tie(obj_id, std::ignore) = s;
+        m_selected_object_ids.emplace_back(obj_id);
+    }
+}
+
+void RotoptimizeJob::process(Ctl &ctl)
+{
+    int prev_status = 0;
+    auto statustxt = _u8L("Searching for optimal orientation");
+    ctl.update_status(0, statustxt);
+
+    auto params =
+        sla::RotOptimizeParams{}
+            .accuracy(m_accuracy)
+            .print_config(&m_default_print_cfg)
+            .statucb([this, &prev_status, &ctl, &statustxt](int s)
+        {
+            if (s > 0 && s < 100)
+                ctl.update_status(prev_status + s / m_selected_object_ids.size(),
+                                  statustxt);
+
+            return !ctl.was_canceled();
+        });
+
+
+    for (ObjRot &objrot : m_selected_object_ids) {
+        ModelObject *o = m_plater->model().objects[size_t(objrot.idx)];
+        if (!o) continue;
+
+        if (Methods[m_method_id].findfn)
+            objrot.rot = Methods[m_method_id].findfn(*o, params);
+
+        prev_status += 100 / m_selected_object_ids.size();
+
+        if (ctl.was_canceled()) break;
+    }
+
+    ctl.update_status(100, ctl.was_canceled() ?
+                               _u8L("Orientation search canceled.") :
+                               _u8L("Orientation found."));
+}
+
+RotoptimizeJob::RotoptimizeJob() : m_plater{wxGetApp().plater()} { prepare(); }
+
+void RotoptimizeJob::finalize(bool canceled, std::exception_ptr &eptr)
+{
+    if (canceled || eptr)
         return;
-    
-    ModelObject *o = m_plater->model().objects[size_t(obj_idx)];
-    const SLAPrintObject *po = m_plater->sla_print().objects()[size_t(obj_idx)];
 
-    if (!o || !po) return;
+    for (const ObjRot &objrot : m_selected_object_ids) {
+        ModelObject *o = m_plater->model().objects[size_t(objrot.idx)];
+        if (!o) continue;
 
-    TriangleMesh mesh = o->raw_mesh();
-    mesh.require_shared_vertices();
-
-//    for (auto inst : o->instances) {
-//        Transform3d tr = Transform3d::Identity();
-//        tr.rotate(Eigen::AngleAxisd(inst->get_rotation(Z), Vec3d::UnitZ()));
-//        tr.rotate(Eigen::AngleAxisd(inst->get_rotation(Y), Vec3d::UnitY()));
-//        tr.rotate(Eigen::AngleAxisd(inst->get_rotation(X), Vec3d::UnitX()));
-
-//        double score = sla::get_model_supportedness(*po, tr);
-
-//        std::cout << "Model supportedness before: " << score << std::endl;
-//    }
-
-    Vec2d r = sla::find_best_rotation(*po, 0.75f,
-        [this](unsigned s) {
-            if (s < 100)
-                update_status(int(s), _(L("Searching for optimal orientation")));
-        },
-        [this] () { return was_canceled(); });
-
-
-    double mindist = 6.0; // FIXME
-
-    if (!was_canceled()) {
         for(ModelInstance * oi : o->instances) {
-            oi->set_rotation({r[X], r[Y], 0.});
+            if (objrot.rot)
+                oi->set_rotation({objrot.rot->x(), objrot.rot->y(), 0.});
 
             auto    trmatrix = oi->get_transformation().get_matrix();
             Polygon trchull  = o->convex_hull_2d(trmatrix);
-
-            MinAreaBoundigBox rotbb(trchull, MinAreaBoundigBox::pcConvex);
-            double            phi = rotbb.angle_to_X();
-
-            // The box should be landscape
-            if(rotbb.width() < rotbb.height()) phi += PI / 2;
-
-            Vec3d rt = oi->get_rotation(); rt(Z) += phi;
-
-            oi->set_rotation(rt);
+            
+            if (!trchull.empty()) {
+                MinAreaBoundigBox rotbb(trchull, MinAreaBoundigBox::pcConvex);
+                double            phi = rotbb.angle_to_X();
+    
+                // The box should be landscape
+                if(rotbb.width() < rotbb.height()) phi += PI / 2;
+    
+                Vec3d rt = oi->get_rotation(); rt(Z) += phi;
+    
+                oi->set_rotation(rt);
+            }
         }
-
-        m_plater->find_new_position(o->instances, scaled(mindist));
 
         // Correct the z offset of the object which was corrupted be
         // the rotation
         o->ensure_on_bed();
     }
 
-    update_status(100, was_canceled() ? _(L("Orientation search canceled.")) :
-                                        _(L("Orientation found.")));
+    if (!canceled)
+        m_plater->update();
 }
 
-void RotoptimizeJob::finalize()
+std::string RotoptimizeJob::get_method_name(size_t i)
 {
-    if (!was_canceled())
-        m_plater->update();
-    
-    Job::finalize();
+    return into_u8(_(Methods[i].name));
+}
+
+std::string RotoptimizeJob::get_method_description(size_t i)
+{
+    return into_u8(_(Methods[i].descr));
 }
 
 }}

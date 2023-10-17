@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2021 Lukáš Matěna @lukasmatena, Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef MARCHINGSQUARES_HPP
 #define MARCHINGSQUARES_HPP
 
@@ -297,7 +301,7 @@ template<class Rst> class Grid {
         case SquareTag::full:
         case SquareTag::none: {
             Coord crd{tl(cell) + Coord{m_cellsize.r / 2, m_cellsize.c / 2}};
-            return {{crd, Dir::none, m_rst}, crd};
+            return {{crd, Dir::none, m_rst}, {crd}};
         }
         }
         

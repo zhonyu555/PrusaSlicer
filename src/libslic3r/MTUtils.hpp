@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef MTUTILS_HPP
 #define MTUTILS_HPP
 
@@ -47,7 +51,7 @@ private:
 public:
     // Forwarded constructor
     template<class... Args>
-    inline CachedObject(Setter fn, Args &&... args)
+    inline CachedObject(Setter &&fn, Args &&... args)
         : m_obj(std::forward<Args>(args)...), m_valid(false), m_setter(fn)
     {}
 
@@ -55,7 +59,7 @@ public:
     // the next retrieval (Setter will be called). The data that is used in
     // the setter function should be guarded as well during modification so
     // the modification has to take place in fn.
-    inline void invalidate(std::function<void()> fn)
+    template<class Fn> void invalidate(Fn &&fn)
     {
         std::lock_guard<SpinMutex> lck(m_lck);
         fn();
@@ -74,29 +78,6 @@ public:
     }
 };
 
-/// A very simple range concept implementation with iterator-like objects.
-template<class It> class Range
-{
-    It from, to;
-
-public:
-    // The class is ready for range based for loops.
-    It begin() const { return from; }
-    It end() const { return to; }
-
-    // The iterator type can be obtained this way.
-    using Type = It;
-
-    Range() = default;
-    Range(It &&b, It &&e)
-        : from(std::forward<It>(b)), to(std::forward<It>(e))
-    {}
-
-    // Some useful container-like methods...
-    inline size_t size() const { return end() - begin(); }
-    inline bool   empty() const { return size() == 0; }
-};
-
 template<class C> bool all_of(const C &container)
 {
     return std::all_of(container.begin(),
@@ -106,13 +87,8 @@ template<class C> bool all_of(const C &container)
                        });
 }
 
-template<class T> struct remove_cvref
-{
-    using type =
-        typename std::remove_cv<typename std::remove_reference<T>::type>::type;
-};
-
-template<class T> using remove_cvref_t = typename remove_cvref<T>::type;
+//template<class T>
+//using remove_cvref_t = std::remove_reference_t<std::remove_cv_t<T>>;
 
 /// Exactly like Matlab https://www.mathworks.com/help/matlab/ref/linspace.html
 template<class T, class I, class = IntegerOnly<I>>

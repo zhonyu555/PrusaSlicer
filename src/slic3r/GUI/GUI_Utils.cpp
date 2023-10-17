@@ -1,12 +1,19 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "GUI_Utils.hpp"
+#include "GUI_App.hpp"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 
 #ifdef _WIN32
-#include <Windows.h>
-#endif
+    #include <Windows.h>
+    #include "libslic3r/AppConfig.hpp"
+    #include <wx/msw/registry.h>
+#endif // _WIN32
 
 #include <wx/toplevel.h>
 #include <wx/sizer.h>
@@ -16,7 +23,6 @@
 #include <wx/fontutil.h>
 
 #include "libslic3r/Config.hpp"
-
 
 namespace Slic3r {
 namespace GUI {
@@ -149,6 +155,26 @@ wxFont get_default_font_for_dpi(const wxWindow *window, int dpi)
 #endif
     return wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
 }
+
+bool check_dark_mode() {
+#if wxCHECK_VERSION(3,1,3)
+    return wxSystemSettings::GetAppearance().IsDark();
+#else
+    const unsigned luma = wxGetApp().get_colour_approx_luma(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    return luma < 128;
+#endif
+}
+
+
+#ifdef _WIN32
+void update_dark_ui(wxWindow* window) 
+{
+    bool is_dark = wxGetApp().app_config->get_bool("dark_color_mode");// ? true : check_dark_mode();// #ysDarkMSW - Allow it when we deside to support the sustem colors for application
+    window->SetBackgroundColour(is_dark ? wxColour(43,  43,  43)  : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+    window->SetForegroundColour(is_dark ? wxColour(250, 250, 250) : wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+}
+#endif
+
 
 CheckboxFileDialog::ExtraPanel::ExtraPanel(wxWindow *parent)
     : wxPanel(parent, wxID_ANY)

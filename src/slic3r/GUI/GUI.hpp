@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2016 - 2022 Lukáš Hejl @hejllukas, David Kocík @kocikdav, Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral, Tomáš Mészáros @tamasmeszaros
+///|/ Copyright (c) Slic3r 2015 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_hpp_
 #define slic3r_GUI_hpp_
 
@@ -7,12 +12,13 @@ namespace boost::filesystem { class path; }
 #include <wx/string.h>
 
 #include "libslic3r/Config.hpp"
+#include "libslic3r/Preset.hpp"
 
 class wxWindow;
 class wxMenuBar;
-class wxNotebook;
 class wxComboCtrl;
 class wxFileDialog;
+class wxArrayString;
 class wxTopLevelWindow;
 
 namespace Slic3r { 
@@ -49,6 +55,8 @@ void show_info(wxWindow* parent, const wxString& message, const wxString& title 
 void show_info(wxWindow* parent, const char* message, const char* title = nullptr);
 inline void show_info(wxWindow* parent, const std::string& message,const std::string& title = std::string()) { show_info(parent, message.c_str(), title.c_str()); }
 void warning_catcher(wxWindow* parent, const wxString& message);
+void show_substitutions_info(const PresetsConfigSubstitutions& presets_config_substitutions);
+void show_substitutions_info(const ConfigSubstitutions& config_substitutions, const std::string& filename);
 
 // Creates a wxCheckListBoxComboPopup inside the given wxComboCtrl, filled with the given text and items.
 // Items data must be separated by '|', and contain the item name to be shown followed by its initial value (0 for false, 1 for true).
@@ -78,6 +86,24 @@ boost::filesystem::path	into_path(const wxString &str);
 extern void about();
 // Ask the destop to open the datadir using the default file explorer.
 extern void desktop_open_datadir_folder();
+// Ask the destop to open the directory specified by path using the default file explorer.
+void desktop_open_folder(const boost::filesystem::path& path);
+
+#ifdef __linux__
+// Calling wxExecute on Linux with proper handling of AppImage's env vars.
+// argv example: { "xdg-open", path.c_str(), nullptr }
+void desktop_execute(const char* argv[]);
+void desktop_execute_get_result(wxString command, wxArrayString& output);
+#endif // __linux__
+
+#ifdef _WIN32
+// Call CreateProcessW to start external proccess on path
+// returns true on success
+// path should contain path to the process
+// cmd_opt can be empty or contain command line options. Example: L"/silent"
+// error_msg will contain error message if create_process return false
+bool create_process(const boost::filesystem::path& path, const std::wstring& cmd_opt, std::string& error_msg);
+#endif //_WIN32
 
 } // namespace GUI
 } // namespace Slic3r

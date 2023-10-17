@@ -1,3 +1,13 @@
+///|/ Copyright (c) Prusa Research 2018 - 2022 Pavel Mikuš @Godrak, Lukáš Hejl @hejllukas, Filip Sykala @Jony01, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2014 Petr Ledvina @ledvinap
+///|/
+///|/ ported from lib/Slic3r/Line.pm:
+///|/ Copyright (c) Prusa Research 2022 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2014 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Geometry.hpp"
 #include "Line.hpp"
 #include "Polyline.hpp"
@@ -29,7 +39,14 @@ bool Line::intersection_infinite(const Line &other, Point* point) const
     if (std::fabs(denom) < EPSILON)
         return false;
     double t1 = cross2(v12, v2) / denom;
-    *point = (a1 + t1 * v1).cast<coord_t>();
+    Vec2d result = (a1 + t1 * v1);
+    if (result.x() > std::numeric_limits<coord_t>::max() || result.x() < std::numeric_limits<coord_t>::lowest() ||
+        result.y() > std::numeric_limits<coord_t>::max() || result.y() < std::numeric_limits<coord_t>::lowest()) {
+        // Intersection has at least one of the coordinates much bigger (or smaller) than coord_t maximum value (or minimum).
+        // So it can not be stored into the Point without integer overflows. That could mean that input lines are parallel or near parallel.
+        return false;
+    }
+    *point = (result).cast<coord_t>();
     return true;
 }
 
@@ -63,30 +80,28 @@ bool Line::parallel_to(double angle) const
     return Slic3r::Geometry::directions_parallel(this->direction(), angle);
 }
 
+bool Line::parallel_to(const Line& line) const
+{
+    const Vec2d v1 = (this->b - this->a).cast<double>();
+    const Vec2d v2 = (line.b - line.a).cast<double>();
+    return sqr(cross2(v1, v2)) < sqr(EPSILON) * v1.squaredNorm() * v2.squaredNorm();
+}
+
+bool Line::perpendicular_to(double angle) const
+{
+    return Slic3r::Geometry::directions_perpendicular(this->direction(), angle);
+}
+
+bool Line::perpendicular_to(const Line& line) const
+{
+    const Vec2d v1 = (this->b - this->a).cast<double>();
+    const Vec2d v2 = (line.b - line.a).cast<double>();
+    return sqr(v1.dot(v2)) < sqr(EPSILON) * v1.squaredNorm() * v2.squaredNorm();
+}
+
 bool Line::intersection(const Line &l2, Point *intersection) const
 {
-    const Line  &l1  = *this;
-    const Vec2d  v1  = (l1.b - l1.a).cast<double>();
-    const Vec2d  v2  = (l2.b - l2.a).cast<double>();
-    double       denom  = cross2(v1, v2);
-    if (fabs(denom) < EPSILON)
-#if 0
-        // Lines are collinear. Return true if they are coincident (overlappign).
-        return ! (fabs(nume_a) < EPSILON && fabs(nume_b) < EPSILON);
-#else
-        return false;
-#endif
-    const Vec2d v12 = (l1.a - l2.a).cast<double>();
-    double nume_a = cross2(v2, v12);
-    double nume_b = cross2(v1, v12);
-    double t1 = nume_a / denom;
-    double t2 = nume_b / denom;
-    if (t1 >= 0 && t1 <= 1.0f && t2 >= 0 && t2 <= 1.0f) {
-        // Get the intersection point.
-        (*intersection) = (l1.a.cast<double>() + t1 * v1).cast<coord_t>();
-        return true;
-    }
-    return false;  // not intersecting
+    return line_alg::intersection(*this, l2, intersection);
 }
 
 bool Line::clip_with_bbox(const BoundingBox &bbox)

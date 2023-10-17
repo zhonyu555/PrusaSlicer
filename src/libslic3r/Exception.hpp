@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2021 Vojtěch Bubník @bubnikv, David Kocík @kocikdav
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef _libslic3r_Exception_h_
 #define _libslic3r_Exception_h_
 
@@ -15,6 +19,7 @@ class Exception : public std::runtime_error { using std::runtime_error::runtime_
 SLIC3R_DERIVE_EXCEPTION(CriticalException,  Exception);
 SLIC3R_DERIVE_EXCEPTION(RuntimeError,       CriticalException);
 SLIC3R_DERIVE_EXCEPTION(LogicError,         CriticalException);
+SLIC3R_DERIVE_EXCEPTION(HardCrash,          CriticalException);
 SLIC3R_DERIVE_EXCEPTION(InvalidArgument,    LogicError);
 SLIC3R_DERIVE_EXCEPTION(OutOfRange,         LogicError);
 SLIC3R_DERIVE_EXCEPTION(IOError,            CriticalException);

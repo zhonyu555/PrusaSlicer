@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "ConfigSnapshotDialog.hpp"
 #include "I18N.hpp"
 
@@ -5,9 +9,11 @@
 
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Time.hpp"
+#include "libslic3r/Color.hpp"
 #include "GUI_App.hpp"
 #include "MainFrame.hpp"
 #include "wxExtensions.hpp"
+#include "format.hpp"
 
 namespace Slic3r { 
 namespace GUI {
@@ -29,11 +35,18 @@ static wxString format_reason(const Config::Snapshot::Reason reason)
     }
 }
 
-static wxString generate_html_row(const Config::Snapshot &snapshot, bool row_even, bool snapshot_active)
+static std::string get_color(wxColour colour) 
 {
+    return encode_color(ColorRGB(colour.Red(), colour.Green(), colour.Blue()));
+};
+
+static wxString generate_html_row(const Config::Snapshot &snapshot, bool row_even, bool snapshot_active, bool dark_mode)
+{    
     // Start by declaring a row with an alternating background color.
     wxString text = "<tr bgcolor=\"";
-    text += snapshot_active ? "#B3FFCB" : (row_even ? "#FFFFFF" : "#D5D5D5");
+    text += snapshot_active ? 
+            dark_mode ? "#208a20"  : "#B3FFCB" : 
+            (row_even ? get_color(wxGetApp().get_window_default_clr()/*wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW)*/) : dark_mode ? "#656565" : "#D5D5D5" );
     text += "\">";
     text += "<td>";
     
@@ -68,7 +81,7 @@ static wxString generate_html_row(const Config::Snapshot &snapshot, bool row_eve
         if (vc.version.max_slic3r_version != Semver::inf())
             text += ", " + _(L("max PrusaSlicer version")) + ": " + vc.version.max_slic3r_version.to_string();
         text += "<br>";
-        for (const std::pair<std::string, std::set<std::string>> &model : vc.models_variants_installed) {
+        for (const auto& model : vc.models_variants_installed) {
             text += _(L("model")) + ": " + model.first + ", " + _(L("variants")) + ": ";
             for (const std::string &variant : model.second) {
                 if (&variant != &*model.second.begin())
@@ -81,10 +94,10 @@ static wxString generate_html_row(const Config::Snapshot &snapshot, bool row_eve
     }
 
     if (! compatible) {
-        text += "<p align=\"right\">" + from_u8((boost::format(_utf8(L("Incompatible with this %s"))) % SLIC3R_APP_NAME).str()) + "</p>";
+        text += "<p align=\"right\">" + format_wxstr(_L("Incompatible with this %s"), SLIC3R_APP_NAME) + "</p>";
     }
     else if (! snapshot_active)
-        text += "<p align=\"right\"><a href=\"" + snapshot.id + "\">" + _(L("Activate")) + "</a></p>";
+        text += "<p align=\"right\"><a href=\"" + snapshot.id + "\">" + _L("Activate") + "</a></p>";
     text += "</td>";
 	text += "</tr>";
     return text;
@@ -92,14 +105,15 @@ static wxString generate_html_row(const Config::Snapshot &snapshot, bool row_eve
 
 static wxString generate_html_page(const Config::SnapshotDB &snapshot_db, const wxString &on_snapshot)
 {
+    bool dark_mode = wxGetApp().dark_mode();
     wxString text = 
         "<html>"
-        "<body bgcolor=\"#ffffff\" cellspacing=\"2\" cellpadding=\"0\" border=\"0\" link=\"#800000\">"
-        "<font color=\"#000000\">";
+        "<body bgcolor=\"" + get_color(wxGetApp().get_window_default_clr()/*wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW)*/) + "\" cellspacing=\"2\" cellpadding=\"0\" border=\"0\" link=\"#800000\">"
+        "<font color=\"" + get_color(wxGetApp().get_label_clr_default()) + "\">";
     text += "<table style=\"width:100%\">";
     for (size_t i_row = 0; i_row < snapshot_db.snapshots().size(); ++ i_row) {
         const Config::Snapshot &snapshot = snapshot_db.snapshots()[snapshot_db.snapshots().size() - i_row - 1];
-        text += generate_html_row(snapshot, i_row & 1, snapshot.id == on_snapshot);
+        text += generate_html_row(snapshot, i_row & 1, snapshot.id == on_snapshot, dark_mode);
     }
     text +=
         "</table>"
@@ -115,8 +129,12 @@ ConfigSnapshotDialog::ConfigSnapshotDialog(const Config::SnapshotDB &snapshot_db
                wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxMAXIMIZE_BOX)
 {
     this->SetFont(wxGetApp().normal_font());
-    this->SetBackgroundColour(*wxWHITE);
-    
+#ifdef _WIN32
+    wxGetApp().UpdateDarkUI(this);
+#else
+    this->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+#endif
+
     wxBoxSizer* vsizer = new wxBoxSizer(wxVERTICAL);
     this->SetSizer(vsizer);
 
@@ -142,6 +160,7 @@ ConfigSnapshotDialog::ConfigSnapshotDialog(const Config::SnapshotDB &snapshot_db
     }
     
     wxStdDialogButtonSizer* buttons = this->CreateStdDialogButtonSizer(wxCLOSE);
+    wxGetApp().UpdateDarkUI(static_cast<wxButton*>(this->FindWindowById(wxID_CLOSE, this)));
     this->SetEscapeId(wxID_CLOSE);
     this->Bind(wxEVT_BUTTON, &ConfigSnapshotDialog::onCloseDialog, this, wxID_CLOSE);
     vsizer->Add(buttons, 0, wxEXPAND | wxRIGHT | wxBOTTOM, 3);

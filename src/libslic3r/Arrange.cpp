@@ -1,9 +1,12 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Arrange.hpp"
-#include "SVG.hpp"
 
 #include "BoundingBox.hpp"
 
-#include <libnest2d/backends/clipper/geometries.hpp>
+#include <libnest2d/backends/libslic3r/geometries.hpp>
 #include <libnest2d/optimizers/nlopt/subplex.hpp>
 #include <libnest2d/placers/nfpplacer.hpp>
 #include <libnest2d/selections/firstfit.hpp>
@@ -13,6 +16,7 @@
 #include <ClipperUtils.hpp>
 
 #include <boost/geometry/index/rtree.hpp>
+#include <boost/container/small_vector.hpp>
 
 #if defined(_MSC_VER) && defined(__clang__)
 #define BOOST_NO_CXX17_HDR_STRING_VIEW
@@ -54,23 +58,22 @@ namespace Slic3r {
 
 template<class Tout = double, class = FloatingOnly<Tout>, int...EigenArgs>
 inline constexpr Eigen::Matrix<Tout, 2, EigenArgs...> unscaled(
-    const ClipperLib::IntPoint &v) noexcept
+    const Slic3r::ClipperLib::IntPoint &v) noexcept
 {
-    return Eigen::Matrix<Tout, 2, EigenArgs...>{unscaled<Tout>(v.X),
-                                                unscaled<Tout>(v.Y)};
+    return Eigen::Matrix<Tout, 2, EigenArgs...>{unscaled<Tout>(v.x()),
+                                                unscaled<Tout>(v.y())};
 }
 
 namespace arrangement {
 
 using namespace libnest2d;
-namespace clppr = ClipperLib;
 
 // Get the libnest2d types for clipper backend
-using Item         = _Item<clppr::Polygon>;
-using Box          = _Box<clppr::IntPoint>;
-using Circle       = _Circle<clppr::IntPoint>;
-using Segment      = _Segment<clppr::IntPoint>;
-using MultiPolygon = TMultiShape<clppr::Polygon>;
+using Item         = _Item<ExPolygon>;
+using Box          = _Box<Point>;
+using Circle       = _Circle<Point>;
+using Segment      = _Segment<Point>;
+using MultiPolygon = ExPolygons;
 
 // Summon the spatial indexing facilities from boost
 namespace bgi = boost::geometry::index;
@@ -87,7 +90,13 @@ template<class PConf>
 void fill_config(PConf& pcfg, const ArrangeParams &params) {
 
     // Align the arranged pile into the center of the bin
-    pcfg.alignment = PConf::Alignment::CENTER;
+    switch (params.alignment) {
+    case Pivots::Center: pcfg.alignment = PConf::Alignment::CENTER; break;
+    case Pivots::BottomLeft: pcfg.alignment = PConf::Alignment::BOTTOM_LEFT; break;
+    case Pivots::BottomRight: pcfg.alignment = PConf::Alignment::BOTTOM_RIGHT; break;
+    case Pivots::TopLeft: pcfg.alignment = PConf::Alignment::TOP_LEFT; break;
+    case Pivots::TopRight: pcfg.alignment = PConf::Alignment::TOP_RIGHT; break;
+    }
 
     // Start placing the items from the center of the print bed
     pcfg.starting_point = PConf::Alignment::CENTER;
@@ -127,8 +136,8 @@ template<class TBin>
 class AutoArranger {
 public:
     // Useful type shortcuts...
-    using Placer = typename placers::_NofitPolyPlacer<clppr::Polygon, TBin>;
-    using Selector = selections::_FirstFitSelection<clppr::Polygon>;
+    using Placer = typename placers::_NofitPolyPlacer<ExPolygon, TBin>;
+    using Selector = selections::_FirstFitSelection<ExPolygon>;
     using Packer   = _Nester<Placer, Selector>;
     using PConfig  = typename Packer::PlacementConfig;
     using Distance = TCoord<PointImpl>;
@@ -168,7 +177,7 @@ protected:
     // as it possibly can be but at the same time, it has to provide
     // reasonable results.
     std::tuple<double /*score*/, Box /*farthest point from bin center*/>
-    objfunc(const Item &item, const clppr::IntPoint &bincenter)
+    objfunc(const Item &item, const Point &bincenter)
     {
         const double bin_area = m_bin_area;
         const SpatIndex& spatindex = m_rtree;
@@ -220,12 +229,12 @@ protected:
         
         switch (compute_case) {
         case BIG_ITEM: {
-            const clppr::IntPoint& minc = ibb.minCorner(); // bottom left corner
-            const clppr::IntPoint& maxc = ibb.maxCorner(); // top right corner
+            const Point& minc = ibb.minCorner(); // bottom left corner
+            const Point& maxc = ibb.maxCorner(); // top right corner
 
             // top left and bottom right corners
-            clppr::IntPoint top_left{getX(minc), getY(maxc)};
-            clppr::IntPoint bottom_right{getX(maxc), getY(minc)};
+            Point top_left{getX(minc), getY(maxc)};
+            Point bottom_right{getX(maxc), getY(minc)};
 
             // Now the distance of the gravity center will be calculated to the
             // five anchor points and the smallest will be chosen.
@@ -254,7 +263,7 @@ protected:
             auto& index = isBig(item.area()) ? spatindex : smalls_spatindex;
 
             // Query the spatial index for the neighbors
-            std::vector<SpatElement> result;
+            boost::container::small_vector<SpatElement, 100> result;
             result.reserve(index.size());
 
             index.query(query, std::back_inserter(result));
@@ -381,7 +390,7 @@ public:
         });
 
         if (stopcond) m_pck.stopCondition(stopcond);
-        
+
         m_pck.configure(m_pconf);
     }
      
@@ -427,24 +436,11 @@ template<> std::function<double(const Item&)> AutoArranger<Circle>::get_objfn()
 {
     auto bincenter = m_bin.center();
     return [this, bincenter](const Item &item) {
-        
+
         auto result = objfunc(item, bincenter);
-        
+
         double score = std::get<0>(result);
-        
-        auto isBig = [this](const Item& itm) {
-            return itm.area() / m_bin_area > BIG_ITEM_TRESHOLD ;
-        };
-        
-        if(isBig(item)) {
-            auto mp = m_merged_pile;
-            mp.push_back(item.transformedShape());
-            auto chull = sl::convexHull(mp);
-            double miss = Placer::overfit(chull, m_bin);
-            if(miss < 0) miss = 0;
-            score += miss*miss;
-        }
-        
+
         return score;
     };
 }
@@ -452,7 +448,7 @@ template<> std::function<double(const Item&)> AutoArranger<Circle>::get_objfn()
 // Specialization for a generalized polygon.
 // Warning: this is unfinished business. It may or may not work.
 template<>
-std::function<double(const Item &)> AutoArranger<clppr::Polygon>::get_objfn()
+std::function<double(const Item &)> AutoArranger<ExPolygon>::get_objfn()
 {
     auto bincenter = sl::boundingBox(m_bin).center();
     return [this, bincenter](const Item &item) {
@@ -474,6 +470,12 @@ template<class S> Radians min_area_boundingbox_rotation(const S &sh)
         .angleToX();
 }
 
+template<class S>
+Radians fit_into_box_rotation(const S &sh, const _Box<TPoint<S>> &box)
+{
+    return fitIntoBoxRotation<S, TCompute<S>, boost::rational<LargeInt>>(sh, box);
+}
+
 template<class BinT> // Arrange for arbitrary bin type
 void _arrange(
         std::vector<Item> &           shapes,
@@ -485,7 +487,7 @@ void _arrange(
 {
     // Integer ceiling the min distance from the bed perimeters
     coord_t md = params.min_obj_distance;
-    md = md / 2;
+    md = md / 2 - params.min_bed_distance;
     
     auto corrected_bin = bin;
     sl::offset(corrected_bin, md);
@@ -493,11 +495,11 @@ void _arrange(
     mod_params.min_obj_distance = 0;
 
     AutoArranger<BinT> arranger{corrected_bin, mod_params, progressfn, stopfn};
-    
+
     auto infl = coord_t(std::ceil(params.min_obj_distance / 2.0));
     for (Item& itm : shapes) itm.inflate(infl);
     for (Item& itm : excludes) itm.inflate(infl);
-    
+
     remove_large_items(excludes, corrected_bin);
 
     // If there is something on the plate
@@ -507,21 +509,36 @@ void _arrange(
     inp.reserve(shapes.size() + excludes.size());
     for (auto &itm : shapes  ) inp.emplace_back(itm);
     for (auto &itm : excludes) inp.emplace_back(itm);
-    
+
     // Use the minimum bounding box rotation as a starting point.
     // TODO: This only works for convex hull. If we ever switch to concave
     // polygon nesting, a convex hull needs to be calculated.
-    if (params.allow_rotations)
-        for (auto &itm : shapes)
+    if (params.allow_rotations) {
+        for (auto &itm : shapes) {
             itm.rotation(min_area_boundingbox_rotation(itm.rawShape()));
 
-    arranger(inp.begin(), inp.end());
+            // If the item is too big, try to find a rotation that makes it fit
+            if constexpr (std::is_same_v<BinT, Box>) {
+                auto bb = itm.boundingBox();
+                if (bb.width() >= bin.width() || bb.height() >= bin.height())
+                    itm.rotate(fit_into_box_rotation(itm.transformedShape(), bin));
+            }
+        }
+    }
+
+    if (sl::area(corrected_bin) > 0)
+        arranger(inp.begin(), inp.end());
+    else {
+        for (Item &itm : inp)
+            itm.binId(BIN_ID_UNSET);
+    }
+
     for (Item &itm : inp) itm.inflate(-infl);
 }
 
 inline Box to_nestbin(const BoundingBox &bb) { return Box{{bb.min(X), bb.min(Y)}, {bb.max(X), bb.max(Y)}};}
 inline Circle to_nestbin(const CircleBed &c) { return Circle({c.center()(0), c.center()(1)}, c.radius()); }
-inline clppr::Polygon to_nestbin(const Polygon &p) { return sl::create<clppr::Polygon>(Slic3rMultiPoint_to_ClipperPath(p)); }
+inline ExPolygon to_nestbin(const Polygon &p) { return ExPolygon{p}; }
 inline Box to_nestbin(const InfiniteBed &bed) { return Box::infinite({bed.center.x(), bed.center.y()}); }
 
 inline coord_t width(const BoundingBox& box) { return box.max.x() - box.min.x(); }
@@ -539,7 +556,7 @@ static CircleBed to_circle(const Point &center, const Points& points) {
     std::vector<double> vertex_distances;
     double avg_dist = 0;
     
-    for (auto pt : points)
+    for (const Point& pt : points)
     {
         double distance = distance_to(center, pt);
         vertex_distances.push_back(distance);
@@ -568,23 +585,15 @@ static void process_arrangeable(const ArrangePolygon &arrpoly,
     const Vec2crd &offs     = arrpoly.translation;
     double         rotation = arrpoly.rotation;
 
-    if (p.is_counter_clockwise()) p.reverse();
-
-    clppr::Polygon clpath(Slic3rMultiPoint_to_ClipperPath(p));
-
-    // This fixes:
-    // https://github.com/prusa3d/PrusaSlicer/issues/2209
-    if (clpath.Contour.size() < 3)
-        return;
-
-    auto firstp = clpath.Contour.front();
-    clpath.Contour.emplace_back(firstp);
-
-    outp.emplace_back(std::move(clpath));
+    outp.emplace_back(std::move(p));
     outp.back().rotation(rotation);
     outp.back().translation({offs.x(), offs.y()});
+    outp.back().inflate(arrpoly.inflation);
     outp.back().binId(arrpoly.bed_idx);
     outp.back().priority(arrpoly.priority);
+    outp.back().setOnPackedFn([&arrpoly](Item &itm){
+        itm.inflate(-arrpoly.inflation);
+    });
 }
 
 template<class Fn> auto call_with_bed(const Points &bed, Fn &&fn)
@@ -599,12 +608,18 @@ template<class Fn> auto call_with_bed(const Points &bed, Fn &&fn)
         auto      parea = poly_area(bed);
 
         if ((1.0 - parea / area(bb)) < 1e-3)
-            return fn(bb);
+            return fn(RectangleBed{bb});
         else if (!std::isnan(circ.radius()))
             return fn(circ);
         else
-            return fn(Polygon(bed));
+            return fn(IrregularBed{ExPolygon(bed)});
     }
+}
+
+bool is_box(const Points &bed)
+{
+    return !bed.empty() &&
+           ((1.0 - poly_area(bed) / area(BoundingBox(bed))) < 1e-3);
 }
 
 template<>
@@ -613,9 +628,7 @@ void arrange(ArrangePolygons &      items,
              const Points &         bed,
              const ArrangeParams &  params)
 {
-    call_with_bed(bed, [&](const auto &bin) {
-        arrange(items, excludes, bin, params);
-    });
+    arrange(items, excludes, to_arrange_bed(bed), params);
 }
 
 template<class BedT>
@@ -624,7 +637,7 @@ void arrange(ArrangePolygons &      arrangables,
              const BedT &           bed,
              const ArrangeParams &  params)
 {
-    namespace clppr = ClipperLib;
+    namespace clppr = Slic3r::ClipperLib;
     
     std::vector<Item> items, fixeditems;
     items.reserve(arrangables.size());
@@ -643,8 +656,8 @@ void arrange(ArrangePolygons &      arrangables,
     _arrange(items, fixeditems, to_nestbin(bed), params, pri, cfn);
     
     for(size_t i = 0; i < items.size(); ++i) {
-        clppr::IntPoint tr = items[i].translation();
-        arrangables[i].translation = {coord_t(tr.X), coord_t(tr.Y)};
+        Point tr = items[i].translation();
+        arrangables[i].translation = {coord_t(tr.x()), coord_t(tr.y())};
         arrangables[i].rotation    = items[i].rotation();
         arrangables[i].bed_idx     = items[i].binId();
     }
@@ -654,6 +667,114 @@ template void arrange(ArrangePolygons &items, const ArrangePolygons &excludes, c
 template void arrange(ArrangePolygons &items, const ArrangePolygons &excludes, const CircleBed &bed, const ArrangeParams &params);
 template void arrange(ArrangePolygons &items, const ArrangePolygons &excludes, const Polygon &bed, const ArrangeParams &params);
 template void arrange(ArrangePolygons &items, const ArrangePolygons &excludes, const InfiniteBed &bed, const ArrangeParams &params);
+
+ArrangeBed to_arrange_bed(const Points &bedpts)
+{
+    ArrangeBed ret;
+
+    call_with_bed(bedpts, [&](const auto &bed) {
+        ret = bed;
+    });
+
+    return ret;
+}
+
+void arrange(ArrangePolygons &items,
+             const ArrangePolygons &excludes,
+             const SegmentedRectangleBed &bed,
+             const ArrangeParams &params)
+{
+    arrange(items, excludes, bed.bb, params);
+
+    if (! excludes.empty())
+        return;
+
+    auto it = std::max_element(items.begin(), items.end(),
+                               [](auto &i1, auto &i2) {
+                                   return i1.bed_idx < i2.bed_idx;
+                               });
+
+    size_t beds = 0;
+    if (it != items.end())
+        beds = it->bed_idx + 1;
+
+    std::vector<BoundingBox> pilebb(beds);
+
+    for (auto &itm : items) {
+        if (itm.bed_idx >= 0)
+            pilebb[itm.bed_idx].merge(get_extents(itm.transformed_poly()));
+    }
+
+    auto piecesz = unscaled(bed.bb).size();
+    piecesz.x() /= bed.segments.x();
+    piecesz.y() /= bed.segments.y();
+
+    for (size_t bedidx = 0; bedidx < beds; ++bedidx) {
+        BoundingBox bb;
+        auto pilesz = unscaled(pilebb[bedidx]).size();
+        bb.max.x() = scaled(std::ceil(pilesz.x() / piecesz.x()) * piecesz.x());
+        bb.max.y() = scaled(std::ceil(pilesz.y() / piecesz.y()) * piecesz.y());
+        switch (params.alignment) {
+        case Pivots::BottomLeft:
+            bb.translate(bed.bb.min - bb.min);
+            break;
+        case Pivots::TopRight:
+            bb.translate(bed.bb.max - bb.max);
+            break;
+        case Pivots::BottomRight: {
+            Point bedref{bed.bb.max.x(), bed.bb.min.y()};
+            Point bbref {bb.max.x(), bb.min.y()};
+            bb.translate(bedref - bbref);
+            break;
+        }
+        case Pivots::TopLeft: {
+            Point bedref{bed.bb.min.x(), bed.bb.max.y()};
+            Point bbref {bb.min.x(), bb.max.y()};
+            bb.translate(bedref - bbref);
+            break;
+        }
+        case Pivots::Center: {
+            bb.translate(bed.bb.center() - bb.center());
+            break;
+        }
+        }
+
+        Vec2crd d = bb.center() - pilebb[bedidx].center();
+
+        auto bedbb = bed.bb;
+        bedbb.offset(-params.min_bed_distance);
+        auto pilebbx = pilebb[bedidx];
+        pilebbx.translate(d);
+
+        Point corr{0, 0};
+        corr.x() = -std::min(0, pilebbx.min.x() - bedbb.min.x())
+                   -std::max(0, pilebbx.max.x() - bedbb.max.x());
+        corr.y() = -std::min(0, pilebbx.min.y() - bedbb.min.y())
+                   -std::max(0, pilebbx.max.y() - bedbb.max.y());
+
+        d += corr;
+
+        for (auto &itm : items)
+            if (itm.bed_idx == int(bedidx))
+                itm.translation += d;
+    }
+}
+
+BoundingBox bounding_box(const InfiniteBed &bed)
+{
+    BoundingBox ret;
+    using C = coord_t;
+
+    // It is important for Mx and My to be strictly less than half of the
+    // range of type C. width(), height() and area() will not overflow this way.
+    C Mx = C((std::numeric_limits<C>::lowest() + 2 * bed.center.x()) / 4.01);
+    C My = C((std::numeric_limits<C>::lowest() + 2 * bed.center.y()) / 4.01);
+
+    ret.max = bed.center - Point{Mx, My};
+    ret.min = bed.center + Point{Mx, My};
+
+    return ret;
+}
 
 } // namespace arr
 } // namespace Slic3r

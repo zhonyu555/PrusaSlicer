@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2021 - 2023 Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef SLA_PAD_HPP
 #define SLA_PAD_HPP
 
@@ -6,14 +10,16 @@
 #include <cmath>
 #include <string>
 
+#include <libslic3r/Point.hpp>
+
+struct indexed_triangle_set;
+
 namespace Slic3r {
 
 class ExPolygon;
 class Polygon;
 using ExPolygons = std::vector<ExPolygon>;
-using Polygons = std::vector<Polygon>;
-
-class TriangleMesh;
+using Polygons = std::vector<Polygon, PointsAllocator<Polygon>>;
 
 namespace sla {
 
@@ -21,17 +27,17 @@ using ThrowOnCancel = std::function<void(void)>;
 
 /// Calculate the polygon representing the silhouette.
 void pad_blueprint(
-    const TriangleMesh &mesh,       // input mesh
+    const indexed_triangle_set &mesh,       // input mesh
     ExPolygons &        output,     // Output will be merged with
     const std::vector<float> &,     // Exact Z levels to sample
     ThrowOnCancel thrfn = [] {}); // Function that throws if cancel was requested
 
 void pad_blueprint(
-    const TriangleMesh &mesh,
-    ExPolygons &        output,
-    float               samplingheight = 0.1f,  // The height range to sample
-    float               layerheight    = 0.05f, // The sampling height
-    ThrowOnCancel       thrfn = [] {});
+    const indexed_triangle_set &mesh,
+    ExPolygons &                output,
+    float         samplingheight = 0.1f,  // The height range to sample
+    float         layerheight    = 0.05f, // The sampling height
+    ThrowOnCancel thrfn          = [] {});
 
 struct PadConfig {
     double wall_thickness_mm = 1.;
@@ -82,11 +88,12 @@ struct PadConfig {
     std::string validate() const;
 };
 
-void create_pad(const ExPolygons &support_contours,
-                const ExPolygons &model_contours,
-                TriangleMesh &    output_mesh,
-                const PadConfig & = PadConfig(),
-                ThrowOnCancel throw_on_cancel = []{});
+void create_pad(
+    const ExPolygons &    support_contours,
+    const ExPolygons &    model_contours,
+    indexed_triangle_set &output_mesh,
+    const PadConfig &             = PadConfig(),
+    ThrowOnCancel throw_on_cancel = [] {});
 
 } // namespace sla
 } // namespace Slic3r

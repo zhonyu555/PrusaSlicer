@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2018 - 2021 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966
+///|/ Copyright (c) SuperSlicer 2018 - 2019 Remi Durand @supermerill
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "../ClipperUtils.hpp"
 #include "../ShortestPath.hpp"
 #include "../Surface.hpp"
@@ -53,7 +58,7 @@ static inline Polyline make_wave(
     polyline.points.reserve(points.size());
     for (auto& point : points) {
         point(1) += offset;
-        point(1) = clamp(0., height, double(point(1)));
+        point(1) = std::clamp(double(point.y()), 0., height);
         if (vertical)
             std::swap(point(0), point(1));
         polyline.points.emplace_back((point * scaleFactor).cast<coord_t>());
@@ -166,7 +171,7 @@ void FillGyroid::_fill_surface_single(
     coord_t     distance = coord_t(scale_(this->spacing) / density_adjusted);
 
     // align bounding box to a multiple of our grid module
-    bb.merge(_align_to_grid(bb.min, Point(2*M_PI*distance, 2*M_PI*distance)));
+    bb.merge(align_to_grid(bb.min, Point(2*M_PI*distance, 2*M_PI*distance)));
 
     // generate pattern
     Polylines polylines = make_gyroid_waves(
@@ -180,7 +185,7 @@ void FillGyroid::_fill_surface_single(
 	for (Polyline &pl : polylines)
 		pl.translate(bb.min);
 
-	polylines = intersection_pl(polylines, to_polygons(expolygon));
+	polylines = intersection_pl(polylines, expolygon);
 
     if (! polylines.empty()) {
 		// Remove very small bits, but be careful to not remove infill lines connecting thin walls!

@@ -71,7 +71,7 @@ is currently unsupported because some of the dependencies don't support this, mo
 Please note that the `CMAKE_OSX_DEPLOYMENT_TARGET` and `CMAKE_OSX_SYSROOT` options need to be set the same
 on both the dependencies bundle as well as PrusaSlicer itself.
 
-Official Mac PrusaSlicer builds are currently built against SDK 10.9 to ensure compatibility with older Macs.
+Official macOS PrusaSlicer builds are currently (as of PrusaSlicer 2.5) built against SDK 10.12 to ensure compatibility with older Macs.
 
 _Warning:_ XCode may be set such that it rejects SDKs bellow some version (silently, more or less).
 This is set in the property list file
@@ -90,8 +90,9 @@ Works on a fresh installation of MacOS Catalina 10.15.6
     
 - Enter:
 
-```brew install cmake git gettext
+```
 brew update
+brew install cmake git gettext
 brew upgrade
 git clone https://github.com/prusa3d/PrusaSlicer/
 cd PrusaSlicer/deps
@@ -105,3 +106,4 @@ cd build
 cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local"
 make
 src/prusa-slicer
+```

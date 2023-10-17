@@ -1,3 +1,9 @@
+///|/ Copyright (c) Prusa Research 2018 - 2022 David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 Spencer Owen @spuder
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Repetier_hpp_
 #define slic3r_Repetier_hpp_
 
@@ -6,7 +12,6 @@
 #include <boost/optional.hpp>
 
 #include "PrintHost.hpp"
-
 
 namespace Slic3r {
 
@@ -19,23 +24,20 @@ public:
     Repetier(DynamicPrintConfig *config);
     ~Repetier() override = default;
 
-    const char* get_name() const;
+    const char* get_name() const override;
 
     bool test(wxString &curl_msg) const override;
     wxString get_test_ok_msg () const override;
     wxString get_test_failed_msg (wxString &msg) const override;
-    bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn) const override;
+    bool upload(PrintHostUpload upload_data, ProgressFn prorgess_fn, ErrorFn error_fn, InfoFn info_fn) const override;
     bool has_auto_discovery() const override { return false; }
     bool can_test() const override { return true; }
-    bool can_start_print() const override { return false; }
+    PrintHostPostUploadActions get_post_upload_actions() const override { return PrintHostPostUploadAction::StartPrint; }
     bool supports_multiple_printers() const override { return true; }
     std::string get_host() const override { return host; }
     
     bool get_groups(wxArrayString &groups) const override;
     bool get_printers(wxArrayString &printers) const override;
-
-protected:
-    virtual bool validate_version_text(const boost::optional<std::string> &version_text) const;
 
 private:
     std::string host;
