@@ -34,9 +34,9 @@ prusaslicer_add_cmake_project(OpenVDB
         -DDISABLE_DEPENDENCY_VERSION_CHECKS=ON # Centos6 has old zlib
 )
 
+ExternalProject_Get_Property(dep_OpenVDB BINARY_DIR)
 if (MSVC)
     if (${DEP_DEBUG})
-        ExternalProject_Get_Property(dep_OpenVDB BINARY_DIR)
         ExternalProject_Add_Step(dep_OpenVDB build_debug
             DEPENDEES build
             DEPENDERS install
@@ -45,4 +45,27 @@ if (MSVC)
             WORKING_DIRECTORY "${BINARY_DIR}"
         )
     endif ()
+elseif (APPLE)
+    # Fix zstd not being found during linking
+    find_program(HOMEBREW_EXECUTABLE brew NO_CACHE)
+    if(HOMEBREW_EXECUTABLE STREQUAL "HOMEBREW_EXECUTABLE-NOTFOUND")
+        message(FATAL_ERROR "Homebrew must be installed in order to install zstd.")
+    endif ()
+
+    execute_process(COMMAND ${HOMEBREW_EXECUTABLE} --prefix zstd
+                    RESULT_VARIABLE HOMEBREW_ZSTD_PREFIX_RESULT
+                    OUTPUT_VARIABLE HOMEBREW_ZSTD_PREFIX
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    if(NOT HOMEBREW_ZSTD_PREFIX_RESULT EQUAL "0")
+        message(FATAL_ERROR "Could not find the zstd Homebrew keg. Ensure that zstd is installed via homebrew.")
+    endif ()
+
+    message(STATUS "Found zstd Homebrew prefix: ${HOMEBREW_ZSTD_PREFIX}")
+
+    ExternalProject_Add_Step(dep_OpenVDB fix_zstd_linking
+        DEPENDEES configure
+        DEPENDERS build
+        COMMAND ${CMAKE_COMMAND} ../dep_OpenVDB -DCMAKE_EXE_LINKER_FLAGS:STRING=-L${HOMEBREW_ZSTD_PREFIX}/lib
+        WORKING_DIRECTORY "${BINARY_DIR}"
+    )
 endif ()
