@@ -1464,6 +1464,7 @@ void TabPrint::build()
         line.append_option(optgroup->get_option("top_solid_min_thickness"));
         line.append_option(optgroup->get_option("bottom_solid_min_thickness"));
         optgroup->append_line(line);
+        optgroup->append_single_option_line("reduce_shell_thickness");
 		line = { "", "" };
 	    line.full_width = 1;
 	    line.widget = [this](wxWindow* parent) {
