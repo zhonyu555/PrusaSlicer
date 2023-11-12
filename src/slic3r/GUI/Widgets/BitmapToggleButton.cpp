@@ -6,7 +6,7 @@ BitmapToggleButton::BitmapToggleButton(wxWindow* parent, const wxString& label, 
 {
     const long style = wxBORDER_NONE | wxBU_EXACTFIT | wxBU_LEFT;
     if (label.IsEmpty())
-        wxBitmapToggleButton::Create(parent, id, wxNullBitmap, wxDefaultPosition, wxDefaultSize, style);
+        wxBitmapToggleButton::Create(parent, id, wxNullBitmap, wxDefaultPosition, wxDefaultSize, style | wxBU_NOTEXT);
     else {
 #ifdef __WXGTK3__
         wxSize label_size = parent->GetTextExtent(label);
@@ -15,7 +15,7 @@ BitmapToggleButton::BitmapToggleButton(wxWindow* parent, const wxString& label, 
         wxSize def_size = wxDefaultSize;
 #endif
         // Call Create() from wxToggleButton instead of wxBitmapToggleButton to allow add Label text under Linux
-        wxToggleButton::Create(parent, id, label, wxDefaultPosition, def_size, style);
+        wxToggleButton::Create(parent, id, label, wxDefaultPosition, def_size, style | wxBU_NOTEXT);
     }
 
 #ifdef __WXMSW__
