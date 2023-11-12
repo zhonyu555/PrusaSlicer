@@ -397,12 +397,6 @@ ModelVolumePtrs prepare_volumes_to_slice(const ModelVolume &mv)
     }
     return result;
 }
-
-TransformationType get_transformation_type(const Selection &selection)
-{
-    assert(selection.is_single_full_object() || selection.is_single_volume());
-    return selection.is_single_volume() ? TransformationType::Local_Relative_Joint : TransformationType::Instance_Relative_Joint; // object
-}
 } // namespace
 
 bool GLGizmoEmboss::do_mirror(size_t axis)
@@ -429,8 +423,8 @@ bool GLGizmoEmboss::do_mirror(size_t axis)
         Selection &selection = m_parent.get_selection();
         selection.setup_cache();
 
-        auto selection_mirror_fnc = [&selection, &axis]() { selection.mirror((Axis) axis, get_transformation_type(selection)); };
-        selection_transform(selection, selection_mirror_fnc, m_volume);
+        auto selection_mirror_fnc = [&selection, &axis]() { selection.mirror((Axis) axis, get_drag_transformation_type(selection)); };
+        selection_transform(selection, selection_mirror_fnc);
 
         m_parent.do_mirror(L("Set Mirror"));
         wxGetApp().obj_manipul()->UpdateAndShow(true);
@@ -506,34 +500,13 @@ bool GLGizmoEmboss::on_mouse_for_rotation(const wxMouseEvent &mouse_event)
     if (!m_dragging) return used;
 
     if (mouse_event.Dragging()) {
-        if (!m_rotate_start_angle.has_value()) {
-            // when m_rotate_start_angle is not set mean it is not Dragging
-            // when angle_opt is not set than angle is Zero
-            const std::optional<float> &angle_opt = m_style_manager.get_style().angle;
-            m_rotate_start_angle = angle_opt.value_or(0.f);
-        }
-
-        double angle = m_rotate_gizmo.get_angle();
-        angle -= PI / 2; // Grabber is upward
-
-        // temporary rotation
-        Selection& selection = m_parent.get_selection();
-        selection.rotate(Vec3d(0., 0., angle), get_transformation_type(selection));
-
-        angle += *m_rotate_start_angle;
-        // move to range <-M_PI, M_PI>
-        Geometry::to_range_pi_pi(angle);
-
-        // set into activ style
+        // check that style is activ
         assert(m_style_manager.is_active_font());
-        if (m_style_manager.is_active_font()) {
-            std::optional<float> angle_opt;
-            if (!is_approx(angle, 0.))
-                angle_opt = angle;
-            m_style_manager.get_style().angle = angle_opt;
-        }
+        if (!m_style_manager.is_active_font())
+            return used;
 
-        volume_transformation_changing();
+        std::optional<float> &angle_opt = m_style_manager.get_style().angle;
+        dragging_rotate_gizmo(m_rotate_gizmo.get_angle(), angle_opt, m_rotate_start_angle, m_parent.get_selection());
     }
     return used;
 }
@@ -544,12 +517,9 @@ bool GLGizmoEmboss::on_mouse_for_translate(const wxMouseEvent &mouse_event)
     if (m_volume == nullptr)
         return false;
     
-    std::optional<double> wanted_up_limit;
-    if (m_keep_up)
-        wanted_up_limit = up_limit;
     const Camera &camera = wxGetApp().plater()->get_camera();
     bool was_dragging = m_surface_drag.has_value();
-    bool res = on_mouse_surface_drag(mouse_event, camera, m_surface_drag, m_parent, m_raycast_manager, up_limit);
+    bool res = on_mouse_surface_drag(mouse_event, camera, m_surface_drag, m_parent, m_raycast_manager, UP_LIMIT);
     bool is_dragging = m_surface_drag.has_value();
 
     // End with surface dragging?
@@ -569,13 +539,14 @@ bool GLGizmoEmboss::on_mouse_for_translate(const wxMouseEvent &mouse_event)
         calculate_scale();
 
         // Recalculate angle for GUI
-        if (!m_keep_up) { 
-            const GLVolume *gl_volume = get_selected_gl_volume(m_parent.get_selection());
+        if (!m_keep_up) {
+            const Selection &selection = m_parent.get_selection();
+            const GLVolume *gl_volume = get_selected_gl_volume(selection);
             assert(gl_volume != nullptr);
             assert(m_style_manager.is_active_font());
             if (gl_volume == nullptr || !m_style_manager.is_active_font())
                 return res;
-            m_style_manager.get_style().angle = calc_up(gl_volume->world_matrix(), Slic3r::GUI::up_limit);
+            m_style_manager.get_style().angle = calc_angle(selection);
         }
 
         volume_transformation_changing();
@@ -694,10 +665,20 @@ void GLGizmoEmboss::volume_transformation_changed()
 {
     if (m_volume == nullptr || 
         !m_volume->text_configuration.has_value() ||
-        !m_volume->emboss_shape.has_value()) {
+        !m_volume->emboss_shape.has_value() ||
+        !m_style_manager.is_active_font()) {
         assert(false);
         return;
     }
+
+    if (!m_keep_up) {
+        // Re-Calculate current angle of up vector
+        m_style_manager.get_style().angle = calc_angle(m_parent.get_selection());
+    } else {
+        // angle should be the same
+        assert(is_approx(m_style_manager.get_style().angle, calc_angle(m_parent.get_selection())));
+    }
+
     const TextConfiguration &tc = *m_volume->text_configuration;
     const EmbossShape &es = *m_volume->emboss_shape;
 
@@ -710,6 +691,12 @@ void GLGizmoEmboss::volume_transformation_changed()
     // Update surface by new position
     if (use_surface || per_glyph)
         process();
+    else {
+        // inform slicing process that model changed
+        // SLA supports, processing
+        // ensure on bed
+        wxGetApp().plater()->changed_object(*m_volume->get_object());
+    }
 
     // Show correct value of height & depth inside of inputs
     calculate_scale();
@@ -992,16 +979,7 @@ void GLGizmoEmboss::on_stop_dragging()
 
     // apply rotation
     m_parent.do_rotate(L("Text-Rotate"));
-
-    // Re-Calculate current angle of up vector
-    const GLVolume *gl_volume = get_selected_gl_volume(m_parent.get_selection());
-    assert(m_style_manager.is_active_font());
-    assert(gl_volume != nullptr);
-    if (m_style_manager.is_active_font() && gl_volume != nullptr) 
-        m_style_manager.get_style().angle = calc_up(gl_volume->world_matrix(), Slic3r::GUI::up_limit);
-
     m_rotate_start_angle.reset();
-
     volume_transformation_changed();
 }
 void GLGizmoEmboss::on_dragging(const UpdateData &data) { m_rotate_gizmo.dragging(data); }
@@ -1235,7 +1213,7 @@ void GLGizmoEmboss::set_volume_by_selection()
 
     StyleManager::Style style_{style};  // copy  
     style_.projection = volume->emboss_shape->projection;
-    style_.angle = calc_up(gl_volume->world_matrix(), Slic3r::GUI::up_limit);
+    style_.angle = calc_angle(selection);
     style_.distance = calc_distance(*gl_volume, m_raycast_manager, m_parent);
         
     if (auto it = std::find_if(styles.begin(), styles.end(), has_same_name);
@@ -1283,7 +1261,7 @@ void GLGizmoEmboss::set_volume_by_selection()
     // Calculate current angle of up vector
     assert(m_style_manager.is_active_font());
     if (m_style_manager.is_active_font()) 
-        m_style_manager.get_style().angle = calc_up(gl_volume->world_matrix(), up_limit);    
+        m_style_manager.get_style().angle = calc_angle(selection);
 
     // calculate scale for height and depth inside of scaled object instance
     calculate_scale();    
@@ -1425,7 +1403,7 @@ void GLGizmoEmboss::draw_window()
     draw_style_list();
 
     // Do not select volume type, when it is text object
-    if (m_volume->get_object()->volumes.size() != 1) {
+    if (!m_volume->is_the_only_one_part()) {
         ImGui::Separator();
         draw_model_type();
     }
@@ -2890,11 +2868,12 @@ void GLGizmoEmboss::draw_advanced()
         do_local_z_rotate(m_parent, diff_angle);
         
         // calc angle after rotation
-        const GLVolume *gl_volume = get_selected_gl_volume(m_parent.get_selection());
+        const Selection &selection = m_parent.get_selection();
+        const GLVolume *gl_volume = get_selected_gl_volume(selection);
         assert(gl_volume != nullptr);
         assert(m_style_manager.is_active_font());
         if (m_style_manager.is_active_font() && gl_volume != nullptr) 
-            m_style_manager.get_style().angle = calc_up(gl_volume->world_matrix(), Slic3r::GUI::up_limit);
+            m_style_manager.get_style().angle = calc_angle(selection);
         
         if (font_prop.per_glyph)
             reinit_text_lines(m_text_lines.get_lines().size());
@@ -2952,21 +2931,15 @@ void GLGizmoEmboss::draw_advanced()
         process();
     }
 
-    /*
     if (ImGui::Button(_u8L("Set text to face camera").c_str())) {
         assert(get_selected_volume(m_parent.get_selection()) == m_volume);
         const Camera &cam = wxGetApp().plater()->get_camera();
-        FontProp& fp = m_style_manager.get_font_prop();
-        if (face_selected_volume_to_camera(cam, m_parent) && 
-            (use_surface || fp.per_glyph)) {
-            if (fp.per_glyph)
-                reinit_text_lines();
-            process();
-        }
+        auto wanted_up_limit = m_keep_up ? std::optional<double>(UP_LIMIT) : std::optional<double>{};
+        if (face_selected_volume_to_camera(cam, m_parent, wanted_up_limit))
+            volume_transformation_changed();
     } else if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("%s", _u8L("Orient the text towards the camera.").c_str());
     }
-    */
 
     //ImGui::SameLine(); if (ImGui::Button("Re-emboss")) GLGizmoEmboss::re_emboss(*m_volume);    
 
@@ -3717,9 +3690,9 @@ GuiCfg create_gui_configuration()
         + 2 * (cfg.icon_width + space);
     cfg.minimal_window_size = ImVec2(window_width, window_height);
 
-    // 9 = useSurface, charGap, lineGap, bold, italic, surfDist, rotation, keepUp
+    // 9 = useSurface, charGap, lineGap, bold, italic, surfDist, rotation, keepUp, textFaceToCamera
     // 4 = 1px for fix each edit image of drag float 
-    float advance_height = input_height * 9 + 9;
+    float advance_height = input_height * 10 + 9;
     cfg.minimal_window_size_with_advance =
         ImVec2(cfg.minimal_window_size.x,
                cfg.minimal_window_size.y + advance_height);

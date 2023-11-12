@@ -1404,8 +1404,11 @@ namespace Slic3r {
             std::optional<EmbossShape> &es = volume->emboss_shape;
             if (!es.has_value())
                 continue;
-            if (filename.compare(es->svg_file.path_in_3mf) == 0)
-                es->svg_file.file_data = m_path_to_emboss_shape_files[filename];
+            std::optional<EmbossShape::SvgFile> &svg = es->svg_file;
+            if (!svg.has_value())
+                continue;
+            if (filename.compare(svg->path_in_3mf) == 0)
+                svg->file_data = m_path_to_emboss_shape_files[filename];
         }
     }
 
@@ -2040,16 +2043,19 @@ namespace Slic3r {
             return false;
 
         // Fill svg file content into shape_configuration
-        EmbossShape::SvgFile &svg = volume.shape_configuration->svg_file;
-        const std::string &path = svg.path_in_3mf;
-        if (path.empty()) // do not contain svg file
-            return true; 
+        std::optional<EmbossShape::SvgFile> &svg = volume.shape_configuration->svg_file;
+        if (!svg.has_value())
+            return true; // do not contain svg file
+
+        const std::string &path = svg->path_in_3mf;
+        if (path.empty()) 
+            return true; // do not contain svg file
 
         auto it = m_path_to_emboss_shape_files.find(path);
         if (it == m_path_to_emboss_shape_files.end())
             return true; // svg file is not loaded yet
 
-        svg.file_data = it->second;
+        svg->file_data = it->second;
         return true;
     }
 
@@ -3841,9 +3847,18 @@ bool to_xml(std::stringstream &stream, const EmbossShape::SvgFile &svg, const Mo
         stream << SVG_FILE_PATH_ATTR << "=\"" << xml_escape_double_quotes_attribute_value(svg.path) << "\" ";
     stream << SVG_FILE_PATH_IN_3MF_ATTR << "=\"" << xml_escape_double_quotes_attribute_value(svg.path_in_3mf) << "\" ";
 
-    const std::string &file_data = *svg.file_data; 
+    std::shared_ptr<std::string> file_data = svg.file_data;
+    assert(file_data != nullptr); 
+    if (file_data == nullptr && !svg.path.empty())
+        file_data = read_from_disk(svg.path);
+    if (file_data == nullptr) {
+        BOOST_LOG_TRIVIAL(warning) << "Can't write svg file no filedata";
+        return false;
+    }
+    const std::string &file_data_str = *file_data; 
+
     return mz_zip_writer_add_mem(&archive, svg.path_in_3mf.c_str(), 
-        (const void *) file_data.c_str(), file_data.size(), MZ_DEFAULT_COMPRESSION);
+        (const void *) file_data_str.c_str(), file_data_str.size(), MZ_DEFAULT_COMPRESSION);
 }
 
 } // namespace
@@ -3851,12 +3866,13 @@ bool to_xml(std::stringstream &stream, const EmbossShape::SvgFile &svg, const Mo
 void to_xml(std::stringstream &stream, const EmbossShape &es, const ModelVolume &volume, mz_zip_archive &archive)
 {
     stream << "   <" << SHAPE_TAG << " ";
-    if(!to_xml(stream, es.svg_file, volume, archive))
-        BOOST_LOG_TRIVIAL(warning) << "Can't write svg file defiden embossed shape into 3mf";
+    if (es.svg_file.has_value())
+        if(!to_xml(stream, *es.svg_file, volume, archive))
+            BOOST_LOG_TRIVIAL(warning) << "Can't write svg file defiden embossed shape into 3mf";
     
     stream << SHAPE_SCALE_ATTR << "=\"" << es.scale << "\" ";
 
-    if (!es.is_healed)
+    if (!es.final_shape.is_healed)
         stream << UNHEALED_ATTR << "=\"" << 1 << "\" ";
 
     // projection
@@ -3896,10 +3912,17 @@ std::optional<EmbossShape> read_emboss_shape(const char **attributes, unsigned i
 
     std::string file_path = get_attribute_value_string(attributes, num_attributes, SVG_FILE_PATH_ATTR);
     std::string file_path_3mf = get_attribute_value_string(attributes, num_attributes, SVG_FILE_PATH_IN_3MF_ATTR);
-    ExPolygonsWithIds shapes; // TODO: need to implement 
+
+    // MayBe: store also shapes to not store svg
+    // But be carefull curve will be lost -> scale will not change sampling
+    // shapes could be loaded from SVG
+    ExPolygonsWithIds shapes; 
+    // final shape could be calculated from shapes
+    HealedExPolygons final_shape;
+    final_shape.is_healed = is_healed;
 
     EmbossShape::SvgFile svg{file_path, file_path_3mf};
-    return EmbossShape{shapes, scale, std::move(projection), std::move(fix_tr_mat), std::move(svg), is_healed};
+    return EmbossShape{std::move(shapes), std::move(final_shape), scale, std::move(projection), std::move(fix_tr_mat), std::move(svg)};
 }
 
 

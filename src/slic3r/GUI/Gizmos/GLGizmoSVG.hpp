@@ -123,11 +123,14 @@ private:
     void draw_distance();
     void draw_rotation();
     void draw_mirroring();
+    void draw_face_the_camera();
     void draw_model_type();
 
     // process mouse event
     bool on_mouse_for_rotation(const wxMouseEvent &mouse_event);
     bool on_mouse_for_translate(const wxMouseEvent &mouse_event);
+
+    void volume_transformation_changed();
     
     struct GuiCfg;
     std::unique_ptr<const GuiCfg> m_gui_cfg;

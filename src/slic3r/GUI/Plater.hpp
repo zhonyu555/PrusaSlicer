@@ -102,6 +102,8 @@ public:
     void search();
     void jump_to_option(size_t selected);
     void jump_to_option(const std::string& opt_key, Preset::Type type, const std::wstring& category);
+    // jump to option which is represented by composite key : "opt_key;tab_name"
+    void jump_to_option(const std::string& composite_key);
 
     ObjectManipulation*     obj_manipul();
     ObjectList*             obj_list();
@@ -298,6 +300,7 @@ public:
     void clear_before_change_mesh(int obj_idx, const std::string &notification_msg);
     void changed_mesh(int obj_idx);
 
+    void changed_object(ModelObject &object);
     void changed_object(int obj_idx);
     void changed_objects(const std::vector<size_t>& object_idxs);
     void schedule_background_process(bool schedule = true);

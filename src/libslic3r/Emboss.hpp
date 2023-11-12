@@ -18,19 +18,15 @@
 
 namespace Slic3r {
 
-// Extend expolygons with information whether it was successfull healed
-struct HealedExPolygons{
-    ExPolygons expolygons;
-    bool is_healed;
-    operator ExPolygons&() { return expolygons; }
-};
-
 /// <summary>
 /// class with only static function add ability to engraved OR raised
 /// text OR polygons onto model surface
 /// </summary>
 namespace Emboss
 {    
+    static const float UNION_DELTA = 50.0f; // [approx in nano meters depends on volume scale]
+    static const unsigned UNION_MAX_ITERATIN = 10; // [count]
+
     /// <summary>
     /// Collect fonts registred inside OS
     /// </summary>
@@ -474,9 +470,8 @@ namespace Emboss
 void translate(ExPolygonsWithIds &e, const Point &p);
 BoundingBox get_extents(const ExPolygonsWithIds &e);
 void center(ExPolygonsWithIds &e);
-HealedExPolygons union_ex(const ExPolygonsWithIds &shapes, unsigned max_heal_iteration);
 // delta .. safe offset before union (use as boolean close)
 // NOTE: remove unprintable spaces between neighbor curves (made by linearization of curve)
-HealedExPolygons union_with_delta(const ExPolygonsWithIds &shapes, float delta, unsigned max_heal_iteration);
+ExPolygons union_with_delta(EmbossShape &shape, float delta, unsigned max_heal_iteration);
 } // namespace Slic3r
 #endif // slic3r_Emboss_hpp_

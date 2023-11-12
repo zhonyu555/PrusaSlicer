@@ -41,9 +41,9 @@ std::string WipeTowerIntegration::append_tcr(GCodeGenerator &gcodegen, const Wip
 
     std::string tcr_rotated_gcode = post_process_wipe_tower_moves(tcr, wipe_tower_offset, wipe_tower_rotation);
 
-    gcode += gcodegen.writer().unlift(); // Make sure there is no z-hop (in most cases, there isn't).
-
     double current_z = gcodegen.writer().get_position().z();
+    gcode += gcodegen.writer().travel_to_z(current_z);
+
     if (z == -1.) // in case no specific z was provided, print at current_z pos
         z = current_z;
 
@@ -54,9 +54,10 @@ std::string WipeTowerIntegration::append_tcr(GCodeGenerator &gcodegen, const Wip
     const bool should_travel_to_tower = ! tcr.priming
                                      && (tcr.force_travel        // wipe tower says so
                                          || ! needs_toolchange   // this is just finishing the tower with no toolchange
-                                         || is_ramming);
+                                         || is_ramming
+                                         || will_go_down);       // don't dig into the print
     if (should_travel_to_tower) {
-        gcode += gcodegen.retract();
+        gcode += gcodegen.retract_and_wipe();
         gcodegen.m_avoid_crossing_perimeters.use_external_mp_once();
         gcode += gcodegen.travel_to(
             wipe_tower_point_to_object_point(gcodegen, start_pos),
@@ -81,7 +82,9 @@ std::string WipeTowerIntegration::append_tcr(GCodeGenerator &gcodegen, const Wip
             gcodegen.m_wipe.reset_path(); // We don't want wiping on the ramming lines.
         toolchange_gcode_str = gcodegen.set_extruder(new_extruder_id, tcr.print_z); // TODO: toolchange_z vs print_z
         if (gcodegen.config().wipe_tower)
-            deretraction_str = gcodegen.unretract();
+            deretraction_str += gcodegen.writer().get_travel_to_z_gcode(z, "restore layer Z");
+            deretraction_str += gcodegen.unretract();
+
     }
     assert(toolchange_gcode_str.empty() || toolchange_gcode_str.back() == '\n');
     assert(deretraction_str.empty() || deretraction_str.back() == '\n');
@@ -180,7 +183,7 @@ std::string WipeTowerIntegration::post_process_wipe_tower_moves(const WipeTower:
         gcode_out += line + "\n";
 
         // If this was a toolchange command, we should change current extruder offset
-        if (line == "[toolchange_gcode]") {
+        if (line == "[toolchange_gcode_from_wipe_tower_generator]") {
             extruder_offset = m_extruder_offsets[tcr.new_tool].cast<float>();
 
             // If the extruder offset changed, add an extra move so everything is continuous
@@ -242,7 +245,10 @@ std::string WipeTowerIntegration::finalize(GCodeGenerator &gcodegen)
 {
     std::string gcode;
     if (std::abs(gcodegen.writer().get_position().z() - m_final_purge.print_z) > EPSILON)
-        gcode += gcodegen.change_layer(m_final_purge.print_z);
+        gcode += gcodegen.generate_travel_gcode(
+            {{gcodegen.last_pos().x(), gcodegen.last_pos().y(), scaled(m_final_purge.print_z)}},
+            "move to safe place for purging"
+        );
     gcode += append_tcr(gcodegen, m_final_purge, -1);
     return gcode;
 }

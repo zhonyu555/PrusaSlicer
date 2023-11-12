@@ -1574,14 +1574,15 @@ void TabPrint::build()
         optgroup->append_single_option_line("support_material_synchronize_layers", category_path + "synchronize-with-object-layers");
 
         optgroup = page->new_optgroup(L("Organic supports"));
-        optgroup->append_single_option_line("support_tree_angle", category_path + "tree_angle");
-        optgroup->append_single_option_line("support_tree_angle_slow", category_path + "tree_angle_slow");
-        optgroup->append_single_option_line("support_tree_branch_diameter", category_path + "tree_branch_diameter");
-        optgroup->append_single_option_line("support_tree_branch_diameter_angle", category_path + "tree_branch_diameter_angle");
-        optgroup->append_single_option_line("support_tree_branch_diameter_double_wall", category_path + "tree_branch_diameter_double_wall");
-        optgroup->append_single_option_line("support_tree_tip_diameter", category_path + "tree_tip_diameter");
-        optgroup->append_single_option_line("support_tree_branch_distance", category_path + "tree_branch_distance");
-        optgroup->append_single_option_line("support_tree_top_rate", category_path + "tree_top_rate");
+        const std::string path = "organic-supports_480131#organic-supports-settings";
+        optgroup->append_single_option_line("support_tree_angle", path);
+        optgroup->append_single_option_line("support_tree_angle_slow", path);
+        optgroup->append_single_option_line("support_tree_branch_diameter", path);
+        optgroup->append_single_option_line("support_tree_branch_diameter_angle", path);
+        optgroup->append_single_option_line("support_tree_branch_diameter_double_wall", path);
+        optgroup->append_single_option_line("support_tree_tip_diameter", path);
+        optgroup->append_single_option_line("support_tree_branch_distance", path);
+        optgroup->append_single_option_line("support_tree_top_rate", path);
 
     page = add_options_page(L("Speed"), "time");
         optgroup = page->new_optgroup(L("Speed for print moves"));
@@ -1986,33 +1987,56 @@ void TabFilament::update_line_with_near_label_widget(ConfigOptionsGroupShp optgr
         field->toggle(is_checked);
 }
 
+std::vector<std::pair<std::string, std::vector<std::string>>> option_keys {
+    {"Travel lift", {
+        "filament_retract_lift",
+        "filament_travel_ramping_lift",
+        "filament_travel_max_lift",
+        "filament_travel_slope",
+        //"filament_travel_lift_before_obstacle",
+        "filament_retract_lift_above",
+        "filament_retract_lift_below"
+    }},
+    {"Retraction", {
+        "filament_retract_length",
+        "filament_retract_speed",
+        "filament_deretract_speed",
+        "filament_retract_restart_extra",
+        "filament_retract_before_travel",
+        "filament_retract_layer_change",
+        "filament_wipe",
+        "filament_retract_before_wipe",
+    }},
+    {"Retraction when tool is disabled", {
+        "filament_retract_length_toolchange",
+        "filament_retract_restart_extra_toolchange"
+    }}
+};
+
 void TabFilament::add_filament_overrides_page()
 {
     PageShp page = add_options_page(L("Filament Overrides"), "wrench");
-    ConfigOptionsGroupShp optgroup = page->new_optgroup(L("Retraction"));
 
     const int extruder_idx = 0; // #ys_FIXME
 
-    for (const std::string opt_key : {  "filament_retract_length",
-                                        "filament_retract_lift",
-                                        "filament_retract_lift_above",
-                                        "filament_retract_lift_below",
-                                        "filament_retract_speed",
-                                        "filament_deretract_speed",
-                                        "filament_retract_restart_extra",
-                                        "filament_retract_before_travel",
-                                        "filament_retract_layer_change",
-                                        "filament_wipe",
-                                        "filament_retract_before_wipe"
-                                     })
-        create_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
+    for (const auto&[title, keys] : option_keys) {
+        ConfigOptionsGroupShp optgroup = page->new_optgroup(L(title));
+        for (const std::string& opt_key : keys) {
+            create_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
+        }
+    }
+}
 
-    optgroup = page->new_optgroup(L("Retraction when tool is disabled"));
-    for (const std::string opt_key : {  "filament_retract_length_toolchange",
-                                        "filament_retract_restart_extra_toolchange"
-                                     })
-        create_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
-
+std::optional<ConfigOptionsGroupShp> get_option_group(const Page* page, const std::string& title) {
+    auto og_it = std::find_if(
+        page->m_optgroups.begin(), page->m_optgroups.end(),
+        [&](const ConfigOptionsGroupShp& og) {
+            return og->title == title;
+        }
+    );
+    if (og_it == page->m_optgroups.end())
+        return {};
+    return *og_it;
 }
 
 void TabFilament::update_filament_overrides_page()
@@ -2021,54 +2045,77 @@ void TabFilament::update_filament_overrides_page()
         return;
     Page* page = m_active_page;
 
-    auto og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction"; });
-    if (og_it == page->m_optgroups.end())
-        return;
-    ConfigOptionsGroupShp optgroup = *og_it;
-
-    std::vector<std::string> opt_keys = {   "filament_retract_length",
-                                            "filament_retract_lift",
-                                            "filament_retract_lift_above",
-                                            "filament_retract_lift_below",
-                                            "filament_retract_speed",
-                                            "filament_deretract_speed",
-                                            "filament_retract_restart_extra",
-                                            "filament_retract_before_travel",
-                                            "filament_retract_layer_change",
-                                            "filament_wipe",
-                                            "filament_retract_before_wipe"
-                                        };
 
     const int extruder_idx = 0; // #ys_FIXME
 
-    const bool have_retract_length = m_config->option("filament_retract_length")->is_nil() ||
-                                     m_config->opt_float("filament_retract_length", extruder_idx) > 0;
+    const bool have_retract_length = (
+        m_config->option("filament_retract_length")->is_nil()
+        || m_config->opt_float("filament_retract_length", extruder_idx) > 0
+    );
 
-    for (const std::string& opt_key : opt_keys)
-    {
-        bool is_checked = opt_key=="filament_retract_length" ? true : have_retract_length;
-        update_line_with_near_label_widget(optgroup, opt_key, extruder_idx, is_checked);
-/*
-        m_overrides_options[opt_key]->Enable(is_checked);
+    const bool uses_ramping_lift = (
+        m_config->option("filament_travel_ramping_lift")->is_nil()
+        || m_config->opt_bool("filament_travel_ramping_lift", extruder_idx)
+    );
 
-        is_checked &= !m_config->option(opt_key)->is_nil();
-        CheckBox::SetValue(m_overrides_options[opt_key], is_checked);
+    const bool is_lifting =  (
+        m_config->option("filament_travel_max_lift")->is_nil()
+        || m_config->opt_float("filament_travel_max_lift", extruder_idx) > 0
+        || m_config->option("filament_retract_lift")->is_nil()
+        || m_config->opt_float("filament_retract_lift", extruder_idx) > 0
+    );
 
-        Field* field = optgroup->get_fieldc(opt_key, extruder_idx);
-        if (field != nullptr)
-            field->toggle(is_checked);
-*/
+    for (const auto&[title, keys] : option_keys) {
+        std::optional<ConfigOptionsGroupShp> optgroup{get_option_group(page, title)};
+        if (!optgroup) {
+            continue;
+        }
+
+        for (const std::string& opt_key : keys) {
+            bool is_checked{true};
+            if (
+                title == "Retraction"
+                && opt_key != "filament_retract_length"
+                && !have_retract_length
+            ) {
+                is_checked = false;
+            }
+
+            if (
+                title == "Travel lift"
+                && uses_ramping_lift
+                && opt_key == "filament_retract_lift"
+                && !m_config->option("filament_travel_ramping_lift")->is_nil()
+                && m_config->opt_bool("filament_travel_ramping_lift", extruder_idx)
+            ) {
+                is_checked = false;
+            }
+
+            if (
+                title == "Travel lift"
+                && !is_lifting
+                && (
+                    opt_key == "filament_retract_lift_above"
+                    || opt_key == "filament_retract_lift_below"
+                )
+            ) {
+                is_checked = false;
+            }
+
+            if (
+                title == "Travel lift"
+                && !uses_ramping_lift
+                && opt_key != "filament_travel_ramping_lift"
+                && opt_key != "filament_retract_lift"
+                && opt_key != "filament_retract_lift_above"
+                && opt_key != "filament_retract_lift_below"
+            ) {
+                is_checked = false;
+            }
+
+            update_line_with_near_label_widget(*optgroup, opt_key, extruder_idx, is_checked);
+        }
     }
-
-    og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction when tool is disabled"; });
-    if (og_it == page->m_optgroups.end())
-        return;
-    optgroup = *og_it;
-
-    for (const std::string& opt_key : {"filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange"})
-        update_line_with_near_label_widget(optgroup, opt_key, extruder_idx);
-
-
 }
 
 void TabFilament::create_extruder_combobox()
@@ -3102,7 +3149,8 @@ const std::vector<std::string> extruder_options = {
     "min_layer_height", "max_layer_height", "extruder_offset",
     "retract_length", "retract_lift", "retract_lift_above", "retract_lift_below",
     "retract_speed", "deretract_speed", "retract_restart_extra", "retract_before_travel",
-    "retract_layer_change", "wipe", "retract_before_wipe",
+    "retract_layer_change", "wipe", "retract_before_wipe", "travel_ramping_lift",
+    "travel_slope", "travel_max_lift", "travel_lift_before_obstacle",
     "retract_length_toolchange", "retract_restart_extra_toolchange",
 };
 
@@ -3256,14 +3304,20 @@ void TabPrinter::build_extruder_pages(size_t n_before_extruders)
         optgroup = page->new_optgroup(L("Position (for multi-extruder printers)"));
         optgroup->append_single_option_line("extruder_offset", "", extruder_idx);
 
-        optgroup = page->new_optgroup(L("Retraction"));
-        optgroup->append_single_option_line("retract_length", "", extruder_idx);
+        optgroup = page->new_optgroup(L("Travel lift"));
         optgroup->append_single_option_line("retract_lift", "", extruder_idx);
-        line = { L("Only lift Z"), "" };
+        optgroup->append_single_option_line("travel_ramping_lift", "", extruder_idx);
+        optgroup->append_single_option_line("travel_max_lift", "", extruder_idx);
+        optgroup->append_single_option_line("travel_slope", "", extruder_idx);
+        //optgroup->append_single_option_line("travel_lift_before_obstacle", "", extruder_idx);
+
+        line = { L("Only lift"), "" };
         line.append_option(optgroup->get_option("retract_lift_above", extruder_idx));
         line.append_option(optgroup->get_option("retract_lift_below", extruder_idx));
         optgroup->append_line(line);
 
+        optgroup = page->new_optgroup(L("Retraction"));
+        optgroup->append_single_option_line("retract_length", "", extruder_idx);
         optgroup->append_single_option_line("retract_speed", "", extruder_idx);
         optgroup->append_single_option_line("deretract_speed", "", extruder_idx);
         optgroup->append_single_option_line("retract_restart_extra", "", extruder_idx);
@@ -3471,10 +3525,18 @@ void TabPrinter::toggle_options()
     {
         size_t i = size_t(val - 1);
         bool have_retract_length = m_config->opt_float("retract_length", i) > 0;
+        const bool ramping_lift = m_config->opt_bool("travel_ramping_lift", i);
+        const bool lifts_z = (ramping_lift && m_config->opt_float("travel_max_lift", i) > 0)
+                          || (! ramping_lift && m_config->opt_float("retract_lift", i) > 0);
+
 
         // when using firmware retraction, firmware decides retraction length
         bool use_firmware_retraction = m_config->opt_bool("use_firmware_retraction");
         toggle_option("retract_length", !use_firmware_retraction, i);
+
+        toggle_option("retract_lift", ! ramping_lift, i);
+        toggle_option("travel_max_lift", ramping_lift, i);
+        toggle_option("travel_slope", ramping_lift, i);
 
         // user can customize travel length if we have retraction length or we"re using
         // firmware retraction
@@ -3482,15 +3544,15 @@ void TabPrinter::toggle_options()
 
         // user can customize other retraction options if retraction is enabled
         bool retraction = (have_retract_length || use_firmware_retraction);
-        std::vector<std::string> vec = { "retract_lift", "retract_layer_change" };
+        std::vector<std::string> vec = {  };
         for (auto el : vec)
-            toggle_option(el, retraction, i);
+            toggle_option("retract_layer_change", retraction, i);
 
         // retract lift above / below only applies if using retract lift
         vec.resize(0);
         vec = { "retract_lift_above", "retract_lift_below" };
         for (auto el : vec)
-            toggle_option(el, retraction && (m_config->opt_float("retract_lift", i) > 0), i);
+            toggle_option(el, lifts_z, i);
 
         // some options only apply when not using firmware retraction
         vec.resize(0);
@@ -3520,6 +3582,8 @@ void TabPrinter::toggle_options()
             }
             load_config(new_conf);
         }
+
+        //toggle_option("travel_lift_before_obstacle", ramping_lift, i);
 
         toggle_option("retract_length_toolchange", have_multiple_extruders, i);
 

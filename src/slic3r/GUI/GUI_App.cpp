@@ -489,7 +489,7 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
     /* FT_AMF */     { "AMF files"sv,       { ".amf"sv, ".zip.amf"sv, ".xml"sv } },
     /* FT_3MF */     { "3MF files"sv,       { ".3mf"sv } },
     /* FT_GCODE */   { "G-code files"sv,    { ".gcode"sv, ".gco"sv, ".bgcode"sv, ".bgc"sv, ".g"sv, ".ngc"sv } },
-    /* FT_MODEL */   { "Known files"sv,     { ".stl"sv, ".obj"sv, ".3mf"sv, ".amf"sv, ".zip.amf"sv, ".xml"sv, ".step"sv, ".stp"sv } },
+    /* FT_MODEL */   { "Known files"sv,     { ".stl"sv, ".obj"sv, ".3mf"sv, ".amf"sv, ".zip.amf"sv, ".xml"sv, ".step"sv, ".stp"sv, ".svg"sv } },
     /* FT_PROJECT */ { "Project files"sv,   { ".3mf"sv, ".amf"sv, ".zip.amf"sv } },
     /* FT_FONTS */   { "Font files"sv,      { ".ttc"sv, ".ttf"sv } },
     /* FT_GALLERY */ { "Known files"sv,     { ".stl"sv, ".obj"sv } },
@@ -928,15 +928,15 @@ void GUI_App::init_app_config()
 {
 	// Profiles for the alpha are stored into the PrusaSlicer-alpha directory to not mix with the current release.
 
-//    SetAppName(SLIC3R_APP_KEY);
-	SetAppName(SLIC3R_APP_KEY "-alpha");
-//  SetAppName(SLIC3R_APP_KEY "-beta");
+//  SetAppName(SLIC3R_APP_KEY);
+//	SetAppName(SLIC3R_APP_KEY "-alpha");
+    SetAppName(SLIC3R_APP_KEY "-beta");
 
 
 //	SetAppDisplayName(SLIC3R_APP_NAME);
 
 	// Set the Slic3r data directory at the Slic3r XS module.
-	// Unix: ~/ .Slic3r
+	// Unix: ~/ .Slic3rP
 	// Windows : "C:\Users\username\AppData\Roaming\Slic3r" or "C:\Documents and Settings\username\Application Data\Slic3r"
 	// Mac : "~/Library/Application Support/Slic3r"
 
@@ -1106,6 +1106,9 @@ static int get_app_font_pt_size(const AppConfig* app_config)
 
 bool GUI_App::on_init_inner()
 {
+    // TODO: remove this when all asserts are gone.
+    wxDisableAsserts();
+
     // Set initialization of image handlers before any UI actions - See GH issue #7469
     wxInitAllImageHandlers();
 
@@ -2056,7 +2059,7 @@ void GUI_App::import_model(wxWindow *parent, wxArrayString& input_files) const
 {
     input_files.Clear();
     wxFileDialog dialog(parent ? parent : GetTopWindow(),
-        _L("Choose one or more files (STL/3MF/STEP/OBJ/AMF/PRUSA):"),
+        _L("Choose one or more files (STL/3MF/STEP/OBJ/AMF/SVG):"),
         from_u8(app_config->get_last_dir()), "",
         file_wildcards(FT_MODEL), wxFD_OPEN | wxFD_MULTIPLE | wxFD_FILE_MUST_EXIST);
 
@@ -2608,12 +2611,15 @@ void GUI_App::add_config_menu(wxMenuBar *menu)
             break;
         case ConfigMenuWifiConfigFile:
         {
+            open_wifi_config_dialog(true);
+            /*
             std::string file_path;
             WifiConfigDialog dialog(mainframe, file_path, removable_drive_manager());
             if (dialog.ShowModal() == wxID_OK)
             {
                 plater_->get_notification_manager()->push_exporting_finished_notification(file_path, boost::filesystem::path(file_path).parent_path().string(), true);
             }
+            */
         }
         break;
         default:
@@ -3566,6 +3572,39 @@ void GUI_App::start_download(std::string url)
         } 
     m_downloader->init(dest_folder);
     m_downloader->start_download(url);
+}
+
+void GUI_App::open_wifi_config_dialog(bool forced, const wxString& drive_path/* = {}*/)
+{
+    if(m_wifi_config_dialog_shown)
+        return;
+
+    bool dialog_was_declined = app_config->get_bool("wifi_config_dialog_declined");
+
+    if (!forced && dialog_was_declined) {
+
+        // dialog was already declined this run, show only notification
+        notification_manager()->push_notification(NotificationType::WifiConfigFileDetected
+            , NotificationManager::NotificationLevel::ImportantNotificationLevel
+            // TRN Text of notification when Slicer starts and usb stick with printer settings ini file is present 
+            , _u8L("Printer configuration file detected on removable media.")
+            // TRN Text of hypertext of notification when Slicer starts and usb stick with printer settings ini file is present 
+            , _u8L("Write Wi-Fi credentials."), [drive_path](wxEvtHandler* evt_hndlr) {
+                wxGetApp().open_wifi_config_dialog(true, drive_path);
+                return true; });
+        return;
+    }
+    
+    m_wifi_config_dialog_shown = true;
+    std::string file_path;
+    WifiConfigDialog dialog(mainframe, file_path, removable_drive_manager(), drive_path);
+    if (dialog.ShowModal() == wxID_OK) {
+        plater_->get_notification_manager()->push_exporting_finished_notification(file_path, boost::filesystem::path(file_path).parent_path().string(), true);
+        app_config->set("wifi_config_dialog_declined", "0");
+    } else {
+        app_config->set("wifi_config_dialog_declined", "1");
+    }
+    m_wifi_config_dialog_shown = false;
 }
 
 } // GUI
