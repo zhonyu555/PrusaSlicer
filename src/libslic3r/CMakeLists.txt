@@ -69,9 +69,11 @@ set(SLIC3R_SOURCES
     ElephantFootCompensation.hpp
     Emboss.cpp
     Emboss.hpp
+    EmbossShape.hpp
     enum_bitmask.hpp
     ExPolygon.cpp
     ExPolygon.hpp
+    ExPolygonSerialize.hpp
     ExPolygonsIndex.cpp
     ExPolygonsIndex.hpp
     Extruder.cpp
@@ -158,6 +160,8 @@ set(SLIC3R_SOURCES
     GCode/ExtrusionProcessor.hpp
     GCode/FindReplace.cpp
     GCode/FindReplace.hpp
+    GCode/LabelObjects.cpp
+    GCode/LabelObjects.hpp
     GCode/GCodeWriter.cpp
     GCode/GCodeWriter.hpp
     GCode/PostProcessor.cpp
@@ -500,6 +504,7 @@ set(SLIC3R_SOURCES
     Arachne/SkeletalTrapezoidationJoint.hpp
     Arachne/WallToolPaths.hpp
     Arachne/WallToolPaths.cpp
+    StaticMap.hpp
 )
 
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})

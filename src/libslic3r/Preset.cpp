@@ -465,7 +465,7 @@ static std::vector<std::string> s_Preset_print_options {
     "ooze_prevention", "standby_temperature_delta", "interface_shells", "extrusion_width", "first_layer_extrusion_width",
     "perimeter_extrusion_width", "external_perimeter_extrusion_width", "infill_extrusion_width", "solid_infill_extrusion_width",
     "top_infill_extrusion_width", "support_material_extrusion_width", "infill_overlap", "infill_anchor", "infill_anchor_max", "bridge_flow_ratio",
-    "elefant_foot_compensation", "xy_size_compensation", "resolution", "gcode_resolution", "arc_fitting", "arc_fitting_tolerance",
+    "elefant_foot_compensation", "xy_size_compensation", "resolution", "gcode_resolution", "arc_fitting",
     "wipe_tower", "wipe_tower_x", "wipe_tower_y",
     "wipe_tower_width", "wipe_tower_cone_angle", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_bridging", "single_extruder_multi_material_priming", "mmu_segmented_region_max_width",
     "mmu_segmented_region_interlocking_depth", "wipe_tower_extruder", "wipe_tower_no_sparse_layers", "wipe_tower_extra_spacing", "compatible_printers", "compatible_printers_condition", "inherits",
@@ -1324,9 +1324,9 @@ inline t_config_option_keys deep_diff(const ConfigBase &config_this, const Confi
                 // Ignore this field, it is not presented to the user, therefore showing a "modified" flag for this parameter does not help.
                 // Also the length of this field may differ, which may lead to a crash if the block below is used.
             } else if (opt_key == "thumbnails") {
-                // "thumbnails" can not containes a extentions in old config but are valid and use PNG extention by default
+                // "thumbnails" can not contain extensions in old config but they are valid and use PNG extension by default
                 // So, check if "thumbnails" is really changed
-                // We will compare full thumnails instead of exactly config values
+                // We will compare full thumbnails instead of exactly config values
                 auto [thumbnails, er]         = GCodeThumbnails::make_and_check_thumbnail_list(config_this);
                 auto [thumbnails_new, er_new] = GCodeThumbnails::make_and_check_thumbnail_list(config_other);
                 if (thumbnails != thumbnails_new || er != er_new)
@@ -1343,6 +1343,12 @@ inline t_config_option_keys deep_diff(const ConfigBase &config_this, const Confi
                 case coFloatsOrPercents:    add_correct_opts_to_diff<ConfigOptionFloatsOrPercents   >(opt_key, diff, config_other, config_this);  break;
                 default:        diff.emplace_back(opt_key);     break;
                 }
+                // "nozzle_diameter" is a vector option which contain info about diameter for each nozzle
+                // But in the same time size of this vector indicates about count of extruders,
+                // So, we need to add it to the diff if its size is changed.
+                if (opt_key == "nozzle_diameter" && 
+                    static_cast<const ConfigOptionFloats*>(this_opt)->size() != static_cast<const ConfigOptionFloats*>(other_opt)->size())
+                    diff.emplace_back(opt_key);
             }
         }
     }
@@ -2323,6 +2329,15 @@ namespace PresetUtils {
             }
         }
         return true;
+    }
+    bool compare_vendor_profile_printers(const VendorProfile& vp_old, const VendorProfile& vp_new, std::vector<std::string>& new_printers)
+    {
+        for (const VendorProfile::PrinterModel& model : vp_new.models)
+        {
+            if (std::find_if(vp_old.models.begin(), vp_old.models.end(), [model](const VendorProfile::PrinterModel& pm) { return pm.id == model.id; }) == vp_old.models.end())
+                new_printers.push_back(model.name);
+        }
+        return new_printers.empty();
     }
 } // namespace PresetUtils
 

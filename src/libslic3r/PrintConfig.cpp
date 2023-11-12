@@ -59,8 +59,7 @@ static t_config_enum_names enum_names_from_keys_map(const t_config_enum_values &
 
 static const t_config_enum_values s_keys_map_ArcFittingType {
     { "disabled",       int(ArcFittingType::Disabled) },
-    { "emit_center",    int(ArcFittingType::EmitCenter) },
-    { "emit_radius",    int(ArcFittingType::EmitRadius) }
+    { "emit_center",    int(ArcFittingType::EmitCenter) }
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(ArcFittingType)
 
@@ -229,6 +228,13 @@ static const t_config_enum_values s_keys_map_DraftShield = {
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(DraftShield)
 
+static const t_config_enum_values s_keys_map_LabelObjectsStyle = {
+    { "disabled",  int(LabelObjectsStyle::Disabled)  },
+    { "octoprint", int(LabelObjectsStyle::Octoprint) },
+    { "firmware",  int(LabelObjectsStyle::Firmware)  }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(LabelObjectsStyle)
+
 static const t_config_enum_values s_keys_map_GCodeThumbnailsFormat = {
     { "PNG", int(GCodeThumbnailsFormat::PNG) },
     { "JPG", int(GCodeThumbnailsFormat::JPG) },
@@ -310,7 +316,8 @@ void PrintConfigDef::init_common_params()
 
     def = this->add("thumbnails", coString);
     def->label = L("G-code thumbnails");
-    def->tooltip = L("Picture sizes to be stored into a .gcode and .sl1 / .sl1s files, in the following format: \"XxY/EXT, XxY/EXT, ...\"");
+    def->tooltip = L("Picture sizes to be stored into a .gcode / .bgcode and .sl1 / .sl1s files, in the following format: \"XxY/EXT, XxY/EXT, ...\"\n"
+                     "Currently supported extensions are PNG, QOI and JPG.");
     def->mode = comExpert;
     def->gui_type = ConfigOptionDef::GUIType::one_string;
     def->set_default_value(new ConfigOptionString());
@@ -429,24 +436,14 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("arc_fitting", coEnum);
     def->label = L("Arc fitting");
-    def->tooltip = L("Enable this to get a G-code file which has G2 and G3 moves. "
-                     "And the fitting tolerance is same with resolution");
+    def->tooltip = L("Enable to get a G-code file which has G2 and G3 moves. "
+                     "G-code resolution will be used as the fitting tolerance.");
     def->set_enum<ArcFittingType>({
         { "disabled",       "Disabled" },
-        { "emit_center",    "Enabled: G2/3 I J" },
-        { "emit_radius",    "Enabled: G2/3 R" }
+        { "emit_center",    "Enabled: G2/3 I J" }
     });
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionEnum<ArcFittingType>(ArcFittingType::Disabled));
-
-    def = this->add("arc_fitting_tolerance", coFloatOrPercent);
-    def->label = L("Arc fitting tolerance");
-    def->sidetext = L("mm or %");
-    def->tooltip = L("When using the arc_fitting option, allow the curve to deviate a cetain % from the collection of strait paths.\n"
-                     "Can be a mm value or a percentage of the current extrusion width.");
-    def->mode = comAdvanced;
-    def->min = 0;
-    def->set_default_value(new ConfigOptionFloatOrPercent(5, true));
 
     // Maximum extruder temperature, bumped to 1500 to support printing of glass.
     const int max_temp = 1500;
@@ -1492,13 +1489,20 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionEnum<GCodeFlavor>(gcfRepRapSprinter));
 
-    def = this->add("gcode_label_objects", coBool);
+    def = this->add("gcode_label_objects", coEnum);
     def->label = L("Label objects");
-    def->tooltip = L("Enable this to add comments into the G-Code labeling print moves with what object they belong to,"
-                   " which is useful for the Octoprint CancelObject plugin. This settings is NOT compatible with "
-                   "Single Extruder Multi Material setup and Wipe into Object / Wipe into Infill.");
+    def->tooltip = L("Selects whether labels should be exported at object boundaries and in what format.\n"
+                     "OctoPrint = comments to be consumed by OctoPrint CancelObject plugin.\n"
+                     "Firmware = firmware specific G-code (it will be chosen based on firmware flavor and it can end up to be empty).\n\n"
+                     "This settings is NOT compatible with Single Extruder Multi Material setup and Wipe into Object / Wipe into Infill.");
+
+    def->set_enum<LabelObjectsStyle>({
+        { "disabled",   L("Disabled") },
+        { "octoprint",  L("OctoPrint comments") },
+        { "firmware",   L("Firmware-specific") }
+        });
     def->mode = comAdvanced;
-    def->set_default_value(new ConfigOptionBool(0));
+    def->set_default_value(new ConfigOptionEnum<LabelObjectsStyle>(LabelObjectsStyle::Disabled));
 
     def = this->add("gcode_substitutions", coStrings);
     def->label = L("G-code substitutions");
@@ -1508,7 +1512,7 @@ void PrintConfigDef::init_fff_params()
 
     def = this->add("gcode_binary", coBool);
     def->label = L("Export as binary G-code");
-    def->tooltip = L("Exports G-code in binary format.");
+    def->tooltip = L("Export G-code in binary format.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(0));
 
@@ -4340,6 +4344,10 @@ void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &va
     } else if (opt_key == "draft_shield" && (value == "1" || value == "0")) {
         // draft_shield used to be a bool, it was turned into an enum in PrusaSlicer 2.4.0.
         value = value == "1" ? "enabled" : "disabled";
+    } else if (opt_key == "gcode_label_objects" && (value == "1" || value == "0")) {
+        // gcode_label_objects used to be a bool (the behavior was nothing or "octoprint"), it is
+        // and enum since PrusaSlicer 2.6.2.
+        value = value == "1" ? "octoprint" : "disabled";
     } else if (opt_key == "octoprint_host") {
         opt_key = "print_host";
     } else if (opt_key == "octoprint_cafile") {
@@ -5109,6 +5117,7 @@ OtherSlicingStatesConfigDef::OtherSlicingStatesConfigDef()
     def->tooltip = L("Zero-based index of the first extruder used in the print. Same as initial_tool.");
 
     def = this->add("initial_filament_type", coString);
+    // TRN: Meaning 'filament type of the initial filament'
     def->label = L("Initial filament type");
     def->tooltip = L("String containing filament type of the first used extruder.");
 
@@ -5118,7 +5127,7 @@ OtherSlicingStatesConfigDef::OtherSlicingStatesConfigDef()
 
     def = this->add("is_extruder_used", coBools);
     def->label = L("Is extruder used?");
-    def->tooltip = L("Vector of bools stating whether a given extruder is used in the print.");
+    def->tooltip = L("Vector of booleans stating whether a given extruder is used in the print.");
 }
 
 PrintStatisticsConfigDef::PrintStatisticsConfigDef()
@@ -5151,15 +5160,15 @@ PrintStatisticsConfigDef::PrintStatisticsConfigDef()
 
     def = this->add("total_cost", coFloat);
     def->label = L("Total cost");
-    def->tooltip = L("Total cost of all material used in the print. Calculated from filament_cost value in Filament Settings.");
+    def->tooltip = L("Total cost of all material used in the print. Calculated from cost in Filament Settings.");
 
     def = this->add("total_weight", coFloat);
     def->label = L("Total weight");
-    def->tooltip = L("Total weight of the print. Calculated from filament_density value in Filament Settings.");
+    def->tooltip = L("Total weight of the print. Calculated from density in Filament Settings.");
 
     def = this->add("total_wipe_tower_cost", coFloat);
     def->label = L("Total wipe tower cost");
-    def->tooltip = L("Total cost of the material wasted on the wipe tower. Calculated from filament_cost value in Filament Settings.");
+    def->tooltip = L("Total cost of the material wasted on the wipe tower. Calculated from cost in Filament Settings.");
 
     def = this->add("total_wipe_tower_filament", coFloat);
     def->label = L("Wipe tower volume");
@@ -5170,7 +5179,7 @@ PrintStatisticsConfigDef::PrintStatisticsConfigDef()
     def->tooltip = L("Total length of filament used in the print.");
 
     def = this->add("total_toolchanges", coInt);
-    def->label = L("Total toolchanges");
+    def->label = L("Total number of toolchanges");
     def->tooltip = L("Number of toolchanges during the print.");
 
     def = this->add("extruded_volume_total", coFloat);
@@ -5179,11 +5188,11 @@ PrintStatisticsConfigDef::PrintStatisticsConfigDef()
 
     def = this->add("extruded_weight", coFloats);
     def->label = L("Weight per extruder");
-    def->tooltip = L("Weight per extruder extruded during the entire print. Calculated from filament_density value in Filament Settings.");
+    def->tooltip = L("Weight per extruder extruded during the entire print. Calculated from density in Filament Settings.");
 
     def = this->add("extruded_weight_total", coFloat);
     def->label = L("Total weight");
-    def->tooltip = L("Total weight of the print. Calculated from filament_density value in Filament Settings.");
+    def->tooltip = L("Total weight of the print. Calculated from density in Filament Settings.");
 
     def = this->add("total_layer_count", coInt);
     def->label = L("Total layer count");
@@ -5206,7 +5215,7 @@ ObjectsInfoConfigDef::ObjectsInfoConfigDef()
     def->label = L("Scale per object");
     def->tooltip = L("Contains a string with the information about what scaling was applied to the individual objects. "
                      "Indexing of the objects is zero-based (first object has index 0).\n"
-                     "Example: 'x:100% y:50% z:100'.");
+                     "Example: 'x:100% y:50% z:100%'.");
 
     def = this->add("input_filename_base", coString);
     def->label = L("Input filename without extension");
@@ -5327,11 +5336,11 @@ CustomGcodeSpecificConfigDef::CustomGcodeSpecificConfigDef()
     def->tooltip = L("Zero-based index of the current layer (i.e. first layer is number 0).");
 
     def = this->add("layer_z", coFloat);
-    def->label = L("Layer z");
+    def->label = L("Layer Z");
     def->tooltip = L("Height of the current layer above the print bed, measured to the top of the layer.");
 
     def = this->add("max_layer_z", coFloat);
-    def->label = L("Maximal layer z");
+    def->label = L("Maximal layer Z");
     def->tooltip = L("Height of the last layer above the print bed.");
 
     def = this->add("filament_extruder_id", coInt);
@@ -5347,7 +5356,7 @@ CustomGcodeSpecificConfigDef::CustomGcodeSpecificConfigDef()
     def->tooltip = L("Index of the extruder that is being loaded. The index is zero based (first extruder has index 0).");
 
     def = this->add("toolchange_z", coFloat);
-    def->label = L("Toolchange z");
+    def->label = L("Toolchange Z");
     def->tooltip = L("Height above the print bed when the toolchange takes place. Usually the same as layer_z, but can be different.");
 }
 

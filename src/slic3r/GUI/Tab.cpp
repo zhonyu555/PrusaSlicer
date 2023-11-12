@@ -69,6 +69,8 @@
 #include "MsgDialog.hpp"
 #include "Notebook.hpp"
 
+#include "Widgets/CheckBox.hpp"
+
 #ifdef WIN32
 	#include <CommCtrl.h>
 #endif // WIN32
@@ -82,7 +84,11 @@ Tab::Tab(wxBookCtrlBase* parent, const wxString& title, Preset::Type type) :
     Create(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxBK_LEFT | wxTAB_TRAVERSAL/*, name*/);
     this->SetFont(Slic3r::GUI::wxGetApp().normal_font());
 
+#ifdef __WXMSW__
     wxGetApp().UpdateDarkUI(this);
+#elif __WXOSX__
+    SetBackgroundColour(parent->GetBackgroundColour());
+#endif
 
     m_compatible_printers.type			= Preset::TYPE_PRINTER;
     m_compatible_printers.key_list		= "compatible_printers";
@@ -166,8 +172,6 @@ void Tab::create_preset_tab()
             select_preset(Preset::remove_suffix_modified(preset_name));
         }
     });
-
-    auto color = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
 
     //buttons
     m_scaled_buttons.reserve(6);
@@ -292,6 +296,9 @@ void Tab::create_preset_tab()
     m_treectrl = new wxTreeCtrl(panel, wxID_ANY, wxDefaultPosition, wxSize(20 * m_em_unit, -1),
         wxTR_NO_BUTTONS | wxTR_HIDE_ROOT | wxTR_SINGLE | wxTR_NO_LINES | wxBORDER_SUNKEN | wxWANTS_CHARS);
     m_treectrl->SetFont(wxGetApp().normal_font());
+#ifdef __linux__
+    m_treectrl->SetBackgroundColour(m_parent->GetBackgroundColour());
+#endif
     m_left_sizer->Add(m_treectrl, 1, wxEXPAND);
     // Index of the last icon inserted into m_treectrl
     m_icon_count = -1;
@@ -422,10 +429,6 @@ Slic3r::GUI::PageShp Tab::add_options_page(const wxString& title, const std::str
     }
     // Initialize the page.
     PageShp page(new Page(m_page_view, title, icon_idx));
-//	page->SetBackgroundStyle(wxBG_STYLE_SYSTEM);
-#ifdef __WINDOWS__
-//	page->SetDoubleBuffered(true);
-#endif //__WINDOWS__
 
     if (!is_extruder_pages)
         m_pages.push_back(page);
@@ -961,6 +964,11 @@ void Tab::msw_rescale()
     m_presets_choice->msw_rescale();
     m_treectrl->SetMinSize(wxSize(20 * m_em_unit, -1));
 
+    if (m_compatible_printers.checkbox)
+        CheckBox::Rescale(m_compatible_printers.checkbox);
+    if (m_compatible_prints.checkbox)
+        CheckBox::Rescale(m_compatible_prints.checkbox);
+
     // rescale options_groups
     if (m_active_page)
         m_active_page->msw_rescale();
@@ -1364,10 +1372,10 @@ void Tab::update_preset_description_line()
                 if (!default_filament_profiles.empty())
                 {
                     description_line += "\n\n\t" + _(L("default filament profile")) + ": \n\t\t";
-                    for (auto& profile : default_filament_profiles) {
+                    for (const std::string& profile : default_filament_profiles) {
                         if (&profile != &*default_filament_profiles.begin())
                             description_line += ", ";
-                        description_line += profile;
+                        description_line += from_u8(profile);
                     }
                 }
                 break;
@@ -1678,7 +1686,6 @@ void TabPrint::build()
         optgroup->append_single_option_line("resolution");
         optgroup->append_single_option_line("gcode_resolution");
         optgroup->append_single_option_line("arc_fitting");
-        optgroup->append_single_option_line("arc_fitting_tolerance");
         optgroup->append_single_option_line("xy_size_compensation");
         optgroup->append_single_option_line("elefant_foot_compensation", "elephant-foot-compensation_114487");
 
@@ -1942,7 +1949,8 @@ void TabFilament::create_line_with_near_label_widget(ConfigOptionsGroupShp optgr
         line = optgroup->create_single_option_line(optgroup->get_option(opt_key));
 
     line.near_label_widget = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup), opt_key, opt_index](wxWindow* parent) {
-        wxCheckBox* check_box = new wxCheckBox(parent, wxID_ANY, "");
+        wxWindow* check_box = CheckBox::GetNewWin(parent);
+        wxGetApp().UpdateDarkUI(check_box);
 
         check_box->Bind(wxEVT_CHECKBOX, [optgroup_wk, opt_key, opt_index](wxCommandEvent& evt) {
             const bool is_checked = evt.IsChecked();
@@ -1955,7 +1963,7 @@ void TabFilament::create_line_with_near_label_widget(ConfigOptionsGroupShp optgr
                         field->set_na_value();
                 }
             }
-        }, check_box->GetId());
+        });
 
         m_overrides_options[opt_key] = check_box;
         return check_box;
@@ -1971,7 +1979,7 @@ void TabFilament::update_line_with_near_label_widget(ConfigOptionsGroupShp optgr
     m_overrides_options[opt_key]->Enable(is_checked);
 
     is_checked &= !m_config->option(opt_key)->is_nil();
-    m_overrides_options[opt_key]->SetValue(is_checked);
+    CheckBox::SetValue(m_overrides_options[opt_key], is_checked);
 
     Field* field = optgroup->get_fieldc(opt_key, opt_index);
     if (field != nullptr)
@@ -2040,6 +2048,16 @@ void TabFilament::update_filament_overrides_page()
     {
         bool is_checked = opt_key=="filament_retract_length" ? true : have_retract_length;
         update_line_with_near_label_widget(optgroup, opt_key, extruder_idx, is_checked);
+/*
+        m_overrides_options[opt_key]->Enable(is_checked);
+
+        is_checked &= !m_config->option(opt_key)->is_nil();
+        CheckBox::SetValue(m_overrides_options[opt_key], is_checked);
+
+        Field* field = optgroup->get_fieldc(opt_key, extruder_idx);
+        if (field != nullptr)
+            field->toggle(is_checked);
+*/
     }
 
     og_it = std::find_if(page->m_optgroups.begin(), page->m_optgroups.end(), [](const ConfigOptionsGroupShp og) { return og->title == "Retraction when tool is disabled"; });
@@ -2231,6 +2249,7 @@ void TabFilament::build()
 
         create_line_with_widget(optgroup.get(), "filament_ramming_parameters", "", [this](wxWindow* parent) {
             auto ramming_dialog_btn = new wxButton(parent, wxID_ANY, _(L("Ramming settings"))+dots, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
+            wxGetApp().SetWindowVariantForButton(ramming_dialog_btn);
             wxGetApp().UpdateDarkUI(ramming_dialog_btn);
             ramming_dialog_btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
             ramming_dialog_btn->SetSize(ramming_dialog_btn->GetBestSize());
@@ -2401,6 +2420,9 @@ void TabFilament::clear_pages()
 
     m_volumetric_speed_description_line = nullptr;
 	m_cooling_description_line = nullptr;
+
+    for (auto& over_opt : m_overrides_options)
+        over_opt.second = nullptr;
 }
 
 void TabFilament::msw_rescale()
@@ -2408,17 +2430,25 @@ void TabFilament::msw_rescale()
     for (const auto& over_opt : m_overrides_options)
         if (wxWindow* win = over_opt.second)
             win->SetInitialSize(win->GetBestSize());
-
     Tab::msw_rescale();
 }
 
 void TabFilament::sys_color_changed()
 {
+    wxGetApp().UpdateDarkUI(m_extruders_cb);
     m_extruders_cb->Clear();
     update_extruder_combobox();
 
     Tab::sys_color_changed();
+
+    for (const auto& over_opt : m_overrides_options)
+        if (wxWindow* check_box = over_opt.second) {
+            wxGetApp().UpdateDarkUI(check_box);
+            CheckBox::SysColorChanged(check_box);
+        }
 }
+
+
 
 void TabFilament::load_current_preset()
 {
@@ -2666,6 +2696,7 @@ void TabPrinter::build_fff()
                         auto [thumbnails_list, errors] = GCodeThumbnails::make_and_check_thumbnail_list(val);
 
                         if (errors != enum_bitmask<ThumbnailError>()) {
+                            // TRN: First argument is parameter name, the second one is the value.
                             std::string error_str = format(_u8L("Invalid value provided for parameter %1%: %2%"), "thumbnails", val);
                             error_str += GCodeThumbnails::get_error_string(errors);
                             InfoDialog(parent(), _L("G-code flavor is switched"), from_u8(error_str)).ShowModal();
@@ -3686,6 +3717,7 @@ void Tab::rebuild_page_tree()
             continue;
         auto itemId = m_treectrl->AppendItem(rootItem, translate_category(p->title(), m_type), p->iconID());
         m_treectrl->SetItemTextColour(itemId, p->get_item_colour());
+        m_treectrl->SetItemFont(itemId, wxGetApp().normal_font());
         if (translate_category(p->title(), m_type) == selected)
             item = itemId;
     }
@@ -4464,9 +4496,9 @@ void Tab::create_line_with_widget(ConfigOptionsGroup* optgroup, const std::strin
 // Return a callback to create a Tab widget to mark the preferences as compatible / incompatible to the current printer.
 wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &deps)
 {
-    deps.checkbox = new wxCheckBox(parent, wxID_ANY, _(L("All")));
+    deps.checkbox = CheckBox::GetNewWin(parent, _L("All"));
     deps.checkbox->SetFont(Slic3r::GUI::wxGetApp().normal_font());
-    wxGetApp().UpdateDarkUI(deps.checkbox, false, true);
+    wxGetApp().UpdateDarkUI(deps.checkbox);
     deps.btn = new ScalableButton(parent, wxID_ANY, "printer", format_wxstr(" %s %s", _L("Set"), dots),
                                   wxDefaultSize, wxDefaultPosition, wxBU_LEFT | wxBU_EXACTFIT);
     deps.btn->SetFont(Slic3r::GUI::wxGetApp().normal_font());
@@ -4478,11 +4510,12 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
 
     deps.checkbox->Bind(wxEVT_CHECKBOX, ([this, &deps](wxCommandEvent e)
     {
-        deps.btn->Enable(! deps.checkbox->GetValue());
+        const bool is_checked = CheckBox::GetValue(deps.checkbox);
+        deps.btn->Enable(!is_checked);
         // All printers have been made compatible with this preset.
-        if (deps.checkbox->GetValue())
+        if (is_checked)
             this->load_key_value(deps.key_list, std::vector<std::string> {});
-        this->get_field(deps.key_condition)->toggle(deps.checkbox->GetValue());
+        this->get_field(deps.key_condition)->toggle(is_checked);
         this->update_changed_ui();
     }) );
 
@@ -4525,7 +4558,7 @@ wxSizer* Tab::compatible_widget_create(wxWindow* parent, PresetDependencies &dep
             for (auto idx : selections)
                 value.push_back(presets[idx].ToUTF8().data());
             if (value.empty()) {
-                deps.checkbox->SetValue(1);
+                CheckBox::SetValue(deps.checkbox, true);
                 deps.btn->Disable();
             }
             // All depending_presets have been made compatible with this preset.
@@ -4547,6 +4580,7 @@ void SubstitutionManager::init(DynamicPrintConfig* config, wxWindow* parent, wxF
     m_em = em_unit(parent);
 
     m_substitutions = m_config->option<ConfigOptionStrings>("gcode_substitutions")->values;
+    m_chb_match_single_lines.clear();
 }
 
 void SubstitutionManager::validate_length()
@@ -4646,11 +4680,7 @@ void SubstitutionManager::add_substitution( int substitution_id,
 
     auto top_sizer = new wxBoxSizer(wxHORIZONTAL);
     auto add_text_editor = [substitution_id, top_sizer, this](const wxString& value, int opt_pos, int proportion) {
-        auto editor = new wxTextCtrl(m_parent, wxID_ANY, value, wxDefaultPosition, wxSize(15 * m_em, wxDefaultCoord), wxTE_PROCESS_ENTER
-#ifdef _WIN32
-            | wxBORDER_SIMPLE
-#endif
-        );
+        auto editor = new ::TextInput(m_parent, value, "", "", wxDefaultPosition, wxSize(15 * m_em, wxDefaultCoord), wxTE_PROCESS_ENTER);
 
         editor->SetFont(wxGetApp().normal_font());
         wxGetApp().UpdateDarkUI(editor);
@@ -4679,39 +4709,39 @@ void SubstitutionManager::add_substitution( int substitution_id,
     bool whole_word          = strchr(params.c_str(), 'w') != nullptr || strchr(params.c_str(), 'W') != nullptr;
     bool match_single_line   = strchr(params.c_str(), 's') != nullptr || strchr(params.c_str(), 'S') != nullptr;
 
-    auto chb_regexp = new wxCheckBox(m_parent, wxID_ANY, _L("Regular expression"));
-    chb_regexp->SetValue(regexp);
+    auto chb_regexp = CheckBox::GetNewWin(m_parent, _L("Regular expression"));
+    CheckBox::SetValue(chb_regexp, regexp);
     params_sizer->Add(chb_regexp, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, m_em);
 
-    auto chb_case_insensitive = new wxCheckBox(m_parent, wxID_ANY, _L("Case insensitive"));
-    chb_case_insensitive->SetValue(case_insensitive);
+    auto chb_case_insensitive = CheckBox::GetNewWin(m_parent, _L("Case insensitive"));
+    CheckBox::SetValue(chb_case_insensitive, case_insensitive);
     params_sizer->Add(chb_case_insensitive, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
 
-    auto chb_whole_word = new wxCheckBox(m_parent, wxID_ANY, _L("Whole word"));
-    chb_whole_word->SetValue(whole_word);
+    auto chb_whole_word = CheckBox::GetNewWin(m_parent, _L("Whole word"));
+    CheckBox::SetValue(chb_whole_word, whole_word);
     params_sizer->Add(chb_whole_word, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
 
-    auto chb_match_single_line = new wxCheckBox(m_parent, wxID_ANY, _L("Match single line"));
-    chb_match_single_line->SetValue(match_single_line);
+    auto chb_match_single_line = CheckBox::GetNewWin(m_parent, _L("Match single line"));
+    CheckBox::SetValue(chb_match_single_line, match_single_line);
     chb_match_single_line->Show(regexp);
     m_chb_match_single_lines.emplace_back(chb_match_single_line);
 
     params_sizer->Add(chb_match_single_line, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT | wxLEFT, m_em);
 
-    for (wxCheckBox* chb : std::initializer_list<wxCheckBox*>{ chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line }) {
+    for (wxWindow* chb : std::initializer_list<wxWindow*>{ chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line }) {
         chb->SetFont(wxGetApp().normal_font());
         chb->Bind(wxEVT_CHECKBOX, [this, substitution_id, chb_regexp, chb_case_insensitive, chb_whole_word, chb_match_single_line](wxCommandEvent e) {
             std::string value = std::string();
-            if (chb_regexp->GetValue())
+            if (CheckBox::GetValue(chb_regexp))
                 value += "r";
-            if (chb_case_insensitive->GetValue())
+            if (CheckBox::GetValue(chb_case_insensitive))
                 value += "i";
-            if (chb_whole_word->GetValue())
+            if (CheckBox::GetValue(chb_whole_word))
                 value += "w";
-            if (chb_match_single_line->GetValue())
+            if (CheckBox::GetValue(chb_match_single_line))
                 value += "s";
 
-            chb_match_single_line->Show(chb_regexp->GetValue());
+            chb_match_single_line->Show(CheckBox::GetValue(chb_regexp));
             m_grid_sizer->Layout();
 
             edit_substitution(substitution_id, 2, value);
@@ -4735,6 +4765,7 @@ void SubstitutionManager::update_from_config()
     if (m_substitutions == subst && m_grid_sizer->IsShown(1)) {
         // just update visibility for chb_match_single_lines
         int subst_id = 0;
+        assert(m_chb_match_single_lines.size() == size_t(subst.size()/4));
         for (size_t i = 0; i < subst.size(); i += 4) {
             const std::string& params = subst[i + 2];
             const bool         regexp = strchr(params.c_str(), 'r') != nullptr || strchr(params.c_str(), 'R') != nullptr;
@@ -4772,8 +4803,10 @@ void SubstitutionManager::delete_all()
     m_config->option<ConfigOptionStrings>("gcode_substitutions")->values.clear();
     call_ui_update();
 
-    if (!m_grid_sizer->IsEmpty())
+    if (!m_grid_sizer->IsEmpty()) {
         m_grid_sizer->Clear(true);
+        m_chb_match_single_lines.clear();
+    }
 
     m_parent->GetParent()->Layout();
 }
@@ -4839,6 +4872,7 @@ wxSizer* TabPrint::create_substitutions_widget(wxWindow* parent)
     m_subst_manager.init(m_config, parent, grid_sizer);
     m_subst_manager.set_cb_edited_substitution([this]() {
         update_dirty();
+        Layout();
         wxGetApp().mainframe->on_config_changed(m_config); // invalidate print
     });
     m_subst_manager.set_cb_hide_delete_all_btn([this]() {
@@ -4974,7 +5008,7 @@ void Tab::compatible_widget_reload(PresetDependencies &deps)
 
     bool has_any = ! m_config->option<ConfigOptionStrings>(deps.key_list)->values.empty();
     has_any ? deps.btn->Enable() : deps.btn->Disable();
-    deps.checkbox->SetValue(! has_any);
+    CheckBox::SetValue(deps.checkbox, !has_any);
 
     field->toggle(! has_any);
 }
@@ -5005,11 +5039,8 @@ void Tab::fill_icon_descriptions()
         "the last saved preset."));
 
     m_icon_descriptions.emplace_back(&m_bmp_edit_value, L("EDIT VALUE"),
-        // TRN Description for "EDIT VALUE"
-        L("indicates that the settings were changed and are not equal to the last saved preset for "
-        "the current option group.\n"
-        "Click the BACK ARROW icon to reset all settings for the current option group to "
-        "the last saved preset."));
+        // TRN Description for "EDIT VALUE" in the Help dialog (the icon is currently used only to edit custom gcodes).
+        L("clicking this icon opens a dialog allowing to edit this value."));
 }
 
 void Tab::set_tooltips_text()

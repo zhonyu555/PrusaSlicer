@@ -288,6 +288,7 @@ void OptionsGroup::activate_line(Line& line)
 
     if (!custom_ctrl && m_use_custom_ctrl) {
         custom_ctrl = new OG_CustomCtrl(is_legend_line || !staticbox ? this->parent() : static_cast<wxWindow*>(this->stb), this);
+        wxGetApp().UpdateDarkUI(custom_ctrl);
 		if (is_legend_line)
 			sizer->Add(custom_ctrl, 0, wxEXPAND | wxLEFT, wxOSX ? 0 : 10);
 		else
@@ -942,8 +943,8 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 		else if (opt->gui_flags == "serialized") {
 			std::vector<std::string> values = config.option<ConfigOptionStrings>(opt_key)->values;
 			if (!values.empty() && !values[0].empty())
-				for (auto el : values)
-					text_value += el + ";";
+				for (const std::string& el : values)
+					text_value += from_u8(el) + ";";
 			ret = text_value;
 		}
 		else

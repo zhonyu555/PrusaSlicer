@@ -375,7 +375,7 @@ public:
     bool can_increase_instances() const;
     bool can_decrease_instances(int obj_idx = -1) const;
     bool can_set_instance_to_object() const;
-    bool can_fix_through_netfabb() const;
+    bool can_fix_through_winsdk() const;
     bool can_simplify() const;
     bool can_split_to_objects() const;
     bool can_split_to_volumes() const;
@@ -493,6 +493,7 @@ public:
     wxMenu* object_menu();
     wxMenu* part_menu();
     wxMenu* text_part_menu();
+    wxMenu* svg_part_menu();
     wxMenu* sla_object_menu();
     wxMenu* default_menu();
     wxMenu* instance_menu();

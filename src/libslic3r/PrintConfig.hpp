@@ -49,8 +49,7 @@ namespace Slic3r {
 
 enum class ArcFittingType {
     Disabled,
-    EmitCenter,
-    EmitRadius,
+    EmitCenter
 };
 
 enum GCodeFlavor : unsigned char {
@@ -147,6 +146,10 @@ enum DraftShield {
     dsDisabled, dsLimited, dsEnabled
 };
 
+enum class LabelObjectsStyle {
+    Disabled, Octoprint, Firmware
+};
+
 enum class PerimeterGeneratorType
 {
     // Classic perimeter generator using Clipper offsets with constant extrusion width.
@@ -183,6 +186,7 @@ CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(SLAPillarConnectionMode)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(SLASupportTreeType)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(BrimType)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(DraftShield)
+CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(LabelObjectsStyle)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(GCodeThumbnailsFormat)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(ForwardCompatibilitySubstitutionRule)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(PerimeterGeneratorType)
@@ -697,7 +701,6 @@ PRINT_CONFIG_CLASS_DEFINE(
     GCodeConfig,
 
     ((ConfigOptionEnum<ArcFittingType>, arc_fitting))
-    ((ConfigOptionFloatOrPercent,      arc_fitting_tolerance))
     ((ConfigOptionBool,                autoemit_temperature_commands))
     ((ConfigOptionString,              before_layer_gcode))
     ((ConfigOptionString,              between_objects_gcode))
@@ -730,7 +733,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloats,              filament_multitool_ramming_flow))
     ((ConfigOptionBool,                gcode_comments))
     ((ConfigOptionEnum<GCodeFlavor>,   gcode_flavor))
-    ((ConfigOptionBool,                gcode_label_objects))
+    ((ConfigOptionEnum<LabelObjectsStyle>,  gcode_label_objects))
     // Triples of strings: "search pattern", "replace with pattern", "attribs"
     // where "attribs" are one of:
     //      r - regular expression

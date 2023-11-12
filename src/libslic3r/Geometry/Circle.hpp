@@ -141,6 +141,18 @@ Circled circle_taubin_newton(const Vec2ds& input, size_t cycles = 20);
 // Find circle using RANSAC randomized algorithm.
 Circled circle_ransac(const Vec2ds& input, size_t iterations = 20, double* min_error = nullptr);
 
+// Linear Least squares fitting.
+// Be careful! The linear least squares fitting is strongly biased towards small circles,
+// thus the method is only recommended for circles or arches with large arc angle.
+// Also it is strongly recommended to center the input at an expected circle (or arc) center
+// to minimize the small circle bias!
+    // Linear Least squares fitting with SVD. Most accurate, but slowest.
+    Circled circle_linear_least_squares_svd(const Vec2ds &input);
+    // Linear Least squares fitting with QR decomposition. Medium accuracy, medium speed.
+    Circled circle_linear_least_squares_qr(const Vec2ds &input);
+    // Linear Least squares fitting solving normal equations. Low accuracy, high speed.
+    Circled circle_linear_least_squares_normal(const Vec2ds &input);
+
 // Randomized algorithm by Emo Welzl, working with squared radii for efficiency. The returned circle radius is inflated by epsilon.
 template<typename Vector, typename Points>
 CircleSq<Vector> smallest_enclosing_circle2_welzl(const Points &points, const typename Vector::Scalar epsilon)

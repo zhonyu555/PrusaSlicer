@@ -307,8 +307,8 @@ void GCodeViewer::SequentialView::Marker::init()
 void GCodeViewer::SequentialView::Marker::set_world_position(const Vec3f& position)
 {    
     m_world_position = position;
-    m_world_transform = (Geometry::translation_transform((position + m_z_offset * Vec3f::UnitZ()).cast<double>()) *
-      Geometry::translation_transform(m_model.get_bounding_box().size().z() * Vec3d::UnitZ()) * Geometry::rotation_transform({ M_PI, 0.0, 0.0 })).cast<float>();
+    m_world_transform = (Geometry::translation_transform((position + m_model_z_offset * Vec3f::UnitZ()).cast<double>()) *
+        Geometry::translation_transform(m_model.get_bounding_box().size().z() * Vec3d::UnitZ()) * Geometry::rotation_transform({ M_PI, 0.0, 0.0 })).cast<float>();
 }
 
 void GCodeViewer::SequentialView::Marker::render()
@@ -351,7 +351,7 @@ void GCodeViewer::SequentialView::Marker::render()
     imgui.text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, _u8L("Tool position") + ":");
     ImGui::SameLine();
     char buf[1024];
-    const Vec3f position = m_world_position + m_world_offset;
+    const Vec3f position = m_world_position + m_world_offset + m_z_offset * Vec3f::UnitZ();
     sprintf(buf, "X: %.3f, Y: %.3f, Z: %.3f", position.x(), position.y(), position.z());
     imgui.text(std::string(buf));
 
@@ -505,7 +505,7 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, s
                         }
 
                         if (ftell(file.f) == file_size)
-                          break;
+                            break;
 
                         res = read_next_block_header(*file.f, file_header, block_header, nullptr, 0);
                         if (res != EResult::Success || block_header.type != (uint16_t)EBlockType::GCode) {
@@ -544,7 +544,7 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, s
 
     auto resize_range = [&](Range& range, size_t lines_count) {
         const size_t half_lines_count = lines_count / 2;
-        range.min = (curr_line_id >= half_lines_count) ? curr_line_id - half_lines_count : 1;
+        range.min = (curr_line_id > half_lines_count) ? curr_line_id - half_lines_count : 1;
         range.max = *range.min + lines_count - 1;
         size_t lines_ends_count = 0;
         for (const auto& le : m_lines_ends) {
@@ -841,6 +841,7 @@ void GCodeViewer::load(const GCodeProcessorResult& gcode_result, const Print& pr
         m_custom_gcode_per_print_z = gcode_result.custom_gcode_per_print_z;
 
     m_max_print_height = gcode_result.max_print_height;
+    m_z_offset = gcode_result.z_offset;
 
     load_toolpaths(gcode_result);
     load_wipetower_shell(print);
@@ -1000,6 +1001,7 @@ void GCodeViewer::reset()
     m_paths_bounding_box.reset();
     m_max_bounding_box.reset();
     m_max_print_height = 0.0f;
+    m_z_offset = 0.0f;
     m_tool_colors = std::vector<ColorRGBA>();
     m_extruders_count = 0;
     m_extruder_ids = std::vector<unsigned char>();
@@ -1042,6 +1044,7 @@ void GCodeViewer::render()
         if (m_sequential_view.current.last != m_sequential_view.endpoints.last) {
             m_sequential_view.marker.set_world_position(m_sequential_view.current_position);
             m_sequential_view.marker.set_world_offset(m_sequential_view.current_offset);
+            m_sequential_view.marker.set_z_offset(m_z_offset);
             m_sequential_view.render(legend_height);
         }
     }
@@ -2258,20 +2261,22 @@ void GCodeViewer::load_toolpaths(const GCodeProcessorResult& gcode_result)
         if (move.type == EMoveType::Seam)
             ++seams_count;
 
-        size_t move_id = i - seams_count;
+        const size_t move_id = i - seams_count;
 
         if (move.type == EMoveType::Extrude) {
-            if (!move.internal_only) {
-                // layers zs
-                const double* const last_z = m_layers.empty() ? nullptr : &m_layers.get_zs().back();
-                const double z = static_cast<double>(move.position.z());
-                if (last_z == nullptr || z < *last_z - EPSILON || *last_z + EPSILON < z) {
-                    const size_t start_it = (m_layers.empty() && first_travel_s_id != 0) ? first_travel_s_id : last_travel_s_id;
-                    m_layers.append(z, { start_it, move_id });
-                }
-                else
-                    m_layers.get_ranges().back().last = move_id;
+            // layers zs/ranges
+            const double* const last_z = m_layers.empty() ? nullptr : &m_layers.get_zs().back();
+            const double z = static_cast<double>(move.position.z());
+            if (move.extrusion_role != GCodeExtrusionRole::Custom &&
+                (last_z == nullptr || z < *last_z - EPSILON || *last_z + EPSILON < z)) {
+                // start a new layer
+                const size_t start_it = (m_layers.empty() && first_travel_s_id != 0) ? first_travel_s_id : last_travel_s_id;
+                m_layers.append(z, { start_it, move_id });
             }
+            else if (!m_layers.empty() && !move.internal_only)
+                // update last layer
+                m_layers.get_ranges().back().last = move_id;
+
             // extruder ids
             m_extruder_ids.emplace_back(move.extruder_id);
             // roles
@@ -2538,8 +2543,11 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
         const size_t min_s_id = m_layers.get_range_at(min_id).first;
         const size_t max_s_id = m_layers.get_range_at(max_id).last;
 
-        return (min_s_id <= path.sub_paths.front().first.s_id && path.sub_paths.front().first.s_id <= max_s_id) ||
-            (min_s_id <= path.sub_paths.back().last.s_id && path.sub_paths.back().last.s_id <= max_s_id);
+        const bool top_layer_shown = max_id == m_layers.size() - 1;
+
+        return (min_s_id <= path.sub_paths.front().first.s_id && path.sub_paths.front().first.s_id <= max_s_id) || // the leading vertex is contained
+               (min_s_id <= path.sub_paths.back().last.s_id && path.sub_paths.back().last.s_id <= max_s_id) ||     // the trailing vertex is contained
+               (top_layer_shown && max_s_id < path.sub_paths.front().first.s_id); // the leading vertex is above the top layer and the top layer is shown
     };
 
 #if ENABLE_GCODE_VIEWER_STATISTICS
@@ -2588,10 +2596,8 @@ void GCodeViewer::refresh_render_paths(bool keep_sequential_current_first, bool 
             for (size_t i = 0; i < buffer.paths.size(); ++i) {
                 const Path& path = buffer.paths[i];
                 if (path.type == EMoveType::Travel) {
-                    if (path.sub_paths.front().first.s_id > m_layers_z_range[0]) {
-                        if (!is_travel_in_layers_range(i, m_layers_z_range[0], m_layers_z_range[1]))
-                            continue;
-                    }
+                    if (!is_travel_in_layers_range(i, m_layers_z_range[0], m_layers_z_range[1]))
+                          continue;
                 }
                 else if (!is_in_layers_range(path, m_layers_z_range[0], m_layers_z_range[1]))
                     continue;

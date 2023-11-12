@@ -28,6 +28,7 @@
 #include "Exception.hpp"
 #include "ExtrusionEntity.hpp"
 #include "Geometry/ConvexHull.hpp"
+#include "GCode/LabelObjects.hpp"
 #include "GCode/PrintExtents.hpp"
 #include "GCode/Thumbnails.hpp"
 #include "GCode/WipeTower.hpp"
@@ -101,7 +102,6 @@ namespace Slic3r {
         if (!gcode.empty() && gcode.back() != '\n')
             gcode += '\n';
     }
-
 
     // Return true if tch_prefix is found in custom_gcode
     static bool custom_gcode_changes_tool(const std::string& custom_gcode, const std::string& tch_prefix, unsigned next_extruder)
@@ -1148,6 +1148,10 @@ void GCodeGenerator::_do_export(Print& print, GCodeOutputStream &file, Thumbnail
     // Emit machine envelope limits for the Marlin firmware.
     this->print_machine_envelope(file, print);
 
+    // Label all objects so printer knows about them since the start.
+    m_label_objects.init(print);
+    file.write(m_label_objects.all_objects_header());
+
     // Update output variables after the extruders were initialized.
     m_placeholder_parser_integration.init(m_writer);
     // Let the start-up script prime the 1st printing tool.
@@ -1463,13 +1467,13 @@ void GCodeGenerator::process_layers(
     const auto smooth_path_interpolator = tbb::make_filter<void, std::pair<size_t, GCode::SmoothPathCache>>(slic3r_tbb_filtermode::serial_in_order,
         [this, &print, &layers_to_print, &layer_to_print_idx, &interpolation_params](tbb::flow_control &fc) -> std::pair<size_t, GCode::SmoothPathCache> {
             if (layer_to_print_idx >= layers_to_print.size()) {
-                if ((!m_pressure_equalizer && layer_to_print_idx == layers_to_print.size()) || (m_pressure_equalizer && layer_to_print_idx == (layers_to_print.size() + 1))) {
+                if (layer_to_print_idx == layers_to_print.size() + (m_pressure_equalizer ? 1 : 0)) {
                     fc.stop();
                     return {};
                 } else {
                     // Pressure equalizer need insert empty input. Because it returns one layer back.
                     // Insert NOP (no operation) layer;
-                    return { ++ layer_to_print_idx, {} };
+                    return { layer_to_print_idx ++, {} };
                 }
             } else {
                 print.throw_if_canceled();
@@ -1561,13 +1565,13 @@ void GCodeGenerator::process_layers(
     const auto smooth_path_interpolator = tbb::make_filter<void, std::pair<size_t, GCode::SmoothPathCache>> (slic3r_tbb_filtermode::serial_in_order,
         [this, &print, &layers_to_print, &layer_to_print_idx, interpolation_params](tbb::flow_control &fc) -> std::pair<size_t, GCode::SmoothPathCache> {
             if (layer_to_print_idx >= layers_to_print.size()) {
-                if ((!m_pressure_equalizer && layer_to_print_idx == layers_to_print.size()) || (m_pressure_equalizer && layer_to_print_idx == (layers_to_print.size() + 1))) {
+                if (layer_to_print_idx == layers_to_print.size() + (m_pressure_equalizer ? 1 : 0)) {
                     fc.stop();
                     return {};
                 } else {
                     // Pressure equalizer need insert empty input. Because it returns one layer back.
                     // Insert NOP (no operation) layer;
-                    return { ++ layer_to_print_idx, {} };
+                    return { layer_to_print_idx ++, {} };
                 }
             } else {
                 print.throw_if_canceled();
@@ -2339,9 +2343,8 @@ void GCodeGenerator::process_layer_single_object(
     const bool                print_wipe_extrusions)
 {
     bool     first     = true;
-    int      object_id = 0;
     // Delay layer initialization as many layers may not print with all extruders.
-    auto init_layer_delayed = [this, &print_instance, &layer_to_print, &first, &object_id, &gcode]() {
+    auto init_layer_delayed = [this, &print_instance, &layer_to_print, &first, &gcode]() {
         if (first) {
             first = false;
             const PrintObject &print_object = print_instance.print_object;
@@ -2357,14 +2360,7 @@ void GCodeGenerator::process_layer_single_object(
                 m_avoid_crossing_perimeters.use_external_mp_once();
             m_last_obj_copy = this_object_copy;
             this->set_origin(unscale(offset));
-            if (this->config().gcode_label_objects) {
-                for (const PrintObject *po : print_object.print()->objects())
-                    if (po == &print_object)
-                        break;
-                    else
-                        ++ object_id;
-                gcode += std::string("; printing object ") + print_object.model_object()->name + " id:" + std::to_string(object_id) + " copy " + std::to_string(print_instance.instance_id) + "\n";
-            }
+            gcode += m_label_objects.start_object(print_instance.print_object.instances()[print_instance.instance_id], GCode::LabelObjects::IncludeName::No);
         }
     };
 
@@ -2541,8 +2537,8 @@ void GCodeGenerator::process_layer_single_object(
                 }
             }
         }
-    if (! first && this->config().gcode_label_objects)
-        gcode += std::string("; stop printing object ") + print_object.model_object()->name + " id:" + std::to_string(object_id) + " copy " + std::to_string(print_instance.instance_id) + "\n";
+    if (! first)
+        gcode += m_label_objects.stop_object(print_instance.print_object.instances()[print_instance.instance_id]);
 }
 
 void GCodeGenerator::apply_print_config(const PrintConfig &print_config)
@@ -2648,6 +2644,8 @@ static inline bool validate_smooth_path(const GCode::SmoothPath &smooth_path, bo
 }
 #endif //NDEBUG
 
+static constexpr const double min_gcode_segment_length = 0.002;
+
 std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, const GCode::SmoothPathCache &smooth_path_cache, const std::string_view description, double speed)
 {
     // Extrude all loops CCW.
@@ -2666,7 +2664,7 @@ std::string GCodeGenerator::extrude_loop(const ExtrusionLoop &loop_src, const GC
     // if polyline was shorter than the clipping distance we'd get a null polyline, so
     // we discard it in that case.
     if (m_enable_loop_clipping)
-        clip_end(smooth_path, scale_(EXTRUDER_CONFIG(nozzle_diameter)) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER);
+        clip_end(smooth_path, scaled<double>(EXTRUDER_CONFIG(nozzle_diameter)) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER, scaled<double>(min_gcode_segment_length));
 
     if (smooth_path.empty())
         return {};
@@ -2711,7 +2709,7 @@ std::string GCodeGenerator::extrude_skirt(
     // if polyline was shorter than the clipping distance we'd get a null polyline, so
     // we discard it in that case.
     if (m_enable_loop_clipping)
-        clip_end(smooth_path, scale_(EXTRUDER_CONFIG(nozzle_diameter)) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER);
+        clip_end(smooth_path, scale_(EXTRUDER_CONFIG(nozzle_diameter)) * LOOP_CLIPPING_LENGTH_OVER_NOZZLE_DIAMETER, scaled<double>(min_gcode_segment_length));
 
     if (smooth_path.empty())
         return {};
@@ -3072,51 +3070,50 @@ std::string GCodeGenerator::_extrude(
         comment = description;
         comment += description_bridge;
     }
-    Vec2d prev = this->point_to_gcode_quantized(path.front().point);
+    Vec2d prev_exact = this->point_to_gcode(path.front().point);
+    Vec2d prev = GCodeFormatter::quantize(prev_exact);
     auto  it   = path.begin();
     auto  end  = path.end();
-    const bool emit_radius = m_config.arc_fitting == ArcFittingType::EmitRadius;
     for (++ it; it != end; ++ it) {
-        Vec2d  p = this->point_to_gcode_quantized(it->point);
-        // Center of the radius to be emitted into the G-code: Either by radius or by center offset.
-        double radius = 0;
-        Vec2d  ij;
-        if (it->radius != 0) {
-            // Extrude an arc.
-            assert(m_config.arc_fitting == ArcFittingType::EmitCenter ||
-                   m_config.arc_fitting == ArcFittingType::EmitRadius);
-            radius = unscaled<double>(it->radius);
-            if (emit_radius) {
-                // Only quantize radius if emitting it directly into G-code. Otherwise use the exact radius for calculating the IJ values.
-                radius = GCodeFormatter::quantize_xyzf(radius);
+        Vec2d p_exact = this->point_to_gcode(it->point);
+        Vec2d p = GCodeFormatter::quantize(p_exact);
+        assert(p != prev);
+        if (p != prev) {
+            // Center of the radius to be emitted into the G-code: Either by radius or by center offset.
+            double radius = 0;
+            Vec2d  ij;
+            if (it->radius != 0) {
+                // Extrude an arc.
+                assert(m_config.arc_fitting == ArcFittingType::EmitCenter);
+                radius = unscaled<double>(it->radius);
+                {
+                    // Calculate quantized IJ circle center offset.
+                    ij = GCodeFormatter::quantize(Vec2d(
+                            Geometry::ArcWelder::arc_center(prev_exact.cast<double>(), p_exact.cast<double>(), double(radius), it->ccw())
+                            - prev));
+                    if (ij == Vec2d::Zero())
+                        // Don't extrude a degenerated circle.
+                        radius = 0;
+                }
+            }
+            if (radius == 0) {
+                // Extrude line segment.
+                if (const double line_length = (p - prev).norm(); line_length > 0) {
+                    path_length += line_length;
+                    gcode += m_writer.extrude_to_xy(p, e_per_mm * line_length, comment);
+                }
             } else {
-                // Calculate quantized IJ circle center offset.
-                ij = GCodeFormatter::quantize(Vec2d(
-                        Geometry::ArcWelder::arc_center(prev.cast<double>(), p.cast<double>(), double(radius), it->ccw())
-                        - prev));
-                if (ij == Vec2d::Zero())
-                    // Don't extrude a degenerated circle.
-                    radius = 0;
-            }
-        }
-        if (radius == 0) {
-            // Extrude line segment.
-            if (const double line_length = (p - prev).norm(); line_length > 0) {
+                double angle = Geometry::ArcWelder::arc_angle(prev.cast<double>(), p.cast<double>(), double(radius));
+                assert(angle > 0);
+                const double line_length = angle * std::abs(radius);
                 path_length += line_length;
-                gcode += m_writer.extrude_to_xy(p, e_per_mm * line_length, comment);
+                const double dE = e_per_mm * line_length;
+                assert(dE > 0);
+                gcode += m_writer.extrude_to_xy_G2G3IJ(p, ij, it->ccw(), dE, comment);
             }
-        } else {
-            double angle = Geometry::ArcWelder::arc_angle(prev.cast<double>(), p.cast<double>(), double(radius));
-            assert(angle > 0);
-            const double line_length = angle * std::abs(radius);
-            path_length += line_length;
-            const double dE = e_per_mm * line_length;
-            assert(dE > 0);
-            gcode += emit_radius ?
-                m_writer.extrude_to_xy_G2G3R(p, radius, it->ccw(), dE, comment) :
-                m_writer.extrude_to_xy_G2G3IJ(p, ij, it->ccw(), dE, comment);
+            prev = p;
+            prev_exact = p_exact;
         }
-        prev = p;
     }
 
     if (m_enable_cooling_markers)

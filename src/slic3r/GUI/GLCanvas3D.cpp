@@ -981,7 +981,7 @@ void GLCanvas3D::SequentialPrintClearance::render()
     glsafe(::glEnable(GL_BLEND));
     glsafe(::glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-    if (!m_evaluating)
+    if (!m_evaluating && !m_dragging)
         m_fill.render();
 
 #if ENABLE_GL_CORE_PROFILE
@@ -1029,6 +1029,7 @@ wxDEFINE_EVENT(EVT_GLCANVAS_INSTANCE_MOVED, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_INSTANCE_ROTATED, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_RESET_SKEW, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_INSTANCE_SCALED, SimpleEvent);
+wxDEFINE_EVENT(EVT_GLCANVAS_INSTANCE_MIRRORED, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_FORCE_UPDATE, SimpleEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_WIPETOWER_MOVED, Vec3dEvent);
 wxDEFINE_EVENT(EVT_GLCANVAS_WIPETOWER_ROTATED, Vec3dEvent);
@@ -1528,6 +1529,8 @@ bool GLCanvas3D::check_volumes_outside_state(GLVolumeCollection& volumes, ModelI
                 contained_min_one |= !volume->is_outside;
             }
         }
+        else if (volume->is_modifier)
+            volume->is_outside = false;
     }
 
     for (unsigned int vol_idx = 0; vol_idx < volumes.volumes.size(); ++vol_idx) {
@@ -1639,7 +1642,6 @@ void GLCanvas3D::set_config(const DynamicPrintConfig* config)
     m_config = config;
     m_layers_editing.set_config(config);
 
-
     if (config) {
         PrinterTechnology ptech = current_printer_technology();
 
@@ -1660,7 +1662,14 @@ void GLCanvas3D::set_config(const DynamicPrintConfig* config)
         double objdst = min_object_distance(*config);
         double min_obj_dst = slot == ArrangeSettingsDb_AppCfg::slotFFFSeqPrint ? objdst : 0.;
         m_arrange_settings_db.set_distance_from_obj_range(slot, min_obj_dst, 100.);
-        m_arrange_settings_db.get_defaults(slot).d_obj = objdst;
+        
+        if (std::abs(m_arrange_settings_db.get_defaults(slot).d_obj - objdst) > EPSILON) {
+            m_arrange_settings_db.get_defaults(slot).d_obj = objdst;
+
+            // Defaults have changed, so let's sync with the app config and fill
+            // in the missing values with the new defaults.
+            m_arrange_settings_db.sync();
+        }
     }
 }
 
@@ -2371,6 +2380,7 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
                     volume->extruder_id = extruder_id;
 
                 volume->is_modifier = !mvs->model_volume->is_model_part();
+                volume->shader_outside_printer_detection_enabled = mvs->model_volume->is_model_part();
                 volume->set_color(color_from_model_volume(*mvs->model_volume));
                 // force update of render_color alpha channel 
                 volume->set_render_color(volume->color.is_transparent());
@@ -2639,9 +2649,10 @@ void GLCanvas3D::reload_scene(bool refresh_immediately, bool force_full_scene_re
         raycaster->set_active(v->is_active);
     }
 
+    // check activity/visibility of the modifiers in SLA mode
     for (GLVolume* volume : m_volumes.volumes)
         if (volume->object_idx() < (int)m_model->objects.size() && m_model->objects[volume->object_idx()]->instances[volume->instance_idx()]->is_printable()) {
-            if (volume->is_modifier && m_model->objects[volume->object_idx()]->volumes[volume->volume_idx()]->is_modifier())
+            if (volume->is_active && volume->is_modifier && m_model->objects[volume->object_idx()]->volumes[volume->volume_idx()]->is_modifier())
                 volume->is_active = printer_technology != ptSLA;
         }
 
@@ -3612,20 +3623,19 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
 
 //#if defined(__WXMSW__) || defined(__linux__)
 //        // On Windows and Linux needs focus in order to catch key events
-        // Set focus in order to remove it from object list
         if (m_canvas != nullptr) {
-            // Only set focus, if the top level window of this canvas is active
-            // and ObjectList has a focus
-            auto p = dynamic_cast<wxWindow*>(evt.GetEventObject());
-            while (p->GetParent())
-                p = p->GetParent();
-#ifdef __WIN32__
-            wxWindow* const obj_list = wxGetApp().obj_list()->GetMainWindow();
-#else
-            wxWindow* const obj_list = wxGetApp().obj_list();
-#endif
-            if (obj_list == p->FindFocus())
-                m_canvas->SetFocus();
+
+            // Set focus in order to remove it from sidebar but not from TextControl (in ManipulationPanel f.e.)
+            if (!m_canvas->HasFocus()) {
+                wxTopLevelWindow* tlw = find_toplevel_parent(m_canvas);
+                // Only set focus, if the top level window of this canvas is active
+                if (tlw->IsActive()) {
+                    auto* text_ctrl = dynamic_cast<wxTextCtrl*>(tlw->FindFocus());
+                    if (text_ctrl == nullptr)
+                        m_canvas->SetFocus();
+                }
+            }
+
             m_mouse.position = pos.cast<double>();
             m_tooltip_enabled = false;
             // 1) forces a frame render to ensure that m_hover_volume_idxs is updated even when the user right clicks while
@@ -3728,6 +3738,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
                         if (!evt.CmdDown())
                             m_mouse.drag.start_position_3D = m_mouse.scene_position;
                         m_sequential_print_clearance_first_displacement = true;
+                        m_sequential_print_clearance.start_dragging();
                     }
                 }
             }
@@ -3852,6 +3863,7 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         else if (m_mouse.drag.move_volume_idx != -1 && m_mouse.dragging) {
             do_move(L("Move Object"));
             wxGetApp().obj_manipul()->set_dirty();
+            m_sequential_print_clearance.stop_dragging();
             // Let the plater know that the dragging finished, so a delayed refresh
             // of the scene with the background processing data should be performed.
             post_event(SimpleEvent(EVT_GLCANVAS_MOUSE_DRAGGING_FINISHED));
@@ -3927,7 +3939,8 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
          type == GLGizmosManager::EType::Move ||
          type == GLGizmosManager::EType::Rotate ||
          type == GLGizmosManager::EType::Scale ||
-         type == GLGizmosManager::EType::Emboss) ) {
+         type == GLGizmosManager::EType::Emboss||
+         type == GLGizmosManager::EType::Svg) ) {
         for (int hover_volume_id : m_hover_volume_idxs) { 
             const GLVolume &hover_gl_volume = *m_volumes.volumes[hover_volume_id];
             int object_idx = hover_gl_volume.object_idx();
@@ -3936,12 +3949,20 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             int hover_volume_idx = hover_gl_volume.volume_idx();
             if (hover_volume_idx < 0 || static_cast<size_t>(hover_volume_idx) >= hover_object->volumes.size()) continue;
             const ModelVolume* hover_volume = hover_object->volumes[hover_volume_idx];
-            if (!hover_volume->text_configuration.has_value()) continue;
-            m_selection.add_volumes(Selection::EMode::Volume, {(unsigned) hover_volume_id});
-            if (type != GLGizmosManager::EType::Emboss)
-                m_gizmos.open_gizmo(GLGizmosManager::EType::Emboss);
-            wxGetApp().obj_list()->update_selections();
-            return;           
+
+            if (hover_volume->text_configuration.has_value()) {
+                m_selection.add_volumes(Selection::EMode::Volume, {(unsigned) hover_volume_id});
+                if (type != GLGizmosManager::EType::Emboss)
+                    m_gizmos.open_gizmo(GLGizmosManager::EType::Emboss);            
+                wxGetApp().obj_list()->update_selections();
+                return;
+            } else if (hover_volume->emboss_shape.has_value()) {
+                m_selection.add_volumes(Selection::EMode::Volume, {(unsigned) hover_volume_id});
+                if (type != GLGizmosManager::EType::Svg)
+                    m_gizmos.open_gizmo(GLGizmosManager::EType::Svg);
+                wxGetApp().obj_list()->update_selections();
+                return;
+            }
         }
     }
 
@@ -4315,7 +4336,7 @@ void GLCanvas3D::do_mirror(const std::string& snapshot_type)
     for (int id : obj_idx_for_update_info_items)
         wxGetApp().obj_list()->update_info_items(static_cast<size_t>(id));
 
-    post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+    post_event(SimpleEvent(EVT_GLCANVAS_INSTANCE_MIRRORED));
 
     m_dirty = true;
 }
@@ -6226,7 +6247,7 @@ void GLCanvas3D::_check_and_update_toolbar_icon_scale()
 #if ENABLE_RETINA_GL
     new_scale /= m_retina_helper->get_scale_factor();
 #endif
-    if (fabs(new_scale - scale) > 0.01) // scale is changed by 1% and more
+    if (fabs(new_scale - scale) > 0.015) // scale is changed by 1.5% and more
         wxGetApp().set_auto_toolbar_icon_scale(new_scale);
 }
 
@@ -7880,10 +7901,10 @@ const ModelVolume *get_model_volume(const GLVolume &v, const Model &model)
     return ret;
 }
 
-const ModelVolume *get_model_volume(const ObjectID &volume_id, const ModelObjectPtrs &objects)
+ModelVolume *get_model_volume(const ObjectID &volume_id, const ModelObjectPtrs &objects)
 {
     for (const ModelObject *obj : objects)
-        for (const ModelVolume *vol : obj->volumes)
+        for (ModelVolume *vol : obj->volumes)
             if (vol->id() == volume_id)
                 return vol;
     return nullptr;

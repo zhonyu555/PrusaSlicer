@@ -2,8 +2,7 @@
 ///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
 ///|/
 ///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
-///|/
-#include "libslic3r/libslic3r.h"
+///|/#include "libslic3r/libslic3r.h"
 #include "libslic3r/Utils.hpp"
 #include "libslic3r/Print.hpp"
 #include "libslic3r/LocalesUtils.hpp"
@@ -345,7 +344,7 @@ void GCodeProcessor::TimeMachine::calculate_time(size_t keep_last_n_blocks, floa
             }
         }
         layers_time[block.layer_id - 1] += block_time;
-        g1_times_cache.push_back({ block.g1_line_id, time });
+        g1_times_cache.push_back({ block.g1_line_id, block.remaining_internal_g1_lines, time });
         // update times for remaining time to printer stop placeholders
         auto it_stop_time = std::lower_bound(stop_times.begin(), stop_times.end(), block.g1_line_id,
             [](const StopTime& t, unsigned int value) { return t.g1_line_id < value; });
@@ -458,6 +457,7 @@ void GCodeProcessorResult::reset() {
     moves = std::vector<GCodeProcessorResult::MoveVertex>();
     bed_shape = Pointfs();
     max_print_height = 0.0f;
+    z_offset = 0.0f;
     settings_ids.reset();
     extruders_count = 0;
     backtrace_enabled = false;
@@ -477,6 +477,7 @@ void GCodeProcessorResult::reset() {
     lines_ends.clear();
     bed_shape = Pointfs();
     max_print_height = 0.0f;
+    z_offset = 0.0f;
     settings_ids.reset();
     extruders_count = 0;
     backtrace_enabled = false;
@@ -595,8 +596,12 @@ void GCodeProcessor::apply_config(const PrintConfig& config)
     for (size_t i = 0; i < extruders_count; ++ i) {
         m_extruder_offsets[i]           = to_3d(config.extruder_offset.get_at(i).cast<float>().eval(), 0.f);
         m_extruder_colors[i]            = static_cast<unsigned char>(i);
-        m_extruder_temps_config[i]      = static_cast<int>(config.temperature.get_at(i));
         m_extruder_temps_first_layer_config[i] = static_cast<int>(config.first_layer_temperature.get_at(i));
+        m_extruder_temps_config[i]      = static_cast<int>(config.temperature.get_at(i));
+        if (m_extruder_temps_config[i] == 0) {
+            // This means the value should be ignored and first layer temp should be used.
+            m_extruder_temps_config[i] = m_extruder_temps_first_layer_config[i];
+        }
         m_result.filament_diameters[i]  = static_cast<float>(config.filament_diameter.get_at(i));
         m_result.filament_densities[i]  = static_cast<float>(config.filament_density.get_at(i));
         m_result.filament_cost[i]       = static_cast<float>(config.filament_cost.get_at(i));
@@ -1301,6 +1306,8 @@ void GCodeProcessor::process_buffer(const std::string &buffer)
 
 void GCodeProcessor::finalize(bool perform_post_process)
 {
+    m_result.z_offset = m_z_offset;
+
     // update width/height of wipe moves
     for (GCodeProcessorResult::MoveVertex& move : m_result.moves) {
         if (move.type == EMoveType::Wipe) {
@@ -2554,7 +2561,8 @@ void GCodeProcessor::process_G1(const GCodeReader::GCodeLine& line)
     process_G1(g1_axes, g1_feedrate);
 }
 
-void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes, std::optional<double> feedrate, G1DiscretizationOrigin origin)
+void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes, const std::optional<double>& feedrate,
+    G1DiscretizationOrigin origin, const std::optional<unsigned int>& remaining_internal_g1_lines)
 {
     const float filament_diameter = (static_cast<size_t>(m_extruder_id) < m_result.filament_diameters.size()) ? m_result.filament_diameters[m_extruder_id] : m_result.filament_diameters.back();
     const float filament_radius = 0.5f * filament_diameter;
@@ -2620,7 +2628,7 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
 
     if (volume_extruded_filament != 0.)
         m_used_filaments.increase_caches(volume_extruded_filament, m_extruder_id, area_filament_cross_section * m_parking_position,
-                                        area_filament_cross_section * m_extra_loading_move);
+                                         area_filament_cross_section * m_extra_loading_move);
 
     const EMoveType type = move_type(delta_pos);
     if (type == EMoveType::Extrude) {
@@ -2634,9 +2642,16 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
         if (m_forced_height > 0.0f)
+            // use height coming from the gcode tags
             m_height = m_forced_height;
-        else if (m_layer_id == 0)
-            m_height = m_first_layer_height + m_z_offset;
+        else if (m_layer_id == 0) { // first layer
+            if (m_end_position[Z] > 0.0f)
+                // use the current (clamped) z, if greater than zero  
+                m_height = std::min<float>(m_end_position[Z], 2.0f);
+            else
+                // use the first layer height  
+                m_height = m_first_layer_height + m_z_offset;
+        }
         else if (origin == G1DiscretizationOrigin::G1) {
             if (m_end_position[Z] > m_extruded_last_z + EPSILON && delta_pos[Z] == 0.0)
                 m_height = m_end_position[Z] - m_extruded_last_z;
@@ -2644,9 +2659,6 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
 
         if (m_height == 0.0f)
             m_height = DEFAULT_TOOLPATH_HEIGHT;
-
-        if (m_end_position[Z] == 0.0f || (m_extrusion_role == GCodeExtrusionRole::Custom && m_layer_id == 0))
-            m_end_position[Z] = m_height;
 
         if (origin == G1DiscretizationOrigin::G1)
             m_extruded_last_z = m_end_position[Z];
@@ -2657,6 +2669,7 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
 #endif // ENABLE_GCODE_VIEWER_DATA_CHECKING
 
         if (m_forced_width > 0.0f)
+            // use width coming from the gcode tags
             m_width = m_forced_width;
         else if (m_extrusion_role == GCodeExtrusionRole::ExternalPerimeter)
             // cross section: rectangle
@@ -2710,6 +2723,7 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
         block.role = m_extrusion_role;
         block.distance = distance;
         block.g1_line_id = m_g1_line_id;
+        block.remaining_internal_g1_lines = remaining_internal_g1_lines.has_value() ? *remaining_internal_g1_lines : 0;
         block.layer_id = std::max<unsigned int>(1, m_layer_id);
 
         // calculates block cruise feedrate
@@ -2884,7 +2898,17 @@ void GCodeProcessor::process_G1(const std::array<std::optional<double>, 4>& axes
 void GCodeProcessor::process_G2_G3(const GCodeReader::GCodeLine& line, bool clockwise)
 {
     enum class EFitting { None, IJ, R };
-    const EFitting fitting = line.has('R') ? EFitting::R : (line.has('I') && line.has('J')) ? EFitting::IJ : EFitting::None;
+    std::string_view axis_pos_I;
+    std::string_view axis_pos_J;
+    EFitting fitting = EFitting::None;
+    if (line.has('R')) {
+        fitting = EFitting::R;
+    } else {
+        axis_pos_I = line.axis_pos('I');
+        axis_pos_J = line.axis_pos('J');
+        if (! axis_pos_I.empty() || ! axis_pos_J.empty())
+            fitting = EFitting::IJ;
+    }
 
     if (fitting == EFitting::None)
         return;
@@ -2917,7 +2941,10 @@ void GCodeProcessor::process_G2_G3(const GCodeReader::GCodeLine& line, bool cloc
         rel_center.y() = c.y() - m_start_position[Y];
     }
     else {
-        if (!line.has_value('I', rel_center.x()) || !line.has_value('J', rel_center.y()))
+        assert(fitting == EFitting::IJ);
+        if (! axis_pos_I.empty() && ! line.has_value(axis_pos_I, rel_center.x()))
+            return;
+        if (! axis_pos_J.empty() && ! line.has_value(axis_pos_J, rel_center.y()))
             return;
     }
 
@@ -3015,16 +3042,17 @@ void GCodeProcessor::process_G2_G3(const GCodeReader::GCodeLine& line, bool cloc
         return ret;
     };
 
-    auto internal_only_g1_line = [this](const AxisCoords& target, bool has_z, const std::optional<float>& feedrate, const std::optional<float>& extrusion) {
-        std::array<std::optional<double>, 4> g1_axes = { target[X], target[Y], std::nullopt, std::nullopt };
-        std::optional<double> g1_feedrate = std::nullopt;
-        if (has_z)
-            g1_axes[Z] = target[Z];
-        if (feedrate.has_value())
-            g1_feedrate = (double)*feedrate;
-        if (extrusion.has_value())
-            g1_axes[E] = target[E];
-        process_G1(g1_axes, g1_feedrate, G1DiscretizationOrigin::G2G3);
+    auto internal_only_g1_line = [this](const AxisCoords& target, bool has_z, const std::optional<float>& feedrate,
+        const std::optional<float>& extrusion, const std::optional<unsigned int>& remaining_internal_g1_lines = std::nullopt) {
+          std::array<std::optional<double>, 4> g1_axes = { target[X], target[Y], std::nullopt, std::nullopt };
+          std::optional<double> g1_feedrate = std::nullopt;
+          if (has_z)
+              g1_axes[Z] = target[Z];
+          if (extrusion.has_value())
+              g1_axes[E] = target[E];
+          if (feedrate.has_value())
+              g1_feedrate = (double)*feedrate;
+          process_G1(g1_axes, g1_feedrate, G1DiscretizationOrigin::G2G3, remaining_internal_g1_lines);
     };
 
     // calculate arc segments
@@ -3087,7 +3115,8 @@ void GCodeProcessor::process_G2_G3(const GCodeReader::GCodeLine& line, bool cloc
         arc_target[E] += extruder_per_segment;
 
         m_start_position = m_end_position; // this is required because we are skipping the call to process_gcode_line()
-        internal_only_g1_line(adjust_target(arc_target, prev_target), z_per_segment != 0.0, (i == 1) ? feedrate : std::nullopt, extrusion);
+        internal_only_g1_line(adjust_target(arc_target, prev_target), z_per_segment != 0.0, (i == 1) ? feedrate : std::nullopt,
+            extrusion, segments - i);
         prev_target = arc_target;
     }
 
@@ -3823,7 +3852,7 @@ void GCodeProcessor::post_process()
         // used to update m_result.moves[].gcode_id
         std::vector<std::pair<size_t, size_t>> m_gcode_lines_map;
 
-        size_t m_curr_g1_id{ 0 };
+        size_t m_times_cache_id{ 0 };
         size_t m_out_file_pos{ 0 };
 
         bgcode::binarize::Binarizer& m_binarizer;
@@ -3836,21 +3865,44 @@ void GCodeProcessor::post_process()
         : m_binarizer(binarizer), m_write_type(type), m_machine(machine) {}
 #endif // NDEBUG
 
-        void update(size_t lines_counter, size_t g1_lines_counter) {
+        // return: number of internal G1 lines (from G2/G3 splitting) processed
+        unsigned int update(const std::string& line, size_t lines_counter, size_t g1_lines_counter) {
+            unsigned int ret = 0;
             m_gcode_lines_map.push_back({ lines_counter, 0 });
 
-            if (g1_lines_counter == 0)
-                return;
+            if (GCodeReader::GCodeLine::cmd_is(line, "G0") ||
+                GCodeReader::GCodeLine::cmd_is(line, "G1") ||
+                GCodeReader::GCodeLine::cmd_is(line, "G2") ||
+                GCodeReader::GCodeLine::cmd_is(line, "G3") ||
+                GCodeReader::GCodeLine::cmd_is(line, "G28"))
+                ++g1_lines_counter;
+            else
+                return ret;
 
-            auto init_it = m_machine.g1_times_cache.begin() + m_curr_g1_id;
+            auto init_it = m_machine.g1_times_cache.begin() + m_times_cache_id;
             auto it = init_it;
-            while (it != m_machine.g1_times_cache.end() && it->id < g1_lines_counter + 1) {
+            while (it != m_machine.g1_times_cache.end() && it->id < g1_lines_counter) {
                 ++it;
-                ++m_curr_g1_id;
+                ++m_times_cache_id;
             }
 
-            if ((it != m_machine.g1_times_cache.end() && it != init_it) || m_curr_g1_id == 0)
+            if (it->id > g1_lines_counter)
+                return ret;
+
+            // search for internal G1 lines
+            if (GCodeReader::GCodeLine::cmd_is(line, "G2") || GCodeReader::GCodeLine::cmd_is(line, "G3")) {
+                while (it != m_machine.g1_times_cache.end() && it->remaining_internal_g1_lines > 0) {
+                    ++it;
+                    ++m_times_cache_id;
+                    ++g1_lines_counter;
+                    ++ret;
+                }
+            }
+
+            if (it != m_machine.g1_times_cache.end() && it->id == g1_lines_counter)
                 m_time = it->elapsed_time;
+
+            return ret;
         }
 
         // add the given gcode line to the cache
@@ -4187,7 +4239,7 @@ void GCodeProcessor::post_process()
         }
     };
 
-    // add lines XXX to exported gcode
+    // add lines M104 to exported gcode
     auto process_line_T = [this, &export_lines](const std::string& gcode_line, const size_t g1_lines_counter, const ExportLines::Backtrace& backtrace) {
         const std::string cmd = GCodeReader::GCodeLine::extract_cmd(gcode_line);
         if (cmd.size() >= 2) {
@@ -4265,9 +4317,8 @@ void GCodeProcessor::post_process()
                 gcode_line.insert(gcode_line.end(), it, it_end);
                 if (eol) {
                     ++line_id;
-                    export_lines.update(line_id, g1_lines_counter);
-
                     gcode_line += "\n";
+                    const unsigned int internal_g1_lines_counter = export_lines.update(gcode_line, line_id, g1_lines_counter);
                     // replace placeholder lines
                     bool processed = process_placeholders(gcode_line);
                     if (processed)
@@ -4275,11 +4326,24 @@ void GCodeProcessor::post_process()
                     if (!processed)
                         processed = process_used_filament(gcode_line);
                     if (!processed && !is_temporary_decoration(gcode_line)) {
-                        if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G1"))
+                        if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G0") || GCodeReader::GCodeLine::cmd_is(gcode_line, "G1")) {
+                            export_lines.append_line(gcode_line);
                             // add lines M73 where needed
                             process_line_G1(g1_lines_counter++);
+                            gcode_line.clear();
+                        }
+                        else if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G2") || GCodeReader::GCodeLine::cmd_is(gcode_line, "G3")) {
+                            export_lines.append_line(gcode_line);
+                            // add lines M73 where needed
+                            process_line_G1(g1_lines_counter + internal_g1_lines_counter);
+                            g1_lines_counter += (1 + internal_g1_lines_counter);
+                            gcode_line.clear();
+                        }
+                        else if (GCodeReader::GCodeLine::cmd_is(gcode_line, "G28")) {
+                            ++g1_lines_counter;
+                        }
                         else if (m_result.backtrace_enabled && GCodeReader::GCodeLine::cmd_starts_with(gcode_line, "T")) {
-                            // add lines XXX where needed
+                            // add lines M104 where needed
                             process_line_T(gcode_line, g1_lines_counter, backtrace_T);
                             max_backtrace_time = std::max(max_backtrace_time, backtrace_T.time);
                         }
@@ -4312,62 +4376,22 @@ void GCodeProcessor::post_process()
     out.close();
     in.close();
 
+    const std::string result_filename = m_result.filename;
     if (m_binarizer.is_enabled()) {
-        // updates m_result.lines_ends from binarized gcode file
-        m_result.lines_ends.clear();
-
-        FilePtr file(boost::nowide::fopen(out_path.c_str(), "rb"));
-        if (file.f != nullptr) {
-            fseek(file.f, 0, SEEK_END);
-            const long file_size = ftell(file.f);
-            rewind(file.f);
-
-            // read file header
-            using namespace bgcode::core;
-            using namespace bgcode::binarize;
-            FileHeader file_header;
-            EResult res = read_header(*file.f, file_header, nullptr);
-            if (res == EResult::Success) {
-                // search first GCode block
-                BlockHeader block_header;
-                res = read_next_block_header(*file.f, file_header, block_header, EBlockType::GCode, nullptr, 0);
-                while (res == EResult::Success) {
-                    GCodeBlock block;
-                    res = block.read_data(*file.f, file_header, block_header);
-                    if (res != EResult::Success)
-                        break;
-
-                    // extract lines ends from block
-                    std::vector<size_t>& lines_ends = m_result.lines_ends.emplace_back(std::vector<size_t>());
-                    for (size_t i = 0; i < block.raw_data.size(); ++i) {
-                        if (block.raw_data[i] == '\n')
-                            lines_ends.emplace_back(i + 1);
-                    }
-
-                    if (ftell(file.f) == file_size)
-                        break;
-
-                    // read next block header
-                    res = read_next_block_header(*file.f, file_header, block_header, nullptr, 0);
-                    if (res != EResult::Success)
-                        break;
-                    if (block_header.type != (uint16_t)EBlockType::GCode) {
-                        res = EResult::InvalidBlockType;
-                        break;
-                    }
-                }
-            }
-
-            if (res != EResult::Success && !m_result.lines_ends.empty() && !m_result.lines_ends.front().empty())
-                // some error occourred, clear lines ends
-                m_result.lines_ends = { std::vector<size_t>() };
-        }
+        // The list of lines in the binary gcode is different from the original one.
+        // This requires to re-process the binarized file to be able to synchronize with it all the data needed by the preview,
+        // as gcode window, tool position and moves slider which relies on indexing the gcode lines.
+        reset();
+        // the following call modifies m_result.filename
+        process_binary_file(out_path);
+        // restore the proper filename
+        m_result.filename = result_filename;
     }
+    else
+        export_lines.synchronize_moves(m_result);
 
-    export_lines.synchronize_moves(m_result);
-
-    if (rename_file(out_path, m_result.filename))
-        throw Slic3r::RuntimeError(std::string("Failed to rename the output G-code file from ") + out_path + " to " + m_result.filename + '\n' +
+    if (rename_file(out_path, result_filename))
+        throw Slic3r::RuntimeError(std::string("Failed to rename the output G-code file from ") + out_path + " to " + result_filename + '\n' +
             "Is " + out_path + " locked?" + '\n');
 }
 

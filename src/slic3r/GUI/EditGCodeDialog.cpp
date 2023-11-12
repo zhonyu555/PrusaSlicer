@@ -8,6 +8,7 @@
 #include <wx/textctrl.h>
 #include <wx/button.h>
 #include <wx/wupdlock.h>
+#include <wx/html/htmlwin.h>
 
 #include "GUI.hpp"
 #include "GUI_App.hpp"
@@ -32,6 +33,7 @@ namespace GUI {
 //------------------------------------------
 
 EditGCodeDialog::EditGCodeDialog(wxWindow* parent, const std::string& key, const std::string& value) :
+    // TRN: This is title of a dialog. The argument is the name of the currently edited custom G-code.
     DPIDialog(parent, wxID_ANY, format_wxstr(_L("Edit Custom G-code (%1%)"), key), wxDefaultPosition, wxDefaultSize, wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER)
 {
     SetFont(wxGetApp().normal_font());
@@ -40,12 +42,45 @@ EditGCodeDialog::EditGCodeDialog(wxWindow* parent, const std::string& key, const
     int border = 10;
     int em = em_unit();
 
+    // append info line with link on printables.com
+    wxHtmlWindow* html_window = new wxHtmlWindow(this, wxID_ANY, wxDefaultPosition, wxSize(60 * em, 5 * em), wxHW_SCROLLBAR_NEVER);
+
+    html_window->Bind(wxEVT_HTML_LINK_CLICKED, [](wxHtmlLinkEvent& event) {
+        wxGetApp().open_browser_with_warning_dialog(event.GetLinkInfo().GetHref());
+        event.Skip(false);
+    });
+
+    const auto text_clr = wxGetApp().get_label_clr_default();
+    const auto bgr_clr_str = wxGetApp().get_html_bg_color(parent);
+    const auto text_clr_str = encode_color(ColorRGB(text_clr.Red(), text_clr.Green(), text_clr.Blue()));
+
+    //TRN this word-combination is a part of phraze "For more information about placeholders and its use visit our help page"
+    const wxString link = format_wxstr("<a href = \"%1%\">%2%</a>", "help.prusa3d.com/article/macros_1775", _L("help page"));
+
+    // TRN ConfigWizard : Downloader : %1% = "help page"
+    const wxString main_text = format_wxstr(_L("For more information about placeholders and its use visit our %1%."), link);
+
+    const wxFont& font = this->GetFont();
+    const int fs = font.GetPointSize();
+    int size[] = { fs,fs,fs,fs,fs,fs,fs };
+    html_window->SetFonts(font.GetFaceName(), font.GetFaceName(), size);
+
+    html_window->SetPage(format_wxstr(
+        "<html><body bgcolor=%1% link=%2%>"
+        "<font color=%2% size=\"3\">%3%</font>"
+        "</body></html>"
+        , bgr_clr_str
+        , text_clr_str
+        , main_text
+    ));
+
+
     wxStaticText* label_top = new wxStaticText(this, wxID_ANY, _L("Built-in placeholders (Double click item to add to G-code)") + ":");
 
     auto* grid_sizer = new wxFlexGridSizer(1, 3, 5, 15);
     grid_sizer->SetFlexibleDirection(wxBOTH);
 
-    m_params_list = new ParamsViewCtrl(this, wxSize(em * 30, em * 70));
+    m_params_list = new ParamsViewCtrl(this, wxSize(em * 45, em * 70));
     m_params_list->SetFont(wxGetApp().code_font());
     wxGetApp().UpdateDarkUI(m_params_list);
 
@@ -58,6 +93,7 @@ EditGCodeDialog::EditGCodeDialog(wxWindow* parent, const std::string& key, const
 #endif
     );
     m_gcode_editor->SetFont(wxGetApp().code_font());
+    m_gcode_editor->SetInsertionPointEnd();
     wxGetApp().UpdateDarkUI(m_gcode_editor);
 
     grid_sizer->Add(m_params_list,  1, wxEXPAND);
@@ -79,6 +115,7 @@ EditGCodeDialog::EditGCodeDialog(wxWindow* parent, const std::string& key, const
 
     wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
 
+    topSizer->Add(html_window         , 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(label_top           , 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(grid_sizer          , 1, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
     topSizer->Add(m_param_label       , 0, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, border);
@@ -95,6 +132,13 @@ EditGCodeDialog::EditGCodeDialog(wxWindow* parent, const std::string& key, const
 
     init_params_list(key);
     bind_list_and_button();
+}
+
+EditGCodeDialog::~EditGCodeDialog()
+{
+    // To avoid redundant process of wxEVT_DATAVIEW_SELECTION_CHANGED after dialog distroing (on Linux)
+    // unbind this event from params_list
+    m_params_list->Unbind(wxEVT_DATAVIEW_SELECTION_CHANGED, &EditGCodeDialog::selection_changed, this);
 }
 
 std::string EditGCodeDialog::get_edited_gcode() const
@@ -115,15 +159,15 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
 
     // Add slicing states placeholders
 
-    wxDataViewItem slicing_state = m_params_list->AppendGroup(_L("[Global] Slicing State"), "re_slice");
+    wxDataViewItem slicing_state = m_params_list->AppendGroup(_L("[Global] Slicing state"), "custom-gcode_slicing-state_global");
     if (!cgp_ro_slicing_states_config_def.empty()) {
-        wxDataViewItem read_only = m_params_list->AppendSubGroup(slicing_state, _L("Read Only"), "lock_closed");
+        wxDataViewItem read_only = m_params_list->AppendSubGroup(slicing_state, _L("Read only"), "lock_closed");
         for (const auto& [opt_key, def]: cgp_ro_slicing_states_config_def.options)
             m_params_list->AppendParam(read_only, get_type(opt_key, def), opt_key);
     }
 
     if (!cgp_rw_slicing_states_config_def.empty()) {
-        wxDataViewItem read_write = m_params_list->AppendSubGroup(slicing_state, _L("Read Write"), "lock_open");
+        wxDataViewItem read_write = m_params_list->AppendSubGroup(slicing_state, _L("Read write"), "lock_open");
         for (const auto& [opt_key, def] : cgp_rw_slicing_states_config_def.options)
             m_params_list->AppendParam(read_write, get_type(opt_key, def), opt_key);
     }
@@ -131,7 +175,7 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
     // add other universal params, which are related to slicing state
 
     if (!cgp_other_slicing_states_config_def.empty()) {
-        slicing_state = m_params_list->AppendGroup(_L("Slicing State"), "re_slice");
+        slicing_state = m_params_list->AppendGroup(_L("Slicing state"), "custom-gcode_slicing-state");
         for (const auto& [opt_key, def] : cgp_other_slicing_states_config_def.options)
             m_params_list->AppendParam(slicing_state, get_type(opt_key, def), opt_key);
     }
@@ -142,7 +186,7 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
         // Add print statistics subgroup
 
         if (!cgp_print_statistics_config_def.empty()) {
-            wxDataViewItem statistics = m_params_list->AppendGroup(_L("Print Statistics"), "info");
+            wxDataViewItem statistics = m_params_list->AppendGroup(_L("Print statistics"), "custom-gcode_stats");
             for (const auto& [opt_key, def] : cgp_print_statistics_config_def.options)
                 m_params_list->AppendParam(statistics, get_type(opt_key, def), opt_key);
         }
@@ -150,7 +194,7 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
         // Add objects info subgroup
 
         if (!cgp_objects_info_config_def.empty()) {
-            wxDataViewItem objects_info = m_params_list->AppendGroup(_L("Objects Info"), "advanced_plus");
+            wxDataViewItem objects_info = m_params_list->AppendGroup(_L("Objects info"), "custom-gcode_object-info");
             for (const auto& [opt_key, def] : cgp_objects_info_config_def.options)
                 m_params_list->AppendParam(objects_info, get_type(opt_key, def), opt_key);
         }
@@ -158,7 +202,7 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
         // Add  dimensions subgroup
 
         if (!cgp_dimensions_config_def.empty()) {
-            wxDataViewItem dimensions = m_params_list->AppendGroup(_L("Dimensions"), "measure");
+            wxDataViewItem dimensions = m_params_list->AppendGroup(_L("Dimensions"), "custom-gcode_measure");
             for (const auto& [opt_key, def] : cgp_dimensions_config_def.options)
                 m_params_list->AppendParam(dimensions, get_type(opt_key, def), opt_key);
         }
@@ -175,7 +219,8 @@ void EditGCodeDialog::init_params_list(const std::string& custom_gcode_name)
     // Add specific placeholders
 
     if (!specific_params.empty()) {
-        wxDataViewItem group = m_params_list->AppendGroup(format_wxstr(_L("Specific for %1%"), custom_gcode_name), "add_gcode");
+        // TRN: The argument is the name of currently edited custom gcode. The string starts a section of placeholders only available in this gcode.
+        wxDataViewItem group = m_params_list->AppendGroup(format_wxstr(_L("Specific for %1%"), custom_gcode_name), "custom-gcode_gcode");
         for (const auto& opt_key : specific_params)
             if (custom_gcode_specific_config_def.has(opt_key)) {
                 auto def = custom_gcode_specific_config_def.get(opt_key);
@@ -229,74 +274,89 @@ wxDataViewItem EditGCodeDialog::add_presets_placeholders()
 void EditGCodeDialog::add_selected_value_to_gcode()
 {
     const wxString val = m_params_list->GetSelectedValue();
-    if (!val.IsEmpty())
-        m_gcode_editor->WriteText(val + "\n");
+    if (val.IsEmpty())
+        return;
+
+    m_gcode_editor->WriteText(m_gcode_editor->GetInsertionPoint() == m_gcode_editor->GetLastPosition() ? "\n" + val : val);
+
+    if (val.Last() == ']') {
+        const long new_pos = m_gcode_editor->GetInsertionPoint();
+        if (val[val.Len() - 2] == '[')
+            m_gcode_editor->SetInsertionPoint(new_pos - 1);          // set cursor into brackets
+        else
+            m_gcode_editor->SetSelection(new_pos - 17, new_pos - 1); // select "current_extruder"
+    }
+
+    m_gcode_editor->SetFocus();
+}
+
+void EditGCodeDialog::selection_changed(wxDataViewEvent& evt)
+{   
+    wxString label;
+    wxString description;
+
+    const std::string opt_key = m_params_list->GetSelectedParamKey();
+    if (!opt_key.empty()) {
+        const ConfigOptionDef*    def     { nullptr };
+
+        const auto& full_config = wxGetApp().preset_bundle->full_config();
+        if (const ConfigDef* config_def = full_config.def(); config_def && config_def->has(opt_key)) {
+            def = config_def->get(opt_key);
+        }
+        else {
+            for (const ConfigDef* config: std::initializer_list<const ConfigDef*> {
+                    &custom_gcode_specific_config_def,
+                    &cgp_ro_slicing_states_config_def,
+                    &cgp_rw_slicing_states_config_def,
+                    &cgp_other_slicing_states_config_def,
+                    &cgp_print_statistics_config_def,
+                    &cgp_objects_info_config_def,
+                    &cgp_dimensions_config_def,
+                    &cgp_timestamps_config_def,
+                    &cgp_other_presets_config_def
+            }) {
+                if (config->has(opt_key)) {
+                    def = config->get(opt_key);
+                    break;
+                }
+            }
+        }
+
+        if (def) {
+            const ConfigOptionType scalar_type = def->is_scalar() ? def->type : static_cast<ConfigOptionType>(def->type - coVectorType);
+            wxString type_str = scalar_type == coNone           ? "none" :
+                                scalar_type == coFloat          ? "float" : 
+                                scalar_type == coInt            ? "integer" :
+                                scalar_type == coString         ? "string" :
+                                scalar_type == coPercent        ? "percent" :
+                                scalar_type == coFloatOrPercent ? "float or percent" :
+                                scalar_type == coPoint          ? "point" :
+                                scalar_type == coBool           ? "bool" :
+                                scalar_type == coEnum           ? "enum" : "undef";
+            if (!def->is_scalar())
+                type_str += "[]";
+
+            label = (!def || (def->full_label.empty() && def->label.empty()) ) ? format_wxstr("%1%\n(%2%)", opt_key, type_str) :
+                    (!def->full_label.empty() && !def->label.empty() ) ?
+                    format_wxstr("%1% > %2%\n(%3%)", _(def->full_label), _(def->label), type_str) :
+                    format_wxstr("%1%\n(%2%)", def->label.empty() ? _(def->full_label) : _(def->label), type_str);
+
+            if (def)
+                description = get_wraped_wxString(_(def->tooltip), 120);
+        }
+        else
+            label = "Undef optptr";
+    }
+
+    m_param_label->SetLabel(label);
+    m_param_description->SetLabel(description);
+
+    Layout();
 }
 
 void EditGCodeDialog::bind_list_and_button()
 {
-    m_params_list->Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, [this](wxDataViewEvent& evt) {
-        wxString label;
-        wxString description;
-
-        const std::string opt_key = m_params_list->GetSelectedParamKey();
-        if (!opt_key.empty()) {
-            const ConfigOptionDef*    def     { nullptr };
-
-            const auto& full_config = wxGetApp().preset_bundle->full_config();
-            if (const ConfigDef* config_def = full_config.def(); config_def && config_def->has(opt_key)) {
-                def = config_def->get(opt_key);
-            }
-            else {
-                for (const ConfigDef* config: std::initializer_list<const ConfigDef*> {
-                     &custom_gcode_specific_config_def,
-                     &cgp_ro_slicing_states_config_def,
-                     &cgp_rw_slicing_states_config_def,
-                     &cgp_other_slicing_states_config_def,
-                     &cgp_print_statistics_config_def,
-                     &cgp_objects_info_config_def,
-                     &cgp_dimensions_config_def,
-                     &cgp_timestamps_config_def,
-                     &cgp_other_presets_config_def
-                }) {
-                    if (config->has(opt_key)) {
-                        def = config->get(opt_key);
-                        break;
-                    }
-                }
-            }
-
-            if (def) {
-                const ConfigOptionType scalar_type = def->is_scalar() ? def->type : static_cast<ConfigOptionType>(def->type - coVectorType);
-                wxString type_str = scalar_type == coNone           ? "none" :
-                                    scalar_type == coFloat          ? "float" : 
-                                    scalar_type == coInt            ? "integer" :
-                                    scalar_type == coString         ? "string" :
-                                    scalar_type == coPercent        ? "percent" :
-                                    scalar_type == coFloatOrPercent ? "float or percent" :
-                                    scalar_type == coPoint          ? "point" :
-                                    scalar_type == coBool           ? "bool" :
-                                    scalar_type == coEnum           ? "enum" : "undef";
-                if (!def->is_scalar())
-                    type_str += "[]";
-
-                label = (!def || (def->full_label.empty() && def->label.empty()) ) ? format_wxstr("%1%\n(%2%)", opt_key, type_str) :
-                        (!def->full_label.empty() && !def->label.empty() ) ?
-                        format_wxstr("%1% > %2%\n(%3%)", _(def->full_label), _(def->label), type_str) :
-                        format_wxstr("%1%\n(%2%)", def->label.empty() ? _(def->full_label) : _(def->label), type_str);
-
-                if (def)
-                    description = get_wraped_wxString(_(def->tooltip), 120);
-            }
-            else
-                label = "Undef optptr";
-        }
-
-        m_param_label->SetLabel(label);
-        m_param_description->SetLabel(description);
-
-        Layout();
-    });
+    m_params_list->Bind(wxEVT_DATAVIEW_SELECTION_CHANGED, &EditGCodeDialog::selection_changed, this);
 
     m_params_list->Bind(wxEVT_DATAVIEW_ITEM_ACTIVATED, [this](wxDataViewEvent& ) {
         add_selected_value_to_gcode();
@@ -329,9 +389,9 @@ void EditGCodeDialog::on_sys_color_changed()
 
 const std::map<ParamType, std::string> ParamsInfo {
 //    Type                      BitmapName
-    { ParamType::Scalar,        "scalar_param"          },
-    { ParamType::Vector,        "vector_param"          },
-    { ParamType::FilamentVector,"vector_filament_param" },
+    { ParamType::Scalar,        "custom-gcode_single"          },
+    { ParamType::Vector,        "custom-gcode_vector"          },
+    { ParamType::FilamentVector,"custom-gcode_vector-index" },
 };
 
 static void make_bold(wxString& str)
