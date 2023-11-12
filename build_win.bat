@@ -15,7 +15,7 @@ REM /|/
 @ECHO                  [-PRODUCT ^<product^>] [-DESTDIR ^<directory^>]
 @ECHO                  [-STEPS ^<all^|all-dirty^|app^|app-dirty^|deps^|deps-dirty^>]
 @ECHO                  [-RUN ^<console^|custom^|none^|viewer^|window^>]
-@ECHO                  [-PRIORITY ^<normal^|low^>]
+@ECHO                  [-PRIORITY ^<normal^|low^>] [-TOOL ^<auto^|visual^|msbuild^>]
 @ECHO.
 @ECHO  -a -ARCH      Target processor architecture
 @ECHO                Default: %PS_ARCH_HOST%
@@ -23,7 +23,9 @@ REM /|/
 @ECHO                Default: %PS_CONFIG_DEFAULT%
 @ECHO  -v -VERSION   Major version number of MSVC installation to use for build
 @ECHO                Default: %PS_VERSION_SUPPORTED%
-@ECHO  -p -PRODUCT   Product ID of MSVC installation to use for build
+@ECHO  -p -PRODUCT   Product IDs of MSVC installation to use for build
+@ECHO                  Can be a list in quotes: "BuildTools community"
+@ECHO                  It will use first found tool
 @ECHO                Default: %PS_PRODUCT_DEFAULT%
 @ECHO  -s -STEPS     Performs only the specified build steps:
 @ECHO                  all - clean and build deps and app
@@ -46,6 +48,11 @@ REM /|/
 @ECHO                Default: %PS_DESTDIR_DEFAULT_MSG%
 @ECHO  -p -PRIORITY  Build CPU priority
 @ECHO                Default: normal
+@ECHO  -t -TOOL      Specifies which build tool to use for build
+@ECHO                  auto - search for Visual Studio first, fall back on MS Build
+@ECHO                  visual - use Visual Studio, error if not found
+@ECHO                  msbuild - use MS Build Tools, error if not found
+@ECHO                Default: auto
 @ECHO.
 @ECHO  Examples:
 @ECHO.
@@ -68,22 +75,11 @@ SET PS_DEPS_PATH_FILE_NAME=.DEPS_PATH.txt
 SET PS_DEPS_PATH_FILE=%~dp0deps\build\%PS_DEPS_PATH_FILE_NAME%
 SET PS_CONFIG_LIST="Debug;MinSizeRel;Release;RelWithDebInfo"
 
+
 REM The officially supported toolchain version is 16 (Visual Studio 2019)
 REM TODO: Update versions after Boost gets rolled to 1.78 or later
 SET PS_VERSION_SUPPORTED=16
 SET PS_VERSION_EXCEEDED=17
-SET VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
-IF NOT EXIST "%VSWHERE%" SET VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
-FOR /F "tokens=4 USEBACKQ delims=." %%I IN (`"%VSWHERE%" -nologo -property productId`) DO SET PS_PRODUCT_DEFAULT=%%I
-IF "%PS_PRODUCT_DEFAULT%" EQU "" (
-    SET EXIT_STATUS=-1
-    @ECHO ERROR: No Visual Studio installation found. 1>&2
-    GOTO :HELP
-)
-REM Default to the latest supported version if multiple are available
-FOR /F "tokens=1 USEBACKQ delims=." %%I IN (
-    `^""%VSWHERE%" -version "[%PS_VERSION_SUPPORTED%,%PS_VERSION_EXCEEDED%)" -latest -nologo -property catalog_buildVersion^"`
-) DO SET PS_VERSION_SUPPORTED=%%I
 
 REM Probe build directories and system state for reasonable default arguments
 pushd %~dp0
@@ -93,8 +89,11 @@ CALL :TOLOWER PS_ARCH
 SET PS_RUN=none
 SET PS_DESTDIR=
 SET PS_VERSION=
-SET PS_PRODUCT=%PS_PRODUCT_DEFAULT%
 SET PS_PRIORITY=normal
+SET PS_TOOL=auto
+SET PS_PRODUCT=
+SET PS_VSWHERE_PRODUCTS=
+
 CALL :RESOLVE_DESTDIR_CACHE
 
 REM Set up parameters used by help menu
@@ -108,7 +107,7 @@ SET EXIT_STATUS=1
 SET PS_CURRENT_STEP=arguments
 SET PARSER_STATE=
 SET PARSER_FAIL=
-FOR %%I in (%*) DO CALL :PARSE_OPTION "ARCH CONFIG DESTDIR STEPS RUN VERSION PRODUCT PRIORITY" PARSER_STATE "%%~I"
+FOR %%I in (%*) DO CALL :PARSE_OPTION "ARCH CONFIG DESTDIR STEPS RUN VERSION PRODUCT PRIORITY TOOL" PARSER_STATE "%%~I"
 IF "%PARSER_FAIL%" NEQ "" (
     @ECHO ERROR: Invalid switch: %PARSER_FAIL% 1>&2
     GOTO :HELP
@@ -126,6 +125,12 @@ IF "%PS_CONFIG%" EQU "" GOTO :HELP
 CALL :PARSE_OPTION_VALUE "normal low" PS_PRIORITY
 SET PS_PRIORITY=%PS_PRIORITY:normal= %
 SET PS_PRIORITY=%PS_PRIORITY:low=-low% 
+
+SET PS_VSWHERE_PRODUCTS_DEFAULT="Enterprise Professional Community BuildTools"
+CALL :PARSE_OPTION_VALUE "auto visual msbuild" PS_TOOL
+IF "%PS_TOOL%" EQU "visual" SET PS_VSWHERE_PRODUCTS_DEFAULT="Enterprise Professional Community"
+IF "%PS_TOOL%" EQU "msbuild" SET PS_VSWHERE_PRODUCTS_DEFAULT="BuildTools"
+
 REM RESOLVE_DESTDIR_CACHE must go after PS_ARCH and PS_CONFIG, but before PS STEPS
 CALL :RESOLVE_DESTDIR_CACHE
 IF "%PS_STEPS%" EQU "" SET PS_STEPS=%PS_STEPS_DEFAULT%
@@ -160,17 +165,10 @@ IF "%PS_RUN%" NEQ "none" IF "%PS_STEPS:~0,4%" EQU "deps" (
     @ECHO ERROR: RUN=none is the only valid option for STEPS "deps" or "deps-dirty"
     GOTO :HELP
 )
-IF DEFINED PS_VERSION (
-    SET /A PS_VERSION_EXCEEDED=%PS_VERSION% + 1
-) ELSE SET PS_VERSION=%PS_VERSION_SUPPORTED%
-SET MSVC_FILTER=-products Microsoft.VisualStudio.Product.%PS_PRODUCT% -version "[%PS_VERSION%,%PS_VERSION_EXCEEDED%)"
-FOR /F "tokens=* USEBACKQ" %%I IN (`^""%VSWHERE%" %MSVC_FILTER% -nologo -property installationPath^"`) DO SET MSVC_DIR=%%I
-IF NOT EXIST "%MSVC_DIR%" (
-    @ECHO ERROR: Compatible Visual Studio installation not found. 1>&2
-    GOTO :HELP
-)
-REM Cmake always defaults to latest supported MSVC generator. Let's make sure it uses what we select.
-FOR /F "tokens=* USEBACKQ" %%I IN (`^""%VSWHERE%" %MSVC_FILTER% -nologo -property catalog_productLineVersion^"`) DO SET PS_PRODUCT_VERSION=%%I
+
+REM Search for the build tool to use
+CALL :SCAN_BUILD_TOOL
+IF %EXIT_STATUS% LSS 0 GOTO :HELP
 
 REM Give the user a chance to cancel if we found something odd.
 IF "%PS_ASK_TO_CONTINUE%" EQU "" GOTO :BUILD_ENV
@@ -189,9 +187,11 @@ SET PS_CURRENT_STEP=environment
 @ECHO ** Build Steps:  %PS_STEPS%
 @ECHO ** Run App:      %PS_RUN%
 @ECHO ** Deps path:    %PS_DESTDIR%
-@ECHO ** Using Microsoft Visual Studio installation found at:
+@ECHO ** Product Ver:  %PS_PRODUCT_VERSION%
+@ECHO ** Using Microsoft %PS_PRODUCT_NAME% installation found at:
 @ECHO **  %MSVC_DIR%
 SET CMAKE_GENERATOR=Visual Studio %PS_VERSION% %PS_PRODUCT_VERSION%
+
 CALL "%MSVC_DIR%\Common7\Tools\vsdevcmd.bat" -arch=%PS_ARCH% -host_arch=%PS_ARCH_HOST% -app_platform=Desktop
 IF %ERRORLEVEL% NEQ 0 GOTO :END
 REM Need to reset the echo state after vsdevcmd.bat clobbers it.
@@ -315,6 +315,73 @@ exit /B %EXIT_STATUS%
 
 GOTO :EOF
 REM Functions and stubs start here.
+
+:SCAN_BUILD_TOOL
+REM Searches for a valid installation of MSBuild (EG Visual Studio, Build Tools)
+REM No Args
+REM Sets the following global variables:
+REM   PS_VERSION, PS_PRODUCT, PS_PRODUCT_NAME, MSVC_DIR, PS_PRODUCT_VERSION
+SET PS_VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe
+IF NOT EXIST "%PS_VSWHERE%" SET VSWHERE=%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe
+IF NOT EXIST "%PS_VSWHERE%" (
+    SET EXIT_STATUS=-1
+    @ECHO ERROR: vswhere.exe not found. 1>&2
+    GOTO :SCAN_BUILD_TOOL_END
+)
+
+IF DEFINED PS_VERSION (
+    SET /A PS_VERSION_EXCEEDED=%PS_VERSION% + 1
+) ELSE SET PS_VERSION=%PS_VERSION_SUPPORTED%
+SET PS_VSWHERE_QUERY_VERSION=-version "[%PS_VERSION%,%PS_VERSION_EXCEEDED%)"
+
+SET PS_VSWHERE_QUERY="%PS_VSWHERE%" -nologo
+
+REM if PS_PRODUCT was specified, we should search for that instead of BuildTools
+SET PS_VSWHERE_PRODUCTS=%PS_VSWHERE_PRODUCTS_DEFAULT%
+IF DEFINED PS_PRODUCT (
+    SET PS_VSWHERE_PRODUCTS="%PS_PRODUCT%"
+)
+
+CALL :VSWHERE_SEARCH %PS_VSWHERE_PRODUCTS% "-property productID" PS_PRODUCT
+FOR /F "tokens=4 delims=." %%I IN ("%PS_PRODUCT%") DO SET PS_PRODUCT=%%I
+
+IF "%PS_PRODUCT%" EQU "" (
+    SET EXIT_STATUS=-1
+    @ECHO ERROR: No Visual Studio ^(%PS_VSWHERE_PRODUCTS%^) installation found. 1>&2
+    GOTO :SCAN_BUILD_TOOL_END
+)
+
+CALL :VSWHERE_SEARCH %PS_PRODUCT% "-property displayName" PS_PRODUCT_NAME
+
+CALL :VSWHERE_SEARCH %PS_PRODUCT% "-property installationPath" MSVC_DIR
+
+IF NOT EXIST "%MSVC_DIR%" (
+    SET EXIT_STATUS=-1
+    @ECHO ERROR: Compatible Visual Studio installation not found. 1>&2
+    GOTO :SCAN_BUILD_TOOL_END
+)
+REM Cmake always defaults to latest supported MSVC generator. Let's make sure it uses what we select.
+CALL :VSWHERE_SEARCH %PS_PRODUCT% "-property catalog_productLineVersion" PS_PRODUCT_VERSION
+
+:SCAN_BUILD_TOOL_END
+
+GOTO :EOF
+
+:VSWHERE_SEARCH
+@REM Search for a product using vswhere.exe, ends of first one found
+@REM %1 - Valid list of Product IDs (EG "Community BuildTools")
+@REM %2 - Additional vswhere commandline options (EG "-property productID")
+@REM %3 - Out variable Name
+@REM Available ProductIDs: Enterprise, Professional, Community, BuildTools
+SetLocal EnableDelayedExpansion
+FOR %%I IN (%~1) DO (
+    FOR /F "tokens=* USEBACKQ" %%a IN (`^"%PS_VSWHERE_QUERY% %PS_VSWHERE_QUERY_VERSION% %~2 -products Microsoft.VisualStudio.Product.%%I^"`) DO SET PS_VSWHERE_RESULT=%%a
+    IF "!PS_VSWHERE_RESULT!" NEQ "" GOTO :VSWHERE_SEARCH_END
+)
+:VSWHERE_SEARCH_END
+endlocal & SET %~3=%PS_VSWHERE_RESULT%
+
+GOTO :EOF
 
 :RESOLVE_DESTDIR_CACHE
 @REM Resolves all DESTDIR cache values and sets PS_STEPS_DEFAULT
