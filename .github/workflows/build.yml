@@ -36,6 +36,11 @@ jobs:
         key: downloadcache-${{ runner.os }}-${{ github.run_id }}
         restore-keys: |
           downloadcache-${{ runner.os }}
+    - name: Download GMP
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p deps/download/GMP
+        test -r deps/download/GMP/gmp-6.2.1.tar.bz2 || curl -o deps/download/GMP/gmp-6.2.1.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
     - name: 2. Building dependencies
       if: steps.cache-dependencies.outputs.cache-hit != 'true'
       run: |
@@ -79,6 +84,11 @@ jobs:
         key: downloadcache-${{ runner.os }}-${{ github.run_id }}
         restore-keys: |
           downloadcache-${{ runner.os }}
+    - name: Download GMP
+      if: steps.cache-dependencies.outputs.cache-hit != 'true'
+      run: |
+        mkdir -p deps/download/GMP
+        test -r deps/download/GMP/gmp-6.2.1.tar.bz2 || curl -o deps/download/GMP/gmp-6.2.1.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
     - name: Dependencies
       if: steps.cache-dependencies.outputs.cache-hit != 'true'
       run: |
