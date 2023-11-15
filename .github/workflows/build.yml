@@ -109,13 +109,19 @@ jobs:
         cmake .. -DCMAKE_PREFIX_PATH=$(pwd)/../deps/build/destdir/usr/local
         make -j $(sysctl -n hw.logicalcpu)
   windows:
-    runs-on: windows-latest
+    runs-on: windows-2019
     steps:
     - uses: actions/checkout@v3
     - name: Relocate workspace
       run: |
         md c:\PrusaSlicer
         xcopy . c:\PrusaSlicer /s/h
+        #- name: Download GMP
+        ##if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        #run: |
+        #md c:\PrusaSlicer\deps
+        #mkdir -p deps/download/GMP
+        #test -r deps/download/GMP/gmp-6.2.1.tar.bz2 || curl -o deps/download/GMP/gmp-6.2.1.tar.bz2 https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.bz2
     - name: Run the automatic build script
       run: |
         c:
