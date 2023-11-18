@@ -6,11 +6,13 @@
 
 #include <stdexcept>
 #include <type_traits>
+#include <boost/log/trivial.hpp>
 
 #include <libslic3r/Model.hpp>
 #include <libslic3r/Format/OBJ.hpp> // load_obj for default mesh
 #include <libslic3r/CutSurface.hpp> // use surface cuts
 #include <libslic3r/BuildVolume.hpp> // create object
+#include <libslic3r/SLA/ReprojectPointsOnMesh.hpp>
 
 #include "slic3r/GUI/Plater.hpp"
 #include "slic3r/GUI/NotificationManager.hpp"
@@ -418,7 +420,6 @@ void UpdateJob::update_volume(ModelVolume *volume, TriangleMesh &&mesh, const Da
     volume->set_mesh(std::move(mesh));
     volume->set_new_unique_id();
     volume->calculate_convex_hull();
-    volume->get_object()->invalidate_bounding_box();
 
     // write data from base into volume
     base.write(*volume);
@@ -432,20 +433,15 @@ void UpdateJob::update_volume(ModelVolume *volume, TriangleMesh &&mesh, const Da
             update_name_in_list(*obj_list, *volume);
     }
 
-    // When text is object.
-    // When text positive volume is lowest part of object than modification of text
-    // have to move object on bed.
-    if (volume->type() == ModelVolumeType::MODEL_PART)
-        volume->get_object()->ensure_on_bed();
+    ModelObject *object = volume->get_object();
+    assert(object != nullptr);
+    if (object == nullptr)
+        return;
 
-    // redraw scene
-    GLCanvas3D *canvas = app.plater()->canvas3D();
-
-    bool refresh_immediately = false;
-    canvas->reload_scene(refresh_immediately);
-
-    // Change buttons "Export G-code" into "Slice now"
-    canvas->post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+    Plater *plater = app.plater();
+    if (plater->printer_technology() == ptSLA)
+        sla::reproject_points_and_holes(object);
+    plater->changed_object(*object);
 }
 
 /////////////////
@@ -792,14 +788,10 @@ bool check(const UpdateSurfaceVolumeData &input, bool is_main_thread)
 template<typename Fnc> 
 ExPolygons create_shape(DataBase &input, Fnc was_canceled) {
     EmbossShape &es = input.create_shape();
-    float delta = 50.f;
-    unsigned max_heal_iteration = 10;    
-    HealedExPolygons result = union_with_delta(es.shapes_with_ids, delta, max_heal_iteration);
-    es.is_healed = result.is_healed;
-    for (const ExPolygonsWithId &e : es.shapes_with_ids)
-        if (!e.is_healed)
-            es.is_healed = false;
-    return result.expolygons;
+    // TODO: improve to use real size of volume
+    // ... need world matrix for volume
+    // ... printer resolution will be fine too
+    return union_with_delta(es, UNION_DELTA, UNION_MAX_ITERATIN);
 }
 
 //#define STORE_SAMPLING
@@ -1560,7 +1552,7 @@ bool start_create_volume_on_surface_job(CreateVolumeParams &input, DataBasePtr d
         return on_bad_state(std::move(data), object);
 
     // Create result volume transformation
-    Transform3d surface_trmat = create_transformation_onto_surface(hit->position, hit->normal, Slic3r::GUI::up_limit);
+    Transform3d surface_trmat = create_transformation_onto_surface(hit->position, hit->normal, UP_LIMIT);
     apply_transformation(input.angle, input.distance, surface_trmat);
     Transform3d transform  = instance->get_matrix().inverse() * surface_trmat;
     auto        gizmo_type = static_cast<GLGizmosManager::EType>(input.gizmo);

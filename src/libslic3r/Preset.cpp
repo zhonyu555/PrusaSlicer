@@ -485,7 +485,8 @@ static std::vector<std::string> s_Preset_filament_options {
     "overhang_fan_speed_0", "overhang_fan_speed_1", "overhang_fan_speed_2", "overhang_fan_speed_3",
     // Retract overrides
     "filament_retract_length", "filament_retract_lift", "filament_retract_lift_above", "filament_retract_lift_below", "filament_retract_speed", "filament_deretract_speed", "filament_retract_restart_extra", "filament_retract_before_travel",
-    "filament_retract_layer_change", "filament_wipe", "filament_retract_before_wipe", "filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange",
+    "filament_retract_layer_change", "filament_wipe", "filament_retract_before_wipe", "filament_retract_length_toolchange", "filament_retract_restart_extra_toolchange", "filament_travel_ramping_lift",
+    "filament_travel_slope", "filament_travel_max_lift", "filament_travel_lift_before_obstacle",
     // Profile compatibility
     "filament_vendor", "compatible_prints", "compatible_prints_condition", "compatible_printers", "compatible_printers_condition", "inherits"
 };
@@ -767,7 +768,7 @@ static bool profile_print_params_same(const DynamicPrintConfig &cfg_old, const D
     // when comparing profiles for equality. Ignore them.
     for (const char *key : { "compatible_prints", "compatible_prints_condition",
                              "compatible_printers", "compatible_printers_condition", "inherits",
-                             "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id",
+                             "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id", "filament_vendor",
                              "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile",
                              //FIXME remove the print host keys?
                              "print_host", "printhost_apikey", "printhost_cafile" })
@@ -780,7 +781,7 @@ static bool profile_print_params_same(const DynamicPrintConfig &cfg_old, const D
 // and select it, losing previous modifications.
 // Only a single profile could be edited at at the same time, which introduces complexity when loading
 // filament profiles for multi-extruder printers.
-std::pair<Preset*, bool> PresetCollection::load_external_preset(
+ExternalPreset PresetCollection::load_external_preset(
     // Path to the profile source file (a G-code, an AMF or 3MF file, a config file)
     const std::string           &path,
     // Name of the profile, derived from the source file name.
@@ -803,7 +804,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
         const Preset &edited = this->get_edited_preset();
         if ((edited.name == original_name || edited.name == inherits) && profile_print_params_same(edited.config, cfg))
             // Just point to that already selected and edited profile.
-            return std::make_pair(&(*this->find_preset_internal(edited.name)), false);
+            return ExternalPreset(&(*this->find_preset_internal(edited.name)), false);
     }
     // Is there a preset already loaded with the name stored inside the config?
     std::deque<Preset>::iterator it       = this->find_preset_internal(original_name);
@@ -813,11 +814,11 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
 		it = this->find_preset_renamed(original_name);
 		found = it != m_presets.end();
     }
-    if (found && profile_print_params_same(it->config, cfg)) {
-        // The preset exists and it matches the values stored inside config.
+    if (found && profile_print_params_same(it->config, cfg) && it->is_visible) {
+        // The preset exists and is visible and it matches the values stored inside config.
         if (select == LoadAndSelect::Always)
             this->select_preset(it - m_presets.begin());
-        return std::make_pair(&(*it), false);
+        return ExternalPreset(&(*it), false);
     }
     if (! found && select != LoadAndSelect::Never && ! inherits.empty()) {
         // Try to use a system profile as a base to select the system profile
@@ -829,28 +830,36 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
             // The system preset exists and it matches the values stored inside config.
             if (select == LoadAndSelect::Always)
                 this->select_preset(it - m_presets.begin());
-            return std::make_pair(&(*it), false);
+            return ExternalPreset(&(*it), false);
         }
     }
     if (found) {
         if (select != LoadAndSelect::Never) {
+            const size_t idx = it - m_presets.begin();
+            // The newly selected preset can be activated AND have to be make as visible.
+            bool is_installed = !m_presets[idx].is_visible;
+
             // Select the existing preset and override it with new values, so that
             // the differences will be shown in the preset editor against the referenced profile.
-            this->select_preset(it - m_presets.begin());
-            // The source config may contain keys from many possible preset types. Just copy those that relate to this preset.
+            this->select_preset(idx);
 
-            // Following keys are not used neither by the UI nor by the slicing core, therefore they are not important 
-            // Erase them from config appl to avoid redundant "dirty" parameter in loaded preset.
-            for (const char* key : { "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id",
-                                     "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile" })
-                keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+            // update dirty state only if it's needed
+            if (!profile_print_params_same(it->config, cfg)) {
+                // The source config may contain keys from many possible preset types. Just copy those that relate to this preset.
 
-            this->get_edited_preset().config.apply_only(combined_config, keys, true);
-            this->update_dirty();
-            // Don't save the newly loaded project as a "saved into project" state.
-            //update_saved_preset_from_current_preset();
-            assert(this->get_edited_preset().is_dirty);
-            return std::make_pair(&(*it), this->get_edited_preset().is_dirty);
+                // Following keys are not used neither by the UI nor by the slicing core, therefore they are not important 
+                // Erase them from config apply to avoid redundant "dirty" parameter in loaded preset.
+                for (const char* key : { "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id", "filament_vendor", 
+                                         "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile" })
+                    keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+
+                this->get_edited_preset().config.apply_only(combined_config, keys, true);
+                this->update_dirty();
+                // Don't save the newly loaded project as a "saved into project" state.
+                //update_saved_preset_from_current_preset();
+                assert(this->get_edited_preset().is_dirty);
+            }
+            return ExternalPreset(&(*it), this->get_edited_preset().is_dirty, is_installed);
         }
         if (inherits.empty()) {
             // Update the "inherits" field.
@@ -881,7 +890,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
             // The preset exists and it matches the values stored inside config.
             if (select == LoadAndSelect::Always)
                 this->select_preset(it - m_presets.begin());
-            return std::make_pair(&(*it), false);
+            return ExternalPreset(&(*it), false);
         }
         // Form another profile name.
     }
@@ -891,7 +900,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
     if (this->m_idx_selected != size_t(-1) && &this->get_selected_preset() == &preset)
         this->get_edited_preset().is_external = true;
 
-    return std::make_pair(&preset, false);
+    return ExternalPreset(&preset, false);
 }
 
 Preset& PresetCollection::load_preset(const std::string &path, const std::string &name, DynamicPrintConfig &&config, bool select)
