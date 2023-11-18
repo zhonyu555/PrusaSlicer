@@ -4994,9 +4994,9 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice_) const
     if (get_config_bool("background_processing"))
     {
 	    RemovableDriveManager::RemovableDrivesStatus removable_media_status = wxGetApp().removable_drive_manager()->status();
-		if (sidebar->show_reslice(false) |
-			sidebar->show_export(true) |
-			sidebar->show_send(send_gcode_shown) |
+		if (sidebar->show_reslice(false) ||
+			sidebar->show_export(true) ||
+			sidebar->show_send(send_gcode_shown) ||
 			sidebar->show_export_removable(removable_media_status.has_removable_drives))
 //			sidebar->show_eject(removable_media_status.has_eject))
             sidebar->Layout();
@@ -5006,9 +5006,9 @@ void Plater::priv::show_action_buttons(const bool ready_to_slice_) const
 	    RemovableDriveManager::RemovableDrivesStatus removable_media_status;
 	    if (! ready_to_slice) 
 	    	removable_media_status = wxGetApp().removable_drive_manager()->status();
-        if (sidebar->show_reslice(ready_to_slice) |
-            sidebar->show_export(!ready_to_slice) |
-            sidebar->show_send(send_gcode_shown && !ready_to_slice) |
+        if (sidebar->show_reslice(ready_to_slice) ||
+            sidebar->show_export(!ready_to_slice) ||
+            sidebar->show_send(send_gcode_shown && !ready_to_slice) ||
 			sidebar->show_export_removable(!ready_to_slice && removable_media_status.has_removable_drives))
 //            sidebar->show_eject(!ready_to_slice && removable_media_status.has_eject))
             sidebar->Layout();

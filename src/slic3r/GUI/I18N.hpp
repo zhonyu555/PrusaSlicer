@@ -4,6 +4,7 @@
 ///|/
 #ifndef _
 #define _(s)    	Slic3r::GUI::I18N::translate((s))
+#undef	_L			// Warning suppression
 #define _L(s)    	Slic3r::GUI::I18N::translate((s))
 #define _u8L(s)     Slic3r::GUI::I18N::translate_utf8((s))
 #endif /* _ */
