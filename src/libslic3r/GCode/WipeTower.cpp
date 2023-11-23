@@ -798,7 +798,9 @@ WipeTower::ToolChangeResult WipeTower::tool_change(size_t tool)
 
     if (tool != (unsigned)(-1)) {
         writer.comment_with_value(" toolchange #", m_num_tool_changes + 1); // the number is zero-based
-        writer.append(std::string("; material : " + (m_current_tool < m_filpar.size() ? m_filpar[m_current_tool].material : "(NONE)") + " -> " + m_filpar[tool].material + "\n").c_str())
+        writer.append(std::string("; material : " + (m_current_tool < m_filpar.size() ?
+            m_filpar[m_current_tool].material + " " + std::to_string(m_filpar[m_current_tool].temperature) : "(NONE)") +
+            " -> " + m_filpar[tool].material + " " + std::to_string(m_filpar[tool].temperature) +"\n").c_str())
               .append(";--------------------\n");
     }
 
