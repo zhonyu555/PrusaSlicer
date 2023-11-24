@@ -2487,46 +2487,14 @@ bool Plater::priv::get_config_bool(const std::string &key) const
     return wxGetApp().app_config->get_bool(key);
 }
 
-// After loading of the presets from project, check if they are visible.
-// Set them to visible if they are not.
-void Plater::check_selected_presets_visibility(PrinterTechnology loaded_printer_technology)
+void Plater::notify_about_installed_presets()
 {
-    auto update_selected_preset_visibility = [](PresetCollection& presets, std::vector<std::string>& names) {
-        if (!presets.get_selected_preset().is_visible) {
-            assert(presets.get_selected_preset().name == presets.get_edited_preset().name);
-            presets.get_selected_preset().is_visible = true;
-            presets.get_edited_preset().is_visible = true;
-            names.emplace_back(presets.get_selected_preset().name);
-        }
-    };
-
-    std::vector<std::string> names;
-    PresetBundle* preset_bundle = wxGetApp().preset_bundle;
-    if (loaded_printer_technology == ptFFF) {
-        update_selected_preset_visibility(preset_bundle->prints, names);
-        for (const auto& extruder_filaments : preset_bundle->extruders_filaments) {
-            Preset* preset = preset_bundle->filaments.find_preset(extruder_filaments.get_selected_preset_name());
-            if (preset && !preset->is_visible) {
-                preset->is_visible = true;
-                names.emplace_back(preset->name);
-                if (preset->name == preset_bundle->filaments.get_edited_preset().name)
-                    preset_bundle->filaments.get_selected_preset().is_visible = true;
-            }
-        }
-    }
-    else {
-        update_selected_preset_visibility(preset_bundle->sla_prints, names);
-        update_selected_preset_visibility(preset_bundle->sla_materials, names);
-    }
-    update_selected_preset_visibility(preset_bundle->printers, names);
-
-    preset_bundle->update_compatible(PresetSelectCompatibleType::Never);
-
+    const auto& names = wxGetApp().preset_bundle->tmp_installed_presets;
     // show notification about temporarily installed presets
     if (!names.empty()) {
         std::string notif_text = into_u8(_L_PLURAL("The preset below was temporarily installed on the active instance of PrusaSlicer",
             "The presets below were temporarily installed on the active instance of PrusaSlicer", names.size())) + ":";
-        for (std::string& name : names)
+        for (const std::string& name : names)
             notif_text += "\n - " + name;
         get_notification_manager()->push_notification(NotificationType::CustomNotification,
             NotificationManager::NotificationLevel::PrintInfoNotificationLevel, notif_text);
@@ -2672,7 +2640,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                         Preset::normalize(config);
                         PresetBundle* preset_bundle = wxGetApp().preset_bundle;
                         preset_bundle->load_config_model(filename.string(), std::move(config));
-                        q->check_selected_presets_visibility(loaded_printer_technology);
+                        q->notify_about_installed_presets();
 
                         if (loaded_printer_technology == ptFFF)
                             CustomGCode::update_custom_gcode_per_print_z_from_config(model.custom_gcode_per_print_z, &preset_bundle->project_config);
@@ -6713,7 +6681,7 @@ void Plater::apply_cut_object_to_model(size_t obj_idx, const ModelObjectPtrs& ne
 
 
 
-wxString check_binary_vs_ascii_gcode_extension(PrinterTechnology pt, const std::string& ext, bool binary_output)
+static wxString check_binary_vs_ascii_gcode_extension(PrinterTechnology pt, const std::string& ext, bool binary_output)
 {
     wxString err_out;
     if (pt == ptFFF) {
@@ -6733,6 +6701,34 @@ wxString check_binary_vs_ascii_gcode_extension(PrinterTechnology pt, const std::
         }
     }
     return err_out;
+}
+
+
+
+// This function should be deleted when binary G-codes become more common. The dialog is there to make the
+// transition period easier for the users, because bgcode files are not recognized by older firmwares
+// without any error message.
+static void alert_when_exporting_binary_gcode(bool binary_output, const std::string& printer_notes)
+{
+    if (binary_output
+     && (boost::algorithm::contains(printer_notes, "PRINTER_MODEL_XL")
+      || boost::algorithm::contains(printer_notes, "PRINTER_MODEL_MINI")
+      || boost::algorithm::contains(printer_notes, "PRINTER_MODEL_MK4")
+      || boost::algorithm::contains(printer_notes, "PRINTER_MODEL_MK3.9")))
+    {
+        AppConfig* app_config = wxGetApp().app_config;
+        wxWindow* parent = wxGetApp().mainframe;
+        const std::string option_key = "dont_warn_about_firmware_version_when_exporting_binary_gcode";
+
+        if (app_config->get(option_key) != "1") {
+            RichMessageDialog dialog(parent, _L("You are exporting binary G-code for a Prusa printer. Please, make sure that your printer "
+                "is running firmware version 5.1.0-alpha2 or later. Older firmwares are not able to handle binary G-codes."),
+                _L("Exporting binary G-code"), wxICON_WARNING | wxOK);
+            dialog.ShowCheckBox(_L("Don't show again"));
+            if (dialog.ShowModal() == wxID_OK && dialog.IsCheckBoxChecked())
+                app_config->set(option_key, "1");
+        }
+    }
 }
 
 
@@ -6806,23 +6802,13 @@ void Plater::export_gcode(bool prefer_removable)
             };
 
             wxString error_str;
-#if 1 // #ysFIXME > clear code after testing
             if (check_for_error(output_path, error_str)) {
                 ErrorDialog(this, error_str, [this](const std::string& key) -> void { sidebar().jump_to_option(key); }).ShowModal();
                 output_path.clear();
+            } else {
+                alert_when_exporting_binary_gcode(wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("gcode_binary"),
+                                                  wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_string("printer_notes"));
             }
-#else
-            while (check_for_error(output_path, error_str)) {
-                show_error(this, error_str);
-                dlg.SetFilename(from_path(output_path.filename()));
-                if (dlg.ShowModal() == wxID_OK)
-                    output_path = into_path(dlg.GetPath());
-                else {
-                    output_path.clear();
-                    break;
-                }
-            }
-#endif
         }
     }
 
@@ -7379,6 +7365,9 @@ void Plater::send_gcode()
                 return;
             }
         }
+
+        alert_when_exporting_binary_gcode(wxGetApp().preset_bundle->prints.get_edited_preset().config.opt_bool("gcode_binary"),
+                                          wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_string("printer_notes"));
 
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.post_action = dlg.post_action();

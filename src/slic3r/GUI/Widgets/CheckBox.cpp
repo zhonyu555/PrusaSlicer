@@ -60,6 +60,8 @@ void CheckBox::update()
     updateBitmap(e);
 #endif
 
+    if (GetBitmapMargins().GetWidth() == 0 && !GetLabelText().IsEmpty())
+        SetBitmapMargins(4, 0);
     update_size();
 
     this->SetLabel(m_accessibility_label+((val)?(" X"):("")));

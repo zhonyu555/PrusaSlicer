@@ -46,6 +46,8 @@
 #include "PlaceholderParser.hpp"
 #include "GCode/Thumbnails.hpp"
 
+#include "PresetBundle.hpp"
+
 using boost::property_tree::ptree;
 
 namespace Slic3r {
@@ -768,7 +770,7 @@ static bool profile_print_params_same(const DynamicPrintConfig &cfg_old, const D
     // when comparing profiles for equality. Ignore them.
     for (const char *key : { "compatible_prints", "compatible_prints_condition",
                              "compatible_printers", "compatible_printers_condition", "inherits",
-                             "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id",
+                             "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id", "filament_vendor",
                              "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile",
                              //FIXME remove the print host keys?
                              "print_host", "printhost_apikey", "printhost_cafile" })
@@ -781,7 +783,7 @@ static bool profile_print_params_same(const DynamicPrintConfig &cfg_old, const D
 // and select it, losing previous modifications.
 // Only a single profile could be edited at at the same time, which introduces complexity when loading
 // filament profiles for multi-extruder printers.
-std::pair<Preset*, bool> PresetCollection::load_external_preset(
+ExternalPreset PresetCollection::load_external_preset(
     // Path to the profile source file (a G-code, an AMF or 3MF file, a config file)
     const std::string           &path,
     // Name of the profile, derived from the source file name.
@@ -804,7 +806,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
         const Preset &edited = this->get_edited_preset();
         if ((edited.name == original_name || edited.name == inherits) && profile_print_params_same(edited.config, cfg))
             // Just point to that already selected and edited profile.
-            return std::make_pair(&(*this->find_preset_internal(edited.name)), false);
+            return ExternalPreset(&(*this->find_preset_internal(edited.name)), false);
     }
     // Is there a preset already loaded with the name stored inside the config?
     std::deque<Preset>::iterator it       = this->find_preset_internal(original_name);
@@ -814,11 +816,11 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
 		it = this->find_preset_renamed(original_name);
 		found = it != m_presets.end();
     }
-    if (found && profile_print_params_same(it->config, cfg)) {
-        // The preset exists and it matches the values stored inside config.
+    if (found && profile_print_params_same(it->config, cfg) && it->is_visible) {
+        // The preset exists and is visible and it matches the values stored inside config.
         if (select == LoadAndSelect::Always)
             this->select_preset(it - m_presets.begin());
-        return std::make_pair(&(*it), false);
+        return ExternalPreset(&(*it), false);
     }
     if (! found && select != LoadAndSelect::Never && ! inherits.empty()) {
         // Try to use a system profile as a base to select the system profile
@@ -830,28 +832,36 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
             // The system preset exists and it matches the values stored inside config.
             if (select == LoadAndSelect::Always)
                 this->select_preset(it - m_presets.begin());
-            return std::make_pair(&(*it), false);
+            return ExternalPreset(&(*it), false);
         }
     }
     if (found) {
         if (select != LoadAndSelect::Never) {
+            const size_t idx = it - m_presets.begin();
+            // The newly selected preset can be activated AND have to be make as visible.
+            bool is_installed = !m_presets[idx].is_visible;
+
             // Select the existing preset and override it with new values, so that
             // the differences will be shown in the preset editor against the referenced profile.
-            this->select_preset(it - m_presets.begin());
-            // The source config may contain keys from many possible preset types. Just copy those that relate to this preset.
+            this->select_preset(idx);
 
-            // Following keys are not used neither by the UI nor by the slicing core, therefore they are not important 
-            // Erase them from config appl to avoid redundant "dirty" parameter in loaded preset.
-            for (const char* key : { "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id",
-                                     "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile" })
-                keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+            // update dirty state only if it's needed
+            if (!profile_print_params_same(it->config, cfg)) {
+                // The source config may contain keys from many possible preset types. Just copy those that relate to this preset.
 
-            this->get_edited_preset().config.apply_only(combined_config, keys, true);
-            this->update_dirty();
-            // Don't save the newly loaded project as a "saved into project" state.
-            //update_saved_preset_from_current_preset();
-            assert(this->get_edited_preset().is_dirty);
-            return std::make_pair(&(*it), this->get_edited_preset().is_dirty);
+                // Following keys are not used neither by the UI nor by the slicing core, therefore they are not important 
+                // Erase them from config apply to avoid redundant "dirty" parameter in loaded preset.
+                for (const char* key : { "print_settings_id", "filament_settings_id", "sla_print_settings_id", "sla_material_settings_id", "printer_settings_id", "filament_vendor", 
+                                         "printer_model", "printer_variant", "default_print_profile", "default_filament_profile", "default_sla_print_profile", "default_sla_material_profile" })
+                    keys.erase(std::remove(keys.begin(), keys.end(), key), keys.end());
+
+                this->get_edited_preset().config.apply_only(combined_config, keys, true);
+                this->update_dirty();
+                // Don't save the newly loaded project as a "saved into project" state.
+                //update_saved_preset_from_current_preset();
+                assert(this->get_edited_preset().is_dirty);
+            }
+            return ExternalPreset(&(*it), this->get_edited_preset().is_dirty, is_installed);
         }
         if (inherits.empty()) {
             // Update the "inherits" field.
@@ -882,7 +892,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
             // The preset exists and it matches the values stored inside config.
             if (select == LoadAndSelect::Always)
                 this->select_preset(it - m_presets.begin());
-            return std::make_pair(&(*it), false);
+            return ExternalPreset(&(*it), false);
         }
         // Form another profile name.
     }
@@ -892,7 +902,7 @@ std::pair<Preset*, bool> PresetCollection::load_external_preset(
     if (this->m_idx_selected != size_t(-1) && &this->get_selected_preset() == &preset)
         this->get_edited_preset().is_external = true;
 
-    return std::make_pair(&preset, false);
+    return ExternalPreset(&preset, false);
 }
 
 Preset& PresetCollection::load_preset(const std::string &path, const std::string &name, DynamicPrintConfig &&config, bool select)
@@ -1780,7 +1790,8 @@ std::string PhysicalPrinter::get_preset_name(std::string name)
 // ***  PhysicalPrinterCollection  ***
 // -----------------------------------
 
-PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::string>& keys)
+PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::string>& keys, PresetBundle* preset_bundle)
+    :m_preset_bundle_owner(preset_bundle)
 {
     // Default config for a physical printer containing all key/value pairs of PhysicalPrinter::printer_options().
     for (const std::string &key : keys) {
@@ -1789,6 +1800,28 @@ PhysicalPrinterCollection::PhysicalPrinterCollection( const std::vector<std::str
         assert(opt->default_value);
         m_default_config.set_key_value(key, opt->default_value->clone());
     }
+}
+
+static void update_preset_names_if_were_renamed(std::set<std::string>& preset_names, const PrinterPresetCollection& printer_presets)
+{
+    std::set<std::string> new_names;
+
+    bool was_renamed{ false };
+    for (const std::string& preset_name : preset_names) {
+        const Preset* preset = printer_presets.find_preset(preset_name);
+        if (preset)
+            new_names.emplace(preset_name);
+        else {
+            if (const std::string* new_name = printer_presets.get_preset_name_renamed(preset_name)) {
+                BOOST_LOG_TRIVIAL(warning) << "Printer preset present " << preset_name << "was renamed to: " << *new_name << std::endl;
+                new_names.emplace(*new_name);
+                was_renamed = true;
+            }
+        }
+    }
+
+    if (was_renamed)
+        preset_names = new_names;
 }
 
 // Load all printers found in dir_path.
@@ -1809,10 +1842,15 @@ void PhysicalPrinterCollection::load_printers(
             std::string name = dir_entry.path().filename().string();
             // Remove the .ini suffix.
             name.erase(name.size() - 4);
-            if (this->find_printer(name, false)) {
+            if (PhysicalPrinter* found_printer = this->find_printer(name, false)) {
                 // This happens when there's is a preset (most likely legacy one) with the same name as a system preset
                 // that's already been loaded from a bundle.
                 BOOST_LOG_TRIVIAL(warning) << "Printer already present, not loading: " << name;
+
+                // But some of used printer_preset might have been renamed.
+                // Check it and replace with new name(s) if it's needed
+                update_preset_names_if_were_renamed(found_printer->preset_names, m_preset_bundle_owner->printers);
+
                 continue;
             }
             try {
@@ -1826,6 +1864,9 @@ void PhysicalPrinterCollection::load_printers(
                         substitutions.push_back({ name, Preset::TYPE_PHYSICAL_PRINTER, PresetConfigSubstitutions::Source::UserFile, printer.file, std::move(config_substitutions) });
                     printer.update_from_config(config);
                     printer.loaded = true;
+                    // Some of used printer_preset might have been renamed.
+                    // Check it and replace with new name(s) if it's needed
+                    update_preset_names_if_were_renamed(printer.preset_names, m_preset_bundle_owner->printers);
                 }
                 catch (const std::ifstream::failure& err) {
                     throw Slic3r::RuntimeError(std::string("The selected preset cannot be loaded: ") + printer.file + "\n\tReason: " + err.what());
@@ -1857,6 +1898,9 @@ void PhysicalPrinterCollection::load_printer(const std::string& path, const std:
     it->file = path;
     it->config = std::move(config);
     it->loaded = true;
+    // Some of used printer_preset might have been renamed.
+    // Check it and replace with new name(s) if it's needed
+    update_preset_names_if_were_renamed(it->preset_names, m_preset_bundle_owner->printers);
     if (select)
         this->select_printer(*it);
 
@@ -2112,6 +2156,10 @@ void PhysicalPrinterCollection::select_printer(const std::string& full_name)
         m_selected_preset = *it->preset_names.begin();
     else
         m_selected_preset = it->get_preset_name(full_name);
+
+    // Check if selected preset wasn't renamed and replace it with new name
+    if (const std::string* new_name = m_preset_bundle_owner->printers.get_preset_name_renamed(m_selected_preset))
+        m_selected_preset = *new_name;
 }
 
 void PhysicalPrinterCollection::select_printer(const std::string& printer_name, const std::string& preset_name)
