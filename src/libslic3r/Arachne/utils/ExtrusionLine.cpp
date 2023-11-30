@@ -44,7 +44,15 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     if (junctions.size() <= min_path_size)
         return;
 
-    // TODO: allow for the first point to be removed in case of simplifying closed Extrusionlines.
+    printf("BEFORE ExtrusionLine::simplify on %zu points:\n", junctions.size());
+    for (size_t point_idx = 0; point_idx < junctions.size(); point_idx++) {
+        const ExtrusionJunction &cur = junctions[point_idx];
+        const ExtrusionJunction &prev = point_idx ? junctions[point_idx - 1] : cur;
+        printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
+               unscaled(cur - prev).norm());
+    }
+
+    // TODO: Weighted average of widths.
 
     /* ExtrusionLines are treated as (open) polylines, so in case an ExtrusionLine is actually a closed polygon, its
      * starting and ending points will be equal (or almost equal). Therefore, the simplification of the ExtrusionLine
@@ -54,11 +62,11 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     // Starting junction should always exist in the simplified path
     new_junctions.emplace_back(junctions.front());
 
-    /* Initially, previous_previous is always the same as previous because, for open ExtrusionLines the last junction
+    /* XXX Initially, previous_previous is always the same as previous because, for open ExtrusionLines the last junction
      * cannot be taken into consideration when checking the points at index 1. For closed ExtrusionLines, the first and
      * last junctions are anyway the same.
      * */
-    ExtrusionJunction previous_previous = junctions.front();
+    ExtrusionJunction previous_previous = this->is_closed ? junctions[junctions.size() - 2] : junctions.front();
     ExtrusionJunction previous = junctions.front();
 
     /* When removing a vertex, we check the height of the triangle of the area
@@ -76,16 +84,20 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
      From this area we compute the height of the representative triangle using
      the standard formula for a triangle area: A = .5*b*h
      */
-    const ExtrusionJunction& initial = junctions.at(1);
+    const ExtrusionJunction& initial = junctions[1];
     int64_t accumulated_area_removed = int64_t(previous.p.x()) * int64_t(initial.p.y()) - int64_t(previous.p.y()) * int64_t(initial.p.x()); // Twice the Shoelace formula for area of polygon per line segment.
 
-    for (size_t point_idx = 1; point_idx < junctions.size() - 1; point_idx++)
+    // For a closed polygon we process the last point, which is the same as the first point.
+    for (size_t point_idx = 1; point_idx < junctions.size() - (this->is_closed ? 0 : 1); point_idx++)
     {
-        const ExtrusionJunction& current = junctions[point_idx];
+        // For the last point of a closed polygon, use the first point of the new polygon in case we modified it.
+        const bool is_last = point_idx + 1 == junctions.size();
+        const ExtrusionJunction& current = is_last ? new_junctions[0] : junctions[point_idx];
 
         // Spill over in case of overflow, unless the [next] vertex will then be equal to [previous].
-        const bool spill_over = point_idx + 1 == junctions.size() && new_junctions.size() > 1;
-        ExtrusionJunction& next = spill_over ? new_junctions[0] : junctions[point_idx + 1];
+        const bool spill_over = this->is_closed && point_idx + 2 >= junctions.size() &&
+            point_idx + 2 - junctions.size() < new_junctions.size();
+        ExtrusionJunction& next = spill_over ? new_junctions[point_idx + 2 - junctions.size()] : junctions[point_idx + 1];
 
         const int64_t removed_area_next = int64_t(current.p.x()) * int64_t(next.p.y()) - int64_t(current.p.y()) * int64_t(next.p.x()); // Twice the Shoelace formula for area of polygon per line segment.
         const int64_t negative_area_closing = int64_t(next.p.x()) * int64_t(previous.p.y()) - int64_t(next.p.y()) * int64_t(previous.p.x()); // Area between the origin and the short-cutting segment
@@ -95,6 +107,7 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
         if (length2 < scaled<coord_t>(0.025))
         {
             // We're allowed to always delete segments of less than 5 micron. The width in this case doesn't matter that much.
+            printf("  Too short: %zu len %.3f\n", point_idx, unscaled(sqrt(length2)));
             continue;
         }
 
@@ -103,6 +116,7 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
 
         if (base_length_2 == 0) // Two line segments form a line back and forth with no area.
         {
+            printf("  Base length zero: %zu, len %.3f\n", point_idx, unscaled(sqrt(length2)));
             continue; // Remove the junction (vertex).
         }
         //We want to check if the height of the triangle formed by previous, current and next vertices is less than allowed_error_distance_squared.
@@ -119,6 +133,8 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
             // We shouldn't remove middle junctions of colinear segments if the area changed for the C-P segment is exceeding the maximum allowed
              && extrusion_area_error <= maximum_extrusion_area_deviation)
         {
+            printf("  Colinear: %zu, height %.3f, area error %.3f < %.3f\n", point_idx, unscaled(sqrt(height_2)),
+                   unscaled(sqrt(extrusion_area_error)), unscaled(sqrt(maximum_extrusion_area_deviation)));
             // Remove the current junction (vertex).
             continue;
         }
@@ -133,13 +149,26 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
                 // We should instead move this point to a location where both edges are kept and then remove the previous point that we wanted to keep.
                 // By taking the intersection of these two lines, we get a point that preserves the direction (so it makes the corner a bit more pointy).
                 // We just need to be sure that the intersection point does not introduce an artifact itself.
+                //      o  prev_prev
+                //      |
+                //      o  prev
+                //       \  cur
+                // inte + o------------o next
+                //
                 Point intersection_point;
                 bool has_intersection = Line(previous_previous.p, previous.p).intersection_infinite(Line(current.p, next.p), &intersection_point);
                 if (!has_intersection
                     || Line::distance_to_infinite_squared(intersection_point, previous.p, current.p) > double(allowed_error_distance_squared)
                     || (intersection_point - previous.p).cast<int64_t>().squaredNorm() > smallest_line_segment_squared  // The intersection point is way too far from the 'previous'
-                    || (intersection_point - next.p).cast<int64_t>().squaredNorm() > smallest_line_segment_squared)     // and 'next' points, so it shouldn't replace 'current'
+                    || (intersection_point - current.p).cast<int64_t>().squaredNorm() > smallest_line_segment_squared)     // and 'current' points, so it shouldn't replace 'current'
                 {
+                    printf("  NO BETTER SPOT: %zu, length %.3f < %.3f, height %.3f < %.3f, intersect %d %.3f, %.3f, len %.3f, %.3f, %.3f\n", point_idx,
+                           unscaled(sqrt(length2)), unscaled(sqrt(smallest_line_segment_squared)),
+                           unscaled(sqrt(height_2)), unscaled(sqrt(allowed_error_distance_squared)),
+                           has_intersection, unscaled(intersection_point.x()), unscaled(intersection_point.y()),
+                           unscaled((intersection_point - previous.p).cast<int64_t>().norm()),
+                           unscaled((intersection_point - current.p).cast<int64_t>().norm()),
+                           unscaled((intersection_point - next.p).cast<int64_t>().norm()));
                     // We can't find a better spot for it, but the size of the line is more than 5 micron.
                     // So the only thing we can do here is leave it in...
                 }
@@ -158,12 +187,16 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
                     accumulated_area_removed = removed_area_next; // So that in the next iteration it's the area between the origin, [previous] and [current]
                     previous_previous = previous;
                     previous = new_to_add; // Note that "previous" is only updated if we don't remove the junction (vertex).
+                    printf("  Replaced %zu with: %zu, at %.3f, %.3f\n", new_junctions.size(), point_idx,
+                           unscaled(intersection_point.x()), unscaled(intersection_point.y()));
                     new_junctions.push_back(new_to_add);
                     continue;
                 }
             }
             else
             {
+                printf("  Next segment small: %zu, next %.3f < %.3f\n", point_idx,
+                       unscaled(sqrt(next_length2)), unscaled(sqrt(4 * smallest_line_segment_squared)));
                 continue; // Remove the junction (vertex).
             }
         }
@@ -171,21 +204,29 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
         accumulated_area_removed = removed_area_next; // So that in the next iteration it's the area between the origin, [previous] and [current]
         previous_previous = previous;
         previous = current; // Note that "previous" is only updated if we don't remove the junction (vertex).
+        printf("  %zu => %zu\n", point_idx, new_junctions.size());
         new_junctions.push_back(current);
     }
 
-    // Ending junction (vertex) should always exist in the simplified path
-    new_junctions.emplace_back(junctions.back());
-
-    /* In case this is a closed polygon (instead of a poly-line-segments), the invariant that the first and last points are the same should be enforced.
-     * Since one of them didn't move, and the other can't have been moved further than the constraints, if originally equal, they can simply be equated.
-     */
-    if ((junctions.front().p - junctions.back().p).cast<int64_t>().squaredNorm() == 0)
-    {
-        new_junctions.back().p = junctions.front().p;
+    if (this->is_closed) {
+        /* The first and last points should be the same for a closed polygon.
+         * We processed the last point above, so copy it into the first point.
+         */
+        new_junctions.front().p = new_junctions.back().p;
+    } else {
+        // Ending junction (vertex) should always exist in the simplified path
+        new_junctions.emplace_back(junctions.back());
     }
 
     junctions = new_junctions;
+
+    printf("AFTER ExtrusionLine::simplify on %zu points:\n", junctions.size());
+    for (size_t point_idx = 0; point_idx < junctions.size(); point_idx++) {
+        const ExtrusionJunction &cur = junctions[point_idx];
+        const ExtrusionJunction &prev = point_idx ? junctions[point_idx - 1] : cur;
+        printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
+               unscaled(cur - prev).norm());
+    }
 }
 
 int64_t ExtrusionLine::calculateExtrusionAreaDeviationError(ExtrusionJunction A, ExtrusionJunction B, ExtrusionJunction C) {
