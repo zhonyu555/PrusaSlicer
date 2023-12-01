@@ -276,7 +276,6 @@ void PrintObject::make_perimeters()
     );
 #else
     for (size_t layer_idx = 0; layer_idx < m_layers.size(); ++ layer_idx) {
-        printf("!!! LAYER %zu !!!\n", layer_idx);
         m_print->throw_if_canceled();
         m_layers[layer_idx]->make_perimeters();
     }

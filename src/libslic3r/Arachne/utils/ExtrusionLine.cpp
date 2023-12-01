@@ -51,9 +51,9 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
         printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
                unscaled(cur - prev).norm());
     }
-
+    
     // TODO: Weighted average of widths.
-
+    
     /* ExtrusionLines are treated as (open) polylines, so in case an ExtrusionLine is actually a closed polygon, its
      * starting and ending points will be equal (or almost equal). Therefore, the simplification of the ExtrusionLine
      * should not touch the first and last points. As a result, start simplifying from point at index 1.
@@ -219,7 +219,7 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     }
 
     junctions = new_junctions;
-
+    
     printf("AFTER ExtrusionLine::simplify on %zu points:\n", junctions.size());
     for (size_t point_idx = 0; point_idx < junctions.size(); point_idx++) {
         const ExtrusionJunction &cur = junctions[point_idx];
@@ -227,6 +227,7 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
         printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
                unscaled(cur - prev).norm());
     }
+    return;
 }
 
 int64_t ExtrusionLine::calculateExtrusionAreaDeviationError(ExtrusionJunction A, ExtrusionJunction B, ExtrusionJunction C) {
