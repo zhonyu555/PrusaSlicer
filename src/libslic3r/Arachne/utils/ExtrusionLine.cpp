@@ -58,6 +58,11 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
      * */
     ExtrusionJunction previous_previous = this->is_closed ? junctions[junctions.size() - 2] : junctions.front();
 
+    /* TODO: When deleting, combining, or modifying junctions, it would
+     * probably be good to set the new junction's width to a weighted average
+     * of the junctions it is derived from.
+     */
+
     /* When removing a vertex, we check the height of the triangle of the area
      being removed from the original polygon by the simplification. However,
      when consecutively removing multiple vertices the height of the previously
