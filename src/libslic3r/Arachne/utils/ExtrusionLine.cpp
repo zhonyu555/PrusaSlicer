@@ -48,12 +48,10 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     for (size_t point_idx = 0; point_idx < junctions.size(); point_idx++) {
         const ExtrusionJunction &cur = junctions[point_idx];
         const ExtrusionJunction &prev = point_idx ? junctions[point_idx - 1] : cur;
-        printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
-               unscaled(cur - prev).norm());
+        printf("  %zu: %.3f, %.3f, w %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
+               unscaled(cur.w), unscaled(cur - prev).norm());
     }
-    
-    // TODO: Weighted average of widths.
-    
+
     /* ExtrusionLines are treated as (open) polylines, so in case an ExtrusionLine is actually a closed polygon, its
      * starting and ending points will be equal (or almost equal). Therefore, the simplification of the ExtrusionLine
      * should not touch the first and last points. As a result, start simplifying from point at index 1.
@@ -62,12 +60,11 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     // Starting junction should always exist in the simplified path
     new_junctions.emplace_back(junctions.front());
 
-    /* XXX Initially, previous_previous is always the same as previous because, for open ExtrusionLines the last junction
-     * cannot be taken into consideration when checking the points at index 1. For closed ExtrusionLines, the first and
-     * last junctions are anyway the same.
+    ExtrusionJunction previous = junctions.front();
+    /* For open ExtrusionLines the last junction cannot be taken into consideration when checking the points at index 1.
+     * For closed ExtrusionLines, the first and last junctions are the same, so use the prior to last juction.
      * */
     ExtrusionJunction previous_previous = this->is_closed ? junctions[junctions.size() - 2] : junctions.front();
-    ExtrusionJunction previous = junctions.front();
 
     /* When removing a vertex, we check the height of the triangle of the area
      being removed from the original polygon by the simplification. However,
@@ -219,15 +216,14 @@ void ExtrusionLine::simplify(const int64_t smallest_line_segment_squared, const 
     }
 
     junctions = new_junctions;
-    
+
     printf("AFTER ExtrusionLine::simplify on %zu points:\n", junctions.size());
     for (size_t point_idx = 0; point_idx < junctions.size(); point_idx++) {
         const ExtrusionJunction &cur = junctions[point_idx];
         const ExtrusionJunction &prev = point_idx ? junctions[point_idx - 1] : cur;
-        printf("  %zu: %.3f, %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
-               unscaled(cur - prev).norm());
+        printf("  %zu: %.3f, %.3f, w %.3f, len %.3f\n", point_idx, unscaled(cur.p[0]), unscaled(cur.p[1]),
+               unscaled(cur.w), unscaled(cur - prev).norm());
     }
-    return;
 }
 
 int64_t ExtrusionLine::calculateExtrusionAreaDeviationError(ExtrusionJunction A, ExtrusionJunction B, ExtrusionJunction C) {
