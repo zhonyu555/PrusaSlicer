@@ -1143,9 +1143,12 @@ void PrintObject::detect_surfaces_type()
         }
 
         if (spiral_vase) {
-        	if (num_layers > 1)
-	        	// Turn the last bottom layer infill to a top infill, so it will be extruded with a proper pattern.
-	        	m_layers[num_layers - 1]->m_regions[region_id]->m_slices.set_type(stTop);
+            if (num_layers > 2) {
+                // Turn the last bottom layer infill to a top infill, so it will be extruded with a proper pattern.
+                m_layers[num_layers - 2]->m_regions[region_id]->m_slices.set_type(stTop);
+                m_layers[num_layers - 1]->m_regions[region_id]->m_slices.set_type(stPerimeter);
+            }
+
 	        for (size_t i = num_layers; i < m_layers.size(); ++ i)
 	        	m_layers[i]->m_regions[region_id]->m_slices.set_type(stInternal);
         }

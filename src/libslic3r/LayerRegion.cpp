@@ -96,6 +96,12 @@ void LayerRegion::make_perimeters(
         (this->layer()->id() >= size_t(region_config.bottom_solid_layers.value) &&
          this->layer()->print_z >= region_config.bottom_solid_min_thickness - EPSILON);
 
+    auto _region_config = region_config;
+
+    if (print_config.spiral_vase && this->layer()->id() == size_t(region_config.bottom_solid_layers.value - 1) ) {
+        _region_config.perimeters.value = 4;
+    }
+
     PerimeterGenerator::Parameters params(
         this->layer()->height,
         int(this->layer()->id()),
@@ -103,7 +109,7 @@ void LayerRegion::make_perimeters(
         this->flow(frExternalPerimeter),
         this->bridging_flow(frPerimeter),
         this->flow(frSolidInfill),
-        region_config,
+        _region_config,
         this->layer()->object()->config(),
         print_config,
         spiral_vase
