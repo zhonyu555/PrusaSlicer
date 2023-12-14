@@ -190,7 +190,46 @@ void GLGizmoBrim::on_render_input_window(float x, float y, float bottom_limit)
 
 void GLGizmoBrim::update_model_object() const
 {
-    // todo: implement the model update of the Slic3r model structure
+    bool updated = false;
+    ModelObject* mo = m_c->selection_info()->model_object();
+    int idx = -1;
+    for (ModelVolume* mv : mo->volumes) {
+        if (! mv->is_model_part())
+            continue;
+        ++idx;
+        updated |= mv->brim_facets.set(*m_triangle_selectors[idx].get());
+    }
+
+    if (updated) {
+        const ModelObjectPtrs& mos = wxGetApp().model().objects;
+        wxGetApp().obj_list()->update_info_items(std::find(mos.begin(), mos.end(), mo) - mos.begin());
+
+        m_parent.post_event(SimpleEvent(EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS));
+    }
+}
+
+void GLGizmoBrim::update_from_model_object()
+{
+    wxBusyCursor wait;
+
+    const ModelObject* mo = m_c->selection_info()->model_object();
+    m_triangle_selectors.clear();
+
+    int volume_id = -1;
+    for (const ModelVolume* mv : mo->volumes) {
+        if (! mv->is_model_part())
+            continue;
+
+        ++volume_id;
+
+        // This mesh does not account for the possible Z up SLA offset.
+        const TriangleMesh* mesh = &mv->mesh();
+
+        m_triangle_selectors.emplace_back(std::make_unique<TriangleSelectorGUI>(*mesh));
+        // Reset of TriangleSelector is done inside TriangleSelectorGUI's constructor, so we don't need it to perform it again in deserialize().
+        m_triangle_selectors.back()->deserialize(mv->brim_facets.get_data(), false);
+        m_triangle_selectors.back()->request_update_render_data();
+    }
 }
 
 PainterGizmoType GLGizmoBrim::get_painter_type() const
