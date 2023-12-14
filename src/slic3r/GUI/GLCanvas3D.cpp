@@ -6226,7 +6226,8 @@ void GLCanvas3D::_render_sequential_clearance()
     case GLGizmosManager::EType::Emboss:
     case GLGizmosManager::EType::Simplify:
     case GLGizmosManager::EType::FdmSupports:
-    case GLGizmosManager::EType::Seam: { return; }
+    case GLGizmosManager::EType::Seam:
+    case GLGizmosManager::EType::Brim: { return; }
     default: { break; }
     }
  

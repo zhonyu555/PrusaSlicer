@@ -1651,6 +1651,7 @@ void NotificationManager::UpdatedItemsInfoNotification::add_type(InfoItemType ty
 		switch ((*it).first) {
 		case InfoItemType::CustomSupports:      text += format(_L_PLURAL("%1$d object was loaded with custom supports.",		"%1$d objects were loaded with custom supports.",		(*it).second), (*it).second) + "\n"; break;
 		case InfoItemType::CustomSeam:          text += format(_L_PLURAL("%1$d object was loaded with custom seam.",			"%1$d objects were loaded with custom seam.",			(*it).second), (*it).second) + "\n"; break;
+		case InfoItemType::CustomBrim:          text += format(_L_PLURAL("%1$d object was loaded with custom brim.",			"%1$d objects were loaded with custom brim.",			(*it).second), (*it).second) + "\n"; break;
 		case InfoItemType::MmuSegmentation:     text += format(_L_PLURAL("%1$d object was loaded with multimaterial painting.", "%1$d objects were loaded with multimaterial painting.",(*it).second), (*it).second) + "\n"; break;
 		case InfoItemType::VariableLayerHeight: text += format(_L_PLURAL("%1$d object was loaded with variable layer height.",	"%1$d objects were loaded with variable layer height.", (*it).second), (*it).second) + "\n"; break;
 		case InfoItemType::Sinking:             text += format(_L_PLURAL("%1$d object was loaded with partial sinking.",		"%1$d objects were loaded with partial sinking.",		(*it).second), (*it).second) + "\n"; break;
@@ -1671,6 +1672,7 @@ void NotificationManager::UpdatedItemsInfoNotification::render_left_sign(ImGuiWr
 	switch (type) {
 	case InfoItemType::CustomSupports:      text = ImGui::CustomSupportsMarker; break;
 	case InfoItemType::CustomSeam:          text = ImGui::CustomSeamMarker; break;
+	case InfoItemType::CustomBrim:          text = ImGui::CustomBrimMarker; break;
 	case InfoItemType::MmuSegmentation:     text = ImGui::MmuSegmentationMarker; break;
 	case InfoItemType::VariableLayerHeight: text = ImGui::VarLayerHeightMarker; break;
 	case InfoItemType::Sinking:             text = ImGui::SinkingObjectMarker; break;

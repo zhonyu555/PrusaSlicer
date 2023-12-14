@@ -80,6 +80,7 @@ public:
         SlaSupports,
         FdmSupports,
         Seam,
+        Brim,
         MmuSegmentation,
         Measure,
         Emboss,
