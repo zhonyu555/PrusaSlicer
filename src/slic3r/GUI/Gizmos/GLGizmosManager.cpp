@@ -295,7 +295,7 @@ bool GLGizmosManager::gizmo_event(SLAGizmoEventType action, const Vec2d& mouse_p
         return dynamic_cast<GLGizmoFdmSupports*>(m_gizmos[FdmSupports].get())->gizmo_event(action, mouse_position, shift_down, alt_down, control_down);
     else if (m_current == Seam)
         return dynamic_cast<GLGizmoSeam*>(m_gizmos[Seam].get())->gizmo_event(action, mouse_position, shift_down, alt_down, control_down);
-    else if (m_current == Seam)
+    else if (m_current == Brim)
         return dynamic_cast<GLGizmoBrim*>(m_gizmos[Brim].get())->gizmo_event(action, mouse_position, shift_down, alt_down, control_down);
     else if (m_current == MmuSegmentation)
         return dynamic_cast<GLGizmoMmuSegmentation*>(m_gizmos[MmuSegmentation].get())->gizmo_event(action, mouse_position, shift_down, alt_down, control_down);
