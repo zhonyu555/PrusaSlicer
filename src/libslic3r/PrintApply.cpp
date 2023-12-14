@@ -78,6 +78,8 @@ static inline void model_volume_list_copy_configs(ModelObject &model_object_dst,
         mv_dst.supported_facets.assign(mv_src.supported_facets);
         assert(mv_dst.seam_facets.id() == mv_src.seam_facets.id());
         mv_dst.seam_facets.assign(mv_src.seam_facets);
+        assert(mv_dst.brim_facets.id() == mv_src.brim_facets.id());
+        mv_dst.brim_facets.assign(mv_src.brim_facets);
         assert(mv_dst.mmu_segmentation_facets.id() == mv_src.mmu_segmentation_facets.id());
         mv_dst.mmu_segmentation_facets.assign(mv_src.mmu_segmentation_facets);
         //FIXME what to do with the materials?
@@ -1204,6 +1206,8 @@ Print::ApplyStatus Print::apply(const Model &model, DynamicPrintConfig new_full_
                 }
             } else if (model_custom_seam_data_changed(model_object, model_object_new)) {
                 update_apply_status(this->invalidate_step(psGCodeExport));
+            } else if (model_custom_brim_data_changed(model_object, model_object_new)) {
+                // todo: apply update logic for brim data changes
             }
         }
         if (! solid_or_modifier_differ) {
