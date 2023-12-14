@@ -823,6 +823,9 @@ public:
     // List of seam enforcers/blockers.
     FacetsAnnotation    seam_facets;
 
+    // List of brim facets painted for brim enforcers/blockers.
+    FacetsAnnotation    brim_facets;
+
     // List of mesh facets painted for MMU segmentation.
     FacetsAnnotation    mmu_segmentation_facets;
 
