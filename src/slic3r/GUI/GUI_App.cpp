@@ -499,9 +499,13 @@ static const FileWildcards file_wildcards_by_type[FT_SIZE] = {
 
     /* FT_TEX */     { "Texture"sv,         { ".png"sv, ".svg"sv } },
 
+<<<<<<< HEAD
     /* FT_SL1 (deprecated, overriden by sla_wildcards) */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv, ".pwmx"sv } },
 
     /* FT_ZIP */     { "Zip files"sv, { ".zip"sv } },
+=======
+    /* FT_SL1 */     { "Masked SLA files"sv, { ".sl1"sv, ".sl1s"sv,  ".sl2"sv, ".sl2b"sv, ".pwmx"sv } },
+>>>>>>> remotes/origin/vb_sl2_binary_experiment
 };
 
 // This function produces a Win32 file dialog file template mask to be consumed by wxWidgets on all platforms.
