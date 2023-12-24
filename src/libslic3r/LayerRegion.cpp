@@ -31,7 +31,16 @@ Flow LayerRegion::flow(FlowRole role) const
 
 Flow LayerRegion::flow(FlowRole role, double layer_height) const
 {
-    return m_region->flow(*m_layer->object(), role, layer_height, m_layer->id() == 0);
+    if (this->region().config().infill_every_layers > 1 && role == frPerimeter && 
+        m_layer->id() > this->region().config().infill_every_layers - 1){
+        Layer *player = m_layer->lower_layer;
+        for (int i = 1; i <= this->region().config().infill_every_layers - 1;i++) {
+                layer_height += player->height;
+                player = player->lower_layer;
+        };
+    }
+
+    return m_region->flow(*m_layer->object(), role, layer_height, m_layer->id());
 }
 
 Flow LayerRegion::bridging_flow(FlowRole role, bool force_thick_bridges) const

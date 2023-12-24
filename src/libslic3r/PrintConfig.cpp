@@ -1555,10 +1555,11 @@ void PrintConfigDef::init_fff_params()
     def->set_default_value(new ConfigOptionFloat(0));
 
     def = this->add("infill_every_layers", coInt);
-    def->label = L("Combine infill every");
+    def->label = L("Combine infill with perimeters every");
     def->category = L("Infill");
-    def->tooltip = L("This feature allows to combine infill and speed up your print by extruding thicker "
-                   "infill layers while preserving thin perimeters, thus accuracy.");
+    def->tooltip = L("This feature allows to combine infill with internal perimeters and speed up your print by extruding thicker "
+                    "infill and internal perimeters layers while preserving thin perimeters, thus accuracy. "
+                    "Internal perimeters will be combined only in Arachne and when external perimeters are printed first.");
     def->sidetext = L("layers");
     def->full_label = L("Combine infill every n layers");
     def->min = 1;
