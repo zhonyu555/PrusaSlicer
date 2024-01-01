@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GCodeReader_hpp_
 #define slic3r_GCodeReader_hpp_
 
@@ -69,6 +73,17 @@ public:
             const char *cmd = GCodeReader::skip_whitespaces(gcode_line.c_str());
             size_t len = strlen(cmd_test); 
             return strncmp(cmd, cmd_test, len) == 0 && GCodeReader::is_end_of_word(cmd[len]);
+        }
+
+        static bool cmd_starts_with(const std::string& gcode_line, const char* cmd_test) {
+            return strncmp(GCodeReader::skip_whitespaces(gcode_line.c_str()), cmd_test, strlen(cmd_test)) == 0;
+        }
+
+        static std::string extract_cmd(const std::string& gcode_line) {
+            GCodeLine temp;
+            temp.m_raw = gcode_line;
+            const std::string_view cmd = temp.cmd();
+            return { cmd.begin(), cmd.end() };
         }
 
     private:

@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <limits>
 
 #include <libslic3r/SLA/Rotfinder.hpp>
@@ -288,7 +292,7 @@ template<unsigned MAX_ITER>
 struct RotfinderBoilerplate {
     static constexpr unsigned MAX_TRIES = MAX_ITER;
 
-    int status = 0;
+    int status = 0, prev_status = 0;
     TriangleMesh mesh;
     unsigned max_tries;
     const RotOptimizeParams &params;
@@ -300,13 +304,8 @@ struct RotfinderBoilerplate {
         TriangleMesh mesh = mo.raw_mesh();
 
         ModelInstance *mi = mo.instances[0];
-        auto rotation = Vec3d::Zero();
-        auto offset = Vec3d::Zero();
-        Transform3d trafo_instance =
-            Geometry::assemble_transform(offset, rotation,
-                                         mi->get_scaling_factor(),
-                                         mi->get_mirror());
-
+        const Geometry::Transformation trafo = mi->get_transformation();
+        Transform3d trafo_instance = trafo.get_scaling_factor_matrix() * trafo.get_mirror_matrix();
         mesh.transform(trafo_instance);
 
         return mesh;
@@ -314,13 +313,20 @@ struct RotfinderBoilerplate {
 
     RotfinderBoilerplate(const ModelObject &mo, const RotOptimizeParams &p)
         : mesh{get_mesh_to_rotate(mo)}
-        , params{p}
         , max_tries(p.accuracy() * MAX_TRIES)
-    {
+        , params{p}
+    {}
 
+    void statusfn() {
+        int s = status * 100 / max_tries;
+        if (s != prev_status) {
+            params.statuscb()(s);
+            prev_status = s;
+        }
+
+        ++status;
     }
 
-    void statusfn() { params.statuscb()(++status * 100.0 / max_tries); }
     bool stopcond() { return ! params.statuscb()(-1); }
 };
 

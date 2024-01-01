@@ -141,18 +141,6 @@ NodeSPtr Node::closestNode(const Point& loc)
     return result;
 }
 
-bool inside(const Polygons &polygons, const Point &p)
-{
-    int poly_count_inside = 0;
-    for (const Polygon &poly : polygons) {
-        const int is_inside_this_poly = ClipperLib::PointInPolygon(p, poly.points);
-        if (is_inside_this_poly == -1)
-            return true;
-        poly_count_inside += is_inside_this_poly;
-    }
-    return (poly_count_inside % 2) == 1;
-}
-
 bool lineSegmentPolygonsIntersection(const Point& a, const Point& b, const EdgeGrid::Grid& outline_locator, Point& result, const coord_t within_max_dist)
 {
     struct Visitor {
@@ -192,7 +180,7 @@ bool Node::realign(const Polygons& outlines, const EdgeGrid::Grid& outline_locat
     if (outlines.empty())
         return false;
 
-    if (inside(outlines, m_p)) {
+    if (contains(outlines, m_p)) {
         // Only keep children that have an unbroken connection to here, realign will put the rest in rerooted parts due to recursion:
         Point coll;
         bool reground_me = false;
@@ -347,12 +335,12 @@ coord_t Node::prune(const coord_t& pruning_distance)
     return max_distance_pruned;
 }
 
-void Node::convertToPolylines(Polylines &output, const coord_t line_width) const
+void Node::convertToPolylines(Polylines &output, const coord_t line_overlap) const
 {
     Polylines result;
     result.emplace_back();
     convertToPolylines(0, result);
-    removeJunctionOverlap(result, line_width);
+    removeJunctionOverlap(result, line_overlap);
     append(output, std::move(result));
 }
 
@@ -376,10 +364,10 @@ void Node::convertToPolylines(size_t long_line_idx, Polylines &output) const
     }
 }
 
-void Node::removeJunctionOverlap(Polylines &result_lines, const coord_t line_width) const
+void Node::removeJunctionOverlap(Polylines &result_lines, const coord_t line_overlap) const
 {
-    const coord_t reduction = line_width / 2; // TODO make configurable?
-    size_t res_line_idx = 0;
+    const coord_t reduction    = line_overlap;
+    size_t        res_line_idx = 0;
     while (res_line_idx < result_lines.size()) {
         Polyline &polyline = result_lines[res_line_idx];
         if (polyline.size() <= 1) {

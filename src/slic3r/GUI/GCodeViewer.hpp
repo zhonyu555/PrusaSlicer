@@ -1,7 +1,14 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, Oleksandra Iushchenko @YuSanka
+///|/ Copyright (c) BambuStudio 2023 manch1n @manch1n
+///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GCodeViewer_hpp_
 #define slic3r_GCodeViewer_hpp_
 
 #include "3DScene.hpp"
+#include "libslic3r/ExtrusionRole.hpp"
 #include "libslic3r/GCode/GCodeProcessor.hpp"
 #include "GLModel.hpp"
 
@@ -30,7 +37,7 @@ class GCodeViewer
     using InstanceIdBuffer = std::vector<size_t>;
     using InstancesOffsets = std::vector<Vec3f>;
 
-    static const std::vector<ColorRGBA> Extrusion_Role_Colors;
+    static const std::array<ColorRGBA, static_cast<size_t>(GCodeExtrusionRole::Count)> Extrusion_Role_Colors;
     static const std::vector<ColorRGBA> Options_Colors;
     static const std::vector<ColorRGBA> Travel_Colors;
     static const std::vector<ColorRGBA> Range_Colors;
@@ -62,6 +69,10 @@ class GCodeViewer
         };
 
         EFormat format{ EFormat::Position };
+#if ENABLE_GL_CORE_PROFILE
+        // vaos id
+        std::vector<unsigned int> vaos;
+#endif // ENABLE_GL_CORE_PROFILE
         // vbos id
         std::vector<unsigned int> vbos;
         // sizes of the buffers, in bytes, used in export to obj
@@ -162,6 +173,10 @@ class GCodeViewer
     // ibo buffer containing indices data (for lines/triangles) used to render a specific toolpath type
     struct IBuffer
     {
+#if ENABLE_GL_CORE_PROFILE
+        // id of the associated vertex array buffer
+        unsigned int vao{ 0 };
+#endif // ENABLE_GL_CORE_PROFILE
         // id of the associated vertex buffer
         unsigned int vbo{ 0 };
         // ibo id
@@ -200,7 +215,7 @@ class GCodeViewer
         };
 
         EMoveType type{ EMoveType::Noop };
-        ExtrusionRole role{ erNone };
+        GCodeExtrusionRole role{ GCodeExtrusionRole::None };
         float delta_extruder{ 0.0f };
         float height{ 0.0f };
         float width{ 0.0f };
@@ -212,11 +227,7 @@ class GCodeViewer
         unsigned char cp_color_id{ 0 };
         std::vector<Sub_Path> sub_paths;
 
-#if ENABLE_VOLUMETRIC_RATE_TOOLPATHS_RECALC
         bool matches(const GCodeProcessorResult::MoveVertex& move, bool account_for_volumetric_rate) const;
-#else
-        bool matches(const GCodeProcessorResult::MoveVertex& move) const;
-#endif // ENABLE_VOLUMETRIC_RATE_TOOLPATHS_RECALC
         size_t vertices_count() const {
             return sub_paths.empty() ? 0 : sub_paths.back().last.s_id - sub_paths.front().first.s_id + 1;
         }
@@ -360,11 +371,7 @@ class GCodeViewer
             }
             case ERenderPrimitiveType::InstancedModel: { return model.model.is_initialized() && !model.instances.buffer.empty(); }
             case ERenderPrimitiveType::BatchedModel: {
-#if ENABLE_LEGACY_OPENGL_REMOVAL
                 return !model.data.vertices.empty() && !model.data.indices.empty() &&
-#else
-                return model.data.vertices_count() > 0 && model.data.indices_count() &&
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
                     !vertices.vbos.empty() && vertices.vbos.front() != 0 && !indices.empty() && indices.front().ibo != 0;
             }
             default: { return false; }
@@ -377,9 +384,9 @@ class GCodeViewer
     {
         GLVolumeCollection volumes;
         bool visible{ false };
+        bool force_visible{ false };
     };
 
-#if ENABLE_SHOW_TOOLPATHS_COG
     // helper to render center of gravity
     class COG
     {
@@ -415,28 +422,20 @@ class GCodeViewer
                 return;
 
             const float radius = m_fixed_size ? 10.0f : 1.0f;
-
-#if ENABLE_LEGACY_OPENGL_REMOVAL
             m_model.init_from(smooth_sphere(32, radius));
-#else
-            m_model.init_from(its_make_sphere(radius, PI / 32.0));
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
         }
     };
-#endif // ENABLE_SHOW_TOOLPATHS_COG
 
     // helper to render extrusion paths
     struct Extrusions
     {
         struct Range
         {
-#if ENABLE_PREVIEW_LAYER_TIME
             enum class EType : unsigned char
             {
                 Linear,
                 Logarithmic
             };
-#endif // ENABLE_PREVIEW_LAYER_TIME
 
             float min;
             float max;
@@ -452,13 +451,8 @@ class GCodeViewer
             }
             void reset() { min = FLT_MAX; max = -FLT_MAX; count = 0; }
 
-#if ENABLE_PREVIEW_LAYER_TIME
             float step_size(EType type = EType::Linear) const;
             ColorRGBA get_color_at(float value, EType type = EType::Linear) const;
-#else
-            float step_size() const { return (max - min) / (static_cast<float>(Range_Colors.size()) - 1.0f); }
-            ColorRGBA get_color_at(float value) const;
-#endif // ENABLE_PREVIEW_LAYER_TIME
         };
 
         struct Ranges
@@ -475,10 +469,8 @@ class GCodeViewer
             Range volumetric_rate;
             // Color mapping by extrusion temperature.
             Range temperature;
-#if ENABLE_PREVIEW_LAYER_TIME
             // Color mapping by layer time.
             std::array<Range, static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Count)> layer_time;
-#endif // ENABLE_PREVIEW_LAYER_TIME
 
             void reset() {
                 height.reset();
@@ -487,11 +479,9 @@ class GCodeViewer
                 fan_speed.reset();
                 volumetric_rate.reset();
                 temperature.reset();
-#if ENABLE_PREVIEW_LAYER_TIME
                 for (auto& range : layer_time) {
                     range.reset();
                 }
-#endif // ENABLE_PREVIEW_LAYER_TIME
             }
         };
 
@@ -500,7 +490,7 @@ class GCodeViewer
 
         void reset_role_visibility_flags() {
             role_visibility_flags = 0;
-            for (unsigned int i = 0; i < erCount; ++i) {
+            for (uint32_t i = 0; i < uint32_t(GCodeExtrusionRole::Count); ++i) {
                 role_visibility_flags |= 1 << i;
             }
         }
@@ -543,6 +533,10 @@ class GCodeViewer
         std::vector<Range>& get_ranges() { return m_ranges; }
         double get_z_at(unsigned int id) const { return (id < m_zs.size()) ? m_zs[id] : 0.0; }
         Range get_range_at(unsigned int id) const { return (id < m_ranges.size()) ? m_ranges[id] : Range(); }
+        int get_l_at(double z) const {
+            auto iter = std::upper_bound(m_zs.begin(), m_zs.end(), z);
+            return std::distance(m_zs.begin(), iter);
+        }
 
         bool operator != (const Layers& other) const {
             if (m_zs != other.m_zs)
@@ -558,8 +552,11 @@ class GCodeViewer
     struct SequentialRangeCap
     {
         TBuffer* buffer{ nullptr };
-        unsigned int ibo{ 0 };
+#if ENABLE_GL_CORE_PROFILE
+        unsigned int vao{ 0 };
+#endif // ENABLE_GL_CORE_PROFILE
         unsigned int vbo{ 0 };
+        unsigned int ibo{ 0 };
         ColorRGBA color;
 
         ~SequentialRangeCap();
@@ -747,10 +744,8 @@ public:
         FanSpeed,
         Temperature,
         VolumetricRate,
-#if ENABLE_PREVIEW_LAYER_TIME
         LayerTimeLinear,
         LayerTimeLogarithmic,
-#endif // ENABLE_PREVIEW_LAYER_TIME
         Tool,
         ColorPrint,
         Count
@@ -759,20 +754,20 @@ public:
 private:
     bool m_gl_data_initialized{ false };
     unsigned int m_last_result_id{ 0 };
-#if ENABLE_VOLUMETRIC_RATE_TOOLPATHS_RECALC
     EViewType m_last_view_type{ EViewType::Count };
-#endif // ENABLE_VOLUMETRIC_RATE_TOOLPATHS_RECALC
     size_t m_moves_count{ 0 };
     std::vector<TBuffer> m_buffers{ static_cast<size_t>(EMoveType::Extrude) };
     // bounding box of toolpaths
     BoundingBoxf3 m_paths_bounding_box;
-    // bounding box of toolpaths + marker tools
+    // bounding box of shells
+    BoundingBoxf3 m_shells_bounding_box;
+    // bounding box of toolpaths + marker tools + shells
     BoundingBoxf3 m_max_bounding_box;
     float m_max_print_height{ 0.0f };
     std::vector<ColorRGBA> m_tool_colors;
     Layers m_layers;
     std::array<unsigned int, 2> m_layers_z_range;
-    std::vector<ExtrusionRole> m_roles;
+    std::vector<GCodeExtrusionRole> m_roles;
     size_t m_extruders_count;
     std::vector<unsigned char> m_extruder_ids;
     std::vector<float> m_filament_diameters;
@@ -780,34 +775,29 @@ private:
     Extrusions m_extrusions;
     SequentialView m_sequential_view;
     Shells m_shells;
-#if ENABLE_SHOW_TOOLPATHS_COG
     COG m_cog;
-#endif // ENABLE_SHOW_TOOLPATHS_COG
     EViewType m_view_type{ EViewType::FeatureType };
     bool m_legend_enabled{ true };
-#if ENABLE_PREVIEW_LAYOUT
     struct LegendResizer
     {
         bool dirty{ true };
         void reset() { dirty = true; }
     };
     LegendResizer m_legend_resizer;
-#endif // ENABLE_PREVIEW_LAYOUT
     PrintEstimatedStatistics m_print_statistics;
     PrintEstimatedStatistics::ETimeMode m_time_estimate_mode{ PrintEstimatedStatistics::ETimeMode::Normal };
 #if ENABLE_GCODE_VIEWER_STATISTICS
     Statistics m_statistics;
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-    std::array<float, 2> m_detected_point_sizes = { 0.0f, 0.0f };
     GCodeProcessorResult::SettingsIds m_settings_ids;
     std::array<SequentialRangeCap, 2> m_sequential_range_caps;
-#if ENABLE_PREVIEW_LAYER_TIME
     std::array<std::vector<float>, static_cast<size_t>(PrintEstimatedStatistics::ETimeMode::Count)> m_layers_times;
-#endif // ENABLE_PREVIEW_LAYER_TIME
 
     std::vector<CustomGCode::Item> m_custom_gcode_per_print_z;
 
     bool m_contained_in_bed{ true };
+
+    ConflictResultOpt m_conflict_result;
 
 public:
     GCodeViewer();
@@ -816,31 +806,30 @@ public:
     void init();
 
     // extract rendering data from the given parameters
-#if ENABLE_LEGACY_OPENGL_REMOVAL
     void load(const GCodeProcessorResult& gcode_result, const Print& print);
-#else
-    void load(const GCodeProcessorResult& gcode_result, const Print& print, bool initialized);
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
     // recalculate ranges in dependence of what is visible and sets tool/print colors
     void refresh(const GCodeProcessorResult& gcode_result, const std::vector<std::string>& str_tool_colors);
-#if ENABLE_PREVIEW_LAYOUT
     void refresh_render_paths(bool keep_sequential_current_first, bool keep_sequential_current_last) const;
-#else
-    void refresh_render_paths();
-#endif // ENABLE_PREVIEW_LAYOUT
     void update_shells_color_by_extruder(const DynamicPrintConfig* config);
 
     void reset();
     void render();
-#if ENABLE_SHOW_TOOLPATHS_COG
     void render_cog() { m_cog.render(); }
-#endif // ENABLE_SHOW_TOOLPATHS_COG
 
     bool has_data() const { return !m_roles.empty(); }
     bool can_export_toolpaths() const;
 
     const BoundingBoxf3& get_paths_bounding_box() const { return m_paths_bounding_box; }
-    const BoundingBoxf3& get_max_bounding_box() const { return m_max_bounding_box; }
+    const BoundingBoxf3& get_shells_bounding_box() const { return m_shells_bounding_box; }
+    const BoundingBoxf3& get_max_bounding_box() const {
+        BoundingBoxf3& max_bounding_box = const_cast<BoundingBoxf3&>(m_max_bounding_box);
+        if (!max_bounding_box.defined) {
+            max_bounding_box = m_shells_bounding_box;
+            max_bounding_box.merge(m_paths_bounding_box);
+            max_bounding_box.merge(m_paths_bounding_box.max + m_sequential_view.marker.get_bounding_box().size().z() * Vec3d::UnitZ());
+        }
+        return m_max_bounding_box;
+    }
     const std::vector<double>& get_layers_zs() const { return m_layers.get_zs(); }
 
     const SequentialView& get_sequential_view() const { return m_sequential_view; }
@@ -867,6 +856,8 @@ public:
     bool is_legend_enabled() const { return m_legend_enabled; }
     void enable_legend(bool enable) { m_legend_enabled = enable; }
 
+    void set_force_shells_visible(bool visible) { m_shells.force_visible = visible; }
+
     void export_toolpaths_to_obj(const char* filename) const;
 
     void toggle_gcode_window_visibility() { m_sequential_view.gcode_window.toggle_visibility(); }
@@ -874,28 +865,23 @@ public:
     std::vector<CustomGCode::Item>& get_custom_gcode_per_print_z() { return m_custom_gcode_per_print_z; }
     size_t get_extruders_count() { return m_extruders_count; }
 
-#if ENABLE_PREVIEW_LAYOUT
     void invalidate_legend() { m_legend_resizer.reset(); }
-#endif // ENABLE_PREVIEW_LAYOUT
+
+    const ConflictResultOpt& get_conflict_result() const { return m_conflict_result; }
+
+    void load_shells(const Print& print);
 
 private:
     void load_toolpaths(const GCodeProcessorResult& gcode_result);
-#if ENABLE_LEGACY_OPENGL_REMOVAL
-    void load_shells(const Print& print);
-#else
-    void load_shells(const Print& print, bool initialized);
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-#if !ENABLE_PREVIEW_LAYOUT
-    void refresh_render_paths(bool keep_sequential_current_first, bool keep_sequential_current_last) const;
-#endif // !ENABLE_PREVIEW_LAYOUT
+    void load_wipetower_shell(const Print& print);
     void render_toolpaths();
     void render_shells();
     void render_legend(float& legend_height);
 #if ENABLE_GCODE_VIEWER_STATISTICS
     void render_statistics();
 #endif // ENABLE_GCODE_VIEWER_STATISTICS
-    bool is_visible(ExtrusionRole role) const {
-        return role < erCount && (m_extrusions.role_visibility_flags & (1 << role)) != 0;
+    bool is_visible(GCodeExtrusionRole role) const {
+        return role < GCodeExtrusionRole::Count && (m_extrusions.role_visibility_flags & (1 << int(role))) != 0;
     }
     bool is_visible(const Path& path) const { return is_visible(path.role); }
     void log_memory_used(const std::string& label, int64_t additional = 0) const;
@@ -906,4 +892,3 @@ private:
 } // namespace Slic3r
 
 #endif // slic3r_GCodeViewer_hpp_
-

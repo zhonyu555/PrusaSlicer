@@ -1,3 +1,13 @@
+#/|/ Copyright (c) Prusa Research 2017 - 2023 Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, Oleksandra Iushchenko @YuSanka, Lukáš Hejl @hejllukas, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+#/|/ Copyright (c) 2023 Ben Greiner
+#/|/ Copyright (c) 2021 D-mo @dimitry-ishenko
+#/|/ Copyright (c) 2020 Pascal de Bruijn @pmjdebruijn
+#/|/ Copyright (c) 2019 Sam Segers
+#/|/ Copyright (c) 2019 Colin Gilgenbach @hexane360
+#/|/ Copyright (c) 2018 Dan Kortschak
+#/|/
+#/|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+#/|/
 cmake_minimum_required(VERSION 3.13)
 project(PrusaSlicer)
 
@@ -26,14 +36,13 @@ endif()
 option(SLIC3R_STATIC 			"Compile PrusaSlicer with static libraries (Boost, TBB, glew)" ${SLIC3R_STATIC_INITIAL})
 option(SLIC3R_GUI    			"Compile PrusaSlicer with GUI components (OpenGL, wxWidgets)" 1)
 option(SLIC3R_FHS               "Assume PrusaSlicer is to be installed in a FHS directory structure" 0)
-option(SLIC3R_WX_STABLE         "Build against wxWidgets stable (3.0) as oppsed to dev (3.1) on Linux" 0)
-option(SLIC3R_PROFILE 			"Compile PrusaSlicer with an invasive Shiny profiler" 0)
 option(SLIC3R_PCH               "Use precompiled headers" 1)
 option(SLIC3R_MSVC_COMPILE_PARALLEL "Compile on Visual Studio in parallel" 1)
 option(SLIC3R_MSVC_PDB          "Generate PDB files on MSVC in Release mode" 1)
 option(SLIC3R_PERL_XS           "Compile XS Perl module and enable Perl unit and integration tests" 0)
 option(SLIC3R_ASAN              "Enable ASan on Clang and GCC" 0)
 option(SLIC3R_UBSAN             "Enable UBSan on Clang and GCC" 0)
+option(SLIC3R_ENABLE_FORMAT_STEP "Enable compilation of STEP file support" 1)
 # If SLIC3R_FHS is 1 -> SLIC3R_DESKTOP_INTEGRATION is always 0, othrewise variable.
 CMAKE_DEPENDENT_OPTION(SLIC3R_DESKTOP_INTEGRATION "Allow perfoming desktop integration during runtime" 1 "NOT SLIC3R_FHS" 0)
 
@@ -60,7 +69,6 @@ if (APPLE)
     endif ()
 endif ()
 
-# Proposal for C++ unit tests and sandboxes
 option(SLIC3R_BUILD_SANDBOXES   "Build development sandboxes" OFF)
 option(SLIC3R_BUILD_TESTS       "Build unit tests" ON)
 
@@ -114,6 +122,8 @@ if (MSVC)
     # C4244: 'conversion' conversion from 'type1' to 'type2', possible loss of data. An integer type is converted to a smaller integer type.
     # C4267: The compiler detected a conversion from size_t to a smaller type.
     add_compile_options(/wd4244 /wd4267)
+    # Enforce strict C++ conformance, so our code that compiles on MSVC also compiles on GCC and clang.
+    add_compile_options(/permissive-)
 endif ()
 
 if (MINGW)
@@ -335,25 +345,6 @@ add_definitions(-DwxUSE_UNICODE -D_UNICODE -DUNICODE -DWXINTL_NO_GETTEXT_MACRO)
 # Disable unsafe implicit wxString to const char* / std::string and vice versa. This implicit conversion breaks the UTF-8 encoding quite often.
 add_definitions(-DwxNO_UNSAFE_WXSTRING_CONV)
 
-if (SLIC3R_PROFILE)
-    message("PrusaSlicer will be built with a Shiny invasive profiler")
-    add_definitions(-DSLIC3R_PROFILE)
-endif ()
-
-# Disable optimization even with debugging on.
-if (0)
-    message(STATUS "Perl compiled without optimization. Disabling optimization for the PrusaSlicer build.")
-    message("Old CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
-    message("Old CMAKE_CXX_FLAGS_RELWITHDEBINFO: ${CMAKE_CXX_FLAGS_RELEASE}")
-    message("Old CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
-    set(CMAKE_CXX_FLAGS_RELEASE "/MD /Od /Zi /EHsc /DWIN32 /DTBB_USE_ASSERT")
-    set(CMAKE_C_FLAGS_RELEASE "/MD /Od /Zi /DWIN32 /DTBB_USE_ASSERT")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/MD /Od /Zi /EHsc /DWIN32 /DTBB_USE_ASSERT")
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/MD /Od /Zi /DWIN32 /DTBB_USE_ASSERT")
-    set(CMAKE_CXX_FLAGS "/MD /Od /Zi /EHsc /DWIN32 /DTBB_USE_ASSERT")
-    set(CMAKE_C_FLAGS "/MD /Od /Zi /DWIN32 /DTBB_USE_ASSERT")
-endif()
-
 # Find and configure boost
 if(SLIC3R_STATIC)
     # Use static boost libraries.
@@ -423,6 +414,7 @@ endif()
 set(TBB_DEBUG 1)
 find_package(TBB REQUIRED)
 slic3r_remap_configs(TBB::tbb RelWithDebInfo Release)
+slic3r_remap_configs(TBB::tbbmalloc RelWithDebInfo Release)
 # include_directories(${TBB_INCLUDE_DIRS})
 # add_definitions(${TBB_DEFINITIONS})
 # if(MSVC)
@@ -458,9 +450,8 @@ if (NOT EIGEN3_FOUND)
 endif ()
 include_directories(BEFORE SYSTEM ${EIGEN3_INCLUDE_DIR})
 
-# Find expat or use bundled version
-# Always use the system libexpat on Linux.
-
+# Find expat. We have our overriden FindEXPAT which exports libexpat target
+# no matter what.
 find_package(EXPAT REQUIRED)
 
 add_library(libexpat INTERFACE)
@@ -563,6 +554,7 @@ foreach(po_file ${L10N_PO_FILES})
 endforeach()
 
 find_package(NLopt 1.4 REQUIRED)
+slic3r_remap_configs(NLopt::nlopt RelWithDebInfo Release)
 
 if(SLIC3R_STATIC)
     set(OPENVDB_USE_STATIC_LIBS ON)

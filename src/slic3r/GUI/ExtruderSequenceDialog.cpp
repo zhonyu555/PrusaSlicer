@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2022 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "ExtruderSequenceDialog.hpp"
 
 #include <wx/wx.h>
@@ -263,9 +267,6 @@ void ExtruderSequenceDialog::apply_extruder_sequence()
 void ExtruderSequenceDialog::on_dpi_changed(const wxRect& suggested_rect)
 {
     SetFont(wxGetApp().normal_font());
-
-    m_bmp_add.msw_rescale();
-    m_bmp_del.msw_rescale();
 
     const int em = em_unit();
 

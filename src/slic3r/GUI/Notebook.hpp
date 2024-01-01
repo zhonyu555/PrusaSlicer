@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2021 - 2022 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Notebook_hpp_
 #define slic3r_Notebook_hpp_
 
@@ -21,6 +25,8 @@ public:
     void SetSelection(int sel);
     void UpdateMode();
     void Rescale();
+    void OnColorsChanged();
+    void UpdateModeMarkers();
     bool InsertPage(size_t n, const wxString& text, bool bSelect = false, const std::string& bmp_name = "");
     void RemovePage(size_t n);
     bool SetPageImage(size_t n, const std::string& bmp_name) const;
@@ -243,6 +249,16 @@ public:
     void Rescale()
     {
         GetBtnsListCtrl()->Rescale();
+    }
+
+    void OnColorsChanged()
+    {
+        GetBtnsListCtrl()->OnColorsChanged();
+    }
+
+    void UpdateModeMarkers()
+    {
+        GetBtnsListCtrl()->UpdateModeMarkers();
     }
 
     void OnNavigationKey(wxNavigationKeyEvent& event)

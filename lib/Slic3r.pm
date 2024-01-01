@@ -1,3 +1,13 @@
+#/|/ Copyright (c) Prusa Research 2016 - 2022 Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral, Oleksandra Iushchenko @YuSanka
+#/|/ Copyright (c) 2018 Martin Loidl @LoidlM
+#/|/ Copyright (c) Slic3r 2011 - 2016 Alessandro Ranellucci @alranel
+#/|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+#/|/ Copyright (c) 2012 Mark Hindess
+#/|/ Copyright (c) 2012 Michael Moon
+#/|/ Copyright (c) 2011 Clarence Risher
+#/|/
+#/|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+#/|/
 # This package loads all the non-GUI Slic3r perl packages.
 
 package Slic3r;
@@ -32,18 +42,12 @@ use Moo 1.003001;
 
 use Slic3r::XS;   # import all symbols (constants etc.) before they get parsed
 use Slic3r::Config;
-use Slic3r::ExPolygon;
-use Slic3r::ExtrusionLoop;
-use Slic3r::ExtrusionPath;
 use Slic3r::GCode::Reader;
-use Slic3r::Layer;
 use Slic3r::Line;
 use Slic3r::Model;
 use Slic3r::Point;
 use Slic3r::Polygon;
 use Slic3r::Polyline;
-use Slic3r::Print::Object;
-use Slic3r::Surface;
 our $build = eval "use Slic3r::Build; 1";
 
 # Scaling between the float and integer coordinates.

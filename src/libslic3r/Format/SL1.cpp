@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "SL1.hpp"
 
 #include <boost/log/trivial.hpp>
@@ -17,6 +21,7 @@
 #include "libslic3r/GCode/ThumbnailData.hpp"
 
 #include "SLAArchiveReader.hpp"
+#include "SLAArchiveFormatRegistry.hpp"
 #include "ZipperArchiveImport.hpp"
 
 #include "libslic3r/MarchingSquares.hpp"
@@ -25,6 +30,7 @@
 #include "libslic3r/Execution/ExecutionTBB.hpp"
 
 #include "libslic3r/SLA/RasterBase.hpp"
+
 
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/filesystem/path.hpp>
@@ -63,7 +69,8 @@ void fill_iniconf(ConfMap &m, const SLAPrint &print)
     m["layerHeight"]    = get_cfg_value(cfg, "layer_height");
     m["expTime"]        = get_cfg_value(cfg, "exposure_time");
     m["expTimeFirst"]   = get_cfg_value(cfg, "initial_exposure_time");
-    m["expUserProfile"] = get_cfg_value(cfg, "material_print_speed") == "slow" ? "1" : "0";
+    const std::string mps = get_cfg_value(cfg, "material_print_speed");
+    m["expUserProfile"] = mps == "slow" ? "1" : mps == "fast" ? "0" : "2";
     m["materialName"]   = get_cfg_value(cfg, "sla_material_settings_id");
     m["printerModel"]   = get_cfg_value(cfg, "printer_model");
     m["printerVariant"] = get_cfg_value(cfg, "printer_variant");
@@ -435,7 +442,7 @@ ConfigSubstitutions SL1Reader::read(std::vector<ExPolygons> &slices,
 
 ConfigSubstitutions SL1Reader::read(DynamicPrintConfig &out)
 {
-    ZipperArchive arch = read_zipper_archive(m_fname, {}, {"png"});
+    ZipperArchive arch = read_zipper_archive(m_fname, {"ini"}, {"png", "thumbnail"});
     return out.load(arch.profile, ForwardCompatibilitySubstitutionRule::Enable);
 }
 

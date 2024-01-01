@@ -1,39 +1,40 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Filip Sykala @Jony01
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GLGizmoScale_hpp_
 #define slic3r_GLGizmoScale_hpp_
 
 #include "GLGizmoBase.hpp"
 
-#include "libslic3r/BoundingBox.hpp"
-
-
 namespace Slic3r {
 namespace GUI {
 
+class Selection;
+
 class GLGizmoScale3D : public GLGizmoBase
 {
-    static const float Offset;
+    static const double Offset;
 
     struct StartingData
     {
-        Vec3d scale;
-        Vec3d drag_position;
+        bool ctrl_down{ false };
+        Vec3d scale{ Vec3d::Ones() };
+        Vec3d drag_position{ Vec3d::Zero() };
+        Vec3d center{ Vec3d::Zero() };
+        Vec3d instance_center{ Vec3d::Zero() };
+        Vec3d constraint_position{ Vec3d::Zero() };
         BoundingBoxf3 box;
-        Vec3d pivots[6];
-        bool ctrl_down;
-
-        StartingData() : scale(Vec3d::Ones()), drag_position(Vec3d::Zero()), ctrl_down(false) { for (int i = 0; i < 5; ++i) { pivots[i] = Vec3d::Zero(); } }
     };
 
-    mutable BoundingBoxf3 m_box;
-    mutable Transform3d m_transform;
-    // Transforms grabbers offsets to the proper reference system (world for instances, instance for volumes)
-    mutable Transform3d m_offsets_transform;
+    BoundingBoxf3 m_bounding_box;
+    Transform3d m_grabbers_transform;
+    Vec3d m_center{ Vec3d::Zero() };
+    Vec3d m_instance_center{ Vec3d::Zero() };
     Vec3d m_scale{ Vec3d::Ones() };
-    Vec3d m_offset{ Vec3d::Zero() };
     double m_snap_step{ 0.05 };
     StartingData m_starting;
 
-#if ENABLE_LEGACY_OPENGL_REMOVAL
     struct GrabberConnection
     {
         GLModel model;
@@ -42,7 +43,6 @@ class GLGizmoScale3D : public GLGizmoBase
         Vec3d old_v2{ Vec3d::Zero() };
     };
     std::array<GrabberConnection, 7> m_grabber_connections;
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     ColorRGBA m_base_color;
     ColorRGBA m_drag_color;
@@ -65,7 +65,8 @@ public:
     /// <returns>Return True when use the information otherwise False.</returns>
     bool on_mouse(const wxMouseEvent &mouse_event) override;
 
-    void data_changed() override;
+    void data_changed(bool is_serializing) override;
+    void enable_ununiversal_scale(bool enable);
 protected:
     virtual bool on_init() override;
     virtual std::string on_get_name() const override;
@@ -74,19 +75,17 @@ protected:
     virtual void on_stop_dragging() override;
     virtual void on_dragging(const UpdateData& data) override;
     virtual void on_render() override;
-    virtual void on_render_for_picking() override;
+    virtual void on_register_raycasters_for_picking() override;
+    virtual void on_unregister_raycasters_for_picking() override;
 
 private:
-#if ENABLE_LEGACY_OPENGL_REMOVAL
     void render_grabbers_connection(unsigned int id_1, unsigned int id_2, const ColorRGBA& color);
-#else
-    void render_grabbers_connection(unsigned int id_1, unsigned int id_2) const;
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     void do_scale_along_axis(Axis axis, const UpdateData& data);
     void do_scale_uniform(const UpdateData& data);
 
     double calc_ratio(const UpdateData& data) const;
+    void update_render_data();
 };
 
 

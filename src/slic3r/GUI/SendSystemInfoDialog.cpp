@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2021 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "SendSystemInfoDialog.hpp"
 
 #include "libslic3r/AppConfig.hpp"
@@ -55,8 +59,10 @@ static const std::string SEND_SYSTEM_INFO_DOMAIN = "prusa3d.com";
 static const std::string SEND_SYSTEM_INFO_URL = "https://files." + SEND_SYSTEM_INFO_DOMAIN + "/wp-json/v1/ps";
 
 
+#if !ENABLE_GL_CORE_PROFILE
 // Declaration of a free function defined in OpenGLManager.cpp:
 std::string gl_get_string_safe(GLenum param, const std::string& default_value);
+#endif // !ENABLE_GL_CORE_PROFILE
 
 
 // A dialog with the information text and buttons send/dont send/ask later.
@@ -432,7 +438,7 @@ static std::string generate_system_info_json()
 
     pt::ptree hw_node;
     {
-        hw_node.put("ArchName", wxPlatformInfo::Get().GetArchName());
+        hw_node.put("ArchName", wxPlatformInfo::Get().GetBitnessName());
         size_t num = std::round(Slic3r::total_physical_memory()/107374100.);
         hw_node.put("RAM_GiB", std::to_string(num / 10) + "." + std::to_string(num % 10));
     }
@@ -502,14 +508,18 @@ static std::string generate_system_info_json()
 #endif // _WIN32
 
     pt::ptree opengl_node;
-    opengl_node.put("Version", OpenGLManager::get_gl_info().get_version());
-    opengl_node.put("GLSLVersion", OpenGLManager::get_gl_info().get_glsl_version());
+    opengl_node.put("Version", OpenGLManager::get_gl_info().get_version_string());
+    opengl_node.put("GLSLVersion", OpenGLManager::get_gl_info().get_glsl_version_string());
     opengl_node.put("Vendor", OpenGLManager::get_gl_info().get_vendor());
     opengl_node.put("Renderer", OpenGLManager::get_gl_info().get_renderer());
     // Generate list of OpenGL extensions:
+#if ENABLE_GL_CORE_PROFILE
+    std::vector<std::string> extensions_list = OpenGLManager::get_gl_info().get_extensions_list();
+#else
     std::string extensions_str = gl_get_string_safe(GL_EXTENSIONS, "");
     std::vector<std::string> extensions_list;
     boost::split(extensions_list, extensions_str, boost::is_any_of(" "), boost::token_compress_off);
+#endif // ENABLE_GL_CORE_PROFILE
     std::sort(extensions_list.begin(), extensions_list.end());
     pt::ptree extensions_node;
     for (const std::string& s : extensions_list) {
@@ -652,7 +662,7 @@ SendSystemInfoDialog::SendSystemInfoDialog(wxWindow* parent)
                                         wxString message;
                                         bool success = send_info(message);
                                         if (! message.IsEmpty())
-                                            InfoDialog(nullptr, wxEmptyString, message).ShowModal();
+                                            InfoDialog(this, wxEmptyString, message).ShowModal();
                                         if (success) {
                                             save_version();
                                             EndModal(0);

@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, David Kocík @kocikdav, Lukáš Hejl @hejllukas, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "MsgDialog.hpp"
 
 #include <wx/settings.h>
@@ -32,6 +36,9 @@ MsgDialog::MsgDialog(wxWindow *parent, const wxString &title, const wxString &he
 	, content_sizer(new wxBoxSizer(wxVERTICAL))
 	, btn_sizer(new wxBoxSizer(wxHORIZONTAL))
 {
+#ifdef __APPLE__
+    this->SetBackgroundColour(wxGetApp().get_window_default_clr());
+#endif
 	boldfont.SetWeight(wxFONTWEIGHT_BOLD);
 
     this->SetFont(wxGetApp().normal_font());
@@ -99,9 +106,10 @@ void MsgDialog::apply_style(long style)
     if (style & wxNO)       add_button(wxID_NO,     (style & wxNO_DEFAULT));
     if (style & wxCANCEL)   add_button(wxID_CANCEL, (style & wxCANCEL_DEFAULT));
 
-    logo->SetBitmap( create_scaled_bitmap(style & wxICON_WARNING        ? "exclamation" :
-                                          style & wxICON_INFORMATION    ? "info"        :
-                                          style & wxICON_QUESTION       ? "question"    : "PrusaSlicer", this, 64, style & wxICON_ERROR));
+    std::string icon_name = style & wxICON_WARNING        ? "exclamation" :
+                            style & wxICON_INFORMATION    ? "info"        :
+                            style & wxICON_QUESTION       ? "question"    : "PrusaSlicer";
+    logo->SetBitmap(*get_bmp_bundle(icon_name, 64));
 }
 
 void MsgDialog::finalize()
@@ -135,25 +143,11 @@ static void add_msg_content(wxWindow* parent, wxBoxSizer* content_sizer, wxStrin
         msg_lines++;
     }
 
-    wxFont      font = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    wxFont      font = wxGetApp().normal_font();//wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
     wxFont      monospace = wxGetApp().code_font();
     wxColour    text_clr = wxGetApp().get_label_clr_default();
-    wxColour    bgr_clr = parent->GetBackgroundColour();
-
-#ifdef __APPLE__
-    // On macOS 10.13 and older the background color returned by wxWidgets
-    // is wrong, which leads to https://github.com/prusa3d/PrusaSlicer/issues/7603
-    // and https://github.com/prusa3d/PrusaSlicer/issues/3775. wxSYS_COLOUR_WINDOW
-    // may not match the window background exactly, but it seems to never end up
-    // as black on black.
-    
-    if (wxPlatformInfo::Get().GetOSMajorVersion() == 10
-     && wxPlatformInfo::Get().GetOSMinorVersion() < 14)
-        bgr_clr = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
-#endif
-
     auto        text_clr_str = encode_color(ColorRGB(text_clr.Red(), text_clr.Green(), text_clr.Blue()));
-    auto        bgr_clr_str = encode_color(ColorRGB(bgr_clr.Red(), bgr_clr.Green(), bgr_clr.Blue()));
+    auto        bgr_clr_str = wxGetApp().get_html_bg_color(parent);
     const int   font_size = font.GetPointSize();
     int         size[] = { font_size, font_size, font_size, font_size, font_size, font_size, font_size };
     html->SetFonts(font.GetFaceName(), monospace.GetFaceName(), size);
@@ -230,7 +224,7 @@ ErrorDialog::ErrorDialog(wxWindow *parent, const wxString &msg, bool monospaced_
     add_msg_content(this, content_sizer, msg, monospaced_font);
 
 	// Use a small bitmap with monospaced font, as the error text will not be wrapped.
-	logo->SetBitmap(create_scaled_bitmap("PrusaSlicer_192px_grayscale.png", this, monospaced_font ? 48 : /*1*/84));
+	logo->SetBitmap(*get_bmp_bundle("PrusaSlicer_192px_grayscale.png", monospaced_font ? 48 : /*1*/84));
 
     SetMaxSize(wxSize(-1, CONTENT_MAX_HEIGHT*wxGetApp().em_unit()));
 

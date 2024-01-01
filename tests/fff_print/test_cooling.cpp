@@ -176,6 +176,7 @@ SCENARIO("Cooling integration tests", "[Cooling]") {
             { "fan_below_layer_time",       { 0 } },
             { "slowdown_below_layer_time",  { 0 } },
             { "bridge_speed",               99 },
+            { "enable_dynamic_overhang_speeds", false },
             // internal bridges use solid_infil speed
             { "bottom_solid_layers",        1 },
             // internal bridges use solid_infil speed
@@ -259,7 +260,7 @@ SCENARIO("Cooling integration tests", "[Cooling]") {
         });            
         THEN("slowdown_below_layer_time is honored") {
             // Account for some inaccuracies.
-            const double slowdown_below_layer_time = config.opt<ConfigOptionInts>("slowdown_below_layer_time")->values.front() - 0.2;
+            const double slowdown_below_layer_time = config.opt<ConfigOptionInts>("slowdown_below_layer_time")->values.front() - 0.5;
             size_t minimum_time_honored = std::count_if(layer_times.begin(), layer_times.end(), 
                 [slowdown_below_layer_time](double t){ return t > slowdown_below_layer_time; });
             REQUIRE(minimum_time_honored == layer_times.size());

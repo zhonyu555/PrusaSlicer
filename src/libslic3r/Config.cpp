@@ -1,3 +1,23 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, David Kocík @kocikdav, Tomáš Mészáros @tamasmeszaros, Vojtěch Král @vojtechkral, Oleksandra Iushchenko @YuSanka
+///|/ Copyright (c) 2018 fredizzimo @fredizzimo
+///|/ Copyright (c) Slic3r 2013 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2015 Maksim Derbasov @ntfshard
+///|/
+///|/ ported from lib/Slic3r/Config.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2022 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2011 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2015 Alexander Rössler @machinekoder
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/ Copyright (c) 2012 Mark Hindess
+///|/ Copyright (c) 2012 Josh McCullough
+///|/ Copyright (c) 2011 - 2012 Michael Moon
+///|/ Copyright (c) 2012 Simon George
+///|/ Copyright (c) 2012 Johannes Reinhardt
+///|/ Copyright (c) 2011 Clarence Risher
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Config.hpp"
 #include "format.hpp"
 #include "Utils.hpp"
@@ -268,7 +288,7 @@ ConfigOption* ConfigOptionDef::create_empty_option() const
 	//    case coPoint3s:         return new ConfigOptionPoint3s();
 	    case coBool:            return new ConfigOptionBool();
 	    case coBools:           return new ConfigOptionBools();
-	    case coEnum:            return new ConfigOptionEnumGeneric(this->enum_keys_map);
+	    case coEnum:            return new ConfigOptionEnumGeneric(this->enum_def->m_enum_keys_map);
 	    default:                throw ConfigurationError(std::string("Unknown option type for option ") + this->label);
 	    }
 	}
@@ -279,7 +299,7 @@ ConfigOption* ConfigOptionDef::create_default_option() const
     if (this->default_value)
         return (this->default_value->type() == coEnum) ?
             // Special case: For a DynamicConfig, convert a templated enum to a generic enum.
-            new ConfigOptionEnumGeneric(this->enum_keys_map, this->default_value->getInt()) :
+            new ConfigOptionEnumGeneric(this->enum_def->m_enum_keys_map, this->default_value->getInt()) :
             this->default_value->clone();
     return this->create_empty_option();
 }
@@ -301,6 +321,31 @@ ConfigOptionDef* ConfigDef::add_nullable(const t_config_option_key &opt_key, Con
 	ConfigOptionDef *def = this->add(opt_key, type);
 	def->nullable = true;
 	return def;
+}
+
+void ConfigDef::finalize()
+{
+    // Validate & finalize open & closed enums.
+    for (std::pair<const t_config_option_key, ConfigOptionDef> &kvp : options) {
+        ConfigOptionDef& def = kvp.second;
+        if (def.type == coEnum) {
+            assert(def.enum_def);
+            assert(def.enum_def->is_valid_closed_enum());
+            assert(def.gui_type != ConfigOptionDef::GUIType::i_enum_open && 
+                   def.gui_type != ConfigOptionDef::GUIType::f_enum_open && 
+                   def.gui_type != ConfigOptionDef::GUIType::select_open);
+            def.enum_def->finalize_closed_enum();
+        } else if (def.gui_type == ConfigOptionDef::GUIType::i_enum_open || def.gui_type == ConfigOptionDef::GUIType::f_enum_open ||
+                   def.gui_type == ConfigOptionDef::GUIType::select_open) {
+            assert(def.enum_def);
+            assert(def.enum_def->is_valid_open_enum());
+            assert(def.gui_type != ConfigOptionDef::GUIType::i_enum_open || def.type == coInt || def.type == coInts);
+            assert(def.gui_type != ConfigOptionDef::GUIType::f_enum_open || def.type == coFloat || def.type == coPercent || def.type == coFloatOrPercent);
+            assert(def.gui_type != ConfigOptionDef::GUIType::select_open || def.type == coString || def.type == coStrings);
+        } else {
+            assert(! def.enum_def);
+        }
+    }
 }
 
 std::ostream& ConfigDef::print_cli_help(std::ostream& out, bool show_defaults, std::function<bool(const ConfigOptionDef &)> filter) const
@@ -378,8 +423,8 @@ std::ostream& ConfigDef::print_cli_help(std::ostream& out, bool show_defaults, s
                 descr += " (";
                 if (!def.sidetext.empty()) {
                     descr += def.sidetext + ", ";
-                } else if (!def.enum_values.empty()) {
-                    descr += boost::algorithm::join(def.enum_values, ", ") + "; ";
+                } else if (def.enum_def && def.enum_def->has_values()) {
+                    descr += boost::algorithm::join(def.enum_def->values(), ", ") + "; ";
                 }
                 descr += "default: " + def.default_value->serialize() + ")";
             }
@@ -772,6 +817,9 @@ ConfigSubstitutions ConfigBase::load(const boost::property_tree::ptree &tree, Fo
             // ignore
         }
     }
+    // Do legacy conversion on a completely loaded dictionary.
+    // Perform composite conversions, for example merging multiple keys into one key.
+    this->handle_legacy_composite();
     return std::move(substitutions_ctxt.substitutions);
 }
 
@@ -1142,7 +1190,7 @@ bool DynamicConfig::read_cli(int argc, const char* const argv[], t_config_option
         }
 
         const t_config_option_key &opt_key = it->second;
-        const ConfigOptionDef     &optdef  = this->def()->options.at(opt_key);
+        const ConfigOptionDef     &optdef  = *this->option_def(opt_key);
 
         // If the option type expects a value and it was not already provided,
         // look for it in the next token.

@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_Utils_hpp_
 #define slic3r_GUI_Utils_hpp_
 
@@ -82,13 +86,16 @@ template<class P> class DPIAware : public P
 {
 public:
     DPIAware(wxWindow *parent, wxWindowID id, const wxString &title, const wxPoint &pos=wxDefaultPosition,
-        const wxSize &size=wxDefaultSize, long style=wxDEFAULT_FRAME_STYLE, const wxString &name=wxFrameNameStr)
+        const wxSize &size=wxDefaultSize, long style=wxDEFAULT_FRAME_STYLE, const wxString &name= wxFrameNameStr, const int font_point_size = -1)
         : P(parent, id, title, pos, size, style, name)
     {
         int dpi = get_dpi_for_window(this);
         m_scale_factor = (float)dpi / (float)DPI_DEFAULT;
         m_prev_scale_factor = m_scale_factor;
 		m_normal_font = get_default_font_for_dpi(this, dpi);
+
+        if (font_point_size > 0)
+            m_normal_font.SetPointSize(font_point_size);
 
         /* Because of default window font is a primary display font, 
          * We should set correct font for window before getting em_unit value.
@@ -414,6 +421,16 @@ public:
     TaskTimer(std::string task_name);
 
     ~TaskTimer();
+};
+
+class KeyAutoRepeatFilter
+{
+    size_t m_count{ 0 };
+
+public:
+    void increase_count() { ++m_count; }
+    void reset_count() { m_count = 0; }
+    bool is_first() const { return m_count == 0; }
 };
 
 }}

@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_PresetBundle_hpp_
 #define slic3r_PresetBundle_hpp_
 
@@ -7,6 +12,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <array>
 #include <boost/filesystem/path.hpp>
 
 namespace Slic3r {
@@ -50,9 +56,14 @@ public:
 	const PresetCollection& 	materials(PrinterTechnology pt) const { return pt == ptFFF ? this->filaments : this->sla_materials; }
     PrinterPresetCollection     printers;
     PhysicalPrinterCollection   physical_printers;
-    // Filament preset names for a multi-extruder or multi-material print.
-    // extruders.size() should be the same as printers.get_edited_preset().config.nozzle_diameter.size()
-    std::vector<std::string>    filament_presets;
+
+    // Filament presets per extruder for a multi-extruder or multi-material print.
+    // extruders_filaments.size() should be the same as printers.get_edited_preset().config.nozzle_diameter.size()
+    std::vector<ExtruderFilaments> extruders_filaments;
+    void cache_extruder_filaments_names();
+    void reset_extruder_filaments();
+
+    PresetCollection&           get_presets(Preset::Type preset_type);
 
     // The project configuration values are kept separated from the print/filament/printer preset,
     // they are being serialized / deserialized from / to the .amf, .3mf, .config, .gcode, 
@@ -129,6 +140,8 @@ public:
     // update size and content of filament_presets.
     void                        update_multi_material_filament_presets();
 
+    void                        update_filaments_compatible(PresetSelectCompatibleType select_other_filament_if_incompatible, int extruder_idx = -1);
+
     // Update the is_compatible flag of all print and filament presets depending on whether they are marked
     // as compatible with the currently selected printer (and print in case of filament presets).
     // Also updates the is_visible flag of each preset.
@@ -142,13 +155,24 @@ public:
     // If the "vendor" section is missing, enable all models and variants of the particular vendor.
     void                        load_installed_printers(const AppConfig &config);
 
-    const std::string&          get_preset_name_by_alias(const Preset::Type& preset_type, const std::string& alias) const;
+    const std::string&          get_preset_name_by_alias(const Preset::Type& preset_type, const std::string& alias, int extruder_id = -1);
 
     // Save current preset of a provided type under a new name. If the name is different from the old one,
     // Unselected option would be reverted to the beginning values
     void                        save_changes_for_preset(const std::string& new_name, Preset::Type type, const std::vector<std::string>& unselected_options);
+    // Transfer options form preset_from_name preset to preset_to_name preset and save preset_to_name preset as new new_name preset
+    // Return false, if new preset wasn't saved
+    bool                        transfer_and_save(Preset::Type type, const std::string& preset_from_name, const std::string& preset_to_name,
+                                                  const std::string& new_name, const std::vector<std::string>& options);
 
     static const char *PRUSA_BUNDLE;
+
+    static std::array<Preset::Type, 3>  types_list(PrinterTechnology pt) {
+        if (pt == ptFFF)
+            return  { Preset::TYPE_PRINTER, Preset::TYPE_PRINT, Preset::TYPE_FILAMENT };
+        return      { Preset::TYPE_PRINTER, Preset::TYPE_SLA_PRINT, Preset::TYPE_SLA_MATERIAL };
+    }
+
 private:
     std::pair<PresetsConfigSubstitutions, std::string> load_system_presets(ForwardCompatibilitySubstitutionRule compatibility_rule);
     // Merge one vendor's presets with the other vendor's presets, report duplicates.
@@ -177,6 +201,10 @@ private:
 };
 
 ENABLE_ENUM_BITMASK_OPERATORS(PresetBundle::LoadConfigBundleAttribute)
+
+// Copies bed texture and model files to 'data_dir()\printer' folder, if needed
+// and updates the config accordingly
+extern void copy_bed_model_and_texture_if_needed(DynamicPrintConfig& config);
 
 } // namespace Slic3r
 

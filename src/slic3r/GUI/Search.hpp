@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_SearchComboBox_hpp_
 #define slic3r_SearchComboBox_hpp_
 
@@ -202,8 +206,12 @@ class SearchListModel : public wxDataViewVirtualListModel
 
 public:
     enum {
+#ifdef __WXMSW__
+        colIconMarkedText,
+#else
         colIcon,
         colMarkedText,
+#endif
         colMax
     };
 
@@ -213,7 +221,7 @@ public:
 
     void Clear();
     void Prepend(const std::string& text);
-    void msw_rescale();
+    void sys_color_changed();
 
     // implementation of base class virtuals to define model
 

@@ -1,3 +1,12 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) 2017 Eyal Soha
+///|/
+///|/ ported from lib/Slic3r/Fill/PlanePath.pm:
+///|/ Copyright (c) Prusa Research 2016 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2014 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <stdlib.h>
 #include <stdint.h>
 
@@ -414,7 +423,7 @@ public:
 //        bool sticks_removed = 
         remove_sticks(polygons_src);
 //        if (sticks_removed) BOOST_LOG_TRIVIAL(error) << "Sticks removed!";
-        polygons_outer = aoffset1 == 0 ? polygons_src : offset(polygons_src, float(aoffset1), ClipperLib::jtMiter, miterLimit);
+        polygons_outer = aoffset1 == 0 ? to_polygons(polygons_src) : offset(polygons_src, float(aoffset1), ClipperLib::jtMiter, miterLimit);
         if (aoffset2 < 0)
             polygons_inner = shrink(polygons_outer, float(aoffset1 - aoffset2), ClipperLib::jtMiter, miterLimit);
 		// Filter out contours with zero area or small area, contours with 2 points only.
@@ -2970,7 +2979,18 @@ Polylines FillMonotonic::fill_surface(const Surface *surface, const FillParams &
     params2.monotonic = true;
     Polylines polylines_out;
     if (! fill_surface_by_lines(surface, params2, 0.f, 0.f, polylines_out))
-        BOOST_LOG_TRIVIAL(error) << "FillMonotonous::fill_surface() failed to fill a region.";
+        BOOST_LOG_TRIVIAL(error) << "FillMonotonic::fill_surface() failed to fill a region.";
+    return polylines_out;
+}
+
+Polylines FillMonotonicLines::fill_surface(const Surface *surface, const FillParams &params)
+{
+    FillParams params2 = params;
+    params2.monotonic = true;
+    params2.anchor_length_max = 0.0f;
+    Polylines polylines_out;
+    if (! fill_surface_by_lines(surface, params2, 0.f, 0.f, polylines_out))
+        BOOST_LOG_TRIVIAL(error) << "FillMonotonicLines::fill_surface() failed to fill a region.";
     return polylines_out;
 }
 
@@ -3043,14 +3063,18 @@ Polylines FillSupportBase::fill_surface(const Surface *surface, const FillParams
     return polylines_out;
 }
 
-Points sample_grid_pattern(const ExPolygon &expolygon, coord_t spacing)
+// Lightning infill assumes that the distance between any two sampled points is always
+// at least equal to the value of spacing. To meet this assumption, we need to use
+// BoundingBox for whole layers instead of bounding box just around processing ExPolygon.
+// Using just BoundingBox around processing ExPolygon could produce two points closer
+// than spacing (in cases where two ExPolygon are closer than spacing).
+Points sample_grid_pattern(const ExPolygon &expolygon, coord_t spacing, const BoundingBox &global_bounding_box)
 {
     ExPolygonWithOffset poly_with_offset(expolygon, 0, 0, 0);
-    BoundingBox bounding_box = poly_with_offset.bounding_box_src();
     std::vector<SegmentedIntersectionLine> segs = slice_region_by_vertical_lines(
         poly_with_offset, 
-        (bounding_box.max.x() - bounding_box.min.x() + spacing - 1) / spacing, 
-        bounding_box.min.x(),
+        (global_bounding_box.max.x() - global_bounding_box.min.x() + spacing - 1) / spacing,
+        global_bounding_box.min.x(),
         spacing);
 
     Points out;
@@ -3066,17 +3090,17 @@ Points sample_grid_pattern(const ExPolygon &expolygon, coord_t spacing)
     return out;
 }
 
-Points sample_grid_pattern(const ExPolygons &expolygons, coord_t spacing)
+Points sample_grid_pattern(const ExPolygons &expolygons, coord_t spacing, const BoundingBox &global_bounding_box)
 {
     Points out;
     for (const ExPolygon &expoly : expolygons)
-        append(out, sample_grid_pattern(expoly, spacing));
+        append(out, sample_grid_pattern(expoly, spacing, global_bounding_box));
     return out;
 }
 
-Points sample_grid_pattern(const Polygons &polygons, coord_t spacing)
+Points sample_grid_pattern(const Polygons &polygons, coord_t spacing, const BoundingBox &global_bounding_box)
 {
-    return sample_grid_pattern(union_ex(polygons), spacing);
+    return sample_grid_pattern(union_ex(polygons), spacing, global_bounding_box);
 }
 
 } // namespace Slic3r

@@ -43,22 +43,15 @@ set(XS_MAIN_XS ${CMAKE_CURRENT_BINARY_DIR}/main.xs)
 set(XSP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/xsp)
 #FIXME list the dependecies explicitely, add dependency on the typemap.
 set(XS_XSP_FILES
-    ${XSP_DIR}/BoundingBox.xsp
     ${XSP_DIR}/Config.xsp
     ${XSP_DIR}/ExPolygon.xsp
-    ${XSP_DIR}/ExtrusionEntityCollection.xsp
-    ${XSP_DIR}/ExtrusionLoop.xsp
-    ${XSP_DIR}/ExtrusionPath.xsp
     ${XSP_DIR}/Geometry.xsp
-    ${XSP_DIR}/Layer.xsp
     ${XSP_DIR}/Line.xsp
     ${XSP_DIR}/Model.xsp
     ${XSP_DIR}/Point.xsp
     ${XSP_DIR}/Polygon.xsp
     ${XSP_DIR}/Polyline.xsp
     ${XSP_DIR}/Print.xsp
-    ${XSP_DIR}/Surface.xsp
-    ${XSP_DIR}/SurfaceCollection.xsp
     ${XSP_DIR}/TriangleMesh.xsp
     ${XSP_DIR}/XS.xsp
 )
@@ -181,6 +174,11 @@ if (MSVC)
     add_custom_command(TARGET XS POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy ${TOP_LEVEL_PROJECT_DIR}/deps/GMP/gmp/lib/win${_bits}/libgmp-10.dll "${PERL_LOCAL_LIB_ARCH_DIR}/auto/Slic3r/XS/"
         COMMENT "Installing gmp runtime into the local-lib directory ..."
+        VERBATIM)
+
+    add_custom_command(TARGET XS POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy ${TOP_LEVEL_PROJECT_DIR}/deps/MPFR/mpfr/lib/win${_bits}/libmpfr-4.dll "${PERL_LOCAL_LIB_ARCH_DIR}/auto/Slic3r/XS/"
+        COMMENT "Installing mpfr runtime into the local-lib directory ..."
         VERBATIM)
 endif()
 

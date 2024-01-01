@@ -1,3 +1,8 @@
+///|/ Copyright (c) 2022 Denis Itskovich @denis-itskovich
+///|/ Copyright (c) Prusa Research 2019 - 2021 Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Roman Beránek @zavorka, Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/PresetBundle.hpp"
 #include "Mouse3DController.hpp"
@@ -668,6 +673,11 @@ void Mouse3DController::init()
 #ifndef _WIN32
     	// Don't start the background thread on Windows, as the HID messages are sent as Windows messages.
 	    m_thread = std::thread(&Mouse3DController::run, this);
+#else
+        // For some reason, HID message routing does not work well with remote session. Requires further investigation
+        if (::GetSystemMetrics(SM_REMOTESESSION)) {
+            m_thread = std::thread(&Mouse3DController::run, this);
+        }
 #endif // _WIN32
 	}
 }

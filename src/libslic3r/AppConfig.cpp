@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Lukáš Hejl @hejllukas, Filip Sykala @Jony01, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "libslic3r/libslic3r.h"
 #include "libslic3r/Utils.hpp"
 #include "AppConfig.hpp"
@@ -34,11 +38,17 @@ static const std::string MODEL_PREFIX = "model:";
 // to show this notification. On the other hand, we would like PrusaSlicer 2.3.2 to show an update notification of the upcoming PrusaSlicer 2.4.0.
 // Thus we will let PrusaSlicer 2.3.2 and couple of follow-up versions to download the version number from an alternate file until the PrusaSlicer 2.3.0/2.3.1
 // are phased out, then we will revert to the original name.
-//static const std::string VERSION_CHECK_URL = "https://files.prusa3d.com/wp-content/uploads/repository/PrusaSlicer-settings-master/live/PrusaSlicer.version";
-static const std::string VERSION_CHECK_URL = "https://files.prusa3d.com/wp-content/uploads/repository/PrusaSlicer-settings-master/live/PrusaSlicer.version2";
+// For 2.6.0-alpha1 we have switched back to the original. The file should contain data for AppUpdater.cpp
+static const std::string VERSION_CHECK_URL = "https://files.prusa3d.com/wp-content/uploads/repository/PrusaSlicer-settings-master/live/PrusaSlicer.version";
+//static const std::string VERSION_CHECK_URL = "https://files.prusa3d.com/wp-content/uploads/repository/PrusaSlicer-settings-master/live/PrusaSlicer.version2";
+// Url to index archive zip that contains latest indicies
+static const std::string INDEX_ARCHIVE_URL= "https://files.prusa3d.com/wp-content/uploads/repository/vendor_indices.zip";
+// Url to folder with vendor profile files. Used when downloading new profiles that are not in resources folder.
+static const std::string PROFILE_FOLDER_URL = "https://files.prusa3d.com/wp-content/uploads/repository/PrusaSlicer-settings-master/live/";
 
 const std::string AppConfig::SECTION_FILAMENTS = "filaments";
 const std::string AppConfig::SECTION_MATERIALS = "sla_materials";
+const std::string AppConfig::SECTION_EMBOSS_STYLE = "font";
 
 void AppConfig::reset()
 {
@@ -60,6 +70,9 @@ void AppConfig::set_defaults()
         // Disable background processing by default as it is not stable.
         if (get("background_processing").empty())
             set("background_processing", "0");
+        // Enable support issues alerts by default
+        if (get("alert_when_supports_needed").empty())
+            set("alert_when_supports_needed", "1");
         // If set, the "Controller" tab for the control of the printer over serial line and the serial port settings are hidden.
         // By default, Prusa has the controller hidden.
         if (get("no_controller").empty())
@@ -67,6 +80,8 @@ void AppConfig::set_defaults()
         // If set, the "- default -" selections of print/filament/printer are suppressed, if there is a valid preset available.
         if (get("no_defaults").empty())
             set("no_defaults", "1");
+        if (get("no_templates").empty())
+            set("no_templates", "0");
         if (get("show_incompatible_presets").empty())
             set("show_incompatible_presets", "0");
 
@@ -150,10 +165,8 @@ void AppConfig::set_defaults()
         if (get("order_volumes").empty())
             set("order_volumes", "1");
 
-#if ENABLE_SHOW_NON_MANIFOLD_EDGES
         if (get("non_manifold_edges").empty())
             set("non_manifold_edges", "1");
-#endif // ENABLE_SHOW_NON_MANIFOLD_EDGES
 
         if (get("clear_undo_redo_stack_on_new_project").empty())
             set("clear_undo_redo_stack_on_new_project", "1");
@@ -185,6 +198,9 @@ void AppConfig::set_defaults()
 
     if (get("show_hints").empty())
         set("show_hints", "1");
+
+    if (get("allow_auto_color_change").empty())
+        set("allow_auto_color_change", "1");
 
     if (get("allow_ip_resolve").empty())
         set("allow_ip_resolve", "1");
@@ -230,8 +246,13 @@ static std::string appconfig_md5_hash_line(const std::string_view data)
     return "# MD5 checksum " + md5_digest_str + "\n";
 };
 
+struct ConfigFileInfo {
+    bool correct_checksum {false};
+    bool contains_null {false};
+};
+
 // Assume that the last line with the comment inside the config file contains a checksum and that the user didn't modify the config file.
-static bool verify_config_file_checksum(boost::nowide::ifstream &ifs)
+static ConfigFileInfo check_config_file_and_verify_checksum(boost::nowide::ifstream &ifs)
 {
     auto read_whole_config_file = [&ifs]() -> std::string {
         std::stringstream ss;
@@ -240,7 +261,8 @@ static bool verify_config_file_checksum(boost::nowide::ifstream &ifs)
     };
 
     ifs.seekg(0, boost::nowide::ifstream::beg);
-    std::string whole_config = read_whole_config_file();
+    const std::string whole_config  = read_whole_config_file();
+    const bool        contains_null = whole_config.find_first_of('\0') != std::string::npos;
 
     // The checksum should be on the last line in the config file.
     if (size_t last_comment_pos = whole_config.find_last_of('#'); last_comment_pos != std::string::npos) {
@@ -249,9 +271,9 @@ static bool verify_config_file_checksum(boost::nowide::ifstream &ifs)
         // When the checksum isn't found, the checksum was not saved correctly, it was removed or it is an older config file without the checksum.
         // If the checksum is incorrect, then the file was either not saved correctly or modified.
         if (std::string_view(whole_config.c_str() + last_comment_pos, whole_config.size() - last_comment_pos) == appconfig_md5_hash_line({ whole_config.data(), last_comment_pos }))
-            return true;
+            return {true, contains_null};
     }
-    return false;
+    return {false, contains_null};
 }
 #endif
 
@@ -269,14 +291,25 @@ std::string AppConfig::load(const std::string &path)
         ifs.open(path);
 #ifdef WIN32
         // Verify the checksum of the config file without taking just for debugging purpose.
-        if (!verify_config_file_checksum(ifs))
-            BOOST_LOG_TRIVIAL(info) << "The configuration file " << path <<
-            " has a wrong MD5 checksum or the checksum is missing. This may indicate a file corruption or a harmless user edit.";
+        const ConfigFileInfo config_file_info = check_config_file_and_verify_checksum(ifs);
+        if (!config_file_info.correct_checksum)
+            BOOST_LOG_TRIVIAL(info)
+                << "The configuration file " << path
+                << " has a wrong MD5 checksum or the checksum is missing. This may indicate a file corruption or a harmless user edit.";
+
+        if (!config_file_info.correct_checksum && config_file_info.contains_null) {
+            BOOST_LOG_TRIVIAL(info) << "The configuration file " + path + " is corrupted, because it is contains null characters.";
+            throw Slic3r::CriticalException("The configuration file contains null characters.");
+        }
 
         ifs.seekg(0, boost::nowide::ifstream::beg);
 #endif
-        pt::read_ini(ifs, tree);
-    } catch (pt::ptree_error& ex) {
+        try {
+            pt::read_ini(ifs, tree);
+        } catch (pt::ptree_error &ex) {
+            throw Slic3r::CriticalException(ex.what());
+        }
+    } catch (Slic3r::CriticalException &ex) {
 #ifdef WIN32
         // The configuration file is corrupted, try replacing it with the backup configuration.
         ifs.close();
@@ -284,39 +317,33 @@ std::string AppConfig::load(const std::string &path)
         if (boost::filesystem::exists(backup_path)) {
             // Compute checksum of the configuration backup file and try to load configuration from it when the checksum is correct.
             boost::nowide::ifstream backup_ifs(backup_path);
-            if (!verify_config_file_checksum(backup_ifs)) {
-                BOOST_LOG_TRIVIAL(error) << format("Both \"%1%\" and \"%2%\" are corrupted. It isn't possible to restore configuration from the backup.", path, backup_path);
+            if (const ConfigFileInfo config_file_info = check_config_file_and_verify_checksum(backup_ifs); !config_file_info.correct_checksum || config_file_info.contains_null) {
+                BOOST_LOG_TRIVIAL(error) << format(R"(Both "%1%" and "%2%" are corrupted. It isn't possible to restore configuration from the backup.)", path, backup_path);
                 backup_ifs.close();
                 boost::filesystem::remove(backup_path);
             } else if (std::string error_message; copy_file(backup_path, path, error_message, false) != SUCCESS) {
-                BOOST_LOG_TRIVIAL(error) << format("Configuration file \"%1%\" is corrupted. Failed to restore from backup \"%2%\": %3%", path, backup_path, error_message);
+                BOOST_LOG_TRIVIAL(error) << format(R"(Configuration file "%1%" is corrupted. Failed to restore from backup "%2%": %3%)", path, backup_path, error_message);
                 backup_ifs.close();
                 boost::filesystem::remove(backup_path);
             } else {
-                BOOST_LOG_TRIVIAL(info) << format("Configuration file \"%1%\" was corrupted. It has been succesfully restored from the backup \"%2%\".", path, backup_path);
+                BOOST_LOG_TRIVIAL(info) << format(R"(Configuration file "%1%" was corrupted. It has been successfully restored from the backup "%2%".)", path, backup_path);
                 // Try parse configuration file after restore from backup.
                 try {
                     ifs.open(path);
                     pt::read_ini(ifs, tree);
                     recovered = true;
                 } catch (pt::ptree_error& ex) {
-                    BOOST_LOG_TRIVIAL(info) << format("Failed to parse configuration file \"%1%\" after it has been restored from backup: %2%", path, ex.what());
+                    BOOST_LOG_TRIVIAL(info) << format(R"(Failed to parse configuration file "%1%" after it has been restored from backup: %2%)", path, ex.what());
                 }
             }
         } else
 #endif // WIN32
-            BOOST_LOG_TRIVIAL(info) << format("Failed to parse configuration file \"%1%\": %2%", path, ex.what());
-        if (! recovered) {
+            BOOST_LOG_TRIVIAL(info) << format(R"(Failed to parse configuration file "%1%": %2%)", path, ex.what());
+        if (!recovered) {
             // Report the initial error of parsing PrusaSlicer.ini.
             // Error while parsing config file. We'll customize the error message and rethrow to be displayed.
             // ! But to avoid the use of _utf8 (related to use of wxWidgets) 
             // we will rethrow this exception from the place of load() call, if returned value wouldn't be empty
-            /*
-            throw Slic3r::RuntimeError(
-                _utf8(L("Error parsing PrusaSlicer config file, it is probably corrupted. "
-                        "Try to manually delete the file to recover from the error. Your user profiles will not be affected.")) +
-                "\n\n" + AppConfig::config_path() + "\n\n" + ex.what());
-            */
             return ex.what();
         }
     }
@@ -388,12 +415,8 @@ std::string AppConfig::load()
 
 void AppConfig::save()
 {
-    {
-        // Returns "undefined" if the thread naming functionality is not supported by the operating system.
-        std::optional<std::string> current_thread_name = get_current_thread_name();
-        if (current_thread_name && *current_thread_name != "slic3r_main")
-            throw CriticalException("Calling AppConfig::save() from a worker thread!");
-    }
+    if (! is_main_thread_active())
+        throw CriticalException("Calling AppConfig::save() from a worker thread!");
 
     // The config is first written to a file with a PID suffix and then moved
     // to avoid race conditions with multiple instances of Slic3r
@@ -462,6 +485,46 @@ void AppConfig::save()
     m_dirty = false;
 }
 
+bool AppConfig::erase(const std::string &section, const std::string &key)
+{       
+    if (auto it_storage = m_storage.find(section); it_storage != m_storage.end()) {
+        auto &section = it_storage->second;
+        auto it = section.find(key);
+        if (it != section.end()) {
+            section.erase(it);
+            m_dirty = true;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AppConfig::set_section(const std::string &section, std::map<std::string, std::string> data)
+{ 
+    auto it_section = m_storage.find(section);
+    if (it_section == m_storage.end()) {
+        if (data.empty())
+            return false;
+        it_section = m_storage.insert({ section, {} }).first;
+    }
+    auto &dst = it_section->second;
+    if (dst == data)
+        return false;
+    dst = std::move(data);
+    m_dirty = true;
+    return true;
+}
+
+bool AppConfig::clear_section(const std::string &section)
+{ 
+    if (auto it_section = m_storage.find(section); it_section != m_storage.end() && ! it_section->second.empty()) {
+        it_section->second.clear();
+        m_dirty = true;
+        return true;
+    }
+    return false;
+}
+
 bool AppConfig::get_variant(const std::string &vendor, const std::string &model, const std::string &variant) const
 {
     const auto it_v = m_vendors.find(vendor);
@@ -470,28 +533,47 @@ bool AppConfig::get_variant(const std::string &vendor, const std::string &model,
     return it_m == it_v->second.end() ? false : it_m->second.find(variant) != it_m->second.end();
 }
 
-void AppConfig::set_variant(const std::string &vendor, const std::string &model, const std::string &variant, bool enable)
+bool AppConfig::set_variant(const std::string &vendor, const std::string &model, const std::string &variant, bool enable)
 {
     if (enable) {
-        if (get_variant(vendor, model, variant)) { return; }
+        if (get_variant(vendor, model, variant))
+            return false;
         m_vendors[vendor][model].insert(variant);
     } else {
         auto it_v = m_vendors.find(vendor);
-        if (it_v == m_vendors.end()) { return; }
+        if (it_v == m_vendors.end())
+            return false;
         auto it_m = it_v->second.find(model);
-        if (it_m == it_v->second.end()) { return; }
+        if (it_m == it_v->second.end())
+            return false;
         auto it_var = it_m->second.find(variant);
-        if (it_var == it_m->second.end()) { return; }
+        if (it_var == it_m->second.end())
+            return false;
         it_m->second.erase(it_var);
     }
     // If we got here, there was an update
     m_dirty = true;
+    return true;
 }
 
-void AppConfig::set_vendors(const AppConfig &from)
+bool AppConfig::set_vendors(const VendorMap &vendors)
 {
-    m_vendors = from.m_vendors;
-    m_dirty = true;
+    if (m_vendors != vendors) {
+        m_vendors = vendors;
+        m_dirty = true;
+        return true;
+    } else
+        return false;
+}
+
+bool AppConfig::set_vendors(VendorMap &&vendors)
+{
+    if (m_vendors != vendors) {
+        m_vendors = std::move(vendors);
+        m_dirty = true;
+        return true;
+    } else
+        return false;
 }
 
 std::string AppConfig::get_last_dir() const
@@ -526,34 +608,52 @@ std::vector<std::string> AppConfig::get_recent_projects() const
     return ret;
 }
 
-void AppConfig::set_recent_projects(const std::vector<std::string>& recent_projects)
+bool AppConfig::set_recent_projects(const std::vector<std::string>& recent_projects)
 {
-    auto it = m_storage.find("recent_projects");
-    if (it == m_storage.end())
-        it = m_storage.insert(std::map<std::string, std::map<std::string, std::string>>::value_type("recent_projects", std::map<std::string, std::string>())).first;
-
-    it->second.clear();
-    for (unsigned int i = 0; i < (unsigned int)recent_projects.size(); ++i)
-    {
-        it->second[std::to_string(i + 1)] = recent_projects[i];
+    static constexpr const char *section = "recent_projects";
+    auto it_section = m_storage.find(section);
+    if (it_section == m_storage.end()) {
+        if (recent_projects.empty())
+            return false;
+        it_section = m_storage.insert({ std::string(section), {} }).first;
     }
+    auto &dst = it_section->second;
+
+    std::map<std::string, std::string> src;
+    for (unsigned int i = 0; i < (unsigned int)recent_projects.size(); ++i)
+        src[std::to_string(i + 1)] = recent_projects[i];
+
+    if (src != dst) {
+        dst = std::move(src);
+        m_dirty = true;
+        return true;
+    } else
+        return false;
 }
 
-void AppConfig::set_mouse_device(const std::string& name, double translation_speed, double translation_deadzone,
+bool AppConfig::set_mouse_device(const std::string& name, double translation_speed, double translation_deadzone,
                                  float rotation_speed, float rotation_deadzone, double zoom_speed, bool swap_yz)
 {
-    std::string key = std::string("mouse_device:") + name;
-    auto it = m_storage.find(key);
-    if (it == m_storage.end())
-        it = m_storage.insert(std::map<std::string, std::map<std::string, std::string>>::value_type(key, std::map<std::string, std::string>())).first;
+    const std::string key = std::string("mouse_device:") + name;
+    auto it_section = m_storage.find(key);
+    if (it_section == m_storage.end())
+        it_section = m_storage.insert({ key, {} }).first;
+    auto &dst = it_section->second;
 
-    it->second.clear();
-    it->second["translation_speed"] = float_to_string_decimal_point(translation_speed);
-    it->second["translation_deadzone"] = float_to_string_decimal_point(translation_deadzone);
-    it->second["rotation_speed"] = float_to_string_decimal_point(rotation_speed);
-    it->second["rotation_deadzone"] = float_to_string_decimal_point(rotation_deadzone);
-    it->second["zoom_speed"] = float_to_string_decimal_point(zoom_speed);
-    it->second["swap_yz"] = swap_yz ? "1" : "0";
+    std::map<std::string, std::string> src;
+    src["translation_speed"]    = float_to_string_decimal_point(translation_speed);
+    src["translation_deadzone"] = float_to_string_decimal_point(translation_deadzone);
+    src["rotation_speed"]       = float_to_string_decimal_point(rotation_speed);
+    src["rotation_deadzone"]    = float_to_string_decimal_point(rotation_deadzone);
+    src["zoom_speed"]           = float_to_string_decimal_point(zoom_speed);
+    src["swap_yz"]              = swap_yz ? "1" : "0";
+
+    if (src != dst) {
+        dst = std::move(src);
+        m_dirty = true;
+        return true;
+    } else
+        return false;
 }
 
 std::vector<std::string> AppConfig::get_mouse_device_names() const
@@ -567,16 +667,16 @@ std::vector<std::string> AppConfig::get_mouse_device_names() const
     return out;
 }
 
-void AppConfig::update_config_dir(const std::string &dir)
+bool AppConfig::update_config_dir(const std::string &dir)
 {
-    this->set("recent", "config_directory", dir);
+    return this->set("recent", "config_directory", dir);
 }
 
-void AppConfig::update_skein_dir(const std::string &dir)
+bool AppConfig::update_skein_dir(const std::string &dir)
 {
     if (is_shapes_dir(dir))
-        return; // do not save "shapes gallery" directory
-    this->set("recent", "skein_directory", dir);
+        return false; // do not save "shapes gallery" directory
+    return this->set("recent", "skein_directory", dir);
 }
 /*
 std::string AppConfig::get_last_output_dir(const std::string &alt) const
@@ -611,9 +711,9 @@ std::string AppConfig::get_last_output_dir(const std::string& alt, const bool re
 	return is_shapes_dir(alt) ? get_last_dir() : alt;
 }
 
-void AppConfig::update_last_output_dir(const std::string& dir, const bool removable)
+bool AppConfig::update_last_output_dir(const std::string& dir, const bool removable)
 {
-	this->set("", (removable ? "last_output_path_removable" : "last_output_path"), dir);
+	return this->set("", (removable ? "last_output_path_removable" : "last_output_path"), dir);
 }
 
 
@@ -631,7 +731,7 @@ void AppConfig::reset_selections()
     }
 }
 
-std::string AppConfig::config_path()
+std::string AppConfig::config_path() const
 {
     std::string path = (m_mode == EAppMode::Editor) ?
         (boost::filesystem::path(Slic3r::data_dir()) / (SLIC3R_APP_KEY ".ini")).make_preferred().string() :
@@ -646,7 +746,27 @@ std::string AppConfig::version_check_url() const
     return from_settings.empty() ? VERSION_CHECK_URL : from_settings;
 }
 
-bool AppConfig::exists()
+std::string AppConfig::index_archive_url() const
+{
+#if 0  
+    // this code is for debug & testing purposes only - changed url wont get trough inner checks anyway. 
+    auto from_settings = get("index_archive_url");
+    return from_settings.empty() ? INDEX_ARCHIVE_URL : from_settings;
+#endif
+    return INDEX_ARCHIVE_URL;
+}
+
+std::string AppConfig::profile_folder_url() const
+{
+#if 0   
+    // this code is for debug & testing purposes only - changed url wont get trough inner checks anyway. 
+    auto from_settings = get("profile_folder_url");
+    return from_settings.empty() ? PROFILE_FOLDER_URL : from_settings;
+#endif
+    return PROFILE_FOLDER_URL;
+}
+
+bool AppConfig::exists() const
 {
     return boost::filesystem::exists(config_path());
 }

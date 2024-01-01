@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "OG_CustomCtrl.hpp"
 #include "OptionsGroup.hpp"
 #include "Plater.hpp"
@@ -19,12 +23,12 @@ static bool is_point_in_rect(const wxPoint& pt, const wxRect& rect)
             rect.GetTop() <= pt.y && pt.y <= rect.GetBottom();
 }
 
-static wxSize get_bitmap_size(const wxBitmap& bmp)
+static wxSize get_bitmap_size(const wxBitmapBundle* bmp, wxWindow* parent)
 {
-#ifdef __APPLE__
-    return bmp.GetScaledSize();
+#ifdef __WIN32__
+    return bmp->GetBitmapFor(parent).GetSize();
 #else
-    return bmp.GetSize();
+    return bmp->GetDefaultSize();
 #endif
 }
 
@@ -45,8 +49,8 @@ OG_CustomCtrl::OG_CustomCtrl(   wxWindow*            parent,
     m_v_gap     = lround(1.0 * m_em_unit);
     m_h_gap     = lround(0.2 * m_em_unit);
 
-    m_bmp_mode_sz       = get_bitmap_size(create_scaled_bitmap("mode_simple", this, wxOSX ? 10 : 12));
-    m_bmp_blinking_sz   = get_bitmap_size(create_scaled_bitmap("search_blink", this));
+    m_bmp_mode_sz       = get_bitmap_size(get_bmp_bundle("mode", wxOSX ? 10 : 12), this);
+    m_bmp_blinking_sz   = get_bitmap_size(get_bmp_bundle("search_blink"), this);
 
     init_ctrl_lines();// from og.lines()
 
@@ -173,8 +177,8 @@ wxPoint OG_CustomCtrl::get_pos(const Line& line, Field* field_in/* = nullptr*/)
                 ConfigOptionDef option = opt.opt;
                 // add label if any
                 if (is_multioption_line && !option.label.empty()) {
-                    //!            To correct translation by context have to use wxGETTEXT_IN_CONTEXT macro from wxWidget 3.1.1
-                    label = (option.label == L_CONTEXT("Top", "Layers") || option.label == L_CONTEXT("Bottom", "Layers")) ?
+                    // those two parameter names require localization with context
+                    label = (option.label == "Top" || option.label == "Bottom") ?
                         _CTX(option.label, "Layers") : _(option.label);
                     label += ":";
 
@@ -188,7 +192,7 @@ wxPoint OG_CustomCtrl::get_pos(const Line& line, Field* field_in/* = nullptr*/)
 #else
                     GetTextExtent(label, &label_w, &label_h, 0, 0, &m_font);
 #endif //__WXMSW__
-                    h_pos += label_w + 1 + m_h_gap;
+                    h_pos += label_w + m_h_gap;
                 }                
                 h_pos += (opt.opt.gui_type == ConfigOptionDef::GUIType::legend ? 1 : 3) * blinking_button_width;
                 
@@ -199,7 +203,7 @@ wxPoint OG_CustomCtrl::get_pos(const Line& line, Field* field_in/* = nullptr*/)
                 if (opt.opt.gui_type == ConfigOptionDef::GUIType::legend)
                     h_pos += 2 * blinking_button_width;
 
-                h_pos += field->getWindow()->GetSize().x;
+                h_pos += field->getWindow()->GetSize().x + m_h_gap;
 
                 if (option_set.size() == 1 && option_set.front().opt.full_width)
                     break;
@@ -246,7 +250,7 @@ void OG_CustomCtrl::OnMotion(wxMouseEvent& event)
 
     wxString language = wxGetApp().app_config->get("translation_language");
 
-    bool suppress_hyperlinks = get_app_config()->get("suppress_hyperlinks") == "1";
+    const bool suppress_hyperlinks = get_app_config()->get_bool("suppress_hyperlinks");
 
     for (CtrlLine& line : ctrl_lines) {
         line.is_focused = is_point_in_rect(pos, line.rect_label);
@@ -386,6 +390,8 @@ void OG_CustomCtrl::correct_widgets_position(wxSizer* widget, const Line& line, 
 
 void OG_CustomCtrl::init_max_win_width()
 {
+    m_max_win_width = 0;
+
     if (opt_group->ctrl_horiz_alignment == wxALIGN_RIGHT && m_max_win_width == 0)
         for (CtrlLine& line : ctrl_lines) {
             if (int max_win_width = line.get_max_win_width();
@@ -416,10 +422,10 @@ void OG_CustomCtrl::msw_rescale()
     m_v_gap     = lround(1.0 * m_em_unit);
     m_h_gap     = lround(0.2 * m_em_unit);
 
-    m_bmp_mode_sz = create_scaled_bitmap("mode_simple", this, wxOSX ? 10 : 12).GetSize();
-    m_bmp_blinking_sz = create_scaled_bitmap("search_blink", this).GetSize();
+    m_bmp_mode_sz       = get_bitmap_size(get_bmp_bundle("mode", wxOSX ? 10 : 12), this);
+    m_bmp_blinking_sz   = get_bitmap_size(get_bmp_bundle("search_blink"), this);
 
-    m_max_win_width = 0;
+    init_max_win_width();
 
     wxCoord    v_pos = 0;
     for (CtrlLine& line : ctrl_lines) {
@@ -497,7 +503,7 @@ void OG_CustomCtrl::CtrlLine::msw_rescale()
 {
     // if we have a single option with no label, no sidetext
     if (draw_just_act_buttons)
-        height = get_bitmap_size(create_scaled_bitmap("empty")).GetHeight();
+        height = get_bitmap_size(get_bmp_bundle("empty"), ctrl).GetHeight();
 
     if (ctrl->opt_group->label_width != 0 && !og_line.label.IsEmpty()) {
         wxSize label_sz = ctrl->GetTextExtent(og_line.label);
@@ -565,7 +571,7 @@ void OG_CustomCtrl::CtrlLine::render(wxDC& dc, wxCoord v_pos)
 
     Field* field = ctrl->opt_group->get_field(og_line.get_options().front().opt_id);
 
-    bool suppress_hyperlinks = get_app_config()->get("suppress_hyperlinks") == "1";
+    const bool suppress_hyperlinks = get_app_config()->get_bool("suppress_hyperlinks");
     if (draw_just_act_buttons) {
         if (field)
             draw_act_bmps(dc, wxPoint(0, v_pos), field->undo_to_sys_bitmap(), field->undo_bitmap(), field->blink());
@@ -620,9 +626,9 @@ void OG_CustomCtrl::CtrlLine::render(wxDC& dc, wxCoord v_pos)
         ConfigOptionDef option = opt.opt;
         // add label if any
         if (is_multioption_line && !option.label.empty()) {
-            //!            To correct translation by context have to use wxGETTEXT_IN_CONTEXT macro from wxWidget 3.1.1
-            label = (option.label == L_CONTEXT("Top", "Layers") || option.label == L_CONTEXT("Bottom", "Layers")) ?
-                    _CTX(option.label, "Layers") : _(option.label);
+            // those two parameter names require localization with context
+            label = (option.label == "Top" || option.label == "Bottom") ?
+                _CTX(option.label, "Layers") : _(option.label);
             label += ":";
 
             if (is_url_string)
@@ -664,15 +670,13 @@ wxCoord OG_CustomCtrl::CtrlLine::draw_mode_bmp(wxDC& dc, wxCoord v_pos)
         return ctrl->m_h_gap;
 
     ConfigOptionMode mode = og_line.get_options()[0].opt.mode;
-    const std::string& bmp_name = mode == ConfigOptionMode::comSimple   ? "mode_simple" :
-                                  mode == ConfigOptionMode::comAdvanced ? "mode_advanced" : "mode_expert";
-    wxBitmap bmp = create_scaled_bitmap(bmp_name, ctrl, wxOSX ? 10 : 12);
-    wxCoord y_draw = v_pos + lround((height - get_bitmap_size(bmp).GetHeight()) / 2);
+    wxBitmapBundle* bmp = get_bmp_bundle("mode", wxOSX ? 10 : 12, wxGetApp().get_mode_btn_color(mode));
+    wxCoord y_draw = v_pos + lround((height - get_bitmap_size(bmp, ctrl).GetHeight()) / 2);
 
     if (og_line.get_options().front().opt.gui_type != ConfigOptionDef::GUIType::legend)
-        dc.DrawBitmap(bmp, 0, y_draw);
+        dc.DrawBitmap(bmp->GetBitmapFor(ctrl), 0, y_draw);
 
-    return get_bitmap_size(bmp).GetWidth() + ctrl->m_h_gap;
+    return get_bitmap_size(bmp, ctrl).GetWidth() + ctrl->m_h_gap;
 }
 
 wxCoord    OG_CustomCtrl::CtrlLine::draw_text(wxDC& dc, wxPoint pos, const wxString& text, const wxColour* color, int width, bool is_url/* = false*/)
@@ -708,7 +712,7 @@ wxCoord    OG_CustomCtrl::CtrlLine::draw_text(wxDC& dc, wxPoint pos, const wxStr
         dc.GetMultiLineTextExtent(out_text, &text_width, &text_height);
 
         pos.y = pos.y + lround((height - text_height) / 2);
-        if (width > 0)
+        if (rect_label.GetWidth() == 0)
             rect_label = wxRect(pos, wxSize(text_width, text_height));
 
         wxColour old_clr = dc.GetTextForeground();
@@ -734,33 +738,33 @@ wxCoord    OG_CustomCtrl::CtrlLine::draw_text(wxDC& dc, wxPoint pos, const wxStr
 
 wxPoint OG_CustomCtrl::CtrlLine::draw_blinking_bmp(wxDC& dc, wxPoint pos, bool is_blinking)
 {
-    wxBitmap bmp_blinking = create_scaled_bitmap(is_blinking ? "search_blink" : "empty", ctrl);
+    wxBitmapBundle* bmp_blinking = get_bmp_bundle(is_blinking ? "search_blink" : "empty");
     wxCoord h_pos = pos.x;
-    wxCoord v_pos = pos.y + lround((height - get_bitmap_size(bmp_blinking).GetHeight()) / 2);
+    wxCoord v_pos = pos.y + lround((height - get_bitmap_size(bmp_blinking, ctrl).GetHeight()) / 2);
 
-    dc.DrawBitmap(bmp_blinking, h_pos, v_pos);
+    dc.DrawBitmap(bmp_blinking->GetBitmapFor(ctrl), h_pos, v_pos);
 
-    int bmp_dim = get_bitmap_size(bmp_blinking).GetWidth();
+    int bmp_dim = get_bitmap_size(bmp_blinking, ctrl).GetWidth();
 
     h_pos += bmp_dim + ctrl->m_h_gap;
     return wxPoint(h_pos, v_pos);
 }
 
-wxCoord OG_CustomCtrl::CtrlLine::draw_act_bmps(wxDC& dc, wxPoint pos, const wxBitmap& bmp_undo_to_sys, const wxBitmap& bmp_undo, bool is_blinking, size_t rect_id)
+wxCoord OG_CustomCtrl::CtrlLine::draw_act_bmps(wxDC& dc, wxPoint pos, const wxBitmapBundle& bmp_undo_to_sys, const wxBitmapBundle& bmp_undo, bool is_blinking, size_t rect_id)
 {
     pos = draw_blinking_bmp(dc, pos, is_blinking);
     wxCoord h_pos = pos.x;
     wxCoord v_pos = pos.y;
 
-    dc.DrawBitmap(bmp_undo_to_sys, h_pos, v_pos);
+    dc.DrawBitmap(bmp_undo_to_sys.GetBitmapFor(ctrl), h_pos, v_pos);
 
-    int bmp_dim = get_bitmap_size(bmp_undo_to_sys).GetWidth();
+    int bmp_dim = get_bitmap_size(&bmp_undo_to_sys, ctrl).GetWidth();
     rects_undo_to_sys_icon[rect_id] = wxRect(h_pos, v_pos, bmp_dim, bmp_dim);
 
     h_pos += bmp_dim + ctrl->m_h_gap;
-    dc.DrawBitmap(bmp_undo, h_pos, v_pos);
+    dc.DrawBitmap(bmp_undo.GetBitmapFor(ctrl), h_pos, v_pos);
 
-    bmp_dim = get_bitmap_size(bmp_undo).GetWidth();
+    bmp_dim = get_bitmap_size(&bmp_undo, ctrl).GetWidth();
     rects_undo_icon[rect_id] = wxRect(h_pos, v_pos, bmp_dim, bmp_dim);
 
     h_pos += bmp_dim + ctrl->m_h_gap;

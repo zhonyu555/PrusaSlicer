@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2022 Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_MutablePriorityQueue_hpp_
 #define slic3r_MutablePriorityQueue_hpp_
 
@@ -6,6 +10,10 @@
 #include <vector>
 #include <limits>
 #include <cstdlib> // adds size_t (without std::)
+
+namespace Slic3r {
+
+constexpr auto InvalidQueueID = std::numeric_limits<size_t>::max();
 
 template<typename T, typename IndexSetter, typename LessPredicate, const bool ResetIndexWhenRemoved = false>
 class MutablePriorityQueue
@@ -41,7 +49,7 @@ public:
 	bool		empty() const						{ return m_heap.empty(); }
 	T&			operator[](std::size_t idx) noexcept { return m_heap[idx]; }
 	const T&	operator[](std::size_t idx) const noexcept { return m_heap[idx]; }
-	static constexpr size_t invalid_id() { return std::numeric_limits<size_t>::max(); }
+    static constexpr size_t invalid_id() { return InvalidQueueID; }
 
 	using iterator		 = typename std::vector<T>::iterator;
 	using const_iterator = typename std::vector<T>::const_iterator;
@@ -291,7 +299,7 @@ public:
 	bool		empty() const						{ return m_heap.empty(); }
 	T&			operator[](std::size_t idx) noexcept { assert(! address::is_padding(idx)); return m_heap[idx]; }
 	const T&    operator[](std::size_t idx) const noexcept { assert(! address::is_padding(idx)); return m_heap[idx]; }
-	static constexpr size_t invalid_id() { return std::numeric_limits<size_t>::max(); }
+    static constexpr size_t invalid_id() { return InvalidQueueID; }
 
 protected:
 	void		update_heap_up(size_t top, size_t bottom);
@@ -449,5 +457,7 @@ inline void MutableSkipHeapPriorityQueue<T, LessPredicate, IndexSetter, blocking
 		parent = child;
 	}
 }
+
+} // namespace Slic3r
 
 #endif /* slic3r_MutablePriorityQueue_hpp_ */

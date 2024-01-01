@@ -1,3 +1,13 @@
+#/|/ Copyright (c) Prusa Research 2017 - 2022 Vojtěch Bubník @bubnikv
+#/|/ Copyright (c) Slic3r 2011 - 2015 Alessandro Ranellucci @alranel
+#/|/ Copyright (c) 2013 Jose Luis Perez Diez
+#/|/ Copyright (c) 2013 Anders Sundman
+#/|/ Copyright (c) 2013 Jesse Vincent
+#/|/ Copyright (c) 2012 Mike Sheldrake @mesheldrake
+#/|/ Copyright (c) 2012 Mark Hindess
+#/|/
+#/|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+#/|/
 package Slic3r::Geometry;
 use strict;
 use warnings;
@@ -33,22 +43,5 @@ sub scaled_epsilon () { epsilon / &Slic3r::SCALING_FACTOR }
 
 sub scale   ($) { $_[0] / &Slic3r::SCALING_FACTOR }
 sub unscale ($) { $_[0] * &Slic3r::SCALING_FACTOR }
-
-# 2D
-sub bounding_box {
-    my ($points) = @_;
-    
-    my @x = map $_->x, @$points;
-    my @y = map $_->y, @$points;    #,,
-    my @bb = (undef, undef, undef, undef);
-    for (0..$#x) {
-        $bb[X1] = $x[$_] if !defined $bb[X1] || $x[$_] < $bb[X1];
-        $bb[X2] = $x[$_] if !defined $bb[X2] || $x[$_] > $bb[X2];
-        $bb[Y1] = $y[$_] if !defined $bb[Y1] || $y[$_] < $bb[Y1];
-        $bb[Y2] = $y[$_] if !defined $bb[Y2] || $y[$_] > $bb[Y2];
-    }
-    
-    return @bb[X1,Y1,X2,Y2];
-}
 
 1;

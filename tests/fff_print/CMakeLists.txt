@@ -4,6 +4,7 @@ add_executable(${_TEST_NAME}_tests
 	test_avoid_crossing_perimeters.cpp
 	test_bridges.cpp
 	test_cooling.cpp
+	test_clipper.cpp
 	test_custom_gcode.cpp
 	test_data.cpp
 	test_data.hpp
@@ -20,6 +21,7 @@ add_executable(${_TEST_NAME}_tests
 	test_print.cpp
 	test_printgcode.cpp
 	test_printobject.cpp
+	test_shells.cpp
 	test_skirt_brim.cpp
 	test_support_material.cpp
 	test_thin_walls.cpp

@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Filip Sykala @Jony01, Lukáš Hejl @hejllukas, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Li Jiang
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_App_hpp_
 #define slic3r_GUI_App_hpp_
 
@@ -46,7 +51,9 @@ class ObjectList;
 class ObjectLayers;
 class Plater;
 class NotificationManager;
+class Downloader;
 struct GUI_InitParams;
+class GalleryDialog;
 
 
 
@@ -55,11 +62,13 @@ enum FileType
     FT_STL,
     FT_OBJ,
     FT_OBJECT,
+    FT_STEP,
     FT_AMF,
     FT_3MF,
     FT_GCODE,
     FT_MODEL,
     FT_PROJECT,
+    FT_FONTS,
     FT_GALLERY,
 
     FT_INI,
@@ -69,14 +78,14 @@ enum FileType
 
     FT_SL1,
 
+    FT_ZIP,
+
     FT_SIZE,
 };
 
-#if ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
-extern wxString file_wildcards(FileType file_type);
-#else
-extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = std::string{});
-#endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
+extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = {});
+
+wxString sla_wildcards(const char *formatid);
 
 enum ConfigMenuIDs {
     ConfigMenuWizard,
@@ -118,11 +127,10 @@ private:
     bool            m_initialized { false };
     bool            m_post_initialized { false };
     bool            m_app_conf_exists{ false };
+    bool            m_last_app_conf_lower_version{ false };
     EAppMode        m_app_mode{ EAppMode::Editor };
     bool            m_is_recreating_gui{ false };
-#ifdef __linux__
     bool            m_opengl_initialized{ false };
-#endif
 
     wxColour        m_color_label_modified;
     wxColour        m_color_label_sys;
@@ -136,6 +144,7 @@ private:
     wxColour        m_color_selected_btn_bg;
     bool            m_force_colors_update { false };
 #endif
+    std::vector<std::string>     m_mode_palette;
 
     wxFont		    m_small_font;
     wxFont		    m_bold_font;
@@ -161,6 +170,7 @@ private:
 	std::unique_ptr <OtherInstanceMessageHandler> m_other_instance_message_handler;
     std::unique_ptr <AppUpdater> m_app_updater;
     std::unique_ptr <wxSingleInstanceChecker> m_single_instance_checker;
+    std::unique_ptr <Downloader> m_downloader;
     std::string m_instance_hash_string;
 	size_t m_instance_hash_int;
 
@@ -191,8 +201,9 @@ public:
     static bool     dark_mode();
     const wxColour  get_label_default_clr_system();
     const wxColour  get_label_default_clr_modified();
-    void            init_label_colours();
-    void            update_label_colours_from_appconfig();
+    const std::vector<std::string> get_mode_default_palette();
+    void            init_ui_colours();
+    void            update_ui_colours_from_appconfig();
     void            update_label_colours();
     // update color mode for window
     void            UpdateDarkUI(wxWindow *window, bool highlited = false, bool just_font = false);
@@ -212,6 +223,11 @@ public:
     const wxColour& get_label_clr_default() { return m_color_label_default; }
     const wxColour& get_window_default_clr(){ return m_color_window_default; }
 
+    const std::string       get_html_bg_color(wxWindow* html_parent);
+
+    const std::string&      get_mode_btn_color(int mode_id);
+    std::vector<wxColour>   get_mode_palette();
+    void                    set_mode_palette(const std::vector<wxColour> &palette);
 
 #ifdef _WIN32
     const wxColour& get_label_highlight_clr()   { return m_color_highlight_label_default; }
@@ -241,6 +257,7 @@ public:
     void            keyboard_shortcuts();
     void            load_project(wxWindow *parent, wxString& input_file) const;
     void            import_model(wxWindow *parent, wxArrayString& input_files) const;
+    void            import_zip(wxWindow* parent, wxString& input_file) const;
     void            load_gcode(wxWindow* parent, wxString& input_file) const;
 
     static bool     catch_error(std::function<void()> cb, const std::string& err);
@@ -253,7 +270,7 @@ public:
 
     Tab*            get_tab(Preset::Type type);
     ConfigOptionMode get_mode();
-    void            save_mode(const /*ConfigOptionMode*/int mode) ;
+    bool            save_mode(const /*ConfigOptionMode*/int mode) ;
     void            update_mode();
 
     void            add_config_menu(wxMenuBar *menu);
@@ -284,6 +301,7 @@ public:
     void            OSXStoreOpenFiles(const wxArrayString &files) override;
     // wxWidgets override to get an event on open files.
     void            MacOpenFiles(const wxArrayString &fileNames) override;
+    void            MacOpenURL(const wxString& url) override;
 #endif /* __APPLE */
 
     Sidebar&             sidebar();
@@ -294,7 +312,9 @@ public:
     Plater*              plater();
     const Plater*        plater() const;
     Model&      		 model();
-    NotificationManager * notification_manager();
+    NotificationManager* notification_manager();
+    GalleryDialog *      gallery_dialog();
+    Downloader*          downloader();
 
     // Parameters extracted from the command line to be passed to GUI after initialization.
     GUI_InitParams* init_params { nullptr };
@@ -330,6 +350,7 @@ public:
     bool            may_switch_to_SLA_preset(const wxString& caption);
     bool            run_wizard(ConfigWizard::RunReason reason, ConfigWizard::StartPage start_page = ConfigWizard::SP_WELCOME);
     void            show_desktop_integration_dialog();
+    void            show_downloader_registration_dialog();
 
 #if ENABLE_THUMBNAIL_GENERATOR_DEBUG
     // temporary and debug only -> extract thumbnails from selected gcode and save them as png files
@@ -348,6 +369,10 @@ public:
     void            associate_stl_files();
     void            associate_gcode_files();
 #endif // __WXMSW__
+
+
+    // URL download - PrusaSlicer gets system call to open prusaslicer:// URL which should contain address of download
+    void            start_download(std::string url);
 
 private:
     bool            on_init_inner();
@@ -371,6 +396,7 @@ private:
     void            app_version_check(bool from_user);
 
     bool            m_datadir_redefined { false }; 
+
 };
 
 DECLARE_APP(GUI_App)

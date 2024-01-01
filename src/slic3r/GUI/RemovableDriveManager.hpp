@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 David Kocík @kocikdav, Roman Beránek @zavorka, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_RemovableDriveManager_hpp_
 #define slic3r_GUI_RemovableDriveManager_hpp_
 
@@ -92,6 +96,7 @@ public:
 private:
 	bool 			 		m_initialized { false };
 	wxEvtHandler*			m_callback_evt_handler { nullptr };
+
 
 #ifndef REMOVABLE_DRIVE_MANAGER_OS_CALLBACKS
 	// Worker thread, worker thread synchronization and callbacks to the UI thread.

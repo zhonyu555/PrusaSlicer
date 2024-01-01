@@ -1,10 +1,13 @@
-// Include GLGizmoBase.hpp before I18N.hpp as it includes some libigl code, which overrides our localization "L" macro.
+///|/ Copyright (c) Prusa Research 2019 - 2023 Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "GLGizmoMove.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
-#if ENABLE_GL_SHADERS_ATTRIBUTES
+#include "slic3r/GUI/GUI_ObjectManipulation.hpp"
 #include "slic3r/GUI/Plater.hpp"
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#include "libslic3r/Model.hpp"
 
 #include <GL/glew.h>
 
@@ -21,16 +24,12 @@ GLGizmoMove3D::GLGizmoMove3D(GLCanvas3D& parent, const std::string& icon_filenam
 
 std::string GLGizmoMove3D::get_tooltip() const
 {
-    const Selection& selection = m_parent.get_selection();
-    bool show_position = selection.is_single_full_instance();
-    const Vec3d& position = selection.get_bounding_box().center();
-
-    if (m_hover_id == 0 || m_grabbers[0].dragging)
-        return "X: " + format(show_position ? position(0) : m_displacement(0), 2);
-    else if (m_hover_id == 1 || m_grabbers[1].dragging)
-        return "Y: " + format(show_position ? position(1) : m_displacement(1), 2);
-    else if (m_hover_id == 2 || m_grabbers[2].dragging)
-        return "Z: " + format(show_position ? position(2) : m_displacement(2), 2);
+  if (m_hover_id == 0)
+        return "X: " + format(m_displacement.x(), 2);
+    else if (m_hover_id == 1)
+        return "Y: " + format(m_displacement.y(), 2);
+    else if (m_hover_id == 2)
+        return "Z: " + format(m_displacement.z(), 2);
     else
         return "";
 }
@@ -39,25 +38,19 @@ bool GLGizmoMove3D::on_mouse(const wxMouseEvent &mouse_event) {
     return use_grabbers(mouse_event);
 }
 
-void GLGizmoMove3D::data_changed() {
-    const Selection &selection = m_parent.get_selection();
-    bool is_wipe_tower = selection.is_wipe_tower();
-    m_grabbers[2].enabled = !is_wipe_tower;
+void GLGizmoMove3D::data_changed(bool is_serializing) {
+    m_grabbers[2].enabled = !m_parent.get_selection().is_wipe_tower();
 }
 
 bool GLGizmoMove3D::on_init()
 {
     for (int i = 0; i < 3; ++i) {
         m_grabbers.push_back(Grabber());
-#if ENABLE_GIZMO_GRABBER_REFACTOR
         m_grabbers.back().extensions = GLGizmoBase::EGrabberExtension::PosZ;
-#endif // ENABLE_GIZMO_GRABBER_REFACTOR
     }
 
-#if ENABLE_GIZMO_GRABBER_REFACTOR
     m_grabbers[0].angles = { 0.0, 0.5 * double(PI), 0.0 };
     m_grabbers[1].angles = { -0.5 * double(PI), 0.0, 0.0 };
-#endif // ENABLE_GIZMO_GRABBER_REFACTOR
 
     m_shortcut_key = WXK_CONTROL_M;
 
@@ -71,19 +64,17 @@ std::string GLGizmoMove3D::on_get_name() const
 
 bool GLGizmoMove3D::on_is_activable() const
 {
-    return !m_parent.get_selection().is_empty();
+    const Selection& selection = m_parent.get_selection();
+    return !selection.is_any_cut_volume() && !selection.is_any_connector() && !selection.is_empty();
 }
 
 void GLGizmoMove3D::on_start_dragging()
 {
     assert(m_hover_id != -1);
-
     m_displacement = Vec3d::Zero();
-    const BoundingBoxf3& box = m_parent.get_selection().get_bounding_box();
-    m_starting_drag_position = m_grabbers[m_hover_id].center;
-    m_starting_box_center = box.center();
-    m_starting_box_bottom_center = box.center();
-    m_starting_box_bottom_center(2) = box.min(2);
+    m_starting_drag_position = m_grabbers[m_hover_id].matrix * m_grabbers[m_hover_id].center;
+    m_starting_box_center = m_center;
+    m_starting_box_bottom_center = Vec3d(m_center.x(), m_center.y(), m_bounding_box.min.z());
 }
 
 void GLGizmoMove3D::on_stop_dragging()
@@ -102,53 +93,66 @@ void GLGizmoMove3D::on_dragging(const UpdateData& data)
         m_displacement.z() = calc_projection(data);
         
     Selection &selection = m_parent.get_selection();
-    selection.translate(m_displacement);
+    TransformationType trafo_type;
+    trafo_type.set_relative();
+    switch (wxGetApp().obj_manipul()->get_coordinates_type())
+    {
+    case ECoordinatesType::Instance: { trafo_type.set_instance(); break; }
+    case ECoordinatesType::Local: { trafo_type.set_local(); break; }
+    default: { break; }
+    }
+    selection.translate(m_displacement, trafo_type);
 }
 
 void GLGizmoMove3D::on_render()
 {
-#if !ENABLE_GIZMO_GRABBER_REFACTOR
-    if (!m_cone.is_initialized())
-        m_cone.init_from(its_make_cone(1.0, 1.0, double(PI) / 18.0));
-#endif // !ENABLE_GIZMO_GRABBER_REFACTOR
-
-    const Selection& selection = m_parent.get_selection();
-
     glsafe(::glClear(GL_DEPTH_BUFFER_BIT));
     glsafe(::glEnable(GL_DEPTH_TEST));
 
-    const BoundingBoxf3& box = selection.get_bounding_box();
-    const Vec3d& center = box.center();
+    const Selection& selection = m_parent.get_selection();
+    const auto& [box, box_trafo] = selection.get_bounding_box_in_current_reference_system();
+    m_bounding_box = box;
+    m_center = box_trafo.translation();
+    const Transform3d base_matrix = box_trafo;
+
+    for (int i = 0; i < 3; ++i) {
+        m_grabbers[i].matrix = base_matrix;
+    }
+
+    const Vec3d zero = Vec3d::Zero();
+    const Vec3d half_box_size = 0.5 * m_bounding_box.size();
 
     // x axis
-    m_grabbers[0].center = { box.max.x() + Offset, center.y(), center.z() };
+    m_grabbers[0].center = { half_box_size.x() + Offset, 0.0, 0.0 };
     m_grabbers[0].color = AXES_COLOR[0];
 
     // y axis
-    m_grabbers[1].center = { center.x(), box.max.y() + Offset, center.z() };
+    m_grabbers[1].center = { 0.0, half_box_size.y() + Offset, 0.0 };
     m_grabbers[1].color = AXES_COLOR[1];
 
     // z axis
-    m_grabbers[2].center = { center.x(), center.y(), box.max.z() + Offset };
+    m_grabbers[2].center = { 0.0, 0.0, half_box_size.z() + Offset };
     m_grabbers[2].color = AXES_COLOR[2];
 
-    glsafe(::glLineWidth((m_hover_id != -1) ? 2.0f : 1.5f));
+#if ENABLE_GL_CORE_PROFILE
+    if (!OpenGLManager::get_gl_info().is_core_profile())
+#endif // ENABLE_GL_CORE_PROFILE
+        glsafe(::glLineWidth((m_hover_id != -1) ? 2.0f : 1.5f));
 
-#if ENABLE_LEGACY_OPENGL_REMOVAL
-    auto render_grabber_connection = [this, &center](unsigned int id) {
+    auto render_grabber_connection = [this, &zero](unsigned int id) {
         if (m_grabbers[id].enabled) {
-            if (!m_grabber_connections[id].model.is_initialized() || !m_grabber_connections[id].old_center.isApprox(center)) {
-                m_grabber_connections[id].old_center = center;
+            if (!m_grabber_connections[id].model.is_initialized() || !m_grabber_connections[id].old_center.isApprox(m_grabbers[id].center)) {
+                m_grabber_connections[id].old_center = m_grabbers[id].center;
                 m_grabber_connections[id].model.reset();
 
                 GLModel::Geometry init_data;
                 init_data.format = { GLModel::Geometry::EPrimitiveType::Lines, GLModel::Geometry::EVertexLayout::P3 };
                 init_data.color = AXES_COLOR[id];
-                init_data.reserve_vertices(2);
-                init_data.reserve_indices(2);
+                init_data.vertices.reserve(2);
+                init_data.indices.reserve(2);
 
                 // vertices
-                init_data.add_vertex((Vec3f)center.cast<float>());
+                init_data.add_vertex((Vec3f)zero.cast<float>());
                 init_data.add_vertex((Vec3f)m_grabbers[id].center.cast<float>());
 
                 // indices
@@ -160,119 +164,101 @@ void GLGizmoMove3D::on_render()
             m_grabber_connections[id].model.render();
         }
     };
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
     if (m_hover_id == -1) {
-#if ENABLE_LEGACY_OPENGL_REMOVAL
+#if ENABLE_GL_CORE_PROFILE
+        GLShaderProgram* shader = OpenGLManager::get_gl_info().is_core_profile() ? wxGetApp().get_shader("dashed_thick_lines") : wxGetApp().get_shader("flat");
+#else
         GLShaderProgram* shader = wxGetApp().get_shader("flat");
+#endif // ENABLE_GL_CORE_PROFILE
         if (shader != nullptr) {
             shader->start_using();
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-
-#if ENABLE_GL_SHADERS_ATTRIBUTES
             const Camera& camera = wxGetApp().plater()->get_camera();
-            shader->set_uniform("view_model_matrix", camera.get_view_matrix());
+            shader->set_uniform("view_model_matrix", camera.get_view_matrix() * base_matrix);
             shader->set_uniform("projection_matrix", camera.get_projection_matrix());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_GL_CORE_PROFILE
+            const std::array<int, 4>& viewport = camera.get_viewport();
+            shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
+            shader->set_uniform("width", 0.25f);
+            shader->set_uniform("gap_size", 0.0f);
+#endif // ENABLE_GL_CORE_PROFILE
 
             // draw axes
             for (unsigned int i = 0; i < 3; ++i) {
-#if ENABLE_LEGACY_OPENGL_REMOVAL
                 render_grabber_connection(i);
-#else
-                if (m_grabbers[i].enabled) {
-                    glsafe(::glColor4fv(AXES_COLOR[i].data()));
-                    ::glBegin(GL_LINES);
-                    ::glVertex3dv(center.data());
-                    ::glVertex3dv(m_grabbers[i].center.data());
-                    glsafe(::glEnd());
-                }
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
             }
 
-#if ENABLE_LEGACY_OPENGL_REMOVAL
             shader->stop_using();
         }
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
 
         // draw grabbers
-        render_grabbers(box);
-#if !ENABLE_GIZMO_GRABBER_REFACTOR
-        for (unsigned int i = 0; i < 3; ++i) {
-            if (m_grabbers[i].enabled)
-                render_grabber_extension((Axis)i, box, false);
-        }
-#endif // !ENABLE_GIZMO_GRABBER_REFACTOR
+        render_grabbers(m_bounding_box);
     }
     else {
         // draw axis
-#if ENABLE_LEGACY_OPENGL_REMOVAL
+#if ENABLE_GL_CORE_PROFILE
+        GLShaderProgram* shader = OpenGLManager::get_gl_info().is_core_profile() ? wxGetApp().get_shader("dashed_thick_lines") : wxGetApp().get_shader("flat");
+#else
         GLShaderProgram* shader = wxGetApp().get_shader("flat");
+#endif // ENABLE_GL_CORE_PROFILE
         if (shader != nullptr) {
             shader->start_using();
 
-#if ENABLE_GL_SHADERS_ATTRIBUTES
             const Camera& camera = wxGetApp().plater()->get_camera();
-            shader->set_uniform("view_model_matrix", camera.get_view_matrix());
+            shader->set_uniform("view_model_matrix", camera.get_view_matrix()* base_matrix);
             shader->set_uniform("projection_matrix", camera.get_projection_matrix());
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
+#if ENABLE_GL_CORE_PROFILE
+            const std::array<int, 4>& viewport = camera.get_viewport();
+            shader->set_uniform("viewport_size", Vec2d(double(viewport[2]), double(viewport[3])));
+            shader->set_uniform("width", 0.5f);
+            shader->set_uniform("gap_size", 0.0f);
+#endif // ENABLE_GL_CORE_PROFILE
 
             render_grabber_connection(m_hover_id);
             shader->stop_using();
         }
 
         shader = wxGetApp().get_shader("gouraud_light");
-#else
-        glsafe(::glColor4fv(AXES_COLOR[m_hover_id].data()));
-        ::glBegin(GL_LINES);
-        ::glVertex3dv(center.data());
-        ::glVertex3dv(m_grabbers[m_hover_id].center.data());
-        glsafe(::glEnd());
-
-        GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
         if (shader != nullptr) {
             shader->start_using();
             shader->set_uniform("emission_factor", 0.1f);
+            glsafe(::glDisable(GL_CULL_FACE));
             // draw grabber
-            const float mean_size = (float)((box.size().x() + box.size().y() + box.size().z()) / 3.0);
+            const Vec3d box_size = m_bounding_box.size();
+            const float mean_size = (float)((box_size.x() + box_size.y() + box_size.z()) / 3.0);
             m_grabbers[m_hover_id].render(true, mean_size);
+            glsafe(::glEnable(GL_CULL_FACE));
             shader->stop_using();
         }
-#if !ENABLE_GIZMO_GRABBER_REFACTOR
-        render_grabber_extension((Axis)m_hover_id, box, false);
-#endif // !ENABLE_GIZMO_GRABBER_REFACTOR
     }
 }
 
-void GLGizmoMove3D::on_render_for_picking()
+void GLGizmoMove3D::on_register_raycasters_for_picking()
 {
-    glsafe(::glDisable(GL_DEPTH_TEST));
+    // the gizmo grabbers are rendered on top of the scene, so the raytraced picker should take it into account
+    m_parent.set_raycaster_gizmos_on_top(true);
+}
 
-    const BoundingBoxf3& box = m_parent.get_selection().get_bounding_box();
-    render_grabbers_for_picking(box);
-#if !ENABLE_GIZMO_GRABBER_REFACTOR
-    render_grabber_extension(X, box, true);
-    render_grabber_extension(Y, box, true);
-    render_grabber_extension(Z, box, true);
-#endif // !ENABLE_GIZMO_GRABBER_REFACTOR
+void GLGizmoMove3D::on_unregister_raycasters_for_picking()
+{
+    m_parent.set_raycaster_gizmos_on_top(false);
 }
 
 double GLGizmoMove3D::calc_projection(const UpdateData& data) const
 {
     double projection = 0.0;
 
-    Vec3d starting_vec = m_starting_drag_position - m_starting_box_center;
-    double len_starting_vec = starting_vec.norm();
+    const Vec3d starting_vec = m_starting_drag_position - m_starting_box_center;
+    const double len_starting_vec = starting_vec.norm();
     if (len_starting_vec != 0.0) {
-        Vec3d mouse_dir = data.mouse_ray.unit_vector();
+        const Vec3d mouse_dir = data.mouse_ray.unit_vector();
         // finds the intersection of the mouse ray with the plane parallel to the camera viewport and passing throught the starting position
         // use ray-plane intersection see i.e. https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection algebric form
         // in our case plane normal and ray direction are the same (orthogonal view)
         // when moving to perspective camera the negative z unit axis of the camera needs to be transformed in world space and used as plane normal
-        Vec3d inters = data.mouse_ray.a + (m_starting_drag_position - data.mouse_ray.a).dot(mouse_dir) / mouse_dir.squaredNorm() * mouse_dir;
+        const Vec3d inters = data.mouse_ray.a + (m_starting_drag_position - data.mouse_ray.a).dot(mouse_dir) * mouse_dir;
         // vector from the starting position to the found intersection
-        Vec3d inters_vec = inters - m_starting_drag_position;
+        const Vec3d inters_vec = inters - m_starting_drag_position;
 
         // finds projection of the vector along the staring direction
         projection = inters_vec.dot(starting_vec.normalized());
@@ -284,66 +270,18 @@ double GLGizmoMove3D::calc_projection(const UpdateData& data) const
     return projection;
 }
 
-#if !ENABLE_GIZMO_GRABBER_REFACTOR
-void GLGizmoMove3D::render_grabber_extension(Axis axis, const BoundingBoxf3& box, bool picking)
+Transform3d GLGizmoMove3D::local_transform(const Selection& selection) const
 {
-    const float mean_size = float((box.size().x() + box.size().y() + box.size().z()) / 3.0);
-    const double size = m_dragging ? double(m_grabbers[axis].get_dragging_half_size(mean_size)) : double(m_grabbers[axis].get_half_size(mean_size));
-
-#if ENABLE_LEGACY_OPENGL_REMOVAL
-    GLShaderProgram* shader = wxGetApp().get_shader(picking ? "flat" : "gouraud_light");
-#else
-    GLShaderProgram* shader = wxGetApp().get_shader("gouraud_light");
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-    if (shader == nullptr)
-        return;
-
-#if ENABLE_LEGACY_OPENGL_REMOVAL
-    m_cone.set_color((!picking && m_hover_id != -1) ? complementary(m_grabbers[axis].color) : m_grabbers[axis].color);
-    shader->start_using();
-    shader->set_uniform("emission_factor", 0.1f);
-#else
-    m_cone.set_color(-1, (!picking && m_hover_id != -1) ? complementary(m_grabbers[axis].color) : m_grabbers[axis].color);
-    if (!picking) {
-        shader->start_using();
-        shader->set_uniform("emission_factor", 0.1f);
+    Transform3d ret = Geometry::translation_transform(m_center);
+    if (!wxGetApp().obj_manipul()->is_world_coordinates()) {
+        const GLVolume& v = *selection.get_first_volume();
+        Transform3d orient_matrix = v.get_instance_transformation().get_rotation_matrix();
+        if (selection.is_single_volume_or_modifier() && wxGetApp().obj_manipul()->is_local_coordinates())
+            orient_matrix = orient_matrix * v.get_volume_transformation().get_rotation_matrix();
+        ret = ret * orient_matrix;
     }
-#endif // ENABLE_LEGACY_OPENGL_REMOVAL
-
-#if ENABLE_GL_SHADERS_ATTRIBUTES
-    const Camera& camera = wxGetApp().plater()->get_camera();
-    Transform3d view_model_matrix = camera.get_view_matrix() * Geometry::assemble_transform(m_grabbers[axis].center);
-    if (axis == X)
-        view_model_matrix = view_model_matrix * Geometry::assemble_transform(Vec3d::Zero(), 0.5 * PI * Vec3d::UnitY());
-    else if (axis == Y)
-        view_model_matrix = view_model_matrix * Geometry::assemble_transform(Vec3d::Zero(), -0.5 * PI * Vec3d::UnitX());
-    view_model_matrix = view_model_matrix * Geometry::assemble_transform(2.0 * size * Vec3d::UnitZ(), Vec3d::Zero(), Vec3d(0.75 * size, 0.75 * size, 3.0 * size));
-
-    shader->set_uniform("view_model_matrix", view_model_matrix);
-    shader->set_uniform("projection_matrix", camera.get_projection_matrix());
-    shader->set_uniform("normal_matrix", (Matrix3d)view_model_matrix.matrix().block(0, 0, 3, 3).inverse().transpose());
-#else
-    glsafe(::glPushMatrix());
-    glsafe(::glTranslated(m_grabbers[axis].center.x(), m_grabbers[axis].center.y(), m_grabbers[axis].center.z()));
-    if (axis == X)
-        glsafe(::glRotated(90.0, 0.0, 1.0, 0.0));
-    else if (axis == Y)
-        glsafe(::glRotated(-90.0, 1.0, 0.0, 0.0));
-
-    glsafe(::glTranslated(0.0, 0.0, 2.0 * size));
-    glsafe(::glScaled(0.75 * size, 0.75 * size, 3.0 * size));
-#endif // ENABLE_GL_SHADERS_ATTRIBUTES
-    m_cone.render();
-#if !ENABLE_GL_SHADERS_ATTRIBUTES
-    glsafe(::glPopMatrix());
-#endif // !ENABLE_GL_SHADERS_ATTRIBUTES
-
-#if !ENABLE_LEGACY_OPENGL_REMOVAL
-    if (! picking)
-#endif // !ENABLE_LEGACY_OPENGL_REMOVAL
-        shader->stop_using();
+    return ret;
 }
-#endif // !ENABLE_GIZMO_GRABBER_REFACTOR
 
 } // namespace GUI
 } // namespace Slic3r

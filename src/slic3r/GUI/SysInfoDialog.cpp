@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Tomáš Mészáros @tamasmeszaros, Lukáš Matěna @lukasmatena, Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "SysInfoDialog.hpp"
 #include "I18N.hpp"
 #include "3DScene.hpp"
@@ -6,6 +10,8 @@
 #include "Plater.hpp"
 
 #include <string>
+
+#include <boost/algorithm/string/replace.hpp>
 
 #include <Eigen/Core>
 
@@ -21,7 +27,9 @@
 #ifdef _WIN32
 	// The standard Windows includes.
 	#define WIN32_LEAN_AND_MEAN
+#ifndef NOMINMAX
 	#define NOMINMAX
+#endif
 	#include <Windows.h>
 	#include <psapi.h>
 #endif /* _WIN32 */
@@ -40,10 +48,15 @@ std::string get_main_info(bool format_as_html)
     if (!format_as_html)
         out << b_start << (wxGetApp().is_editor() ? SLIC3R_APP_NAME : GCODEVIEWER_APP_NAME) << b_end << line_end;
     out << b_start << "Version:   "             << b_end << SLIC3R_VERSION << line_end;
-    out << b_start << "Build:     " << b_end << (wxGetApp().is_editor() ? SLIC3R_BUILD_ID : GCODEVIEWER_BUILD_ID) << line_end;
+    
+    std::string build_id = SLIC3R_BUILD_ID;
+    if (! wxGetApp().is_editor())
+        boost::replace_first(build_id, SLIC3R_APP_NAME, GCODEVIEWER_APP_NAME);
+    out << b_start << "Build:     " << b_end << build_id << line_end;
+
     out << line_end;
     out << b_start << "Operating System:    "   << b_end << wxPlatformInfo::Get().GetOperatingSystemFamilyName() << line_end;
-    out << b_start << "System Architecture: "   << b_end << wxPlatformInfo::Get().GetArchName() << line_end;
+    out << b_start << "System Architecture: "   << b_end << wxPlatformInfo::Get().GetBitnessName() << line_end;
     out << b_start << 
 #if defined _WIN32
         "Windows Version:     "
@@ -95,8 +108,10 @@ SysInfoDialog::SysInfoDialog()
 	main_sizer->Add(hsizer, 1, wxEXPAND | wxALL, 10);
 
     // logo
-    m_logo_bmp = ScalableBitmap(this, wxGetApp().logo_name(), 192);
-    m_logo = new wxStaticBitmap(this, wxID_ANY, m_logo_bmp.bmp());
+    //m_logo_bmp = ScalableBitmap(this, wxGetApp().logo_name(), 192);
+    //m_logo = new wxStaticBitmap(this, wxID_ANY, m_logo_bmp.bmp());
+    m_logo = new wxStaticBitmap(this, wxID_ANY, *get_bmp_bundle(wxGetApp().logo_name(), 192));
+
 	hsizer->Add(m_logo, 0, wxALIGN_CENTER_VERTICAL);
     
     wxBoxSizer* vsizer = new wxBoxSizer(wxVERTICAL);
@@ -187,8 +202,8 @@ SysInfoDialog::SysInfoDialog()
 
 void SysInfoDialog::on_dpi_changed(const wxRect &suggested_rect)
 {
-    m_logo_bmp.msw_rescale();
-    m_logo->SetBitmap(m_logo_bmp.bmp());
+    //m_logo_bmp.msw_rescale();
+    //m_logo->SetBitmap(m_logo_bmp.bmp());
 
     wxFont font = get_default_font(this);
     const int fs = font.GetPointSize() - 1;

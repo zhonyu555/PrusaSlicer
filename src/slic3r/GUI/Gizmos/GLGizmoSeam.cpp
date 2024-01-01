@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2022 Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "GLGizmoSeam.hpp"
 
 #include "libslic3r/Model.hpp"
@@ -110,8 +114,7 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
     window_width = std::max(window_width, cursor_type_radio_left + cursor_type_radio_sphere + cursor_type_radio_circle);
 
     auto draw_text_with_caption = [this, &caption_max](const wxString& caption, const wxString& text) {
-        static const ImVec4 ORANGE(1.0f, 0.49f, 0.22f, 1.0f);
-        m_imgui->text_colored(ORANGE, caption);
+        m_imgui->text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, caption);
         ImGui::SameLine(caption_max);
         m_imgui->text(text);
     };
@@ -157,7 +160,7 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
     else {
         if (m_imgui->button(m_desc.at("reset_direction"))) {
             wxGetApp().CallAfter([this](){
-                    m_c->object_clipper()->set_position(-1., false);
+                    m_c->object_clipper()->set_position_by_ratio(-1., false);
                 });
         }
     }
@@ -166,7 +169,7 @@ void GLGizmoSeam::on_render_input_window(float x, float y, float bottom_limit)
     ImGui::SameLine(sliders_left_width);
     ImGui::PushItemWidth(window_width - sliders_left_width - slider_icon_width);
     if (m_imgui->slider_float("##clp_dist", &clp_dist, 0.f, 1.f, "%.2f", 1.0f, true, _L("Ctrl + Mouse wheel")))
-        m_c->object_clipper()->set_position(clp_dist, true);
+        m_c->object_clipper()->set_position_by_ratio(clp_dist, true);
 
     ImGui::Separator();
     if (m_imgui->button(m_desc.at("remove_all"))) {

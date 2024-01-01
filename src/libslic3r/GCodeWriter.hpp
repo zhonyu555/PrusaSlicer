@@ -1,3 +1,11 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Oleksandra Iushchenko @YuSanka, David Kocík @kocikdav
+///|/ Copyright (c) 2016 Chow Loong Jin @hyperair
+///|/ Copyright (c) Slic3r 2014 - 2015 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2015 Maksim Derbasov @ntfshard
+///|/ Copyright (c) 2015 Alexander Rössler @machinekoder
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GCodeWriter_hpp_
 #define slic3r_GCodeWriter_hpp_
 
@@ -43,7 +51,8 @@ public:
     std::string postamble() const;
     std::string set_temperature(unsigned int temperature, bool wait = false, int tool = -1) const;
     std::string set_bed_temperature(unsigned int temperature, bool wait = false);
-    std::string set_acceleration(unsigned int acceleration);
+    std::string set_print_acceleration(unsigned int acceleration)   { return set_acceleration_internal(Acceleration::Print, acceleration); }
+    std::string set_travel_acceleration(unsigned int acceleration)  { return set_acceleration_internal(Acceleration::Travel, acceleration); }
     std::string reset_e(bool force = false);
     std::string update_progress(unsigned int num, unsigned int tot, bool allow_100 = false) const;
     // return false if this extruder was already selected
@@ -67,7 +76,21 @@ public:
     std::string unretract();
     std::string lift();
     std::string unlift();
+
+    // Current position of the printer, in G-code coordinates.
+    // Z coordinate of current position contains zhop. If zhop is applied (this->zhop() > 0),
+    // then the print_z = this->get_position().z() - this->zhop().
     Vec3d       get_position() const { return m_pos; }
+    // Current Z hop value.
+    double      get_zhop() const { return m_lifted; }
+    // Update position of the print head based on the final position returned by a custom G-code block.
+    // The new position Z coordinate contains the Z-hop.
+    // GCodeWriter expects the custom script to NOT change print_z, only Z-hop, thus the print_z is maintained
+    // by this function while the current Z-hop accumulator is updated.
+    void        update_position(const Vec3d &new_pos);
+
+    // Returns whether this flavor supports separate print and travel acceleration.
+    static bool supports_separate_travel_acceleration(GCodeFlavor flavor);
 
     // To be called by the CoolingBuffer from another thread.
     static std::string set_fan(const GCodeFlavor gcode_flavor, bool gcode_comments, unsigned int speed);
@@ -81,17 +104,26 @@ private:
     std::string     m_extrusion_axis;
     bool            m_single_extruder_multi_material;
     Extruder*       m_extruder;
-    unsigned int    m_last_acceleration;
+    unsigned int    m_last_acceleration = (unsigned int)(-1);
+    unsigned int    m_last_travel_acceleration = (unsigned int)(-1); // only used for flavors supporting separate print/travel acc
     // Limit for setting the acceleration, to respect the machine limits set for the Marlin firmware.
     // If set to zero, the limit is not in action.
     unsigned int    m_max_acceleration;
+    unsigned int    m_max_travel_acceleration;
+
     unsigned int    m_last_bed_temperature;
     bool            m_last_bed_temperature_reached;
     double          m_lifted;
     Vec3d           m_pos = Vec3d::Zero();
 
+    enum class Acceleration {
+        Travel,
+        Print
+    };
+
     std::string _travel_to_z(double z, const std::string &comment);
     std::string _retract(double length, double restart_extra, const std::string &comment);
+    std::string set_acceleration_internal(Acceleration type, unsigned int acceleration);
 };
 
 class GCodeFormatter {

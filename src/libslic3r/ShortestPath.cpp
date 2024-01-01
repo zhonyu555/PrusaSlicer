@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, David Kocík @kocikdav
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #if 0
 	#pragma optimize("", off)
 	#undef NDEBUG
@@ -1074,6 +1078,15 @@ std::vector<size_t> chain_points(const Points &points, Point *start_near)
 	for (auto &segment_and_reversal : ordered)
 		out.emplace_back(segment_and_reversal.first);
 	return out;
+}
+
+std::vector<size_t> chain_expolygons(const ExPolygons &expolygons, Point *start_near)
+{
+    Points ordering_points;
+    ordering_points.reserve(expolygons.size());
+    for (const ExPolygon &ex : expolygons)
+        ordering_points.push_back(ex.contour.first_point());
+    return chain_points(ordering_points);
 }
 
 #ifndef NDEBUG

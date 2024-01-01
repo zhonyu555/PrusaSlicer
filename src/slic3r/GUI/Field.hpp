@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Vojtěch Král @vojtechkral, Enrico Turri @enricoturri1966
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef SLIC3R_GUI_FIELD_HPP
 #define SLIC3R_GUI_FIELD_HPP
 
@@ -106,14 +110,14 @@ public:
 	bool 	set_undo_to_sys_tooltip(const wxString* tip)		{ return m_undo_ui.set_undo_to_sys_tooltip(tip); }	
 
 	// ui items used for revert line value
-	bool				has_undo_ui()			const { return m_undo_ui.undo_bitmap != nullptr; }
-	const wxBitmap&		undo_bitmap()			const { return m_undo_ui.undo_bitmap->bmp(); }
-	const wxString*		undo_tooltip()			const { return m_undo_ui.undo_tooltip; }
-	const wxBitmap&		undo_to_sys_bitmap()	const { return m_undo_ui.undo_to_sys_bitmap->bmp(); }
-	const wxString*		undo_to_sys_tooltip()	const { return m_undo_ui.undo_to_sys_tooltip; }
-	const wxColour*		label_color()			const { return m_undo_ui.label_color; }
-	const bool			blink()					const { return m_undo_ui.blink; }
-	bool*				get_blink_ptr()				  { return &m_undo_ui.blink; }
+	bool					has_undo_ui()			const { return m_undo_ui.undo_bitmap != nullptr; }
+	const wxBitmapBundle&	undo_bitmap()			const { return m_undo_ui.undo_bitmap->bmp(); }
+	const wxString*			undo_tooltip()			const { return m_undo_ui.undo_tooltip; }
+	const wxBitmapBundle&	undo_to_sys_bitmap()	const { return m_undo_ui.undo_to_sys_bitmap->bmp(); }
+	const wxString*			undo_to_sys_tooltip()	const { return m_undo_ui.undo_to_sys_tooltip; }
+	const wxColour*			label_color()			const { return m_undo_ui.label_color; }
+	const bool				blink()					const { return m_undo_ui.blink; }
+	bool*					get_blink_ptr()				  { return &m_undo_ui.blink; }
 };
 
 
@@ -319,7 +323,6 @@ class SpinCtrl : public Field {
 private:
 	static const int UNDEF_VALUE = INT_MIN;
 
-    bool            suppress_propagation {false};
 public:
 	SpinCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id), tmp_value(UNDEF_VALUE) {}
 	SpinCtrl(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id), tmp_value(UNDEF_VALUE) {}
@@ -331,24 +334,18 @@ public:
 	void			BUILD() override;
     /// Propagate value from field to the OptionGroupe and Config after kill_focus/ENTER
     void	        propagate_value() ;
-
+/*
     void			set_value(const std::string& value, bool change_event = false) {
 		m_disable_change_event = !change_event;
 		dynamic_cast<wxSpinCtrl*>(window)->SetValue(value);
 		m_disable_change_event = false;
     }
-    void			set_value(const boost::any& value, bool change_event = false) override {
-		m_disable_change_event = !change_event;
-		tmp_value = boost::any_cast<int>(value);
-        m_value = value;
-		dynamic_cast<wxSpinCtrl*>(window)->SetValue(tmp_value);
-		m_disable_change_event = false;
-	}
+*/
+    void            set_value(const boost::any& value, bool change_event = false) override;
+    void            set_last_meaningful_value() override;
+    void            set_na_value() override;
 
-	boost::any&		get_value() override {
-		int value = static_cast<wxSpinCtrl*>(window)->GetValue();
-		return m_value = value;
-	}
+	boost::any&		get_value() override;
 
     void            msw_rescale() override;
 
@@ -426,7 +423,7 @@ class PointCtrl : public Field {
 public:
 	PointCtrl(const ConfigOptionDef& opt, const t_config_option_key& id) : Field(opt, id) {}
 	PointCtrl(wxWindow* parent, const ConfigOptionDef& opt, const t_config_option_key& id) : Field(parent, opt, id) {}
-	~PointCtrl() {}
+	~PointCtrl();
 
 	wxSizer*		sizer{ nullptr };
 	wxTextCtrl*		x_textctrl{ nullptr };
