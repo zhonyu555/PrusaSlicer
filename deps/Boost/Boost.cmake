@@ -141,8 +141,8 @@ endif ()
 
 ExternalProject_Add(
     dep_Boost
-    URL "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
-    URL_HASH SHA256=f22143b5528e081123c3c5ed437e92f648fe69748e95fa6e2bd41484e2986cc3
+    URL "https://github.com/Caribou3d/CaribouSlicer_deps/releases/download/boost_1.78/boost_1_78_0.tar.gz"
+    URL_HASH SHA256=94ced8b72956591c4775ae2207a9763d3600b30d9d7446562c552f0a14a63be7    
     DOWNLOAD_DIR ${DEP_DOWNLOAD_DIR}/Boost
     CONFIGURE_COMMAND "${_bootstrap_cmd}"
     PATCH_COMMAND ${_patch_command}
