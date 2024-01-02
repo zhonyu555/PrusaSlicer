@@ -32,10 +32,10 @@ while getopts ":ihag" opt; do
     g )
         export FORCE_GTK2="1"
         ;;
-    h ) echo "Usage: ./BuildLinuxImage.sh [-g][-i] [-h]"
+    h ) echo "Usage: ./BuildLinuxImage.sh [-g][-i][-a][-h]"
         echo "   -g: force gtk2 build"
         echo "   -i: generate Appimage (optional)"
-	echo "   -a: generate tgz (optional)"
+	    echo "   -a: generate tgz (optional)"
         echo "   -h: help"
         exit 0
         ;;
@@ -76,7 +76,7 @@ then
 
     popd > /dev/null
     echo -e "\n... done\n"
-fi    
+fi
 
 if [[ -n "$BUILD_IMAGE" ]]
 then
@@ -91,7 +91,6 @@ then
     else
 	mv package/"@SLIC3R_APP_KEY@_ubu64.AppImage" "@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-GTK2-linux-x64.AppImage"
     fi
-
 
     echo -e "\n... done\n"
 fi
