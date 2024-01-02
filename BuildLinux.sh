@@ -88,13 +88,13 @@ while getopts ":hugbdsiw" opt; do
 	;;
     h ) echo "Usage: ./BuildLinux.sh [-h][-w][-u][-g][-b][-d][-s][-i]"
         echo "   -h: this message"
+	    echo "   -w: wipe build directories before building"
         echo "   -u: only update dependency packets (optional and need sudo)"
         echo "   -g: force gtk2 build"
         echo "   -b: build in debug mode"
         echo "   -d: build deps"
         echo "   -s: build PrusaSlicer"
         echo "   -i: Generate appimage (optional)"
-	    echo "   -w: wipe build directories bfore building"
         echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
         echo -e "   and then './BuildLinux.sh -dsi'\n"
         exit 0
@@ -104,15 +104,15 @@ done
 
 if [ $OPTIND -eq 1 ]
 then
-    echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i][-w]"
+    echo "Usage: ./BuildLinux.sh [-h][-w][-u][-g][-b][-d][-s][-i]"
     echo "   -h: this message"
+    echo "   -w: wipe build directories before building"
     echo "   -u: only update dependency packets (optional and need sudo)"
     echo "   -g: force gtk2 build"
     echo "   -b: build in debug mode"
     echo "   -d: build deps"
     echo "   -s: build PrusaSlicer"
     echo "   -i: generate appimage (optional)"
-    echo "   -w: wipe build directories bfore building"
     echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
     echo -e "   and then './BuildLinux.sh -dsi'\n"
     exit 0
