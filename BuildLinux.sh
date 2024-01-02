@@ -27,6 +27,9 @@ case $( "${OS_FOUND}" | tr '[:upper:]' '[:lower:]') in
   nt|win*)
     TARGET_OS='windows'
     ;;
+  darwin)
+    TARGET_OS='macos'
+    ;;
   *)
     TARGET_OS='unknown'
     ;;
@@ -48,6 +51,14 @@ if [ $TARGET_OS == "linux" ]; then
 else
     echo -e "$(tput setaf 1)This script doesn't support your Operating system!"
     echo -e "Please use Linux 64-bit or Windows 10 64-bit with Linux subsystem / git-bash.$(tput sgr0)\n"
+    exit -1
+fi
+
+# Check if CMake is installed
+export CMAKE_INSTALLED=`which cmake`
+if [[ -z "$CMAKE_INSTALLED" ]]
+then
+    echo "Can't find CMake. Either is not installed or not in the PATH. Aborting!"
     exit -1
 fi
 
@@ -75,15 +86,15 @@ while getopts ":hugbdsiw" opt; do
     w )
 	BUILD_WIPE="1"
 	;;
-    h ) echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i][-w]"
-        echo "   -h: this message"    	
+    h ) echo "Usage: ./BuildLinux.sh [-h][-w][-u][-g][-b][-d][-s][-i]"
+        echo "   -h: this message"
         echo "   -u: only update dependency packets (optional and need sudo)"
         echo "   -g: force gtk2 build"
         echo "   -b: build in debug mode"
         echo "   -d: build deps"
         echo "   -s: build PrusaSlicer"
         echo "   -i: Generate appimage (optional)"
-	echo "   -w: wipe build directories bfore building"
+	    echo "   -w: wipe build directories bfore building"
         echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
         echo -e "   and then './BuildLinux.sh -dsi'\n"
         exit 0
@@ -94,14 +105,14 @@ done
 if [ $OPTIND -eq 1 ]
 then
     echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i][-w]"
-    echo "   -h: this message"    	
+    echo "   -h: this message"
     echo "   -u: only update dependency packets (optional and need sudo)"
     echo "   -g: force gtk2 build"
     echo "   -b: build in debug mode"
     echo "   -d: build deps"
     echo "   -s: build PrusaSlicer"
     echo "   -i: generate appimage (optional)"
-    echo "   -w: wipe build directories bfore building"    
+    echo "   -w: wipe build directories bfore building"
     echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
     echo -e "   and then './BuildLinux.sh -dsi'\n"
     exit 0
@@ -117,7 +128,7 @@ echo -e "FOUND_GTK3:\n$FOUND_GTK3)\n"
 
 if [[ -n "$FORCE_GTK2" ]]
 then
-   FOUND_GTK3="" 
+   FOUND_GTK3=""
    FOUND_GTK3_DEV=""
 fi
 
@@ -133,9 +144,9 @@ then
         echo -e "\nFind libgtk-3, installing: libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git\n"
         apt install libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git
     fi
-    
+
     # for ubuntu 22.04:
-    ubu_version="$(cat /etc/issue)" 
+    ubu_version="$(cat /etc/issue)"
     if [[ $ubu_version == "Ubuntu 22.04"* ]]
     then
         apt install curl libssl-dev libcurl4-openssl-dev m4
@@ -193,15 +204,15 @@ then
 
     pushd deps/build > /dev/null
     cmake .. $BUILD_ARGS
-    
-    echo -e "\ndone\n"
-    
+
+    echo -e "\n... done\n"
+
     echo -e "\n[2/9] Building dependencies...\n"
 
     # make deps
     make -j$NCORES
     echo -e "\n... done\n"
-        
+
     # rename wxscintilla
     echo "[3/9] Renaming wxscintilla library..."
     pushd destdir/usr/local/lib  > /dev/null
@@ -213,7 +224,7 @@ then
     fi
     popd > /dev/null
     echo -e "\n... done\n"
-    
+
     # clean deps
     echo "[4/9] Cleaning dependencies..."
     rm -rf dep_*
@@ -233,7 +244,7 @@ then
     then
 	mkdir build
     fi
-    
+
     BUILD_ARGS=""
     if [[ -n "$FOUND_GTK3_DEV" ]]
     then
@@ -243,20 +254,20 @@ then
     then
         BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug"
     fi
-    
+
     # cmake
-    pushd build  > /dev/null
-        cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DSLIC3R_STATIC=1 ${BUILD_ARGS}
-        echo "... done"
-        # make PrusaSlicer
-        echo -e "\n[6/9] Building PrusaSlicer ...\n"
-        make -j$NCORES
+    pushd build > /dev/null
+    cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DSLIC3R_STATIC=1 ${BUILD_ARGS}
+    echo "... done"
+    # make PrusaSlicer
+    echo -e "\n[6/9] Building PrusaSlicer ...\n"
+    make -j$NCORES
 	echo -e "\n... done"
 
-        echo -e "\n[7/9] Generating language files ...\n"
-        #make .mo
-        make gettext_po_to_mo
-    
+    echo -e "\n[7/9] Generating language files ...\n"
+    #make .mo
+    make gettext_po_to_mo
+
     popd  > /dev/null
     echo -e "\n... done"
 
@@ -265,7 +276,7 @@ then
 
     pushd build  > /dev/null
     $ROOT/build/src/BuildLinuxImage.sh -a $FORCE_GTK2
-    popd  > /dev/null  
+    popd  > /dev/null
 fi
 
 if [[ -n "$BUILD_IMAGE" ]]
