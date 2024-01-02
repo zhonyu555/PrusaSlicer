@@ -62,7 +62,13 @@ then
     echo -e '#!/bin/bash\nDIR=$(readlink -f "$0" | xargs dirname)\nexport LD_LIBRARY_PATH="$DIR/bin"\nexec "$DIR/bin/@SLIC3R_APP_NAME@" "$@"' > package/@SLIC3R_APP_NAME@
     chmod ug+x package/@SLIC3R_APP_NAME@
     pushd package > /dev/null
-    tar -czvf ../@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-linux64.tgz .  &>/dev/null
+    if [[ -z "$FOUND_GTK3_DEV" ]]
+    then
+	tar -czvf ../@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-GTK3-linux64.tgz .  &>/dev/null
+    else
+	tar -czvf ../@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-GTK2-linux64.tgz .  &>/dev/null
+    fi
+
     popd > /dev/null
     echo -e "\n... done\n"
 fi    
@@ -74,6 +80,13 @@ then
     chmod +x ../src/build_appimage.sh
     ../src/build_appimage.sh
     popd  > /dev/null
-    mv package/"@SLIC3R_APP_KEY@_ubu64.AppImage" "@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-@SLI3R_BUILD_NR@-linux-x64.AppImage"
+    if [[ -z "$FOUND_GTK3_DEV" ]]
+    then
+	mv package/"@SLIC3R_APP_KEY@_ubu64.AppImage" "@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-GTK3-linux-x64.AppImage"
+    else
+	mv package/"@SLIC3R_APP_KEY@_ubu64.AppImage" "@SLIC3R_APP_KEY@-@SLIC3R_VERSION@-GTK2-linux-x64.AppImage"
+    fi
+
+
     echo -e "\n... done\n"
 fi

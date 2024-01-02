@@ -23,7 +23,7 @@ Type=Application
 Categories=Utility;
 MimeType=model/stl;application/vnd.ms-3mfdocument;application/prs.wavefront-obj;application/x-amf;
 EOF
-
+cp @SLIC3R_APP_NAME@ AppRun
 
 ../appimagetool.AppImage .
 mv @SLIC3R_APP_KEY@-x86_64.AppImage ${APP_IMAGE}
