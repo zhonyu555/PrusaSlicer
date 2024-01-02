@@ -145,14 +145,14 @@ then
     # cmake deps
     echo "Cmake command: cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=\"10.14\" ${BUILD_ARCH} "
     pushd deps/build > /dev/null
- #   cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET="10.14" $BUILD_ARGS 
+    cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET="10.14" $BUILD_ARGS 
 
     echo -e "\n... done\n"
 
     echo -e "[2/9] Building dependencies ...\n"
 
     # make deps
-#    make -j$NCORES
+    make -j$NCORES
 
     echo -e "\n... done\n"
 
@@ -168,7 +168,7 @@ then
     echo -e "[4/9] Cleaning dependencies...\n"
 
     # clean deps
-#    rm -rf dep_*
+    rm -rf dep_*
     popd > /dev/null
 
     echo -e "\n... done\n"
@@ -211,7 +211,7 @@ then
     if [[ -z "$BUILD_XCODE" ]]
     then
         echo -e "\n[6/9] Building PrusaSlicer ...\n"
-#        make -j$NCORES
+        make -j$NCORES
         echo -e "\n... done"
     fi
 
