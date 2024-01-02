@@ -44,7 +44,7 @@ then
     # create directory and copy into it
     if [ -d "pack" ]
     then
-        rm -rf pack/*
+        rm -rf pack
     fi
     mkdir pack
     mkdir pack/@SLIC3R_APP_KEY@
@@ -66,6 +66,8 @@ then
     # copy bin and do not let it lower case
     cp -f src/@SLIC3R_APP_NAME@ pack/@SLIC3R_APP_KEY@/@SLIC3R_APP_KEY@.app/Contents/MacOS/@SLIC3R_APP_KEY@
     chmod u+x pack/@SLIC3R_APP_KEY@/@SLIC3R_APP_KEY@.app/Contents/MacOS/@SLIC3R_APP_KEY@
+    tar -czvf @SLIC3R_APP_KEY@-@SLIC3R_VERSION@-macOS.tgz pack/@SLIC3R_APP_KEY@ &>/dev/null
+
     echo -e "\n... done\n"
 fi   
 
@@ -73,11 +75,9 @@ if [[ -n "$BUILD_IMAGE" ]]
 then
     echo -e "\n[9/9] Creating DMG Image for distribution ...\n"
 
-    tar -czvf @SLIC3R_APP_KEY@-@SLIC3R_VERSION@.tgz pack/@SLIC3R_APP_KEY@
-
     # create dmg
     hdiutil create -ov -fs HFS+ -volname "@SLIC3R_APP_KEY@" -srcfolder "pack/@SLIC3R_APP_KEY@" temp.dmg
-    hdiutil convert temp.dmg -format UDZO -o @SLIC3R_APP_KEY@-2.dmg
-
+    hdiutil convert temp.dmg -format UDZO -o @SLIC3R_APP_KEY@-@SLIC3R_VERSION@.dmg
+    rm -f temp.dmg
     echo -e "\n... done\n"
 fi

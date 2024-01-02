@@ -66,7 +66,7 @@ fi
 while getopts ":idaxbhcsw" opt; do
   case ${opt} in
     i )
-        export BUILD_IMAGE="1"
+        BUILD_IMAGE="1"
         ;;
     d )
         BUILD_DEPS="1"
@@ -78,13 +78,13 @@ while getopts ":idaxbhcsw" opt; do
         export BUILD_ARCH="x86_64"
         ;;
     b )
-        export BUILD_DEBUG="1"
+        BUILD_DEBUG="1"
         ;;
     s )
         BUILD_PRUSASLICER="1"
         ;;
     c)
-        export BUILD_XCODE="1"
+        BUILD_XCODE="1"
         ;;
     w )
 	    BUILD_WIPE="1"
