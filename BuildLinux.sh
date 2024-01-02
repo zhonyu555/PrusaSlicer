@@ -8,12 +8,11 @@
 # Change log:
 #
 # 20 Nov 2023, wschadow, branding and minor changes
+# 01 Jan 2024, wschadow, debranding for the Prusa version, added build options
 #
 
 export ROOT=`pwd`
 export NCORES=`nproc`
-
-
 
 OS_FOUND=$( command -v uname)
 
@@ -53,7 +52,7 @@ else
 fi
 
 unset name
-while getopts ":hugbdsi" opt; do
+while getopts ":hugbdsiw" opt; do
   case ${opt} in
     u )
         UPDATE_LIB="1"
@@ -71,9 +70,12 @@ while getopts ":hugbdsi" opt; do
         BUILD_DEBUG="1"
         ;;
     g )
-        FOUND_GTK3=""
+        FORCE_GTK2="-g"
         ;;
-    h ) echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i]"
+    w )
+	BUILD_WIPE="1"
+	;;
+    h ) echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i][-w]"
         echo "   -h: this message"    	
         echo "   -u: only update dependency packets (optional and need sudo)"
         echo "   -g: force gtk2 build"
@@ -81,6 +83,7 @@ while getopts ":hugbdsi" opt; do
         echo "   -d: build deps"
         echo "   -s: build PrusaSlicer"
         echo "   -i: Generate appimage (optional)"
+	echo "   -w: wipe build directories bfore building"
         echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
         echo -e "   and then './BuildLinux.sh -dsi'\n"
         exit 0
@@ -88,24 +91,35 @@ while getopts ":hugbdsi" opt; do
   esac
 done
 
-echo "BUILD_DEBUG is set to: $BUILD_DEBUG"
-echo "BUILD_DEPS is set to: $BUILD_DEPS"
-
 if [ $OPTIND -eq 1 ]
 then
-    echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i]"
+    echo "Usage: ./BuildLinux.sh [-h][-u][-g][-b][-d][-s][-i][-w]"
     echo "   -h: this message"    	
     echo "   -u: only update dependency packets (optional and need sudo)"
     echo "   -g: force gtk2 build"
     echo "   -b: build in debug mode"
     echo "   -d: build deps"
     echo "   -s: build PrusaSlicer"
-    echo "   -i: Generate appimage (optional)"
+    echo "   -i: generate appimage (optional)"
+    echo "   -w: wipe build directories bfore building"    
     echo -e "\n   For a first use, you want to 'sudo ./BuildLinux.sh -u'"
     echo -e "   and then './BuildLinux.sh -dsi'\n"
     exit 0
 fi
 
+FOUND_GTK2=$(dpkg -l libgtk* | grep gtk2)
+FOUND_GTK3=$(dpkg -l libgtk* | grep gtk-3)
+FOUND_GTK2_DEV=$(dpkg -l libgtk* | grep gtk2.0-dev)
+FOUND_GTK3_DEV=$(dpkg -l libgtk* | grep gtk-3-dev)
+
+echo -e "FOUND_GTK2:\n$FOUND_GTK2\n"
+echo -e "FOUND_GTK3:\n$FOUND_GTK3)\n"
+
+if [[ -n "$FORCE_GTK2" ]]
+then
+   FOUND_GTK3="" 
+   FOUND_GTK3_DEV=""
+fi
 
 if [[ -n "$UPDATE_LIB" ]]
 then
@@ -119,6 +133,7 @@ then
         echo -e "\nFind libgtk-3, installing: libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git\n"
         apt install libgtk-3-dev libglew-dev libudev-dev libdbus-1-dev cmake git
     fi
+    
     # for ubuntu 22.04:
     ubu_version="$(cat /etc/issue)" 
     if [[ $ubu_version == "Ubuntu 22.04"* ]]
@@ -134,14 +149,6 @@ then
     exit 0
 fi
 
-FOUND_GTK2=$(dpkg -l libgtk* | grep gtk2)
-FOUND_GTK3=$(dpkg -l libgtk* | grep gtk-3)
-FOUND_GTK2_DEV=$(dpkg -l libgtk* | grep gtk2.0-dev)
-FOUND_GTK3_DEV=$(dpkg -l libgtk* | grep gtk-3-dev)
-
-echo -e "FOUND_GTK2:\n$FOUND_GTK2\n"
-echo -e "FOUND_GTK3:\n$FOUND_GTK3)\n"
-
 if [[ -z "$FOUND_GTK2_DEV" ]]
 then
     if [[ -z "$FOUND_GTK3_DEV" ]]
@@ -154,6 +161,10 @@ fi
 
 if [[ -n "$BUILD_DEPS" ]]
 then
+    if [[ -n $BUILD_WIPE ]]
+    then
+       rm -fr deps/build
+    fi
     # mkdir build in deps
     if [ ! -d "deps/build" ]
     then
@@ -164,6 +175,8 @@ then
     if [[ -n "$FOUND_GTK3_DEV" ]]
     then
         BUILD_ARGS="-DDEP_WX_GTK3=ON"
+    else
+        BUILD_ARGS="-DDEP_WX_GTK3=OFF"
     fi
     if [[ -n "$BUILD_DEBUG" ]]
     then
@@ -177,16 +190,14 @@ then
         popd > /dev/null
         BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TYPE=Debug"
     fi
-    
-    pushd deps/build
+
+    pushd deps/build > /dev/null
     cmake .. $BUILD_ARGS
     
     echo -e "\ndone\n"
     
     echo -e "\n[2/9] Building dependencies...\n"
 
-    pushd deps/build > /dev/null
-        
     # make deps
     make -j$NCORES
     echo -e "\n... done\n"
@@ -205,7 +216,7 @@ then
     
     # clean deps
     echo "[4/9] Cleaning dependencies..."
-#    rm -rf dep_*
+    rm -rf dep_*
     popd  > /dev/null
     echo -e "\n... done\n"
 fi
@@ -213,6 +224,10 @@ fi
 if [[ -n "$BUILD_PRUSASLICER" ]]
 then
     echo -e "[5/9] Configuring PrusaSlicer ...\n"
+    if [[ -n $BUILD_WIPE ]]
+    then
+       rm -fr build
+    fi
     # mkdir build
     if [ ! -d "build" ]
     then
@@ -249,7 +264,7 @@ then
     chmod 755 $ROOT/build/src/BuildLinuxImage.sh
 
     pushd build  > /dev/null
-    $ROOT/build/src/BuildLinuxImage.sh -a
+    $ROOT/build/src/BuildLinuxImage.sh -a $FORCE_GTK2
     popd  > /dev/null  
 fi
 
@@ -258,7 +273,7 @@ then
     # Give proper permissions to script
     chmod 755 $ROOT/build/src/BuildLinuxImage.sh
     pushd build  > /dev/null
-    $ROOT/build/src/BuildLinuxImage.sh -i
+    $ROOT/build/src/BuildLinuxImage.sh -i $FORCE_GTK2
     popd  > /dev/null
 fi
 
