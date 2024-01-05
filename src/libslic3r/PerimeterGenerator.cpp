@@ -64,7 +64,7 @@
 
 namespace Slic3r {
 
-ExtrusionMultiPath PerimeterGenerator::thick_polyline_to_multi_path(const ThickPolyline &thick_polyline, ExtrusionRole role, const Flow &flow, const float tolerance, const float merge_tolerance)
+ExtrusionMultiPath PerimeterGenerator::thick_polyline_to_multi_path(const ThickPolyline &thick_polyline, ExtrusionRole role, const Flow &flow, const float tolerance, const float merge_tolerance, float max_width)
 {
     ExtrusionMultiPath multi_path;
     ExtrusionPath      path(role);
@@ -124,7 +124,7 @@ ExtrusionMultiPath PerimeterGenerator::thick_polyline_to_multi_path(const ThickP
             continue;
         }
 
-        const double w        = fmax(line.a_width, line.b_width);
+        const double w        = fmin(fmax(line.a_width, line.b_width),scale_(max_width - flow.height() * float(1. - 0.25 * PI)));
         const Flow   new_flow = (role.is_bridge() && flow.bridge()) ? flow : flow.with_width(unscale<float>(w) + flow.height() * float(1. - 0.25 * PI));
         if (path.empty()) {
             // Convert from spacing to extrusion width based on the extrusion model
@@ -512,7 +512,7 @@ struct PerimeterGeneratorArachneExtrusion
     bool fuzzify = false;
 };
 
-static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::Parameters &params, const Polygons &lower_slices_polygons_cache, std::vector<PerimeterGeneratorArachneExtrusion> &pg_extrusions)
+static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::Parameters &params, const Polygons &lower_slices_polygons_cache, std::vector<PerimeterGeneratorArachneExtrusion> &pg_extrusions, float max_bead_widh = FLT_MAX)
 {
     ExtrusionEntityCollection extrusion_coll;
     for (PerimeterGeneratorArachneExtrusion &pg_extrusion : pg_extrusions) {
@@ -561,13 +561,13 @@ static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::P
 
             // get non-overhang paths by intersecting this loop with the grown lower slices
             extrusion_paths_append(paths, clip_extrusion(extrusion_path, lower_slices_paths, ClipperLib_Z::ctIntersection), role_normal,
-                                   is_external ? params.ext_perimeter_flow : params.perimeter_flow);
+                                   is_external ? params.ext_perimeter_flow : params.perimeter_flow, max_bead_widh);
 
             // get overhang paths by checking what parts of this loop fall
             // outside the grown lower slices (thus where the distance between
             // the loop centerline and original lower slices is >= half nozzle diameter
             extrusion_paths_append(paths, clip_extrusion(extrusion_path, lower_slices_paths, ClipperLib_Z::ctDifference), role_overhang,
-                                   params.overhang_flow);
+                                   params.overhang_flow, max_bead_widh);
 
             // Reapply the nearest point search for starting point.
             // We allow polyline reversal because Clipper may have randomly reversed polylines during clipping.
@@ -607,7 +607,7 @@ static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::P
                 chain_and_reorder_extrusion_paths(paths, &start_point);
             }
         } else {
-            extrusion_paths_append(paths, *extrusion, role_normal, is_external ? params.ext_perimeter_flow : params.perimeter_flow);
+            extrusion_paths_append(paths, *extrusion, role_normal, is_external ? params.ext_perimeter_flow : params.perimeter_flow, max_bead_widh);
         }
 
         // Append paths to collection.
@@ -1268,8 +1268,16 @@ void PerimeterGenerator::process_arachne(
             }
         }
     }
+    
+    assert(!params.print_config.nozzle_diameter.empty());
+    float min_nozzle_diameter = float(*std::min_element(params.print_config.nozzle_diameter.values.begin(), params.print_config.nozzle_diameter.values.end()));
 
-    if (ExtrusionEntityCollection extrusion_coll = traverse_extrusions(params, lower_slices_polygons_cache, ordered_extrusions); !extrusion_coll.empty())
+    float max_bead_width = params.object_config.max_bead_width.value;
+    
+    if (const auto &max_bead_width_opt = params.object_config.max_bead_width; max_bead_width_opt.percent)
+        max_bead_width = (max_bead_width_opt.value * 0.01 * min_nozzle_diameter);
+
+    if (ExtrusionEntityCollection extrusion_coll = traverse_extrusions(params, lower_slices_polygons_cache, ordered_extrusions, max_bead_width); !extrusion_coll.empty())
         out_loops.append(extrusion_coll);
 
     ExPolygons    infill_contour = union_ex(wallToolPaths.getInnerContour());
