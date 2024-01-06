@@ -41,7 +41,7 @@ static std::vector<std::string> s_project_options {
     "wiping_volumes_matrix"
 };
 
-const char *PresetBundle::PRUSA_BUNDLE = "PrusaResearch";
+const char *PresetBundle::CR3D_BUNDLE = "CR3D";
 
 PresetBundle::PresetBundle() :
     prints(Preset::TYPE_PRINT, Preset::print_options(), static_cast<const PrintRegionConfig&>(FullPrintConfig::defaults())),

@@ -131,20 +131,20 @@ BundleMap BundleMap::load()
     const auto rsrc_vendor_dir = (boost::filesystem::path(resources_dir()) / "profiles").make_preferred();
     const auto cache_dir = boost::filesystem::path(Slic3r::data_dir()) / "cache"; // for Index
     // Load Prusa bundle from the datadir/vendor directory or from datadir/cache/vendor (archive) or from resources/profiles.
-    auto prusa_bundle_path = (vendor_dir / PresetBundle::PRUSA_BUNDLE).replace_extension(".ini");
+    auto prusa_bundle_path = (vendor_dir / PresetBundle::CR3D_BUNDLE).replace_extension(".ini");
     BundleLocation prusa_bundle_loc = BundleLocation::IN_VENDOR;
     if (! boost::filesystem::exists(prusa_bundle_path)) {
-        prusa_bundle_path = (archive_dir / PresetBundle::PRUSA_BUNDLE).replace_extension(".ini");
+        prusa_bundle_path = (archive_dir / PresetBundle::CR3D_BUNDLE).replace_extension(".ini");
         prusa_bundle_loc = BundleLocation::IN_ARCHIVE;
     }
     if (!boost::filesystem::exists(prusa_bundle_path)) {
-        prusa_bundle_path = (rsrc_vendor_dir / PresetBundle::PRUSA_BUNDLE).replace_extension(".ini");
+        prusa_bundle_path = (rsrc_vendor_dir / PresetBundle::CR3D_BUNDLE).replace_extension(".ini");
         prusa_bundle_loc = BundleLocation::IN_RESOURCES;
     }
     {
         Bundle prusa_bundle;
         if (prusa_bundle.load(std::move(prusa_bundle_path), prusa_bundle_loc, true))
-            res.emplace(PresetBundle::PRUSA_BUNDLE, std::move(prusa_bundle)); 
+            res.emplace(PresetBundle::CR3D_BUNDLE, std::move(prusa_bundle)); 
     }
 
     // Load the other bundles in the datadir/vendor directory
@@ -217,7 +217,7 @@ BundleMap BundleMap::load()
 
 Bundle& BundleMap::prusa_bundle()
 {
-    auto it = find(PresetBundle::PRUSA_BUNDLE);
+    auto it = find(PresetBundle::CR3D_BUNDLE);
     if (it == end()) {
         throw Slic3r::RuntimeError("ConfigWizard: Internal error in BundleMap: PRUSA_BUNDLE not loaded");
     }
@@ -688,7 +688,7 @@ void PagePrinters::set_run_reason(ConfigWizard::RunReason run_reason)
     if (is_primary_printer_page
         && (run_reason == ConfigWizard::RR_DATA_EMPTY || run_reason == ConfigWizard::RR_DATA_LEGACY)
         && printer_pickers.size() > 0 
-        && printer_pickers[0]->vendor_id == PresetBundle::PRUSA_BUNDLE) {
+        && printer_pickers[0]->vendor_id == PresetBundle::CR3D_BUNDLE) {
         printer_pickers[0]->select_one(0, true);
     }
 }
@@ -1716,7 +1716,7 @@ PageVendors::PageVendors(ConfigWizard *parent)
 
     for (const std::pair<std::wstring, const VendorProfile*>& v : vendors) {
         const VendorProfile* vendor = v.second;
-        if (vendor->id == PresetBundle::PRUSA_BUNDLE) { continue; }
+        if (vendor->id == PresetBundle::CR3D_BUNDLE) { continue; }
         if (vendor && vendor->templates_profile)
             continue;
 
@@ -2356,7 +2356,6 @@ void ConfigWizard::priv::load_pages()
     // Printers
     if (!only_sla_mode)
         index->add_page(page_fff);
-    index->add_page(page_msla);
     if (!only_sla_mode) {
         index->add_page(page_vendors);
 
@@ -2430,7 +2429,7 @@ void ConfigWizard::priv::init_dialog_size()
         9*disp_rect.width / 10,
         9*disp_rect.height / 10);
 
-    const int width_hint = index->GetSize().GetWidth() + std::max(90 * em(), (only_sla_mode ? page_msla->get_width() : page_fff->get_width()) + 30 * em());    // XXX: magic constant, I found no better solution
+    const int width_hint = index->GetSize().GetWidth() + std::max(90 * em(), ( page_fff->get_width()) + 30 * em());    // XXX: magic constant, I found no better solution
     if (width_hint < window_rect.width) {
         window_rect.x += (window_rect.width - width_hint) / 2;
         window_rect.width = width_hint;
@@ -2457,7 +2456,7 @@ void ConfigWizard::priv::load_vendors()
 
                 const auto &model = needle->second.first;
                 const auto &variant = needle->second.second;
-                appconfig_new.set_variant("PrusaResearch", model, variant, true);
+                appconfig_new.set_variant("CR3D", model, variant, true);
             }
     }
 
@@ -2549,7 +2548,7 @@ void ConfigWizard::priv::create_3rdparty_pages()
 {
     for (const auto &pair : bundles) {
         const VendorProfile *vendor = pair.second.vendor_profile;
-        if (vendor->id == PresetBundle::PRUSA_BUNDLE) { continue; }
+        if (vendor->id == PresetBundle::CR3D_BUNDLE) { continue; }
 
         bool is_fff_technology = false;
         bool is_sla_technology = false;
@@ -2735,13 +2734,6 @@ void ConfigWizard::priv::on_custom_setup(const bool custom_wanted)
 
 void ConfigWizard::priv::on_printer_pick(PagePrinters *page, const PrinterPickerEvent &evt)
 {
-    if (check_sla_selected() != any_sla_selected ||
-        check_fff_selected() != any_fff_selected) {
-        any_fff_selected = check_fff_selected();
-        any_sla_selected = check_sla_selected();
-
-        load_pages();
-    }
 
     // Update the is_visible flag on relevant printer profiles
     for (auto &pair : bundles) {
@@ -3084,7 +3076,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         return pt;
     };
     // Prusa printers are considered first, then 3rd party.
-    if (preferred_pt = get_preferred_printer_technology("PrusaResearch", bundles.prusa_bundle());
+    if (preferred_pt = get_preferred_printer_technology("CR3D", bundles.prusa_bundle());
         preferred_pt == ptAny || (preferred_pt == ptSLA && suppress_sla_printer)) {
         for (const auto& bundle : bundles) {
             if (bundle.second.is_prusa_bundle) { continue; }
@@ -3225,7 +3217,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         return std::string();
     };
     // Prusa printers are considered first, then 3rd party.
-    if (preferred_model = get_preferred_printer_model("PrusaResearch", bundles.prusa_bundle(), preferred_variant);
+    if (preferred_model = get_preferred_printer_model("CR3D", bundles.prusa_bundle(), preferred_variant);
         preferred_model.empty()) {
         for (const auto& bundle : bundles) {
             if (bundle.second.is_prusa_bundle) { continue; }
@@ -3370,14 +3362,6 @@ bool ConfigWizard::priv::check_fff_selected()
     return ret;
 }
 
-bool ConfigWizard::priv::check_sla_selected()
-{
-    bool ret = page_msla->any_selected();
-    for (const auto& printer: pages_3rdparty)
-        if (printer.second.second)               // SLA page
-            ret |= printer.second.second->any_selected();
-    return ret;
-}
 
 
 // Public
@@ -3434,26 +3418,20 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
     wxGetApp().UpdateDarkUI(p->btn_finish);
     wxGetApp().UpdateDarkUI(p->btn_cancel);
 
-    const auto prusa_it = p->bundles.find("PrusaResearch");
-    wxCHECK_RET(prusa_it != p->bundles.cend(), "Vendor PrusaResearch not found");
-    const VendorProfile *vendor_prusa = prusa_it->second.vendor_profile;
+    const auto cr3d_de = p->bundles.find("CR3D");
+    wxCHECK_RET(cr3d_de != p->bundles.cend(), "Vendor CR3D not found");
+    const VendorProfile *vendor_cr3d = cr3d_de->second.vendor_profile;
 
     p->add_page(p->page_welcome = new PageWelcome(this));
 
     
-    p->page_fff = new PagePrinters(this, _L("Prusa FFF Technology Printers"), "Prusa FFF", *vendor_prusa, 0, T_FFF);
+    p->page_fff = new PagePrinters(this, _L("CR3D Technology Printers"), "CR3D", *vendor_cr3d, 0, T_FFF);
     p->only_sla_mode = !p->page_fff->has_printers;
     if (!p->only_sla_mode) {
         p->add_page(p->page_fff);
         p->page_fff->is_primary_printer_page = true;
     }
   
-
-    p->page_msla = new PagePrinters(this, _L("Prusa MSLA Technology Printers"), "Prusa MSLA", *vendor_prusa, 0, T_SLA);
-    p->add_page(p->page_msla);
-    if (p->only_sla_mode) {
-        p->page_msla->is_primary_printer_page = true;
-    }
 
     if (!p->only_sla_mode) {
 	    // Pages for 3rd party vendors
@@ -3463,7 +3441,6 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
         p->custom_printer_selected = p->page_custom->custom_wanted();
     }
 
-    p->any_sla_selected = p->check_sla_selected();
     p->any_fff_selected = ! p->only_sla_mode && p->check_fff_selected();
 
     p->update_materials(T_ANY);
@@ -3530,7 +3507,6 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
         p->any_sla_selected = true;
         p->load_pages();
         p->page_fff->select_all(true, false);
-        p->page_msla->select_all(true, false);
         p->index->go_to(p->page_mode);
     });
 
