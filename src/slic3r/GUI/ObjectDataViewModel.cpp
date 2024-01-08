@@ -70,6 +70,7 @@ const std::map<InfoItemType, InfoItemAtributes> INFO_ITEMS{
 //           info_item Type                         info_item Name              info_item BitmapName
             { InfoItemType::CustomSupports,      {L("Paint-on supports"),       "fdm_supports_" },     },
             { InfoItemType::CustomSeam,          {L("Paint-on seam"),           "seam_" },             },
+            { InfoItemType::CustomBrim,          {L("Paint-on brim"),           "brim_" },             },
             { InfoItemType::CutConnectors,       {L("Connectors"),              "cut_connectors" },    },
             { InfoItemType::MmuSegmentation,     {L("Multimaterial painting"),  "mmu_segmentation_"},  },
             { InfoItemType::Sinking,             {L("Sinking"),                 "sinking"},            },

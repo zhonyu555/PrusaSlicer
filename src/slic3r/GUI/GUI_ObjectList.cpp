@@ -1892,6 +1892,13 @@ void ObjectList::del_info_item(const int obj_idx, InfoItemType type)
             mv->seam_facets.reset();
         break;
 
+    case InfoItemType::CustomBrim:
+        cnv->get_gizmos_manager().reset_all_states();
+        Plater::TakeSnapshot(plater, _L("Remove paint-on brim"));
+        for (ModelVolume* mv : (*m_objects)[obj_idx]->volumes)
+            mv->brim_facets.reset();
+        break;
+
     case InfoItemType::CutConnectors:
         if (!del_from_cut_object(true)) {
             // there is no need to post EVT_GLCANVAS_SCHEDULE_BACKGROUND_PROCESS if nothing was changed
@@ -2705,10 +2712,12 @@ void ObjectList::part_selection_changed()
                     }
                     case InfoItemType::CustomSupports:
                     case InfoItemType::CustomSeam:
+                    case InfoItemType::CustomBrim:
                     case InfoItemType::MmuSegmentation:
                     {
                         GLGizmosManager::EType gizmo_type = info_type == InfoItemType::CustomSupports   ? GLGizmosManager::EType::FdmSupports :
                                                             info_type == InfoItemType::CustomSeam       ? GLGizmosManager::EType::Seam :
+                                                            info_type == InfoItemType::CustomBrim       ? GLGizmosManager::EType::Brim :
                                                             GLGizmosManager::EType::MmuSegmentation;
                         if (gizmos_mgr.get_current_type() != gizmo_type)
                             gizmos_mgr.open_gizmo(gizmo_type);
@@ -2878,6 +2887,7 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selectio
 
     for (InfoItemType type : {InfoItemType::CustomSupports,
                               InfoItemType::CustomSeam,
+                              InfoItemType::CustomBrim,
                               InfoItemType::CutConnectors,
                               InfoItemType::MmuSegmentation,
                               InfoItemType::Sinking,
@@ -2889,12 +2899,14 @@ void ObjectList::update_info_items(size_t obj_idx, wxDataViewItemArray* selectio
         switch (type) {
         case InfoItemType::CustomSupports :
         case InfoItemType::CustomSeam :
+        case InfoItemType::CustomBrim :
         case InfoItemType::MmuSegmentation :
             should_show = printer_technology() == ptFFF
                        && std::any_of(model_object->volumes.begin(), model_object->volumes.end(),
                                       [type](const ModelVolume *mv) {
                                           return !(type == InfoItemType::CustomSupports ? mv->supported_facets.empty() :
                                                    type == InfoItemType::CustomSeam     ? mv->seam_facets.empty() :
+                                                   type == InfoItemType::CustomBrim     ? mv->brim_facets.empty() :
                                                                                           mv->mmu_segmentation_facets.empty());
                                       });
             break;

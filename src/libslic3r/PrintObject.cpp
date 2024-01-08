@@ -3152,6 +3152,7 @@ void PrintObject::project_and_append_custom_facets(
 {
     for (const ModelVolume* mv : this->model_object()->volumes)
         if (mv->is_model_part()) {
+            // todo: update conditional here to support brim facets
             const indexed_triangle_set custom_facets = seam
                     ? mv->seam_facets.get_facets_strict(*mv, type)
                     : mv->supported_facets.get_facets_strict(*mv, type);

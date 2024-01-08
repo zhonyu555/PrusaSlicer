@@ -55,6 +55,7 @@ enum class InfoItemType
     Undef,
     CustomSupports,
     CustomSeam,
+    CustomBrim,
     CutConnectors,
     MmuSegmentation,
     Sinking,

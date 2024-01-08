@@ -1234,6 +1234,7 @@ void ModelObject::convert_units(ModelObjectPtrs& new_objects, ConversionType con
 
             vol->supported_facets.assign(volume->supported_facets);
             vol->seam_facets.assign(volume->seam_facets);
+            vol->brim_facets.assign(volume->brim_facets);
             vol->mmu_segmentation_facets.assign(volume->mmu_segmentation_facets);
 
             // Perform conversion only if the target "imperial" state is different from the current one.
@@ -1346,6 +1347,7 @@ void ModelVolume::reset_extra_facets()
 {
     this->supported_facets.reset();
     this->seam_facets.reset();
+    this->brim_facets.reset();
     this->mmu_segmentation_facets.reset();
 }
 
@@ -1912,6 +1914,7 @@ void ModelVolume::assign_new_unique_ids_recursive()
     config.set_new_unique_id();
     supported_facets.set_new_unique_id();
     seam_facets.set_new_unique_id();
+    brim_facets.set_new_unique_id();
     mmu_segmentation_facets.set_new_unique_id();
 }
 
@@ -2215,6 +2218,13 @@ bool model_custom_seam_data_changed(const ModelObject& mo, const ModelObject& mo
     return model_property_changed(mo, mo_new, 
         [](const ModelVolumeType t) { return t == ModelVolumeType::MODEL_PART; }, 
         [](const ModelVolume &mv_old, const ModelVolume &mv_new){ return mv_old.seam_facets.timestamp_matches(mv_new.seam_facets); });
+}
+
+bool model_custom_brim_data_changed(const ModelObject& mo, const ModelObject& mo_new)
+{
+    return model_property_changed(mo, mo_new, 
+        [](const ModelVolumeType t) { return t == ModelVolumeType::MODEL_PART; }, 
+        [](const ModelVolume &mv_old, const ModelVolume &mv_new){ return mv_old.brim_facets.timestamp_matches(mv_new.brim_facets); });
 }
 
 bool model_mmu_segmentation_data_changed(const ModelObject& mo, const ModelObject& mo_new)

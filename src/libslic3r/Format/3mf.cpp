@@ -124,6 +124,7 @@ static constexpr const char* PRINTABLE_ATTR = "printable";
 static constexpr const char* INSTANCESCOUNT_ATTR = "instances_count";
 static constexpr const char* CUSTOM_SUPPORTS_ATTR = "slic3rpe:custom_supports";
 static constexpr const char* CUSTOM_SEAM_ATTR = "slic3rpe:custom_seam";
+static constexpr const char* CUSTOM_BRIM_ATTR = "slic3rpe:custom_brim";
 static constexpr const char* MMU_SEGMENTATION_ATTR = "slic3rpe:mmu_segmentation";
 
 static constexpr const char* KEY_ATTR = "key";
@@ -362,6 +363,7 @@ namespace Slic3r {
             std::vector<Vec3i> triangles;
             std::vector<std::string> custom_supports;
             std::vector<std::string> custom_seam;
+            std::vector<std::string> custom_brim;
             std::vector<std::string> mmu_segmentation;
 
             bool empty() { return vertices.empty() || triangles.empty(); }
@@ -371,6 +373,7 @@ namespace Slic3r {
                 triangles.clear();
                 custom_supports.clear();
                 custom_seam.clear();
+                custom_brim.clear();
                 mmu_segmentation.clear();
             }
         };
@@ -1830,6 +1833,7 @@ namespace Slic3r {
 
         m_curr_object.geometry.custom_supports.push_back(get_attribute_value_string(attributes, num_attributes, CUSTOM_SUPPORTS_ATTR));
         m_curr_object.geometry.custom_seam.push_back(get_attribute_value_string(attributes, num_attributes, CUSTOM_SEAM_ATTR));
+        m_curr_object.geometry.custom_brim.push_back(get_attribute_value_string(attributes, num_attributes, CUSTOM_BRIM_ATTR));
         m_curr_object.geometry.mmu_segmentation.push_back(get_attribute_value_string(attributes, num_attributes, MMU_SEGMENTATION_ATTR));
         return true;
     }
@@ -2320,24 +2324,29 @@ namespace Slic3r {
             if (has_transform)
                 volume->source.transform = Slic3r::Geometry::Transformation(volume_matrix_to_object);
 
-            // recreate custom supports, seam and mmu segmentation from previously loaded attribute
+            // recreate custom supports, seam, brim and mmu segmentation from previously loaded attribute
             volume->supported_facets.reserve(triangles_count);
             volume->seam_facets.reserve(triangles_count);
+            volume->brim_facets.reserve(triangles_count);
             volume->mmu_segmentation_facets.reserve(triangles_count);
             for (size_t i=0; i<triangles_count; ++i) {
                 size_t index = volume_data.first_triangle_id + i;
                 assert(index < geometry.custom_supports.size());
                 assert(index < geometry.custom_seam.size());
+                assert(index < geometry.custom_brim.size());
                 assert(index < geometry.mmu_segmentation.size());
                 if (! geometry.custom_supports[index].empty())
                     volume->supported_facets.set_triangle_from_string(i, geometry.custom_supports[index]);
                 if (! geometry.custom_seam[index].empty())
                     volume->seam_facets.set_triangle_from_string(i, geometry.custom_seam[index]);
+                if (! geometry.custom_brim[index].empty())
+                    volume->brim_facets.set_triangle_from_string(i, geometry.custom_brim[index]);
                 if (! geometry.mmu_segmentation[index].empty())
                     volume->mmu_segmentation_facets.set_triangle_from_string(i, geometry.mmu_segmentation[index]);
             }
             volume->supported_facets.shrink_to_fit();
             volume->seam_facets.shrink_to_fit();
+            volume->brim_facets.shrink_to_fit();
             volume->mmu_segmentation_facets.shrink_to_fit();
 
             if (auto &es = volume_data.shape_configuration; es.has_value())
@@ -2999,6 +3008,15 @@ namespace Slic3r {
                     output_buffer += CUSTOM_SEAM_ATTR;
                     output_buffer += "=\"";
                     output_buffer += custom_seam_data_string;
+                    output_buffer += "\"";
+                }
+
+                std::string custom_brim_data_string = volume->brim_facets.get_triangle_as_string(i);
+                if (! custom_brim_data_string.empty()) {
+                    output_buffer += " ";
+                    output_buffer += CUSTOM_BRIM_ATTR;
+                    output_buffer += "=\"";
+                    output_buffer += custom_brim_data_string;
                     output_buffer += "\"";
                 }
 

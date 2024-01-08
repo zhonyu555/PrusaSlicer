@@ -99,6 +99,7 @@ static const std::map<const wchar_t, std::string> font_icons_large = {
 //    {ImGui::SinkingObjectMarker     , "move"                            },
 //    {ImGui::CustomSupportsMarker    , "fdm_supports"                    },
 //    {ImGui::CustomSeamMarker        , "seam"                            },
+//    {ImGui::CustomBrimMarker        , "brim"                            },
 //    {ImGui::MmuSegmentationMarker   , "mmu_segmentation"                },
 //    {ImGui::VarLayerHeightMarker    , "layers"                          },
     {ImGui::DocumentationButton     , "notification_documentation"      },
