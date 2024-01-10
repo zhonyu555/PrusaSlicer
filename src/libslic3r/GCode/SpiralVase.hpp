@@ -14,6 +14,7 @@
 
 namespace Slic3r {
 
+
 class SpiralVase {
 public:
     SpiralVase(const PrintConfig &config) : m_config(config)
@@ -28,7 +29,7 @@ public:
     }
 
     std::string process_layer(const std::string &gcode);
-    
+
 private:
     const PrintConfig  &m_config;
     GCodeReader 		m_reader;

@@ -16,7 +16,13 @@ local-lib
 /src/TAGS
 /.vscode/
 build-linux/*
+deps/build*
 deps/build-linux/*
 **/.DS_Store
 **/.idea/
+<<<<<<< HEAD
 deps/usr/local/*
+=======
+.pkg_cache
+CMakeUserPresets.json
+>>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
