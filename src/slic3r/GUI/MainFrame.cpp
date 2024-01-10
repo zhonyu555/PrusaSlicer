@@ -1241,6 +1241,23 @@ void MainFrame::init_menubar_as_editor()
     wxMenuBar::SetAutoWindowMenu(false);
 #endif
 
+
+    // Calibration Menu 
+    wxMenu* calibrationMenu = new wxMenu; 
+    {
+        append_menu_item(
+            calibrationMenu, wxID_ANY, _L("Temperature"), _L("Temperature Calibration"),
+            [this](wxCommandEvent &) {
+
+            },
+            "", nullptr,
+            [this]() {
+                return m_plater->is_view3D_shown();
+                ;
+            },
+            this);
+    }
+
     // File menu
     wxMenu* fileMenu = new wxMenu;
     {
@@ -1568,6 +1585,7 @@ void MainFrame::init_menubar_as_editor()
     if (viewMenu) m_menubar->Append(viewMenu, _L("&View"));
     // Add additional menus from C++
     wxGetApp().add_config_menu(m_menubar);
+    m_menubar->Append(calibrationMenu, _L("&Calibration"));
     m_menubar->Append(helpMenu, _L("&Help"));
 
 #ifdef _MSW_DARK_MODE
