@@ -400,6 +400,8 @@ private:
 
     void slice_volumes();
     // Has any support (not counting the raft).
+    // find the next layer below or above idx; In case of z-dithering it may be different from incrementing/decrementing idx
+    int  next_layer_index(size_t idx, bool lower) const;   // returns int to allow -1
     void detect_surfaces_type();
     void process_external_surfaces();
     void discover_vertical_shells();
@@ -608,6 +610,7 @@ public:
     double              skirt_first_layer_height() const;
     Flow                brim_flow() const;
     Flow                skirt_flow() const;
+    coordf_t            skirt_print_z() const { return m_skirt_height_z; };
     
     std::vector<unsigned int> object_extruders() const;
     std::vector<unsigned int> support_material_extruders() const;
@@ -708,6 +711,7 @@ private:
     // It does NOT encompass MMU/MMU2 starting (wipe) areas.
     Polygon                                 m_first_layer_convex_hull;
     Points                                  m_skirt_convex_hull;
+    coordf_t                                m_skirt_height_z;
 
     // Following section will be consumed by the GCodeGenerator.
     ToolOrdering 							m_tool_ordering;

@@ -209,8 +209,11 @@ void PrintObject::make_perimeters()
                 PRINT_OBJECT_TIME_LIMIT_MILLIS(PRINT_OBJECT_TIME_LIMIT_DEFAULT);
                 for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
                     m_print->throw_if_canceled();
-                    LayerRegion &layerm                     = *m_layers[layer_idx]->get_region(region_id);
-                    const LayerRegion &upper_layerm         = *m_layers[layer_idx+1]->get_region(region_id);
+                    LayerRegion &layerm                   = *m_layers[layer_idx]->get_region(region_id);
+                    int          upper_layer_idx          = this->next_layer_index(layer_idx, false);
+                    if (upper_layer_idx == m_layers.size())
+					    continue;
+                    const LayerRegion &upper_layerm         = *m_layers[upper_layer_idx]->get_region(region_id);
                     const Polygons upper_layerm_polygons    = to_polygons(upper_layerm.slices().surfaces);
                     // Filter upper layer polygons in intersection_ppl by their bounding boxes?
                     // my $upper_layerm_poly_bboxes= [ map $_->bounding_box, @{$upper_layerm_polygons} ];
@@ -283,6 +286,9 @@ void PrintObject::prepare_infill()
 {
     if (! this->set_started(posPrepareInfill))
         return;
+
+    for (size_t idx = 0; idx < m_layers.size(); ++idx)
+        assert(m_layers[idx]->id() == idx + m_config.raft_layers); // subsequent calls will depend on such numbering
 
     m_print->set_status(30, _u8L("Preparing infill"));
 
@@ -672,6 +678,18 @@ Layer* PrintObject::add_layer(int id, coordf_t height, coordf_t print_z, coordf_
     return m_layers.back();
 }
 
+// Returns index of a layer below or above the idx.
+// With introduction of z-dithering we can no longer rely of just incrementing or decrementing indecies.
+int PrintObject::next_layer_index(size_t idx, bool lower) const
+{
+    const Layer *current_layer = m_layers[idx];
+    const Layer *next_layer    = lower ? current_layer->lower_layer : current_layer->upper_layer;
+    if (next_layer != nullptr)
+        return int(next_layer->id() - m_config.raft_layers);
+    else
+        return lower ? -1 : int(m_layers.size());
+}
+
 void PrintObject::clear_support_layers()
 {
     for (Layer *l : m_support_layers)
@@ -754,11 +772,12 @@ bool PrintObject::invalidate_state_by_config_options(
             steps.emplace_back(posSlice);
         } else if (opt_key == "support_material") {
             steps.emplace_back(posSupportMaterial);
-            if (m_config.support_material_contact_distance == 0.) {
+            if (m_config.support_material_contact_distance == 0. || m_config.z_dither) {
             	// Enabling / disabling supports while soluble support interface is enabled.
             	// This changes the bridging logic (bridging enabled without supports, disabled with supports).
-            	// Reset everything.
             	// See GH #1482 for details.
+                // Similarly enabling / disabling supports affects the logic of dithered layer calculations
+                // Reset everything.
 	            steps.emplace_back(posSlice);
 	        }
         } else if (
@@ -871,7 +890,8 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "wall_transition_angle"
             || opt_key == "wall_distribution_count"
             || opt_key == "min_feature_size"
-            || opt_key == "min_bead_width") {
+            || opt_key == "min_bead_width" 
+            || opt_key == "z_dither") {
             steps.emplace_back(posSlice);
         } else if (
                opt_key == "seam_position"
@@ -1019,8 +1039,8 @@ void PrintObject::detect_surfaces_type()
                     LayerRegion *layerm = layer->m_regions[region_id];
                     // comparison happens against the *full* slices (considering all regions)
                     // unless internal shells are requested
-                    Layer       *upper_layer = (idx_layer + 1 < this->layer_count()) ? m_layers[idx_layer + 1] : nullptr;
-                    Layer       *lower_layer = (idx_layer > 0) ? m_layers[idx_layer - 1] : nullptr;
+                    Layer *upper_layer = layer->upper_layer;
+                    Layer *lower_layer = layer->lower_layer;
                     // collapse very narrow parts (using the safety offset in the diff is not enough)
                     float        offset = layerm->flow(frExternalPerimeter).scaled_width() / 10.f;
 
@@ -1216,7 +1236,7 @@ void PrintObject::process_external_surfaces()
 	        [this, &surfaces_covered, &layer_expansions_and_voids, unsupported_width](const tbb::blocked_range<size_t>& range) {
                 PRINT_OBJECT_TIME_LIMIT_MILLIS(PRINT_OBJECT_TIME_LIMIT_DEFAULT);
 	            for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx)
-	            	if (layer_expansions_and_voids[layer_idx + 1]) {
+	                if (layer_expansions_and_voids[next_layer_index(layer_idx, false)]) {
                         // Layer above is partially filled with solid infill (top, bottom, bridging...),
                         // while some sparse inill regions are empty (0% infill).
 		                m_print->throw_if_canceled();
@@ -1244,11 +1264,12 @@ void PrintObject::process_external_surfaces()
                 for (size_t layer_idx = range.begin(); layer_idx < range.end(); ++ layer_idx) {
                     m_print->throw_if_canceled();
                     // BOOST_LOG_TRIVIAL(trace) << "Processing external surface, layer" << m_layers[layer_idx]->print_z;
-                    m_layers[layer_idx]->get_region(int(region_id))->process_external_surfaces(
+                    Layer *lower_layer = this->m_layers[layer_idx]->lower_layer;
+                    Polygons *covered = (lower_layer == nullptr || surfaces_covered.empty() || surfaces_covered[lower_layer->id()].empty())
                         // lower layer
-                    	(layer_idx == 0) ? nullptr : m_layers[layer_idx - 1],
+                        ? nullptr : &surfaces_covered[lower_layer->id()];
                         // lower layer polygons with density > 0%
-                    	(layer_idx == 0 || surfaces_covered.empty() || surfaces_covered[layer_idx - 1].empty()) ? nullptr : &surfaces_covered[layer_idx - 1]);
+                        m_layers[layer_idx]->get_region(int(region_id))->process_external_surfaces(lower_layer, covered);
                 }
             }
         );
@@ -1468,12 +1489,13 @@ void PrintObject::discover_vertical_shells()
 			        if (int n_top_layers = region_config.top_solid_layers.value; n_top_layers > 0) {
                         // Gather top regions projected to this layer.
                         coordf_t print_z = layer->print_z;
-                        int i = int(idx_layer) + 1;
-                        int itop = int(idx_layer) + n_top_layers;
+                        int i     = next_layer_index(idx_layer, false);
+                        int count = 1;
                         bool at_least_one_top_projected = false;
 	                    for (; i < int(cache_top_botom_regions.size()) &&
-	                         (i < itop || m_layers[i]->print_z - print_z < region_config.top_solid_min_thickness - EPSILON);
-	                        ++ i) {
+                                (count < n_top_layers ||
+                                   m_layers[i]->print_z - print_z < region_config.top_solid_min_thickness - EPSILON);
+                                i = next_layer_index(i, false), ++count)  {
                             at_least_one_top_projected = true;
 	                        const DiscoverVerticalShellsCacheEntry &cache = cache_top_botom_regions[i];
                             combine_holes(cache.holes);
@@ -1491,18 +1513,18 @@ void PrintObject::discover_vertical_shells()
 
                         if (one_more_layer_below_top_bottom_surfaces)
                             if (i < int(cache_top_botom_regions.size()) &&
-                                (i <= itop || m_layers[i]->bottom_z() - print_z < region_config.top_solid_min_thickness - EPSILON))
+                                (count <= n_top_layers || m_layers[i]->bottom_z() - print_z < region_config.top_solid_min_thickness - EPSILON))
                                 combine_holes(cache_top_botom_regions[i].holes);
 	                }
 	                if (int n_bottom_layers = region_config.bottom_solid_layers.value; n_bottom_layers > 0) {
                         // Gather bottom regions projected to this layer.
                         coordf_t bottom_z = layer->bottom_z();
-                        int i = int(idx_layer) - 1;
-                        int ibottom = int(idx_layer) - n_bottom_layers;
+                        int i     = next_layer_index(idx_layer, true);
+			int count = 1;
                         bool at_least_one_bottom_projected = false;
-	                    for (; i >= 0 &&
-	                         (i > ibottom || bottom_z - m_layers[i]->bottom_z() < region_config.bottom_solid_min_thickness - EPSILON);
-	                        -- i) {
+                        for (; i >= 0 && (count < n_bottom_layers ||
+                                    bottom_z - m_layers[i]->bottom_z() < region_config.bottom_solid_min_thickness - EPSILON);
+                                i = next_layer_index(i, true), ++count)  {
                                 at_least_one_bottom_projected = true;
 	                        const DiscoverVerticalShellsCacheEntry &cache = cache_top_botom_regions[i];
 							combine_holes(cache.holes);
@@ -1518,7 +1540,7 @@ void PrintObject::discover_vertical_shells()
 
                         if (one_more_layer_below_top_bottom_surfaces)
                             if (i >= 0 &&
-                                (i > ibottom || bottom_z - m_layers[i]->print_z < region_config.bottom_solid_min_thickness - EPSILON))
+                                (count < n_bottom_layers || bottom_z - m_layers[i]->print_z < region_config.bottom_solid_min_thickness - EPSILON))
                                 combine_holes(cache_top_botom_regions[i].holes);
 	                }
 #ifdef SLIC3R_DEBUG_SLICE_PROCESSING
@@ -1614,10 +1636,10 @@ void PrintObject::discover_vertical_shells()
                         Polygons object_volume;
                         Polygons internal_volume;
                         {
-                            Polygons shrinked_bottom_slice = idx_layer > 0 ? to_polygons(m_layers[idx_layer - 1]->lslices) : Polygons{};
-                            Polygons shrinked_upper_slice  = (idx_layer + 1) < m_layers.size() ?
-                                                                 to_polygons(m_layers[idx_layer + 1]->lslices) :
-                                                                 Polygons{};
+                            int      lower_layer_index     = next_layer_index(idx_layer, true);
+                            Polygons shrinked_bottom_slice = lower_layer_index >= 0 ? to_polygons(m_layers[lower_layer_index]->lslices) : Polygons{};
+                            int      upper_layer_index     = next_layer_index(idx_layer, false);
+                            Polygons shrinked_upper_slice  = upper_layer_index < m_layers.size() ? to_polygons(m_layers[upper_layer_index]->lslices) : Polygons{};
                             object_volume = intersection(shrinked_bottom_slice, shrinked_upper_slice);
                             internal_volume = closing(polygonsInternal, float(SCALED_EPSILON));
                         }
@@ -1919,8 +1941,8 @@ void PrintObject::bridge_over_infill()
         std::vector<size_t> layers_to_generate_infill;
         for (const auto &pair : surfaces_by_layer) {
             assert(pair.first > 0);
-            infill_lines[pair.first - 1] = {};
-            layers_to_generate_infill.push_back(pair.first - 1);
+            infill_lines[next_layer_index(pair.first, true)] = {};
+            layers_to_generate_infill.push_back(next_layer_index(pair.first, true));
         }
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, layers_to_generate_infill.size()), [po = static_cast<const PrintObject *>(this),
@@ -1998,15 +2020,15 @@ void PrintObject::bridge_over_infill()
     }
 
     // LAMBDA to gather areas with sparse infill deep enough that we can fit thick bridges there.
-    auto gather_areas_w_depth = [target_flow_height_factor](const PrintObject *po, int lidx, float target_flow_height) {
+    auto gather_areas_w_depth = [target_flow_height_factor, this](const PrintObject *po, int lidx, float target_flow_height) {
         // Gather layers sparse infill areas, to depth defined by used bridge flow
         ExPolygons layers_sparse_infill{};
         ExPolygons not_sparse_infill{};
         double   bottom_z = po->get_layer(lidx)->print_z - target_flow_height * target_flow_height_factor - EPSILON;
-        for (int i = int(lidx) - 1; i >= 0; --i) {
+        for (int i = next_layer_index(lidx, true); i >= 0; i = next_layer_index(i, true)) {
             // Stop iterating if layer is lower than bottom_z and at least one iteration was made
             const Layer *layer = po->get_layer(i);
-            if (layer->print_z < bottom_z && i < int(lidx) - 1)
+            if (layer->print_z < bottom_z && i < next_layer_index(lidx, true))
                 break;
 
             for (const LayerRegion *region : layer->regions()) {
@@ -2363,7 +2385,7 @@ void PrintObject::bridge_over_infill()
                 total_fill_area   = closing(total_fill_area, float(SCALED_EPSILON));
                 expansion_area    = closing(expansion_area, float(SCALED_EPSILON));
                 expansion_area    = intersection(expansion_area, deep_infill_area);
-                Polylines anchors = intersection_pl(infill_lines[lidx - 1], shrink(expansion_area, spacing));
+                Polylines anchors = intersection_pl(infill_lines[po->next_layer_index(lidx,true)], shrink(expansion_area, spacing));
                 Polygons internal_unsupported_area = shrink(deep_infill_area, spacing * 4.5);
 
 #ifdef DEBUG_BRIDGE_OVER_INFILL
@@ -2737,7 +2759,7 @@ bool PrintObject::update_layer_height_profile(const ModelObject &model_object, c
 //     Polygons upper_internal;
 //     for (int layer_id = int(m_layers.size()) - 1; layer_id > 0; -- layer_id) {
 //         Layer *layer       = m_layers[layer_id];
-//         Layer *lower_layer = m_layers[layer_id - 1];
+//         Layer* lower_layer = layer->lower_layer;
 //         // Detect things that we need to support.
 //         // Cummulative fill surfaces.
 //         Polygons fill_surfaces;
@@ -2843,6 +2865,9 @@ void PrintObject::discover_horizontal_shells()
 // fill_surfaces but we only turn them into VOID surfaces, thus preserving the boundaries.
 void PrintObject::combine_infill()
 {
+    // z-dithering is not currently compatible with combining infills
+    if (m_config.z_dither) return;
+
     // Work on each region separately.
     for (size_t region_id = 0; region_id < this->num_printing_regions(); ++ region_id) {
         const PrintRegion &region = this->printing_region(region_id);
@@ -2869,7 +2894,7 @@ void PrintObject::combine_infill()
                 // would exceed max layer height or max combined layer count.
                 if (current_height + layer->height >= nozzle_diameter + EPSILON || num_layers >= every) {
                     // Append combination to lower layer.
-                    combine[layer_idx - 1] = num_layers;
+                    combine[next_layer_index(layer_idx, true)] = num_layers;
                     current_height = 0.;
                     num_layers = 0;
                 }
@@ -2962,6 +2987,7 @@ void PrintObject::_generate_support_material()
 
 static void project_triangles_to_slabs(SpanOfConstPtrs<Layer> layers, const indexed_triangle_set &custom_facets, const Transform3f &tr, bool seam, std::vector<Polygons> &out)
 {
+    // this function relies on absence of dithered layers in "layers" and therefore used only by slicing of supports
     if (custom_facets.indices.empty())
         return;
 
@@ -3162,16 +3188,28 @@ void PrintObject::project_and_append_custom_facets(
                         seam, out);
                 else {
                     std::vector<Polygons> projected;
+                    SpanOfConstPtrs<Layer> layers = this->layers();
                     // Support blockers or enforcers. Project downward facing painted areas upwards to their respective slicing plane.
-                    slice_mesh_slabs(custom_facets, zs_from_layers(this->layers()), this->trafo_centered() * mv->get_matrix(), nullptr, &projected, [](){});
+                    slice_mesh_slabs(custom_facets, zs_from_layers(layers, true), this->trafo_centered() * mv->get_matrix(), nullptr, &projected, [](){});
                     // Merge these projections with the output, layer by layer.
                     assert(! projected.empty());
-                    assert(out.empty() || out.size() == projected.size());
-                    if (out.empty())
-                        out = std::move(projected);
-                    else
-                        for (size_t i = 0; i < out.size(); ++ i)
-                            append(out[i], std::move(projected[i]));
+                    bool out_empty = out.empty();
+                    assert(out_empty || out.size() == layers.size());
+                    size_t proj_idx = 0;
+
+                    for (size_t i = 0; i < layers.size(); ++i) {
+                        if (!layers[i]->dithered) {
+                            if (out_empty)
+                                out.emplace_back(std::move(projected[proj_idx]));
+                            else
+                                append(out[i], std::move(projected[proj_idx]));
+
+                            proj_idx++;
+                        } else if (out_empty) {
+                            out.emplace_back(Polygons());
+                        }
+                    }
+                    assert(proj_idx == projected.size());
                 }
             }
         }

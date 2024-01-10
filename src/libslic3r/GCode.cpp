@@ -396,6 +396,7 @@ std::vector<std::pair<coordf_t, GCodeGenerator::ObjectsLayerToPrint>> GCodeGener
         coordf_t    print_z;
         size_t      object_idx;
         size_t      layer_idx;
+        coordf_t    layer_height;
     };
 
     std::vector<ObjectsLayerToPrint>  per_object(print.objects().size(), ObjectsLayerToPrint());
@@ -409,11 +410,14 @@ std::vector<std::pair<coordf_t, GCodeGenerator::ObjectsLayerToPrint>> GCodeGener
         for (const ObjectLayerToPrint &ltp : per_object[i]) {
             ordering_item.print_z = ltp.print_z();
             ordering_item.layer_idx = &ltp - &front;
+            ordering_item.layer_height = ltp.layer()->height;
             ordering.emplace_back(ordering_item);
         }
     }
 
-    std::sort(ordering.begin(), ordering.end(), [](const OrderingItem& oi1, const OrderingItem& oi2) { return oi1.print_z < oi2.print_z; });
+    std::sort(ordering.begin(), ordering.end(), [](const OrderingItem &oi1, const OrderingItem &oi2) {
+        return fabs(oi1.print_z - oi2.print_z) > EPSILON ? oi1.print_z < oi2.print_z : oi1.layer_height < oi2.layer_height;
+    });
 
     std::vector<std::pair<coordf_t, ObjectsLayerToPrint>> layers_to_print;
 
@@ -422,16 +426,16 @@ std::vector<std::pair<coordf_t, GCodeGenerator::ObjectsLayerToPrint>> GCodeGener
         // Find the last layer with roughly the same print_z.
         size_t j = i + 1;
         coordf_t zmax = ordering[i].print_z + EPSILON;
-        for (; j < ordering.size() && ordering[j].print_z <= zmax; ++j);
+        coordf_t hmax = ordering[i].layer_height + EPSILON; // z-dithering may make layers of different height but same print_z
+        for (; j < ordering.size() && ordering[j].print_z <= zmax && ordering[j].layer_height < hmax; ++j);
         // Merge into layers_to_print.
         std::pair<coordf_t, ObjectsLayerToPrint> merged;
         // Assign an average print_z to the set of layers with nearly equal print_z.
         merged.first = 0.5 * (ordering[i].print_z + ordering[j - 1].print_z);
-        merged.second.assign(print.objects().size(), ObjectLayerToPrint());
+	// z-dithering may result in 2 layers from the same object in merged
         for (; i < j; ++i) {
             const OrderingItem& oi = ordering[i];
-            assert(merged.second[oi.object_idx].layer() == nullptr);
-            merged.second[oi.object_idx] = std::move(per_object[oi.object_idx][oi.layer_idx]);
+            merged.second.emplace_back(std::move(per_object[oi.object_idx][oi.layer_idx]));
         }
         layers_to_print.emplace_back(std::move(merged));
     }
@@ -2067,14 +2071,13 @@ namespace Skirt {
         // not at the print_z of the interlaced support material layers.
         std::map<unsigned int, std::pair<size_t, size_t>> skirt_loops_per_extruder_out;
         if (print.has_skirt() && ! print.skirt().entities.empty() && layer_tools.has_skirt &&
+            // Bevare of several layers with same print_z but different heights which could happen
+            // in case of dithered overhanging layers with support 
+            fabs(skirt_done.back() - layer_tools.print_z) > EPSILON && 
             // Not enough skirt layers printed yet.
-            //FIXME infinite or high skirt does not make sense for sequential print!
-            (skirt_done.size() < (size_t)print.config().skirt_height.value || print.has_infinite_skirt())) {
+            (layer_tools.print_z < print.skirt_print_z() + EPSILON || print.has_infinite_skirt())) {
             bool valid = ! skirt_done.empty() && skirt_done.back() < layer_tools.print_z - EPSILON;
             assert(valid);
-            // This print_z has not been extruded yet (sequential print)
-            // FIXME: The skirt_done should not be empty at this point. The check is a workaround
-            // of https://github.com/prusa3d/PrusaSlicer/issues/5652, but it deserves a real fix.
             if (valid) {
 #if 0
                 // Prime just the first printing extruder. This is original Slic3r's implementation.

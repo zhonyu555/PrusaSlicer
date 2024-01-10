@@ -118,8 +118,15 @@ void LayerRegion::make_perimeters(
         auto perimeters_begin      = uint32_t(m_perimeters.size());
         auto gap_fills_begin       = uint32_t(m_thin_fills.size());
         auto fill_expolygons_begin = uint32_t(fill_expolygons.size());
-        if (this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase)
-            PerimeterGenerator::process_arachne(
+        bool use_arachne = this->layer()->object()->config().perimeter_generator.value == PerimeterGeneratorType::Arachne && !spiral_vase;
+        bool dithered_layer    = this->layer()->dithered;
+        // arachne width averaging is not so good for thin areas of dithered layers becuase it may generate open contours
+        // which make routh attachment/seams between dithered layers and adjacent non-dithered (regular) layers.
+        // On the other hand, for very narrow regions, classic algothim sometimes makes no perimeters at all.
+        // In this case we better fall back on arachne algorithm (even if user selected classic).
+        // Thus the logic of trying classic first for dithered layers and if it makes no perimeters then trying arachne.
+        if (!use_arachne || dithered_layer)
+            PerimeterGenerator::process_classic(
                 // input:
                 params,
                 surface,
@@ -129,8 +136,8 @@ void LayerRegion::make_perimeters(
                 m_perimeters,
                 m_thin_fills,
                 fill_expolygons);
-        else
-            PerimeterGenerator::process_classic(
+        if (dithered_layer && m_perimeters.empty() || !dithered_layer && use_arachne)
+            PerimeterGenerator::process_arachne(
                 // input:
                 params,
                 surface,
