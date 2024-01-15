@@ -20,7 +20,7 @@ class CalibrationAbstractDialog : public DPIDialog
 
 public:
     CalibrationAbstractDialog(GUI_App* app, MainFrame* mainframe, std::string name);
-    virtual ~CalibrationAbstractDialog(){ if(gui_app!=nullptr) gui_app->change_calibration_dialog(this, nullptr);}
+    virtual ~CalibrationAbstractDialog(){ if(gui_app=nullptr) gui_app->change_calibration_dialog(this, nullptr);}
     
 private:
     wxPanel* create_header(wxWindow* parent, const wxFont& bold_font);

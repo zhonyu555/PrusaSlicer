@@ -1272,6 +1272,10 @@ void MainFrame::init_menubar_as_editor()
     {
         append_menu_item(calibrationMenu, wxID_ANY, _(L("Introduction")), _(L("How to use this menu and calibrations.")),
                          [this](wxCommandEvent &) { wxGetApp().html_dialog(); });
+        calibrationMenu->AppendSeparator();
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("Bed/Extruder leveling")),
+                         _(L("Create a test print to help you to level your printer bed.")),
+                         [this](wxCommandEvent &) { wxGetApp().bed_leveling_dialog(); });
     }
 
     // File menu

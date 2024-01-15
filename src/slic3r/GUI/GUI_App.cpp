@@ -100,6 +100,8 @@
 
 
 #include "CalibrationAbstractDialog.hpp"
+#include "CalibrationBedDialog.hpp"
+
 #include "BitmapCache.hpp"
 #include "Notebook.hpp"
 
@@ -1964,7 +1966,10 @@ void GUI_App::html_dialog()
     change_calibration_dialog(nullptr, new HtmlDialog(this, mainframe, "Introduction to calibrations", "/calibration", "introduction.html"));
 }
 
-
+void GUI_App::bed_leveling_dialog() { 
+    
+    change_calibration_dialog(nullptr, new CalibrationBedDialog(this, mainframe)); 
+}
 
 void GUI_App::system_info()
 {

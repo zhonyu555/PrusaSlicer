@@ -256,8 +256,10 @@ public:
     void            set_auto_toolbar_icon_scale(float scale) const;
     void            check_printer_presets();
 
-        void change_calibration_dialog(const wxDialog *have_to_destroy = nullptr, wxDialog *new_one = nullptr);
+    void change_calibration_dialog(const wxDialog *have_to_destroy = nullptr, wxDialog *new_one = nullptr);
     void html_dialog();
+    void bed_leveling_dialog();
+
 
     void            recreate_GUI(const wxString& message);
     void            system_info();

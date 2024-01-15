@@ -83,6 +83,7 @@ enum InfillPattern : int {
     ipGyroid, ipHilbertCurve, ipArchimedeanChords, ipOctagramSpiral, ipAdaptiveCubic, ipSupportCubic, ipSupportBase,
     ipLightning,
     ipEnsuring,
+    ipRectilinearWGapFill,
     ipCount,
 };
 

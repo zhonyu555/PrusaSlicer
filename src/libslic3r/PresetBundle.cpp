@@ -458,7 +458,7 @@ void PresetBundle::reset_extruder_filaments()
 
 PresetCollection&PresetBundle::get_presets(Preset::Type type)
 {
-    assert(type >= Preset::TYPE_PRINT && type <= Preset::TYPE_PRINTER);
+    //assert(type >= Preset::TYPE_PRINT1 && type <= Preset::TYPE_PRINTER);
 
     return  type == Preset::TYPE_PRINT          ? prints        :
             type == Preset::TYPE_SLA_PRINT      ? sla_prints    :

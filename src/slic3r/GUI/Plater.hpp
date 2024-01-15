@@ -89,6 +89,7 @@ public:
     Sidebar &operator=(const Sidebar &) = delete;
     ~Sidebar();
 
+
     void init_filament_combo(PlaterPresetComboBox **combo, const int extr_idx);
     void remove_unused_filament_combos(const size_t current_extruder_count);
     void update_all_preset_comboboxes();
@@ -178,7 +179,8 @@ public:
     const SLAPrint& sla_print() const;
     SLAPrint& sla_print();
 
-    void new_project();
+
+    bool new_project(std::string project_name = "");
     void load_project();
     void load_project(const wxString& filename);
     void add_model(bool imperial_units = false);
@@ -192,11 +194,13 @@ public:
     void convert_gcode_to_binary();
     void refresh_print();
 
-    std::vector<size_t> load_files(const std::vector<boost::filesystem::path>& input_files, bool load_model = true, bool load_config = true, bool imperial_units = false);
-    // To be called when providing a list of files to the GUI slic3r on command line.
-    std::vector<size_t> load_files(const std::vector<std::string>& input_files, bool load_model = true, bool load_config = true, bool imperial_units = false);
+    std::vector<size_t> load_files(
+        const std::vector<boost::filesystem::path> &input_files, bool load_model, bool load_config, bool update_dirs, bool imperial_units);
+    std::vector<size_t> load_files(
+        const std::vector<std::string> &input_files, bool load_model, bool load_config, bool update_dirs, bool imperial_units);
     // to be called on drag and drop
-    bool load_files(const wxArrayString& filenames, bool delete_after_load = false);
+    bool load_files(const wxArrayString &filenames);
+
     void notify_about_installed_presets();
 
     bool preview_zip_archive(const boost::filesystem::path& input_file);

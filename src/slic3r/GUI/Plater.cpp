@@ -1393,6 +1393,8 @@ void Sidebar::show_info_sizer()
     }
 }
 
+
+
 void Sidebar::update_sliced_info_sizer()
 {
     if (p->sliced_info->IsShown(size_t(0)))
@@ -1898,8 +1900,11 @@ struct Plater::priv
 //   std::shared_ptr<ProgressStatusBar> statusbar();
     bool get_config_bool(const std::string &key) const;
 
-    std::vector<size_t> load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool used_inches = false);
-    std::vector<size_t> load_model_objects(const ModelObjectPtrs& model_objects, bool allow_negative_z = false, bool call_selection_changed = true);
+    std::vector<size_t> load_files(
+        const std::vector<fs::path> &input_files, bool load_model, bool load_config, bool update_dirs = true, bool used_inches = false);
+    std::vector<size_t> load_model_objects(const ModelObjectPtrs &model_objects,
+                                           bool                   allow_negative_z       = false,
+                                           bool                   call_selection_changed = true);
 
     fs::path get_export_file_path(GUI::FileType file_type);
     wxString get_export_file(GUI::FileType file_type);
@@ -2501,7 +2506,11 @@ void Plater::notify_about_installed_presets()
     }
 }
 
-std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool imperial_units/* = false*/)
+std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path> &input_files,
+                                             bool                         load_model,
+                                             bool                         load_config,
+                                             bool                         update_dirs /* = true*/,
+                                             bool                         imperial_units /* = false*/)
 {
      if (input_files.empty()) { return std::vector<size_t>(); }
 
@@ -5345,10 +5354,10 @@ bool Plater::is_project_temp() const
     return false;
 }
 
-void Plater::new_project()
+bool Plater::new_project(std::string project_name)
 {
     if (int saved_project = p->save_project_if_dirty(_L("Creating a new project while the current project is modified.")); saved_project == wxID_CANCEL)
-        return;
+        return false;
     else {
         wxString header = _L("Creating a new project while some presets are modified.") + "\n" + 
                           (saved_project == wxID_YES ? _L("You can keep presets modifications to the new project or discard them") :
@@ -5358,7 +5367,7 @@ void Plater::new_project()
         if (saved_project == wxID_NO)
             act_buttons |= ActionButtons::SAVE;
         if (!wxGetApp().check_and_keep_current_preset_changes(_L("Creating a new project"), header, act_buttons))
-            return;
+            return false;
     }
 
     p->select_view_3D("3D");
@@ -5371,6 +5380,7 @@ void Plater::new_project()
     wxGetApp().update_saved_preset_from_current_preset();
     // Update Project dirty state, update application title bar.
     update_project_dirty_from_presets();
+    return true;
 }
 
 void Plater::load_project()
@@ -5395,7 +5405,7 @@ void Plater::load_project(const wxString& filename)
 
     p->reset();
 
-    if (! load_files({ into_path(filename) }).empty()) {
+    if (!load_files({into_path(filename)}, true, true, true, false).empty()) {
         // At least one file was loaded.
         p->set_project_filename(filename);
         // Save the names of active presets and project specific config into ProjectDirtyStateManager.
@@ -5435,7 +5445,7 @@ void Plater::add_model(bool imperial_units/* = false*/)
     }
 
     Plater::TakeSnapshot snapshot(this, snapshot_label);
-    if (! load_files(paths, true, false, imperial_units).empty())
+    if (!load_files(paths, true, false, true, imperial_units).empty())
         wxGetApp().mainframe->update_title();
 }
 
@@ -5448,7 +5458,7 @@ void Plater::import_zip_archive()
 
    wxArrayString arr;
    arr.Add(input_file);
-   load_files(arr, false);
+   load_files(arr);
 }
 
 void Plater::import_sl1_archive()
@@ -5466,7 +5476,7 @@ void Plater::extract_config_from_project()
     wxGetApp().load_project(this, input_file);
 
     if (! input_file.empty())
-        load_files({ into_path(input_file) }, false, true);
+        load_files({ into_path(input_file) }, false, true, true, false);
 }
 
 void Plater::load_gcode()
@@ -5733,16 +5743,23 @@ void Plater::refresh_print()
     p->preview->refresh_print();
 }
 
-std::vector<size_t> Plater::load_files(const std::vector<fs::path>& input_files, bool load_model, bool load_config, bool imperial_units /*= false*/) { return p->load_files(input_files, load_model, load_config, imperial_units); }
-
+std::vector<size_t> Plater::load_files(const std::vector<fs::path> &input_files,
+                                       bool                         load_model,
+                                       bool                         load_config,
+                                       bool                         update_dirs /*= true*/,
+                                       bool                         imperial_units /*= false*/)
+{
+    return p->load_files(input_files, load_model, load_config, update_dirs, imperial_units);
+}
 // To be called when providing a list of files to the GUI slic3r on command line.
-std::vector<size_t> Plater::load_files(const std::vector<std::string>& input_files, bool load_model, bool load_config, bool imperial_units /*= false*/)
+std::vector<size_t> Plater::load_files(
+    const std::vector<std::string> &input_files, bool load_model, bool load_config, bool update_dirs, bool imperial_units)
 {
     std::vector<fs::path> paths;
     paths.reserve(input_files.size());
-    for (const std::string& path : input_files)
+    for (const std::string &path : input_files)
         paths.emplace_back(path);
-    return p->load_files(paths, load_model, load_config, imperial_units);
+    return p->load_files(paths, load_model, load_config, update_dirs, imperial_units);
 }
 
 
@@ -6108,8 +6125,8 @@ bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)
     {
         wxArrayString aux;
         aux.Add(from_u8(project_paths.front().string()));
-        bool loaded3mf = load_files(aux, true);
-        load_files(non_project_paths, true, false);
+        bool loaded3mf = load_files(aux);
+        load_files(non_project_paths, true, false, false, false);
         boost::system::error_code ec;
         if (loaded3mf) {
             fs::remove(project_paths.front(), ec);
@@ -6127,8 +6144,8 @@ bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)
     }
 
     // load all projects and all models as geometry
-    load_files(project_paths, true, false);
-    load_files(non_project_paths, true, false);
+    load_files(project_paths, true, false, false, false);
+    load_files(non_project_paths, true, false, true, false);
 #endif // 0
    
 
@@ -6233,7 +6250,7 @@ void ProjectDropDialog::on_dpi_changed(const wxRect& suggested_rect)
     Refresh();
 }
 
-bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*=false*/)
+bool Plater::load_files(const wxArrayString& filenames)
 {
     const std::regex pattern_drop(".*[.](stl|obj|amf|3mf|prusa|step|stp|zip)", std::regex::icase);
     const std::regex pattern_gcode_drop(".*[.](gcode|g|bgcode|bgc)", std::regex::icase);
@@ -6316,16 +6333,16 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
             }
             case ProjectDropDialog::LoadType::LoadGeometry: {
 //                Plater::TakeSnapshot snapshot(this, _L("Import Object"));
-                load_files({ *it }, true, false);
+                load_files({ *it }, true, false, false, false);
                 break;
             }
             case ProjectDropDialog::LoadType::LoadConfig: {
-                load_files({ *it }, false, true);
+                load_files({ *it }, false, true, true, false);
                 break;
             }
             case ProjectDropDialog::LoadType::OpenWindow: {
                 wxString f = from_path(*it);
-                start_new_slicer(&f, false, delete_after_load);
+                start_new_slicer(&f, false);
                 return false; // did not load anything to this instance
             }
             case ProjectDropDialog::LoadType::Unknown : {
@@ -6359,7 +6376,8 @@ bool Plater::load_files(const wxArrayString& filenames, bool delete_after_load/*
         }
     }
     Plater::TakeSnapshot snapshot(this, snapshot_label);
-    load_files(paths);
+    load_files(paths, true, true, true, false);
+
 
     return true;
 }
@@ -6526,6 +6544,8 @@ static long GetNumberFromUser(  const wxString& msg,
     return wxGetNumberFromUser(msg, prompt, title, value, min, max, parent);
 #endif
 }
+
+
 
 void Plater::set_number_of_copies()
 {

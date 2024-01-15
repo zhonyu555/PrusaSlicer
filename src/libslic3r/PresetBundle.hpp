@@ -48,6 +48,8 @@ public:
     // Export selections (current print, current filaments, current printer) into config.ini
     void            export_selections(AppConfig &config);
 
+    PresetCollection fff_prints;
+
     PresetCollection            prints;
     PresetCollection            sla_prints;
     PresetCollection            filaments;

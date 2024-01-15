@@ -51,6 +51,8 @@ protected:
     virtual float _layer_angle(size_t idx) const override { return 0.f; }
 };
 
+
+
 class FillMonotonic : public FillRectilinear
 {
 public:

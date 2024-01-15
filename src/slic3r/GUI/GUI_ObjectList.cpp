@@ -1779,7 +1779,7 @@ void ObjectList::load_shape_object_from_gallery(const wxArrayString& input_files
         snapshot_label += ", " + wxString::FromUTF8(paths[i].filename().string().c_str());
 
     take_snapshot(snapshot_label);
-    if (! wxGetApp().plater()->load_files(paths, true, false).empty())
+    if (! wxGetApp().plater()->load_files(paths, true, false, false, false).empty())
         wxGetApp().mainframe->update_title();
 }
 

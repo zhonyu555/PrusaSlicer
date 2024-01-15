@@ -19,6 +19,8 @@ set(SLIC3R_GUI_SOURCES
     GUI/AboutDialog.hpp
 GUI/CalibrationAbstractDialog.cpp
 GUI/CalibrationAbstractDialog.hpp
+GUI/CalibrationBedDialog.cpp
+GUI/CalibrationBedDialog.hpp
     GUI/ArrangeSettingsDialogImgui.hpp
     GUI/ArrangeSettingsDialogImgui.cpp
     GUI/SysInfoDialog.cpp
