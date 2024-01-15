@@ -256,6 +256,9 @@ public:
     void            set_auto_toolbar_icon_scale(float scale) const;
     void            check_printer_presets();
 
+        void change_calibration_dialog(const wxDialog *have_to_destroy = nullptr, wxDialog *new_one = nullptr);
+    void html_dialog();
+
     void            recreate_GUI(const wxString& message);
     void            system_info();
     void            keyboard_shortcuts();
@@ -328,6 +331,8 @@ public:
     PresetUpdater*  preset_updater{ nullptr };
     MainFrame*      mainframe{ nullptr };
     Plater*         plater_{ nullptr };
+    std::mutex      not_modal_dialog_mutex;
+    wxDialog       *not_modal_dialog = nullptr;
 
 	PresetUpdater*  get_preset_updater() { return preset_updater; }
 

@@ -1270,7 +1270,8 @@ void MainFrame::init_menubar_as_editor()
     // Calibration Menu 
     wxMenu* calibrationMenu = new wxMenu; 
     {
-
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("Introduction")), _(L("How to use this menu and calibrations.")),
+                         [this](wxCommandEvent &) { wxGetApp().html_dialog(); });
     }
 
     // File menu

@@ -98,6 +98,8 @@
 #include "PhysicalPrinterDialog.hpp"
 #include "WifiConfigDialog.hpp"
 
+
+#include "CalibrationAbstractDialog.hpp"
 #include "BitmapCache.hpp"
 #include "Notebook.hpp"
 
@@ -1922,6 +1924,47 @@ void GUI_App::recreate_GUI(const wxString& msg_name)
 
     m_is_recreating_gui = false;
 }
+
+
+// Calibration Menu 
+void GUI_App::change_calibration_dialog(const wxDialog *have_to_destroy, wxDialog *new_one)
+{
+    if (have_to_destroy == nullptr) {
+        wxDialog *to_destroy = nullptr;
+        {
+            // hove to ensure that this release is "atomic"
+            std::unique_lock<std::mutex> lock(not_modal_dialog_mutex);
+            to_destroy       = not_modal_dialog;
+            not_modal_dialog = nullptr;
+        }
+        if (to_destroy != nullptr) {
+            to_destroy->Destroy();
+        }
+    } else {
+        // hove to ensure that these two command are "atomic"
+        std::unique_lock<std::mutex> lock(not_modal_dialog_mutex);
+        if (not_modal_dialog == have_to_destroy) {
+            not_modal_dialog = nullptr;
+        }
+    }
+    if (new_one != nullptr) {
+        {
+            // hove to ensure that these command are "atomic"
+            std::unique_lock<std::mutex> lock(not_modal_dialog_mutex);
+            if (not_modal_dialog != nullptr)
+                not_modal_dialog->Destroy();
+            not_modal_dialog = new_one;
+        }
+        new_one->Show();
+    }
+}
+
+void GUI_App::html_dialog()
+{
+    change_calibration_dialog(nullptr, new HtmlDialog(this, mainframe, "Introduction to calibrations", "/calibration", "introduction.html"));
+}
+
+
 
 void GUI_App::system_info()
 {

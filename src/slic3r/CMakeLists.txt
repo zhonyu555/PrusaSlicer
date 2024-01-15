@@ -17,6 +17,8 @@ set(SLIC3R_GUI_SOURCES
     pchheader.hpp
     GUI/AboutDialog.cpp
     GUI/AboutDialog.hpp
+GUI/CalibrationAbstractDialog.cpp
+GUI/CalibrationAbstractDialog.hpp
     GUI/ArrangeSettingsDialogImgui.hpp
     GUI/ArrangeSettingsDialogImgui.cpp
     GUI/SysInfoDialog.cpp
