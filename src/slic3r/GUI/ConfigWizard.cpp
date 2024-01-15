@@ -3335,21 +3335,10 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
     wxGetApp().UpdateDarkUI(p->btn_finish);
     wxGetApp().UpdateDarkUI(p->btn_cancel);
 
-<<<<<<< HEAD
     const auto cr3d_de = p->bundles.find("CR3D");
     wxCHECK_RET(cr3d_de != p->bundles.cend(), "Vendor CR3D not found");
     const VendorProfile *vendor_cr3d = cr3d_de->second.vendor_profile;
-=======
-    wxGetApp().SetWindowVariantForButton(p->btn_sel_all);
-    wxGetApp().SetWindowVariantForButton(p->btn_prev);
-    wxGetApp().SetWindowVariantForButton(p->btn_next);
-    wxGetApp().SetWindowVariantForButton(p->btn_finish);
-    wxGetApp().SetWindowVariantForButton(p->btn_cancel);
 
-    const auto prusa_it = p->bundles.find("PrusaResearch");
-    wxCHECK_RET(prusa_it != p->bundles.cend(), "Vendor PrusaResearch not found");
-    const VendorProfile *vendor_prusa = prusa_it->second.vendor_profile;
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 
     p->add_page(p->page_welcome = new PageWelcome(this));
 

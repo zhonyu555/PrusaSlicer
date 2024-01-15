@@ -1211,7 +1211,7 @@ static wxMenu* generate_help_menu()
     append_menu_item(helpMenu, wxID_ANY, _L("Show &Configuration Folder"), _L("Show user configuration folder (datadir)"),
         [](wxCommandEvent&) { Slic3r::GUI::desktop_open_datadir_folder(); });
     append_menu_item(helpMenu, wxID_ANY, _L("Report an I&ssue"), wxString::Format(_L("Report an issue on %s"), SLIC3R_APP_NAME),
-<<<<<<< HEAD
+
         [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://github.com/CR-3D/SliCR-3D-V2/issues/new", nullptr, false); });
     if (wxGetApp().is_editor())
         append_menu_item(helpMenu, wxID_ANY, wxString::Format(_L("&About %s"), SLIC3R_APP_NAME), _L("Show about dialog"),
@@ -1220,13 +1220,7 @@ static wxMenu* generate_help_menu()
         append_menu_item(helpMenu, wxID_ANY, wxString::Format(_L("&About %s"), GCODEVIEWER_APP_NAME), _L("Show about dialog"),
             [](wxCommandEvent&) { Slic3r::GUI::about(); });
     append_menu_item(helpMenu, wxID_ANY, _L("Show Tip of the Day") 
-=======
-        [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://github.com/prusa3d/slic3r/issues/new", nullptr, false); });
-#ifndef __APPLE__
-    append_about_menu_item(helpMenu);
-#endif // __APPLE__
-    append_menu_item(helpMenu, wxID_ANY, _L("Show Tip of the Day")
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
+
 #if 0//debug
         + "\tCtrl+Shift+T"
 #endif
@@ -1276,17 +1270,7 @@ void MainFrame::init_menubar_as_editor()
     // Calibration Menu 
     wxMenu* calibrationMenu = new wxMenu; 
     {
-        append_menu_item(
-            calibrationMenu, wxID_ANY, _L("Temperature"), _L("Temperature Calibration"),
-            [this](wxCommandEvent &) {
 
-            },
-            "", nullptr,
-            [this]() {
-                return m_plater->is_view3D_shown();
-                ;
-            },
-            this);
     }
 
     // File menu
