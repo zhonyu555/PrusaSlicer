@@ -567,7 +567,7 @@ void GLModel::init_from(const indexed_triangle_set& its)
 {
     if (is_initialized()) {
         // call reset() if you want to reuse this model
-        assert(false);
+        //assert(false);
         return;
     }
 

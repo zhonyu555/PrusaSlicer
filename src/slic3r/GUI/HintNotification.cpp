@@ -789,8 +789,8 @@ void NotificationManager::HintNotification::render_text(
             }
             // first line is headline (for hint notification it must be divided by \n)
             if (m_text1.find('\n') >= m_endlines[i]) {
-                ImGui::TextColored(ImVec4(0x1a / 255.0f, 0x74 / 255.0f, 0x76 / 255.0f, 1.0f), "%s",
-                                   line.c_str()); 
+
+				 ImGui::TextColored(ImGuiWrapper::COL_GREEN_DARK, "%s", line.c_str()); 
 				line = ImGui::ColorMarkerEnd;
             }
             // Add ImGui::ColorMarkerStart if there is ImGui::ColorMarkerEnd first (start was at prev line)
@@ -989,6 +989,7 @@ void NotificationManager::HintNotification::render_logo(ImGuiWrapper& imgui, con
 	ImGui::SetCursorPosY(win_size_y / 2 - button_pic_size.y * 2.f);
 	imgui.text(text.c_str());
 }
+
 void NotificationManager::HintNotification::render_documentation_button(ImGuiWrapper& imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
 	ImVec2 win_size(win_size_x, win_size_y);
