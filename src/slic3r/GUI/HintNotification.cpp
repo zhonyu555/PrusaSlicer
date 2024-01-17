@@ -978,7 +978,7 @@ void NotificationManager::HintNotification::render_logo(ImGuiWrapper& imgui, con
 	placeholder_text = ImGui::EjectButton;
 	ImVec2 button_pic_size = ImGui::CalcTextSize(placeholder_text.c_str());
 	std::wstring text;
-	text = ImGui::ClippyMarker;
+	text = ImGui::CR3D_Logo;
 	ImGui::SetCursorPosX(button_pic_size.x / 3);
 	ImGui::SetCursorPosY(win_size_y / 2 - button_pic_size.y * 2.f);
 	imgui.text(text.c_str());

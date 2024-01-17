@@ -157,6 +157,7 @@ namespace ImGui
     const wchar_t DocumentationButton      = 0x2600;
     const wchar_t DocumentationHoverButton = 0x2601;
     const wchar_t ClippyMarker             = 0x2602;
+    const wchar_t CR3D_Logo                     = 0x2607;
     const wchar_t InfoMarker               = 0x2603;
     const wchar_t SliderFloatEditBtnIcon   = 0x2604;
     const wchar_t SliderFloatEditBtnPressedIcon = 0x2605;
