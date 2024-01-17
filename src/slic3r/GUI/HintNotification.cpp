@@ -334,6 +334,7 @@ void HintDatabase::load_hints_from_file(const boost::filesystem::path& path)
 			// unique id string [hint:id] (trim "hint:")
 			std::string id_string = section.first.substr(5);
 			id_string = std::to_string(std::hash<std::string>{}(id_string));
+
 			// unescaping and translating all texts and saving all data common for all hint types 
 			std::string fulltext;
 			std::string text1;
@@ -595,7 +596,6 @@ void NotificationManager::HintNotification::count_lines()
 
 	if (text.empty())
 		return;
-
 	m_endlines.clear();
 	while (last_end < text.length() - 1)
 	{
@@ -754,89 +754,95 @@ bool NotificationManager::HintNotification::on_text_click()
 		m_hypertext_callback();
 	return false;
 }
-
-void NotificationManager::HintNotification::render_text(ImGuiWrapper& imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
+void NotificationManager::HintNotification::render_text(
+    ImGuiWrapper &imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
     if (!m_has_hint_data) {
         retrieve_data();
-	}
+    }
+    bool hasExecuted = false; // Add this flag variable outside the loop
 
-	float	x_offset = m_left_indentation;
-	int		last_end = 0;
-	float	starting_y = (m_lines_count < 4 ? m_line_height / 2 * (4 - m_lines_count + 1) : m_line_height / 2);
-	float	shift_y = m_line_height;
-	std::string line;
+    float       x_offset   = m_left_indentation;
+    int         last_end   = 0;
+    float       starting_y = (m_lines_count < 4 ? m_line_height / 2 * (4 - m_lines_count + 1) : m_line_height / 2);
+    float       shift_y    = m_line_height;
+    std::string line;
 
-	for (size_t i = 0; i < (m_multiline ? /*m_lines_count*/m_endlines.size() : 2); i++) {
-		line.clear();
-		ImGui::SetCursorPosX(x_offset);
-		ImGui::SetCursorPosY(starting_y + i * shift_y);
-		if (m_endlines.size() > i && m_text1.size() >= m_endlines[i]) {
-			if (i == 1 && m_endlines.size() > 2 && !m_multiline) {
-				// second line with "more" hypertext
-				line = m_text1.substr(m_endlines[0] + (m_text1[m_endlines[0]] == '\n' || m_text1[m_endlines[0]] == ' ' ? 1 : 0), m_endlines[1] - m_endlines[0] - (m_text1[m_endlines[0]] == '\n' || m_text1[m_endlines[0]] == ' ' ? 1 : 0));
-				while (ImGui::CalcTextSize(line.c_str()).x > m_window_width - m_window_width_offset - ImGui::CalcTextSize((".." + _u8L("More")).c_str()).x) {
-					line = line.substr(0, line.length() - 1);
-				}
-				line += "..";
-			} else {
-				// regural line
-				line = m_text1.substr(last_end, m_endlines[i] - last_end);	
-			}
-			// first line is headline (for hint notification it must be divided by \n)
-			if (m_text1.find('\n') >= m_endlines[i]) {
-				line = ImGui::ColorMarkerStart + line + ImGui::ColorMarkerEnd;
-			}
-			// Add ImGui::ColorMarkerStart if there is ImGui::ColorMarkerEnd first (start was at prev line)
-			if (line.find_first_of(ImGui::ColorMarkerEnd) < line.find_first_of(ImGui::ColorMarkerStart)) {
-				line = ImGui::ColorMarkerStart + line;
-			}
+    for (size_t i = 0; i < (m_multiline ? /*m_lines_count*/ m_endlines.size() : 2); i++) {
+        line.clear();
+        ImGui::SetCursorPosX(x_offset);
+        ImGui::SetCursorPosY(starting_y + i * shift_y);
+        if (m_endlines.size() > i && m_text1.size() >= m_endlines[i]) {
+            if (i == 1 && m_endlines.size() > 2 && !m_multiline) {
+                // second line with "more" hypertext
+                line = m_text1.substr(m_endlines[0] + (m_text1[m_endlines[0]] == '\n' || m_text1[m_endlines[0]] == ' ' ? 1 : 0),
+                                      m_endlines[1] - m_endlines[0] -
+                                          (m_text1[m_endlines[0]] == '\n' || m_text1[m_endlines[0]] == ' ' ? 1 : 0));
+                while (ImGui::CalcTextSize(line.c_str()).x >
+                       m_window_width - m_window_width_offset - ImGui::CalcTextSize((".." + _u8L("More")).c_str()).x) {
+                    line = line.substr(0, line.length() - 1);
+                }
+                line += "..";
+            } else {
+                // regural line
+                line = m_text1.substr(last_end, m_endlines[i] - last_end);
+            }
+            // first line is headline (for hint notification it must be divided by \n)
+            if (m_text1.find('\n') >= m_endlines[i]) {
+                ImGui::TextColored(ImVec4(0x1a / 255.0f, 0x74 / 255.0f, 0x76 / 255.0f, 1.0f), "%s",
+                                   line.c_str()); 
+				line = ImGui::ColorMarkerEnd;
+            }
+            // Add ImGui::ColorMarkerStart if there is ImGui::ColorMarkerEnd first (start was at prev line)
+            if (line.find_first_of(ImGui::ColorMarkerEnd) < line.find_first_of(ImGui::ColorMarkerStart)) {
+                line = ImGui::ColorMarkerStart + line;
+            }
 
-			last_end = m_endlines[i];
-			if (m_text1.size() > m_endlines[i])
-				last_end += (m_text1[m_endlines[i]] == '\n' || m_text1[m_endlines[i]] == ' ' ? 1 : 0);
-			imgui.text(line.c_str());
-		}
-			
-	}
-	//hyperlink text
-	if (!m_multiline && m_lines_count > 2) {
-		render_hypertext(imgui, x_offset + ImGui::CalcTextSize((line + " ").c_str()).x, starting_y + shift_y, _u8L("More"), true);
-	} else if (!m_hypertext.empty()) {
-		render_hypertext(imgui, x_offset + ImGui::CalcTextSize((line + (line.empty()? "": " ")).c_str()).x, starting_y + (m_endlines.size() - 1) * shift_y, m_hypertext);
-	}
+            last_end = m_endlines[i];
+            if (m_text1.size() > m_endlines[i])
+                last_end += (m_text1[m_endlines[i]] == '\n' || m_text1[m_endlines[i]] == ' ' ? 1 : 0);
+            imgui.text(line.c_str());
+        }
+    }
+    // hyperlink text
+    if (!m_multiline && m_lines_count > 2) {
+        render_hypertext(imgui, x_offset + ImGui::CalcTextSize((line + " ").c_str()).x, starting_y + shift_y, _u8L("More"), true);
+    } else if (!m_hypertext.empty()) {
+        render_hypertext(imgui, x_offset + ImGui::CalcTextSize((line + (line.empty() ? "" : " ")).c_str()).x,
+                         starting_y + (m_endlines.size() - 1) * shift_y, m_hypertext);
+    }
 
-	// text2
-	if (!m_text2.empty() && m_multiline) {
-		starting_y += (m_endlines.size() - 1) * shift_y;
-		last_end = 0;
-		for (size_t i = 0; i < (m_multiline ? m_endlines2.size() : 2); i++) {
-			if (i == 0) //first line X is shifted by hypertext
-				ImGui::SetCursorPosX(x_offset + ImGui::CalcTextSize((line + m_hypertext + (line.empty() ? " " : "  ")).c_str()).x);
-			else
-				ImGui::SetCursorPosX(x_offset);
+    // text2
+    if (!m_text2.empty() && m_multiline) {
+        starting_y += (m_endlines.size() - 1) * shift_y;
+        last_end = 0;
+        for (size_t i = 0; i < (m_multiline ? m_endlines2.size() : 2); i++) {
+            if (i == 0) // first line X is shifted by hypertext
+                ImGui::SetCursorPosX(x_offset + ImGui::CalcTextSize((line + m_hypertext + (line.empty() ? " " : "  ")).c_str()).x);
+            else
+                ImGui::SetCursorPosX(x_offset);
 
-			ImGui::SetCursorPosY(starting_y + i * shift_y);
-			line.clear();
-			if (m_endlines2.size() > i && m_text2.size() >= m_endlines2[i]) {
+            ImGui::SetCursorPosY(starting_y + i * shift_y);
+            line.clear();
+            if (m_endlines2.size() > i && m_text2.size() >= m_endlines2[i]) {
+                // regural line
+                line = m_text2.substr(last_end, m_endlines2[i] - last_end);
 
-				// regural line
-				line = m_text2.substr(last_end, m_endlines2[i] - last_end);
+                // Add ImGui::ColorMarkerStart if there is ImGui::ColorMarkerEnd first (start was at prev line)
+                if (line.find_first_of(ImGui::ColorMarkerEnd) < line.find_first_of(ImGui::ColorMarkerStart)) {
+                    line = ImGui::ColorMarkerStart + line;
+                }
 
-				// Add ImGui::ColorMarkerStart if there is ImGui::ColorMarkerEnd first (start was at prev line)
-				if (line.find_first_of(ImGui::ColorMarkerEnd) < line.find_first_of(ImGui::ColorMarkerStart)) {
-					line = ImGui::ColorMarkerStart + line;
-				}
-
-				last_end = m_endlines2[i];
-				if (m_text2.size() > m_endlines2[i])
-					last_end += (m_text2[m_endlines2[i]] == '\n' || m_text2[m_endlines2[i]] == ' ' ? 1 : 0);
-				imgui.text(line.c_str());
-			}
-
-		}
-	}
+                last_end = m_endlines2[i];
+                if (m_text2.size() > m_endlines2[i])
+                    last_end += (m_text2[m_endlines2[i]] == '\n' || m_text2[m_endlines2[i]] == ' ' ? 1 : 0);
+                imgui.text(line.c_str());
+            }
+        }
+    }
 }
+
+
 
 void NotificationManager::HintNotification::render_close_button(ImGuiWrapper& imgui, const float win_size_x, const float win_size_y, const float win_pos_x, const float win_pos_y)
 {
@@ -978,7 +984,7 @@ void NotificationManager::HintNotification::render_logo(ImGuiWrapper& imgui, con
 	placeholder_text = ImGui::EjectButton;
 	ImVec2 button_pic_size = ImGui::CalcTextSize(placeholder_text.c_str());
 	std::wstring text;
-	text = ImGui::CR3D_Logo;
+	text = ImGui::ClippyMarker;
 	ImGui::SetCursorPosX(button_pic_size.x / 3);
 	ImGui::SetCursorPosY(win_size_y / 2 - button_pic_size.y * 2.f);
 	imgui.text(text.c_str());

@@ -54,7 +54,7 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
     assert(objs_idx.size() == 5);
 
     // CRASH AT THIS LINE
-    const DynamicPrintConfig *printConfig   = wxGetApp().get_tab(Preset::TYPE_SLA_PRINT)->get_config();
+    const DynamicPrintConfig *printConfig   = wxGetApp().get_tab(Preset::TYPE_FFF_PRINT)->get_config();
     const DynamicPrintConfig *printerConfig = wxGetApp().get_tab(Preset::TYPE_PRINTER)->get_config();
     
     /// --- scale ---
@@ -147,10 +147,10 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
 
     //update plater
     //GLCanvas3D::set_warning_freeze(false);
-    wxGetApp().get_tab(Preset::TYPE_SLA_PRINT)->load_config(new_print_config);
+    wxGetApp().get_tab(Preset::TYPE_FFF_PRINT)->load_config(new_print_config);
     plat->on_config_change(new_print_config);
     plat->changed_objects(objs_idx);
-    wxGetApp().get_tab(Preset::TYPE_SLA_PRINT)->update_dirty();
+    wxGetApp().get_tab(Preset::TYPE_FFF_PRINT)->update_dirty();
     //update everything, easier to code.
     this->gui_app->obj_list()->update_after_undo_redo();
     //if(!plat->is_background_process_update_scheduled())
