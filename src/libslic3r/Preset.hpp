@@ -113,19 +113,12 @@ class Preset
 public:
     enum Type
     {
-        TYPE_MATERIAL,
-        TYPE_PRINTER,
-        TYPE_TAB,
-        TYPE_FFF,
-        TYPE_FFF_PRINT,
-        TYPE_FFF_FILAMENT,
-        TYPE_SLA,
-        TYPE_SLA_PRINT,
-
         TYPE_INVALID,
         TYPE_PRINT,
+        TYPE_SLA_PRINT,
         TYPE_FILAMENT,
         TYPE_SLA_MATERIAL,
+        TYPE_PRINTER,
         TYPE_COUNT,
         // This type is here to support PresetConfigSubstitutions for physical printers, however it does not belong to the Preset class,
         // PhysicalPrinter class is used instead.

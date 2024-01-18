@@ -37,7 +37,8 @@ public:
 
     // Initialized to empty, all zeros, Invalid.
     BuildVolume() {}
-    // Initialize from PrintConfig::bed_shape and PrintConfig::max_print_height
+    // Initialize from PrintConfig::
+    //  and PrintConfig::max_print_height
     BuildVolume(const std::vector<Vec2d> &bed_shape, const double max_print_height);
 
     // Source data, unscaled coordinates.

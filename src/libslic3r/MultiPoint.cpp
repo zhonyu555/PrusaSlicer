@@ -34,8 +34,8 @@ void MultiPoint::rotate(double cos_angle, double sin_angle)
     for (Point &pt : this->points) {
         double cur_x = double(pt(0));
         double cur_y = double(pt(1));
-        pt(0) = coord_t(round(cos_angle * cur_x - sin_angle * cur_y));
-        pt(1) = coord_t(round(cos_angle * cur_y + sin_angle * cur_x));
+        pt(0) = coord_t(round(cos_angle * cur_x - sin_angle * cur_y ));
+        pt(1) = coord_t(round(cos_angle * cur_y + sin_angle * cur_x ));
     }
 }
 

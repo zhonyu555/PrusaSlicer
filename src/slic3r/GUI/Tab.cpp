@@ -120,11 +120,7 @@ Tab::Tab(wxBookCtrlBase* parent, const wxString& title, Preset::Type type) :
 
 void Tab::set_type()
 {
-    if (m_name == "print") {
-        m_type = Slic3r::Preset::TYPE_PRINT;
-    } else if (m_name == "fff_print") {
-        m_type = Slic3r::Preset::TYPE_FFF_PRINT;
-    }
+    if (m_name == "print")              { m_type = Slic3r::Preset::TYPE_PRINT;}
     else if (m_name == "sla_print")     { m_type = Slic3r::Preset::TYPE_SLA_PRINT; }
     else if (m_name == "filament")      { m_type = Slic3r::Preset::TYPE_FILAMENT; }
     else if (m_name == "sla_material")  { m_type = Slic3r::Preset::TYPE_SLA_MATERIAL; }

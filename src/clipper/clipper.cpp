@@ -95,14 +95,15 @@ inline double FRound(double a)
 template<typename IType>
 inline IType Round(double val)
 {
-    double v = FRound(val);
-#if defined(CLIPPERLIB_INT32) && ! defined(NDEBUG)
-    static_assert(sizeof(IType) == 4 || sizeof(IType) == 8, "IType must be int32 or int64");
-    static constexpr const double hi = 65536. * 16383. * (sizeof(IType) == 4 ? 1 : 65536. * 65536.);
+    double v = val < 0 ? val - 0.5 : val + 0.5;
+
+#if defined(CLIPPERLIB_INT32) && !defined(NDEBUG)
+
+    static constexpr const double hi = 65536 * 16383;
     if (v > hi || -v > hi)
         throw clipperException("Coordinate outside allowed range");
 #endif
-    return static_cast<IType>(v);
+    return static_cast<cInt>(v);
 }
 
 // Overriding the Eigen operators because we don't want to compare Z coordinate if IntPoint is 3 dimensional.
