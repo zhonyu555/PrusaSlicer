@@ -984,8 +984,8 @@ bool ImGui::ScrollbarEx(const ImRect& bb_frame, ImGuiID id, ImGuiAxis axis, floa
     }
 
     // Render
-    const ImU32 bg_col = GetColorU32(ImGuiCol_ScrollbarBg);
-    const ImU32 grab_col = GetColorU32(held ? ImGuiCol_ScrollbarGrabActive : hovered ? ImGuiCol_ScrollbarGrabHovered : ImGuiCol_ScrollbarGrab, alpha);
+    const ImU32 bg_col   = IM_COL32(0, 255, 0, 255);  
+    const ImU32 grab_col = IM_COL32(0, 255, 0, 255);  
     window->DrawList->AddRectFilled(bb_frame.Min, bb_frame.Max, bg_col, window->WindowRounding, flags);
     ImRect grab_rect;
     if (axis == ImGuiAxis_X)

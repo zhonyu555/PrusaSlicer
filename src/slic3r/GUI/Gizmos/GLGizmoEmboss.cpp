@@ -817,7 +817,7 @@ static void draw_mouse_offset(const std::optional<Vec2d> &offset)
     auto   draw_list = ImGui::GetOverlayDrawList();
     ImVec2 p1        = ImGui::GetMousePos();
     ImVec2 p2(p1.x + offset->x(), p1.y + offset->y());
-    ImU32  color     = ImGui::GetColorU32(ImGuiWrapper::COL_ORANGE_LIGHT);
+    ImU32  color     = ImGui::GetColorU32(ImGuiWrapper::COL_GREEN_DARK);
     float  thickness = 3.f;
     draw_list->AddLine(p1, p2, color, thickness);
 }
@@ -1623,7 +1623,7 @@ void GLGizmoEmboss::draw_font_list_line()
     bool exist_change_in_font = m_style_manager.is_font_changed();
     const std::string& font_text = m_gui_cfg->translations.font;
     if (exist_change_in_font || !exist_stored_style)
-        ImGuiWrapper::text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, font_text);
+        ImGuiWrapper::text_colored(ImGuiWrapper::COL_GREEN_LIGHT, font_text);
     else
         ImGuiWrapper::text(font_text);
 
@@ -2177,7 +2177,7 @@ void GLGizmoEmboss::draw_style_list() {
     if (m_style_manager.exist_stored_style())
         ImGui::Text("%s", title.c_str());
     else
-        ImGui::TextColored(ImGuiWrapper::COL_ORANGE_LIGHT, "%s", title.c_str());
+        ImGui::TextColored(ImGuiWrapper::COL_GREEN_LIGHT, "%s", title.c_str());
         
     ImGui::SetNextItemWidth(m_gui_cfg->input_width);
     auto add_text_modify = [&is_modified](const std::string& name) {
@@ -2401,7 +2401,7 @@ bool GLGizmoEmboss::revertible(const std::string &name,
 {
     bool changed = exist_change(value, default_value);
     if (changed || default_value == nullptr)
-        ImGuiWrapper::text_colored(ImGuiWrapper::COL_ORANGE_LIGHT, name);
+        ImGuiWrapper::text_colored(ImGuiWrapper::COL_GREEN_LIGHT, name);
     else
         ImGuiWrapper::text(name);
 
