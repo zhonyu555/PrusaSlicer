@@ -23,7 +23,8 @@ GUI/CalibrationBedDialog.cpp
 GUI/CalibrationBedDialog.hpp
 GUI/CalibrationTempDialog.cpp
 GUI/CalibrationTempDialog.hpp
-
+GUI/CalibrationCubeDialog.cpp
+GUI/CalibrationCubeDialog.hpp
     GUI/ArrangeSettingsDialogImgui.hpp
     GUI/ArrangeSettingsDialogImgui.cpp
     GUI/SysInfoDialog.cpp

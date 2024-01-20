@@ -32,17 +32,14 @@ void CalibrationBedDialog::create_buttons(wxStdDialogButtonSizer* buttons){
 }
 
 void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
+    gui_app->app_config->set("autocenter", "1");
     Plater* plat = this->main_frame->plater();
     Model& model = plat->model();
     if (!plat->new_project(L("First layer calibration")))
         return;
 
     //GLCanvas3D::set_warning_freeze(true);
-    bool autocenter = gui_app->app_config->get("autocenter") == "1";
-    if(autocenter) {
-        //disable aut-ocenter for this calibration.
-        gui_app->app_config->set("autocenter", "1");
-    }
+
 
     std::vector<size_t> objs_idx = plat->load_files(std::vector<std::string>{
             (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "bed_leveling" / "patch.amf").string(),
@@ -148,11 +145,6 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
     // if(!plat->is_background_process_update_scheduled())
     //     plat->schedule_background_process();
     plat->reslice();
-
-    if (autocenter) {
-        // re-enable auto-center after this calibration.
-        gui_app->app_config->set("autocenter", "1");
-    }
 }
 
 }} // namespace Slic3r::GUI

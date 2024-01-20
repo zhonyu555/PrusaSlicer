@@ -302,6 +302,7 @@ PrinterPicker::PrinterPicker(wxWindow *parent, const VendorProfile &vendor, wxSt
                                    , vendor_dir_path / vendor.id / model.thumbnail
                                    , cache_dir_path  / vendor.id / model.thumbnail })
         {
+            model.thumbnail;
             if (!fs::exists(res))
                 continue;
             load_bitmap(GUI::from_u8(res.string()), bitmap, bitmap_width);

@@ -647,6 +647,7 @@ PlaterPresetComboBox::PlaterPresetComboBox(wxWindow *parent, Preset::Type preset
         });
     }
 
+
     edit_btn = new ScalableButton(parent, wxID_ANY, "cog");
     edit_btn->SetToolTip(_L("Click to edit preset"));
 

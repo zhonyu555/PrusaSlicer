@@ -134,18 +134,18 @@ Control::Control( wxWindow *parent,
     // control's view variables
     SLIDER_MARGIN     = 4 + GUI::wxGetApp().em_unit();
 
-    DARK_ORANGE_PEN   = wxPen(wxColour(237, 107, 33));
-    ORANGE_PEN        = wxPen(wxColour(253, 126, 66));
-    LIGHT_ORANGE_PEN  = wxPen(wxColour(254, 177, 139));
+    DARK_ORANGE_PEN   = wxPen(wxColour(0,0,0,1));
+    ORANGE_PEN       = wxPen(wxColour(0, 0, 0, 1));
+    LIGHT_ORANGE_PEN  = wxPen(wxColour(0, 0, 0, 1));
 
-    DARK_GREY_PEN     = wxPen(wxColour(128, 128, 128));
-    GREY_PEN          = wxPen(wxColour(164, 164, 164));
-    LIGHT_GREY_PEN    = wxPen(wxColour(204, 204, 204));
+    DARK_GREY_PEN     = wxPen(wxColour(0, 0, 0, 1));
+    GREY_PEN       = wxPen(wxColour(0, 0, 0, 1));
+    LIGHT_GREY_PEN    = wxPen(wxColour(0, 0, 0, 1));
 
     m_line_pens = { &DARK_GREY_PEN, &GREY_PEN, &LIGHT_GREY_PEN };
     m_segm_pens = { &DARK_ORANGE_PEN, &ORANGE_PEN, &LIGHT_ORANGE_PEN };
 
-    FOCUS_RECT_PEN   = wxPen(wxColour(128, 128, 10), 1, wxPENSTYLE_DOT);
+    FOCUS_RECT_PEN   = wxPen(wxColour(0, 0, 0, 1), 1, wxPENSTYLE_DOT);
     FOCUS_RECT_BRUSH = wxBrush(wxColour(0, 0, 0), wxBRUSHSTYLE_TRANSPARENT);
 
     m_font = GetFont();

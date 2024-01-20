@@ -102,6 +102,7 @@
 #include "CalibrationAbstractDialog.hpp"
 #include "CalibrationBedDialog.hpp"
 #include "CalibrationTempDialog.hpp"
+#include "CalibrationCubeDialog.hpp"
 
 #include "BitmapCache.hpp"
 #include "Notebook.hpp"
@@ -1972,7 +1973,13 @@ void GUI_App::bed_leveling_dialog() {
     change_calibration_dialog(nullptr, new CalibrationBedDialog(this, mainframe)); 
 }
 
-void GUI_App::filament_temperature_dialog() { change_calibration_dialog(nullptr, new CalibrationTempDialog(this, mainframe)); }
+void GUI_App::filament_temperature_dialog() { 
+    change_calibration_dialog(nullptr, new CalibrationTempDialog(this, mainframe)); 
+}
+
+void GUI_App::calibration_cube_dialog() { 
+    change_calibration_dialog(nullptr, new CalibrationCubeDialog(this, mainframe)); 
+}
 
 void GUI_App::system_info()
 {

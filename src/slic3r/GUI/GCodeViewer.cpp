@@ -4188,11 +4188,11 @@ void GCodeViewer::render_legend(float& legend_height)
 
         if (ImGui::BeginTable("Times", 2)) {
             if (!time_mode.layers_times.empty()) {
-                add_strings_row_to_table(_u8L("First layer") + ":", ImGuiWrapper::COL_GREEN_LIGHT,
+              add_strings_row_to_table(_u8L("First layer") + ":", ImGuiWrapper::COL_WHITE,
                     short_time_ui(get_time_dhms(time_mode.layers_times.front())), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
             }
 
-            add_strings_row_to_table(_u8L("Total") + ":", ImGuiWrapper::COL_GREEN_LIGHT,
+            add_strings_row_to_table(_u8L("Total") + ":", ImGuiWrapper::COL_WHITE,
                 short_time_ui(get_time_dhms(time_mode.time)), ImGuiWrapper::to_ImVec4(ColorRGBA::WHITE()));
 
             ImGui::EndTable();

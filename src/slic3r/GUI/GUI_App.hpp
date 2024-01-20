@@ -260,6 +260,7 @@ public:
     void html_dialog();
     void bed_leveling_dialog();
     void filament_temperature_dialog();
+    void calibration_cube_dialog();
 
 
     void            recreate_GUI(const wxString& message);

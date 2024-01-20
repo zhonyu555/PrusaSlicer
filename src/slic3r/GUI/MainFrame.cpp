@@ -1280,8 +1280,11 @@ void MainFrame::init_menubar_as_editor()
         append_menu_item(calibrationMenu, wxID_ANY, _(L("Filament temperature calibration")),
                          _(L("Create a test print to help you to set your filament temperature.")),
                          [this](wxCommandEvent &) { wxGetApp().filament_temperature_dialog(); });
+        calibrationMenu->AppendSeparator();
 
-
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("Calibration cube")),
+                    _(L("Print a calibration cube, for various calibration goals.")),
+                    [this](wxCommandEvent &) { wxGetApp().calibration_cube_dialog(); });
     }
 
     // File menu

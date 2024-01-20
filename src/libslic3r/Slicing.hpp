@@ -25,6 +25,10 @@ class ModelConfig;
 class ModelObject;
 class DynamicPrintConfig;
 
+
+extern coordf_t check_z_step(const coordf_t val, const coordf_t z_step);
+
+
 // Parameters to guide object slicing and support generation.
 // The slicing parameters account for a raft and whether the 1st object layer is printed with a normal or a bridging flow
 // (using a normal flow over a soluble support, using a bridging flow over a non-soluble support).

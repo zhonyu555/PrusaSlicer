@@ -262,7 +262,7 @@ public:
     static const ImVec4 COL_GREY_LIGHT;
     static const ImVec4 COL_GREEN_DARK;
     static const ImVec4 COL_GREEN_LIGHT;
-
+    static const ImVec4 COL_WHITE;
     static const ImVec4 COL_ORANGE_DARK;
     static const ImVec4 COL_WINDOW_BACKGROUND;
     static const ImVec4 COL_BUTTON_BACKGROUND;
