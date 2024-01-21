@@ -3476,54 +3476,37 @@ void GCodeViewer::render_legend(float& legend_height)
                     imgui.set_requires_extra_frame();
                 }
             }
-
-            if (!time.empty()) {
-                ImGui::SameLine(offsets[0]);
-                imgui.text(time);
-                ImGui::SameLine(offsets[1]);
-                pos = ImGui::GetCursorScreenPos();
-                const float width = std::max(1.0f, percent_bar_size * percent / max_percent);
-                draw_list->AddRectFilled({ pos.x, pos.y + 2.0f }, { pos.x + width, pos.y + icon_size - 2.0f },
-                    ImGui::GetColorU32(ImGuiWrapper::COL_ORANGE_LIGHT));
-                ImGui::Dummy({ percent_bar_size, icon_size });
-                ImGui::SameLine();
-                char buf[64];
-                ::sprintf(buf, "%.1f%%", 100.0f * percent);
-                ImGui::TextUnformatted((percent > 0.0f) ? buf : "");
-                ImGui::SameLine(offsets[2]);
-                imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
-                ImGui::SameLine(offsets[3]);
-                imgui.text(format("%1$.2f %2%", used_filament_g, grams));
-            }
         }
         else {
             imgui.text(label);
-            if (!time.empty()) {
-                ImGui::SameLine(offsets[0]);
-                imgui.text(time);
-                ImGui::SameLine(offsets[1]);
-                pos = ImGui::GetCursorScreenPos();
-                const float width = std::max(1.0f, percent_bar_size * std::min(max_percent, percent) / max_percent);
-                draw_list->AddRectFilled({ pos.x, pos.y + 2.0f }, { pos.x + width, pos.y + icon_size - 2.0f },
-                    ImGui::GetColorU32(ImGuiWrapper::COL_ORANGE_LIGHT));
-                ImGui::Dummy({ percent_bar_size, icon_size });
-                ImGui::SameLine();
-                char buf[64];
-                ::sprintf(buf, "%.1f%%", 100.0f * percent);
-                ImGui::TextUnformatted((percent > 0.0f) ? buf : "");
-                if (used_filament_m > 0.0) {
-                    ImGui::SameLine(offsets[2]);
-                    imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
-                    ImGui::SameLine(offsets[3]);
-                    imgui.text(format("%1$.2f %2%", used_filament_g, grams));
-                }
-            }
-            else if (used_filament_m > 0.0) {
-                ImGui::SameLine(offsets[0]);
-                imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
-                ImGui::SameLine(offsets[1]);
-                imgui.text(format("%1$.2f %2%", used_filament_g, grams));
-            }
+        }
+
+        int offsetsIndex = 0;
+
+        // draw time
+        if (!time.empty()) {
+            ImGui::SameLine(offsets[offsetsIndex++]);
+            imgui.text(time);
+        }
+        // draw percent
+        if (percent > 0.0f) {
+            ImGui::SameLine(offsets[offsetsIndex++]);
+            pos = ImGui::GetCursorScreenPos();
+            const float width = std::max(1.0f, percent_bar_size * std::min(max_percent, percent) / max_percent);
+            draw_list->AddRectFilled({pos.x, pos.y + 2.0f}, {pos.x + width, pos.y + icon_size - 2.0f},
+                ImGui::GetColorU32(ImGuiWrapper::COL_ORANGE_LIGHT));
+            ImGui::Dummy({percent_bar_size, icon_size});
+        }
+        // draw used filament
+        if (used_filament_m > 0.0) {
+            ImGui::SameLine();
+            char buf[64];
+            ::sprintf(buf, "%.1f%%", 100.0f * percent);
+            ImGui::TextUnformatted((percent > 0.0f) ? buf : "");
+            ImGui::SameLine(offsets[offsetsIndex++]);
+            imgui.text(format("%1$.2f %2%", used_filament_m, (imperial_units ? inches : metres)));
+            ImGui::SameLine(offsets[offsetsIndex++]);
+            imgui.text(format("%1$.2f %2%", used_filament_g, grams));
         }
 
         if (!visible)
