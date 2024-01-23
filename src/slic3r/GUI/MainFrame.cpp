@@ -1184,18 +1184,16 @@ static wxMenu* generate_help_menu()
 
     append_menu_item(helpMenu, wxID_ANY, wxString::Format(_L("%s &Website"), SLIC3R_APP_NAME),
         wxString::Format(_L("Open the %s website in your browser"), SLIC3R_APP_NAME),
-        [](wxCommandEvent&) { wxGetApp().open_web_page_localized("https://www.prusa3d.com/slicerweb"); });
+        [](wxCommandEvent&) { wxGetApp().open_web_page_localized("https://www.cr3d.de/"); });
     // TRN Item from "Help" menu
     append_menu_item(helpMenu, wxID_ANY, wxString::Format(_L("&Quick Start"), SLIC3R_APP_NAME),
         wxString::Format(_L("Open the %s website in your browser"), SLIC3R_APP_NAME),
-        [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://help.prusa3d.com/article/first-print-with-prusaslicer_1753", nullptr, false); });
+        [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://www.cr3d.de/", nullptr, false); });
     // TRN Item from "Help" menu
     append_menu_item(helpMenu, wxID_ANY, wxString::Format(_L("Sample &G-codes and Models"), SLIC3R_APP_NAME),
         wxString::Format(_L("Open the %s website in your browser"), SLIC3R_APP_NAME),
-        [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://help.prusa3d.com/article/sample-g-codes_529630", nullptr, false); });
+        [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://www.cr3d.de/", nullptr, false); });
     helpMenu->AppendSeparator();
-    append_menu_item(helpMenu, wxID_ANY, _L("Prusa 3D &Drivers"), _L("Open the Prusa3D drivers download page in your browser"),
-        [](wxCommandEvent&) { wxGetApp().open_web_page_localized("https://www.prusa3d.com/downloads"); });
     append_menu_item(helpMenu, wxID_ANY, _L("Software &Releases"), _L("Open the software releases page in your browser"),
         [](wxCommandEvent&) { wxGetApp().open_browser_with_warning_dialog("https://github.com/CR-3D/SliCR-3D-V2/releases", nullptr, false); });
 //#        my $versioncheck = $self->_append_menu_item($helpMenu, "Check for &Updates...", "Check for new Slic3r versions", sub{
@@ -1270,20 +1268,20 @@ void MainFrame::init_menubar_as_editor()
     // Calibration Menu 
     wxMenu* calibrationMenu = new wxMenu; 
     {
-        append_menu_item(calibrationMenu, wxID_ANY, _(L("Introduction")), _(L("How to use this menu and calibrations.")),
+        append_menu_item(calibrationMenu, wxID_ANY, _L("Introduction"), _L("How to use this menu and calibrations."),
                          [this](wxCommandEvent &) { wxGetApp().html_dialog(); });
         calibrationMenu->AppendSeparator();
-        append_menu_item(calibrationMenu, wxID_ANY, _(L("Bed/Extruder leveling")),
-                         _(L("Create a test print to help you to level your printer bed.")),
+        append_menu_item(calibrationMenu, wxID_ANY, _L("Bed/Extruder leveling"),
+                        _L("Create a test print to help you to level your printer bed."),
                          [this](wxCommandEvent &) { wxGetApp().bed_leveling_dialog(); });
         calibrationMenu->AppendSeparator();
-        append_menu_item(calibrationMenu, wxID_ANY, _(L("Filament temperature calibration")),
-                         _(L("Create a test print to help you to set your filament temperature.")),
+        append_menu_item(calibrationMenu, wxID_ANY, _L("Filament temperature calibration"),
+                         _L("Create a test print to help you to set your filament temperature."),
                          [this](wxCommandEvent &) { wxGetApp().filament_temperature_dialog(); });
         calibrationMenu->AppendSeparator();
 
-        append_menu_item(calibrationMenu, wxID_ANY, _(L("Calibration cube")),
-                    _(L("Print a calibration cube, for various calibration goals.")),
+        append_menu_item(calibrationMenu, wxID_ANY, _L("Calibration cube"),
+                    _L("Print a calibration cube, for various calibration goals."),
                     [this](wxCommandEvent &) { wxGetApp().calibration_cube_dialog(); });
     }
 

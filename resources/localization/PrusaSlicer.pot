@@ -8,11 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-<<<<<<< HEAD
-"POT-Creation-Date: 2023-09-28 20:28+0200\n"
-=======
 "POT-Creation-Date: 2023-12-11 08:57+0100\n"
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1209,12 +1205,7 @@ msgid ""
 "percentage, the speed is calculated over the external perimeter speed."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/libslic3r/PrintConfig.cpp:566 src/libslic3r/PrintConfig.cpp:613
-#, possible-c-format, possible-boost-format
-=======
 #: src/libslic3r/PrintConfig.cpp:593 src/libslic3r/PrintConfig.cpp:640
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 msgid "speed for 0% overlap (bridge)"
 msgstr ""
 
@@ -1227,20 +1218,6 @@ msgstr ""
 msgid "mm/s or %"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/libslic3r/PrintConfig.cpp:575 src/libslic3r/PrintConfig.cpp:622
-#, possible-c-format, possible-boost-format
-msgid "speed for 25% overlap"
-msgstr ""
-
-#: src/libslic3r/PrintConfig.cpp:584 src/libslic3r/PrintConfig.cpp:631
-#, possible-c-format, possible-boost-format
-msgid "speed for 50% overlap"
-msgstr ""
-
-#: src/libslic3r/PrintConfig.cpp:593 src/libslic3r/PrintConfig.cpp:640
-#, possible-c-format, possible-boost-format
-=======
 #: src/libslic3r/PrintConfig.cpp:602 src/libslic3r/PrintConfig.cpp:649
 msgid "speed for 25% overlap"
 msgstr ""
@@ -1250,7 +1227,6 @@ msgid "speed for 50% overlap"
 msgstr ""
 
 #: src/libslic3r/PrintConfig.cpp:620 src/libslic3r/PrintConfig.cpp:667
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 msgid "speed for 75% overlap"
 msgstr ""
 
@@ -1596,12 +1572,7 @@ msgstr ""
 msgid "Extra perimeters if needed"
 msgstr ""
 
-<<<<<<< HEAD
-#: src/libslic3r/PrintConfig.cpp:892
-#, possible-c-format, possible-boost-format
-=======
 #: src/libslic3r/PrintConfig.cpp:919
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 msgid ""
 "Add more perimeters when needed for avoiding gaps in sloping walls. Slic3r "
 "keeps adding perimeters, until more than 70% of the loop immediately above "
@@ -2785,12 +2756,7 @@ msgstr ""
 msgid "This setting represents the maximum speed of your fan."
 msgstr ""
 
-<<<<<<< HEAD
-#: src/libslic3r/PrintConfig.cpp:1900
-#, possible-c-format, possible-boost-format
-=======
 #: src/libslic3r/PrintConfig.cpp:1941
->>>>>>> 97c3679a37e9ede812432e25a096e4906110d441
 msgid ""
 "This is the highest printable layer height for this extruder, used to cap "
 "the variable layer height and support layer height. Maximum recommended "
@@ -6667,7 +6633,6 @@ msgid ""
 msgstr ""
 
 #: src/slic3r/GUI/ConfigManipulation.cpp:86
-#, possible-c-format, possible-boost-format
 msgid ""
 "The Spiral Vase mode requires:\n"
 "- one perimeter\n"

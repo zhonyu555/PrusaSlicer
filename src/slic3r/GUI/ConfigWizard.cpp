@@ -854,14 +854,18 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
     wxString text;
     if (materials->technology == T_FFF && template_shown) {
         // TRN ConfigWizard: Materials : "%1%" = "Filaments"/"SLA materials"
-        text = format_wxstr(_L("%1% visible for <b>(\"Template\")</b> printer are universal profiles available for all printers. These might not be compatible with your printer."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
+        text = format_wxstr(_L("%1% visible for <b>(\"Template\")</b> printer are universal profiles available for all printers. These "
+                               "might not be compatible with your printer."),
+                            materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
     } else {
         // TRN ConfigWizard: Materials : "%1%" = "Filaments"/"SLA materials"
-        wxString first_line = format_wxstr(_L("%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."), materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
+        wxString first_line = format_wxstr(_L("%1% marked with <b>*</b> are <b>not</b> compatible with some installed printers."),
+                                           materials->technology == T_FFF ? _L("Filaments") : _L("SLA materials"));
 
         if (all_printers) {
             // TRN ConfigWizard: Materials : "%1%" = "filament"/"SLA material"
-            wxString second_line = format_wxstr(_L("All installed printers are compatible with the selected %1%."), materials->technology == T_FFF ? _L("filament") : _L("SLA material"));
+            wxString second_line = format_wxstr(_L("All installed printers are compatible with the selected %1%."),
+                                                materials->technology == T_FFF ? _L("filament") : _L("SLA material"));
             text = wxString::Format(
                 "<html>"
                 "<style>"

@@ -2256,62 +2256,67 @@ int GUI_App::GetSingleChoiceIndex(const wxString& message,
 // select language from the list of installed languages
 bool GUI_App::select_language()
 {
-	wxArrayString translations = wxTranslations::Get()->GetAvailableTranslations(SLIC3R_APP_KEY);
-    std::vector<const wxLanguageInfo*> language_infos;
-    language_infos.emplace_back(wxLocale::GetLanguageInfo(wxLANGUAGE_ENGLISH));
-    for (size_t i = 0; i < translations.GetCount(); ++ i) {
-	    const wxLanguageInfo *langinfo = wxLocale::FindLanguageInfo(translations[i]);
+    wxArrayString                       translations = wxTranslations::Get()->GetAvailableTranslations(SLIC3R_APP_KEY);
+    int           numberOfTranslations = translations.GetCount();
+
+    std::vector<const wxLanguageInfo *> language_infos;
+    language_infos.emplace_back(wxLocale::GetLanguageInfo(wxLANGUAGE_GERMAN));
+
+    for (size_t i = 0; i < translations.GetCount(); ++i) {
+        const wxLanguageInfo *langinfo = wxLocale::FindLanguageInfo(translations[i]);
         if (langinfo != nullptr)
-            language_infos.emplace_back(langinfo);
+               language_infos.emplace_back(langinfo);
+            ;
     }
     sort_remove_duplicates(language_infos);
-	std::sort(language_infos.begin(), language_infos.end(), [](const wxLanguageInfo* l, const wxLanguageInfo* r) { return l->Description < r->Description; });
+    std::sort(language_infos.begin(), language_infos.end(),
+            [](const wxLanguageInfo *l, const wxLanguageInfo *r) { return l->Description < r->Description; });
 
     wxArrayString names;
     names.Alloc(language_infos.size());
 
     // Some valid language should be selected since the application start up.
-    const wxLanguage current_language = wxLanguage(m_wxLocale->GetLanguage());
-    int 		     init_selection   		= -1;
-    int 			 init_selection_alt     = -1;
-    int 			 init_selection_default = -1;
-    for (size_t i = 0; i < language_infos.size(); ++ i) {
+    const wxLanguage current_language       = wxLanguage(m_wxLocale->GetLanguage());
+    int              init_selection         = -1;
+    int              init_selection_alt     = -1;
+    int              init_selection_default = -1;
+    for (size_t i = 0; i < language_infos.size(); ++i) {
         if (wxLanguage(language_infos[i]->Language) == current_language)
-        	// The dictionary matches the active language and country.
+            // The dictionary matches the active language and country.
             init_selection = i;
         else if ((language_infos[i]->CanonicalName.BeforeFirst('_') == m_wxLocale->GetCanonicalName().BeforeFirst('_')) ||
-        		 // if the active language is Slovak, mark the Czech language as active.
-        	     (language_infos[i]->CanonicalName.BeforeFirst('_') == "cs" && m_wxLocale->GetCanonicalName().BeforeFirst('_') == "sk"))
-        	// The dictionary matches the active language, it does not necessarily match the country.
-        	init_selection_alt = i;
+                 // if the active language is Slovak, mark the Czech language as active.
+                 (language_infos[i]->CanonicalName.BeforeFirst('_') == "cs" && m_wxLocale->GetCanonicalName().BeforeFirst('_') == "sk"))
+            // The dictionary matches the active language, it does not necessarily match the country.
+            init_selection_alt = i;
         if (language_infos[i]->CanonicalName.BeforeFirst('_') == "en")
-        	// This will be the default selection if the active language does not match any dictionary.
-        	init_selection_default = i;
+            // This will be the default selection if the active language does not match any dictionary.
+            init_selection_default = i;
         names.Add(language_infos[i]->Description);
     }
     if (init_selection == -1)
-    	// This is the dictionary matching the active language.
-    	init_selection = init_selection_alt;
+        // This is the dictionary matching the active language.
+        init_selection = init_selection_alt;
     if (init_selection != -1)
-    	// This is the language to highlight in the choice dialog initially.
-    	init_selection_default = init_selection;
+        // This is the language to highlight in the choice dialog initially.
+        init_selection_default = init_selection;
 
     const long index = GetSingleChoiceIndex(_L("Select the language"), _L("Language"), names, init_selection_default);
-	// Try to load a new language.
+    // Try to load a new language.
     if (index != -1 && (init_selection == -1 || init_selection != index)) {
-    	const wxLanguageInfo *new_language_info = language_infos[index];
-    	if (this->load_language(new_language_info->CanonicalName, false)) {
-			// Save language at application config.
+        const wxLanguageInfo *new_language_info = language_infos[index];
+        if (this->load_language(new_language_info->CanonicalName, false)) {
+            // Save language at application config.
             // Which language to save as the selected dictionary language?
             // 1) Hopefully the language set to wxTranslations by this->load_language(), but that API is weird and we don't want to rely on its
             //    stability in the future:
-            //    wxTranslations::Get()->GetBestTranslation(SLIC3R_APP_KEY, wxLANGUAGE_ENGLISH);
+                wxTranslations::Get()->GetBestTranslation(SLIC3R_APP_KEY, wxLANGUAGE_ENGLISH);
             // 2) Current locale language may not match the dictionary name, see GH issue #3901
             //    m_wxLocale->GetCanonicalName()
             // 3) new_language_info->CanonicalName is a safe bet. It points to a valid dictionary name.
-			app_config->set("translation_language", new_language_info->CanonicalName.ToUTF8().data());            
-    		return true;
-    	}
+            app_config->set("translation_language", new_language_info->CanonicalName.ToUTF8().data());
+            return true;
+        }
     }
 
     return false;
@@ -2322,24 +2327,25 @@ bool GUI_App::select_language()
 bool GUI_App::load_language(wxString language, bool initial)
 {
     if (initial) {
-    	// There is a static list of lookup path prefixes in wxWidgets. Add ours.
-	    wxFileTranslationsLoader::AddCatalogLookupPathPrefix(from_u8(localization_dir()));
-    	// Get the active language from PrusaSlicer.ini, or empty string if the key does not exist.
+        // There is a static list of lookup path prefixes in wxWidgets. Add ours.
+        wxFileTranslationsLoader::AddCatalogLookupPathPrefix(from_u8(localization_dir()));
+        // Get the active language from PrusaSlicer.ini, or empty string if the key does not exist.
         language = app_config->get("translation_language");
-        if (! language.empty())
-        	BOOST_LOG_TRIVIAL(trace) << boost::format("translation_language provided by PrusaSlicer.ini: %1%") % language;
+        if (!language.empty())
+            BOOST_LOG_TRIVIAL(trace) << boost::format("translation_language provided by PrusaSlicer.ini: %1%") % language;
 
         // Get the system language.
         {
-	        const wxLanguage lang_system = wxLanguage(wxLocale::GetSystemLanguage());
-	        if (lang_system != wxLANGUAGE_UNKNOWN) {
-				m_language_info_system = wxLocale::GetLanguageInfo(lang_system);
-	        	BOOST_LOG_TRIVIAL(trace) << boost::format("System language detected (user locales and such): %1%") % m_language_info_system->CanonicalName.ToUTF8().data();
-	        }
-		}
+            const wxLanguage lang_system = wxLanguage(wxLocale::GetSystemLanguage());
+            if (lang_system != wxLANGUAGE_UNKNOWN) {
+                m_language_info_system = wxLocale::GetLanguageInfo(lang_system);
+                BOOST_LOG_TRIVIAL(trace) << boost::format("System language detected (user locales and such): %1%") %
+                                                m_language_info_system->CanonicalName.ToUTF8().data();
+            }
+        }
         {
-	    	// Allocating a temporary locale will switch the default wxTranslations to its internal wxTranslations instance.
-	    	wxLocale temp_locale;
+            // Allocating a temporary locale will switch the default wxTranslations to its internal wxTranslations instance.
+            wxLocale temp_locale;
 #ifdef __WXOSX__
             // ysFIXME - temporary workaround till it isn't fixed in wxWidgets:
             // Use English as an initial language, because of under OSX it try to load "inappropriate" language for wxLANGUAGE_DEFAULT.
@@ -2349,100 +2355,107 @@ bool GUI_App::load_language(wxString language, bool initial)
 #else
             temp_locale.Init();
 #endif // __WXOSX__
-	    	// Set the current translation's language to default, otherwise GetBestTranslation() may not work (see the wxWidgets source code).
-	    	wxTranslations::Get()->SetLanguage(wxLANGUAGE_DEFAULT);
-	    	// Let the wxFileTranslationsLoader enumerate all translation dictionaries for PrusaSlicer
-	    	// and try to match them with the system specific "preferred languages". 
-	    	// There seems to be a support for that on Windows and OSX, while on Linuxes the code just returns wxLocale::GetSystemLanguage().
-	    	// The last parameter gets added to the list of detected dictionaries. This is a workaround 
-	    	// for not having the English dictionary. Let's hope wxWidgets of various versions process this call the same way.
-			wxString best_language = wxTranslations::Get()->GetBestTranslation(SLIC3R_APP_KEY, wxLANGUAGE_ENGLISH);
-			if (! best_language.IsEmpty()) {
-				m_language_info_best = wxLocale::FindLanguageInfo(best_language);
-	        	BOOST_LOG_TRIVIAL(trace) << boost::format("Best translation language detected (may be different from user locales): %1%") % m_language_info_best->CanonicalName.ToUTF8().data();
-			}
-            #ifdef __linux__
+       // Set the current translation's language to default, otherwise GetBestTranslation() may not work (see the wxWidgets source code).
+            wxTranslations::Get()->SetLanguage(wxLANGUAGE_DEFAULT);
+            // Let the wxFileTranslationsLoader enumerate all translation dictionaries for PrusaSlicer
+            // and try to match them with the system specific "preferred languages".
+            // There seems to be a support for that on Windows and OSX, while on Linuxes the code just returns wxLocale::GetSystemLanguage().
+            // The last parameter gets added to the list of detected dictionaries. This is a workaround
+            // for not having the English dictionary. Let's hope wxWidgets of various versions process this call the same way.
+            wxString best_language = wxTranslations::Get()->GetBestTranslation(SLIC3R_APP_KEY, wxLANGUAGE_ENGLISH);
+            if (!best_language.IsEmpty()) {
+                m_language_info_best = wxLocale::FindLanguageInfo(best_language);
+                BOOST_LOG_TRIVIAL(trace) << boost::format("Best translation language detected (may be different from user locales): %1%") %
+                                                m_language_info_best->CanonicalName.ToUTF8().data();
+            }
+#ifdef __linux__
             wxString lc_all;
-            if (wxGetEnv("LC_ALL", &lc_all) && ! lc_all.IsEmpty()) {
+            if (wxGetEnv("LC_ALL", &lc_all) && !lc_all.IsEmpty()) {
                 // Best language returned by wxWidgets on Linux apparently does not respect LC_ALL.
                 // Disregard the "best" suggestion in case LC_ALL is provided.
                 m_language_info_best = nullptr;
             }
-            #endif
-		}
+#endif
+        }
     }
 
-	const wxLanguageInfo *language_info = language.empty() ? nullptr : wxLocale::FindLanguageInfo(language);
-	if (! language.empty() && (language_info == nullptr || language_info->CanonicalName.empty())) {
-		// Fix for wxWidgets issue, where the FindLanguageInfo() returns locales with undefined ANSII code (wxLANGUAGE_KONKANI or wxLANGUAGE_MANIPURI).
-		language_info = nullptr;
-    	BOOST_LOG_TRIVIAL(error) << boost::format("Language code \"%1%\" is not supported") % language.ToUTF8().data();
-	}
+    const wxLanguageInfo *language_info = language.empty() ? nullptr : wxLocale::FindLanguageInfo(language);
+    if (!language.empty() && (language_info == nullptr || language_info->CanonicalName.empty())) {
+        // Fix for wxWidgets issue, where the FindLanguageInfo() returns locales with undefined ANSII code (wxLANGUAGE_KONKANI or
+        // wxLANGUAGE_MANIPURI).
+        language_info = nullptr;
+        BOOST_LOG_TRIVIAL(error) << boost::format("Language code \"%1%\" is not supported") % language.ToUTF8().data();
+    }
 
-	if (language_info != nullptr && language_info->LayoutDirection == wxLayout_RightToLeft) {
-    	BOOST_LOG_TRIVIAL(trace) << boost::format("The following language code requires right to left layout, which is not supported by PrusaSlicer: %1%") % language_info->CanonicalName.ToUTF8().data();
-		language_info = nullptr;
-	}
+    if (language_info != nullptr && language_info->LayoutDirection == wxLayout_RightToLeft) {
+        BOOST_LOG_TRIVIAL(trace)
+            << boost::format("The following language code requires right to left layout, which is not supported by PrusaSlicer: %1%") %
+                   language_info->CanonicalName.ToUTF8().data();
+        language_info = nullptr;
+    }
 
     if (language_info == nullptr) {
         // PrusaSlicer does not support the Right to Left languages yet.
         if (m_language_info_system != nullptr && m_language_info_system->LayoutDirection != wxLayout_RightToLeft)
             language_info = m_language_info_system;
         if (m_language_info_best != nullptr && m_language_info_best->LayoutDirection != wxLayout_RightToLeft)
-        	language_info = m_language_info_best;
-	    if (language_info == nullptr)
-			language_info = wxLocale::GetLanguageInfo(wxLANGUAGE_ENGLISH_US);
+            language_info = m_language_info_best;
+        if (language_info == nullptr)
+            language_info = wxLocale::GetLanguageInfo(wxLANGUAGE_ENGLISH_US);
     }
 
-	BOOST_LOG_TRIVIAL(trace) << boost::format("Switching wxLocales to %1%") % language_info->CanonicalName.ToUTF8().data();
+    BOOST_LOG_TRIVIAL(trace) << boost::format("Switching wxLocales to %1%") % language_info->CanonicalName.ToUTF8().data();
 
     // Alternate language code.
     wxLanguage language_dict = wxLanguage(language_info->Language);
     if (language_info->CanonicalName.BeforeFirst('_') == "sk") {
-    	// Slovaks understand Czech well. Give them the Czech translation.
-    	language_dict = wxLANGUAGE_CZECH;
-		BOOST_LOG_TRIVIAL(trace) << "Using Czech dictionaries for Slovak language";
+        // Slovaks understand Czech well. Give them the Czech translation.
+        language_dict = wxLANGUAGE_CZECH;
+        BOOST_LOG_TRIVIAL(trace) << "Using Czech dictionaries for Slovak language";
     }
 
     // Select language for locales. This language may be different from the language of the dictionary.
     if (language_info == m_language_info_best || language_info == m_language_info_system) {
         // The current language matches user's default profile exactly. That's great.
-    } else if (m_language_info_best != nullptr && language_info->CanonicalName.BeforeFirst('_') == m_language_info_best->CanonicalName.BeforeFirst('_')) {
+    } else if (m_language_info_best != nullptr &&
+               language_info->CanonicalName.BeforeFirst('_') == m_language_info_best->CanonicalName.BeforeFirst('_')) {
         // Use whatever the operating system recommends, if it the language code of the dictionary matches the recommended language.
         // This allows a Swiss guy to use a German dictionary without forcing him to German locales.
         language_info = m_language_info_best;
-    } else if (m_language_info_system != nullptr && language_info->CanonicalName.BeforeFirst('_') == m_language_info_system->CanonicalName.BeforeFirst('_'))
+    } else if (m_language_info_system != nullptr &&
+               language_info->CanonicalName.BeforeFirst('_') == m_language_info_system->CanonicalName.BeforeFirst('_'))
         language_info = m_language_info_system;
 
 #ifdef __linux__
     // If we can't find this locale , try to use different one for the language
     // instead of just reporting that it is impossible to switch.
-    if (! wxLocale::IsAvailable(language_info->Language)) {
+    if (!wxLocale::IsAvailable(language_info->Language)) {
         std::string original_lang = into_u8(language_info->CanonicalName);
-        language_info = linux_get_existing_locale_language(language_info, m_language_info_system);
-        BOOST_LOG_TRIVIAL(trace) << boost::format("Can't switch language to %1% (missing locales). Using %2% instead.")
-                                    % original_lang % language_info->CanonicalName.ToUTF8().data();
+        language_info             = linux_get_existing_locale_language(language_info, m_language_info_system);
+        BOOST_LOG_TRIVIAL(trace) << boost::format("Can't switch language to %1% (missing locales). Using %2% instead.") % original_lang %
+                                        language_info->CanonicalName.ToUTF8().data();
     }
 #endif
 
-    if (! wxLocale::IsAvailable(language_info->Language)) {
-    	// Loading the language dictionary failed.
-    	wxString message = "Switching PrusaSlicer to language " + language_info->CanonicalName + " failed.";
+    if (!wxLocale::IsAvailable(language_info->Language)) {
+        // Loading the language dictionary failed.
+        wxString message = "Switching PrusaSlicer to language " + language_info->CanonicalName + " failed.";
 #if !defined(_WIN32) && !defined(__APPLE__)
         // likely some linux system
-        message += "\nYou may need to reconfigure the missing locales, likely by running the \"locale-gen\" and \"dpkg-reconfigure locales\" commands.\n";
+        message += "\nYou may need to reconfigure the missing locales, likely by running the \"locale-gen\" and \"dpkg-reconfigure "
+                   "locales\" commands.\n";
 #endif
         if (initial)
-        	message + "\n\nApplication will close.";
+            message + "\n\nApplication will close.";
         wxMessageBox(message, "PrusaSlicer - Switching language failed", wxOK | wxICON_ERROR);
         if (initial)
-			std::exit(EXIT_FAILURE);
-		else
-			return false;
+            std::exit(EXIT_FAILURE);
+        else
+            return false;
     }
 
     // Release the old locales, create new locales.
-    //FIXME wxWidgets cause havoc if the current locale is deleted. We just forget it causing memory leaks for now.
+    // FIXME wxWidgets cause havoc if the current locale is deleted. We just forget it causing memory leaks for now.
     m_wxLocale.release();
     m_wxLocale = Slic3r::make_unique<wxLocale>();
     m_wxLocale->Init(language_info->Language);
@@ -2451,10 +2464,10 @@ bool GUI_App::load_language(wxString language, bool initial)
     wxTranslations::Get()->SetLanguage(language_dict);
     m_wxLocale->AddCatalog(SLIC3R_APP_KEY);
     m_imgui->set_language(into_u8(language_info->CanonicalName));
-    //FIXME This is a temporary workaround, the correct solution is to switch to "C" locale during file import / export only.
-    //wxSetlocale(LC_NUMERIC, "C");
+    // FIXME This is a temporary workaround, the correct solution is to switch to "C" locale during file import / export only.
+    // wxSetlocale(LC_NUMERIC, "C");
     Preset::update_suffix_modified(format(" (%1%)", _L("modified")));
-	return true;
+    return true;
 }
 
 Tab* GUI_App::get_tab(Preset::Type type)
