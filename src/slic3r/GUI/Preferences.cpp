@@ -368,12 +368,12 @@ void PreferencesDialog::build()
 
 		append_bool_option(m_optgroup_general, "single_instance",
 #if __APPLE__
-			L("Allow just a single PrusaSlicer instance"),
+			L("Allow just a single SliCR-3D-V2 instance"),
 			L("On OSX there is always only one instance of app running by default. However it is allowed to run multiple instances "
 			  "of same app from the command line. In such case this settings will allow only one instance."),
 #else
-			L("Allow just a single PrusaSlicer instance"),
-			L("If this is enabled, when starting PrusaSlicer and another instance of the same PrusaSlicer is already running, that instance will be reactivated instead."),
+			L("Allow just a single SliCR-3D-V2 instance"),
+			L("If this is enabled, when starting SliCR-3D-V2 and another instance of the same SliCR-3D-V2 is already running, that instance will be reactivated instead."),
 #endif
 		app_config->has("single_instance") ? app_config->get_bool("single_instance") : false );
 
@@ -382,7 +382,7 @@ void PreferencesDialog::build()
 		append_bool_option(m_optgroup_general, "default_action_on_dirty_project",
 			L("Ask for unsaved changes in project"),
 			L("Always ask for unsaved changes in project, when: \n"
-						"- Closing PrusaSlicer,\n"
+						"- Closing SliCR-3D-V2,\n"
 						"- Loading or creating a new project"),
 			app_config->get("default_action_on_dirty_project").empty());
 

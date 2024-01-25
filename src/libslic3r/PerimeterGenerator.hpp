@@ -14,15 +14,17 @@
 #include "Polygon.hpp"
 #include "PrintConfig.hpp"
 #include "SurfaceCollection.hpp"
+#include "Layer.hpp"
 
 namespace Slic3r {
 
 namespace PerimeterGenerator
 {
 
-struct Parameters {    
+struct Parameters { 
+    public:
     Parameters(
-        double                      layer_height,
+        double                      layer_height, 
         int                         layer_id,
         Flow                        perimeter_flow,
         Flow                        ext_perimeter_flow,
@@ -32,8 +34,12 @@ struct Parameters {
         const PrintObjectConfig    &object_config,
         const PrintConfig          &print_config,
         const bool                  spiral_vase) :   
-            layer_height(layer_height),
-            layer_id(layer_id),
+            layer_height(layer_height), 
+            layer_id(layer_id), 
+            slices(slices),
+            upper_slices(nullptr), 
+            lower_slices(nullptr), 
+            layer(nullptr),
             perimeter_flow(perimeter_flow), 
             ext_perimeter_flow(ext_perimeter_flow),
             overhang_flow(overhang_flow), 
@@ -51,7 +57,11 @@ struct Parameters {
 
     // Input parameters
     double                       layer_height;
-    int                          layer_id;
+    const SurfaceCollection      *slices;
+    const ExPolygons             *upper_slices; // Added upper_slices here
+    const ExPolygons             *lower_slices;
+    Layer                        *layer;
+    int                          layer_id;                         
     Flow                         perimeter_flow;
     Flow                         ext_perimeter_flow;
     Flow                         overhang_flow;
@@ -67,39 +77,43 @@ struct Parameters {
     double                       mm3_per_mm;
     double                       mm3_per_mm_overhang;
 
+
+
 private:
     Parameters() = delete;
 };
 
-void process_classic(
-    // Inputs:
-    const Parameters           &params,
-    const Surface              &surface,
-    const ExPolygons           *lower_slices,
-    // Cache:
-    Polygons                   &lower_slices_polygons_cache,
-    // Output:
-    // Loops with the external thin walls
-    ExtrusionEntityCollection  &out_loops,
-    // Gaps without the thin walls
-    ExtrusionEntityCollection  &out_gap_fill,
-    // Infills without the gap fills
-    ExPolygons                 &out_fill_expolygons);
-
 void process_arachne(
     // Inputs:
-    const Parameters           &params,
-    const Surface              &surface,
-    const ExPolygons           *lower_slices,
+    const Parameters &params,
+    const Surface    &surface,
+    const ExPolygons *lower_slices,
     // Cache:
-    Polygons                   &lower_slices_polygons_cache,
+    Polygons &lower_slices_polygons_cache,
     // Output:
     // Loops with the external thin walls
-    ExtrusionEntityCollection  &out_loops,
+    ExtrusionEntityCollection &out_loops,
     // Gaps without the thin walls
-    ExtrusionEntityCollection  &out_gap_fill,
+    ExtrusionEntityCollection &out_gap_fill,
     // Infills without the gap fills
-    ExPolygons                 &out_fill_expolygons);
+    ExPolygons &out_fill_expolygons);
+
+
+void process_classic(
+    // Inputs:
+    const Parameters &params,
+    const Surface    &surface,
+
+    const ExPolygons *lower_slices,
+    // Cache:
+    Polygons &lower_slices_polygons_cache,
+    // Output:
+    // Loops with the external thin walls
+    ExtrusionEntityCollection &out_loops,
+    // Gaps without the thin walls
+    ExtrusionEntityCollection &out_gap_fill,
+    // Infills without the gap fills
+    ExPolygons &out_fill_expolygons);
 
 ExtrusionMultiPath thick_polyline_to_multi_path(const ThickPolyline &thick_polyline, ExtrusionRole role, const Flow &flow, float tolerance, float merge_tolerance);
 
