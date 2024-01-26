@@ -116,7 +116,7 @@ void CalibrationCubeDialog::create_geometry(std::string calibration_path) {
 
 
     plat->reslice();
-
+    gui_app->app_config->set("autocenter", "0");
 }
 
 } // namespace GUI

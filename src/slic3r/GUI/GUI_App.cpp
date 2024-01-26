@@ -1484,13 +1484,11 @@ bool GUI_App::dark_mode()
 
 const wxColour GUI_App::get_label_default_clr_system()
 {
-    return dark_mode() ? wxColour(115, 220, 103) : wxColour(26, 132, 57);
+    return dark_mode() ? wxColour(255, 255, 255) : wxColour(26, 132, 57);
 }
 
 const wxColour GUI_App::get_label_default_clr_modified()
-{
-    return dark_mode() ? wxColour(253, 111, 40) : wxColour(26, 116, 118);
-}
+{ return dark_mode() ? wxColour(26, 116, 118) : wxColour(26, 116, 118); }
 
 const std::vector<std::string> GUI_App::get_mode_default_palette()
 {
@@ -1508,9 +1506,9 @@ void GUI_App::init_ui_colours()
     m_color_label_default           = is_dark_mode ? wxColour(250, 250, 250): wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
     m_color_highlight_label_default = is_dark_mode ? wxColour(230, 230, 230): wxSystemSettings::GetColour(/*wxSYS_COLOUR_HIGHLIGHTTEXT*/wxSYS_COLOUR_WINDOWTEXT);
     m_color_highlight_default       = is_dark_mode ? wxColour(78, 78, 78)   : wxSystemSettings::GetColour(wxSYS_COLOUR_3DLIGHT);
-    m_color_hovered_btn_label       = is_dark_mode ? wxColour(253, 111, 40) : wxColour(26, 116, 118);
-    m_color_default_btn_label       = is_dark_mode ? wxColour(255, 181, 100): wxColour(203, 61, 0);
-    m_color_selected_btn_bg         = is_dark_mode ? wxColour(95, 73, 62)   : wxColour(228, 220, 216);
+    m_color_hovered_btn_label       = is_dark_mode ? wxColour(26, 116, 118) : wxColour(26, 116, 118);
+    m_color_default_btn_label       = is_dark_mode ? wxColour(26, 116, 118) : wxColour(203, 61, 0);
+    m_color_selected_btn_bg         = is_dark_mode ? wxColour(80, 80, 70) : wxColour(228, 220, 216);
 #else
     m_color_label_default = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
 #endif

@@ -55,6 +55,8 @@ void CalibrationTempDialog::create_buttons(wxStdDialogButtonSizer* buttons){
 }
 
 void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
+    gui_app->app_config->set("autocenter", "1");
+
     Plater* plat = this->main_frame->plater();
     Model& model = plat->model();
     if (!plat->new_project(L("Temperature calibration")))
@@ -62,7 +64,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
 
     //GLCanvas3D::set_warning_freeze(true);
     std::vector<size_t> objs_idx = plat->load_files(std::vector<std::string>{
-            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" / "Smart_compact_temperature_calibration_item.amf").string()}, true, false, false, false);
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" / "Smart_compact_temperature_calibration_item.3mf").string()}, true, false, false, false);
 
     assert(objs_idx.size() == 1);
     //         TYPE_PRINT, TYPE_FILAMENT, TYPE_SLA_MATERIAL,
@@ -113,7 +115,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
         tower.push_back(
             add_part(model.objects[objs_idx[0]],
                      (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                      ("t" + std::to_string(temperature) + ".amf"))
+                      ("t" + std::to_string(temperature) + ".3mf"))
                          .string(),
                      // Vec3d{ xyzScale * 5, - xyzScale * 2.5, zshift - xyzScale * 2.5}, Vec3d{ xyzScale, xyzScale, xyzScale * 0.43 }));
                      Vec3d{8 - xyzScale * 5, -xyzScale * 2.3, xyzScale * (0 * 10 - 2.45)}, Vec3d{xyzScale, xyzScale, xyzScale * 0.43}));
@@ -121,14 +123,14 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     for (int16_t i = 1; i < nb_items; i++) {
         tower.push_back(add_part(model.objects[objs_idx[0]],
                                  (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                                  ("Smart_compact_temperature_calibration_item.amf"))
+                                  ("Smart_compact_temperature_calibration_item.3mf"))
                                      .string(),
                                  Vec3d{0, 0, i * 10 * xyzScale}, Vec3d{xyzScale, xyzScale * 0.5, xyzScale}));
         int sub_temp = temperature - i * step_temp;
         if (sub_temp > 175 && sub_temp < 290 && sub_temp % 5 == 0) {
             tower.push_back(add_part(model.objects[objs_idx[0]],
                                      (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                                      ("t" + std::to_string(sub_temp) + ".amf"))
+                                      ("t" + std::to_string(sub_temp) + ".3mf"))
                                          .string(),
                                      Vec3d{8 - xyzScale * 5, -xyzScale * 2.3, xyzScale * (i * 10 - 2.5)},
                                      Vec3d{xyzScale, xyzScale, xyzScale * 0.43}));
@@ -173,7 +175,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     if (brim_width < nozzle_diameter * 8) {
         model.objects[objs_idx[0]]->config.set_key_value("brim_width", new ConfigOptionFloat(nozzle_diameter * 8));
     }
-    model.objects[objs_idx[0]]->config.set_key_value("brim_ears", new ConfigOptionBool(false));
+    //model.objects[objs_idx[0]]->config.set_key_value("brim_ears", new ConfigOptionBool(false));
     model.objects[objs_idx[0]]->config.set_key_value("perimeters", new ConfigOptionInt(1));
     model.objects[objs_idx[0]]->config.set_key_value("extra_perimeters_overhangs", new ConfigOptionBool(true));
     model.objects[objs_idx[0]]->config.set_key_value("bottom_solid_layers", new ConfigOptionInt(2));
@@ -202,6 +204,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     obj->update_after_undo_redo();
 
     plat->reslice();
+    gui_app->app_config->set("autocenter", "0");
 }
 
 }} // namespace Slic3r::GUI

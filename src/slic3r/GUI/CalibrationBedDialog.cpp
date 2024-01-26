@@ -144,7 +144,9 @@ void CalibrationBedDialog::create_geometry(wxCommandEvent& event_args) {
     this->gui_app->obj_list()->update_after_undo_redo();
     // if(!plat->is_background_process_update_scheduled())
     //     plat->schedule_background_process();
+
     plat->reslice();
+    gui_app->app_config->set("autocenter", "0");
 }
 
 }} // namespace Slic3r::GUI
