@@ -1,4 +1,5 @@
 ///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Pavel Mikuš @Godrak, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Filip Sykala @Jony01, Vojtěch Král @vojtechkral
+///|/ Copyright (c) OrcaSlicer 2023 Andrew Boktor @aboktor
 ///|/ Copyright (c) 2023 Pedro Lamas @PedroLamas
 ///|/ Copyright (c) 2023 Mimoja @Mimoja
 ///|/ Copyright (c) 2020 - 2021 Sergey Kovalev @RandoMan70
@@ -2607,6 +2608,25 @@ void PrintConfigDef::init_fff_params()
                    "any number of bottom solid layers as well as skirt/brim loops. "
                    "It won't work when printing more than one single object.");
     def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("spiral_vase_smooth", coBool);
+    def->label = L("Smooth Spiral");
+    def->tooltip = L("Smooth Spiral smoothes out X and Y moves as well"
+                     "resulting in no visible seam at all, even in the XY directions on walls that are not vertical");
+    def->mode = comSimple;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("spiral_vase_max_xy_smoothing", coFloatOrPercent);
+    def->label = L("Max XY Smoothing");
+    def->tooltip = L("Maximum distance to move points in XY to try to achieve a smooth spiral"
+                     "If expressed as a %, it will be computed over nozzle diameter");
+    def->sidetext = L("mm or %");
+    def->ratio_over = "nozzle_diameter";
+    def->min = 0;
+    def->max = 1000;
+    def->max_literal = 10;
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloatOrPercent(200, true));
 
     def = this->add("standby_temperature_delta", coInt);
     def->label = L("Temperature variation");

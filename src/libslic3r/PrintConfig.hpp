@@ -857,6 +857,8 @@ PRINT_CONFIG_CLASS_DERIVED_DEFINE(
     ((ConfigOptionInts,               slowdown_below_layer_time))
     ((ConfigOptionFloat,              solid_infill_acceleration))
     ((ConfigOptionBool,               spiral_vase))
+    ((ConfigOptionBool,               spiral_vase_smooth))
+    ((ConfigOptionFloatOrPercent,     spiral_vase_max_xy_smoothing))
     ((ConfigOptionInt,                standby_temperature_delta))
     ((ConfigOptionInts,               temperature))
     ((ConfigOptionInt,                threads))

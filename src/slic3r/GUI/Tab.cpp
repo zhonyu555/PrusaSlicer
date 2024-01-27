@@ -1445,6 +1445,8 @@ void TabPrint::build()
         optgroup = page->new_optgroup(L("Vertical shells"));
         optgroup->append_single_option_line("perimeters", category_path + "perimeters");
         optgroup->append_single_option_line("spiral_vase", category_path + "spiral-vase");
+        optgroup->append_single_option_line("spiral_vase_smooth", category_path + "spiral-vase#smooth");
+        optgroup->append_single_option_line("spiral_vase_max_xy_smoothing", category_path + "spiral-vase#max-xy-smoothing");
 
         Line line { "", "" };
         line.full_width = 1;

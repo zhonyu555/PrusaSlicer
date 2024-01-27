@@ -1,4 +1,5 @@
 ///|/ Copyright (c) Prusa Research 2016 - 2023 Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966, Pavel Mikuš @Godrak, Oleksandra Iushchenko @YuSanka, Lukáš Hejl @hejllukas, Filip Sykala @Jony01, David Kocík @kocikdav
+///|/ Copyright (c) OrcaSlicer 2023 Andrew Boktor @aboktor, @SoftFever
 ///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
 ///|/ Copyright (c) 2021 Justin Schuh @jschuh
 ///|/ Copyright (c) 2020 Paul Arden @ardenpm
@@ -1505,13 +1506,19 @@ void GCodeGenerator::process_layers(
                     &layer == &layers_to_print.back(), &print_object_instances_ordering, size_t(-1));
             }
         });
+    if (m_spiral_vase) {
+        float nozzle_diameter  = EXTRUDER_CONFIG(nozzle_diameter);
+        float max_xy_smoothing = m_config.get_abs_value("spiral_vase_max_xy_smoothing", nozzle_diameter);
+        this->m_spiral_vase->set_max_xy_smoothing(max_xy_smoothing);
+    }
     // The pipeline is variable: The vase mode filter is optional.
     const auto spiral_vase = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
-        [spiral_vase = this->m_spiral_vase.get()](LayerResult in) -> LayerResult {
+        [spiral_vase = this->m_spiral_vase.get(), &layers_to_print](LayerResult in) -> LayerResult {
             if (in.nop_layer_result)
                 return in;
             spiral_vase->enable(in.spiral_vase_enable);
-            return { spiral_vase->process_layer(std::move(in.gcode)), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush};
+            bool last_layer = in.layer_id == layers_to_print.size() - 1;
+            return { spiral_vase->process_layer(std::move(in.gcode), last_layer), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush};
         });
     const auto pressure_equalizer = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
         [pressure_equalizer = this->m_pressure_equalizer.get()](LayerResult in) -> LayerResult {
@@ -1599,12 +1606,19 @@ void GCodeGenerator::process_layers(
             }
         });
     // The pipeline is variable: The vase mode filter is optional.
-    const auto spiral_vase = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
-        [spiral_vase = this->m_spiral_vase.get()](LayerResult in)->LayerResult {
+    if (m_spiral_vase) {
+        float nozzle_diameter  = EXTRUDER_CONFIG(nozzle_diameter);
+        float max_xy_smoothing = m_config.get_abs_value("spiral_vase_max_xy_smoothing", nozzle_diameter);
+        this->m_spiral_vase->set_max_xy_smoothing(max_xy_smoothing);
+    }
+    const auto spiral_vase = tbb::make_filter<LayerResult, LayerResult>(
+        slic3r_tbb_filtermode::serial_in_order,
+        [spiral_vase = this->m_spiral_vase.get(), &layers_to_print](LayerResult in)->LayerResult {
             if (in.nop_layer_result)
                 return in;
             spiral_vase->enable(in.spiral_vase_enable);
-            return { spiral_vase->process_layer(std::move(in.gcode)), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush };
+            bool last_layer = in.layer_id == layers_to_print.size() - 1;
+            return { spiral_vase->process_layer(std::move(in.gcode), last_layer), in.layer_id, in.spiral_vase_enable, in.cooling_buffer_flush };
         });
     const auto pressure_equalizer = tbb::make_filter<LayerResult, LayerResult>(slic3r_tbb_filtermode::serial_in_order,
         [pressure_equalizer = this->m_pressure_equalizer.get()](LayerResult in) -> LayerResult {
