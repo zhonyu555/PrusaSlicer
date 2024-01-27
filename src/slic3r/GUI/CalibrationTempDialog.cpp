@@ -13,6 +13,9 @@
 #include <wx/display.h>
 #include <wx/file.h>
 #include "wxExtensions.hpp"
+#include <filesystem>
+#include <iostream>
+#include <string>
 
 #if ENABLE_SCROLLABLE
 static wxSize get_screen_size(wxWindow* window)
@@ -22,6 +25,9 @@ static wxSize get_screen_size(wxWindow* window)
     return display.GetClientArea().GetSize();
 }
 #endif // ENABLE_SCROLLABLE
+
+namespace fs = std::filesystem;
+
 
 namespace Slic3r {
 namespace GUI {
@@ -63,8 +69,14 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
         return;
 
     //GLCanvas3D::set_warning_freeze(true);
-    std::vector<size_t> objs_idx = plat->load_files(std::vector<std::string>{
-            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" / "Smart_compact_temperature_calibration_item.3mf").string()}, true, false, false, false);
+    std::vector<size_t> objs_idx = plat->load_files(
+        std::vector<std::string> {
+            (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
+             "Smart_compact_temperature_calibration_item.amf")
+                .string()
+        },
+
+        true, false, false, false);
 
     assert(objs_idx.size() == 1);
     //         TYPE_PRINT, TYPE_FILAMENT, TYPE_SLA_MATERIAL,
@@ -89,6 +101,13 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     if (!steps->GetValue().ToLong(&step_temp)) {
         step_temp = 10;
     }
+
+    static_cast<size_t>(step_temp);
+    static_cast<size_t>(nb_items_down);
+    static_cast<size_t>(nb_items_up);
+
+
+
     size_t nb_items = 1 + nb_items_up + nb_items_down;
     // start at the highest temp
     temperature = temperature + step_temp * nb_items_up;
@@ -99,6 +118,11 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     assert(nozzle_diameter_config->values.size() > 0);
     float nozzle_diameter = nozzle_diameter_config->values[0];
     float xyzScale        = nozzle_diameter / 0.4;
+    static_cast<size_t>(xyzScale);
+    static_cast<size_t>(nozzle_diameter);
+
+
+
     // do scaling
     if (xyzScale < 0.9 || 1.1 < xyzScale) {
         model.objects[objs_idx[0]]->scale(xyzScale, xyzScale * 0.5, xyzScale);
@@ -106,34 +130,39 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
         xyzScale = 1;
         model.objects[objs_idx[0]]->scale(xyzScale, xyzScale * 0.5, xyzScale);
     }
-
+   
     // add 8 others
-    std::vector<ModelObject *> tower;
+    std::vector<ModelObject*> tower;
     tower.push_back(model.objects[objs_idx[0]]);
     float zshift = (1 - xyzScale) / 2;
-    if (temperature > 175 && temperature < 290 && temperature % 5 == 0) {
+
+     if (temperature > 175 && temperature < 290 && temperature % 5 == 0) {
         tower.push_back(
             add_part(model.objects[objs_idx[0]],
                      (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                      ("t" + std::to_string(temperature) + ".3mf"))
+                      ("t" + std::to_string(temperature) + ".amf"))
                          .string(),
                      // Vec3d{ xyzScale * 5, - xyzScale * 2.5, zshift - xyzScale * 2.5}, Vec3d{ xyzScale, xyzScale, xyzScale * 0.43 }));
                      Vec3d{8 - xyzScale * 5, -xyzScale * 2.3, xyzScale * (0 * 10 - 2.45)}, Vec3d{xyzScale, xyzScale, xyzScale * 0.43}));
-    }
-    for (int16_t i = 1; i < nb_items; i++) {
+     }
+
+    for (int16_t i = 0; i < nb_items; i++) {
         tower.push_back(add_part(model.objects[objs_idx[0]],
                                  (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                                  ("Smart_compact_temperature_calibration_item.3mf"))
+                                  ("Smart_compact_temperature_calibration_item.amf"))
                                      .string(),
                                  Vec3d{0, 0, i * 10 * xyzScale}, Vec3d{xyzScale, xyzScale * 0.5, xyzScale}));
+
         int sub_temp = temperature - i * step_temp;
+
         if (sub_temp > 175 && sub_temp < 290 && sub_temp % 5 == 0) {
             tower.push_back(add_part(model.objects[objs_idx[0]],
                                      (boost::filesystem::path(Slic3r::resources_dir()) / "calibration" / "filament_temp" /
-                                      ("t" + std::to_string(sub_temp) + ".3mf"))
+                                      ("t" + std::to_string(sub_temp) + ".amf"))
                                          .string(),
                                      Vec3d{8 - xyzScale * 5, -xyzScale * 2.3, xyzScale * (i * 10 - 2.5)},
                                      Vec3d{xyzScale, xyzScale, xyzScale * 0.43}));
+
         }
     }
 
@@ -149,7 +178,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     /// --- main config, please modify object config when possible ---
     DynamicPrintConfig new_print_config = *print_config; // make a copy
     new_print_config.set_key_value("complete_objects", new ConfigOptionBool(false));
-
+    
     /// -- generate the heat change gcode
     // std::string str_layer_gcode = "{if layer_num > 0 and layer_z  <= " + std::to_string(2 * xyzScale) + "}\nM104 S" +
     // std::to_string(temperature - (int8_t)nb_delta * 5);
@@ -157,35 +186,52 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     double firstChangeHeight = print_config->get_abs_value("first_layer_height", nozzle_diameter);
     // model.custom_gcode_per_print_z.gcodes.emplace_back(CustomGCode::Item{ firstChangeHeight + nozzle_diameter/2,
     // CustomGCode::Type::Custom, -1, "", "M104 S" + std::to_string(temperature) + " ; ground floor temp tower set" });
-    model.objects[objs_idx[0]]->config.set_key_value("print_temperature", new ConfigOptionInt(temperature));
-    for (int16_t i = 1; i < nb_items; i++) {
-        model.custom_gcode_per_print_z.gcodes.emplace_back(CustomGCode::Item{(i * 10 * xyzScale), CustomGCode::Type::Custom, -1, "",
-                                                                             "M104 S" + std::to_string(temperature - i * step_temp) +
-                                                                                 " ; floor " + std::to_string(i) +
-                                                                                 " of the temp tower set"});
+   // model.objects[objs_idx[0]]->config.set_key_value("temperature", new ConfigOptionInt(temperature));
+
+    for (size_t i = 1; i < nb_items; i++) {
+        // model.custom_gcode_per_print_z.gcodes.emplace_back(CustomGCode::Item{(0 * 10 * xyzScale), CustomGCode::Type::Custom, -1, "",
+        //                                                                    "M104 S" + std::to_string(temperature - 0 * step_temp) +
+        //                                                                      " ; floor " + std::to_string(0) +
+        //                                                                    " of the temp tower set"});
         // str_layer_gcode += "\n{ elsif layer_z >= " + std::to_string(i * 10 * xyzScale) + " and layer_z <= " + std::to_string((1 + i * 10)
         // * xyzScale) + " }\nM104 S" + std::to_string(temperature - (int8_t)nb_delta * 5 + i * 5);
+        //}
+        // str_layer_gcode += "\n{endif}\n";
+        // DynamicPrintConfig new_printer_config = *printerConfig; //make a copy
+        // new_printer_config.set_key_value("layer_gcode", new ConfigOptionString(str_layer_gcode));
     }
-    // str_layer_gcode += "\n{endif}\n";
-    // DynamicPrintConfig new_printer_config = *printerConfig; //make a copy
-    // new_printer_config.set_key_value("layer_gcode", new ConfigOptionString(str_layer_gcode));
+
 
     /// --- custom config ---
+    /*
     float brim_width = print_config->option<ConfigOptionFloat>("brim_width")->value;
     if (brim_width < nozzle_diameter * 8) {
         model.objects[objs_idx[0]]->config.set_key_value("brim_width", new ConfigOptionFloat(nozzle_diameter * 8));
     }
+    */
+    
     //model.objects[objs_idx[0]]->config.set_key_value("brim_ears", new ConfigOptionBool(false));
     model.objects[objs_idx[0]]->config.set_key_value("perimeters", new ConfigOptionInt(1));
-    model.objects[objs_idx[0]]->config.set_key_value("extra_perimeters_overhangs", new ConfigOptionBool(true));
+    
+    
+    //model.objects[objs_idx[0]]->config.set_key_value("extra_perimeters_overhangs", new ConfigOptionBool(true));
+    
     model.objects[objs_idx[0]]->config.set_key_value("bottom_solid_layers", new ConfigOptionInt(2));
+    
     model.objects[objs_idx[0]]->config.set_key_value("top_solid_layers", new ConfigOptionInt(3));
+
     model.objects[objs_idx[0]]->config.set_key_value("gap_fill_enabled", new ConfigOptionBool(false));
-    model.objects[objs_idx[0]]->config.set_key_value("thin_perimeters", new ConfigOptionPercent(100));
-    model.objects[objs_idx[0]]->config.set_key_value("layer_height", new ConfigOptionFloat(nozzle_diameter / 2));
+    
+    //model.objects[objs_idx[0]]->config.set_key_value("thin_perimeters", new ConfigOptionPercent(100));
+
+
+   // model.objects[objs_idx[0]]->config.set_key_value("layer_height", new ConfigOptionFloat(nozzle_diameter / 2));
+    
     model.objects[objs_idx[0]]->config.set_key_value("fill_density", new ConfigOptionPercent(7));
-    model.objects[objs_idx[0]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
-    model.objects[objs_idx[0]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinearWGapFill));
+    
+    //model.objects[objs_idx[0]]->config.set_key_value("solid_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinear));
+    
+    //model.objects[objs_idx[0]]->config.set_key_value("top_fill_pattern", new ConfigOptionEnum<InfillPattern>(ipRectilinear));
     // disable ironing post-process, it only slow down things
     model.objects[objs_idx[0]]->config.set_key_value("ironing", new ConfigOptionBool(false));
 
@@ -202,7 +248,7 @@ void CalibrationTempDialog::create_geometry(wxCommandEvent& event_args) {
     // update everything, easier to code.
     ObjectList *obj = this->gui_app->obj_list();
     obj->update_after_undo_redo();
-
+   
     plat->reslice();
     gui_app->app_config->set("autocenter", "0");
 }
