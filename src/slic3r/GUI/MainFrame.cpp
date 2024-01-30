@@ -1283,6 +1283,15 @@ void MainFrame::init_menubar_as_editor()
         append_menu_item(calibrationMenu, wxID_ANY, _L("Calibration cube"),
                     _L("Print a calibration cube, for various calibration goals."),
                     [this](wxCommandEvent &) { wxGetApp().calibration_cube_dialog(); });
+
+        calibrationMenu->AppendSeparator();
+
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("CR-3D Calibration Cube")),
+                         _(L("Print a calibration cube (designed by CR-3D), for various calibration goals.")),
+                         [this](wxCommandEvent &) { wxGetApp().calibration_cr3d_cube_dialog(); });
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("CR-3D Sample Keycard & Tray")), "",
+                         [this](wxCommandEvent &) { wxGetApp().calibration_cr3d_samplecard_dialog(); });
+
     }
 
     // File menu

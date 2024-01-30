@@ -261,7 +261,9 @@ public:
     void bed_leveling_dialog();
     void filament_temperature_dialog();
     void calibration_cube_dialog();
-
+    void calibration_cr3d_cube_dialog();
+    void calibration_cr3d_samplecard_dialog();
+    void calibration_cr3d_masterspool_dialog();
 
     void            recreate_GUI(const wxString& message);
     void            system_info();

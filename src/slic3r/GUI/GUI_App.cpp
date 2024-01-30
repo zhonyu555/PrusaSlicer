@@ -103,6 +103,7 @@
 #include "CalibrationBedDialog.hpp"
 #include "CalibrationTempDialog.hpp"
 #include "CalibrationCubeDialog.hpp"
+#include "CalibrationCr3dDialog.hpp"
 
 #include "BitmapCache.hpp"
 #include "Notebook.hpp"
@@ -1978,6 +1979,21 @@ void GUI_App::filament_temperature_dialog() {
 void GUI_App::calibration_cube_dialog() { 
     change_calibration_dialog(nullptr, new CalibrationCubeDialog(this, mainframe)); 
 }
+
+void GUI_App::calibration_cr3d_cube_dialog() { 
+    change_calibration_dialog(nullptr, new CalibrationCr3dCubeDialog(this, mainframe)); 
+}
+
+void GUI_App::calibration_cr3d_samplecard_dialog()
+{
+    change_calibration_dialog(nullptr, new CalibrationCr3dSampleCardDialog(this, mainframe));
+}
+
+void GUI_App::calibration_cr3d_masterspool_dialog()
+{
+    change_calibration_dialog(nullptr, new CalibrationCr3dMasterSpoolDialog(this, mainframe));
+}
+
 
 void GUI_App::system_info()
 {

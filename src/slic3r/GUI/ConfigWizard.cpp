@@ -850,7 +850,9 @@ void PageMaterials::set_compatible_printers_html_window(const std::vector<std::s
 {
     const auto text_clr = wxGetApp().get_label_clr_default();
     const auto text_clr_str = encode_color(ColorRGB(text_clr.Red(), text_clr.Green(), text_clr.Blue()));
-    const auto bgr_clr_str = wxGetApp().get_html_bg_color(parent);
+    wxColour   newColor(68, 68, 68);
+    const auto bgr_clr_str = encode_color(ColorRGB(newColor.Red(), newColor.Green(), newColor.Blue()));
+
     wxString text;
     if (materials->technology == T_FFF && template_shown) {
         // TRN ConfigWizard: Materials : "%1%" = "Filaments"/"SLA materials"
