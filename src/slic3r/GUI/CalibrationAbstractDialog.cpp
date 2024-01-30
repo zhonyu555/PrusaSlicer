@@ -121,39 +121,40 @@ void CalibrationAbstractDialog::close_me(wxCommandEvent& event_args) {
     this->Destroy();
 }
 
-ModelObject *CalibrationAbstractDialog::add_part(ModelObject *model_object, std::string input_file, Vec3d move, Vec3d scale)
-{
+ModelObject* CalibrationAbstractDialog::add_part(ModelObject* model_object, std::string input_file, Vec3d move, Vec3d scale) {
     Model model;
     try {
         model = Model::read_from_file(input_file);
-    } catch (std::exception &e) {
+    }
+    catch (std::exception & e) {
         auto msg = _L("Error!") + " " + input_file + " : " + e.what() + ".";
         show_error(this, msg);
         exit(1);
     }
 
-    for (ModelObject *object : model.objects) {
+    for (ModelObject* object : model.objects) {
         Vec3d delta = Vec3d::Zero();
-        if (model_object->origin_translation != Vec3d::Zero()) {
+        if (model_object->origin_translation != Vec3d::Zero())
+        {
             object->center_around_origin();
             delta = model_object->origin_translation - object->origin_translation;
         }
-        for (ModelVolume *volume : object->volumes) {
+        for (ModelVolume* volume : object->volumes) {
             volume->translate(delta + move);
-            if (scale != Vec3d{1, 1, 1}) {
+            if (scale != Vec3d{ 1,1,1 }) {
                 volume->scale(scale);
             }
-            ModelVolume *new_volume = model_object->add_volume(*volume);
+            ModelVolume* new_volume = model_object->add_volume(*volume);
             new_volume->set_type(ModelVolumeType::MODEL_PART);
             new_volume->name = boost::filesystem::path(input_file).filename().string();
 
-            // volumes_info.push_back(std::make_pair(from_u8(new_volume->name), new_volume->get_mesh_errors_count() > 0));
+            //volumes_info.push_back(std::make_pair(from_u8(new_volume->name), new_volume->get_mesh_errors_count() > 0));
 
             // set a default extruder value, since user can't add it manually
-            //new_volume->config.set_key_value("extruder", new ConfigOptionInt(0));
-            //new_volume->config.set_key_value("first_layer_extruder", new ConfigOptionInt(0));
+            new_volume->config.set_key_value("extruder", new ConfigOptionInt(0));
+            new_volume->config.set_key_value("first_layer_extruder", new ConfigOptionInt(0));
 
-            // move to bed
+            //move to bed
             /* const TriangleMesh& hull = new_volume->get_convex_hull();
             float min_z = std::numeric_limits<float>::max();
             for (const stl_facet& facet : hull.stl.facet_start) {
@@ -163,9 +164,8 @@ ModelObject *CalibrationAbstractDialog::add_part(ModelObject *model_object, std:
             volume->translate(Vec3d(0,0,-min_z));*/
         }
     }
-    // assert(model.objects.size() == 1);
-    // return model.objects.empty()?nullptr: model.objects[0];
-    return model.objects[0];
+    assert(model.objects.size() == 1);
+    return model.objects.empty()?nullptr: model.objects[0];
 }
 
 void CalibrationAbstractDialog::on_dpi_changed(const wxRect& suggested_rect)
