@@ -1994,6 +1994,10 @@ void GUI_App::calibration_cr3d_masterspool_dialog()
     change_calibration_dialog(nullptr, new CalibrationCr3dMasterSpoolDialog(this, mainframe));
 }
 
+void GUI_App::calibration_cr3d_idex_dialog() {
+    change_calibration_dialog(nullptr, new CalibrationCr3dIDEXDialog(this, mainframe));
+}
+
 
 void GUI_App::system_info()
 {

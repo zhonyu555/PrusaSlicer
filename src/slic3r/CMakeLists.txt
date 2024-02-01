@@ -27,6 +27,7 @@ GUI/CalibrationCubeDialog.cpp
 GUI/CalibrationCubeDialog.hpp
 GUI/CalibrationCr3dDialog.hpp
 GUI/CalibrationCr3dDialog.cpp
+
     GUI/ArrangeSettingsDialogImgui.hpp
     GUI/ArrangeSettingsDialogImgui.cpp
     GUI/SysInfoDialog.cpp

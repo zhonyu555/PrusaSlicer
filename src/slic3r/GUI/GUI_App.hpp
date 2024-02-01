@@ -264,6 +264,7 @@ public:
     void calibration_cr3d_cube_dialog();
     void calibration_cr3d_samplecard_dialog();
     void calibration_cr3d_masterspool_dialog();
+    void calibration_cr3d_idex_dialog();
 
     void            recreate_GUI(const wxString& message);
     void            system_info();

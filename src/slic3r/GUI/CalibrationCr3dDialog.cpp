@@ -76,6 +76,14 @@ void CalibrationCr3dSampleCardDialog::create_buttons(wxStdDialogButtonSizer* but
     buttons->Add(bt);
 }
 
+void CalibrationCr3dIDEXDialog::create_buttons(wxStdDialogButtonSizer *buttons)
+{
+    wxButton *bt = new wxButton(this, wxID_FILE1, _(L("Generate")));
+    bt->Bind(wxEVT_BUTTON, &CalibrationCr3dIDEXDialog::create_geometry_single, this);
+    bt->SetToolTip(_L("CR-3D IDEX Calibration"));
+    buttons->Add(bt);
+}
+
 void CalibrationCr3dMasterSpoolDialog::create_buttons(wxStdDialogButtonSizer* buttons){
 
 }

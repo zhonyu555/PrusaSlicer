@@ -1291,7 +1291,8 @@ void MainFrame::init_menubar_as_editor()
                          [this](wxCommandEvent &) { wxGetApp().calibration_cr3d_cube_dialog(); });
         append_menu_item(calibrationMenu, wxID_ANY, _(L("CR-3D Sample Keycard & Tray")), "",
                          [this](wxCommandEvent &) { wxGetApp().calibration_cr3d_samplecard_dialog(); });
-
+        append_menu_item(calibrationMenu, wxID_ANY, _(L("CR-3D IDEX Calibration")), "",
+                         [this](wxCommandEvent &) { wxGetApp().calibration_cr3d_idex_dialog(); });
     }
 
     // File menu

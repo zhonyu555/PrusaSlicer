@@ -17,6 +17,21 @@ protected:
     void create_geometry(std::string cube_path);
 };
 
+class CalibrationCr3dIDEXDialog : public CalibrationCr3dAbstractDialog
+{
+public:
+    CalibrationCr3dIDEXDialog(GUI_App *app, MainFrame *mainframe) : CalibrationCr3dAbstractDialog(app, mainframe, "CR-3D IDEX Calibration")
+    {
+        create("/calibration/cr3d/idex", "index.html");
+    }
+
+    virtual ~CalibrationCr3dIDEXDialog() { }
+
+protected:
+    void create_buttons(wxStdDialogButtonSizer *sizer) override;
+    void create_geometry_single(wxCommandEvent &event_args) { create_geometry("/idex/IDEX Calibration.3mf"); }
+};
+
 class CalibrationCr3dCubeDialog : public CalibrationCr3dAbstractDialog
 {
 
