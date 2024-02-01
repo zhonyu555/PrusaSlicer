@@ -10,6 +10,7 @@
 #include "Geometry/VoronoiVisualUtils.hpp"
 #include "MutablePolygon.hpp"
 #include "format.hpp"
+#include "TriangleSelector.hpp"
 
 #include <utility>
 #include <cfloat>
@@ -101,6 +102,7 @@ struct PaintedLineVisitor
         const Vec2d  v1                     = line_to_test.vector().cast<double>();
         const double v1_sqr_norm            = v1.squaredNorm();
         const double heuristic_thr_part     = line_to_test.length() + append_threshold;
+        const double min_res = std::max(Slic3r::sqr(resolution), append_threshold_sqr);
         for (auto it_contour_and_segment = cell_data_range.first; it_contour_and_segment != cell_data_range.second; ++it_contour_and_segment) {
             Line        grid_line         = grid.line(*it_contour_and_segment);
             const Vec2d v2                = grid_line.vector().cast<double>();
@@ -122,6 +124,10 @@ struct PaintedLineVisitor
                         grid_line.distance_to_squared(line_to_test.b) < append_threshold2 ||
                         line_to_test.distance_to_squared(grid_line.a) < append_threshold2 ||
                         line_to_test.distance_to_squared(grid_line.b) < append_threshold2) {
+                    if (grid_line.distance_to_squared(line_to_test.a) < min_res ||
+                        grid_line.distance_to_squared(line_to_test.b) < min_res ||
+                        line_to_test.distance_to_squared(grid_line.a) < min_res ||
+                        line_to_test.distance_to_squared(grid_line.b) < min_res) {
                         Line line_to_test_projected;
                         project_line_on_line(grid_line, line_to_test, &line_to_test_projected);
 
@@ -147,10 +153,11 @@ struct PaintedLineVisitor
     Line                                                                                  line_to_test;
     std::unordered_set<std::pair<size_t, size_t>, boost::hash<std::pair<size_t, size_t>>> painted_lines_set;
     int                                                                                   color             = -1;
+    double                                                                                resolution = 50 * SCALED_EPSILON;
 
     static inline const double                                                            cos_threshold2    = Slic3r::sqr(cos(M_PI * 30. / 180.));
     static inline const double                                                            append_threshold  = 50 * SCALED_EPSILON;
-    static inline const double                                                            append_threshold2 = Slic3r::sqr(append_threshold);
+    static inline const double                                                            append_threshold_sqr = Slic3r::sqr(append_threshold);
 };
 
 static Polygon colored_points_to_polygon(const std::vector<ColoredLine> &lines)
@@ -1702,6 +1709,7 @@ std::vector<std::vector<ExPolygons>> multi_material_segmentation_by_painting(con
     std::vector<EdgeGrid::Grid>           edge_grids(num_layers);
     const SpanOfConstPtrs<Layer>          layers = print_object.layers();
     std::vector<ExPolygons>               input_expolygons(num_layers);
+    double                                resolution = scaled<double>(print_object.print()->config().resolution);
 
     throw_on_cancel_callback();
 
@@ -1761,15 +1769,18 @@ std::vector<std::vector<ExPolygons>> multi_material_segmentation_by_painting(con
 
     BOOST_LOG_TRIVIAL(debug) << "MMU segmentation - projection of painted triangles - begin";
     for (const ModelVolume *mv : print_object.model_object()->volumes) {
-        tbb::parallel_for(tbb::blocked_range<size_t>(1, num_extruders + 1), [&mv, &print_object, &layers, &edge_grids, &painted_lines, &painted_lines_mutex, &input_expolygons, &throw_on_cancel_callback](const tbb::blocked_range<size_t> &range) {
+        //can reuse the TriangleSelector for each extruder_idx
+        TriangleSelector tri_selector(mv->mesh());
+        mv->mmu_segmentation_facets.set_facets_selector(tri_selector);
+        tbb::parallel_for(tbb::blocked_range<size_t>(1, num_extruders + 1), [&mv, &print_object, &layers, &edge_grids, &painted_lines, &painted_lines_mutex, &input_expolygons, resolution, &tri_selector , &throw_on_cancel_callback](const tbb::blocked_range<size_t> &range) {
             for (size_t extruder_idx = range.begin(); extruder_idx < range.end(); ++extruder_idx) {
                 throw_on_cancel_callback();
-                const indexed_triangle_set custom_facets = mv->mmu_segmentation_facets.get_facets(*mv, EnforcerBlockerType(extruder_idx));
+                const indexed_triangle_set custom_facets = tri_selector.get_facets(EnforcerBlockerType(extruder_idx));
                 if (!mv->is_model_part() || custom_facets.indices.empty())
                     continue;
 
                 const Transform3f tr = print_object.trafo().cast<float>() * mv->get_matrix().cast<float>();
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, custom_facets.indices.size()), [&tr, &custom_facets, &print_object, &layers, &edge_grids, &input_expolygons, &painted_lines, &painted_lines_mutex, &extruder_idx](const tbb::blocked_range<size_t> &range) {
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, custom_facets.indices.size()), [&tr, &custom_facets, &print_object, &layers, &edge_grids, &input_expolygons, &painted_lines, &painted_lines_mutex, &extruder_idx, &resolution](const tbb::blocked_range<size_t> &range) {
                     for (size_t facet_idx = range.begin(); facet_idx < range.end(); ++facet_idx) {
                         float min_z = std::numeric_limits<float>::max();
                         float max_z = std::numeric_limits<float>::lowest();
@@ -1831,6 +1842,7 @@ std::vector<std::vector<ExPolygons>> multi_material_segmentation_by_painting(con
                             assert(mutex_idx < painted_lines_mutex.size());
 
                             PaintedLineVisitor visitor(edge_grids[layer_idx], painted_lines[layer_idx], painted_lines_mutex[mutex_idx], 16);
+                            visitor.resolution = resolution;
                             visitor.line_to_test = line_to_test;
                             visitor.color        = int(extruder_idx);
                             edge_grids[layer_idx].visit_cells_intersecting_line(line_to_test.a, line_to_test.b, visitor);

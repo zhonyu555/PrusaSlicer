@@ -2021,6 +2021,10 @@ indexed_triangle_set FacetsAnnotation::get_facets(const ModelVolume& mv, Enforce
     selector.deserialize(m_data, false);
     return selector.get_facets(type);
 }
+void FacetsAnnotation::set_facets_selector(TriangleSelector& selector) const
+{
+    selector.deserialize(m_data, false);
+}
 
 indexed_triangle_set FacetsAnnotation::get_facets_strict(const ModelVolume& mv, EnforcerBlockerType type) const
 {
