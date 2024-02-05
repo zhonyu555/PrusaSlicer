@@ -24,7 +24,7 @@ namespace Slic3r {
 
 ProgressStatusBar::ProgressStatusBar(wxWindow *parent, int id)
     : self{new wxStatusBar(parent, id == -1 ? wxID_ANY : id)}
-    , m_prog{new wxGauge(self,
+    , m_prog{new wxGauge(self, 
                          wxGA_HORIZONTAL,
                          100,
                          wxDefaultPosition,

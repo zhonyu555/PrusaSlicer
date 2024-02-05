@@ -359,22 +359,26 @@ void SlicedInfo::SetTextAndShow(SlicedInfoIdx idx, const wxString& text, const w
 class FreqChangedParams : public OG_Settings
 {
     double		    m_brim_width = 0.0;
+    ConfigOptionFloats m_nozzle_diameter;
     wxButton*       m_wiping_dialog_button{ nullptr };
     wxSizer*        m_sizer {nullptr};
 
     std::shared_ptr<ConfigOptionsGroup> m_og_sla;
     std::vector<ScalableButton*>        m_empty_buttons;
 public:
-    FreqChangedParams(wxWindow* parent);
+    FreqChangedParams(wxWindow *parent);
+
     ~FreqChangedParams() {}
 
     wxButton*       get_wiping_dialog_button() { return m_wiping_dialog_button; }
     wxSizer*        get_sizer() override;
     ConfigOptionsGroup* get_og(const bool is_fff);
     void            Show(const bool is_fff) override;
+    size_t          m_extruders_count = 1;
 
     void            msw_rescale();
     void            sys_color_changed();
+    void            handleConfigChange();
 };
 
 void FreqChangedParams::msw_rescale()
@@ -394,8 +398,7 @@ void FreqChangedParams::sys_color_changed()
     wxGetApp().UpdateDarkUI(m_wiping_dialog_button, true);
 }
 
-FreqChangedParams::FreqChangedParams(wxWindow* parent) :
-    OG_Settings(parent, false)
+FreqChangedParams::FreqChangedParams(wxWindow *parent) : OG_Settings(parent, false)
 {
     DynamicPrintConfig*	config = &wxGetApp().preset_bundle->prints.get_edited_preset().config;
 
@@ -405,6 +408,8 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
 
     m_og->m_on_change = [config, this](t_config_option_key opt_key, boost::any value) {
         Tab* tab_print = wxGetApp().get_tab(Preset::TYPE_PRINT);
+        Tab* tab_printer = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+
         if (!tab_print) return;
 
         if (opt_key == "fill_density") {
@@ -418,17 +423,34 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
             if (opt_key == "brim") {
                 double new_val;
                 double brim_width = config->opt_float("brim_width");
-                if (boost::any_cast<bool>(value) == true)
-                {
-                    new_val = m_brim_width == 0.0 ? 5 :
-                        m_brim_width < 0.0 ? m_brim_width * (-1) :
-                        m_brim_width;
-                }
-                else {
+                if (boost::any_cast<bool>(value) == true) {
+                    new_val = m_brim_width == 0.0 ? 5 : m_brim_width < 0.0 ? m_brim_width * (-1) : m_brim_width;
+                } else {
                     m_brim_width = brim_width * (-1);
-                    new_val = 0;
+                    new_val      = 0;
                 }
                 new_conf.set_key_value("brim_width", new ConfigOptionFloat(new_val));
+
+                // changing opt_key "nozzle_diameter" in the printer settings.
+            } else if (opt_key=="nozzle_diameter") {
+
+                const DynamicPrintConfig *conf = tab_printer->get_config();
+                
+                TabPrinter *tabPrinterInstance = dynamic_cast<TabPrinter *>(tab_printer);
+                tab_printer->m_config->keys();
+                Plater plater;
+
+                size_t count = plater.m_extruders_count;
+                // NEW
+               auto *nozzle_diameters    = dynamic_cast<const ConfigOptionFloats *>(tab_printer->m_config->option("nozzle_diameter"));
+                m_extruders_count     = nozzle_diameters->size();
+
+                const wxDouble &selection  = boost::any_cast<wxDouble>(value);
+                double nozzle_diameter = config->opt_float("nozzle_diameter");
+                new_conf.set_key_value("nozzle_diameter", new ConfigOptionFloats{selection});
+              
+            } else if (opt_key == "extruders_count") {
+                    wxGetApp().plater()->on_extruders_change(boost::any_cast<size_t>(value));
             }
             else {
                 assert(opt_key == "support");
@@ -453,6 +475,7 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
                 }
             }
             tab_print->load_config(new_conf);
+            tab_printer->load_config(new_conf);
         }
     };
 
@@ -485,6 +508,7 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
         m_empty_buttons.push_back(btn);
         return sizer;
     };
+
     line.append_widget(empty_widget);
 
     m_og->append_line(line);
@@ -498,16 +522,33 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
     option.opt.sidetext = "   ";
     line.append_option(option);
 
-    m_brim_width = config->opt_float("brim_width");
-    ConfigOptionDef def;
-    def.label = L("Brim");
-    def.type = coBool;
-    def.tooltip = L("This flag enables the brim that will be printed around each object on the first layer.");
-    def.gui_type = ConfigOptionDef::GUIType::undefined;
-    def.set_default_value(new ConfigOptionBool{ m_brim_width > 0.0 ? true : false });
-    option = Option(def, "brim");
-    option.opt.sidetext = "";
-    line.append_option(option);
+    m_og->append_line(line);
+
+    
+//Added nozzle_diameter to the menu
+    //TODO: Add more important opt_keys to the sidebar.
+    line = Line{"", ""};
+   
+    Tab *tab_printer = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+    const DynamicPrintConfig *conf = tab_printer->get_config();
+
+    TabPrinter *tabPrinterInstance = dynamic_cast<TabPrinter *>(tab_printer);
+    Plater      plater;
+
+    size_t count = plater.m_extruders_count;
+
+     // Create a new ConfigOptionDef for each nozzle diameter option
+    for (int i = 0; i < 1; i++) {
+        ConfigOptionDef support_nozzle;
+        support_nozzle.label   = L("Nozzle Diameter");
+        support_nozzle.type    = coFloats;
+        support_nozzle.tooltip = L("This is the diameter of your extruder nozzle (for example: 0.5, 0.35 etc.)");
+        support_nozzle.set_default_value(new ConfigOptionFloats{0.4});
+        option                = Option(support_nozzle, "nozzle_diameter");
+        option.opt.full_width = true;
+        option.opt.sidetext   = "   ";
+        line.append_option(option);
+    }
 
     auto wiping_dialog_btn = [this](wxWindow* parent) {
         m_wiping_dialog_button = new wxButton(parent, wxID_ANY, _L("Purging volumes") + dots, wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT);
@@ -2088,6 +2129,9 @@ private:
 	// vector of all warnings generated by last slicing
 	std::vector<std::pair<Slic3r::PrintStateBase::Warning, size_t>> current_warnings;
 	bool show_warning_dialog { false };
+
+    public:
+        size_t m_extruders_count;
 	
 };
 
@@ -2406,6 +2450,30 @@ void Plater::priv::update(unsigned int flags)
 
     if (get_config_bool("autocenter") && this->sidebar->obj_manipul()->IsShown())
         this->sidebar->obj_manipul()->UpdateAndShow(true);
+
+    Tab                      *printer_tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+    const DynamicPrintConfig *conf        = printer_tab->get_config();
+
+    DynamicPrintConfig f = this->fff_print.full_print_config();
+    size_t             nozzle_count     = f.opt_int("nozzle_diameter");
+
+    auto *nozzle_diameters = dynamic_cast<const ConfigOptionFloats *>(f.option("nozzle_diameter"));
+    auto *nozzle_dmrs      = f.opt<ConfigOptionFloats>("nozzle_diameter");
+
+    if (nozzle_dmrs) {
+        int count = nozzle_dmrs->values.size();
+        std::cout << count;
+        Plater plater;
+
+        plater.m_extruders_count = count;
+    }
+}
+
+
+size_t Plater::setExtrudersCount(size_t count) {
+
+    return 0;
+
 }
 
 void Plater::priv::select_view(const std::string& direction)
@@ -3342,6 +3410,26 @@ void Plater::priv::process_validation_warning(const std::vector<std::string>& wa
             _u8L("WARNING:") + "\n" + text, hypertext, action_fn
         );
     }
+
+    Tab                      *printer_tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
+    const DynamicPrintConfig *conf        = printer_tab->get_config();
+
+    DynamicPrintConfig f            = this->fff_print.full_print_config();
+    size_t             nozzle_count = f.opt_int("nozzle_diameter");
+
+    auto *nozzle_diameters = dynamic_cast<const ConfigOptionFloats *>(f.option("nozzle_diameter"));
+    auto *nozzle_dmrs      = f.opt<ConfigOptionFloats>("nozzle_diameter");
+
+    if (nozzle_dmrs) {
+        int count = nozzle_dmrs->values.size();
+        std::cout << count;
+        Plater plater;
+
+        plater.m_extruders_count = count;
+    }
+
+    //TODO: UI Refresh();
+
 }
 
 

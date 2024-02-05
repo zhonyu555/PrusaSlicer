@@ -778,6 +778,7 @@ void PlaterPresetComboBox::show_add_menu()
         }, "edit_uni", menu, []() { return true; }, wxGetApp().plater());
 
     wxGetApp().plater()->PopupMenu(menu);
+    Tab *printer_tab = wxGetApp().get_tab(Preset::TYPE_PRINTER);
 }
 
 void PlaterPresetComboBox::show_edit_menu()

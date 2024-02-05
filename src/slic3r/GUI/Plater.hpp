@@ -153,12 +153,16 @@ public:
     using fs_path = boost::filesystem::path;
 
     Plater(wxWindow *parent, MainFrame *main_frame);
+    Plater()                          = default;
     Plater(Plater &&) = delete;
     Plater(const Plater &) = delete;
     Plater &operator=(Plater &&) = delete;
     Plater &operator=(const Plater &) = delete;
     ~Plater() = default;
 
+    size_t m_extruders_count;
+    size_t   setExtrudersCount(size_t count);
+    
     bool is_project_dirty() const;
     bool is_presets_dirty() const;
     void update_project_dirty_from_presets();
@@ -178,7 +182,6 @@ public:
     Print& fff_print();
     const SLAPrint& sla_print() const;
     SLAPrint& sla_print();
-
 
     bool new_project(std::string project_name = "");
     void load_project();
@@ -369,7 +372,6 @@ public:
     PrinterTechnology   printer_technology() const;
     const DynamicPrintConfig * config() const;
     bool                set_printer_technology(PrinterTechnology printer_technology);
-
     void copy_selection_to_clipboard();
     void paste_from_clipboard();
     void search(bool plater_is_active);

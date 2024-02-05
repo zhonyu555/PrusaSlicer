@@ -1297,7 +1297,6 @@ bool GUI_App::on_init_inner()
             if (this->plater_ != nullptr)
                 this->plater_->get_notification_manager()->set_download_progress_percentage((float)std::stoi(into_u8(evt.GetString())) / 100.f );
         });
-
         Bind(EVT_SLIC3R_APP_DOWNLOAD_FAILED, [this](const wxCommandEvent& evt) {
             if (this->plater_ != nullptr)
                 this->plater_->get_notification_manager()->close_notification_of_type(NotificationType::AppDownload);
