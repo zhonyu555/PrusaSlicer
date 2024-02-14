@@ -16,6 +16,7 @@ protected:
     Button *        button_inc {nullptr};
     Button *        button_dec {nullptr};
     wxTimer         timer;
+    wxString        text;
 
     static const int SpinInputWidth = 200;
     static const int SpinInputHeight = 50;
@@ -31,7 +32,7 @@ public:
 
     void SetCornerRadius(double radius);
 
-    void SetLabel(const wxString &label) wxOVERRIDE;
+    void SetText(const wxString &text);
 
     void SetLabelColor(StateColor const &color);
 

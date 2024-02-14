@@ -41,7 +41,11 @@ const t_field& OptionsGroup::build_field(const t_config_option_key& id) {
     return build_field(id, opt);
 }
 
-const t_field& OptionsGroup::build_field(const t_config_option_key& id, const ConfigOptionDef& opt) {
+const t_field& OptionsGroup::build_field(const t_config_option_key& id, const ConfigOptionDef& opt) 
+{
+    if (!opt.label.empty() || !opt.full_label.empty()) 
+        Accessibility::SetNextLabelString(opt.full_label.empty() ? opt.label : opt.full_label);
+
     // Check the gui_type field first, fall through
     // is the normal type.
     switch (opt.gui_type) {
@@ -259,7 +263,6 @@ void OptionsGroup::append_separator()
 
 void OptionsGroup::activate_line(Line& line)
 {
-    if(!line.label.IsEmpty()) Accessibility::SetNextLabelString(line.label);
     if (line.is_separator())
         return;
 

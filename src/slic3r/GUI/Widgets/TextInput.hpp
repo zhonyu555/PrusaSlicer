@@ -17,6 +17,9 @@ class TextInput : public wxNavigationEnabled<StaticBox>
     static const int TextInputWidth = 200;
     static const int TextInputHeight = 50;
 
+    wxString       accessibility_label;
+    wxString       text;
+
 public:
     TextInput();
 
@@ -37,7 +40,9 @@ public:
               const wxSize & size  = wxDefaultSize,
               long           style = 0);
 
-    void SetLabel(const wxString& label) wxOVERRIDE;
+    void SetText(const wxString& text);
+
+    wxString GetText() const { return text; }
 
     void SetIcon(const wxBitmapBundle& icon);
 

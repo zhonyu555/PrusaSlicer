@@ -4,8 +4,10 @@
 #include <wx/dcgraph.h>
 #include <wx/panel.h>
 
-#include "slic3r/GUI/GUI_App.hpp"
-#include "slic3r/GUI/Accessibility.hpp"
+#include "../GUI_App.hpp"
+#include "../I18N.hpp"
+#include "../format.hpp"
+#include "../Accessibility.hpp"
 
 BEGIN_EVENT_TABLE(TextInput, wxPanel)
 
@@ -43,7 +45,7 @@ TextInput::TextInput(wxWindow *     parent,
 }
 
 void TextInput::Create(wxWindow *     parent,
-                       wxString       text,
+                       wxString       text_in,
                        wxString       label,
                        wxString       icon,
                        const wxPoint &pos,
@@ -51,16 +53,16 @@ void TextInput::Create(wxWindow *     parent,
                        long           style)
 {
     text_ctrl = nullptr;
+    text = text_in;
     StaticBox::Create(parent, wxID_ANY, pos, size, style);
-    wxWindow::SetLabel(label);
 
     state_handler.attach({&label_color, &text_color});
     state_handler.update_binds();
 
-    if(Slic3r::GUI::Accessibility::IsLabelAvailable())
-        wxStaticText *virtualLabel = new wxStaticText(
-            this, wxID_ANY, Slic3r::GUI::Accessibility::GetLastLabelString(), wxDefaultPosition, wxSize(0, 0), wxST_NO_AUTORESIZE
-        );
+    if (Slic3r::GUI::Accessibility::IsLabelAvailable()) {
+        accessibility_label = Slic3r::GUI::Accessibility::GetLastLabelString();
+        wxWindow::SetLabel(!label.empty() ? label : (accessibility_label + " " + (icon.IsEmpty() ? "" : _L("ComboBox"))));
+    }
 
     text_ctrl = new wxTextCtrl(this, wxID_ANY, text, {4, 4}, size, style | wxBORDER_NONE);
 #ifdef __WXOSX__
@@ -96,11 +98,16 @@ void TextInput::Create(wxWindow *     parent,
     messureSize();
 }
 
-void TextInput::SetLabel(const wxString& label)
+void TextInput::SetText(const wxString& text_in)
 {
-    wxWindow::SetLabel(label);
+    text = text_in;
     messureSize();
     Refresh();
+
+    // If text control is hidded (when there is TextInput from non-editable ComboBox),
+    // a label have to be extended for label name for this control
+    if (!text_ctrl->IsShown())
+        this->SetLabel(Slic3r::GUI::format_wxstr("%1% %2% %3%", accessibility_label, _L("ComboBox"), text));
 }
 
 bool TextInput::SetBackgroundColour(const wxColour& colour)
@@ -294,7 +301,6 @@ void TextInput::render(wxDC& dc)
         dc.DrawBitmap(drop_down_icon.get_bitmap(), pt_r);
     }
 
-    auto text = wxWindow::GetLabel();
     if (!text.IsEmpty()) {
         wxSize textSize = text_ctrl->GetSize();
         if (align_right) {
@@ -315,7 +321,7 @@ void TextInput::messureSize()
 {
     wxSize size = GetSize();
     wxClientDC dc(this);
-    labelSize = dc.GetTextExtent(wxWindow::GetLabel());
+    labelSize = dc.GetTextExtent(text);
 
     const wxSize textSize = text_ctrl->GetSize();
     const wxSize iconSize = drop_down_icon.bmp().IsOk() ? drop_down_icon.GetSize() : wxSize(0, 0);

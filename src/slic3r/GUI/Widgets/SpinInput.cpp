@@ -4,6 +4,8 @@
 #include "UIColors.hpp"
 
 #include "../GUI_App.hpp"
+#include "../I18N.hpp"
+#include "../format.hpp"
 #include "../Accessibility.hpp"
 
 #include <wx/dcgraph.h>
@@ -55,9 +57,9 @@ void SpinInputBase::SetCornerRadius(double radius)
     Refresh();
 }
 
-void SpinInputBase::SetLabel(const wxString &label)
+void SpinInputBase::SetText(const wxString &text_in)
 {
-    wxWindow::SetLabel(label);
+    text = text_in;
     messureSize();
     Refresh();
 }
@@ -207,7 +209,7 @@ void SpinInputBase::render(wxDC& dc)
     const int    btn_w = button_inc->GetSize().GetWidth();
     dc.DrawLine(pt, pt + wxSize{ btn_w - int(scale), 0});
     // draw label
-    auto label = GetLabel();
+    auto label = text;
     if (!label.IsEmpty()) {
         pt.x = size.x - labelSize.x - 5;
         pt.y = (size.y - labelSize.y) / 2;
@@ -234,7 +236,7 @@ void SpinInputBase::messureSize()
     const double scale = this->GetContentScaleFactor();
 
     wxClientDC dc(this);
-    labelSize  = dc.GetMultiLineTextExtent(GetLabel());
+    labelSize  = dc.GetMultiLineTextExtent(text);
     textSize.x = size.x - labelSize.x - btnSize.x - 16;
     text_ctrl->SetSize(textSize);
     text_ctrl->SetPosition({int(3. * scale), (size.y - textSize.y) / 2});
@@ -282,15 +284,14 @@ void SpinInput::Create(wxWindow *parent,
                      int min, int max, int initial)
 {
     StaticBox::Create(parent, wxID_ANY, pos, size);
-    wxWindow::SetLabel(label);
 
     state_handler.attach({&label_color, &text_color});
     state_handler.update_binds();
 
     if(Slic3r::GUI::Accessibility::IsLabelAvailable())
-        wxStaticText *virtualLabel = new wxStaticText(
-            this, wxID_ANY, Slic3r::GUI::Accessibility::GetLastLabelString(), wxDefaultPosition, wxSize(0, 0), wxST_NO_AUTORESIZE
-        );
+        wxWindow::SetLabel(!label.empty() ? label : 
+                           Slic3r::GUI::format_wxstr("%1% %2%", Slic3r::GUI::Accessibility::GetLastLabelString(), _L("Spin Control")));
+
     text_ctrl = new wxTextCtrl(this, wxID_ANY, text, {20, 4}, wxDefaultSize, style | wxBORDER_NONE | wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_NUMERIC));
 #ifdef __WXOSX__
     text_ctrl->OSXDisableAllSmartSubstitutions();
@@ -462,10 +463,13 @@ void SpinInputDouble::Create(wxWindow *parent,
                              double         inc)
 {
     StaticBox::Create(parent, wxID_ANY, pos, size);
-    wxWindow::SetLabel(label);
 
     state_handler.attach({&label_color, &text_color});
     state_handler.update_binds();
+
+    if (Slic3r::GUI::Accessibility::IsLabelAvailable())
+        wxWindow::SetLabel(!label.empty() ? label :
+                           Slic3r::GUI::format_wxstr("%1% %2%", Slic3r::GUI::Accessibility::GetLastLabelString(), _L("Spin Control")));
 
     text_ctrl = new wxTextCtrl(this, wxID_ANY, text, {20, 4}, wxDefaultSize, style | wxBORDER_NONE | wxTE_PROCESS_ENTER, wxTextValidator(wxFILTER_NUMERIC));
 #ifdef __WXOSX__

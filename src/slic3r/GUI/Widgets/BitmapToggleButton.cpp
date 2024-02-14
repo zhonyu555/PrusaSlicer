@@ -15,7 +15,7 @@ BitmapToggleButton::BitmapToggleButton(wxWindow* parent, const wxString& label, 
         wxSize def_size = wxDefaultSize;
 #endif
         // Call Create() from wxToggleButton instead of wxBitmapToggleButton to allow add Label text under Linux
-        wxToggleButton::Create(parent, id, label, wxDefaultPosition, def_size, style | wxBU_NOTEXT);
+        wxToggleButton::Create(parent, id, label, wxDefaultPosition, def_size, style);
     }
 
 #ifdef __WXMSW__

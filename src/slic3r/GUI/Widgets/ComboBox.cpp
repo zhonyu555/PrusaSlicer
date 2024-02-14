@@ -4,6 +4,7 @@
 #include <wx/dcgraph.h>
 
 #include "../GUI_App.hpp"
+#include "../Accessibility.hpp"
 
 BEGIN_EVENT_TABLE(ComboBox, TextInput)
 
@@ -77,7 +78,7 @@ int ComboBox::GetSelection() const
 void ComboBox::SetSelection(int n)
 {
     drop.SetSelection(n);
-    SetLabel(drop.GetValue());
+    SetText(drop.GetValue());
     if (drop.selection >= 0)
         SetIcon(icons[drop.selection]);
 }
@@ -92,41 +93,31 @@ void ComboBox::Rescale()
 
 wxString ComboBox::GetValue() const
 {
-    return drop.GetSelection() >= 0 ? drop.GetValue() : GetLabel();
+    return drop.GetSelection() >= 0 ? drop.GetValue() : GetText();
 }
 
 void ComboBox::SetValue(const wxString &value)
 {
     drop.SetValue(value);
-    SetLabel(value);
+    SetText(value);
     if (drop.selection >= 0)
         SetIcon(icons[drop.selection]);
 }
 
-void ComboBox::SetLabel(const wxString &value)
+void ComboBox::SetText(const wxString &value)
 {
     if (GetTextCtrl()->IsShown() || text_off)
         GetTextCtrl()->SetValue(value);
     else
-        TextInput::SetLabel(value);
+        TextInput::SetText(value);
 }
 
-wxString ComboBox::GetLabel() const
+wxString ComboBox::GetText() const
 {
     if (GetTextCtrl()->IsShown() || text_off)
         return GetTextCtrl()->GetValue();
     else
-        return TextInput::GetLabel();
-}
-
-void ComboBox::SetTextLabel(const wxString& label)
-{
-    TextInput::SetLabel(label);
-}
-
-wxString ComboBox::GetTextLabel() const
-{
-    return TextInput::GetLabel();
+        return TextInput::GetText();
 }
 
 bool ComboBox::SetFont(wxFont const& font)
@@ -238,7 +229,7 @@ void ComboBox::SetString(unsigned int n, wxString const &value)
     if (n >= texts.size()) return;
     texts[n]  = value;
     drop.Invalidate();
-    if (int(n) == drop.GetSelection()) SetLabel(value);
+    if (int(n) == drop.GetSelection()) SetText(value);
 }
 
 wxBitmap ComboBox::GetItemBitmap(unsigned int n) 
@@ -353,7 +344,7 @@ void ComboBox::keyDown(wxKeyEvent& event)
                 break;
             }
             const size_t pos = size_t(GetTextCtrl()->GetInsertionPoint());
-            if (pos < GetLabel().Length())
+            if (pos < GetText().Length())
                 GetTextCtrl()->SetInsertionPoint(pos + 1);
             break;
         }

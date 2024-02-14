@@ -55,11 +55,8 @@ public:
     wxString GetValue() const;
     void     SetValue(const wxString &value);
 
-    void SetLabel(const wxString &label) override;
-    wxString GetLabel() const override;
-
-    void SetTextLabel(const wxString &label);
-    wxString GetTextLabel() const;
+    void SetText(const wxString &label);
+    wxString GetText() const;
 
     wxString GetString(unsigned int n) const override;
     void     SetString(unsigned int n, wxString const &value) override;
