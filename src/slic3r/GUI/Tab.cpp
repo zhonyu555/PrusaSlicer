@@ -1,4 +1,5 @@
 ///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Lukáš Hejl @hejllukas, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2024 Felix Reißmann @felix-rm
 ///|/ Copyright (c) 2021 Martin Budden
 ///|/ Copyright (c) 2021 Ilya @xorza
 ///|/ Copyright (c) 2019 John Drake @foxox
@@ -5340,9 +5341,59 @@ void TabSLAMaterial::build()
     optgroup = page->new_optgroup(L("Exposure"));
     optgroup->append_single_option_line("exposure_time");
     optgroup->append_single_option_line("initial_exposure_time");
+    optgroup->append_single_option_line("exposure_pwm");
+    optgroup->append_single_option_line("initial_exposure_pwm");
+
+    // FIXME: This is quite hacky, maybe use some kind of builtin padding between line items
+    auto padd_option = [](Option opt){
+        opt.opt.label = "\t\t\t" + opt.opt.label;
+        return opt;
+    };
+
+    optgroup = page->new_optgroup(L("Initial Lift and Retract"));
+    auto line = Line{L("Initial lift distance"), ""};
+    line.append_option(optgroup->get_option("sla_initial_primary_lift_distance"));
+    line.append_option(padd_option(optgroup->get_option("sla_initial_secondary_lift_distance")));
+    optgroup->append_line(line);
+    line = Line {L("Initial lift speed"),""};
+    line.append_option(optgroup->get_option("sla_initial_primary_lift_speed"));
+    line.append_option(padd_option(optgroup->get_option("sla_initial_secondary_lift_speed")));
+    optgroup->append_line(line);
+    line = Line {L("Initial retract distance"),""};
+    line.append_option(optgroup->get_option("sla_initial_primary_retract_distance"));
+    line.append_option(padd_option(optgroup->get_option("sla_initial_secondary_retract_distance")));
+    optgroup->append_line(line);
+    line = Line {L("Initial retract speed"),""};
+    line.append_option(optgroup->get_option("sla_initial_primary_retract_speed"));
+    line.append_option(padd_option(optgroup->get_option("sla_initial_secondary_retract_speed")));
+    optgroup->append_line(line);
+    optgroup->append_single_option_line("sla_initial_wait_before_lift");
+    optgroup->append_single_option_line("sla_initial_wait_after_lift");
+    optgroup->append_single_option_line("sla_initial_wait_after_retract");
+
+    optgroup = page->new_optgroup(L("Lift and Retract"));
+    line = Line {L("Lift distance"),""};
+    line.append_option(optgroup->get_option("sla_primary_lift_distance"));
+    line.append_option(padd_option(optgroup->get_option("sla_secondary_lift_distance")));
+    optgroup->append_line(line);
+    line = Line {L("Lift speed"),""};
+    line.append_option(optgroup->get_option("sla_primary_lift_speed"));
+    line.append_option(padd_option(optgroup->get_option("sla_secondary_lift_speed")));
+    optgroup->append_line(line);
+    line = Line {L("Retract distance"),""};
+    line.append_option(optgroup->get_option("sla_primary_retract_distance"));
+    line.append_option(padd_option(optgroup->get_option("sla_secondary_retract_distance")));
+    optgroup->append_line(line);
+    line = Line {L("Retract speed"),""};
+    line.append_option(optgroup->get_option("sla_primary_retract_speed"));
+    line.append_option(padd_option(optgroup->get_option("sla_secondary_retract_speed")));
+    optgroup->append_line(line);
+    optgroup->append_single_option_line("sla_wait_before_lift");
+    optgroup->append_single_option_line("sla_wait_after_lift");
+    optgroup->append_single_option_line("sla_wait_after_retract");
 
     optgroup = page->new_optgroup(L("Corrections"));
-    auto line = Line{ m_config->def()->get("material_correction")->full_label, "" };
+    line = Line{ m_config->def()->get("material_correction")->full_label, "" };
     for (auto& axis : { "X", "Y", "Z" }) {
         auto opt = optgroup->get_option(std::string("material_correction_") + char(std::tolower(axis[0])));
         opt.opt.label = axis;
