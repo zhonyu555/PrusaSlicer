@@ -1,5 +1,6 @@
 #include <Arachne/utils/PolygonsSegmentIndex.hpp>
 #include <MultiMaterialSegmentation.hpp>
+#include <boost/log/trivial.hpp>
 
 #include "VoronoiUtils.hpp"
 
