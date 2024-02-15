@@ -850,8 +850,8 @@ void LayerRegion::expand_surfaces(const double &scale)
 {
     auto merged_layers = this->layer()->merged(float(SCALED_EPSILON));
     
-    for (auto &i : merged_layers){
-        i.scale(scale);
+    for (auto &polygon : merged_layers) {
+        polygon.scale(scale);
     }
     m_slices.set(merged_layers, stInternal); // Surface type doesn't seem to affect the model?! Workaround...
 }

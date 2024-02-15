@@ -772,7 +772,7 @@ void PrintObject::slice_volumes()
 	                    LayerRegion *layerm = layer->m_regions.front();
 
                         // Compensate for filament shrink
-                        if(shrink_scale > EPSILON) {
+                        if(shrink_scale != 1) {
                             layerm->expand_surfaces(shrink_scale);
                         }
 
@@ -814,7 +814,7 @@ void PrintObject::slice_volumes()
 	                            layer->m_regions[region_id]->trim_surfaces(trimming);
                         
                         // Compensate for filament shrink
-                        if(shrink_scale > EPSILON) {
+                        if(shrink_scale != 1) {
                             for (size_t region_id = 0; region_id < layer->m_regions.size(); ++ region_id) {
                                 layer->m_regions[region_id]->expand_surfaces(shrink_scale);
                             }
