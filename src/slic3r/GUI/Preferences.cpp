@@ -697,6 +697,11 @@ void PreferencesDialog::build()
 			app_config->get_bool("sys_menu_enabled"));
 		}
 
+		append_bool_option(m_optgroup_dark_mode, "follow_system_theme",
+		L("Follow system theme"),
+		L("If enabled, UI will use light or dark mode depended on system theme. Will only refresh on program start."),
+		app_config->get_bool("follow_system_theme"));
+
 		activate_options_tab(m_optgroup_dark_mode);
 #endif //_WIN32
 
