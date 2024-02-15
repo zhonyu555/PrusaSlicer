@@ -994,7 +994,7 @@ void PrintConfigDef::init_fff_params()
     def->max = 2;
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloats { 1. });
-
+    
     def = this->add("extrusion_width", coFloatOrPercent);
     def->label = L("Default extrusion width");
     def->category = L("Extrusion Width");
@@ -1183,6 +1183,20 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm");
     def->min = 0;
     def->set_default_value(new ConfigOptionFloats { 1.75 });
+
+    def = this->add("filament_shrink", coPercents);
+    def->label = L("Shrinkage");
+    def->tooltip = L("Enter the plastic shrink rate (Ex. 94% if you measure 94mm instead of 100mm)."
+                    " The part will be scaled in xy to conpensate."
+                    " Only the filament used for the perimeter is taken into account."
+                    "\nBe sure to let enough space between objects, as this compensation is done after the checks.");
+    def->sidetext = L("%");
+    def->min = 80;
+    def->max = 120;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionPercents{ 100 });
+
+
 
     def = this->add("filament_density", coFloats);
     def->label = L("Density");

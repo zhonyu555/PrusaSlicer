@@ -846,6 +846,17 @@ void LayerRegion::trim_surfaces(const Polygons &trimming_polygons)
 	m_slices.set(intersection_ex(this->slices().surfaces, trimming_polygons), stInternal);
 }
 
+void LayerRegion::expand_surfaces(const double &scale)
+{
+    auto merged_layers = this->layer()->merged(float(SCALED_EPSILON));
+    
+    for (auto &i : merged_layers){
+        i.scale(scale);
+    }
+    m_slices.set(merged_layers, stInternal); // Surface type doesn't seem to affect the model?! Workaround...
+}
+
+
 void LayerRegion::elephant_foot_compensation_step(const float elephant_foot_compensation_perimeter_step, const Polygons &trimming_polygons)
 {
 #ifndef NDEBUG

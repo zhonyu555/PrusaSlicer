@@ -750,6 +750,7 @@ bool PrintObject::invalidate_state_by_config_options(
 		} else if (
                opt_key == "elefant_foot_compensation"
             || opt_key == "support_material_contact_distance" 
+            || opt_key == "filament_shrink" 
             || opt_key == "xy_size_compensation") {
             steps.emplace_back(posSlice);
         } else if (opt_key == "support_material") {

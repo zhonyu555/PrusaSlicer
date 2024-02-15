@@ -2171,6 +2171,7 @@ void TabFilament::build()
         optgroup->append_single_option_line("filament_colour");
         optgroup->append_single_option_line("filament_diameter");
         optgroup->append_single_option_line("extrusion_multiplier");
+        optgroup->append_single_option_line("filament_shrink");
         optgroup->append_single_option_line("filament_density");
         optgroup->append_single_option_line("filament_cost");
         optgroup->append_single_option_line("filament_spool_weight");
