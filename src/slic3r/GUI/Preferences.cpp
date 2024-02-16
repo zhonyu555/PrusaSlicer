@@ -827,7 +827,7 @@ void PreferencesDialog::accept(wxEvent&)
 	EndModal(wxID_OK);
 
 #ifdef _WIN32
-	if (m_values.find("dark_color_mode") != m_values.end())
+	if (m_values.find("dark_color_mode") != m_values.end() || m_values.find("follow_system_theme") != m_values.end())
 		wxGetApp().force_colors_update();
 #ifdef _MSW_DARK_MODE
 	if (m_values.find("sys_menu_enabled") != m_values.end())
