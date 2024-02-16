@@ -684,7 +684,7 @@ void PreferencesDialog::build()
 
 		append_bool_option(m_optgroup_dark_mode, "dark_color_mode",
 			L("Enable dark mode"),
-			L("If enabled, UI will use Dark mode colors. If disabled, old UI will be used."),
+			L("If enabled, UI will use Dark mode colors. If disabled, old UI will be used. This is ignored if \"Follow system theme\" is enabled."),
 			app_config->get_bool("dark_color_mode"));
 
 		if (wxPlatformInfo::Get().GetOSMajorVersion() >= 10) // Use system menu just for Window newer then Windows 10
