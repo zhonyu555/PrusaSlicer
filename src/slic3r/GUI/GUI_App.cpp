@@ -1465,6 +1465,9 @@ bool GUI_App::dark_mode()
     // proper dark mode was first introduced.
     return wxPlatformInfo::Get().CheckOSVersion(10, 14) && mac_dark_mode();
 #else
+    if (wxGetApp().app_config->has("follow_system_theme"))
+        if (wxGetApp().app_config->get_bool("follow_system_theme"))
+            return check_dark_mode();
     if (wxGetApp().app_config->has("dark_color_mode"))
         return wxGetApp().app_config->get_bool("dark_color_mode");
     return check_dark_mode();
