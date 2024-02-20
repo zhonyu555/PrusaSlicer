@@ -154,7 +154,7 @@ EncodedRaster GOORLERasterEncoder::operator()(
         uint8_t length_tag : 2;
         uint8_t type_tag : 2;
     };
-    static_assert(sizeof(chunk_header) == 1);
+    static_assert(sizeof(chunk_header) == 1, "struct is not packed");
 
     if (ptr == nullptr) {
         throw std::runtime_error("GOO Encoder received nullptr as image data");

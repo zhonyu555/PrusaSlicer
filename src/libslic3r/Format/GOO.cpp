@@ -113,8 +113,21 @@ static void write_timestamp(char *buffer, size_t size) {
     strncpy(buffer, timestamp.c_str(), size);
 }
 
+#if defined(__GNUC__) || defined(__clang__)
+#define PACKED_PRE
+#define PACKED_IN [[gnu::packed]]
+#define PACKED_POST
+#elif defined(_MSC_VER)
+#define PACKED_PRE __pragma(pack(push, 1))
+#define PACKED_IN
+#define PACKED_POST __pragma(pack(pop))
+#elif
+#error "Unknown compiler for structure packing"
+#endif
+
 // NOTE: All members need to be converted to big endian
-struct [[gnu::packed]] header_info
+PACKED_PRE;
+struct PACKED_IN header_info
 {
     char version[4] = {'v', '3', '.', '0'};
     uint8_t magic_tag[8] = {0x07, 0x00, 0x00, 0x00, 0x44, 0x4c, 0x50, 0x00};
@@ -179,9 +192,12 @@ struct [[gnu::packed]] header_info
     bool grayscale_level = 0;
     uint16_t transition_layers;
 };
+PACKED_POST;
+static_assert(sizeof(header_info) == 195477, "struct is not packed");
 
 // NOTE: All members need to be converted to big endian
-struct [[gnu::packed]] layer_definition
+PACKED_PRE;
+struct PACKED_IN layer_definition
 {
     uint8_t reserved{};
     bool pause_at_layer;
@@ -203,6 +219,12 @@ struct [[gnu::packed]] layer_definition
     uint16_t light_pwm;
     uint8_t delimiter[2] = {0xd, 0xa};
 };
+PACKED_POST;
+static_assert(sizeof(layer_definition) == 66, "struct is not packed");
+
+#undef PACKED_PRE
+#undef PACKED_IN
+#undef PACKED_POST
 
 } // namespace
 
