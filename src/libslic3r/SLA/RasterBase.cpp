@@ -178,16 +178,16 @@ EncodedRaster GOORLERasterEncoder::operator()(
     // Write RLE encoded image data
     for (auto [value, run_length] : RunLengthIterate(input_buffer)) {
         // NOTE: type_tag::VALUE_DIFF not currently supported
-        type_tag t_tag = [&] {
+        type_tag t_tag = [](uint8_t value) {
             if (value == 0)
                 return type_tag::VALUE_00;
             else if (value == 255)
                 return type_tag::VALUE_FF;
             else
                 return type_tag::VALUE_GRAYSCALE;
-        }();
+        }(value);
 
-        length_tag l_tag = [&] {
+        length_tag l_tag = [](size_t run_length) {
             if (run_length >> 4 == 0)
                 return length_tag::RUN_LENGTH_4BIT;
             else if (run_length >> 12 == 0)
@@ -196,13 +196,12 @@ EncodedRaster GOORLERasterEncoder::operator()(
                 return length_tag::RUN_LENGTH_20BIT;
             else
                 return length_tag::RUN_LENGTH_28BIT;
-        }();
+        }(run_length);
 
-        chunk_header header{
-            .type_tag = (uint8_t) t_tag,
-            .length_tag = (uint8_t) l_tag,
-            .length = (uint8_t) (run_length & 0x0f)
-        };
+        chunk_header header{};
+        header.type_tag = (uint8_t) t_tag;
+        header.length_tag = (uint8_t) l_tag;
+        header.length = (uint8_t) (run_length & 0x0f);
 
         output_buffer.push_back(boost::core::bit_cast<uint8_t>(header));
 

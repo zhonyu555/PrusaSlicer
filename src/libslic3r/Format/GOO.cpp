@@ -294,59 +294,58 @@ void GOOWriter::export_print(
     //       This allows more control over exposure and layer hight...
 
     // clang-format off
-    header_info h_info{
-        .aa_level = hton<uint16_t>(m_cfg.gamma_correction.getFloat() * 100),
-        .grey_level = 0, // NOTE: Unset
-        .blur_level = 0, // NOTE: Unset
-        .total_layers = hton<uint32_t>(stats.slow_layers_count + stats.fast_layers_count),
-        .x_resolution = hton<uint16_t>(resolution.width_px),
-        .y_resolution = hton<uint16_t>(resolution.height_px),
-        .x_mirror = m_cfg.display_mirror_x.getBool(),
-        .y_mirror = m_cfg.display_mirror_y.getBool(),
-        .x_platform_size_mm = hton(option_as_float(m_cfg.display_width)),
-        .y_platform_size_mm = hton(option_as_float(m_cfg.display_height)),
-        .z_platform_size_mm = hton(option_as_float(m_cfg.max_print_height)),
-        .layer_thickness_mm = hton(option_as_float(obj_stats.layer_height)),
-        .common_exposure_time_s = hton(option_as_float(mat.exposure_time)),
-        .exposure_delivery_time_static = true,
-        .turn_off_time_s = 0, // NOTE: Unused because of exposure_delivery_time_static==true
-        .bottom_before_lift_time_s = hton(option_as_float(mat.sla_initial_wait_before_lift)),
-        .bottom_after_lift_time_s = hton(option_as_float(mat.sla_initial_wait_after_lift)),
-        .bottom_after_retract_time_s = hton(option_as_float(mat.sla_initial_wait_after_retract)),
-        .before_lift_time_s = hton(option_as_float(mat.sla_wait_before_lift)),
-        .after_lift_time_s = hton(option_as_float(mat.sla_wait_after_lift)),
-        .after_retract_time_s = hton(option_as_float(mat.sla_wait_after_retract)),
-        .bottom_exposure_time_s = hton(option_as_float(mat.exposure_time)),
-        .bottom_layers = hton<uint32_t>(obj_stats.faded_layers + 1), // NOTE: Faded layers + initial layer have increased exposure
-        .bottom_lift_distance_mm = hton(option_as_float(mat.sla_initial_primary_lift_distance)),
-        .bottom_lift_speed_mm_min = hton(option_as_float(mat.sla_initial_primary_lift_speed)),
-        .lift_distance_mm = hton(option_as_float(mat.sla_primary_lift_distance)),
-        .lift_speed_mm_min = hton(option_as_float(mat.sla_primary_lift_speed)),
-        .bottom_retract_distance_mm = hton(option_as_float(mat.sla_initial_primary_retract_distance)),
-        .bottom_retract_speed_mm_min = hton(option_as_float(mat.sla_initial_primary_retract_speed)),
-        .retract_distance_mm = hton(option_as_float(mat.sla_primary_retract_distance)),
-        .retract_speed_mm_min = hton(option_as_float(mat.sla_primary_retract_speed)),
-        .bottom_second_lift_distance_mm = hton(option_as_float(mat.sla_initial_secondary_lift_distance)),
-        .bottom_second_lift_speed_mm_min = hton(option_as_float(mat.sla_initial_secondary_lift_speed)),
-        .second_lift_distance_mm = hton(option_as_float(mat.sla_secondary_lift_distance)),
-        .second_lift_speed_mm_min = hton(option_as_float(mat.sla_secondary_lift_speed)),
-        .bottom_second_retract_distance_mm = hton(option_as_float(mat.sla_initial_secondary_retract_distance)),
-        .bottom_second_retract_speed_mm_min = hton(option_as_float(mat.sla_initial_secondary_retract_speed)),
-        .second_retract_distance_mm = hton(option_as_float(mat.sla_secondary_retract_distance)),
-        .second_retract_speed_mm_min = hton(option_as_float(mat.sla_secondary_retract_speed)),
-        .bottom_light_pwm = hton(option_as_uint16(mat.initial_exposure_pwm)),
-        .light_pwm = hton(option_as_uint16(mat.exposure_pwm)),
-        .advance_mode_layer_definition = true, 
-        .printing_time_s = hton<uint32_t>(stats.estimated_print_time),
-        .total_volume_mm3 = hton<float>(stats.total_weight / mat.material_density.getFloat()),
-        .total_weight_g = hton<float>(stats.total_weight),
-        .total_price = hton<float>(mat.bottle_cost.getFloat() /
-            (mat.bottle_volume.getFloat() * mat.material_density.getFloat()) * stats.total_weight),
-        .price_unit = "",
-        .layer_content_offset = hton<uint32_t>(sizeof(header_info)),
-        .grayscale_level = true,
-        .transition_layers = hton(option_as_uint16(obj_stats.faded_layers))
-    };
+    header_info h_info{};
+    h_info.aa_level = hton<uint16_t>(m_cfg.gamma_correction.getFloat() * 100);
+    h_info.grey_level = 0, // NOTE: Unused
+    h_info.blur_level = 0, // NOTE: Unused
+    h_info.total_layers = hton<uint32_t>(stats.slow_layers_count + stats.fast_layers_count);
+    h_info.x_resolution = hton<uint16_t>(resolution.width_px);
+    h_info.y_resolution = hton<uint16_t>(resolution.height_px);
+    h_info.x_mirror = m_cfg.display_mirror_x.getBool();
+    h_info.y_mirror = m_cfg.display_mirror_y.getBool();
+    h_info.x_platform_size_mm = hton(option_as_float(m_cfg.display_width));
+    h_info.y_platform_size_mm = hton(option_as_float(m_cfg.display_height));
+    h_info.z_platform_size_mm = hton(option_as_float(m_cfg.max_print_height));
+    h_info.layer_thickness_mm = hton(option_as_float(obj_stats.layer_height));
+    h_info.common_exposure_time_s = hton(option_as_float(mat.exposure_time));
+    h_info.exposure_delivery_time_static = true;
+    h_info.turn_off_time_s = 0, // NOTE: Unused because of exposure_delivery_time_static==tru;
+    h_info.bottom_before_lift_time_s = hton(option_as_float(mat.sla_initial_wait_before_lift));
+    h_info.bottom_after_lift_time_s = hton(option_as_float(mat.sla_initial_wait_after_lift));
+    h_info.bottom_after_retract_time_s = hton(option_as_float(mat.sla_initial_wait_after_retract));
+    h_info.before_lift_time_s = hton(option_as_float(mat.sla_wait_before_lift));
+    h_info.after_lift_time_s = hton(option_as_float(mat.sla_wait_after_lift));
+    h_info.after_retract_time_s = hton(option_as_float(mat.sla_wait_after_retract));
+    h_info.bottom_exposure_time_s = hton(option_as_float(mat.exposure_time));
+    h_info.bottom_layers = hton<uint32_t>(obj_stats.faded_layers + 1), // NOTE: Faded layers + initial layer have increased exposur;
+    h_info.bottom_lift_distance_mm = hton(option_as_float(mat.sla_initial_primary_lift_distance));
+    h_info.bottom_lift_speed_mm_min = hton(option_as_float(mat.sla_initial_primary_lift_speed));
+    h_info.lift_distance_mm = hton(option_as_float(mat.sla_primary_lift_distance));
+    h_info.lift_speed_mm_min = hton(option_as_float(mat.sla_primary_lift_speed));
+    h_info.bottom_retract_distance_mm = hton(option_as_float(mat.sla_initial_primary_retract_distance));
+    h_info.bottom_retract_speed_mm_min = hton(option_as_float(mat.sla_initial_primary_retract_speed));
+    h_info.retract_distance_mm = hton(option_as_float(mat.sla_primary_retract_distance));
+    h_info.retract_speed_mm_min = hton(option_as_float(mat.sla_primary_retract_speed));
+    h_info.bottom_second_lift_distance_mm = hton(option_as_float(mat.sla_initial_secondary_lift_distance));
+    h_info.bottom_second_lift_speed_mm_min = hton(option_as_float(mat.sla_initial_secondary_lift_speed));
+    h_info.second_lift_distance_mm = hton(option_as_float(mat.sla_secondary_lift_distance));
+    h_info.second_lift_speed_mm_min = hton(option_as_float(mat.sla_secondary_lift_speed));
+    h_info.bottom_second_retract_distance_mm = hton(option_as_float(mat.sla_initial_secondary_retract_distance));
+    h_info.bottom_second_retract_speed_mm_min = hton(option_as_float(mat.sla_initial_secondary_retract_speed));
+    h_info.second_retract_distance_mm = hton(option_as_float(mat.sla_secondary_retract_distance));
+    h_info.second_retract_speed_mm_min = hton(option_as_float(mat.sla_secondary_retract_speed));
+    h_info.bottom_light_pwm = hton(option_as_uint16(mat.initial_exposure_pwm));
+    h_info.light_pwm = hton(option_as_uint16(mat.exposure_pwm));
+    h_info.advance_mode_layer_definition = true;
+    h_info.printing_time_s = hton<uint32_t>(stats.estimated_print_time);
+    h_info.total_volume_mm3 = hton<float>(stats.total_weight / mat.material_density.getFloat());
+    h_info.total_weight_g = hton<float>(stats.total_weight);
+    h_info.total_price = hton<float>(mat.bottle_cost.getFloat() /
+        (mat.bottle_volume.getFloat() * mat.material_density.getFloat()) * stats.total_weight);
+    h_info.price_unit[0] = '\0'; //NOTE: No currency unit
+    h_info.layer_content_offset = hton<uint32_t>(sizeof(header_info));
+    h_info.grayscale_level = true;
+    h_info.transition_layers = hton(option_as_uint16(obj_stats.faded_layers));
     // clang-format on
 
     write_timestamp(h_info.file_time, sizeof(h_info.file_time));
@@ -370,52 +369,51 @@ void GOOWriter::export_print(
         bool bottom = current_layer == 1;
 
         // clang-format off
-        layer_definition l_def{
-            .pause_at_layer = false,
-            .pause_lift_distance_mm = 0,
-            .position_mm = hton<float>(
-                mat.initial_layer_height.getFloat() + layer_height * (current_layer - 1)
-            ),
-            .exposure_time_s = hton(constrained_map(
-                current_layer, 1, obj_stats.faded_layers + 1, //
-                mat.initial_exposure_time, mat.exposure_time
-            )),
-            .off_time_s = 0,
-            .before_lift_time_s = hton(option_as_float( //
-                bottom ? mat.sla_initial_wait_before_lift : mat.sla_wait_before_lift
-            )),
-            .after_lift_time_s = hton(option_as_float( //
-                bottom ? mat.sla_initial_wait_after_lift : mat.sla_wait_after_lift
-            )),
-            .after_retract_time_s = hton(option_as_float( //
-                bottom ? mat.sla_initial_wait_after_retract : mat.sla_wait_after_retract
-            )),
-            .lift_distance_mm = hton(option_as_float( //
-                bottom ? mat.sla_initial_primary_lift_distance : mat.sla_primary_lift_distance
-            )),
-            .lift_speed_mm_min = hton(option_as_float( //
-                bottom ? mat.sla_initial_primary_lift_speed : mat.sla_primary_lift_speed
-            )),
-            .second_lift_distance_mm = hton(option_as_float( //
-                bottom ? mat.sla_initial_secondary_lift_distance : mat.sla_secondary_lift_distance
-            )),
-            .second_lift_speed_mm_min = hton(option_as_float( //
-                bottom ? mat.sla_initial_secondary_lift_speed : mat.sla_secondary_lift_speed
-            )),
-            .retract_distance_mm = hton(option_as_float( //
-                bottom ? mat.sla_initial_primary_retract_distance : mat.sla_primary_retract_distance
-            )),
-            .retract_speed_mm_min = hton(option_as_float( //
-                bottom ? mat.sla_initial_primary_retract_speed : mat.sla_primary_retract_speed
-            )),
-            .second_retract_distance_mm = hton(option_as_float( //
-                bottom ? mat.sla_initial_secondary_retract_distance : mat.sla_secondary_retract_distance
-            )),
-            .second_retract_speed_mm_min = hton(option_as_float( //
-                bottom ? mat.sla_initial_secondary_retract_speed : mat.sla_secondary_retract_speed
-            )),
-            .light_pwm = hton(option_as_uint16(bottom ? mat.initial_exposure_pwm : mat.exposure_pwm))
-        };
+        layer_definition l_def{};
+        l_def.pause_at_layer = false;
+        l_def.pause_lift_distance_mm = 0;
+        l_def.position_mm = hton<float>(
+            mat.initial_layer_height.getFloat() + layer_height * (current_layer - 1)
+        );
+        l_def.exposure_time_s = hton(constrained_map(
+            current_layer, 1, obj_stats.faded_layers + 1, //
+            mat.initial_exposure_time, mat.exposure_time
+        ));
+        l_def.off_time_s = 0;
+        l_def.before_lift_time_s = hton(option_as_float( //
+            bottom ? mat.sla_initial_wait_before_lift : mat.sla_wait_before_lift
+        ));
+        l_def.after_lift_time_s = hton(option_as_float( //
+            bottom ? mat.sla_initial_wait_after_lift : mat.sla_wait_after_lift
+        ));
+        l_def.after_retract_time_s = hton(option_as_float( //
+            bottom ? mat.sla_initial_wait_after_retract : mat.sla_wait_after_retract
+        ));
+        l_def.lift_distance_mm = hton(option_as_float( //
+            bottom ? mat.sla_initial_primary_lift_distance : mat.sla_primary_lift_distance
+        ));
+        l_def.lift_speed_mm_min = hton(option_as_float( //
+            bottom ? mat.sla_initial_primary_lift_speed : mat.sla_primary_lift_speed
+        ));
+        l_def.second_lift_distance_mm = hton(option_as_float( //
+            bottom ? mat.sla_initial_secondary_lift_distance : mat.sla_secondary_lift_distance
+        ));
+        l_def.second_lift_speed_mm_min = hton(option_as_float( //
+            bottom ? mat.sla_initial_secondary_lift_speed : mat.sla_secondary_lift_speed
+        ));
+        l_def.retract_distance_mm = hton(option_as_float( //
+            bottom ? mat.sla_initial_primary_retract_distance : mat.sla_primary_retract_distance
+        ));
+        l_def.retract_speed_mm_min = hton(option_as_float( //
+            bottom ? mat.sla_initial_primary_retract_speed : mat.sla_primary_retract_speed
+        ));
+        l_def.second_retract_distance_mm = hton(option_as_float( //
+            bottom ? mat.sla_initial_secondary_retract_distance : mat.sla_secondary_retract_distance
+        ));
+        l_def.second_retract_speed_mm_min = hton(option_as_float( //
+            bottom ? mat.sla_initial_secondary_retract_speed : mat.sla_secondary_retract_speed
+        ));
+        l_def.light_pwm = hton(option_as_uint16(bottom ? mat.initial_exposure_pwm : mat.exposure_pwm));
         // clang-format on
 
         output.write(reinterpret_cast<const char *>(&l_def), sizeof(layer_definition));
