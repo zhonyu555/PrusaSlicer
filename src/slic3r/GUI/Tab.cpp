@@ -55,6 +55,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 
+#include <initializer_list>
+
 #include "wxExtensions.hpp"
 #include "PresetComboBoxes.hpp"
 #include <wx/wupdlock.h>
@@ -2948,6 +2950,27 @@ void TabPrinter::build_sla()
     line.append_option(optgroup->get_option("fast_tilt_time"));
     line.append_option(optgroup->get_option("slow_tilt_time"));
     line.append_option(optgroup->get_option("high_viscosity_tilt_time"));
+    line.near_label_widget = [this, optgroup_wk = ConfigOptionsGroupWkp(optgroup)](wxWindow* parent) {
+        wxWindow* check_box = CheckBox::GetNewWin(parent);
+        wxGetApp().UpdateDarkUI(check_box);
+
+        check_box->Bind(wxEVT_CHECKBOX, [this, optgroup_wk](wxCommandEvent& evt) {
+            const bool is_checked = evt.IsChecked();
+            if (auto optgroup_sh = optgroup_wk.lock(); optgroup_sh) {
+                for (const std::string& opt_key : {"fast_tilt_time", "slow_tilt_time", "high_viscosity_tilt_time"})
+                    if (Field* field = optgroup_sh->get_fieldc(opt_key, 0); field != nullptr) {
+                        field->toggle(is_checked);
+                        if (is_checked)
+                            field->set_last_meaningful_value();
+                        else
+                            field->set_na_value();
+                    }
+            }
+
+            toggle_options();
+        });
+        return check_box;
+    };
     optgroup->append_line(line);
     optgroup->append_single_option_line("area_fill");
 

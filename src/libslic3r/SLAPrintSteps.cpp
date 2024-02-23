@@ -928,6 +928,7 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
     const double fast_tilt = printer_config.fast_tilt_time.getFloat();// 5.0;
     const double slow_tilt = printer_config.slow_tilt_time.getFloat();// 8.0;
     const double hv_tilt   = printer_config.high_viscosity_tilt_time.getFloat();// 10.0;
+    const bool is_printer_with_tilt = !(std::isnan(fast_tilt) || std::isnan(slow_tilt) || std::isnan(hv_tilt)) ;
 
     const double init_exp_time = material_config.initial_exposure_time.getFloat();
     const double exp_time      = material_config.exposure_time.getFloat();
@@ -948,7 +949,6 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
     size_t slow_layers = 0;
     size_t fast_layers = 0;
 
-    const double delta_fade_time = (init_exp_time - exp_time) / (fade_layers_cnt + 1);
     double fade_layer_time = init_exp_time;
 
     execution::SpinningMutex<ExecutionTBB> mutex;
@@ -957,7 +957,7 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
     // Going to parallel:
     auto printlayerfn = [this,
             // functions and read only vars
-            area_fill, display_area, exp_time, init_exp_time, fast_tilt, slow_tilt, hv_tilt, material_config, delta_fade_time,
+            area_fill, display_area, exp_time, init_exp_time, fade_layers_cnt, fast_tilt, slow_tilt, hv_tilt, is_printer_with_tilt, material_config,
 
             // write vars
             &mutex, &models_volume, &supports_volume, &estim_time, &slow_layers,
@@ -1037,53 +1037,61 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
 
         layer.transformed_slices(union_ex(trslices));
 
-        // Calculation of the slow and fast layers to the future controlling those values on FW
+        { 
+            Lock lck(mutex);
+            if(is_printer_with_tilt){
+                // Calculation of the slow and fast layers to the future controlling those values on FW
 
-        const bool is_fast_layer = (layer_model_area + layer_support_area) <= display_area*area_fill;
-        const double tilt_time = material_config.material_print_speed == slamsSlow              ? slow_tilt :
-                                 material_config.material_print_speed == slamsHighViscosity     ? hv_tilt   :
-                                 is_fast_layer ? fast_tilt : slow_tilt;
+                const double delta_fade_time = (init_exp_time - exp_time) / (fade_layers_cnt + 1);
+                const bool is_fast_layer = (layer_model_area + layer_support_area) <= display_area*area_fill;
+                const double tilt_time = material_config.material_print_speed == slamsSlow              ? slow_tilt :
+                                        material_config.material_print_speed == slamsHighViscosity     ? hv_tilt   :
+                                        is_fast_layer ? fast_tilt : slow_tilt;
 
-        { Lock lck(mutex);
-            if (is_fast_layer)
-                fast_layers++;
-            else
-                slow_layers++;
+            
+                if (is_fast_layer)
+                    fast_layers++;
+                else
+                    slow_layers++;
 
-            // Calculation of the printing time
+                // Calculation of the printing time
 
-            double layer_times = 0.0;
-            if (sliced_layer_cnt < 3)
-                layer_times += init_exp_time;
-            else if (fade_layer_time > exp_time) {
-                fade_layer_time -= delta_fade_time;
-                layer_times += fade_layer_time;
+                double layer_times = 0.0;
+                if (sliced_layer_cnt < 3)
+                    layer_times += init_exp_time;
+                else if (fade_layer_time > exp_time) {
+                    fade_layer_time -= delta_fade_time;
+                    layer_times += fade_layer_time;
+                }
+                else
+                    layer_times += exp_time;
+                layer_times += tilt_time;
+
+                //// Per layer times (magical constants cuclulated from FW)
+
+                static double exposure_safe_delay_before{ 3.0 };
+                static double exposure_high_viscosity_delay_before{ 3.5 };
+                static double exposure_slow_move_delay_before{ 1.0 };
+
+                if (material_config.material_print_speed == slamsSlow)
+                    layer_times += exposure_safe_delay_before;
+                else if (material_config.material_print_speed == slamsHighViscosity)
+                    layer_times += exposure_high_viscosity_delay_before;
+                else if (!is_fast_layer)
+                    layer_times += exposure_slow_move_delay_before;
+
+                // Increase layer time for "magic constants" from FW
+                layer_times += (
+                    l_height * 5  // tower move
+                    + 120 / 1000  // Magical constant to compensate remaining computation delay in exposure thread
+                );
+
+                layers_times.push_back(layer_times);
+                estim_time += layer_times;
+            } else {
+                layers_times.push_back(0);
+                estim_time += 0;
             }
-            else
-                layer_times += exp_time;
-            layer_times += tilt_time;
-
-            //// Per layer times (magical constants cuclulated from FW)
-
-            static double exposure_safe_delay_before{ 3.0 };
-            static double exposure_high_viscosity_delay_before{ 3.5 };
-            static double exposure_slow_move_delay_before{ 1.0 };
-
-            if (material_config.material_print_speed == slamsSlow)
-                layer_times += exposure_safe_delay_before;
-            else if (material_config.material_print_speed == slamsHighViscosity)
-                layer_times += exposure_high_viscosity_delay_before;
-            else if (!is_fast_layer)
-                layer_times += exposure_slow_move_delay_before;
-
-            // Increase layer time for "magic constants" from FW
-            layer_times += (
-                l_height * 5  // tower move
-                + 120 / 1000  // Magical constant to compensate remaining computation delay in exposure thread
-            );
-
-            layers_times.push_back(layer_times);
-            estim_time += layer_times;
         }
     };
 
