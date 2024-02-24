@@ -226,7 +226,7 @@ EncodedRaster GOORLERasterEncoder::operator()(
 
     // Write checksum
     uint8_t checksum =
-        std::reduce(output_buffer.begin() + 5, output_buffer.end(), 0, std::bit_xor<uint8_t>{});
+        ~std::reduce(output_buffer.begin() + 5, output_buffer.end(), 0, std::plus<uint8_t>{});
     output_buffer.push_back(checksum);
 
     // Write delimiter

@@ -1145,8 +1145,6 @@ void SLAPrint::Steps::merge_slices_and_eval_stats() {
                 else
                     fast_layers++;
 
-                BOOST_LOG_TRIVIAL(error) << sliced_layer_cnt << ' ' << total_layer_time;
-
                 layers_times.push_back(total_layer_time);
                 estim_time += total_layer_time;
             }
