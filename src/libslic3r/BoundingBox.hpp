@@ -73,7 +73,9 @@ private:
     template<bool IncludeBoundary = false, class BoundingBoxType, class It, class = IteratorOnly<It>>
     static void construct(BoundingBoxType &out, It from, It to)
     {
-        if (from != to) {
+        if (from == to) {
+            out.defined = false;
+        } else {
             auto it = from;
             out.min = it->template cast<typename PointType::Scalar>();
             out.max = out.min;
@@ -144,6 +146,16 @@ public:
     bool intersects(const BoundingBox3Base<PointType>& other) const {
         return this->min.x() < other.max.x() && this->max.x() > other.min.x() && this->min.y() < other.max.y() && this->max.y() > other.min.y() && 
             this->min.z() < other.max.z() && this->max.z() > other.min.z();
+    }
+
+    // Shares some boundary.
+    bool shares_boundary(const BoundingBox3Base<PointType>& other) const {
+        return is_approx(this->min.x(), other.max.x()) ||
+               is_approx(this->max.x(), other.min.x()) ||
+               is_approx(this->min.y(), other.max.y()) ||
+               is_approx(this->max.y(), other.min.y()) ||
+               is_approx(this->min.z(), other.max.z()) ||
+               is_approx(this->max.z(), other.min.z());
     }
 };
 

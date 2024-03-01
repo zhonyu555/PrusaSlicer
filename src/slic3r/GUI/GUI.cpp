@@ -194,8 +194,11 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 			ConfigOptionBools* vec_new = new ConfigOptionBools{ boost::any_cast<unsigned char>(value) != 0 };
 			config.option<ConfigOptionBools>(opt_key)->set_at(vec_new, opt_index, 0);
 			break;}
-		case coInt:
-			config.set_key_value(opt_key, new ConfigOptionInt(boost::any_cast<int>(value)));
+		case coInt: {
+			//config.set_key_value(opt_key, new ConfigOptionInt(boost::any_cast<int>(value)));
+			int& val_new = config.opt_int(opt_key);
+			val_new = boost::any_cast<int>(value);
+			}
 			break;
 		case coInts:{
 			ConfigOptionInts* vec_new = new ConfigOptionInts{ boost::any_cast<int>(value) };
@@ -209,7 +212,7 @@ void change_opt_value(DynamicPrintConfig& config, const t_config_option_key& opt
 			}
 			break;
 		case coPoints:{
-			if (opt_key == "bed_shape" || opt_key == "thumbnails") {
+			if (opt_key == "bed_shape") {
 				config.option<ConfigOptionPoints>(opt_key)->values = boost::any_cast<std::vector<Vec2d>>(value);
 				break;
 			}
@@ -344,7 +347,7 @@ void show_substitutions_info(const PresetsConfigSubstitutions& presets_config_su
 	};
 
 	for (const PresetConfigSubstitutions& substitution : presets_config_substitutions) {
-		changes += "\n\n" + format_wxstr("%1% : %2%", preset_type_name(substitution.preset_type), bold_string(substitution.preset_name));
+		changes += "\n\n" + format_wxstr("%1% : %2%", preset_type_name(substitution.preset_type), bold_string(from_u8(substitution.preset_name)));
 		if (!substitution.preset_file.empty())
 			changes += format_wxstr(" (%1%)", substitution.preset_file);
 

@@ -328,7 +328,7 @@ class DefaultArranger: public Arranger<ArrItem> {
         // a pure RectangleBed with inner-fit polygon calculation.
         if (!with_wipe_tower &&
             m_settings.get_arrange_strategy() == ArrangeSettingsView::asAuto &&
-            std::is_convertible_v<Bed, RectangleBed>) {
+            IsRectangular<Bed>) {
             PackStrategyNFP base_strategy{std::move(kernel), ep, Accuracy, stop_cond};
 
             RectangleOverfitPackingStrategy final_strategy{std::move(base_strategy)};
@@ -444,7 +444,7 @@ ArrItem AdvancedItemConverter<ArrItem>::get_arritem(const Arrangeable &arrbl,
 
     auto simpl_tol = static_cast<double>(this->simplification_tolerance());
 
-    if (simpl_tol > 0)
+    if (simpl_tol > 0.)
     {
         outline = expolygons_simplify(outline, simpl_tol);
         if (!envelope.empty())

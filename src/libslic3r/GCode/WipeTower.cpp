@@ -793,12 +793,13 @@ WipeTower::ToolChangeResult WipeTower::tool_change(size_t tool)
 		.set_initial_tool(m_current_tool)
         .set_y_shift(m_y_shift + (tool!=(unsigned int)(-1) && (m_current_shape == SHAPE_REVERSED) ? m_layer_info->depth - m_layer_info->toolchanges_depth(): 0.f))
 		.append(";--------------------\n"
-				"; CP TOOLCHANGE START\n")
-		.comment_with_value(" toolchange #", m_num_tool_changes + 1); // the number is zero-based
+				"; CP TOOLCHANGE START\n");
 
-    if (tool != (unsigned)(-1))
+    if (tool != (unsigned)(-1)) {
+        writer.comment_with_value(" toolchange #", m_num_tool_changes + 1); // the number is zero-based
         writer.append(std::string("; material : " + (m_current_tool < m_filpar.size() ? m_filpar[m_current_tool].material : "(NONE)") + " -> " + m_filpar[tool].material + "\n").c_str())
               .append(";--------------------\n");
+    }
 
     writer.speed_override_backup();
 	writer.speed_override(100);
@@ -1008,7 +1009,7 @@ void WipeTower::toolchange_Change(
     // This is where we want to place the custom gcodes. We will use placeholders for this.
     // These will be substituted by the actual gcodes when the gcode is generated.
     //writer.append("[end_filament_gcode]\n");
-    writer.append("[toolchange_gcode]\n");
+    writer.append("[toolchange_gcode_from_wipe_tower_generator]\n");
 
     // Travel to where we assume we are. Custom toolchange or some special T code handling (parking extruder etc)
     // gcode could have left the extruder somewhere, we cannot just start extruding. We should also inform the
@@ -1017,7 +1018,9 @@ void WipeTower::toolchange_Change(
     writer.feedrate(m_travel_speed * 60.f) // see https://github.com/prusa3d/PrusaSlicer/issues/5483
           .append(std::string("G1 X") + Slic3r::float_to_string_decimal_point(current_pos.x())
                              +  " Y"  + Slic3r::float_to_string_decimal_point(current_pos.y())
-                             + never_skip_tag() + "\n");
+                             + never_skip_tag() + "\n"
+    );
+
     writer.append("[deretraction_from_wipe_tower_generator]");
 
     // The toolchange Tn command will be inserted later, only in case that the user does
@@ -1486,6 +1489,11 @@ void WipeTower::save_on_last_wipe()
         // Which toolchange will finish_layer extrusions be subtracted from?
         int idx = first_toolchange_to_nonsoluble(m_layer_info->tool_changes);
 
+        if (idx == -1) {
+            // In this case, finish_layer will be called at the very beginning.
+            finish_layer().total_extrusion_length_in_plane();
+        }
+
         for (int i=0; i<int(m_layer_info->tool_changes.size()); ++i) {
             auto& toolchange = m_layer_info->tool_changes[i];
             tool_change(toolchange.new_tool);
@@ -1497,9 +1505,9 @@ void WipeTower::save_on_last_wipe()
                                       m_perimeter_width, m_layer_info->height)  - toolchange.first_wipe_line - length_to_save;
 
                 length_to_wipe = std::max(length_to_wipe,0.f);
-                float depth_to_wipe = m_perimeter_width * (std::floor(length_to_wipe/width) + ( length_to_wipe > 0.f ? 1.f : 0.f ) ) * m_extra_spacing;
+                float depth_to_wipe = m_perimeter_width * (std::floor(length_to_wipe/width) + ( length_to_wipe > 0.f ? 1.f : 0.f ) );
 
-                toolchange.required_depth = toolchange.ramming_depth + depth_to_wipe;
+                toolchange.required_depth = (toolchange.ramming_depth + depth_to_wipe) * m_extra_spacing;
             }
         }
     }
@@ -1560,14 +1568,15 @@ void WipeTower::generate(std::vector<std::vector<WipeTower::ToolChangeResult>> &
         }
     }
 
-    for (auto& used : m_used_filament_length) // reset used filament stats
-        used = 0.f;
+    m_used_filament_length.assign(m_used_filament_length.size(), 0.f); // reset used filament stats
+    assert(m_used_filament_length_until_layer.empty());
+    m_used_filament_length_until_layer.emplace_back(0.f, m_used_filament_length);
 
     m_old_temperature = -1; // reset last temperature written in the gcode
 
-    std::vector<WipeTower::ToolChangeResult> layer_result;
 	for (const WipeTower::WipeTowerInfo& layer : m_plan)
 	{
+        std::vector<WipeTower::ToolChangeResult> layer_result;
         set_layer(layer.z, layer.height, 0, false/*layer.z == m_plan.front().z*/, layer.z == m_plan.back().z);
         m_internal_rotation += 180.f;
 
@@ -1604,6 +1613,10 @@ void WipeTower::generate(std::vector<std::vector<WipeTower::ToolChangeResult>> &
         }
 
 		result.emplace_back(std::move(layer_result));
+
+        if (m_used_filament_length_until_layer.empty() || m_used_filament_length_until_layer.back().first != layer.z)
+            m_used_filament_length_until_layer.emplace_back();
+        m_used_filament_length_until_layer.back() = std::make_pair(layer.z, m_used_filament_length);
 	}
 }
 

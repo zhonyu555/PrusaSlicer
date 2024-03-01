@@ -12,11 +12,16 @@ xs/MANIFEST.bak
 xs/assertlib*
 .init_bundle.ini
 .vs/*
-local-lib
 /src/TAGS
 /.vscode/
 build-linux/*
+deps/build*
 deps/build-linux/*
 **/.DS_Store
 **/.idea/
+<<<<<<< HEAD
 deps/build
+=======
+.pkg_cache
+CMakeUserPresets.json
+>>>>>>> version_2.7.2
