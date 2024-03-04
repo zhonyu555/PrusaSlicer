@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# This script can download and compile dependencies, compile PrusauSlicer
+# This script can download and compile dependencies, compile PrusaSlicer
 # and optional build a .tgz and an appimage.
 #
 # Original script from SuperSclier by supermerill https://github.com/supermerill/SuperSlicer
@@ -13,7 +13,6 @@
 
 export ROOT=`pwd`
 export NCORES=`sysctl -n hw.ncpu`
-
 
 OS_FOUND=$( command -v uname)
 
@@ -51,8 +50,8 @@ if [ $TARGET_OS == "macos" ]; then
     fi
 else
     echo -e "$(tput setaf 1)This script doesn't support your Operating system!"
-    echo -e "Please use Linux 64-bit or Windows 10 64-bit with Linux subsystem / git-bash.$(tput sgr0)\n"
-#    exit -1
+    echo -e "Please use a macOS.$(tput sgr0)\n"
+    exit -1
 fi
 
 # Check if CMake is installed
@@ -63,19 +62,23 @@ then
     exit -1
 fi
 
-while getopts ":idaxbhcsw" opt; do
+BUILD_ARCH=$(uname -m)
+
+while getopts ":idaxbhcstwr" opt; do
   case ${opt} in
     i )
         BUILD_IMAGE="1"
         ;;
     d )
         BUILD_DEPS="1"
-        ;;        
+        ;;
     a )
-        export BUILD_ARCH="arm64"
+        BUILD_ARCH="arm64"
+        BUILD_IMG="-a"
         ;;
     x )
-        export BUILD_ARCH="x86_64"
+        BUILD_ARCH="x86_64"
+        BUILD_IMG="-x"
         ;;
     b )
         BUILD_DEBUG="1"
@@ -88,17 +91,22 @@ while getopts ":idaxbhcsw" opt; do
         ;;
     w )
 	    BUILD_WIPE="1"
-	;;        
-    h ) echo "Usage: ./BuildMacOS.sh  [-h][-w][-d][-a][-x][-b][-c][-s][-i]"
-        echo "   -h: this message"    
-	    echo "   -w: wipe build directories bfore building"        
+	;;
+    r )
+	    BUILD_CLEANDEPEND="1"
+	;;
+    h ) echo "Usage: ./BuildMacOS.sh  [-h][-w][-d][-a][-r][-x][-b][-c][-s][-t][-i]"
+        echo "   -h: this message"
+	    echo "   -w: wipe build directories bfore building"
         echo "   -d: build dependencies"
-        echo "   -a: Build for arm64 (Apple Silicon)"
-        echo "   -x: Build for x86_64 (Intel)"
-        echo "   -b: Build with debug symbols"
-        echo "   -c: Build for XCode"
-        echo "   -s: build PrusaSlicer"        
-        echo "   -i: Generate DMG image (optional)\n"        
+        echo "   -a: build for arm64 (Apple Silicon)"
+        echo "   -r: clean dependencies"
+        echo "   -x: build for x86_64 (Intel)"
+        echo "   -b: build with debug symbols"
+        echo "   -c: build for XCode"
+        echo "   -s: build PrusaSlicer"
+        echo "   -t: build tests (in combination with -s)"
+        echo "   -i: generate DMG image (optional)\n"
         exit 0
         ;;
   esac
@@ -106,26 +114,32 @@ done
 
 if [ $OPTIND -eq 1 ]
 then
-    echo "Usage: ./BuildLinux.sh [-h][-w][-d][-a][-x][-b][-c][-s][-i]"
-    echo "   -h: this message"   
-	echo "   -w: wipe build directories bfore building"         
+    echo "Usage: ./BuildLinux.sh [-h][-w][-d][-a][-r][-x][-b][-c][-s][-t][-i]"
+    echo "   -h: this message"
+	echo "   -w: wipe build directories bfore building"
     echo "   -d: build dependencies"
     echo "   -a: Build for arm64 (Apple Silicon)"
-    echo "   -x: Build for x86_64 (Intel)"
-    echo "   -b: Build with debug symbols"
-    echo "   -c: Build for XCode"
-    echo "   -s: build PrusaSlicer"    
-    echo -e "   -i: Generate DMG image (optional)\n"        
+    echo "   -r: clean dependencies"
+    echo "   -x: build for x86_64 (Intel)"
+    echo "   -b: build with debug symbols"
+    echo "   -c: build for XCode"
+    echo "   -s: build PrusaSlicer"
+    echo "   -t: build tests (in combination with -s)"
+    echo -e "   -i: Generate DMG image (optional)\n"
     exit 0
 fi
 
+export $BUILD_ARCH
 export LIBRARY_PATH=$LIBRARY_PATH:$(brew --prefix zstd)/lib/
+
 
 if [[ -n "$BUILD_DEPS" ]]
 then
     if [[ -n $BUILD_WIPE ]]
     then
+       echo -e "\n wiping deps/build directory ...\n"
        rm -fr deps/build
+       echo -e " ... done\n"
     fi
     # mkdir in deps
     if [ ! -d "deps/build" ]
@@ -145,33 +159,36 @@ then
     # cmake deps
     echo "Cmake command: cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET=\"10.14\" ${BUILD_ARCH} "
     pushd deps/build > /dev/null
-    cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET="10.14" $BUILD_ARGS 
+    cmake .. -DCMAKE_OSX_DEPLOYMENT_TARGET="10.14" $BUILD_ARGS
 
-    echo -e "\n... done\n"
+    echo -e "\n ... done\n"
 
     echo -e "[2/9] Building dependencies ...\n"
 
     # make deps
     make -j$NCORES
 
-    echo -e "\n... done\n"
+    echo -e "\n ... done\n"
 
     echo -e "[3/9] Renaming wxscintilla library ...\n"
 
     # rename wxscintilla
-    pushd destdir/usr/local/lib
+    pushd destdir/usr/local/lib > /dev/null
     cp libwxscintilla-3.2.a libwx_osx_cocoau_scintilla-3.2.a
 
     popd > /dev/null
-    echo -e "\n... done\n"
-
-    echo -e "[4/9] Cleaning dependencies...\n"
-
-    # clean deps
-    rm -rf dep_*
     popd > /dev/null
+    echo -e "\n ... done\n"
+fi
 
-    echo -e "\n... done\n"
+if [[ -n "$BUILD_CLEANDEPEND" ]]
+then
+    echo -e "[4/9] Cleaning dependencies...\n"
+    pushd deps/build
+    pwd
+    rm -fr dep_*
+    popd > /dev/null
+    echo -e "\n ... done\n"
 fi
 
 if [[ -n "$BUILD_PRUSASLICER" ]]
@@ -180,7 +197,9 @@ then
 
     if [[ -n $BUILD_WIPE ]]
     then
+       echo -e "\n wiping build directory...\n"
        rm -fr build
+       echo -e " ... done\n"
     fi
 
     # mkdir build
@@ -202,32 +221,40 @@ then
     then
         BUILD_ARGS="-GXcode ${BUILD_ARGS}"
     fi
+
+    if [[ -n "$BUILD_TESTS" ]]
+    then
+        BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TESTS=1"
+    else
+        BUILD_ARGS="${BUILD_ARGS} -DCMAKE_BUILD_TESTS=0"
+    fi
+
     # cmake
     pushd build > /dev/null
     cmake .. -DCMAKE_PREFIX_PATH="$PWD/../deps/build/destdir/usr/local" -DCMAKE_OSX_DEPLOYMENT_TARGET="10.14" -DSLIC3R_STATIC=1 ${BUILD_ARGS}
-    echo -e "\n... done"
+    echo -e "\n ... done"
 
     # make Slic3r
     if [[ -z "$BUILD_XCODE" ]]
     then
         echo -e "\n[6/9] Building PrusaSlicer ...\n"
         make -j$NCORES
-        echo -e "\n... done"
+        echo -e "\n ... done"
     fi
 
     echo -e "\n[7/9] Generating language files ...\n"
     #make .mo
     make gettext_po_to_mo
-    
+
     popd  > /dev/null
-    echo -e "\n... done"
+    echo -e "\n ... done"
 
     # Give proper permissions to script
     chmod 755 $ROOT/build/src/BuildMacOSImage.sh
 
     pushd build  > /dev/null
-    $ROOT/build/src/BuildMacOSImage.sh -a 
-    popd  > /dev/null  
+    $ROOT/build/src/BuildMacOSImage.sh -p $BUILD_IMG
+    popd  > /dev/null
 fi
 
 if [[ -n "$BUILD_IMAGE" ]]
@@ -235,6 +262,6 @@ then
     # Give proper permissions to script
     chmod 755 $ROOT/build/src/BuildMacOSImage.sh
     pushd build  > /dev/null
-    $ROOT/build/src/BuildMacOSImage.sh -i
+    $ROOT/build/src/BuildMacOSImage.sh -i $BUILD_IMG
     popd  > /dev/null
 fi
