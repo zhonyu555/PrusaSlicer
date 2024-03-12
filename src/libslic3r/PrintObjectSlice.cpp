@@ -754,11 +754,13 @@ void PrintObject::slice_volumes()
         	// Only enable Elephant foot compensation if printing directly on the print bed.
             float(scale_(m_config.elefant_foot_compensation.value)) :
         	0.f;
+
+        const double shrink_scale = 1 / (m_config.filament_shrink.get_at(this->object_extruders().back()) / 100);
         // Uncompensated slices for the first layer in case the Elephant foot compensation is applied.
 	    ExPolygons  lslices_1st_layer;
 	    tbb::parallel_for(
 	        tbb::blocked_range<size_t>(0, m_layers.size()),
-			[this, xy_compensation_scaled, elephant_foot_compensation_scaled, &lslices_1st_layer](const tbb::blocked_range<size_t>& range) {
+			[this, xy_compensation_scaled, elephant_foot_compensation_scaled, shrink_scale, &lslices_1st_layer](const tbb::blocked_range<size_t>& range) {
 	            for (size_t layer_id = range.begin(); layer_id < range.end(); ++ layer_id) {
 	                m_print->throw_if_canceled();
 	                Layer *layer = m_layers[layer_id];
@@ -768,6 +770,12 @@ void PrintObject::slice_volumes()
 	                    // Optimized version for a single region layer.
 	                    // Single region, growing or shrinking.
 	                    LayerRegion *layerm = layer->m_regions.front();
+
+                        // Compensate for filament shrink
+                        if(shrink_scale != 1) {
+                            layerm->expand_surfaces(shrink_scale);
+                        }
+
 	                    if (elfoot > 0) {
 		                    // Apply the elephant foot compensation and store the 1st layer slices without the Elephant foot compensation applied.
 		                    lslices_1st_layer = to_expolygons(std::move(layerm->m_slices.surfaces));
@@ -804,7 +812,14 @@ void PrintObject::slice_volumes()
 		                        trimming = offset(layer->merged(float(SCALED_EPSILON)), xy_compensation_scaled - float(SCALED_EPSILON));
 	                        for (size_t region_id = 0; region_id < layer->m_regions.size(); ++ region_id)
 	                            layer->m_regions[region_id]->trim_surfaces(trimming);
-	                    }
+                        
+                        // Compensate for filament shrink
+                        if(shrink_scale != 1) {
+                            for (size_t region_id = 0; region_id < layer->m_regions.size(); ++ region_id) {
+                                layer->m_regions[region_id]->expand_surfaces(shrink_scale);
+                            }
+                        }
+                    }
 	                }
 	                // Merge all regions' slices to get islands sorted topologically, chain them by a shortest path in separate index list
 	                layer->make_slices();
