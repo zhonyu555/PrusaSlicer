@@ -97,17 +97,17 @@ void append_svg(std::string &buf, const Polygon &poly, PolyType type)
     buf += type == PolyType::Contour ? "contour"sv : "hole"sv;
     buf += "\" d=\"M "sv;
     buf += decimal_from(c.x(), intbuf);
-    buf += " "sv;
+    buf += ' ';
     buf += decimal_from(c.y(), intbuf);
-    buf += " l "sv;
+    buf += " l"sv;
 
     for (const Point &p : poly) {
         Point d = p - c;
         if (d.x() == 0 && d.y() == 0)
             continue;
-        buf += " "sv;
+        buf += ' ';
         buf += decimal_from(d.x(), intbuf);
-        buf += " "sv;
+        buf += ' ';
         buf += decimal_from(d.y(), intbuf);
         c = p;
     }
