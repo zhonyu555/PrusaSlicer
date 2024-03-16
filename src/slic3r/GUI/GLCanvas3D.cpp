@@ -1344,6 +1344,7 @@ GLCanvas3D::GLCanvas3D(wxGLCanvas *canvas, Bed3D &bed)
       m_multisample_allowed(false),
       m_moving(false),
       m_tab_down(false),
+      m_camera_moving(false),
       m_cursor_type(Standard),
       m_reload_delayed(false),
       m_render_sla_auxiliaries(true),
@@ -3157,7 +3158,13 @@ void GLCanvas3D::on_key(wxKeyEvent& evt)
         }
     );
 
+    const bool is_nav_touchpad = wxGetApp().app_config->get("camera_navigation_style") == std::string("touchpad");
     const int keyCode = evt.GetKeyCode();
+
+    if (is_nav_touchpad && m_camera_moving && evt.GetEventType() == wxEVT_KEY_UP &&
+        (keyCode == WXK_SHIFT || keyCode == WXK_ALT)) {
+        mouse_up_cleanup();
+    }
 
     auto imgui = wxGetApp().imgui();
     if (imgui->update_key_data(evt)) {
@@ -3488,6 +3495,8 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
 
     Point pos(evt.GetX(), evt.GetY());
 
+    const bool is_nav_touchpad = wxGetApp().app_config->get("camera_navigation_style") == std::string("touchpad");
+
     ImGuiWrapper* imgui = wxGetApp().imgui();
     if (m_tooltip.is_in_imgui() && evt.LeftUp())
         // ignore left up events coming from imgui windows and not processed by them
@@ -3811,49 +3820,15 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
             }
         }
         // do not process the dragging if the left mouse was set down in another canvas
-        else if (evt.LeftIsDown()) {
+        else if (!is_nav_touchpad && evt.LeftIsDown()) {
             // if dragging over blank area with left button, rotate
             if (!m_moving) {
-                if ((any_gizmo_active || evt.CmdDown() || m_hover_volume_idxs.empty()) && m_mouse.is_start_position_3D_defined()) {
-                    const Vec3d rot = (Vec3d(pos.x(), pos.y(), 0.0) - m_mouse.drag.start_position_3D) * (PI * TRACKBALLSIZE / 180.0);
-                    if (wxGetApp().app_config->get_bool("use_free_camera"))
-                        // Virtual track ball (similar to the 3DConnexion mouse).
-                        wxGetApp().plater()->get_camera().rotate_local_around_target(Vec3d(rot.y(), rot.x(), 0.0));
-                    else {
-                        // Forces camera right vector to be parallel to XY plane in case it has been misaligned using the 3D mouse free rotation.
-                        // It is cheaper to call this function right away instead of testing wxGetApp().plater()->get_mouse3d_controller().connected(),
-                        // which checks an atomics (flushes CPU caches).
-                        // See GH issue #3816.
-                        Camera& camera = wxGetApp().plater()->get_camera();
-                        camera.recover_from_free_camera();
-                        camera.rotate_on_sphere(rot.x(), rot.y(), current_printer_technology() != ptSLA);
-                    }
-
-                    m_dirty = true;
-                }
-                m_mouse.drag.start_position_3D = Vec3d((double)pos.x(), (double)pos.y(), 0.0);
+                on_camera_rotate(evt, any_gizmo_active);
             }
         }
-        else if (evt.MiddleIsDown() || evt.RightIsDown()) {
+        else if (!is_nav_touchpad && (evt.MiddleIsDown() || evt.RightIsDown())) {
             // If dragging over blank area with right/middle button, pan.
-            if (m_mouse.is_start_position_2D_defined()) {
-                // get point in model space at Z = 0
-                float z = 0.0f;
-                const Vec3d cur_pos = _mouse_to_3d(pos, &z);
-                const Vec3d orig = _mouse_to_3d(m_mouse.drag.start_position_2D, &z);
-                Camera& camera = wxGetApp().plater()->get_camera();
-                if (!wxGetApp().app_config->get_bool("use_free_camera"))
-                    // Forces camera right vector to be parallel to XY plane in case it has been misaligned using the 3D mouse free rotation.
-                    // It is cheaper to call this function right away instead of testing wxGetApp().plater()->get_mouse3d_controller().connected(),
-                    // which checks an atomics (flushes CPU caches).
-                    // See GH issue #3816.
-                    camera.recover_from_free_camera();
-
-                camera.set_target(camera.get_target() + orig - cur_pos);
-                m_dirty = true;
-            }
-
-            m_mouse.drag.start_position_2D = pos;
+            on_camera_pan(evt);
         }
     }
     else if (evt.LeftUp() || evt.MiddleUp() || evt.RightUp()) {
@@ -3925,13 +3900,19 @@ void GLCanvas3D::on_mouse(wxMouseEvent& evt)
         mouse_up_cleanup();
     }
     else if (evt.Moving()) {
-        m_mouse.position = pos.cast<double>();
+        if (is_nav_touchpad && evt.AltDown() && !evt.ShiftDown()) {
+            on_camera_rotate(evt, any_gizmo_active);
+        } else if (is_nav_touchpad && !evt.AltDown() && evt.ShiftDown()) {
+            on_camera_pan(evt);
+        } else {
+            m_mouse.position = pos.cast<double>();
 
-        // updates gizmos overlay
-        if (m_selection.is_empty())
-            m_gizmos.reset_all_states();
+            // updates gizmos overlay
+            if (m_selection.is_empty())
+                m_gizmos.reset_all_states();
 
-        m_dirty = true;
+            m_dirty = true;
+        }
     }
     else
         evt.Skip();
@@ -3993,6 +3974,72 @@ void GLCanvas3D::on_set_focus(wxFocusEvent& evt)
     m_tooltip_enabled = false;
     _refresh_if_shown_on_screen();
     m_tooltip_enabled = true;
+}
+
+void GLCanvas3D::on_camera_rotate(wxMouseEvent& evt, bool any_gizmo_active)
+{
+    const bool is_nav_touchpad = wxGetApp().app_config->get("camera_navigation_style") == std::string("touchpad");
+
+    Point pos(evt.GetX(), evt.GetY());
+
+    if ((any_gizmo_active || (evt.AltDown() && is_nav_touchpad) || evt.CmdDown() || m_hover_volume_idxs.empty()) && m_mouse.is_start_position_3D_defined()) {
+        const Vec3d rot = (Vec3d(pos.x(), pos.y(), 0.0) - m_mouse.drag.start_position_3D) * (PI * TRACKBALLSIZE / 180.0);
+        if (wxGetApp().app_config->get_bool("use_free_camera"))
+            // Virtual track ball (similar to the 3DConnexion mouse).
+            wxGetApp().plater()->get_camera().rotate_local_around_target(Vec3d(rot.y(), rot.x(), 0.0));
+        else {
+            // Forces camera right vector to be parallel to XY plane in case it has been misaligned using the 3D mouse free rotation.
+            // It is cheaper to call this function right away instead of testing wxGetApp().plater()->get_mouse3d_controller().connected(),
+            // which checks an atomics (flushes CPU caches).
+            // See GH issue #3816.
+            Camera& camera = wxGetApp().plater()->get_camera();
+            camera.recover_from_free_camera();
+            camera.rotate_on_sphere(rot.x(), rot.y(), current_printer_technology() != ptSLA);
+        }
+
+        m_dirty = true;
+    }
+    m_mouse.drag.start_position_3D = Vec3d((double)pos.x(), (double)pos.y(), 0.0);
+    start_camera_moving();
+}
+
+void GLCanvas3D::on_camera_pan(wxMouseEvent& evt)
+{
+    Point pos(evt.GetX(), evt.GetY());
+
+    if (m_mouse.is_start_position_2D_defined()) {
+        // get point in model space at Z = 0
+        float z = 0.0f;
+        const Vec3d cur_pos = _mouse_to_3d(pos, &z);
+        const Vec3d orig = _mouse_to_3d(m_mouse.drag.start_position_2D, &z);
+        Camera& camera = wxGetApp().plater()->get_camera();
+        if (!wxGetApp().app_config->get_bool("use_free_camera"))
+            // Forces camera right vector to be parallel to XY plane in case it has been misaligned using the 3D mouse free rotation.
+            // It is cheaper to call this function right away instead of testing wxGetApp().plater()->get_mouse3d_controller().connected(),
+            // which checks an atomics (flushes CPU caches).
+            // See GH issue #3816.
+            camera.recover_from_free_camera();
+
+        camera.set_target(camera.get_target() + orig - cur_pos);
+        m_dirty = true;
+    }
+
+    m_mouse.drag.start_position_2D = pos;
+    start_camera_moving();
+}
+
+void GLCanvas3D::start_camera_moving()
+{
+    const bool is_nav_touchpad = wxGetApp().app_config->get("camera_navigation_style") == std::string("touchpad");
+
+    if (!m_camera_moving && is_nav_touchpad) {
+        if (wxWindow::FindFocus() != m_canvas) {
+            // Grab keyboard focus on camera movement
+            m_canvas->SetFocus();
+        }
+    }
+
+    m_camera_moving = true;
 }
 
 Size GLCanvas3D::get_canvas_size() const
@@ -4532,6 +4579,7 @@ void GLCanvas3D::export_toolpaths_to_obj(const char* filename) const
 void GLCanvas3D::mouse_up_cleanup()
 {
     m_moving = false;
+    m_camera_moving = false;
     m_mouse.drag.move_volume_idx = -1;
     m_mouse.set_start_position_3D_as_invalid();
     m_mouse.set_start_position_2D_as_invalid();
