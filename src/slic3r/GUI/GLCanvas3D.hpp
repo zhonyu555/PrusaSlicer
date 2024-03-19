@@ -867,9 +867,8 @@ public:
     void on_paint(wxPaintEvent& evt);
     void on_set_focus(wxFocusEvent& evt);
 
-    void on_camera_rotate(wxMouseEvent& evt, bool any_gizmo_active);
-    void on_camera_pan(wxMouseEvent& evt);
-    void start_camera_moving();
+    bool is_camera_rotate(const wxMouseEvent& evt) const;
+    bool is_camera_pan(const wxMouseEvent& evt) const;
 
     Size get_canvas_size() const;
     Vec2d get_local_mouse_position() const;
