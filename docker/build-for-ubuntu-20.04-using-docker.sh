@@ -17,6 +17,6 @@ docker run --rm -ti --name prusa-build \
 		mkdir -p build && \
 		cd build && \
 		cmake .. -DSLIC3R_STATIC=1 -DSLIC3R_GTK=3 -DSLIC3R_PCH=OFF -DCMAKE_PREFIX_PATH=/data/deps/build/destdir/usr/local -DSLIC3R_GUI=1 -DSLIC3R_STATIC=1  && \
-		make -j 8 && \
+		(make -j 8 || /bin/bash) && \
 		cp /data/build/src/prusa-slicer /data/ \
 "
