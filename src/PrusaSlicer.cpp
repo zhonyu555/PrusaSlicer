@@ -628,7 +628,7 @@ int CLI::run(int argc, char **argv)
                 }
                 if (print->empty())
                     boost::nowide::cout << "Nothing to print for " << outfile << " . Either the print is empty or no object is fully inside the print volume." << std::endl;
-                else
+                else {
                     try {
                         std::string outfile_final;
                         print->process();
@@ -656,6 +656,23 @@ int CLI::run(int argc, char **argv)
                         boost::nowide::cerr << ex.what() << std::endl;
                         return 1;
                     }
+
+                    // =======================================================================================================================================
+                    // export the mesh + support to a file
+                    // =======================================================================================================================================
+                    SLAPrint *slaprint = static_cast<SLAPrint*>(print);
+                    TriangleMesh *mesh = ( TriangleMesh * )&(slaprint->objects()[0]->support_mesh());
+                    mesh->merge(slaprint->objects()[0]->pad_mesh());
+
+                    std::shared_ptr<const indexed_triangle_set> m = slaprint->objects()[0]->get_mesh_to_print();
+                    TriangleMesh inst_object_mesh;
+                    if (m)
+                        inst_object_mesh = TriangleMesh{*m};
+                    mesh->merge(inst_object_mesh);
+                    Slic3r::store_obj("/tmp/xxx.obj", mesh);
+                    // =======================================================================================================================================
+                }
+
 /*
                 print.center = ! m_config.has("center")
                     && ! m_config.has("align_xy")
