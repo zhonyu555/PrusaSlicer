@@ -1156,7 +1156,7 @@ bool GUI_App::on_init_inner()
     // If load_language() fails, the application closes.
     load_language(wxString(), true);
 #ifdef _MSW_DARK_MODE
-    bool init_dark_color_mode = app_config->get_bool("dark_color_mode");
+    bool init_dark_color_mode = dark_mode();
     bool init_sys_menu_enabled = app_config->get_bool("sys_menu_enabled");
     NppDarkMode::InitDarkMode(init_dark_color_mode, init_sys_menu_enabled);
 #endif
@@ -1180,7 +1180,7 @@ bool GUI_App::on_init_inner()
 
 #ifdef _MSW_DARK_MODE
     // app_config can be updated in check_older_app_config(), so check if dark_color_mode and sys_menu_enabled was changed
-    if (bool new_dark_color_mode = app_config->get_bool("dark_color_mode");
+    if (bool new_dark_color_mode = dark_mode();
         init_dark_color_mode != new_dark_color_mode) {
         NppDarkMode::SetDarkMode(new_dark_color_mode);
         init_ui_colours();
@@ -1465,6 +1465,9 @@ bool GUI_App::dark_mode()
     // proper dark mode was first introduced.
     return wxPlatformInfo::Get().CheckOSVersion(10, 14) && mac_dark_mode();
 #else
+    if (wxGetApp().app_config->has("follow_system_theme"))
+        if (wxGetApp().app_config->get_bool("follow_system_theme"))
+            return check_dark_mode();
     if (wxGetApp().app_config->has("dark_color_mode"))
         return wxGetApp().app_config->get_bool("dark_color_mode");
     return check_dark_mode();
@@ -1984,7 +1987,7 @@ void GUI_App::force_menu_update()
 void GUI_App::force_colors_update()
 {
 #ifdef _MSW_DARK_MODE
-    NppDarkMode::SetDarkMode(app_config->get_bool("dark_color_mode"));
+    NppDarkMode::SetDarkMode(dark_mode());
     if (WXHWND wxHWND = wxToolTip::GetToolTipCtrl())
         NppDarkMode::SetDarkExplorerTheme((HWND)wxHWND);
     NppDarkMode::SetDarkTitleBar(mainframe->GetHWND());

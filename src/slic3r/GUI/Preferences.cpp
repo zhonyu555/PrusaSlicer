@@ -684,7 +684,7 @@ void PreferencesDialog::build()
 
 		append_bool_option(m_optgroup_dark_mode, "dark_color_mode",
 			L("Enable dark mode"),
-			L("If enabled, UI will use Dark mode colors. If disabled, old UI will be used."),
+			L("If enabled, UI will use Dark mode colors. If disabled, old UI will be used. This is ignored if \"Follow system theme\" is enabled."),
 			app_config->get_bool("dark_color_mode"));
 
 		if (wxPlatformInfo::Get().GetOSMajorVersion() >= 10) // Use system menu just for Window newer then Windows 10
@@ -696,6 +696,11 @@ void PreferencesDialog::build()
 			"but on some combination of display scales it can look ugly. If disabled, old UI will be used."),
 			app_config->get_bool("sys_menu_enabled"));
 		}
+
+		append_bool_option(m_optgroup_dark_mode, "follow_system_theme",
+		L("Follow system theme"),
+		L("If enabled, UI will use light or dark mode depended on system theme. Will only refresh on program start."),
+		app_config->get_bool("follow_system_theme"));
 
 		activate_options_tab(m_optgroup_dark_mode);
 #endif //_WIN32
@@ -822,7 +827,7 @@ void PreferencesDialog::accept(wxEvent&)
 	EndModal(wxID_OK);
 
 #ifdef _WIN32
-	if (m_values.find("dark_color_mode") != m_values.end())
+	if (m_values.find("dark_color_mode") != m_values.end() || m_values.find("follow_system_theme") != m_values.end())
 		wxGetApp().force_colors_update();
 #ifdef _MSW_DARK_MODE
 	if (m_values.find("sys_menu_enabled") != m_values.end())
