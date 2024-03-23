@@ -29,7 +29,7 @@
     #define wxOSX true
 #else
     #define wxOSX false
-#endif 
+#endif
 #ifdef __WXGTK3__
     #define wxGTK3 true
 #else
@@ -190,6 +190,9 @@ public:
 	void			show_field(const t_config_option_key& opt_key, bool show = true);
 	void			hide_field(const t_config_option_key& opt_key) {  show_field(opt_key, false);  }
 
+	void            enable_field(const t_config_option_key& opt_key, bool enable = true);
+    void            disable_field(const t_config_option_key& opt_key) { enable_field(opt_key, false); }
+
 	void			set_name(const wxString& new_name) { stb->SetLabel(new_name); }
 	wxString		get_name() const { return stb->GetLabel(); }
 
@@ -201,7 +204,7 @@ public:
 
     void            hide_labels() { label_width = 0; }
 
-	OptionsGroup(	wxWindow* _parent, const wxString& title, bool is_tab_opt = false, 
+	OptionsGroup(	wxWindow* _parent, const wxString& title, bool is_tab_opt = false,
                     column_t extra_clmn = nullptr);
 	virtual ~OptionsGroup() { clear(true); }
 

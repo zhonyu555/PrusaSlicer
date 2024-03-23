@@ -17,7 +17,7 @@
 #include <wx/button.h>
 #include <wx/statbox.h>
 #include <wx/wupdlock.h>
-#if wxUSE_SECRETSTORE 
+#if wxUSE_SECRETSTORE
 #include <wx/secretstore.h>
 #endif
 #include <wx/clipbrd.h>
@@ -41,6 +41,8 @@
 #include "BitmapCache.hpp"
 #include "BonjourDialog.hpp"
 #include "MsgDialog.hpp"
+#include "OAuthDialog.hpp"
+#include "SimplyPrint.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -76,14 +78,14 @@ PresetForPrinter::PresetForPrinter(PhysicalPrinterDialog* parent, const std::str
         if (m_parent->get_printer()->has_empty_config()) {
             // update Print Host upload from the selected preset
             m_parent->get_printer()->update_from_preset(*preset);
-            // update values in parent (PhysicalPrinterDialog) 
-        } 
-            
+            // update values in parent (PhysicalPrinterDialog)
+        }
+
 
         // update PrinterTechnology if it was changed
         if (m_presets_list->set_printer_technology(preset->printer_technology()))
             m_parent->set_printer_technology(preset->printer_technology());
-        else 
+        else
             m_parent->update(true);
 
         update_full_printer_name();
@@ -136,7 +138,7 @@ std::string PresetForPrinter::get_preset_name()
 void PresetForPrinter::SuppressDelete()
 {
     m_delete_preset_btn->Enable(false);
-    
+
     // this case means that now we have only one related preset for the printer
     // So, allow any selection
     m_presets_list->set_printer_technology(ptAny);
@@ -162,7 +164,7 @@ namespace {
 
 bool is_secret_store_ok()
 {
-#if wxUSE_SECRETSTORE 
+#if wxUSE_SECRETSTORE
     wxSecretStore store = wxSecretStore::GetDefault();
     wxString errmsg;
     if (!store.IsOk(&errmsg)) {
@@ -176,7 +178,7 @@ bool is_secret_store_ok()
 }
 bool save_secret(const std::string& id, const std::string& opt, const std::string& usr, const std::string& psswd)
 {
-#if wxUSE_SECRETSTORE 
+#if wxUSE_SECRETSTORE
     wxSecretStore store = wxSecretStore::GetDefault();
     wxString errmsg;
     if (!store.IsOk(&errmsg)) {
@@ -198,7 +200,7 @@ bool save_secret(const std::string& id, const std::string& opt, const std::strin
 #else
     BOOST_LOG_TRIVIAL(error) << "wxUSE_SECRETSTORE not supported. Cannot save password to the system store.";
     return false;
-#endif // wxUSE_SECRETSTORE 
+#endif // wxUSE_SECRETSTORE
 }
 bool load_secret(const std::string& id, const std::string& opt, std::string& usr, std::string& psswd)
 {
@@ -226,7 +228,7 @@ bool load_secret(const std::string& id, const std::string& opt, std::string& usr
 #else
     BOOST_LOG_TRIVIAL(error) << "wxUSE_SECRETSTORE not supported. Cannot load password from the system store.";
     return false;
-#endif // wxUSE_SECRETSTORE 
+#endif // wxUSE_SECRETSTORE
 }
 }
 
@@ -258,7 +260,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
 
     m_add_preset_btn = new ScalableButton(this, wxID_ANY, "add_copies");
     m_add_preset_btn->SetFont(wxGetApp().normal_font());
-    m_add_preset_btn->SetToolTip(_L("Add preset for this printer device")); 
+    m_add_preset_btn->SetToolTip(_L("Add preset for this printer device"));
     m_add_preset_btn->Bind(wxEVT_BUTTON, &PhysicalPrinterDialog::AddPreset, this);
 
     m_printer_name    = new ::TextInput(this,printer_name);
@@ -326,7 +328,7 @@ PhysicalPrinterDialog::PhysicalPrinterDialog(wxWindow* parent, wxString printer_
     topSizer->Add(nameSizer           , 0, wxEXPAND | wxLEFT | wxRIGHT, BORDER_W);
     topSizer->Add(m_presets_sizer     , 0, wxEXPAND | wxLEFT | wxRIGHT, BORDER_W);
     topSizer->Add(m_optgroup->sizer   , 1, wxEXPAND | wxLEFT | wxTOP | wxRIGHT, BORDER_W);
-    topSizer->Add(btns                , 0, wxEXPAND | wxALL, BORDER_W); 
+    topSizer->Add(btns                , 0, wxEXPAND | wxALL, BORDER_W);
 
     SetSizer(topSizer);
     topSizer->SetSizeHints(this);
@@ -420,12 +422,52 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 // Show a wait cursor during the connection test, as it is blocking UI.
                 wxBusyCursor wait;
                 result = host->test(msg);
+
+                if (!result && host->is_cloud()) {
+                    if (const auto h = dynamic_cast<SimplyPrint*>(host.get()); h) {
+                        OAuthDialog dlg(this, h->get_oauth_params());
+                        dlg.ShowModal();
+
+                        const auto& r = dlg.get_result();
+                        result = r.success;
+                        if (r.success) {
+                            h->save_oauth_credential(r);
+                        } else {
+                            msg = r.error_message;
+                        }
+                    }
+                }
             }
             if (result)
                 show_info(this, host->get_test_ok_msg(), _L("Success!"));
             else
                 show_error(this, host->get_test_failed_msg(msg));
+
+            update();
             });
+
+        return sizer;
+    };
+
+    auto print_host_logout = [&](wxWindow* parent) {
+        auto sizer = create_sizer_with_btn(parent, &m_printhost_logout_btn, "", _L("Log Out"));
+
+        m_printhost_logout_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+            std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+            if (!host) {
+                const wxString text = _L("Could not get a valid Printer Host reference");
+                show_error(this, text);
+                return;
+            }
+
+            wxString msg_text = _L("Are you sure to log out?");
+            MessageDialog dialog(this, msg_text, "", wxICON_QUESTION | wxYES_NO);
+
+            if (dialog.ShowModal() == wxID_YES) {
+                host->log_out();
+                update();
+            }
+        });
 
         return sizer;
     };
@@ -459,6 +501,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     Line host_line = m_optgroup->create_single_option_line(option);
     host_line.append_widget(printhost_browse);
     host_line.append_widget(print_host_test);
+    host_line.append_widget(print_host_logout);
     m_optgroup->append_line(host_line);
 
     m_optgroup->append_single_option_line("printhost_authorization_type");
@@ -529,7 +572,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
         m_optgroup->append_line(line);
     }
 
-    // Text line with info how passwords and api keys are stored 
+    // Text line with info how passwords and api keys are stored
     if (is_secret_store_ok()) {
         Line line{ "", "" };
         line.full_width = 1;
@@ -616,8 +659,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
 void PhysicalPrinterDialog::update_printhost_buttons()
 {
     std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-    m_printhost_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
-    m_printhost_browse_btn->Enable(host->has_auto_discovery());
+    if (host) {
+        m_printhost_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
+        m_printhost_browse_btn->Show(host->has_auto_discovery());
+        m_printhost_logout_btn->Show(host->is_logged_in());
+        m_printhost_test_btn->SetLabel(host->is_cloud() ? _L("Login/Test") : _L("Test"));
+    }
 }
 
 void PhysicalPrinterDialog::update(bool printer_change)
@@ -631,6 +678,13 @@ void PhysicalPrinterDialog::update(bool printer_change)
         update_host_type(printer_change);
         const auto opt = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
         m_optgroup->show_field("host_type");
+
+        m_optgroup->enable_field("print_host");
+        m_optgroup->enable_field("print_host_webui");
+        m_optgroup->enable_field("printhost_cafile");
+        m_optgroup->enable_field("printhost_ssl_ignore_revoke");
+        if (m_printhost_cafile_browse_btn)
+            m_printhost_cafile_browse_btn->Enable();
 
         if (opt->value == htPrusaLink) { // PrusaConnect does NOT allow http digest
             m_optgroup->show_field("printhost_authorization_type");
@@ -665,6 +719,29 @@ void PhysicalPrinterDialog::update(bool printer_change)
                 printhost_win->SetValue(m_stored_host);
                 m_stored_host = temp_host;
             }
+        }
+
+        if (opt->value == htSimplyPrint) {
+            // Set the host url
+            if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
+                printhost_field->disable();
+                if (wxTextCtrl* temp = dynamic_cast<TextCtrl*>(printhost_field)->text_ctrl(); temp && temp->GetValue().IsEmpty()) {
+                    temp->SetValue("https://simplyprint.io");
+                }
+                m_config->opt_string("print_host") = "https://simplyprint.io";
+            }
+            if (Field* printhost_webui_field = m_optgroup->get_field("print_host_webui"); printhost_webui_field) {
+                printhost_webui_field->disable();
+                if (wxTextCtrl* temp = dynamic_cast<TextCtrl*>(printhost_webui_field)->text_ctrl(); temp && temp->GetValue().IsEmpty()) {
+                    temp->SetValue("https://simplyprint.io/panel");
+                }
+                m_config->opt_string("print_host_webui") = "https://simplyprint.io/panel";
+            }
+            m_optgroup->hide_field("printhost_apikey");
+            m_optgroup->disable_field("printhost_cafile");
+            m_optgroup->disable_field("printhost_ssl_ignore_revoke");
+            if (m_printhost_cafile_browse_btn)
+                m_printhost_cafile_browse_btn->Disable();
         }
         
         m_last_host_type = opt->value;
@@ -702,7 +779,7 @@ void PhysicalPrinterDialog::update_host_type(bool printer_change)
         bool supported { true };
         wxString label;
     } link, connect;
-    // allowed models are: all MINI, all MK3 and newer, MK2.5 and MK2.5S  
+    // allowed models are: all MINI, all MK3 and newer, MK2.5 and MK2.5S
     auto model_supports_prusalink = [](const std::string& model) {
         return model.size() >= 2 &&
                 (( boost::starts_with(model, "MK") && model[2] > '2' && model[2] <= '9')
@@ -711,7 +788,7 @@ void PhysicalPrinterDialog::update_host_type(bool printer_change)
                 || boost::starts_with(model, "XL")
                 );
     };
-    // allowed models are: all MK3/S and MK2.5/S. 
+    // allowed models are: all MK3/S and MK2.5/S.
     // Since 2.6.2 also MINI, which makes list of supported printers same for both services.
     // Lets keep these 2 functions separated for now.
     auto model_supports_prusaconnect = [](const std::string& model) {
@@ -727,7 +804,7 @@ void PhysicalPrinterDialog::update_host_type(bool printer_change)
     for (PresetForPrinter* prstft : m_presets) {
         std::string preset_name = prstft->get_preset_name();
         if (Preset* preset = wxGetApp().preset_bundle->printers.find_preset(preset_name)) {
-            std::string model_id = preset->config.opt_string("printer_model");            
+            std::string model_id = preset->config.opt_string("printer_model");
             if (preset->vendor) {
                 if (preset->vendor->name == "Prusa Research") {
                     const std::vector<VendorProfile::PrinterModel>& models = preset->vendor->models;
@@ -824,7 +901,7 @@ void PhysicalPrinterDialog::update_full_printer_names()
         if (pos != std::string::npos) {
             wxString str = printer_name.SubString(pos, 1);
             printer_name.Remove(pos, 1);
-            InfoDialog(this, format_wxstr("%1%: \"%2%\" ", _L("Unexpected character"),  str), 
+            InfoDialog(this, format_wxstr("%1%: \"%2%\" ", _L("Unexpected character"),  str),
                        _L("The following characters are not allowed in the name") + ": " + unusable_symbols).ShowModal();
             m_printer_name->SetValue(printer_name);
             m_printer_name->GetTextCtrl()->SetInsertionPointEnd();
@@ -896,7 +973,7 @@ void PhysicalPrinterDialog::OnOK(wxEvent& event)
             }
         }
     }
-    
+
 
     PhysicalPrinterCollection& printers = wxGetApp().preset_bundle->physical_printers;
     const PhysicalPrinter* existing = printers.find_printer(into_u8(printer_name), false);
