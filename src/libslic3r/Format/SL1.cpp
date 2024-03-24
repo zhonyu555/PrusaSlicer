@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2020 - 2023 Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "SL1.hpp"
 
 #include <boost/log/trivial.hpp>
@@ -41,8 +45,9 @@ namespace {
 std::string to_ini(const ConfMap &m)
 {
     std::string ret;
-    for (auto &param : m) ret += param.first + " = " + param.second + "\n";
-    
+    for (auto &param : m)
+        ret += param.first + " = " + param.second + "\n";
+
     return ret;
 }
 

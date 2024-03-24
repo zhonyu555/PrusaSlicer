@@ -1,3 +1,17 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Tomáš Mészáros @tamasmeszaros, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ ported from lib/Slic3r/GUI/Tab.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena
+///|/ Copyright (c) 2015 - 2017 Joseph Lenox @lordofhyphens
+///|/ Copyright (c) Slic3r 2012 - 2016 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2016 Chow Loong Jin @hyperair
+///|/ Copyright (c) 2012 QuantumConcepts
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Tab_hpp_
 #define slic3r_Tab_hpp_
 
@@ -37,6 +51,8 @@
 #include "OptionsGroup.hpp"
 #include "libslic3r/Preset.hpp"
 
+class CheckBox;
+
 namespace Slic3r {
 namespace GUI {
 
@@ -56,8 +72,11 @@ class SubstitutionManager
 	std::function<void()> m_cb_edited_substitution{ nullptr };
 	std::function<void()> m_cb_hide_delete_all_btn{ nullptr };
 
-	void validate_lenth();
-	bool is_compatibile_with_ui();
+	std::vector<std::string>	m_substitutions;
+	std::vector<wxWindow*>		m_chb_match_single_lines;
+
+	void validate_length();
+	bool is_compatible_with_ui();
 	bool is_valid_id(int substitution_id, const wxString& message);
 
 public:
@@ -185,7 +204,7 @@ protected:
 
    	struct PresetDependencies {
 		Preset::Type type	  = Preset::TYPE_INVALID;
-		wxCheckBox 	*checkbox = nullptr;
+		wxWindow 	*checkbox = nullptr;
 		ScalableButton 	*btn  = nullptr;
 		std::string  key_list; // "compatible_printers"
 		std::string  key_condition;
@@ -213,6 +232,8 @@ protected:
 	ScalableBitmap 		   *m_bmp_non_system;
 	// Bitmaps to be shown on the "Undo user changes" button next to each input field.
 	ScalableBitmap 			m_bmp_value_revert;
+	// Bitmaps to be shown on the "Undo user changes" button next to each input field.
+	ScalableBitmap 			m_bmp_edit_value;
     
     std::vector<ScalableButton*>	m_scaled_buttons = {};    
     std::vector<ScalableBitmap*>	m_scaled_bitmaps = {};    
@@ -330,7 +351,7 @@ public:
 	void		rename_preset();
 	void		delete_preset();
 	void		toggle_show_hide_incompatible();
-	void		update_show_hide_incompatible_button();
+	void		update_compatibility_ui();
 	void		update_ui_from_settings();
 	void		update_label_colours();
 	void		decorate();
@@ -388,6 +409,10 @@ public:
 	static bool validate_custom_gcode(const wxString& title, const std::string& gcode);
 	bool        validate_custom_gcodes();
     bool        validate_custom_gcodes_was_shown{ false };
+
+    void						edit_custom_gcode(const t_config_option_key& opt_key);
+    virtual const std::string&	get_custom_gcode(const t_config_option_key& opt_key);
+    virtual void				set_custom_gcode(const t_config_option_key& opt_key, const std::string& value);
 
 protected:
 	void			create_line_with_widget(ConfigOptionsGroup* optgroup, const std::string& opt_key, const std::string& path, widget_t widget);
@@ -450,7 +475,7 @@ class TabFilament : public Tab
     void            create_extruder_combobox();
 	void 			update_volumetric_flow_preset_hints();
 
-    std::map<std::string, wxCheckBox*> m_overrides_options;
+    std::map<std::string, wxWindow*> m_overrides_options;
 public:
 	TabFilament(wxBookCtrlBase* parent) :
 		Tab(parent, _(L("Filament Settings")), Slic3r::Preset::TYPE_FILAMENT) {}
@@ -469,8 +494,13 @@ public:
     // set actiev extruder and update preset combobox if needed
     // return false, if new preset wasn't selected
     bool        set_active_extruder(int new_selected_extruder);
+    void        invalidate_active_extruder() { m_active_extruder = -1; }
     void        update_extruder_combobox();
+    void        update_extruder_combobox_visibility();
     int         get_active_extruder() const { return m_active_extruder; }
+
+	const std::string&	get_custom_gcode(const t_config_option_key& opt_key) override;
+	void				set_custom_gcode(const t_config_option_key& opt_key, const std::string& value) override;
 
 protected:
     bool        select_preset_by_name(const std::string& name_w_suffix, bool force) override;
@@ -536,6 +566,12 @@ public:
 
 class TabSLAMaterial : public Tab
 {
+	void		create_line_with_near_label_widget(ConfigOptionsGroupShp optgroup, const std::string& opt_key);
+	void		update_line_with_near_label_widget(ConfigOptionsGroupShp optgroup, const std::string& opt_key, bool is_checked = true);
+	void		add_material_overrides_page();
+	void		update_material_overrides_page();
+
+	std::map<std::string, wxWindow*> m_overrides_options;
 public:
     TabSLAMaterial(wxBookCtrlBase* parent) :
 		Tab(parent, _(L("Material Settings")), Slic3r::Preset::TYPE_SLA_MATERIAL) {}

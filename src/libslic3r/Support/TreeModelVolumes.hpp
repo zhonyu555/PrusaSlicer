@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2022 - 2023 Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 // Tree supports by Thomas Rahm, losely based on Tree Supports by CuraEngine.
 // Original source of Thomas Rahm's tree supports:
 // https://github.com/ThomasRahm/CuraEngine
@@ -240,12 +244,16 @@ private:
          */
         std::optional<std::reference_wrapper<const Polygons>> getArea(const TreeModelVolumes::RadiusLayerPair &key) const {
             std::lock_guard<std::mutex> guard(m_mutex);
+
             if (key.second >= LayerIndex(m_data.size()))
-                return std::optional<std::reference_wrapper<const Polygons>>{};
-            const auto &layer = m_data[key.second];
+                return std::nullopt;
+
+            const LayerData &layer = m_data[key.second];
             auto it = layer.find(key.first);
-            return it == layer.end() ? 
-                std::optional<std::reference_wrapper<const Polygons>>{} : std::optional<std::reference_wrapper<const Polygons>>{ it->second };
+            if (it == layer.end())
+                return std::nullopt;
+
+            return std::optional<std::reference_wrapper<const Polygons>>{it->second};
         }
         // Get a collision area at a given layer for a radius that is a lower or equial to the key radius.
         std::optional<std::pair<coord_t, std::reference_wrapper<const Polygons>>> get_lower_bound_area(const TreeModelVolumes::RadiusLayerPair &key) const {

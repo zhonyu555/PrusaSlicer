@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Tomáš Mészáros @tamasmeszaros, Filip Sykala @Jony01, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "GLGizmoRotate.hpp"
 #include "slic3r/GUI/GLCanvas3D.hpp"
 #include "slic3r/GUI/ImGuiWrapper.hpp"
@@ -200,10 +204,11 @@ void GLGizmoRotate::init_data_from_selection(const Selection& selection)
     const auto [box, box_trafo] = m_force_local_coordinate ?
         selection.get_bounding_box_in_reference_system(ECoordinatesType::Local) : selection.get_bounding_box_in_current_reference_system();
     m_bounding_box = box;
-    m_center = box_trafo.translation();
+    const std::pair<Vec3d, double> sphere = selection.get_bounding_sphere();
+    m_center = sphere.first;
+    m_radius = Offset + sphere.second;
     m_orient_matrix = box_trafo;
-
-    m_radius = Offset + m_bounding_box.radius();
+    m_orient_matrix.translation() = m_center;
     m_snap_coarse_in_radius = m_radius / 3.0f;
     m_snap_coarse_out_radius = 2.0f * m_snap_coarse_in_radius;
     m_snap_fine_in_radius = m_radius;

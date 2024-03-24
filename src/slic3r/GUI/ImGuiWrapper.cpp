@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, David Kocík @kocikdav, Vojtěch Bubník @bubnikv, Tomáš Mészáros @tamasmeszaros, Filip Sykala @Jony01, Lukáš Hejl @hejllukas, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 Jason Tibbitts @jasontibbitts
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "ImGuiWrapper.hpp"
 
 #include <cstdio>
@@ -67,6 +72,7 @@ static const std::map<const wchar_t, std::string> font_icons = {
     {ImGui::InfoMarkerSmall       , "notification_info"             },
     {ImGui::PlugMarker            , "plug"                          },
     {ImGui::DowelMarker           , "dowel"                         },
+    {ImGui::SnapMarker            , "snap"                          },
 };
 
 static const std::map<const wchar_t, std::string> font_icons_large = {
@@ -175,7 +181,7 @@ void ImGuiWrapper::set_language(const std::string &language)
         0,
     };
     m_font_cjk = false;
-    if (lang == "cs" || lang == "pl" || lang == "hu") {
+    if (lang == "cs" || lang == "pl" || lang == "hu" || lang == "sl") {
         ranges = ranges_latin2;
     } else if (lang == "ru" || lang == "uk" || lang == "be") {
         ranges = ImGui::GetIO().Fonts->GetGlyphRangesCyrillic(); // Default + about 400 Cyrillic characters
@@ -639,6 +645,8 @@ bool ImGuiWrapper::slider_float(const char* label, float* v, float v_min, float 
     m_last_slider_status.edited = ImGui::IsItemEdited();
     m_last_slider_status.clicked = ImGui::IsItemClicked();
     m_last_slider_status.deactivated_after_edit = ImGui::IsItemDeactivatedAfterEdit();
+    if (!m_last_slider_status.can_take_snapshot)
+        m_last_slider_status.can_take_snapshot = ImGui::IsItemClicked();
 
     if (!tooltip.empty() && ImGui::IsItemHovered())
         this->tooltip(into_u8(tooltip).c_str(), max_tooltip_width);
@@ -665,8 +673,9 @@ bool ImGuiWrapper::slider_float(const char* label, float* v, float v_min, float 
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, { 0.4f, 0.4f, 0.4f, 1.0f });
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, { 0.4f, 0.4f, 0.4f, 1.0f });
 
+        int frame_padding = style.ItemSpacing.y / 2; // keep same line height for input and slider
         const ImTextureID tex_id = io.Fonts->TexID;
-        if (image_button(tex_id, size, uv0, uv1, -1, ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImGuiButtonFlags_PressedOnClick)) {
+        if (image_button(tex_id, size, uv0, uv1, frame_padding, ImVec4(0.0, 0.0, 0.0, 0.0), ImVec4(1.0, 1.0, 1.0, 1.0), ImGuiButtonFlags_PressedOnClick)) {
             if (!slider_editing)
                 ImGui::SetKeyboardFocusHere(-1);
             else
@@ -782,7 +791,8 @@ bool ImGuiWrapper::combo(const wxString& label, const std::vector<std::string>& 
 bool ImGuiWrapper::combo(const std::string& label, const std::vector<std::string>& options, int& selection, ImGuiComboFlags flags/* = 0*/, float label_width/* = 0.0f*/, float item_width/* = 0.0f*/)
 {
     // this is to force the label to the left of the widget:
-    if (!label.empty()) {
+    const bool hidden_label = boost::starts_with(label, "##");
+    if (!label.empty() && !hidden_label) {
         text(label);
         ImGui::SameLine(label_width);
     }
@@ -792,7 +802,7 @@ bool ImGuiWrapper::combo(const std::string& label, const std::vector<std::string
     bool res = false;
 
     const char *selection_str = selection < int(options.size()) && selection >= 0 ? options[selection].c_str() : "";
-    if (ImGui::BeginCombo(("##" + label).c_str(), selection_str, flags)) {
+    if (ImGui::BeginCombo(hidden_label ? label.c_str() : ("##" + label).c_str(), selection_str, flags)) {
         for (int i = 0; i < (int)options.size(); i++) {
             if (ImGui::Selectable(options[i].c_str(), i == selection)) {
                 selection_out = i;
@@ -1387,6 +1397,48 @@ bool ImGuiWrapper::slider_optional_int(const char         *label,
             v.reset(); 
         return true;
     } else return false;
+}
+
+std::optional<ImVec2> ImGuiWrapper::change_window_position(const char *window_name, bool try_to_fix) {
+    ImGuiWindow *window = ImGui::FindWindowByName(window_name);
+    // is window just created
+    if (window == NULL)
+        return {};
+
+    // position of window on screen
+    ImVec2 position = window->Pos;
+    ImVec2 size     = window->SizeFull;
+
+    // screen size
+    ImVec2 screen = ImGui::GetMainViewport()->Size;
+
+    std::optional<ImVec2> output_window_offset;
+    if (position.x < 0) {
+        if (position.y < 0)
+            // top left 
+            output_window_offset = ImVec2(0, 0); 
+        else
+            // only left
+            output_window_offset = ImVec2(0, position.y); 
+    } else if (position.y < 0) {
+        // only top
+        output_window_offset = ImVec2(position.x, 0); 
+    } else if (screen.x < (position.x + size.x)) {
+        if (screen.y < (position.y + size.y))
+            // right bottom
+            output_window_offset = ImVec2(screen.x - size.x, screen.y - size.y);
+        else
+            // only right
+            output_window_offset = ImVec2(screen.x - size.x, position.y);
+    } else if (screen.y < (position.y + size.y)) {
+        // only bottom
+        output_window_offset = ImVec2(position.x, screen.y - size.y);
+    }
+
+    if (!try_to_fix && output_window_offset.has_value())
+        output_window_offset = ImVec2(-1, -1); // Put on default position
+
+    return output_window_offset;
 }
 
 void ImGuiWrapper::left_inputs() { 

@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Filip Sykala @Jony01, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_ImGuiWrapper_hpp_
 #define slic3r_ImGuiWrapper_hpp_
 
@@ -49,6 +53,11 @@ public:
         bool edited  { false };
         bool clicked { false };
         bool deactivated_after_edit { false };
+        // flag to indicate possibility to take snapshot from the slider value
+        // It's used from Gizmos to take snapshots just from the very beginning of the editing
+        bool can_take_snapshot { false };
+        // When Undo/Redo snapshot is taken, then call this function
+        void invalidate_snapshot() { can_take_snapshot = false; }
     };
 
     ImGuiWrapper();
@@ -80,6 +89,7 @@ public:
     ImVec2 get_item_spacing() const;
     float  get_slider_float_height() const;
     const LastSliderStatus& get_last_slider_status() const { return m_last_slider_status; }
+    LastSliderStatus& get_last_slider_status() { return m_last_slider_status; }
 
     void set_next_window_pos(float x, float y, int flag, float pivot_x = 0.0f, float pivot_y = 0.0f);
     void set_next_window_bg_alpha(float alpha);
@@ -147,6 +157,15 @@ public:
     bool slider_optional_float(const char* label, std::optional<float> &v, float v_min, float v_max, const char* format = "%.3f", float power = 1.0f, bool clamp = true, const wxString& tooltip = {}, bool show_edit_btn = true, float def_val = .0f);
     // Extended function ImGuiWrapper::slider_float to work with std::optional<int>, when value == def_val than optional release its value
     bool slider_optional_int(const char* label, std::optional<int> &v, int v_min, int v_max, const char* format = "%.3f", float power = 1.0f, bool clamp = true, const wxString& tooltip = {}, bool show_edit_btn = true, int def_val = 0);
+
+    /// <summary>
+    /// Change position of imgui window
+    /// </summary>
+    /// <param name="window_name">ImGui identifier of window</param>
+    /// <param name="output_window_offset">[output] optional </param>
+    /// <param name="try_to_fix">When True Only move to be full visible otherwise reset position</param>
+    /// <returns>New offset of window for function ImGui::SetNextWindowPos</returns>
+    static std::optional<ImVec2> change_window_position(const char *window_name, bool try_to_fix);
 
     /// <summary>
     /// Use ImGui internals to unactivate (lose focus) in input.

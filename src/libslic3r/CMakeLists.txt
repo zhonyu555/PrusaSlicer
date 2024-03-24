@@ -1,3 +1,10 @@
+#/|/ Copyright (c) Prusa Research 2018 - 2023 Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Lukáš Hejl @hejllukas, Lukáš Matěna @lukasmatena, Filip Sykala @Jony01, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+#/|/ Copyright (c) BambuStudio 2023 manch1n @manch1n
+#/|/ Copyright (c) 2023 Mimoja @Mimoja
+#/|/ Copyright (c) 2022 ole00 @ole00
+#/|/
+#/|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+#/|/
 cmake_minimum_required(VERSION 3.13)
 project(libslic3r)
 
@@ -13,6 +20,11 @@ set(OpenVDBUtils_SOURCES "")
 if (TARGET OpenVDB::openvdb)
     set(OpenVDBUtils_SOURCES OpenVDBUtils.cpp OpenVDBUtils.hpp OpenVDBUtilsLegacy.hpp)
 endif()
+
+find_package(LibBGCode REQUIRED COMPONENTS Convert)
+slic3r_remap_configs(LibBGCode::bgcode_core RelWithDebInfo Release)
+slic3r_remap_configs(LibBGCode::bgcode_binarize RelWithDebInfo Release)
+slic3r_remap_configs(LibBGCode::bgcode_convert RelWithDebInfo Release)
 
 set(SLIC3R_SOURCES
     pchheader.cpp
@@ -57,9 +69,11 @@ set(SLIC3R_SOURCES
     ElephantFootCompensation.hpp
     Emboss.cpp
     Emboss.hpp
+    EmbossShape.hpp
     enum_bitmask.hpp
     ExPolygon.cpp
     ExPolygon.hpp
+    ExPolygonSerialize.hpp
     ExPolygonsIndex.cpp
     ExPolygonsIndex.hpp
     Extruder.cpp
@@ -74,7 +88,6 @@ set(SLIC3R_SOURCES
     ExtrusionSimulator.hpp
     FileParserError.hpp
     Fill/Fill.cpp
-    Fill/Fill.hpp
     Fill/Fill3DHoneycomb.cpp
     Fill/Fill3DHoneycomb.hpp
     Fill/FillAdaptive.cpp
@@ -132,6 +145,8 @@ set(SLIC3R_SOURCES
     Format/AnycubicSLA.cpp
     Format/STEP.hpp
     Format/STEP.cpp
+    Format/SVG.hpp
+    Format/SVG.cpp
     Format/SLAArchiveFormatRegistry.hpp
     Format/SLAArchiveFormatRegistry.cpp
     GCode/ThumbnailData.cpp
@@ -142,8 +157,14 @@ set(SLIC3R_SOURCES
     GCode/ConflictChecker.hpp
     GCode/CoolingBuffer.cpp
     GCode/CoolingBuffer.hpp
+    GCode/ExtrusionProcessor.cpp
+    GCode/ExtrusionProcessor.hpp
     GCode/FindReplace.cpp
     GCode/FindReplace.hpp
+    GCode/LabelObjects.cpp
+    GCode/LabelObjects.hpp
+    GCode/GCodeWriter.cpp
+    GCode/GCodeWriter.hpp
     GCode/PostProcessor.cpp
     GCode/PostProcessor.hpp
     GCode/PressureEqualizer.cpp
@@ -156,24 +177,32 @@ set(SLIC3R_SOURCES
     GCode/SpiralVase.hpp
     GCode/SeamPlacer.cpp
     GCode/SeamPlacer.hpp
+    GCode/SmoothPath.cpp
+    GCode/SmoothPath.hpp
     GCode/ToolOrdering.cpp
     GCode/ToolOrdering.hpp
+    GCode/Wipe.cpp
+    GCode/Wipe.hpp
     GCode/WipeTower.cpp
     GCode/WipeTower.hpp
+    GCode/WipeTowerIntegration.cpp
+    GCode/WipeTowerIntegration.hpp
     GCode/GCodeProcessor.cpp
     GCode/GCodeProcessor.hpp
     GCode/AvoidCrossingPerimeters.cpp
     GCode/AvoidCrossingPerimeters.hpp
+    GCode/Travels.cpp
+    GCode/Travels.hpp
     GCode.cpp
     GCode.hpp
     GCodeReader.cpp
     GCodeReader.hpp
     # GCodeSender.cpp
     # GCodeSender.hpp
-    GCodeWriter.cpp
-    GCodeWriter.hpp
     Geometry.cpp
     Geometry.hpp
+    Geometry/ArcWelder.cpp
+    Geometry/ArcWelder.hpp
     Geometry/Bicubic.hpp
     Geometry/Circle.cpp
     Geometry/Circle.hpp
@@ -185,6 +214,8 @@ set(SLIC3R_SOURCES
     Geometry/Voronoi.hpp
     Geometry/VoronoiOffset.cpp
     Geometry/VoronoiOffset.hpp
+    Geometry/VoronoiUtils.hpp
+    Geometry/VoronoiUtils.cpp
     Geometry/VoronoiVisualUtils.hpp
     Int128.hpp
     JumpPointSearch.cpp
@@ -192,6 +223,7 @@ set(SLIC3R_SOURCES
     KDTreeIndirect.hpp
     Layer.cpp
     Layer.hpp
+    LayerRegion.hpp
     LayerRegion.cpp
     libslic3r.h
     "${CMAKE_CURRENT_BINARY_DIR}/libslic3r_version.h"
@@ -201,6 +233,8 @@ set(SLIC3R_SOURCES
     BlacklistedLibraryCheck.hpp
     LocalesUtils.cpp
     LocalesUtils.hpp
+    CutUtils.cpp
+    CutUtils.hpp
     Model.cpp
     Model.hpp
     ModelArrange.hpp
@@ -214,8 +248,55 @@ set(SLIC3R_SOURCES
     MeasureUtils.hpp
     CustomGCode.cpp
     CustomGCode.hpp
-    Arrange.hpp
-    Arrange.cpp
+    Arrange/Arrange.hpp
+    Arrange/ArrangeImpl.hpp
+    Arrange/Items/ArrangeItem.hpp
+    Arrange/Items/ArrangeItem.cpp
+    Arrange/Items/SimpleArrangeItem.hpp
+    Arrange/Items/SimpleArrangeItem.cpp
+    Arrange/Items/TrafoOnlyArrangeItem.hpp
+    Arrange/Items/MutableItemTraits.hpp
+    Arrange/Items/ArbitraryDataStore.hpp
+    Arrange/ArrangeSettingsView.hpp
+    Arrange/ArrangeSettingsDb_AppCfg.hpp
+    Arrange/ArrangeSettingsDb_AppCfg.cpp
+    Arrange/Scene.hpp
+    Arrange/Scene.cpp
+    Arrange/SceneBuilder.hpp
+    Arrange/SceneBuilder.cpp
+    Arrange/Tasks/ArrangeTask.hpp
+    Arrange/Tasks/ArrangeTaskImpl.hpp
+    Arrange/Tasks/FillBedTask.hpp
+    Arrange/Tasks/FillBedTaskImpl.hpp
+    Arrange/Tasks/MultiplySelectionTask.hpp
+    Arrange/Tasks/MultiplySelectionTaskImpl.hpp
+    Arrange/SegmentedRectangleBed.hpp
+    Arrange/Core/ArrangeItemTraits.hpp
+    Arrange/Core/DataStoreTraits.hpp
+    Arrange/Core/ArrangeBase.hpp
+    Arrange/Core/PackingContext.hpp
+    Arrange/Core/ArrangeFirstFit.hpp
+    Arrange/Core/Beds.hpp
+    Arrange/Core/Beds.cpp
+    Arrange/Core/NFP/NFP.hpp
+    Arrange/Core/NFP/NFP.cpp
+    Arrange/Core/NFP/NFPConcave_CGAL.hpp
+    Arrange/Core/NFP/NFPConcave_CGAL.cpp
+    Arrange/Core/NFP/NFPConcave_Tesselate.hpp
+    Arrange/Core/NFP/NFPConcave_Tesselate.cpp
+    Arrange/Core/NFP/EdgeCache.hpp
+    Arrange/Core/NFP/EdgeCache.cpp
+    Arrange/Core/NFP/CircularEdgeIterator.hpp
+    Arrange/Core/NFP/NFPArrangeItemTraits.hpp
+    Arrange/Core/NFP/PackStrategyNFP.hpp
+    Arrange/Core/NFP/RectangleOverfitPackingStrategy.hpp
+    Arrange/Core/NFP/Kernels/KernelTraits.hpp
+    Arrange/Core/NFP/Kernels/GravityKernel.hpp
+    Arrange/Core/NFP/Kernels/TMArrangeKernel.hpp
+    Arrange/Core/NFP/Kernels/CompactifyKernel.hpp
+    Arrange/Core/NFP/Kernels/RectangleOverfitKernelWrapper.hpp
+    Arrange/Core/NFP/Kernels/SVGDebugOutputKernelWrapper.hpp
+    Arrange/Core/NFP/Kernels/KernelUtils.hpp
     MultiPoint.cpp
     MultiPoint.hpp
     MutablePriorityQueue.hpp
@@ -386,7 +467,6 @@ set(SLIC3R_SOURCES
     BranchingTree/BranchingTree.hpp
     BranchingTree/PointCloud.cpp
     BranchingTree/PointCloud.hpp
-
     Arachne/BeadingStrategy/BeadingStrategy.hpp
     Arachne/BeadingStrategy/BeadingStrategy.cpp
     Arachne/BeadingStrategy/BeadingStrategyFactory.hpp
@@ -417,8 +497,9 @@ set(SLIC3R_SOURCES
     Arachne/utils/PolygonsSegmentIndex.hpp
     Arachne/utils/PolylineStitcher.hpp
     Arachne/utils/PolylineStitcher.cpp
-    Arachne/utils/VoronoiUtils.hpp
-    Arachne/utils/VoronoiUtils.cpp
+    Geometry/Voronoi.cpp
+    Geometry/VoronoiUtils.hpp
+    Geometry/VoronoiUtils.cpp
     Arachne/SkeletalTrapezoidation.hpp
     Arachne/SkeletalTrapezoidation.cpp
     Arachne/SkeletalTrapezoidationEdge.hpp
@@ -427,9 +508,14 @@ set(SLIC3R_SOURCES
     Arachne/SkeletalTrapezoidationJoint.hpp
     Arachne/WallToolPaths.hpp
     Arachne/WallToolPaths.cpp
+    StaticMap.hpp
 )
 
 add_library(libslic3r STATIC ${SLIC3R_SOURCES})
+
+if (WIN32)
+    target_compile_definitions(libslic3r PUBLIC NOMINMAX)
+endif()
 
 foreach(_source IN ITEMS ${SLIC3R_SOURCES})
     get_filename_component(_source_path "${_source}" PATH)
@@ -508,6 +594,7 @@ target_link_libraries(libslic3r
     ZLIB::ZLIB
 	JPEG::JPEG
     qoi
+    LibBGCode::bgcode_convert
     )
 
 if (APPLE)

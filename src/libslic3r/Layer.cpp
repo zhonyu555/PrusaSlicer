@@ -1,10 +1,19 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Lukáš Hejl @hejllukas
+///|/ Copyright (c) Slic3r 2014 - 2015 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2015 Maksim Derbasov @ntfshard
+///|/
+///|/ ported from lib/Slic3r/Layer.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2022 Vojtěch Bubník @bubnikv
+///|/ Copyright (c) Slic3r 2011 - 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "Layer.hpp"
 #include "ClipperZUtils.hpp"
 #include "ClipperUtils.hpp"
 #include "Point.hpp"
 #include "Polygon.hpp"
 #include "Print.hpp"
-#include "Fill/Fill.hpp"
 #include "ShortestPath.hpp"
 #include "SVG.hpp"
 #include "BoundingBox.hpp"
@@ -81,7 +90,8 @@ void Layer::make_slices()
     // Top / bottom surfaces must overlap more than 2um to be chained into a Z graph.
     // Also a larger offset will likely be more robust on non-manifold input polygons.
     static constexpr const float delta = scaled<float>(0.001);
-    co.MiterLimit = scaled<double>(3.);
+    // Don't scale the miter limit, it is a factor, not an absolute length!
+    co.MiterLimit = 3.;
 // Use the default zero edge merging distance. For this kind of safety offset the accuracy of normal direction is not important.
 //    co.ShortestEdgeLength = delta * ClipperOffsetShortestEdgeFactor;
 //    static constexpr const double accept_area_threshold_ccw = sqr(scaled<double>(0.1 * delta));
@@ -863,12 +873,14 @@ void Layer::sort_perimeters_into_islands(
             int              sort_region_id = -1;
             // Temporary vector of fills for reordering.
             ExPolygons       fills_temp;
+            // Temporary vector of fill_bboxes for reordering.
+            BoundingBoxes    fill_bboxes_temp;
             // Vector of new positions of the above.
             std::vector<int> new_positions;
             do {
                 sort_region_id = -1;
                 for (size_t source_slice_idx = 0; source_slice_idx < fill_expolygons_ranges.size(); ++ source_slice_idx)
-                    if (ExPolygonRange fill_range = fill_expolygons_ranges[source_slice_idx]; fill_range.size() > 1) {
+                    if (const ExPolygonRange fill_range = fill_expolygons_ranges[source_slice_idx]; fill_range.size() > 1) {
                         // More than one expolygon exists for a single island. Check whether they are contiguous inside a single LayerRegion::fill_expolygons() vector.
                         uint32_t fill_idx = *fill_range.begin();
                         if (const int fill_regon_id = map_expolygon_to_region_and_fill[fill_idx].region_id; fill_regon_id != -1) {
@@ -905,15 +917,23 @@ void Layer::sort_perimeters_into_islands(
                             // Not referenced by any map_expolygon_to_region_and_fill.
                             new_pos = last ++;
                     // Move just the content of m_fill_expolygons to fills_temp, but don't move the container vector.
-                    auto &fills = layerm.m_fill_expolygons;
+                    auto &fills       = layerm.m_fill_expolygons;
+                    auto &fill_bboxes = layerm.m_fill_expolygons_bboxes;
+
+                    assert(fills.size() == fill_bboxes.size());
                     assert(last == int(fills.size()));
-                    fills_temp.reserve(fills.size());
-                    fills_temp.insert(fills_temp.end(), std::make_move_iterator(fills.begin()), std::make_move_iterator(fills.end()));
-                    for (ExPolygon &ex : fills)
-                        ex.clear();
-                    // Move / reoder the expolygons back into m_fill_expolygons.
-                    for (size_t old_pos = 0; old_pos < new_positions.size(); ++ old_pos)
-                        fills[new_positions[old_pos]] = std::move(fills_temp[old_pos]);
+
+                    fills_temp.resize(fills.size());
+                    fills_temp.assign(std::make_move_iterator(fills.begin()), std::make_move_iterator(fills.end()));
+
+                    fill_bboxes_temp.resize(fill_bboxes.size());
+                    fill_bboxes_temp.assign(std::make_move_iterator(fill_bboxes.begin()), std::make_move_iterator(fill_bboxes.end()));
+
+                    // Move / reorder the ExPolygons and BoundingBoxes back into m_fill_expolygons and m_fill_expolygons_bboxes.
+                    for (size_t old_pos = 0; old_pos < new_positions.size(); ++old_pos) {
+                        fills[new_positions[old_pos]]       = std::move(fills_temp[old_pos]);
+                        fill_bboxes[new_positions[old_pos]] = std::move(fill_bboxes_temp[old_pos]);
+                    }
                 }
             } while (sort_region_id != -1);
         } else {
@@ -945,7 +965,7 @@ void Layer::sort_perimeters_into_islands(
                 // Check whether the fill expolygons of this island were split into multiple regions.
                 island.fill_region_id = LayerIsland::fill_region_composite_id;
                 for (uint32_t fill_idx : fill_range) {
-                    if (const int fill_regon_id = map_expolygon_to_region_and_fill[fill_idx].region_id; 
+                    if (const int fill_regon_id = map_expolygon_to_region_and_fill[fill_idx].region_id;
                         fill_regon_id == -1 || (island.fill_region_id != LayerIsland::fill_region_composite_id && int(island.fill_region_id) != fill_regon_id)) {
                         island.fill_region_id = LayerIsland::fill_region_composite_id;
                         break;

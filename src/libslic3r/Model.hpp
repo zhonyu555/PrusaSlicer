@@ -1,3 +1,15 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Tomáš Mészáros @tamasmeszaros, Oleksandra Iushchenko @YuSanka, Enrico Turri @enricoturri1966, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Filip Sykala @Jony01, Lukáš Hejl @hejllukas, David Kocík @kocikdav, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2019 John Drake @foxox
+///|/ Copyright (c) 2019 Sijmen Schoon
+///|/ Copyright (c) 2017 Eyal Soha @eyal0
+///|/ Copyright (c) Slic3r 2014 - 2015 Alessandro Ranellucci @alranel
+///|/
+///|/ ported from lib/Slic3r/Model.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2022 Vojtěch Bubník @bubnikv, Enrico Turri @enricoturri1966
+///|/ Copyright (c) Slic3r 2012 - 2016 Alessandro Ranellucci @alranel
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_Model_hpp_
 #define slic3r_Model_hpp_
 
@@ -11,10 +23,10 @@
 #include "SLA/SupportPoint.hpp"
 #include "SLA/Hollowing.hpp"
 #include "TriangleMesh.hpp"
-#include "Arrange.hpp"
 #include "CustomGCode.hpp"
 #include "enum_bitmask.hpp"
 #include "TextConfiguration.hpp"
+#include "EmbossShape.hpp"
 
 #include <map>
 #include <memory>
@@ -224,6 +236,7 @@ private:
 enum class CutConnectorType : int {
     Plug
     , Dowel
+    , Snap
     , Undef
 };
 
@@ -281,25 +294,26 @@ struct CutConnector
     float height;
     float radius_tolerance;// [0.f : 1.f]
     float height_tolerance;// [0.f : 1.f]
+    float z_angle {0.f};
     CutConnectorAttributes attribs;
 
     CutConnector()
-        : pos(Vec3d::Zero()), rotation_m(Transform3d::Identity()), radius(5.f), height(10.f), radius_tolerance(0.f), height_tolerance(0.1f)
+        : pos(Vec3d::Zero()), rotation_m(Transform3d::Identity()), radius(5.f), height(10.f), radius_tolerance(0.f), height_tolerance(0.1f), z_angle(0.f)
     {}
 
-    CutConnector(Vec3d p, Transform3d rot, float r, float h, float rt, float ht, CutConnectorAttributes attributes)
-        : pos(p), rotation_m(rot), radius(r), height(h), radius_tolerance(rt), height_tolerance(ht), attribs(attributes)
+    CutConnector(Vec3d p, Transform3d rot, float r, float h, float rt, float ht, float za, CutConnectorAttributes attributes)
+        : pos(p), rotation_m(rot), radius(r), height(h), radius_tolerance(rt), height_tolerance(ht), z_angle(za), attribs(attributes)
     {}
 
     CutConnector(const CutConnector& rhs) :
-        CutConnector(rhs.pos, rhs.rotation_m, rhs.radius, rhs.height, rhs.radius_tolerance, rhs.height_tolerance, rhs.attribs) {}
+        CutConnector(rhs.pos, rhs.rotation_m, rhs.radius, rhs.height, rhs.radius_tolerance, rhs.height_tolerance, rhs.z_angle, rhs.attribs) {}
 
     bool operator==(const CutConnector& other) const;
 
     bool operator!=(const CutConnector& other) const { return !(other == (*this)); }
 
     template<class Archive> inline void serialize(Archive& ar) {
-        ar(pos, rotation_m, radius, height, radius_tolerance, height_tolerance, attribs);
+        ar(pos, rotation_m, radius, height, radius_tolerance, height_tolerance, z_angle, attribs);
     }
 };
 
@@ -315,10 +329,6 @@ enum class ModelVolumeType : int {
     SUPPORT_BLOCKER,
     SUPPORT_ENFORCER,
 };
-
-enum class ModelObjectCutAttribute : int { KeepUpper, KeepLower, KeepAsParts, FlipUpper, FlipLower, PlaceOnCutUpper, PlaceOnCutLower, CreateDowels, InvalidateCutInfo };
-using ModelObjectCutAttributes = enum_bitmask<ModelObjectCutAttribute>;
-ENABLE_ENUM_BITMASK_OPERATORS(ModelObjectCutAttribute);
 
 // A printable object, possibly having multiple print volumes (each with its own set of parameters and materials),
 // and possibly having multiple modifier volumes, each modifier volume with its set of parameters and materials.
@@ -461,29 +471,12 @@ public:
     size_t materials_count() const;
     size_t facets_count() const;
     size_t parts_count() const;
-    static indexed_triangle_set get_connector_mesh(CutConnectorAttributes connector_attributes);
-    void apply_cut_connectors(const std::string& name);
     // invalidate cut state for this object and its connectors/volumes
     void invalidate_cut();
     // delete volumes which are marked as connector for this object
     void delete_connectors();
     void clone_for_cut(ModelObject **obj);
 
-private:
-    void process_connector_cut(ModelVolume* volume, const Transform3d& instance_matrix, const Transform3d& cut_matrix,
-                               ModelObjectCutAttributes attributes, ModelObject* upper, ModelObject* lower,
-                               std::vector<ModelObject*>& dowels);
-    void process_modifier_cut(ModelVolume* volume, const Transform3d& instance_matrix, const Transform3d& inverse_cut_matrix,
-                              ModelObjectCutAttributes attributes, ModelObject* upper, ModelObject* lower);
-    void process_volume_cut(ModelVolume* volume, const Transform3d& instance_matrix, const Transform3d& cut_matrix,
-                            ModelObjectCutAttributes attributes, TriangleMesh& upper_mesh, TriangleMesh& lower_mesh);
-    void process_solid_part_cut(ModelVolume* volume, const Transform3d& instance_matrix, const Transform3d& cut_matrix,
-                                ModelObjectCutAttributes attributes, ModelObject* upper, ModelObject* lower);
-public:
-    static void reset_instance_transformation(ModelObject* object, size_t src_instance_idx, const Transform3d& cut_matrix,
-                                              bool place_on_cut = false, bool flip = false);
-
-    ModelObjectPtrs cut(size_t instance, const Transform3d&cut_matrix, ModelObjectCutAttributes attributes);
     void split(ModelObjectPtrs*new_objects);
     void merge();
     // Support for non-uniform scaling of instances. If an instance is rotated by angles, which are not multiples of ninety degrees,
@@ -777,6 +770,7 @@ public:
     // It contains information about connetors
     struct CutInfo
     {
+        bool                is_from_upper{ true };
         bool                is_connector{ false };
         bool                is_processed{ true };
         CutConnectorType    connector_type{ CutConnectorType::Plug };
@@ -794,12 +788,16 @@ public:
 
         void set_processed() { is_processed = true; }
         void invalidate()    { is_connector = false; }
+        void reset_from_upper() { is_from_upper = true; }
 
         template<class Archive> inline void serialize(Archive& ar) {
             ar(is_connector, is_processed, connector_type, radius_tolerance, height_tolerance);
         }
     };
     CutInfo             cut_info;
+
+    bool                is_from_upper() const    { return cut_info.is_from_upper; }
+    void                reset_from_upper()       { cut_info.reset_from_upper(); }
 
     bool                is_cut_connector() const { return cut_info.is_processed && cut_info.is_connector; }
     void                invalidate_cut_info()    { cut_info.invalidate(); }
@@ -825,12 +823,16 @@ public:
     // List of seam enforcers/blockers.
     FacetsAnnotation    seam_facets;
 
-    // List of mesh facets painted for MMU segmentation.
-    FacetsAnnotation    mmu_segmentation_facets;
+    // List of mesh facets painted for MM segmentation.
+    FacetsAnnotation    mm_segmentation_facets;
 
     // Is set only when volume is Embossed Text type
     // Contain information how to re-create volume
     std::optional<TextConfiguration> text_configuration;
+
+    // Is set only when volume is Embossed Shape
+    // Contain 2d information about embossed shape to be editabled
+    std::optional<EmbossShape> emboss_shape; 
 
     // A parent object owning this modifier volume.
     ModelObject*        get_object() const { return this->object; }
@@ -843,10 +845,10 @@ public:
 	bool                is_support_blocker()    const { return m_type == ModelVolumeType::SUPPORT_BLOCKER; }
 	bool                is_support_modifier()   const { return m_type == ModelVolumeType::SUPPORT_BLOCKER || m_type == ModelVolumeType::SUPPORT_ENFORCER; }
     bool                is_text()               const { return text_configuration.has_value(); }
+    bool                is_svg() const { return emboss_shape.has_value()  && !text_configuration.has_value(); }
     bool                is_the_only_one_part() const; // behave like an object
     t_model_material_id material_id() const { return m_material_id; }
     void                reset_extra_facets();
-    void                apply_tolerance();
     void                set_material_id(t_model_material_id material_id);
     ModelMaterial*      material() const;
     void                set_material(t_model_material_id material_id, const ModelMaterial &material);
@@ -927,12 +929,12 @@ public:
         this->config.set_new_unique_id();
         this->supported_facets.set_new_unique_id();
         this->seam_facets.set_new_unique_id();
-        this->mmu_segmentation_facets.set_new_unique_id();
+        this->mm_segmentation_facets.set_new_unique_id();
     }
 
     bool is_fdm_support_painted() const { return !this->supported_facets.empty(); }
     bool is_seam_painted() const { return !this->seam_facets.empty(); }
-    bool is_mm_painted() const { return !this->mmu_segmentation_facets.empty(); }
+    bool is_mm_painted() const { return !this->mm_segmentation_facets.empty(); }
 
 protected:
 	friend class Print;
@@ -971,11 +973,11 @@ private:
         assert(this->config.id().valid());
         assert(this->supported_facets.id().valid());
         assert(this->seam_facets.id().valid());
-        assert(this->mmu_segmentation_facets.id().valid());
+        assert(this->mm_segmentation_facets.id().valid());
         assert(this->id() != this->config.id());
         assert(this->id() != this->supported_facets.id());
         assert(this->id() != this->seam_facets.id());
-        assert(this->id() != this->mmu_segmentation_facets.id());
+        assert(this->id() != this->mm_segmentation_facets.id());
         return true;
     }
 
@@ -1001,41 +1003,39 @@ private:
         ObjectBase(other),
         name(other.name), source(other.source), m_mesh(other.m_mesh), m_convex_hull(other.m_convex_hull),
         config(other.config), m_type(other.m_type), object(object), m_transformation(other.m_transformation),
-        supported_facets(other.supported_facets), seam_facets(other.seam_facets), mmu_segmentation_facets(other.mmu_segmentation_facets),
-        cut_info(other.cut_info),
-        text_configuration(other.text_configuration)
+        supported_facets(other.supported_facets), seam_facets(other.seam_facets), mm_segmentation_facets(other.mm_segmentation_facets),
+        cut_info(other.cut_info), text_configuration(other.text_configuration), emboss_shape(other.emboss_shape)
     {
 		assert(this->id().valid()); 
         assert(this->config.id().valid()); 
         assert(this->supported_facets.id().valid());
         assert(this->seam_facets.id().valid());
-        assert(this->mmu_segmentation_facets.id().valid());
+        assert(this->mm_segmentation_facets.id().valid());
         assert(this->id() != this->config.id());
         assert(this->id() != this->supported_facets.id());
         assert(this->id() != this->seam_facets.id());
-        assert(this->id() != this->mmu_segmentation_facets.id());
+        assert(this->id() != this->mm_segmentation_facets.id());
 		assert(this->id() == other.id());
         assert(this->config.id() == other.config.id());
         assert(this->supported_facets.id() == other.supported_facets.id());
         assert(this->seam_facets.id() == other.seam_facets.id());
-        assert(this->mmu_segmentation_facets.id() == other.mmu_segmentation_facets.id());
+        assert(this->mm_segmentation_facets.id() == other.mm_segmentation_facets.id());
         this->set_material_id(other.material_id());
     }
     // Providing a new mesh, therefore this volume will get a new unique ID assigned.
     ModelVolume(ModelObject *object, const ModelVolume &other, TriangleMesh &&mesh) :
         name(other.name), source(other.source), config(other.config), object(object), m_mesh(new TriangleMesh(std::move(mesh))), m_type(other.m_type), m_transformation(other.m_transformation),
-        cut_info(other.cut_info),
-        text_configuration(other.text_configuration)
+        cut_info(other.cut_info), text_configuration(other.text_configuration), emboss_shape(other.emboss_shape)
     {
 		assert(this->id().valid()); 
         assert(this->config.id().valid()); 
         assert(this->supported_facets.id().valid());
         assert(this->seam_facets.id().valid());
-        assert(this->mmu_segmentation_facets.id().valid());
+        assert(this->mm_segmentation_facets.id().valid());
         assert(this->id() != this->config.id());
         assert(this->id() != this->supported_facets.id());
         assert(this->id() != this->seam_facets.id());
-        assert(this->id() != this->mmu_segmentation_facets.id());
+        assert(this->id() != this->mm_segmentation_facets.id());
 		assert(this->id() != other.id());
         assert(this->config.id() == other.config.id());
         this->set_material_id(other.material_id());
@@ -1046,11 +1046,11 @@ private:
         assert(this->config.id() != other.config.id()); 
         assert(this->supported_facets.id() != other.supported_facets.id());
         assert(this->seam_facets.id() != other.seam_facets.id());
-        assert(this->mmu_segmentation_facets.id() != other.mmu_segmentation_facets.id());
+        assert(this->mm_segmentation_facets.id() != other.mm_segmentation_facets.id());
         assert(this->id() != this->config.id());
         assert(this->supported_facets.empty());
         assert(this->seam_facets.empty());
-        assert(this->mmu_segmentation_facets.empty());
+        assert(this->mm_segmentation_facets.empty());
     }
 
     ModelVolume& operator=(ModelVolume &rhs) = delete;
@@ -1058,21 +1058,22 @@ private:
 	friend class cereal::access;
 	friend class UndoRedo::StackImpl;
 	// Used for deserialization, therefore no IDs are allocated.
-	ModelVolume() : ObjectBase(-1), config(-1), supported_facets(-1), seam_facets(-1), mmu_segmentation_facets(-1), object(nullptr) {
+	ModelVolume() : ObjectBase(-1), config(-1), supported_facets(-1), seam_facets(-1), mm_segmentation_facets(-1), object(nullptr) {
 		assert(this->id().invalid());
         assert(this->config.id().invalid());
         assert(this->supported_facets.id().invalid());
         assert(this->seam_facets.id().invalid());
-        assert(this->mmu_segmentation_facets.id().invalid());
+        assert(this->mm_segmentation_facets.id().invalid());
 	}
 	template<class Archive> void load(Archive &ar) {
 		bool has_convex_hull;
         ar(name, source, m_mesh, m_type, m_material_id, m_transformation, m_is_splittable, has_convex_hull, cut_info);
         cereal::load_by_value(ar, supported_facets);
         cereal::load_by_value(ar, seam_facets);
-        cereal::load_by_value(ar, mmu_segmentation_facets);
+        cereal::load_by_value(ar, mm_segmentation_facets);
         cereal::load_by_value(ar, config);
         cereal::load(ar, text_configuration);
+        cereal::load(ar, emboss_shape);
 		assert(m_mesh);
 		if (has_convex_hull) {
 			cereal::load_optional(ar, m_convex_hull);
@@ -1087,9 +1088,10 @@ private:
         ar(name, source, m_mesh, m_type, m_material_id, m_transformation, m_is_splittable, has_convex_hull, cut_info);
         cereal::save_by_value(ar, supported_facets);
         cereal::save_by_value(ar, seam_facets);
-        cereal::save_by_value(ar, mmu_segmentation_facets);
+        cereal::save_by_value(ar, mm_segmentation_facets);
         cereal::save_by_value(ar, config);
         cereal::save(ar, text_configuration);
+        cereal::save(ar, emboss_shape);
 		if (has_convex_hull)
 			cereal::save_optional(ar, m_convex_hull);
 	}
@@ -1171,11 +1173,7 @@ public:
 
     bool is_printable() const { return object->printable && printable && (print_volume_state == ModelInstancePVS_Inside); }
 
-    // Getting the input polygon for arrange
-    arrangement::ArrangePolygon get_arrange_polygon() const;
-    
-    // Apply the arrange result on the ModelInstance
-    void apply_arrange_result(const Vec2d& offs, double rotation);
+    void invalidate_object_bounding_box() { object->invalidate_bounding_box(); }
 
 protected:
     friend class Print;

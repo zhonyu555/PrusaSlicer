@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral, Enrico Turri @enricoturri1966
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "GUI_ObjectSettings.hpp"
 #include "GUI_ObjectList.hpp"
 #include "GUI_Factories.hpp"
@@ -257,8 +261,8 @@ void ObjectSettings::update_config_values(ModelConfig* config)
     }
 
     main_config.apply(config->get(), true);
-    printer_technology == ptFFF  ?  config_manipulation.update_print_fff_config(&main_config) :
-                                    config_manipulation.update_print_sla_config(&main_config) ;
+    if (printer_technology == ptFFF) 
+        config_manipulation.update_print_fff_config(&main_config);
 
     printer_technology == ptFFF  ?  config_manipulation.toggle_print_fff_options(&main_config) :
                                     config_manipulation.toggle_print_sla_options(&main_config) ;

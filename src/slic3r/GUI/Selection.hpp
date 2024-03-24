@@ -1,3 +1,7 @@
+///|/ Copyright (c) Prusa Research 2019 - 2023 Enrico Turri @enricoturri1966, Oleksandra Iushchenko @YuSanka, Filip Sykala @Jony01, Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_Selection_hpp_
 #define slic3r_GUI_Selection_hpp_
 
@@ -14,6 +18,7 @@ class Shader;
 class Model;
 class ModelObject;
 class ModelVolume;
+class ObjectID;
 class GLVolume;
 class GLArrow;
 class GLCurvedArrow;
@@ -57,46 +62,15 @@ public:
 private:
     struct VolumeCache
     {
-    private:
-        struct TransformCache
-        {
-            Vec3d position{ Vec3d::Zero() };
-            Vec3d rotation{ Vec3d::Zero() };
-            Vec3d scaling_factor{ Vec3d::Ones() };
-            Vec3d mirror{ Vec3d::Ones() };
-            Transform3d rotation_matrix{ Transform3d::Identity() };
-            Transform3d scale_matrix{ Transform3d::Identity() };
-            Transform3d mirror_matrix{ Transform3d::Identity() };
-            Transform3d full_matrix{ Transform3d::Identity() };
-            Geometry::Transformation transform;
-
-            TransformCache() = default;
-            explicit TransformCache(const Geometry::Transformation& transform);
-        };
-
-        TransformCache m_volume;
-        TransformCache m_instance;
-
-    public:
         VolumeCache() = default;
         VolumeCache(const Geometry::Transformation& volume_transform, const Geometry::Transformation& instance_transform);
 
-        const Vec3d& get_volume_position() const { return m_volume.position; }
-        const Transform3d& get_volume_rotation_matrix() const { return m_volume.rotation_matrix; }
-        const Transform3d& get_volume_scale_matrix() const { return m_volume.scale_matrix; }
-        const Transform3d& get_volume_mirror_matrix() const { return m_volume.mirror_matrix; }
-        const Transform3d& get_volume_full_matrix() const { return m_volume.full_matrix; }
-        const Geometry::Transformation& get_volume_transform() const { return m_volume.transform; }
+        const Geometry::Transformation& get_volume_transform() const { return m_volume; }
+        const Geometry::Transformation& get_instance_transform() const { return m_instance; }
 
-        const Vec3d& get_instance_position() const { return m_instance.position; }
-        const Vec3d& get_instance_rotation() const { return m_instance.rotation; }
-        const Vec3d& get_instance_scaling_factor() const { return m_instance.scaling_factor; }
-        const Vec3d& get_instance_mirror() const { return m_instance.mirror; }
-        const Transform3d& get_instance_rotation_matrix() const { return m_instance.rotation_matrix; }
-        const Transform3d& get_instance_scale_matrix() const { return m_instance.scale_matrix; }
-        const Transform3d& get_instance_mirror_matrix() const { return m_instance.mirror_matrix; }
-        const Transform3d& get_instance_full_matrix() const { return m_instance.full_matrix; }
-        const Geometry::Transformation& get_instance_transform() const { return m_instance.transform; }
+    private:
+        Geometry::Transformation m_volume;
+        Geometry::Transformation m_instance;
     };
 
 public:
@@ -141,6 +115,7 @@ private:
         ObjectIdxsToInstanceIdxsMap content;
         // List of ids of the volumes which are sinking when starting dragging
         std::vector<unsigned int> sinking_volumes;
+        Vec3d rotation_pivot;
     };
 
     // Volumes owned by GLCanvas3D.
@@ -176,6 +151,8 @@ private:
     // Bounding box aligned to the axis of the currently selected reference system (World/Object/Part)
     // and transform to place and orient it in world coordinates
     std::optional<std::pair<BoundingBoxf3, Transform3d>> m_bounding_box_in_current_reference_system;
+
+    std::optional<std::pair<Vec3d, double>> m_bounding_sphere;
 
 #if ENABLE_RENDER_SELECTION_CENTER
     GLModel m_vbo_sphere;
@@ -322,6 +299,9 @@ public:
     // Returns the screen space bounding box
     BoundingBoxf get_screen_space_bounding_box();
 
+    // Returns the bounding sphere: first = center, second = radius
+    const std::pair<Vec3d, double> get_bounding_sphere() const;
+
     void setup_cache();
 
     void translate(const Vec3d& displacement, TransformationType transformation_type);
@@ -387,6 +367,7 @@ private:
         m_full_unscaled_instance_bounding_box.reset(); m_full_scaled_instance_bounding_box.reset();
         m_full_unscaled_instance_local_bounding_box.reset();
         m_bounding_box_in_current_reference_system.reset();
+        m_bounding_sphere.reset();
     }
     void render_synchronized_volumes();
     void render_bounding_box(const BoundingBoxf3& box, const Transform3d& trafo, const ColorRGB& color);
@@ -423,8 +404,11 @@ private:
         const Transform3d& transform, const Vec3d& world_pivot);
 };
 
-ModelVolume *get_selected_volume(const Selection &selection);
+ModelVolume    *get_selected_volume   (const Selection &selection);
 const GLVolume *get_selected_gl_volume(const Selection &selection);
+
+ModelVolume    *get_selected_volume   (const ObjectID &volume_id, const Selection &selection);
+ModelVolume    *get_volume            (const ObjectID &volume_id, const Selection &selection);
 
 } // namespace GUI
 } // namespace Slic3r

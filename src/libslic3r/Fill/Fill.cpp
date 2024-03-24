@@ -1,3 +1,12 @@
+///|/ Copyright (c) Prusa Research 2016 - 2023 Lukáš Matěna @lukasmatena, Vojtěch Bubník @bubnikv, Pavel Mikuš @Godrak, Lukáš Hejl @hejllukas
+///|/ Copyright (c) SuperSlicer 2023 Remi Durand @supermerill
+///|/ Copyright (c) 2016 Sakari Kapanen @Flannelhead
+///|/ Copyright (c) Slic3r 2011 - 2015 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2013 Mark Hindess
+///|/ Copyright (c) 2011 Michael Moon
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include <assert.h>
 #include <stdio.h>
 #include <memory>
@@ -534,12 +543,11 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
 		        	flow_mm3_per_mm = new_flow.mm3_per_mm();
 		        	flow_width      = new_flow.width();
 		        }
-		        // Save into layer.
-				ExtrusionEntityCollection* eec = nullptr;
-				auto fill_begin = uint32_t(layerm.fills().size());
-		        layerm.m_fills.entities.push_back(eec = new ExtrusionEntityCollection());
-		        // Only concentric fills are not sorted.
-		        eec->no_sort = f->no_sort();
+                // Save into layer.
+                ExtrusionEntityCollection *eec        = new ExtrusionEntityCollection();
+                auto                       fill_begin = uint32_t(layerm.fills().size());
+                // Only concentric fills are not sorted.
+                eec->no_sort = f->no_sort();
                 if (params.use_arachne) {
                     for (const ThickPolyline &thick_polyline : thick_polylines) {
                         Flow new_flow = surface_fill.params.flow.with_spacing(float(f->spacing));
@@ -554,12 +562,19 @@ void Layer::make_fills(FillAdaptive::Octree* adaptive_fill_octree, FillAdaptive:
                         }
                     }
 
+                    if (!eec->empty())
+                        layerm.m_fills.entities.push_back(eec);
+                    else
+                        delete eec;
+
                     thick_polylines.clear();
                 } else {
                     extrusion_entities_append_paths(
                         eec->entities, std::move(polylines),
-                        surface_fill.params.extrusion_role,
-                        flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height());
+						ExtrusionAttributes{ surface_fill.params.extrusion_role,
+							ExtrusionFlow{ flow_mm3_per_mm, float(flow_width), surface_fill.params.flow.height() } 
+						});
+                    layerm.m_fills.entities.push_back(eec);
                 }
                 insert_fills_into_islands(*this, uint32_t(surface_fill.region_id), fill_begin, uint32_t(layerm.fills().size()));
 		    }
@@ -904,8 +919,9 @@ void Layer::make_ironing()
 				eec->no_sort = true;
 		        extrusion_entities_append_paths(
 		            eec->entities, std::move(polylines),
-					ExtrusionRole::Ironing,
-		            flow_mm3_per_mm, extrusion_width, float(extrusion_height));
+					ExtrusionAttributes{ ExtrusionRole::Ironing,
+						ExtrusionFlow{ flow_mm3_per_mm, extrusion_width, float(extrusion_height) }
+					});
 				insert_fills_into_islands(*this, ironing_params.region_id, fill_begin, uint32_t(ironing_params.layerm->fills().size()));
 		    }
 		}

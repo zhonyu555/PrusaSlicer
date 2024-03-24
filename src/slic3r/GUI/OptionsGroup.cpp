@@ -1,3 +1,15 @@
+///|/ Copyright (c) Prusa Research 2017 - 2023 Oleksandra Iushchenko @YuSanka, Vojtěch Bubník @bubnikv, Lukáš Hejl @hejllukas, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Vojtěch Král @vojtechkral, Enrico Turri @enricoturri1966
+///|/ Copyright (c) 2018 Martin Loidl @LoidlM
+///|/
+///|/ ported from lib/Slic3r/GUI/OptionsGroup.pm:
+///|/ Copyright (c) Prusa Research 2016 - 2018 Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka
+///|/ Copyright (c) Slic3r 2011 - 2015 Alessandro Ranellucci @alranel
+///|/ Copyright (c) 2013 Scott Penrose
+///|/ Copyright (c) 2012 Henrik Brix Andersen @henrikbrixandersen
+///|/ Copyright (c) 2011 Richard Goodwin
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #include "OptionsGroup.hpp"
 #include "ConfigExceptions.hpp"
 #include "Plater.hpp"
@@ -95,6 +107,14 @@ const t_field& OptionsGroup::build_field(const t_config_option_key& id, const Co
 				this->on_kill_focus(opt_id);
 	};
     field->m_parent = parent();
+
+    if (edit_custom_gcode && opt.is_code) {
+        field->m_fn_edit_value = [this](std::string opt_id) {
+            if (!m_disabled)
+                this->edit_custom_gcode(opt_id);
+        };
+        field->set_edit_tooltip(_L("Edit Custom G-code"));
+    }
 
 	field->m_back_to_initial_value = [this](std::string opt_id) {
 		if (!m_disabled)
@@ -268,6 +288,7 @@ void OptionsGroup::activate_line(Line& line)
 
     if (!custom_ctrl && m_use_custom_ctrl) {
         custom_ctrl = new OG_CustomCtrl(is_legend_line || !staticbox ? this->parent() : static_cast<wxWindow*>(this->stb), this);
+        wxGetApp().UpdateDarkUI(custom_ctrl);
 		if (is_legend_line)
 			sizer->Add(custom_ctrl, 0, wxEXPAND | wxLEFT, wxOSX ? 0 : 10);
 		else
@@ -846,6 +867,16 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
     {
         switch (opt->type)
         {
+        case coFloat:
+            if (config.option(opt_key)->is_nil())
+                ret = _L("N/A");
+            else
+                ret = double_to_string(config.option<ConfigOptionFloatNullable>(opt_key)->value);
+
+            break;
+        case coInt:
+            ret = config.option<ConfigOptionIntNullable>(opt_key)->value;
+            break;
         case coPercents:
         case coFloats: {
             if (config.option(opt_key)->is_nil())
@@ -904,9 +935,10 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 		ret = double_to_string(val);
 		}
 		break;
-	case coString:
-		ret = from_u8(config.opt_string(opt_key));
-		break;
+	case coString: {
+        ret = from_u8(config.opt_string(opt_key));
+        break;
+    }
 	case coStrings:
 		if (opt_key == "compatible_printers" || opt_key == "compatible_prints" || opt_key == "gcode_substitutions") {
 			ret = config.option<ConfigOptionStrings>(opt_key)->values;
@@ -921,8 +953,8 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 		else if (opt->gui_flags == "serialized") {
 			std::vector<std::string> values = config.option<ConfigOptionStrings>(opt_key)->values;
 			if (!values.empty() && !values[0].empty())
-				for (auto el : values)
-					text_value += el + ";";
+				for (const std::string& el : values)
+					text_value += from_u8(el) + ";";
 			ret = text_value;
 		}
 		else
@@ -946,8 +978,6 @@ boost::any ConfigOptionsGroup::get_config_value(const DynamicPrintConfig& config
 	case coPoints:
 		if (opt_key == "bed_shape")
 			ret = config.option<ConfigOptionPoints>(opt_key)->values;
-        else if (opt_key == "thumbnails")
-            ret = get_thumbnails_string(config.option<ConfigOptionPoints>(opt_key)->values);
 		else
 			ret = config.option<ConfigOptionPoints>(opt_key)->get_at(idx);
 		break;
@@ -1002,7 +1032,7 @@ wxString OptionsGroup::get_url(const std::string& path_end)
     if (path_end.empty())
         return wxEmptyString;
 
-    wxString language = get_app_config()->get("translation_language");
+    wxString language = wxGetApp().current_language_code_safe();
     wxString lang_marker = language.IsEmpty() ? "en" : language.BeforeFirst('_');
 
     return wxString("https://help.prusa3d.com/") + lang_marker + wxString("/article/" + path_end);

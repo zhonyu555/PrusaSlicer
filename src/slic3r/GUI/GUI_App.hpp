@@ -1,3 +1,8 @@
+///|/ Copyright (c) Prusa Research 2018 - 2023 Vojtěch Bubník @bubnikv, Oleksandra Iushchenko @YuSanka, Tomáš Mészáros @tamasmeszaros, David Kocík @kocikdav, Lukáš Matěna @lukasmatena, Enrico Turri @enricoturri1966, Filip Sykala @Jony01, Lukáš Hejl @hejllukas, Vojtěch Král @vojtechkral
+///|/ Copyright (c) 2021 Li Jiang
+///|/
+///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
+///|/
 #ifndef slic3r_GUI_App_hpp_
 #define slic3r_GUI_App_hpp_
 
@@ -78,13 +83,9 @@ enum FileType
     FT_SIZE,
 };
 
-#if ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
-extern wxString file_wildcards(FileType file_type);
-#else
-extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = std::string{});
-#endif // ENABLE_ALTERNATIVE_FILE_WILDCARDS_GENERATOR
+extern wxString file_wildcards(FileType file_type, const std::string &custom_extension = {});
 
-wxString sla_wildcards(const char *formatid);
+wxString sla_wildcards(const char *formatid, const std::string& custom_extension);
 
 enum ConfigMenuIDs {
     ConfigMenuWizard,
@@ -100,6 +101,7 @@ enum ConfigMenuIDs {
     ConfigMenuLanguage,
     ConfigMenuFlashFirmware,
     ConfigMenuCnt,
+    ConfigMenuWifiConfigFile
 };
 
 class Tab;
@@ -212,6 +214,7 @@ public:
     void            UpdateDVCDarkUI(wxDataViewCtrl* dvc, bool highlited = false);
     // update color mode for panel including all static texts controls
     void            UpdateAllStaticTextDarkUI(wxWindow* parent);
+    void            SetWindowVariantForButton(wxButton* btn);
     void            init_fonts();
 	void            update_fonts(const MainFrame *main_frame = nullptr);
     void            set_label_clr_modified(const wxColour& clr);
@@ -221,6 +224,8 @@ public:
     const wxColour& get_label_clr_sys()     { return m_color_label_sys; }
     const wxColour& get_label_clr_default() { return m_color_label_default; }
     const wxColour& get_window_default_clr(){ return m_color_window_default; }
+
+    const std::string       get_html_bg_color(wxWindow* html_parent);
 
     const std::string&      get_mode_btn_color(int mode_id);
     std::vector<wxColour>   get_mode_palette();
@@ -244,7 +249,9 @@ public:
     const wxFont&   link_font()             { return m_link_font; }
     int             em_unit() const         { return m_em_unit; }
     bool            tabs_as_menu() const;
-    wxSize          get_min_size() const;
+    bool            suppress_round_corners() const;
+    wxSize          get_min_size(wxWindow* display_win) const;
+    int             get_max_font_pt_size();
     float           toolbar_icon_scale(const bool is_limited = false) const;
     void            set_auto_toolbar_icon_scale(float scale) const;
     void            check_printer_presets();
@@ -365,12 +372,15 @@ public:
     void            associate_3mf_files();
     void            associate_stl_files();
     void            associate_gcode_files();
+    void            associate_bgcode_files();
 #endif // __WXMSW__
 
 
     // URL download - PrusaSlicer gets system call to open prusaslicer:// URL which should contain address of download
     void            start_download(std::string url);
 
+    void            open_wifi_config_dialog(bool forced, const wxString& drive_path = {});
+    bool            get_wifi_config_dialog_shown() const { return m_wifi_config_dialog_shown; }
 private:
     bool            on_init_inner();
 	void            init_app_config();
@@ -392,8 +402,8 @@ private:
     // inititate read of version file online in separate thread
     void            app_version_check(bool from_user);
 
-    bool            m_datadir_redefined { false }; 
-
+    bool                    m_datadir_redefined { false }; 
+    bool                    m_wifi_config_dialog_shown { false };
 };
 
 DECLARE_APP(GUI_App)
