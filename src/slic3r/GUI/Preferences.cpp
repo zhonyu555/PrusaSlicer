@@ -134,7 +134,7 @@ void PreferencesDialog::show(const std::string& highlight_opt_key /*= std::strin
 
 	if (wxGetApp().is_editor()) {
 		auto app_config = get_app_config();
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
 		downloader->set_path_name(app_config->get("url_downloader_dest"));
 		downloader->allow(!app_config->has("downloader_url_registered") || app_config->get_bool("downloader_url_registered"));
 #endif
@@ -644,7 +644,7 @@ void PreferencesDialog::build()
 			//L("If enabled, the descriptions of configuration parameters in settings tabs wouldn't work as hyperlinks. "
 			//  "If disabled, the descriptions of configuration parameters in settings tabs will work as hyperlinks."),
 			app_config->get_bool("suppress_hyperlinks"));
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
 		append_bool_option(m_optgroup_other, "downloader_url_registered",
 			L("Allow downloads from Printables.com"),
 			L("If enabled, PrusaSlicer will be allowed to download from Printables.com"),
@@ -652,7 +652,7 @@ void PreferencesDialog::build()
 #endif
 
 		activate_options_tab(m_optgroup_other);
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
 		create_downloader_path_sizer();
 #endif
 		create_settings_font_widget();
@@ -759,7 +759,7 @@ void PreferencesDialog::update_ctrls_alignment()
 
 void PreferencesDialog::accept(wxEvent&)
 {
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
 	if(wxGetApp().is_editor()) {
 		if (const auto it = m_values.find("downloader_url_registered"); it != m_values.end())
 			downloader->allow(it->second == "1");

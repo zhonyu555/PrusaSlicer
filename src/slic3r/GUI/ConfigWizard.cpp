@@ -2407,7 +2407,7 @@ void ConfigWizard::priv::load_pages()
     btn_finish->Enable(any_fff_selected || any_sla_selected || custom_printer_selected || custom_printer_in_bundle);
 
     index->add_page(page_update);
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
     index->add_page(page_downloader);
 #endif
     index->add_page(page_reload_from_disk);
@@ -2776,7 +2776,7 @@ void ConfigWizard::priv::on_3rdparty_install(const VendorProfile *vendor, bool i
 bool ConfigWizard::priv::on_bnt_finish()
 {
     wxBusyCursor wait;
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
     if (!page_downloader->on_finish_downloader()) {
         index->go_to(page_downloader);
         return false;
@@ -3405,7 +3405,7 @@ ConfigWizard::ConfigWizard(wxWindow *parent)
 
     
     p->add_page(p->page_update   = new PageUpdate(this));
-#if !defined(__linux__) || (defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION))
+#if !(defined(__linux__) && !defined(SLIC3R_DESKTOP_INTEGRATION))
     p->add_page(p->page_downloader = new PageDownloader(this));
 #endif
     p->add_page(p->page_reload_from_disk = new PageReloadFromDisk(this));
