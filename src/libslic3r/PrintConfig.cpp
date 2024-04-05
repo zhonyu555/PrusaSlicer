@@ -587,7 +587,8 @@ void PrintConfigDef::init_fff_params()
     auto overhang_speed_setting_description = L("Overhang size is expressed as a percentage of overlap of the extrusion with the previous layer: "
                         "100% would be full overlap (no overhang), while 0% represents full overhang (floating extrusion, bridge). "
                         "Speeds for overhang sizes in between are calculated via linear interpolation. "
-                        "If set as percentage, the speed is calculated over the external perimeter speed.");
+                        "If set as percentage, the speed is calculated over the external perimeter speed. "
+                        "Note that the speeds generated to gcode will never exceed the max volumetric speed value.");
 
     def             = this->add("overhang_speed_0", coFloatOrPercent);
     def->label      = L("speed for 0% overlap (bridge)");
@@ -1092,6 +1093,23 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats { 0. });
 
+    def = this->add("filament_stamping_loading_speed", coFloats);
+    def->label = L("Stamping loading speed");
+    def->tooltip = L("Speed used for stamping.");
+    def->sidetext = L("mm/s");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloats { 20. });
+
+    def = this->add("filament_stamping_distance", coFloats);
+    def->label = L("Stamping distance measured from the center of the cooling tube");
+    def->tooltip = L("If set to nonzero value, filament is moved toward the nozzle between the individual cooling moves (\"stamping\"). "
+                     "This option configures how long this movement should be before the filament is retracted again.");
+    def->sidetext = L("mm");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloats { 0. });
+
     def = this->add("filament_cooling_moves", coInts);
     def->label = L("Number of cooling moves");
     def->tooltip = L("Filament is cooled by being moved back and forth in the "
@@ -1127,6 +1145,16 @@ void PrintConfigDef::init_fff_params()
     def->min = 0;
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloats { 3.4 });
+
+    def = this->add("filament_purge_multiplier", coPercents);
+    def->label = L("Purge volume multiplier");
+    def->tooltip = L("Purging volume on the wipe tower is determined by 'multimaterial_purging' in Printer Settings. "
+                     "This option allows to modify the volume on filament level. "
+                     "Note that the project can override this by setting project-specific values.");
+    def->sidetext = L("%");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionPercents { 100 });
 
     def = this->add("filament_load_time", coFloats);
     def->label = L("Filament load time");
@@ -1540,6 +1568,15 @@ void PrintConfigDef::init_fff_params()
     def->label = L("Top solid infill");
     def->tooltip = L("This is the acceleration your printer will use for top solid infill. Set zero to use "
                      "the value for solid infill.");
+    def->sidetext = L("mm/s²");
+    def->min = 0;
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionFloat(0));
+
+    def = this->add("wipe_tower_acceleration", coFloat);
+    def->label = L("Wipe tower");
+    def->tooltip = L("This is the acceleration your printer will use for wipe tower. Set zero to disable "
+                     "acceleration control for the wipe tower.");
     def->sidetext = L("mm/s²");
     def->min = 0;
     def->mode = comExpert;
@@ -2110,6 +2147,14 @@ void PrintConfigDef::init_fff_params()
     def->sidetext = L("mm");
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionFloat(-2.));
+
+    def = this->add("multimaterial_purging", coFloat);
+    def->label = L("Purging volume");
+    def->tooltip = L("Determines purging volume on the wipe tower. This can be modified in Filament Settings "
+                     "('filament_purge_multiplier') or overridden using project-specific settings.");
+    def->sidetext = L("mm³");
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionFloat(140.));
 
     def = this->add("perimeter_acceleration", coFloat);
     def->label = L("Perimeters");
@@ -3260,13 +3305,6 @@ void PrintConfigDef::init_fff_params()
     def->mode = comAdvanced;
     def->set_default_value(new ConfigOptionBool(false));
 
-    def = this->add("wiping_volumes_extruders", coFloats);
-    def->label = L("Purging volumes - load/unload volumes");
-    def->tooltip = L("This vector saves required volumes to change from/to each tool used on the "
-                     "wipe tower. These values are used to simplify creation of the full purging "
-                     "volumes below.");
-    def->set_default_value(new ConfigOptionFloats { 70., 70., 70., 70., 70., 70., 70., 70., 70., 70.  });
-
     def = this->add("wiping_volumes_matrix", coFloats);
     def->label = L("Purging volumes - matrix");
     def->tooltip = L("This matrix describes volumes (in cubic milimetres) required to purge the"
@@ -3276,6 +3314,11 @@ void PrintConfigDef::init_fff_params()
                                                     140., 140.,   0., 140., 140.,
                                                     140., 140., 140.,   0., 140.,
                                                     140., 140., 140., 140.,   0. });
+
+    def = this->add("wiping_volumes_use_custom_matrix", coBool);
+    def->label = "";
+    def->tooltip = "";
+    def->set_default_value(new ConfigOptionBool{ false });
 
     def = this->add("wipe_tower_x", coFloat);
     def->label = L("Position X");
@@ -3326,6 +3369,16 @@ void PrintConfigDef::init_fff_params()
     def = this->add("wipe_tower_extra_spacing", coPercent);
     def->label = L("Wipe tower purge lines spacing");
     def->tooltip = L("Spacing of purge lines on the wipe tower.");
+    def->sidetext = L("%");
+    def->mode = comExpert;
+    def->min = 100.;
+    def->max = 300.;
+    def->set_default_value(new ConfigOptionPercent(100.));
+
+    def = this->add("wipe_tower_extra_flow", coPercent);
+    def->label = L("Extra flow for purging");
+    def->tooltip = L("Extra flow used for the purging lines on the wipe tower. This makes the purging lines thicker or narrower "
+                     "than they normally would be. The spacing is adjusted automatically.");
     def->sidetext = L("%");
     def->mode = comExpert;
     def->min = 100.;
@@ -4301,6 +4354,35 @@ void PrintConfigDef::init_sla_params()
     def->min = float(SCALING_FACTOR);
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionFloat(0.001));
+
+    // Declare retract values for material profile, overriding the print and printer profiles.
+    for (const char* opt_key : {
+        // float
+        "support_head_front_diameter", "branchingsupport_head_front_diameter", 
+        "support_head_penetration", "branchingsupport_head_penetration", 
+        "support_head_width", "branchingsupport_head_width",
+        "support_pillar_diameter", "branchingsupport_pillar_diameter",
+        "relative_correction_x", "relative_correction_y", "relative_correction_z", 
+        "elefant_foot_compensation",
+        // int
+        "support_points_density_relative"
+        }) {
+        auto it_opt = options.find(opt_key);
+        assert(it_opt != options.end());
+        def = this->add_nullable(std::string("material_ow_") + opt_key, it_opt->second.type);
+        def->label = it_opt->second.label;
+        def->full_label = it_opt->second.full_label;
+        def->tooltip = it_opt->second.tooltip;
+        def->sidetext = it_opt->second.sidetext;
+        def->min  = it_opt->second.min;
+        def->max  = it_opt->second.max;
+        def->mode = it_opt->second.mode;
+        switch (def->type) {
+        case coFloat: def->set_default_value(new ConfigOptionFloatNullable{ it_opt->second.default_value->getFloat() }); break;
+        case coInt:   def->set_default_value(new ConfigOptionIntNullable{ it_opt->second.default_value->getInt() }); break;
+        default: assert(false);
+        }
+    }
 }
 
 // Ignore the following obsolete configuration keys:
@@ -4321,7 +4403,8 @@ static std::set<std::string> PrintConfigDef_ignore = {
     "ensure_vertical_shell_thickness",
     // Disabled in 2.6.0-alpha6, this option is problematic
     "infill_only_where_needed",
-    "gcode_binary" // Introduced in 2.7.0-alpha1, removed in 2.7.1 (replaced by binary_gcode).
+    "gcode_binary", // Introduced in 2.7.0-alpha1, removed in 2.7.1 (replaced by binary_gcode).
+    "wiping_volumes_extruders" // Removed in 2.7.3-alpha1.
 };
 
 void PrintConfigDef::handle_legacy(t_config_option_key &opt_key, std::string &value)
@@ -4452,6 +4535,26 @@ void PrintConfigDef::handle_legacy_composite(DynamicPrintConfig &config)
 
             config.set_key_value("thumbnails", new ConfigOptionString(thumbnails_str));
         }
+    }
+
+    if (config.has("wiping_volumes_matrix") && !config.has("wiping_volumes_use_custom_matrix")) {
+        // This is apparently some pre-2.7.3 config, where the wiping_volumes_matrix was always used.
+        // The 2.7.3 introduced an option to use defaults derived from config. In case the matrix
+        // contains only default values, switch it to default behaviour. The default values
+        // were zeros on the diagonal and 140 otherwise.
+        std::vector<double> matrix = config.opt<ConfigOptionFloats>("wiping_volumes_matrix")->values;
+        int num_of_extruders = int(std::sqrt(matrix.size()) + 0.5);
+        int i = -1;
+        bool custom = false;
+        for (int j = 0; j < int(matrix.size()); ++j) {
+            if (j % num_of_extruders == 0)
+                ++i;
+            if (i != j % num_of_extruders && !is_approx(matrix[j], 140.)) {
+                custom = true;
+                break;
+            }
+        }
+        config.set_key_value("wiping_volumes_use_custom_matrix", new ConfigOptionBool(custom));
     }
 }
 
@@ -4889,9 +4992,15 @@ CLIActionsConfigDef::CLIActionsConfigDef()
     def->cli = "opengl-version";
     def->set_default_value(new ConfigOptionString());
 
+    def = this->add("opengl-compatibility", coBool);
+    def->label = L("OpenGL compatibility profile");
+    def->tooltip = L("Enable OpenGL compatibility profile");
+    def->cli = "opengl-compatibility";
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("opengl-debug", coBool);
     def->label = L("OpenGL debug output");
-    def->tooltip = L("Activate OpenGL debug output on graphic cards which support it");
+    def->tooltip = L("Activate OpenGL debug output on graphic cards which support it (OpenGL 4.3 or higher)");
     def->cli = "opengl-debug";
     def->set_default_value(new ConfigOptionBool(false));
 #endif // ENABLE_GL_CORE_PROFILE
@@ -5065,6 +5174,11 @@ CLIMiscConfigDef::CLIMiscConfigDef()
     def = this->add("datadir", coString);
     def->label = L("Data directory");
     def->tooltip = L("Load and store settings at the given directory. This is useful for maintaining different profiles or including configurations from a network storage.");
+
+    def = this->add("threads", coInt);
+    def->label = L("Maximum number of threads");
+    def->tooltip = L("Sets the maximum number of threads the slicing process will use. If not defined, it will be decided automatically.");
+    def->min = 1;
 
     def = this->add("loglevel", coInt);
     def->label = L("Logging level");
@@ -5357,6 +5471,8 @@ static std::map<t_custom_gcode_key, t_config_option_keys> s_CustomGcodeSpecificP
     {"before_layer_gcode",      {"layer_num", "layer_z", "max_layer_z"}},
     {"layer_gcode",             {"layer_num", "layer_z", "max_layer_z"}},
     {"toolchange_gcode",        {"layer_num", "layer_z", "max_layer_z", "previous_extruder", "next_extruder", "toolchange_z"}},
+    {"color_change_gcode",      {"color_change_extruder"}},
+    {"pause_print_gcode",       {"color_change_extruder"}},
 };
 
 const std::map<t_custom_gcode_key, t_config_option_keys>& custom_gcode_specific_placeholders()
@@ -5395,6 +5511,11 @@ CustomGcodeSpecificConfigDef::CustomGcodeSpecificConfigDef()
     def = this->add("toolchange_z", coFloat);
     def->label = L("Toolchange Z");
     def->tooltip = L("Height above the print bed when the toolchange takes place. Usually the same as layer_z, but can be different.");
+
+    def = this->add("color_change_extruder", coInt);
+    // TRN: This is a label in custom g-code editor dialog, belonging to color_change_extruder. Denoted index of the extruder for which color change is performed.
+    def->label = L("Color change extruder");
+    def->tooltip = L("Index of the extruder for which color change will be performed. The index is zero based (first extruder has index 0).");
 }
 
 const CustomGcodeSpecificConfigDef custom_gcode_specific_config_def;

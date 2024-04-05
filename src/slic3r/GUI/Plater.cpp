@@ -518,19 +518,22 @@ FreqChangedParams::FreqChangedParams(wxWindow* parent) :
         sizer->Add(m_wiping_dialog_button, 0, wxALIGN_CENTER_VERTICAL);
         m_wiping_dialog_button->Bind(wxEVT_BUTTON, ([parent](wxCommandEvent& e)
         {
-            auto &project_config = wxGetApp().preset_bundle->project_config;
+            PresetBundle* preset_bundle = wxGetApp().preset_bundle;
+            DynamicPrintConfig& project_config = preset_bundle->project_config;
+            const bool use_custom_matrix = (project_config.option<ConfigOptionBool>("wiping_volumes_use_custom_matrix"))->value;
             const std::vector<double> &init_matrix = (project_config.option<ConfigOptionFloats>("wiping_volumes_matrix"))->values;
-            const std::vector<double> &init_extruders = (project_config.option<ConfigOptionFloats>("wiping_volumes_extruders"))->values;
-
             const std::vector<std::string> extruder_colours = wxGetApp().plater()->get_extruder_colors_from_plater_config();
 
-            WipingDialog dlg(parent, cast<float>(init_matrix), cast<float>(init_extruders), extruder_colours);
+            // Extract the relevant config options, even values from possibly modified presets.
+            const double default_purge = static_cast<const ConfigOptionFloat*>(preset_bundle->printers.get_edited_preset().config.option("multimaterial_purging"))->value;
+            std::vector<double> filament_purging_multipliers = preset_bundle->get_config_options_for_current_filaments<ConfigOptionPercents>("filament_purge_multiplier");
+
+            WipingDialog dlg(parent, cast<float>(init_matrix), extruder_colours, default_purge, filament_purging_multipliers, use_custom_matrix);
 
             if (dlg.ShowModal() == wxID_OK) {
                 std::vector<float> matrix = dlg.get_matrix();
-                std::vector<float> extruders = dlg.get_extruders();
                 (project_config.option<ConfigOptionFloats>("wiping_volumes_matrix"))->values = std::vector<double>(matrix.begin(), matrix.end());
-                (project_config.option<ConfigOptionFloats>("wiping_volumes_extruders"))->values = std::vector<double>(extruders.begin(), extruders.end());
+                (project_config.option<ConfigOptionBool>("wiping_volumes_use_custom_matrix"))->value = dlg.get_use_custom_matrix();
                 // Update Project dirty state, update application title bar.
                 wxGetApp().plater()->update_project_dirty_from_presets();
                 wxPostEvent(parent, SimpleEvent(EVT_SCHEDULE_BACKGROUND_PROCESS, parent));
@@ -753,10 +756,38 @@ static wxRichToolTipPopup* get_rtt_popup(wxButton* btn)
     return nullptr;
 }
 
+// Help function to find and check if some combobox is dropped down and then dismiss it
+static bool found_and_dismiss_shown_dropdown(wxWindow* win)
+{
+    auto children = win->GetChildren(); 
+    if (children.IsEmpty()) {
+        if (auto dd = dynamic_cast<DropDown*>(win); dd && dd->IsShown()) {
+            dd->CallDismissAndNotify();
+            return true;
+        }
+    }
+
+    for (auto child : children) {
+        if (found_and_dismiss_shown_dropdown(child))
+            return true;
+    }
+    return false;
+}
+
 void Sidebar::priv::show_rich_tip(const wxString& tooltip, wxButton* btn)
 {   
     if (tooltip.IsEmpty())
         return;
+
+    // Currently state (propably wxWidgets issue) : 
+    // When second wxPopupTransientWindow is popped up, then first wxPopupTransientWindow doesn't receive EVT_DISMISS and stay on the top. 
+    // New comboboxes use wxPopupTransientWindow as DropDown now
+    // That is why DropDown stay on top, when we show rich tooltip for btn.
+    // (see https://github.com/prusa3d/PrusaSlicer/issues/11988)
+
+    // So, check the combo boxes and close them if necessary before showing the rich tip.
+    found_and_dismiss_shown_dropdown(scrolled);
+
     wxRichToolTip tip(tooltip, "");
     tip.SetIcon(wxICON_NONE);
     tip.SetTipKind(wxTipKind_BottomRight);
@@ -2099,7 +2130,7 @@ Plater::priv::priv(Plater *q, MainFrame *main_frame)
     , config(Slic3r::DynamicPrintConfig::new_from_defaults_keys({
         "bed_shape", "bed_custom_texture", "bed_custom_model", "complete_objects", "duplicate_distance", "extruder_clearance_radius", "skirts", "skirt_distance",
         "brim_width", "brim_separation", "brim_type", "variable_layer_height", "nozzle_diameter", "single_extruder_multi_material",
-        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_cone_angle", "wipe_tower_extra_spacing", "wipe_tower_extruder",
+        "wipe_tower", "wipe_tower_x", "wipe_tower_y", "wipe_tower_width", "wipe_tower_rotation_angle", "wipe_tower_brim_width", "wipe_tower_cone_angle", "wipe_tower_extra_spacing", "wipe_tower_extra_flow", "wipe_tower_extruder",
         "extruder_colour", "filament_colour", "material_colour", "max_print_height", "printer_model", "printer_notes", "printer_technology",
         // These values are necessary to construct SlicingParameters by the Canvas3D variable layer height editor.
         "layer_height", "first_layer_height", "min_layer_height", "max_layer_height",
@@ -2612,6 +2643,8 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                         config.apply(loaded_printer_technology == ptFFF ?
                             static_cast<const ConfigBase&>(FullPrintConfig::defaults()) :
                             static_cast<const ConfigBase&>(SLAFullPrintConfig::defaults()));
+                        // Set all the nullable values in defaults to nils.
+                        config.null_nullables();
                         // and place the loaded config over the base.
                         config += std::move(config_loaded);
                     }
@@ -2693,7 +2726,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                 if (imperial_units)
                     // Convert even if the object is big.
                     convert_from_imperial_units(model, false);
-                else if (model.looks_like_saved_in_meters()) {
+                else if (!type_3mf && model.looks_like_saved_in_meters()) {
                     auto convert_model_if = [](Model& model, bool condition) {
                         if (condition)
                             //FIXME up-scale only the small parts?
@@ -2715,7 +2748,7 @@ std::vector<size_t> Plater::priv::load_files(const std::vector<fs::path>& input_
                     }
                     convert_model_if(model, answer_convert_from_meters == wxID_YES);
                 }
-                else if (model.looks_like_imperial_units()) {
+                else if (!type_3mf && model.looks_like_imperial_units()) {
                     auto convert_model_if = [convert_from_imperial_units](Model& model, bool condition) {
                         if (condition)
                             //FIXME up-scale only the small parts?
@@ -3672,7 +3705,7 @@ bool Plater::priv::replace_volume_with_stl(int object_idx, int volume_idx, const
         // We need to make sure that the painted data point to existing triangles.
         new_volume->supported_facets.assign(old_volume->supported_facets);
         new_volume->seam_facets.assign(old_volume->seam_facets);
-        new_volume->mmu_segmentation_facets.assign(old_volume->mmu_segmentation_facets);
+        new_volume->mm_segmentation_facets.assign(old_volume->mm_segmentation_facets);
     }
     std::swap(old_model_object->volumes[volume_idx], old_model_object->volumes.back());
     old_model_object->delete_volume(old_model_object->volumes.size() - 1);
@@ -5633,7 +5666,7 @@ void Plater::convert_gcode_to_ascii()
         if (res == EResult::InvalidMagicNumber) {
             in_file.close();
             out_file.close();
-            boost::filesystem::copy_file(input_path, output_path, boost::filesystem::copy_option::overwrite_if_exists);
+            boost::filesystem::copy_file(input_path, output_path, boost::filesystem::copy_options::overwrite_existing);
         }
         else if (res != EResult::Success) {
             MessageDialog msg_dlg(this, _L(std::string(translate_result(res))), _L("Error converting G-code file"), wxICON_INFORMATION | wxOK);
@@ -5712,7 +5745,7 @@ void Plater::convert_gcode_to_binary()
         if (res == EResult::AlreadyBinarized) {
             in_file.close();
             out_file.close();
-            boost::filesystem::copy_file(input_path, output_path, boost::filesystem::copy_option::overwrite_if_exists);
+            boost::filesystem::copy_file(input_path, output_path, boost::filesystem::copy_options::overwrite_existing);
         }
         else if (res != EResult::Success) {
             MessageDialog msg_dlg(this, _L(std::string(translate_result(res))), _L("Error converting G-code file"), wxICON_INFORMATION | wxOK);
@@ -5945,7 +5978,7 @@ bool Plater::preview_zip_archive(const boost::filesystem::path& archive_path)
                             std::replace(name.begin(), name.end(), '\\', '/');
                             // rename if file exists
                             std::string filename = path.filename().string();
-                            std::string extension = boost::filesystem::extension(path);
+                            std::string extension = path.extension().string();
                             std::string just_filename = filename.substr(0, filename.size() - extension.size());
                             std::string final_filename = just_filename;
 
@@ -6794,7 +6827,7 @@ void Plater::export_gcode(bool prefer_removable)
             start_dir,
             from_path(default_output_file.filename()),
             printer_technology() == ptFFF ? GUI::file_wildcards(FT_GCODE, ext) :
-                                            GUI::sla_wildcards(p->sla_print.printer_config().sla_archive_format.value.c_str()),
+                                            GUI::sla_wildcards(p->sla_print.printer_config().sla_archive_format.value.c_str(), ext),
             wxFD_SAVE | wxFD_OVERWRITE_PROMPT
         );
         if (dlg.ShowModal() == wxID_OK) {
@@ -7888,10 +7921,10 @@ void Plater::clear_before_change_mesh(int obj_idx, const std::string &notificati
     // may be different and they would make no sense.
     bool paint_removed = false;
     for (ModelVolume* mv : mo->volumes) {
-        paint_removed |= ! mv->supported_facets.empty() || ! mv->seam_facets.empty() || ! mv->mmu_segmentation_facets.empty();
+        paint_removed |= ! mv->supported_facets.empty() || ! mv->seam_facets.empty() || ! mv->mm_segmentation_facets.empty();
         mv->supported_facets.reset();
         mv->seam_facets.reset();
-        mv->mmu_segmentation_facets.reset();
+        mv->mm_segmentation_facets.reset();
     }
     if (paint_removed) {
         // snapshot_time is captured by copy so the lambda knows where to undo/redo to.

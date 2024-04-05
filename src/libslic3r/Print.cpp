@@ -172,7 +172,8 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
         "use_relative_e_distances",
         "use_volumetric_e",
         "variable_layer_height",
-        "wipe"
+        "wipe",
+        "wipe_tower_acceleration"
     };
 
     static std::unordered_set<std::string> steps_ignore;
@@ -218,9 +219,12 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "filament_unloading_speed_start"
             || opt_key == "filament_toolchange_delay"
             || opt_key == "filament_cooling_moves"
+            || opt_key == "filament_stamping_loading_speed"
+            || opt_key == "filament_stamping_distance"
             || opt_key == "filament_minimal_purge_on_wipe_tower"
             || opt_key == "filament_cooling_initial_speed"
             || opt_key == "filament_cooling_final_speed"
+            || opt_key == "filament_purge_multiplier"
             || opt_key == "filament_ramming_parameters"
             || opt_key == "filament_multitool_ramming"
             || opt_key == "filament_multitool_ramming_volume"
@@ -238,13 +242,16 @@ bool Print::invalidate_state_by_config_options(const ConfigOptionResolver & /* n
             || opt_key == "wipe_tower_cone_angle"
             || opt_key == "wipe_tower_bridging"
             || opt_key == "wipe_tower_extra_spacing"
+            || opt_key == "wipe_tower_extra_flow"
             || opt_key == "wipe_tower_no_sparse_layers"
             || opt_key == "wipe_tower_extruder"
             || opt_key == "wiping_volumes_matrix"
+            || opt_key == "wiping_volumes_use_custom_matrix"
             || opt_key == "parking_pos_retraction"
             || opt_key == "cooling_tube_retraction"
             || opt_key == "cooling_tube_length"
             || opt_key == "extra_loading_move"
+            || opt_key == "multimaterial_purging"
             || opt_key == "travel_speed"
             || opt_key == "travel_speed_z"
             || opt_key == "first_layer_speed"
@@ -1055,7 +1062,7 @@ std::string Print::export_gcode(const std::string& path_template, GCodeProcessor
     this->set_status(90, message);
 
     // Create GCode on heap, it has quite a lot of data.
-    std::unique_ptr<GCodeGenerator> gcode(new GCodeGenerator);
+    std::unique_ptr<GCodeGenerator> gcode(new GCodeGenerator(const_cast<const Print*>(this)));
     gcode->do_export(this, path.c_str(), result, thumbnail_cb);
 
     if (m_conflict_result.has_value())
@@ -1581,7 +1588,7 @@ void Print::_make_wipe_tower()
     m_wipe_tower_data.final_purge = Slic3r::make_unique<WipeTower::ToolChangeResult>(
         wipe_tower.tool_change((unsigned int)(-1)));
 
-    m_wipe_tower_data.used_filament = wipe_tower.get_used_filament();
+    m_wipe_tower_data.used_filament_until_layer = wipe_tower.get_used_filament_until_layer();
     m_wipe_tower_data.number_of_toolchanges = wipe_tower.get_number_of_toolchanges();
     m_wipe_tower_data.width = wipe_tower.width();
     m_wipe_tower_data.first_layer_height = config().first_layer_height;

@@ -1518,11 +1518,11 @@ PageDownloader::PageDownloader(ConfigWizard* parent)
         ));
     }
 
-#ifdef __linux__
+#if defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION) 
     append_text(wxString::Format(_L(
         "On Linux systems the process of registration also creates desktop integration files for this version of application."
     )));
-#endif
+#endif //(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION)
 
     box_allow_downloads->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent& event) { this->m_downloader->allow(event.IsChecked()); });
 
@@ -1582,7 +1582,7 @@ bool DownloaderUtils::Worker::perform_register(const std::string& path_override/
 #elif __APPLE__
     // Apple registers for custom url in info.plist thus it has to be already registered since build.
     // The url will always trigger opening of prusaslicer and we have to check that user has allowed it. (GUI_App::MacOpenURL is the triggered method)
-#else 
+#elif defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION) 
     // the performation should be called later during desktop integration
     perform_registration_linux = true;
 #endif
@@ -1600,7 +1600,7 @@ void DownloaderUtils::Worker::deregister()
     key_full = key_string;
 #elif __APPLE__
     // TODO
-#else 
+#elif defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION) 
     BOOST_LOG_TRIVIAL(debug) << "DesktopIntegrationDialog::undo_downloader_registration";
     DesktopIntegrationDialog::undo_downloader_registration();
     perform_registration_linux = false;
@@ -2785,11 +2785,16 @@ bool ConfigWizard::priv::on_bnt_finish()
      * than last changes wouldn't be updated for filaments/materials.
      * SO, do that before check_and_install_missing_materials()
      */
-    page_filaments->check_and_update_presets();
-    page_sla_materials->check_and_update_presets();
+    if (page_filaments)
+        page_filaments->check_and_update_presets();
+    if (page_sla_materials)
+        page_sla_materials->check_and_update_presets();
     
-	// there's no need to check that filament is selected if we have only custom printer
-    if (custom_printer_selected && !any_fff_selected && !any_sla_selected) return true;
+    // Even if we have only custom printer installed, check filament selection. 
+    // Template filaments could be selected in this case. 
+    if (custom_printer_selected && !any_fff_selected && !any_sla_selected) 
+        return check_and_install_missing_materials(T_FFF);
+
     // check, that there is selected at least one filament/material
     return check_and_install_missing_materials(T_ANY);
 }
@@ -2897,7 +2902,7 @@ bool ConfigWizard::priv::check_and_install_missing_materials(Technology technolo
 
     bool no_templates = wxGetApp().app_config->get("no_templates") == "1";
 
-    if (any_fff_selected && (technology & T_FFF)) {
+    if ((any_fff_selected || custom_printer_selected) && (technology & T_FFF)) {
     	std::set<const VendorProfile::PrinterModel*> printer_models_without_material = printer_models_missing_materials(ptFFF, AppConfig::SECTION_FILAMENTS, no_templates);
     	if (! printer_models_without_material.empty()) {
 			if (only_for_model_id.empty())
@@ -2998,7 +3003,7 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
                 }
             }
         }
-        return pt;
+        return ptAny;
     };
     // Prusa printers are considered first, then 3rd party.
     if (preferred_pt = get_preferred_printer_technology("PrusaResearch", bundles.prusa_bundle());
@@ -3058,14 +3063,14 @@ bool ConfigWizard::priv::apply_config(AppConfig *app_config, PresetBundle *prese
         if ((check_unsaved_preset_changes = install_bundles.size() > 0))
             header = _L_PLURAL("A new vendor was installed and one of its printers will be activated", "New vendors were installed and one of theirs printers will be activated", install_bundles.size());
 
-#ifdef __linux__
+#if defined(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION)
     // Desktop integration on Linux
     BOOST_LOG_TRIVIAL(debug) << "ConfigWizard::priv::apply_config integrate_desktop" << page_welcome->integrate_desktop()  << " perform_registration_linux " << page_downloader->m_downloader->get_perform_registration_linux();
     if (page_welcome->integrate_desktop())
         DesktopIntegrationDialog::perform_desktop_integration();
     if (page_downloader->m_downloader->get_perform_registration_linux())
         DesktopIntegrationDialog::perform_downloader_desktop_integration();
-#endif
+#endif //(__linux__) && defined(SLIC3R_DESKTOP_INTEGRATION)
 
     // Decide whether to create snapshot based on run_reason and the reset profile checkbox
     bool snapshot = true;
