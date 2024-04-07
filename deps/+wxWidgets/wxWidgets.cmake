@@ -9,6 +9,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(_wx_toolkit "-DwxBUILD_TOOLKIT=gtk${_gtk_ver}")
 endif()
 
+# The bundled version of libTIFF is broken with newer versions of cmake
+option(DEP_WX_ENABLE_TIFF "Build wxWidgets TIFF support" ON)
+set(_use_libtiff OFF)
+if (DEP_WX_ENABLE_TIFF)
+    set(_use_libtiff sys)
+endif()
+
 set(_unicode_utf8 OFF)
 if (UNIX AND NOT APPLE) # wxWidgets will not use char as the underlying type for wxString unless its forced to.
     set (_unicode_utf8 ON)
@@ -33,7 +40,7 @@ add_cmake_project(wxWidgets
         -DwxUSE_REGEX=OFF
         -DwxUSE_LIBXPM=builtin
         -DwxUSE_LIBJPEG=sys
-        -DwxUSE_LIBTIFF=sys
+        -DwxUSE_LIBTIFF=${_use_libtiff}
         -DwxUSE_EXPAT=sys
         -DwxUSE_LIBSDL=OFF
         -DwxUSE_XTEST=OFF
