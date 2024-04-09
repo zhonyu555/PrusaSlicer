@@ -2653,6 +2653,13 @@ void PrintConfigDef::init_fff_params()
                    "It won't work when printing more than one single object.");
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("spiral_vase_bottom_lock_perimeters", coInt);
+    def->label = "Add edge closing perimiters on top of the bottom of the object";
+    def->tooltip = "This feature wil add extra perimeters on top of the top bottom layers, 'locking in' the edge between the vase perimeter and bottom infill.";
+    def->mode = comAdvanced;
+    def->set_default_value(new ConfigOptionInt(0));
+    def->min = 0;
+
     def = this->add("standby_temperature_delta", coInt);
     def->label = L("Temperature variation");
     // TRN PrintSettings : "Ooze prevention" > "Temperature variation"

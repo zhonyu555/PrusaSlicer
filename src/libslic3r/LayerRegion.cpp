@@ -98,8 +98,8 @@ void LayerRegion::make_perimeters(
 
     auto _region_config = region_config;
 
-    if (print_config.spiral_vase && this->layer()->id() == size_t(region_config.bottom_solid_layers.value - 1) ) {
-        _region_config.perimeters.value = 4;
+    if (print_config.spiral_vase && print_config.spiral_vase_bottom_lock_perimeters.value > 0 && this->layer()->id() == size_t(region_config.bottom_solid_layers.value) ) {
+        _region_config.perimeters.value = print_config.spiral_vase_bottom_lock_perimeters.value + 1;
     }
 
     PerimeterGenerator::Parameters params(
