@@ -1,7 +1,8 @@
 /**
 * Ported from xs/t/09_polyline.t
 */
-#include <catch2/catch.hpp>
+
+#include <catch2/catch_all.hpp>
 
 #include "libslic3r/Point.hpp"
 #include "libslic3r/Polyline.hpp"
