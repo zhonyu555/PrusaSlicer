@@ -715,7 +715,9 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "perimeter_extrusion_width"
             || opt_key == "infill_overlap"
             || opt_key == "external_perimeters_first"
-            || opt_key == "arc_fitting") {
+            || opt_key == "arc_fitting"
+            || opt_key == "reverse_overhangs"
+            || opt_key == "reverse_perimeters_even") {
             steps.emplace_back(posPerimeters);
         } else if (
                opt_key == "gap_fill_enabled"

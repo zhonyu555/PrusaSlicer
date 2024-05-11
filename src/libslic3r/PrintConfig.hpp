@@ -649,6 +649,10 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloat,                perimeter_speed))
     // Total number of perimeters.
     ((ConfigOptionInt,                  perimeters))
+    //Perimeters reverse
+    ((ConfigOptionBool,                 reverse_overhangs))
+    ((ConfigOptionBool,                 reverse_perimeters_even))
+    ((ConfigOptionBool,                 reverse_infill_even))
     ((ConfigOptionFloatOrPercent,       small_perimeter_speed))
     ((ConfigOptionFloat,                solid_infill_below_area))
     ((ConfigOptionInt,                  solid_infill_extruder))
