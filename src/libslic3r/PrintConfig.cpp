@@ -255,6 +255,12 @@ static t_config_enum_values s_keys_map_PerimeterGeneratorType {
 };
 CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(PerimeterGeneratorType)
 
+static t_config_enum_values s_keys_map_PerimetersOrderingType {
+    { "classic", int(PerimetersOrderingType::Classic) },
+    { "inoutin", int(PerimetersOrderingType::InOutIn) }
+};
+CONFIG_OPTION_ENUM_DEFINE_STATIC_MAPS(PerimetersOrderingType)
+
 static void assign_printer_technology_to_unknown(t_optiondef_map &options, PrinterTechnology printer_technology)
 {
     for (std::pair<const t_config_option_key, ConfigOptionDef> &kvp : options)
@@ -909,22 +915,26 @@ void PrintConfigDef::init_fff_params()
     def = this->add("external_perimeters_first", coBool);
     def->label = L("External perimeters first");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Print contour perimeters from the outermost one to the innermost one "
+    def->tooltip = L("Print contour perimeters from the outermost one to the innermost one"
                    "instead of the default inverse order.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
-    def = this->add("inoutin_perimeters", coBool);
-    def->label = L("inoutin_perimeters");
+    def = this->add("perimeters_ordering", coEnum);
+    def->label = L("Perimeters ordering");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Print contour perimeters the one before the outermost then the outermost and finally starting from the innermost instead of the default order. And force the one before the outermost to be seen as external");
+    def->tooltip = L("Choose between Classic and InOutIn order. InOutIn : Instead of printing in linear order (Classic), the outermost perimeter is printed between the second order and first order perimeters. If the External perimeters first option is activated, the outermost perimeter is printed between the second order and first order perimeters");
     def->mode = comExpert;
-    def->set_default_value(new ConfigOptionBool(false));
+        def->set_enum<PerimetersOrderingType>({
+        { "classic", L("Classic") },
+        { "inoutin", L("InOutIn") }
+    });
+    def->set_default_value(new ConfigOptionEnum<PerimetersOrderingType>(PerimetersOrderingType::Classic));
 
     def = this->add("invert_internals_order", coBool);
-    def->label = L("invert_internals_order");
+    def->label = L("Invert Internals Order");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("invert internal perimeters order");
+    def->tooltip = L("Invert internals perimeters order. Second order and above are printed in reverse order compare to the classic algorithm.");
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 

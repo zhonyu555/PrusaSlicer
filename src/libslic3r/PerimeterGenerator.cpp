@@ -523,7 +523,7 @@ static ExtrusionEntityCollection traverse_extrusions(const PerimeterGenerator::P
 
         const bool    is_external = extrusion->inset_idx == 0;
         const bool    is_next_to_external = extrusion->inset_idx == 1;
-        ExtrusionRole role_normal   = (is_external || (params.config.inoutin_perimeters && is_next_to_external)) ? ExtrusionRole::ExternalPerimeter : ExtrusionRole::Perimeter;
+        ExtrusionRole role_normal   = (is_external || (params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && is_next_to_external)) ? ExtrusionRole::ExternalPerimeter : ExtrusionRole::Perimeter;
         ExtrusionRole role_overhang = role_normal | ExtrusionRoleModifier::Bridge;
 
         if (pg_extrusion.fuzzify)
@@ -1146,7 +1146,7 @@ void PerimeterGenerator::process_arachne(
     int end_perimeter   = -1;
     int direction       = -1;
 
-    if (params.config.external_perimeters_first || params.config.inoutin_perimeters) {
+    if (params.config.external_perimeters_first || params.config.perimeters_ordering == PerimetersOrderingType::InOutIn) {
         start_perimeter = 0;
         end_perimeter   = int(perimeters.size());
         direction       = 1;
@@ -1167,7 +1167,7 @@ void PerimeterGenerator::process_arachne(
     for (size_t idx = 0; idx < all_extrusions.size(); idx++)
         map_extrusion_to_idx.emplace(all_extrusions[idx], idx);
 
-    Arachne::WallToolPaths::ExtrusionLineSet extrusions_constrains = Arachne::WallToolPaths::getRegionOrder(all_extrusions, (params.config.external_perimeters_first ||  params.config.inoutin_perimeters) );
+    Arachne::WallToolPaths::ExtrusionLineSet extrusions_constrains = Arachne::WallToolPaths::getRegionOrder(all_extrusions, (params.config.external_perimeters_first ||  params.config.perimeters_ordering == PerimetersOrderingType::InOutIn) );
     for (auto [before, after] : extrusions_constrains) {
         auto after_it = map_extrusion_to_idx.find(after);
         ++blocked[after_it->second];
@@ -1271,7 +1271,7 @@ void PerimeterGenerator::process_arachne(
         }
     }
 // InOutIn method from OrcaSlicer
-        if ( params.config.inoutin_perimeters && params.layer_id > 0 && ordered_extrusions.size() > 2) { // only enable inoutin algorithm after first layer and with minimum 3 walls
+        if ( params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && params.layer_id > 0 && ordered_extrusions.size() > 2) { // only enable inoutin algorithm after first layer and with minimum 3 walls
             //if (ordered_extrusions.size() > 2) { // 3 walls minimum
                 // From "Orca Initiate reorder sequence to bring any index 1 (first internal) perimeters ahead of any second internal perimeters
                 // Leaving these out of order will result in print defects on the external wall as they will be extruded prior to any

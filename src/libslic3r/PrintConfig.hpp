@@ -159,6 +159,14 @@ enum class PerimeterGeneratorType
     Arachne
 };
 
+enum class PerimetersOrderingType
+{
+    // Classic perimeter order.
+    Classic,
+    // InOutIn perimeter order.
+    InOutIn
+};
+
 enum class GCodeThumbnailsFormat {
     PNG, JPG, QOI
 };
@@ -190,7 +198,7 @@ CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(LabelObjectsStyle)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(GCodeThumbnailsFormat)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(ForwardCompatibilitySubstitutionRule)
 CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(PerimeterGeneratorType)
-
+CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS(PerimetersOrderingType)
 
 #undef CONFIG_OPTION_ENUM_DECLARE_STATIC_MAPS
 
@@ -619,7 +627,7 @@ PRINT_CONFIG_CLASS_DEFINE(
     ((ConfigOptionFloatOrPercent,       overhang_speed_2))
     ((ConfigOptionFloatOrPercent,       overhang_speed_3))
     ((ConfigOptionBool,                 external_perimeters_first))
-    ((ConfigOptionBool,                 inoutin_perimeters))
+    ((ConfigOptionEnum<PerimetersOrderingType>, perimeters_ordering))
     ((ConfigOptionBool,                 invert_internals_order))
     ((ConfigOptionBool,                 extra_perimeters))
     ((ConfigOptionBool,                 extra_perimeters_on_overhangs))
