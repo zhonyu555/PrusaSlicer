@@ -715,6 +715,8 @@ bool PrintObject::invalidate_state_by_config_options(
             || opt_key == "perimeter_extrusion_width"
             || opt_key == "infill_overlap"
             || opt_key == "external_perimeters_first"
+            || opt_key == "inoutin_perimeters"
+            || opt_key == "invert_internals_order"
             || opt_key == "arc_fitting") {
             steps.emplace_back(posPerimeters);
         } else if (

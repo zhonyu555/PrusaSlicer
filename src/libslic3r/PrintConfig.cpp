@@ -914,6 +914,20 @@ void PrintConfigDef::init_fff_params()
     def->mode = comExpert;
     def->set_default_value(new ConfigOptionBool(false));
 
+    def = this->add("inoutin_perimeters", coBool);
+    def->label = L("inoutin_perimeters");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("Print contour perimeters the one before the outermost then the outermost and finally starting from the innermost instead of the default order. And force the one before the outermost to be seen as external");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));
+
+    def = this->add("invert_internals_order", coBool);
+    def->label = L("invert_internals_order");
+    def->category = L("Layers and Perimeters");
+    def->tooltip = L("invert internal perimeters order");
+    def->mode = comExpert;
+    def->set_default_value(new ConfigOptionBool(false));
+
     def = this->add("extra_perimeters", coBool);
     def->label = L("Extra perimeters if needed");
     def->category = L("Layers and Perimeters");

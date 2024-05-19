@@ -1485,6 +1485,8 @@ void TabPrint::build()
         optgroup->append_single_option_line("seam_position", category_path + "seam-position");
         optgroup->append_single_option_line("staggered_inner_seams", category_path + "staggered-inner-seams");
         optgroup->append_single_option_line("external_perimeters_first", category_path + "external-perimeters-first");
+        optgroup->append_single_option_line("inoutin_perimeters", category_path + "inoutin-perimeters");
+        optgroup->append_single_option_line("invert_internals_order", category_path + "invert_internals_order");
         optgroup->append_single_option_line("gap_fill_enabled", category_path + "fill-gaps");
         optgroup->append_single_option_line("perimeter_generator");
 
