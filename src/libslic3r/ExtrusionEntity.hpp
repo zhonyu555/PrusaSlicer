@@ -62,6 +62,10 @@ public:
     virtual Polylines as_polylines() const { Polylines dst; this->collect_polylines(dst); return dst; }
     virtual double length() const = 0;
     virtual double total_volume() const = 0;
+
+    // Loop deep for InOutIn
+    long int inset_idx = -1;
+
 };
 
 using ExtrusionEntitiesPtr = std::vector<ExtrusionEntity*>;

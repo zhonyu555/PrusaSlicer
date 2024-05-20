@@ -923,7 +923,7 @@ void PrintConfigDef::init_fff_params()
     def = this->add("perimeters_ordering", coEnum);
     def->label = L("Perimeters ordering");
     def->category = L("Layers and Perimeters");
-    def->tooltip = L("Choose between Classic and InOutIn order. InOutIn : Instead of printing in linear order (Classic), the outermost perimeter is printed between the second order and first order perimeters. If the External perimeters first option is activated, the outermost perimeter is printed between the second order and first order perimeters");
+    def->tooltip = L("Choose between Classic and InOutIn order. InOutIn : Instead of printing in linear order (Classic), the outermost perimeter is printed between the second order and first order perimeters. If the External perimeters first option is activated, the outermost perimeter is printed between the second order and first order perimeters. Moreover, the outermost and first perimeters are both considered as external perimeters");
     def->mode = comExpert;
         def->set_enum<PerimetersOrderingType>({
         { "classic", L("Classic") },

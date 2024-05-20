@@ -197,6 +197,7 @@ public:
         polygon(polygon), is_contour(is_contour), depth(depth), fuzzify(fuzzify) {}
     // External perimeter. It may be CCW or CW oriented (outer contour or hole contour).
     bool is_external() const { return this->depth == 0; }
+    bool is_next_to_external() const { return this->depth == 1; }
     // An island, which may have holes, but it does not have another internal island.
     bool is_internal_contour() const {
         // An internal contour is a contour containing no other contours
@@ -294,15 +295,21 @@ using PerimeterGeneratorLoops = std::vector<PerimeterGeneratorLoop>;
 
 static ExtrusionEntityCollection traverse_loops_classic(const PerimeterGenerator::Parameters &params, const Polygons &lower_slices_polygons_cache, const PerimeterGeneratorLoops &loops, ThickPolylines &thin_walls)
 {
+    /*
+      const bool    is_external = extrusion->inset_idx == 0;
+        const bool    is_next_to_external = extrusion->inset_idx == 1;
+        ExtrusionRole role_normal   = (is_external || (params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && is_next_to_external)) ? ExtrusionRole::ExternalPerimeter : ExtrusionRole::Perimeter;
+        ExtrusionRole role_overhang = role_normal | ExtrusionRoleModifier::Bridge;
+     */
     // loops is an arrayref of ::Loop objects
     // turn each one into an ExtrusionLoop object
     ExtrusionEntityCollection   coll;
     Polygon                     fuzzified;
     for (const PerimeterGeneratorLoop &loop : loops) {
         bool is_external = loop.is_external();
-        
+        const bool    is_next_to_external = loop.is_next_to_external();
         ExtrusionLoopRole loop_role;
-        ExtrusionRole role_normal   = is_external ? ExtrusionRole::ExternalPerimeter : ExtrusionRole::Perimeter;
+        ExtrusionRole role_normal   = (is_external || (params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && is_next_to_external)) ? ExtrusionRole::ExternalPerimeter : ExtrusionRole::Perimeter;
         ExtrusionRole role_overhang = role_normal | ExtrusionRoleModifier::Bridge;
         if (loop.is_internal_contour()) {
             // Note that we set loop role to ContourInternalPerimeter
@@ -392,6 +399,10 @@ static ExtrusionEntityCollection traverse_loops_classic(const PerimeterGenerator
             out.entities.reserve(out.entities.size() + children.entities.size() + 1);
             ExtrusionLoop *eloop = static_cast<ExtrusionLoop*>(coll.entities[idx.first]);
             coll.entities[idx.first] = nullptr;
+
+            //Keep loop.depth for InOutIn
+            eloop->inset_idx = loop.depth;
+
             if (loop.is_contour) {
                 if (eloop->is_clockwise())
                     eloop->reverse_loop();
@@ -1270,139 +1281,142 @@ void PerimeterGenerator::process_arachne(
             }
         }
     }
-// InOutIn method from OrcaSlicer
-        if ( params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && params.layer_id > 0 && ordered_extrusions.size() > 2) { // only enable inoutin algorithm after first layer and with minimum 3 walls
-            //if (ordered_extrusions.size() > 2) { // 3 walls minimum
-                // From "Orca Initiate reorder sequence to bring any index 1 (first internal) perimeters ahead of any second internal perimeters
-                // Leaving these out of order will result in print defects on the external wall as they will be extruded prior to any
-                // external wall. To do the re-ordering, we are creating two extrusion arrays - reordered_extrusions which will contain
-                // the reordered extrusions and skipped_extrusions will contain the ones that were skipped in the scan"
+    // InOutIn method ported from OrcaSlicer
+    if ( params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && params.layer_id > 0 && ordered_extrusions.size() > 2) { // only enable inoutin algorithm after first layer and with minimum 3 walls
+        /* From "Orca Initiate reorder sequence to bring any index 1 (first internal) perimeters ahead   of any second internal perimeters
+         Leaving these out of order will result in print defects on the external wall as they will be extruded prior to any
+         external wall. To do the re-ordering, we are creating two extrusion arrays - reordered_extrusions which will contain
+         the reordered extrusions and skipped_extrusions will contain the ones that were skipped in the scan"
+         Special cases are not well handeled exemple benchy at 10.6 mm second is a small loop. It should not be used as second. The second of the next outer perimeter is also the second of the first and the small loop should have been with it */
 
-                std::vector<PerimeterGeneratorArachneExtrusion> reordered_extrusions, skipped_extrusions;
-                bool found_second_internal = false; // helper variable to indicate the start of a new island
-                for(auto extrusion_to_reorder : ordered_extrusions){ //scan the perimeters to reorder
-                    switch (extrusion_to_reorder.extrusion->inset_idx) {
-                        case 0: // external perimeter
-                            if(found_second_internal){ //new island - move skipped extrusions to reordered array
-                                for(auto extrusion_skipped : skipped_extrusions)
-                                    reordered_extrusions.emplace_back(extrusion_skipped);
-                                skipped_extrusions.clear();
-                            }
-                            reordered_extrusions.emplace_back(extrusion_to_reorder);
-                            break;
-                        case 1: // first internal perimeter
-                            reordered_extrusions.emplace_back(extrusion_to_reorder);
-                            break;
-                        default: // second internal+ perimeters -> put them in the skipped extrusions array
-                            skipped_extrusions.emplace_back(extrusion_to_reorder);
-                            found_second_internal = true;
-                            break;
+        std::vector<PerimeterGeneratorArachneExtrusion> reordered_extrusions, skipped_extrusions;
+        bool found_second_internal = false; // helper variable to indicate the start of a new island
+        for(auto extrusion_to_reorder : ordered_extrusions){ //scan the perimeters to reorder
+            switch (extrusion_to_reorder.extrusion->inset_idx) {
+                case 0: // external perimeter
+                    if(found_second_internal){ //new island - move skipped extrusions to reordered array
+                        for(auto extrusion_skipped : skipped_extrusions){
+                            reordered_extrusions.emplace_back(extrusion_skipped);
+                        }
+                        skipped_extrusions.clear();
                     }
-                }
-                if(ordered_extrusions.size()>reordered_extrusions.size()){ // no more islands, completing the reordered extrusions list with the skipped perimeters.
-                    for(auto extrusion_skipped : skipped_extrusions)
-                        reordered_extrusions.emplace_back(extrusion_skipped);
-                    skipped_extrusions.clear();
-                }
-                // The list contains all extern and first perimeters followed by all higher order perimeters.
-                // Scan the list for external (outer), first and second order. Some cases ex : Ext First Ext 0 - 1 - 0 or  0 - 1..1 - 0
-                // are not well processed.
-                long int position = 0; // index to run the re-ordering for multiple external perimeters in a single island.
-                long int scan_loop_idx, reordering_loop_idx, current_perimeter;     // indexes to run through the walls in the for loops
-                long int outer, first_internal, second_internal, max_internal ; // allocate index values
-                bool outer_found, first_internal_found, second_internal_found;
+                    reordered_extrusions.emplace_back(extrusion_to_reorder);
+                    break;
+                case 1: // first internal perimeter
+                    reordered_extrusions.emplace_back(extrusion_to_reorder);
+                    break;
+                default: // second internal+ perimeters -> put them in the skipped extrusions array
+                    skipped_extrusions.emplace_back(extrusion_to_reorder);
+                    found_second_internal = true;
+                    break;
+            }
+        }
+        if(ordered_extrusions.size()>reordered_extrusions.size()){ // no more islands, completing the reordered extrusions list with the skipped perimeters.
+            for(auto extrusion_skipped : skipped_extrusions){
+                reordered_extrusions.emplace_back(extrusion_skipped);
+            }
+            skipped_extrusions.clear();
+        }
+        // The list contains all extern and first perimeters followed by all higher order perimeters.
+        // Scan the list for external (outer), first and second order.
 
+        // long int, int, ... should be size_t ... but segfault. so use (size_t) to compare with reordered_extrusions.size() ...
 
-                while (position < reordered_extrusions.size()) {
-                    outer = first_internal = second_internal = 0;
-                    current_perimeter = 0; // initialise all index values to 0
-                    outer_found = first_internal_found = second_internal_found = false;
-                    max_internal = reordered_extrusions.size()-1; // initialise the maximum internal perimeter to the last perimeter on the extrusion list
-                    //Scan loop
-                    // run through the walls to get the index values that need re-ordering until the first one for each
-                    // is found. Start at "position" index to enable the for loop to iterate for multiple external
-                    // perimeters in a single island
-                    for (scan_loop_idx = position; scan_loop_idx < reordered_extrusions.size(); scan_loop_idx++) {
-                        switch (reordered_extrusions[scan_loop_idx].extrusion->inset_idx) {
-                            case 0: // external perimeter
-                                if (!outer_found){
-                                    outer_found = true ;
-                                    outer = scan_loop_idx;
-                                }
-                                break;
-                            case 1: // first internal wall
-                                if (!first_internal_found  && scan_loop_idx>outer && outer_found  ){ //
-                                    first_internal_found = true ;
-                                    first_internal = scan_loop_idx;
-                                }
-                                break;
-                            case 2: // second internal wall
-                                if (!second_internal_found && scan_loop_idx > first_internal && outer_found  ){ //
-                                    second_internal_found = true ;
-                                    second_internal = scan_loop_idx;
-                                }
-                                break;
+        long int position = 0; // index to run the re-ordering for multiple external perimeters in a single island.
+        long int scan_loop_idx, reordering_loop_idx, current_perimeter;     // indexes to run through the walls in the for loops
+        long int outer, first_internal, second_internal, max_internal ; // allocate index values
+        bool outer_found, first_internal_found, second_internal_found;
+
+        while ((size_t)position <  reordered_extrusions.size()) {
+            outer = first_internal = second_internal = 0;
+            current_perimeter = 0; // initialise all index values to 0
+            outer_found = first_internal_found = second_internal_found = false;
+            max_internal = reordered_extrusions.size()-1; // initialise the maximum internal perimeter to the last perimeter on the extrusion list
+            //Scan loop
+            // run through the walls to get the index values that need re-ordering until the first one for each
+            // is found. Start at "position" index to enable the for loop to iterate for multiple external
+            // perimeters in a single island
+            for (scan_loop_idx = position; (size_t)scan_loop_idx < reordered_extrusions.size(); scan_loop_idx++) {
+                switch (reordered_extrusions[scan_loop_idx].extrusion->inset_idx) {
+                    case 0: // external perimeter
+                        if (!outer_found){
+                            outer_found = true ;
+                            outer = scan_loop_idx;
                         }
-                        if(outer_found && first_internal_found && second_internal_found && reordered_extrusions[scan_loop_idx].extrusion->inset_idx == 0 ) {  // found a new external perimeter after we've found all three perimeters to re-order -> this means we entered a new island
-                            scan_loop_idx=scan_loop_idx-1; //step back one perimeter
-                            max_internal = scan_loop_idx; // new maximum internal perimeter is now this as we have found a new external perimeter, hence a new island.
-                            break; // exit the scan loop for loop
+                        break;
+                    case 1: // first internal wall
+                        if (!first_internal_found  && scan_loop_idx>outer && outer_found  ){ //
+                            first_internal_found = true ;
+                            first_internal = scan_loop_idx;
                         }
+                        break;
+                    case 2: // second internal wall
+                        if (!second_internal_found && scan_loop_idx > first_internal && outer_found  ){ //
+                            second_internal_found = true ;
+                            second_internal = scan_loop_idx;
+                        }
+                        break;
+                }
+                if(outer_found && first_internal_found && second_internal_found && reordered_extrusions[scan_loop_idx].extrusion->inset_idx == 0 ) {  // found a new external perimeter after we've found all three perimeters to re-order -> this means we entered a new island
+                    scan_loop_idx=scan_loop_idx-1; //step back one perimeter
+                    max_internal = scan_loop_idx; // new maximum internal perimeter is now this as we have found a new external perimeter, hence a new island.
+                    break; // exit the scan loop for loop
+                }
+            }
+            // Reordering loop
+            if (outer_found && first_internal_found && second_internal_found){ // found perimeters to re-order?
+                std::vector<PerimeterGeneratorArachneExtrusion> inner_outer_extrusions; // temporary array to hold extrusions for reordering
+                inner_outer_extrusions.reserve(int(max_internal - position + 1)); // reserve array containing the number of perimeters before a new island. Variables are array indexes hence need to add +1 to convert to position allocations
+                if (params.config.external_perimeters_first){ // New options In1OutIn2+/ In1OutIn2- / In2+OutIn1 / In2-OutIn1 / In2+In1Out / OutIn1In2- / OutIn1In2+ & In2-In1Out (Normal)
+                    for (reordering_loop_idx = second_internal-1; reordering_loop_idx >= outer; reordering_loop_idx--){ // In1Out
+                        inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
                     }
-                    // Reordering loop
-                    if (outer_found && first_internal_found && second_internal_found)  { // found perimeters to re-order?
-                        std::vector<PerimeterGeneratorArachneExtrusion> inner_outer_extrusions; // temporary array to hold extrusions for reordering
-                        inner_outer_extrusions.reserve(int(max_internal - position + 1)); // reserve array containing the number of perimeters before a new island. Variables are array indexes hence need to add +1 to convert to position allocations
-                     if (params.config.external_perimeters_first){ // New options In1OutIn2+/ In1OutIn2- / In2+OutIn1 / In2-OutIn1 / In2+In1Out / OutIn1In2- / OutIn1In2+ & In2-In1Out (Normal)
-                        for (reordering_loop_idx = second_internal-1; reordering_loop_idx >= outer; reordering_loop_idx--){ // In1Out
-                            inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
-                        }
-                        if (!params.config.invert_internals_order){
-                            for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ //In2+
-                                if(reordering_loop_idx >= second_internal){
-                                    inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
-                                }
-                            }
-                        }
-                        else {
-                            for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ //In2-
-                                if(reordering_loop_idx >= second_internal){
-                                    inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
-                                }
+                    if (!params.config.invert_internals_order){
+                        for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ //In2+
+                            if(reordering_loop_idx >= second_internal){
+                                inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
                             }
                         }
                     }
                     else {
-                        if (params.config.invert_internals_order){
-                            for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ // In2+
-                                if(reordering_loop_idx >= second_internal){
+                        for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ //In2-
+                            if(reordering_loop_idx >= second_internal){
                                 inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
-                                }
                             }
                         }
-                        else {
-                            for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ // In2-
-                                if(reordering_loop_idx >= second_internal){
-                                    inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx]; // max_internal-reordering_loop_idx
-                                }
+                    }
+                }
+                else {
+                    if (params.config.invert_internals_order){
+                        for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ // In2+
+                            if(reordering_loop_idx >= second_internal){
+                                inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
                             }
                         }
-                        for (reordering_loop_idx = outer; reordering_loop_idx < second_internal; reordering_loop_idx++){ // OutIn1
+                    }
+                    else {
+                        for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ // In2-
+                            if(reordering_loop_idx >= second_internal){
+                                inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx]; // max_internal-reordering_loop_idx
+                            }
+                        }
+                    }
+                    for (reordering_loop_idx = outer; reordering_loop_idx < second_internal; reordering_loop_idx++){ // OutIn1
                             inner_outer_extrusions[current_perimeter++] = reordered_extrusions[reordering_loop_idx];
-                        }
                     }
-                    for(reordering_loop_idx = position; reordering_loop_idx <= max_internal; ++reordering_loop_idx) { // replace that part of the perimeter array with the new re-ordered array
-                            ordered_extrusions[reordering_loop_idx] = inner_outer_extrusions[reordering_loop_idx-position];}
-                    }
-                    else { // No perimeter to reorder. Break the loop
-                        break;
-                    }
-                    // Set the next perimeter for the next loop (while loop)
-                    position = scan_loop_idx + 1;
-                } //end while
-           // } //end if (ordered_extrusions.size() > 2)
+                }
+                for(reordering_loop_idx = position; reordering_loop_idx <= max_internal; ++reordering_loop_idx) { // replace that part of the perimeter array with the new re-ordered array
+                            ordered_extrusions[reordering_loop_idx] = inner_outer_extrusions[reordering_loop_idx-position];
+                }
+            }
+            else { // No perimeter to reorder. Break the loop
+                break;
+            }
+                // Set the next perimeter for the next loop (while loop)
+            position = scan_loop_idx + 1;
         }
-// InOutIn
+    }
+    // InOutIn
 
     if (ExtrusionEntityCollection extrusion_coll = traverse_extrusions(params, lower_slices_polygons_cache, ordered_extrusions); !extrusion_coll.empty())
         out_loops.append(extrusion_coll);
@@ -1669,9 +1683,136 @@ void PerimeterGenerator::process_classic(
         // if brim will be printed, reverse the order of perimeters so that
         // we continue inwards after having finished the brim
         // TODO: add test for perimeter order
-        if (params.config.external_perimeters_first || 
-            (params.layer_id == 0 && params.object_config.brim_width.value > 0))
+        if (params.config.external_perimeters_first ||  params.config.perimeters_ordering == PerimetersOrderingType::InOutIn || (params.layer_id == 0 && params.object_config.brim_width.value > 0)) {
             entities.reverse();
+        }
+        if ( params.config.perimeters_ordering == PerimetersOrderingType::InOutIn && params.layer_id > 0 && entities.entities.size() > 2) {
+            ExtrusionEntityCollection reordered_extrusions, skipped_extrusions;
+            bool found_second_internal = false; // helper variable to indicate the start of a new island
+            for(auto extrusion_to_reorder : entities.entities){ //scan the perimeters to reorder
+                switch (extrusion_to_reorder->inset_idx) {
+                    case 0: // external perimeter
+                        if(found_second_internal){ //new island - move skipped extrusions to reordered array
+                            for(auto extrusion_skipped : skipped_extrusions){
+                                reordered_extrusions.append(*extrusion_skipped);
+                            }
+                            skipped_extrusions.clear();
+                        }
+                        reordered_extrusions.append(*extrusion_to_reorder);
+                        break;
+                    case 1: // first internal perimeter
+                        reordered_extrusions.append(*extrusion_to_reorder);
+                        break;
+                    default: // second internal+ perimeters -> put them in the skipped extrusions array
+                        skipped_extrusions.append(*extrusion_to_reorder);
+                        found_second_internal = true;
+                        break;
+                }
+            }
+            if(entities.entities.size()>reordered_extrusions.size()){ // no more islands, completing the reordered extrusions list with the skipped perimeters.
+                for(auto extrusion_skipped : skipped_extrusions){
+                    reordered_extrusions.append(*extrusion_skipped);
+                }
+                skipped_extrusions.clear();
+            }
+
+            long int position = 0; // index to run the re-ordering for multiple external perimeters in a single island.
+            long int scan_loop_idx, reordering_loop_idx, current_perimeter;     // indexes to run through the walls in the for loops
+            long int outer, first_internal, second_internal, max_internal ; // allocate index values
+            bool outer_found, first_internal_found, second_internal_found;
+
+            while ((size_t)position < reordered_extrusions.size()) {
+                // Variables
+                outer = first_internal = second_internal = 0;
+                current_perimeter = 0; // initialise all index values to 0
+                outer_found = first_internal_found = second_internal_found = false;
+                max_internal = reordered_extrusions.size()-1;
+                // Scan
+                for (scan_loop_idx = position; (size_t)scan_loop_idx < reordered_extrusions.size(); scan_loop_idx++) {
+                    switch (reordered_extrusions.entities[scan_loop_idx]->inset_idx) {
+                        case 0: // external perimeter
+                            if (!outer_found){
+                                outer_found = true ;
+                                outer = scan_loop_idx;
+                            }
+                            break;
+                        case 1: // first internal wall
+                            if (!first_internal_found  && scan_loop_idx>outer && outer_found  ){ //
+                                first_internal_found = true ;
+                                first_internal = scan_loop_idx;
+                            }
+                            break;
+                        case 2: // second internal wall
+                            if (!second_internal_found && scan_loop_idx > first_internal && outer_found  ){ //
+                                second_internal_found = true ;
+                                second_internal = scan_loop_idx;
+                            }
+                            break;
+                    }
+                    if(outer_found && first_internal_found && second_internal_found && reordered_extrusions.entities[scan_loop_idx]->inset_idx == 0 ) {  // found a new external perimeter after we've found all three perimeters to re-order -> this means we entered a new island
+                        scan_loop_idx=scan_loop_idx-1; //step back one perimeter
+                        max_internal = scan_loop_idx; // new maximum internal perimeter is now this as we have found a new external perimeter, hence a new island.
+                        break; // exit the scan loop for loop
+                    }
+                }
+                // Reordering loop
+                if (outer_found && first_internal_found && second_internal_found)  {
+                    ExtrusionEntityCollection inner_outer_extrusions; // tmp collection
+                    if (params.config.external_perimeters_first){
+                        for (reordering_loop_idx = second_internal-1; reordering_loop_idx >= outer; reordering_loop_idx--){ // In1Out
+                            inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]);
+                            current_perimeter++;
+                        }
+                        if (!params.config.invert_internals_order){
+                            for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ //In2+
+                                if(reordering_loop_idx >= second_internal){
+                                    inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]);
+                                    current_perimeter++;
+                                }
+                            }
+                        }
+                        else {
+                            for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ //In2-
+                                if(reordering_loop_idx >= second_internal){
+                                    inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]);
+                                    current_perimeter++;
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (params.config.invert_internals_order){
+                            for (reordering_loop_idx = position ; reordering_loop_idx <= max_internal; reordering_loop_idx++){ // In2+
+                                if(reordering_loop_idx >= second_internal){
+                                    inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]);
+                                    current_perimeter++;
+                                }
+                            }
+                        }
+                        else {
+                            for (reordering_loop_idx = max_internal; reordering_loop_idx >=position; reordering_loop_idx--){ // In2-
+                                if(reordering_loop_idx >= second_internal){
+                                    inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]); // max_internal-reordering_loop_idx
+                                    current_perimeter++;
+                                }
+                            }
+                        }
+                        for (reordering_loop_idx = outer; reordering_loop_idx < second_internal; reordering_loop_idx++){ // OutIn1
+                            inner_outer_extrusions.append(*reordered_extrusions.entities[reordering_loop_idx]);
+                        }
+                    }
+                    for(reordering_loop_idx = position; reordering_loop_idx <= max_internal; ++reordering_loop_idx) { // replace that part of the perimeter array with the new re-ordered array
+                        entities.replace(reordering_loop_idx, *inner_outer_extrusions.entities[reordering_loop_idx-position]);
+                    }
+                }
+                else { // No perimeter to reorder. Break the loop
+                    break;
+                }
+                // Set the next perimeter for the next loop (while loop)
+                position = scan_loop_idx + 1;
+            } //end while
+        } //end if (ordered_extrusions.size() > 2)
+
         // append perimeters for this slice as a collection
         if (! entities.empty())
             out_loops.append(entities);
