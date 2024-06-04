@@ -1197,9 +1197,11 @@ void WipeTower::toolchange_Wipe(
     
     // set values for temperature change mid-wipe if cooling down
     bool new_temp_set = false;
-    float y_temp_change = 0.5 * (writer.y() + cleaning_box.lu.y()); // factor 0.5 = switch to new temperature after 50% of wipe complete
+    // set y value to switch to lower temperature; ~20% of surface is already taken by cooling move, switch after another 30%
+    // because for standard purge volumes, a color change is mostly complete after about 40% of the surface is covered
+    float y_temp_change = 0.30f * (cleaning_box.lu.y() - writer.y()) + writer.y();
     // Before starting wipe with a single-extruder MMU, wait for destination temperature if warming up.
-    // If destination temp is cooler, wait until after wipe to set it (for compatibility with fast-cooling extruders).
+    // If destination temp is cooler, wait until mid-wipe to set it (for compatibility with fast-cooling extruders).
     if (m_semm && new_temperature > m_old_temperature) {
         writer.set_extruder_temp(new_temperature, true);
         new_temp_set = true;
@@ -1251,11 +1253,6 @@ void WipeTower::toolchange_Wipe(
 
     writer.set_extrusion_flow(m_extrusion_flow); // Reset the extrusion flow.
     writer.change_analyzer_line_width(m_perimeter_width);
-    // Before starting to print with a single-extruder MMU, AND if cooling down,
-    // wait for destination temperature to settle (if needed) before resuming print.
-    // If new temperature is higher, then it's already correct from before starting the wipe.
-    if (m_semm && new_temperature != 0 && new_temperature < m_old_temperature)
-        writer.set_extruder_temp(new_temperature, true);
 }
 
 
