@@ -1701,6 +1701,9 @@ void TabPrint::build()
         optgroup->append_single_option_line("min_bead_width");
         optgroup->append_single_option_line("min_feature_size");
 
+        optgroup = page->new_optgroup(L("Spiral vase"));
+        optgroup->append_single_option_line("spiral_vase_bottom_lock_perimeters");
+
     page = add_options_page(L("Output options"), "output+page_white");
         optgroup = page->new_optgroup(L("Sequential printing"));
         optgroup->append_single_option_line("complete_objects", "sequential-printing_124589");
