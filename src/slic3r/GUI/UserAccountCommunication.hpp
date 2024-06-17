@@ -12,6 +12,8 @@
 #include <mutex>
 #include <memory>
 
+#include <wx/timer.h>
+
 namespace Slic3r {
 namespace GUI {
 class CodeChalengeGenerator
