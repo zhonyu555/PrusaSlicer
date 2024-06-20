@@ -30,6 +30,7 @@ endif ()
 add_cmake_project(wxWidgets
     URL https://github.com/prusa3d/wxWidgets/archive/78aa2dc0ea7ce99dc19adc1140f74c3e2e3f3a26.zip
     URL_HASH SHA256=94b7d972373503e380e5a8b0ca63b1ccb956da4006402298dd89a0c5c7041b1e
+    PATCH_COMMAND ${PATCH_CMD} ${CMAKE_CURRENT_LIST_DIR}/webkit2.patch
     CMAKE_ARGS
         "-DCMAKE_DEBUG_POSTFIX:STRING="
         -DwxBUILD_PRECOMP=ON
