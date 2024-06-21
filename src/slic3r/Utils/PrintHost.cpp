@@ -31,6 +31,7 @@
 #include "Moonraker.hpp"
 #include "PrusaConnect.hpp"
 #include "../GUI/PrintHostDialogs.hpp"
+#include "../GUI/MainFrame.hpp"
 #include "SimplyPrint.hpp"
 
 namespace fs = boost::filesystem;

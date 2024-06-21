@@ -680,7 +680,7 @@ void PhysicalPrinterDialog::update(bool printer_change)
         m_optgroup->show_field("host_type");
 
         m_optgroup->enable_field("print_host");
-        m_optgroup->enable_field("print_host_webui");
+        m_optgroup->show_field("print_host_webui");
         m_optgroup->enable_field("printhost_cafile");
         m_optgroup->enable_field("printhost_ssl_ignore_revoke");
         if (m_printhost_cafile_browse_btn)
