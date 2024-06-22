@@ -2,8 +2,13 @@
 ///|/
 ///|/ PrusaSlicer is released under the terms of the AGPLv3 or higher
 ///|/
+
+#include <algorithm>
+#include <cmath>
+
 #include "RulerForDoubleSlider.hpp"
 #include "libslic3r/CustomGCode.hpp"
+#include "libslic3r/Point.hpp"
 
 using namespace Slic3r;
 using namespace CustomGCode;
