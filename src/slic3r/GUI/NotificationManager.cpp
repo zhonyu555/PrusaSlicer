@@ -1571,7 +1571,7 @@ void NotificationManager::PrintHostUploadNotification::render_cancel_button(cons
 	}
 	ImGui::PopStyleColor(5);
 
-	// bellow is version where both close and stop button are rendered next to each other
+	// below is version where both close and stop button are rendered next to each other
 
 	/*
 	ImVec2 win_size(win_size_x, win_size_y);
