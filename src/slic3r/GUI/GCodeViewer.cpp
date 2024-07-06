@@ -312,7 +312,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
         ImGuiPureWrap::set_next_window_pos(viewport.GetCenter().x, viewport.Size.y - preview->get_moves_slider_height(), ImGuiCond_Always, 0.5f, 1.0f);
         ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
         ImGui::SetNextWindowBgAlpha(properties_shown ? 0.8f : 0.25f);
-        ImGuiPureWrap::begin(std::string("ToolPosition"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
+        ImGuiPureWrap::begin(std::string("ToolPosition"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing);
         ImGui::AlignTextToFramePadding();
         ImGuiPureWrap::text_colored(ImGuiPureWrap::COL_ORANGE_LIGHT, _u8L("Position") + ":");
         ImGui::SameLine();
@@ -350,7 +350,7 @@ void GCodeViewer::SequentialView::Marker::render_position_window(const libvgcode
                 append_table_row(_u8L("Type"), [&vertex]() {
                     ImGuiPureWrap::text(_u8L(to_string(vertex.type)));
                 });
-                append_table_row(_u8L("Extrusion role"), [&vertex]() {
+                append_table_row(_u8L("Feature type"), [&vertex]() {
                     std::string text;
                     if (vertex.is_extrusion())
                         text = _u8L(to_string(vertex.role));
@@ -760,7 +760,7 @@ void GCodeViewer::SequentialView::GCodeWindow::render(float top, float bottom, s
     ImGuiPureWrap::set_next_window_size(0.0f, wnd_height, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::SetNextWindowBgAlpha(0.6f);
-    ImGuiPureWrap::begin(std::string("G-code"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove);
+    ImGuiPureWrap::begin(std::string("G-code"), ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoFocusOnAppearing);
 
     // center the text in the window by pushing down the first line
     const float f_lines_count = static_cast<float>(visible_lines_count);
@@ -873,8 +873,8 @@ void GCodeViewer::load_as_gcode(const GCodeProcessorResult& gcode_result, const 
 
         // collect color print colors
         libvgcode::Palette color_print_colors;
-        color_print_colors.reserve(str_color_print_colors.size());
-        for (const std::string& color : str_color_print_colors) {
+        const std::vector<std::string>& str_colors = str_color_print_colors.empty() ? str_tool_colors : str_color_print_colors;
+        for (const std::string& color : str_colors) {
             color_print_colors.emplace_back(libvgcode::convert(color));
         }
         m_viewer.set_color_print_colors(color_print_colors);
