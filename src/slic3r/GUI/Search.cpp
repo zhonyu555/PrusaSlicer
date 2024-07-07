@@ -656,7 +656,7 @@ void SearchDialog::Popup(wxPoint position /*= wxDefaultPosition*/)
 
     if (position != wxDefaultPosition)
         this->SetPosition(position);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__linux__)
     this->ShowWithoutActivating();
 #else
     this->Show();
