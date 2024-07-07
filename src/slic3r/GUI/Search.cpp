@@ -447,7 +447,7 @@ void OptionsSearcher::update_dialog_position()
 {
     if (search_dialog) {
         wxPoint old_pos = search_dialog->GetPosition();
-        wxPoint pos = search_input->GetScreenPosition() + wxPoint(-5, search_input->GetSize().y);
+        wxPoint pos = search_input->GetScreenPosition() + wxPoint(0, search_input->GetSize().y);
         if (old_pos != pos)
             search_dialog->SetPosition(pos);
     }
