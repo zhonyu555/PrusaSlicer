@@ -521,8 +521,10 @@ void OptionsSearcher::edit_search_input()
 void OptionsSearcher::process_key_down_from_input(wxKeyEvent& e)
 {
     int key = e.GetKeyCode();
-    if (key == WXK_ESCAPE)
-        search_dialog->EndModal(wxID_CLOSE);
+    if (key == WXK_ESCAPE) {
+        search_input->SetValue("");
+        search_dialog->Hide();
+    }
     else if (search_dialog && (key == WXK_UP || key == WXK_DOWN || key == WXK_NUMPAD_ENTER || key == WXK_RETURN))
         search_dialog->KeyDown(e);
 }
