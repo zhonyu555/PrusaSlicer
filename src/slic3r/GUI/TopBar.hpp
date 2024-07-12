@@ -95,7 +95,7 @@ public:
     void SetSettingsButtonTooltip(const wxString& tooltip);
     void UpdateSearchSizeAndPosition();
     void UpdateSearch(const wxString& search);
-
+    void TriggerMenuButtonPopup();
     wxWindow* GetSearchCtrl() { return m_search->GetTextCtrl(); }
 
 private:

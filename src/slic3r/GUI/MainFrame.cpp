@@ -241,6 +241,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
 
     // declare events
     Bind(wxEVT_MENU, &MainFrame::OnQuit, this, wxID_EXIT);
+    Bind(wxEVT_CHAR_HOOK, &MainFrame::OnKeyDown, this);
     Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent& event) {
         if (event.CanVeto() && m_plater->canvas3D()->get_gizmos_manager().is_in_editing_mode(true)) {
             // prevents to open the save dirty project dialog
@@ -2339,5 +2340,14 @@ void MainFrame::OnQuit(wxCommandEvent& event)
     Close();
 }
 
+void MainFrame::OnKeyDown(wxKeyEvent& event)
+{
+    if (event.GetModifiers() == wxMOD_ALT && strchr("CHEWVF", event.GetKeyCode()))
+    {
+        auto ctrl = m_tabpanel->GetTopBarItemsCtrl();
+        ctrl->TriggerMenuButtonPopup();
+    }
+    event.Skip();
+}
 } // GUI
 } // Slic3r

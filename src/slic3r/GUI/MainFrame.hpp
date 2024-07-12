@@ -232,6 +232,7 @@ public:
     void    refresh_account_menu(bool avatar = false);
 
     void    OnQuit(wxCommandEvent& event);
+    void    OnKeyDown(wxKeyEvent& event);
 
     PrintHostQueueDialog* printhost_queue_dlg() { return m_printhost_queue_dlg; }
 
