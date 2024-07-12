@@ -231,6 +231,8 @@ public:
 
     void    refresh_account_menu(bool avatar = false);
 
+    void    OnQuit(wxCommandEvent& event);
+
     PrintHostQueueDialog* printhost_queue_dlg() { return m_printhost_queue_dlg; }
 
     Plater*               m_plater { nullptr };
@@ -243,7 +245,7 @@ public:
     PreferencesDialog*    preferences_dialog { nullptr };
     PrintHostQueueDialog* m_printhost_queue_dlg;
     GalleryDialog*        m_gallery_dialog{ nullptr };
-    
+
 #ifdef __APPLE__
     std::unique_ptr<wxTaskBarIcon> m_taskbar_icon;
 #endif // __APPLE__

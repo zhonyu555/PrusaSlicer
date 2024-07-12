@@ -240,6 +240,7 @@ DPIFrame(NULL, wxID_ANY, "", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_S
     update_title();
 
     // declare events
+    Bind(wxEVT_MENU, &MainFrame::OnQuit, this, wxID_EXIT);
     Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent& event) {
         if (event.CanVeto() && m_plater->canvas3D()->get_gizmos_manager().is_in_editing_mode(true)) {
             // prevents to open the save dirty project dialog
@@ -1474,7 +1475,7 @@ void MainFrame::init_menubar_as_editor()
         #ifdef _WIN32
             append_menu_item(fileMenu, wxID_EXIT, _L("E&xit"), wxString::Format(_L("Exit %s"), SLIC3R_APP_NAME),
         #else
-            append_menu_item(fileMenu, wxID_EXIT, _L("&Quit"), wxString::Format(_L("Quit %s"), SLIC3R_APP_NAME),
+            append_menu_item(fileMenu, wxID_EXIT, _L("&Quit") + dots + "\tCtrl+Q", wxString::Format(_L("Quit %s"), SLIC3R_APP_NAME),
         #endif
             [this](wxCommandEvent&) { Close(false); }, "exit");
     }
@@ -2333,6 +2334,10 @@ void SettingsDialog::on_dpi_changed(const wxRect& suggested_rect)
 //    Refresh();
 }
 
+void MainFrame::OnQuit(wxCommandEvent& event)
+{
+    Close();
+}
 
 } // GUI
 } // Slic3r
