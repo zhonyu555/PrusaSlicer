@@ -3518,30 +3518,8 @@ bool GUI_App::check_updates(const bool invoked_by_user)
         }
         // then its time for preset_updater sync 
         preset_updater->sync_blocking(preset_bundle, this, plater()->get_preset_archive_database()->get_selected_archive_repositories());
-        // and then we check updates
+        // and then we check updates (not)
     }
-
-	PresetUpdater::UpdateResult updater_result;
-	try {
-        preset_updater->update_index_db();
-		updater_result = preset_updater->config_update(app_config->orig_version(), invoked_by_user ? PresetUpdater::UpdateParams::SHOW_TEXT_BOX : PresetUpdater::UpdateParams::SHOW_NOTIFICATION, plater()->get_preset_archive_database()->get_selected_archive_repositories());
-		if (updater_result == PresetUpdater::R_INCOMPAT_EXIT) {
-			mainframe->Close();
-            // Applicaiton is closing.
-            return false;
-		}
-		else if (updater_result == PresetUpdater::R_INCOMPAT_CONFIGURED) {
-            m_app_conf_exists = true;
-		}
-		else if (invoked_by_user && updater_result == PresetUpdater::R_NOOP) {
-			MsgNoUpdates dlg;
-			dlg.ShowModal();
-		}
-	}
-	catch (const std::exception & ex) {
-		show_error(nullptr, ex.what());
-	}
-    // Applicaiton will continue.
     return true;
 }
 

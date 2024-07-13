@@ -56,6 +56,15 @@ TopBarItemsCtrl::Button::Button(wxWindow* parent, const wxString& label, const s
     Bind(wxEVT_PAINT,        [this](wxPaintEvent&) { render(); });
 }
 
+void TopBarItemsCtrl::TriggerMenuButtonPopup()
+{
+        if (m_menu_btn)
+        {
+            m_menu_btn->set_selected(true);
+            m_menus->Popup(this, &m_menus->main, m_menu_btn->get_popup_pos());
+        }
+}
+
 void TopBarItemsCtrl::Button::set_selected(bool selected)
 {
     m_is_selected = selected;
