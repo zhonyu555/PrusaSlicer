@@ -292,8 +292,7 @@ void TopBarItemsCtrl::CreateSearch()
 
     m_search->SetOnDropDownIcon([this]() 
     {
-        wxGetApp().searcher().set_search_input(m_search); 
-        wxGetApp().show_search_dialog(); 
+        TriggerSearch();
     });
 
     m_search->Bind(wxEVT_KILL_FOCUS, [](wxFocusEvent& e)
@@ -317,8 +316,7 @@ void TopBarItemsCtrl::CreateSearch()
 
     ctrl->Bind(wxEVT_LEFT_DOWN, [this](wxMouseEvent& event)
     {
-        wxGetApp().searcher().set_search_input(m_search); 
-        wxGetApp().show_search_dialog();
+        TriggerSearch();
         event.Skip();
     });
 
@@ -328,6 +326,15 @@ void TopBarItemsCtrl::CreateSearch()
             m_search->SetValue("");
         event.Skip();
     });
+}
+
+void TopBarItemsCtrl::TriggerSearch()
+{
+    if (m_search && m_search->GetTextCtrl())
+    {
+    	wxGetApp().searcher().set_search_input(m_search);
+        wxGetApp().show_search_dialog();
+	}
 }
 
 void TopBarItemsCtrl::UpdateSearchSizeAndPosition()

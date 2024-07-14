@@ -490,6 +490,7 @@ void OptionsSearcher::show_dialog(bool show /*= true*/)
     search_dialog->Popup();
     if (!search_input->HasFocus())
         search_input->SetFocus();
+    wxYield();
 }
 
 void OptionsSearcher::dlg_sys_color_changed()
