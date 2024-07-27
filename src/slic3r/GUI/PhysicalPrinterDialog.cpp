@@ -680,7 +680,6 @@ void PhysicalPrinterDialog::update(bool printer_change)
         m_optgroup->show_field("host_type");
 
         m_optgroup->enable_field("print_host");
-        m_optgroup->show_field("print_host_webui");
         m_optgroup->enable_field("printhost_cafile");
         m_optgroup->enable_field("printhost_ssl_ignore_revoke");
         if (m_printhost_cafile_browse_btn)
@@ -729,13 +728,6 @@ void PhysicalPrinterDialog::update(bool printer_change)
                     temp->SetValue("https://simplyprint.io");
                 }
                 m_config->opt_string("print_host") = "https://simplyprint.io";
-            }
-            if (Field* printhost_webui_field = m_optgroup->get_field("print_host_webui"); printhost_webui_field) {
-                printhost_webui_field->disable();
-                if (wxTextCtrl* temp = dynamic_cast<wxTextCtrl*>(printhost_webui_field->getWindow()); temp && temp->GetValue().IsEmpty()) {
-                    temp->SetValue("https://simplyprint.io/panel");
-                }
-                m_config->opt_string("print_host_webui") = "https://simplyprint.io/panel";
             }
             m_optgroup->hide_field("printhost_apikey");
             m_optgroup->disable_field("printhost_cafile");

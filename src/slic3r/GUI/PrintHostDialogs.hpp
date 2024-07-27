@@ -31,12 +31,11 @@ namespace GUI {
 class PrintHostSendDialog : public GUI::MsgDialog
 {
 public:
-    PrintHostSendDialog(const boost::filesystem::path &path, PrintHostPostUploadActions post_actions, const wxArrayString& groups, const wxArrayString& storage_paths, const wxArrayString& storage_names, bool switch_to_device_tab);
+    PrintHostSendDialog(const boost::filesystem::path &path, PrintHostPostUploadActions post_actions, const wxArrayString& groups, const wxArrayString& storage_paths, const wxArrayString& storage_names);
     boost::filesystem::path filename() const;
     PrintHostPostUploadAction post_action() const;
     std::string group() const;
     std::string storage() const;
-    bool switch_to_device_tab() const {return m_switch_to_device_tab;}
 
     virtual void EndModal(int ret) override;
 private:
@@ -47,7 +46,6 @@ private:
     wxString    m_valid_suffix;
     wxString    m_preselected_storage;
     wxArrayString m_paths;
-    bool m_switch_to_device_tab;
 };
 
 
