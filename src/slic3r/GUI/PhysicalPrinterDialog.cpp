@@ -725,14 +725,14 @@ void PhysicalPrinterDialog::update(bool printer_change)
             // Set the host url
             if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
                 printhost_field->disable();
-                if (wxTextCtrl* temp = dynamic_cast<TextCtrl*>(printhost_field)->text_ctrl(); temp && temp->GetValue().IsEmpty()) {
+                if (wxTextCtrl* temp = dynamic_cast<wxTextCtrl*>(printhost_field->getWindow()); temp && temp->GetValue().IsEmpty()) {
                     temp->SetValue("https://simplyprint.io");
                 }
                 m_config->opt_string("print_host") = "https://simplyprint.io";
             }
             if (Field* printhost_webui_field = m_optgroup->get_field("print_host_webui"); printhost_webui_field) {
                 printhost_webui_field->disable();
-                if (wxTextCtrl* temp = dynamic_cast<TextCtrl*>(printhost_webui_field)->text_ctrl(); temp && temp->GetValue().IsEmpty()) {
+                if (wxTextCtrl* temp = dynamic_cast<wxTextCtrl*>(printhost_webui_field->getWindow()); temp && temp->GetValue().IsEmpty()) {
                     temp->SetValue("https://simplyprint.io/panel");
                 }
                 m_config->opt_string("print_host_webui") = "https://simplyprint.io/panel";
