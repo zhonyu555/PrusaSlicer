@@ -1,9 +1,13 @@
 #include "OAuthJob.hpp"
 
-#include "Http.hpp"
+#include <slic3r/Utils/Http.hpp>
 #include "ThreadSafeQueue.hpp"
 #include "slic3r/GUI/I18N.hpp"
 #include "nlohmann/json.hpp"
+
+#include <boost/log/trivial.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <wx/event.h>
 
 
 namespace Slic3r {

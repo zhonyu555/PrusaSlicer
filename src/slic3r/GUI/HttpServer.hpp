@@ -4,6 +4,7 @@
 #include <iostream>
 #include <mutex>
 #include <stack>
+#include <set>
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>

@@ -4,6 +4,7 @@
 #include "Jobs/BoostThreadWorker.hpp"
 #include "Jobs/PlaterWorker.hpp"
 #include "wxExtensions.hpp"
+#include <wx/stattext.h>
 
 namespace Slic3r {
 namespace GUI {
