@@ -49,7 +49,7 @@ set(SLIC3R_GUI_SOURCES
     GUI/GLCanvas3D.hpp
     GUI/GLCanvas3D.cpp
     GUI/SceneRaycaster.hpp
-    GUI/SceneRaycaster.cpp	
+    GUI/SceneRaycaster.cpp
     GUI/OpenGLManager.hpp
     GUI/OpenGLManager.cpp
     GUI/Selection.hpp
@@ -235,6 +235,7 @@ set(SLIC3R_GUI_SOURCES
     GUI/Jobs/BusyCursorJob.hpp
     GUI/Jobs/CancellableJob.hpp
     GUI/Jobs/PlaterWorker.hpp
+    GUI/Jobs/WindowWorker.hpp
     GUI/Jobs/ArrangeJob2.hpp
     GUI/Jobs/ArrangeJob2.cpp
     GUI/Jobs/CreateFontNameImageJob.cpp
