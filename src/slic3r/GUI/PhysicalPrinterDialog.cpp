@@ -444,7 +444,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 show_error(this, host->get_test_failed_msg(msg));
 
             update();
-            });
+        });
 
         return sizer;
     };
@@ -724,7 +724,8 @@ void PhysicalPrinterDialog::update(bool printer_change)
             // Set the host url
             if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
                 printhost_field->disable();
-                if (wxTextCtrl* temp = dynamic_cast<wxTextCtrl*>(printhost_field->getWindow()); temp && temp->GetValue().IsEmpty()) {
+                if (text_ctrl* temp = dynamic_cast<text_ctrl*>(printhost_field->getWindow()); temp) {
+                    m_stored_host = temp->GetValue();
                     temp->SetValue("https://simplyprint.io");
                 }
                 m_config->opt_string("print_host") = "https://simplyprint.io";
@@ -734,6 +735,16 @@ void PhysicalPrinterDialog::update(bool printer_change)
             m_optgroup->disable_field("printhost_ssl_ignore_revoke");
             if (m_printhost_cafile_browse_btn)
                 m_printhost_cafile_browse_btn->Disable();
+        } else if (m_last_host_type != opt->value && m_last_host_type == htSimplyPrint) { // check if changing away from SimplyPrint
+            if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
+                if (text_ctrl* temp = dynamic_cast<text_ctrl*>(printhost_field->getWindow()); temp) {
+                    if (m_stored_host.starts_with("https://simplyprint.io"))
+                        m_stored_host = wxEmptyString;
+                    temp->SetValue(m_stored_host);
+                    m_stored_host = wxEmptyString;
+                }
+                m_config->opt_string("print_host") = "";
+            }
         }
         
         m_last_host_type = opt->value;
