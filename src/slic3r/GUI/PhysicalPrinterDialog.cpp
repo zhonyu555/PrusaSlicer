@@ -432,6 +432,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                         result = r.success;
                         if (r.success) {
                             h->save_oauth_credential(r);
+                            update_printhost_buttons();
+                            this->Fit();
+                            this->Layout();
+#ifdef __WXMSW__
+                            this->Refresh();
+#endif
                         } else {
                             msg = r.error_message;
                         }
@@ -443,7 +449,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
             else
                 show_error(this, host->get_test_failed_msg(msg));
 
-            update();
+            // update();
         });
 
         return sizer;
@@ -465,7 +471,13 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
 
             if (dialog.ShowModal() == wxID_YES) {
                 host->log_out();
-                update();
+                // update();
+                update_printhost_buttons();
+                this->Fit();
+                this->Layout();
+#ifdef __WXMSW__
+                this->Refresh();
+#endif
             }
         });
 
