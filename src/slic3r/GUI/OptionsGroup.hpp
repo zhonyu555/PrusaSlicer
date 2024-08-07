@@ -29,7 +29,7 @@
     #define wxOSX true
 #else
     #define wxOSX false
-#endif
+#endif 
 #ifdef __WXGTK3__
     #define wxGTK3 true
 #else
@@ -204,7 +204,7 @@ public:
 
     void            hide_labels() { label_width = 0; }
 
-	OptionsGroup(	wxWindow* _parent, const wxString& title, bool is_tab_opt = false,
+	OptionsGroup(	wxWindow* _parent, const wxString& title, bool is_tab_opt = false, 
                     column_t extra_clmn = nullptr);
 	virtual ~OptionsGroup() { clear(true); }
 

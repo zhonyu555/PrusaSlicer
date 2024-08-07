@@ -242,7 +242,7 @@ public:
     void redo_to(int selection);
     bool undo_redo_string_getter(const bool is_undo, int idx, const char** out_text);
     void undo_redo_topmost_string_getter(const bool is_undo, std::string& out_text);
-    // For the memory statistics.
+    // For the memory statistics. 
     const Slic3r::UndoRedo::Stack& undo_redo_stack_main() const;
     void clear_undo_redo_stack_main();
     // Enter / leave the Gizmos specific Undo / Redo stack. To be used by the SLA support point editing gizmo.
@@ -270,7 +270,7 @@ public:
     void set_project_filename(const wxString& filename);
 
     bool is_export_gcode_scheduled() const;
-
+    
     const Selection& get_selection() const;
     int get_selected_object_idx();
     bool is_single_full_object_selection() const;
@@ -279,7 +279,7 @@ public:
     GLCanvas3D* get_current_canvas3D();
 
     void render_sliders(GLCanvas3D& canvas);
-
+    
     void arrange();
     void arrange(Worker &w, bool selected);
 
@@ -372,7 +372,7 @@ public:
     void init_notification_manager();
 
     void bring_instance_forward();
-
+    
     // ROII wrapper for suppressing the Undo / Redo snapshot to be taken.
 	class SuppressSnapshots
 	{
