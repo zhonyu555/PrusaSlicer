@@ -13,6 +13,7 @@
 #include "slic3r/GUI/format.hpp"
 #include "slic3r/GUI/GUI_App.hpp"
 #include "slic3r/GUI/MainFrame.hpp"
+#include "slic3r/GUI/TopBar.hpp"
 
 
 namespace Slic3r {
@@ -88,6 +89,13 @@ static std::string url_encode(const std::vector<std::pair<std::string, std::stri
 }
 
 static void set_auth(Http& http, const std::string& access_token) { http.header("Authorization", "Bearer " + access_token); }
+
+static bool should_open_in_external_browser()
+{
+    const auto& app = GUI::wxGetApp();
+
+    return !app.app_config->get_bool("open_device_tab_post_upload");
+}
 
 SimplyPrint::SimplyPrint(DynamicPrintConfig* config)
 {
@@ -310,7 +318,15 @@ bool SimplyPrint::do_temp_upload(const boost::filesystem::path& file_path,
             // Launch external browser for file importing after uploading
             const auto url = URL_BASE_HOME"/panel?" + url_encode({{"import", "tmp:" + uuid}, {"filename", filename}});
 
-            wxLaunchDefaultBrowser(url);
+            if (should_open_in_external_browser()) {
+                wxLaunchDefaultBrowser(url);
+            } else {
+                const auto mainframe = GUI::wxGetApp().mainframe;
+                mainframe->set_printer_webview_tab_url(url);
+                // tab selection is also handled in PrintHost.cpp which means this line is probably redundant
+                // tab select does need to be after setting the url or else the url doesn't load properly
+                mainframe->select_tab(size_t(4));
+            }
 
             return true;
         },

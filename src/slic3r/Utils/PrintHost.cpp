@@ -19,6 +19,7 @@
 #include <wx/string.h>
 #include <wx/app.h>
 #include <wx/arrstr.h>
+#include <slic3r/GUI/GUI_App.hpp>
 
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/Channel.hpp"
@@ -326,6 +327,8 @@ void PrintHostJobQueue::priv::perform_job(PrintHostJob the_job)
 
     if (success) {
         emit_progress(100);
+        if (the_job.switch_to_device_tab)
+            GUI::wxGetApp().mainframe->select_tab(size_t(4));
     }
 }
 
