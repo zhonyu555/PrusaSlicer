@@ -6148,7 +6148,7 @@ void Plater::send_gcode_inner(DynamicPrintConfig* physical_printer_config)
         }
     }
 
-    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups, storage_paths, storage_names);
+    PrintHostSendDialog dlg(default_output_file, upload_job.printhost->get_post_upload_actions(), groups, storage_paths, storage_names, wxGetApp().app_config->get_bool("open_device_tab_post_upload"));
     if (dlg.ShowModal() == wxID_OK) {
 
         if (printer_technology() == ptFFF) {
@@ -6167,6 +6167,8 @@ void Plater::send_gcode_inner(DynamicPrintConfig* physical_printer_config)
                 wxGetApp().preset_bundle->printers.get_edited_preset().config.opt_string("printer_notes"));
         }
 
+        wxGetApp().app_config->set("open_device_tab_post_upload", dlg.switch_to_device_tab() ? "1" : "0");
+        upload_job.switch_to_device_tab    = dlg.switch_to_device_tab();
         upload_job.upload_data.upload_path = dlg.filename();
         upload_job.upload_data.post_action = dlg.post_action();
         upload_job.upload_data.group       = dlg.group();

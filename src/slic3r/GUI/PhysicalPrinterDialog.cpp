@@ -41,6 +41,8 @@
 #include "BitmapCache.hpp"
 #include "BonjourDialog.hpp"
 #include "MsgDialog.hpp"
+#include "OAuthDialog.hpp"
+#include "../Utils/SimplyPrint.hpp"
 
 namespace Slic3r {
 namespace GUI {
@@ -420,12 +422,64 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
                 // Show a wait cursor during the connection test, as it is blocking UI.
                 wxBusyCursor wait;
                 result = host->test(msg);
+
+                if (!result && host->is_cloud()) {
+                    if (const auto h = dynamic_cast<SimplyPrint*>(host.get()); h) {
+                        OAuthDialog dlg(this, h->get_oauth_params());
+                        dlg.ShowModal();
+
+                        const auto& r = dlg.get_result();
+                        result = r.success;
+                        if (r.success) {
+                            h->save_oauth_credential(r);
+                            update_printhost_buttons();
+                            this->Fit();
+                            this->Layout();
+#ifdef __WXMSW__
+                            this->Refresh();
+#endif
+                        } else {
+                            msg = r.error_message;
+                        }
+                    }
+                }
             }
             if (result)
                 show_info(this, host->get_test_ok_msg(), _L("Success!"));
             else
                 show_error(this, host->get_test_failed_msg(msg));
-            });
+
+            // update();
+        });
+
+        return sizer;
+    };
+
+    auto print_host_logout = [&](wxWindow* parent) {
+        auto sizer = create_sizer_with_btn(parent, &m_printhost_logout_btn, "", _L("Log Out"));
+
+        m_printhost_logout_btn->Bind(wxEVT_BUTTON, [this](wxCommandEvent& e) {
+            std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
+            if (!host) {
+                const wxString text = _L("Could not get a valid Printer Host reference");
+                show_error(this, text);
+                return;
+            }
+
+            wxString msg_text = _L("Are you sure to log out?");
+            MessageDialog dialog(this, msg_text, "", wxICON_QUESTION | wxYES_NO);
+
+            if (dialog.ShowModal() == wxID_YES) {
+                host->log_out();
+                // update();
+                update_printhost_buttons();
+                this->Fit();
+                this->Layout();
+#ifdef __WXMSW__
+                this->Refresh();
+#endif
+            }
+        });
 
         return sizer;
     };
@@ -459,6 +513,7 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
     Line host_line = m_optgroup->create_single_option_line(option);
     host_line.append_widget(printhost_browse);
     host_line.append_widget(print_host_test);
+    host_line.append_widget(print_host_logout);
     m_optgroup->append_line(host_line);
 
     m_optgroup->append_single_option_line("printhost_authorization_type");
@@ -616,8 +671,12 @@ void PhysicalPrinterDialog::build_printhost_settings(ConfigOptionsGroup* m_optgr
 void PhysicalPrinterDialog::update_printhost_buttons()
 {
     std::unique_ptr<PrintHost> host(PrintHost::get_print_host(m_config));
-    m_printhost_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
-    m_printhost_browse_btn->Enable(host->has_auto_discovery());
+    if (host) {
+        m_printhost_test_btn->Enable(!m_config->opt_string("print_host").empty() && host->can_test());
+        m_printhost_browse_btn->Show(host->has_auto_discovery());
+        m_printhost_logout_btn->Show(host->is_logged_in());
+        m_printhost_test_btn->SetLabel(host->is_cloud() ? _L("Login/Test") : _L("Test"));
+    }
 }
 
 void PhysicalPrinterDialog::update(bool printer_change)
@@ -631,6 +690,12 @@ void PhysicalPrinterDialog::update(bool printer_change)
         update_host_type(printer_change);
         const auto opt = m_config->option<ConfigOptionEnum<PrintHostType>>("host_type");
         m_optgroup->show_field("host_type");
+
+        m_optgroup->enable_field("print_host");
+        m_optgroup->enable_field("printhost_cafile");
+        m_optgroup->enable_field("printhost_ssl_ignore_revoke");
+        if (m_printhost_cafile_browse_btn)
+            m_printhost_cafile_browse_btn->Enable();
 
         if (opt->value == htPrusaLink) { // PrusaConnect does NOT allow http digest
             m_optgroup->show_field("printhost_authorization_type");
@@ -666,7 +731,34 @@ void PhysicalPrinterDialog::update(bool printer_change)
                 m_stored_host = temp_host;
             }
         }
-        
+
+        if (opt->value == htSimplyPrint) {
+            // Set the host url
+            if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
+                printhost_field->disable();
+                if (text_ctrl* temp = dynamic_cast<text_ctrl*>(printhost_field->getWindow()); temp) {
+                    m_stored_host = temp->GetValue();
+                    temp->SetValue("https://simplyprint.io");
+                }
+                m_config->opt_string("print_host") = "https://simplyprint.io";
+            }
+            m_optgroup->hide_field("printhost_apikey");
+            m_optgroup->disable_field("printhost_cafile");
+            m_optgroup->disable_field("printhost_ssl_ignore_revoke");
+            if (m_printhost_cafile_browse_btn)
+                m_printhost_cafile_browse_btn->Disable();
+        } else if (m_last_host_type != opt->value && m_last_host_type == htSimplyPrint) { // check if changing away from SimplyPrint
+            if (Field* printhost_field = m_optgroup->get_field("print_host"); printhost_field) {
+                if (text_ctrl* temp = dynamic_cast<text_ctrl*>(printhost_field->getWindow()); temp) {
+                    if (m_stored_host.starts_with("https://simplyprint.io"))
+                        m_stored_host = wxEmptyString;
+                    temp->SetValue(m_stored_host);
+                    m_stored_host = wxEmptyString;
+                }
+                m_config->opt_string("print_host") = "";
+            }
+        }
+
         m_last_host_type = opt->value;
     }
     else {

@@ -190,6 +190,9 @@ public:
 	void			show_field(const t_config_option_key& opt_key, bool show = true);
 	void			hide_field(const t_config_option_key& opt_key) {  show_field(opt_key, false);  }
 
+	void            enable_field(const t_config_option_key& opt_key, bool enable = true);
+    void            disable_field(const t_config_option_key& opt_key) { enable_field(opt_key, false); }
+
 	void			set_name(const wxString& new_name) { stb->SetLabel(new_name); }
 	wxString		get_name() const { return stb->GetLabel(); }
 

@@ -846,6 +846,9 @@ void MainFrame::show_printer_webview_tab(DynamicPrintConfig* dpc)
     if (dpc && dpc->option<ConfigOptionEnum<PrintHostType>>("host_type")->value != htPrusaConnect) {
         std::string url = dpc->opt_string("print_host");
 
+        if (dpc->option<ConfigOptionEnum<PrintHostType>>("host_type")->value == htSimplyPrint)
+            url += "/panel";
+
         if (url.find("http://") != 0 && url.find("https://") != 0) {
             url = "http://" + url;
         }

@@ -19,6 +19,7 @@
 #include <wx/string.h>
 #include <wx/app.h>
 #include <wx/arrstr.h>
+#include <slic3r/GUI/GUI_App.hpp>
 
 #include "libslic3r/PrintConfig.hpp"
 #include "libslic3r/Channel.hpp"
@@ -31,6 +32,8 @@
 #include "Moonraker.hpp"
 #include "PrusaConnect.hpp"
 #include "../GUI/PrintHostDialogs.hpp"
+#include "../GUI/MainFrame.hpp"
+#include "SimplyPrint.hpp"
 
 namespace fs = boost::filesystem;
 using boost::optional;
@@ -67,13 +70,14 @@ PrintHost* PrintHost::get_print_host(DynamicPrintConfig *config)
             case htPrusaConnectNew: return new PrusaConnectNew(config);
             case htMKS:       return new MKS(config);
             case htMoonraker: return new Moonraker(config);
+            case htSimplyPrint: return new SimplyPrint(config);
             default:          return nullptr;
         }
     } else {
         const auto opt = config->option<ConfigOptionEnum<PrintHostType>>("host_type");
         if (opt != nullptr && opt->value == htPrusaConnectNew) {
             return new PrusaConnectNew(config);
-        }        
+        }
         return new SL1Host(config);
     }
 }
@@ -323,6 +327,8 @@ void PrintHostJobQueue::priv::perform_job(PrintHostJob the_job)
 
     if (success) {
         emit_progress(100);
+        if (the_job.switch_to_device_tab)
+            GUI::wxGetApp().mainframe->select_tab(size_t(4));
     }
 }
 
